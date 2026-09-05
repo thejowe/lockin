@@ -1,21 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import { useColorScheme as useRNColorScheme } from 'react-native';
 
+/** El esquema del sistema no existe en el render estático: nadie a quien suscribirse. */
+const subscribe = () => () => {};
+
 /**
- * To support static rendering, this value needs to be re-calculated on the client side for web
+ * En web renderizamos estáticamente, así que el HTML se genera sin saber el
+ * esquema del usuario. Hasta que el cliente hidrata devolvemos 'light' —
+ * si no, el marcado del servidor y el del cliente no coincidirían.
  */
 export function useColorScheme() {
-  const [hasHydrated, setHasHydrated] = useState(false);
-
-  useEffect(() => {
-    setHasHydrated(true);
-  }, []);
-
+  const hasHydrated = useSyncExternalStore(
+    subscribe,
+    () => true,
+    () => false
+  );
   const colorScheme = useRNColorScheme();
 
-  if (hasHydrated) {
-    return colorScheme;
-  }
-
-  return 'light';
+  return hasHydrated ? colorScheme : 'light';
 }

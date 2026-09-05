@@ -1,14 +1,17 @@
 /**
- * Learn more about light and dark modes:
+ * Acceso al tema activo.
  * https://docs.expo.dev/guides/color-schemes/
  */
 
-import { Colors } from '@/constants/theme';
+import { Colors, type ThemeName, type ThemePalette } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
-export function useTheme() {
-  const scheme = useColorScheme();
-  const theme = scheme === 'unspecified' ? 'light' : scheme;
+/** El esquema activo, normalizado: si el sistema no lo declara, claro. */
+export function useThemeName(): ThemeName {
+  return useColorScheme() === 'dark' ? 'dark' : 'light';
+}
 
-  return Colors[theme];
+/** La paleta de marca del esquema activo. */
+export function useTheme(): ThemePalette {
+  return Colors[useThemeName()];
 }
