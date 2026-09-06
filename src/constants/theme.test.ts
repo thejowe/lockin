@@ -68,6 +68,18 @@ const AA_PAIRS: Pair[] = [
     min: 4.5,
     usage: 'texto de apoyo en tarjeta',
   },
+  {
+    foreground: 'textMuted',
+    background: 'background',
+    min: 4.5,
+    usage: 'metadatos y marcas de tiempo',
+  },
+  {
+    foreground: 'textMuted',
+    background: 'backgroundElement',
+    min: 4.5,
+    usage: 'placeholder y contador de campo',
+  },
 
   // Acentos como texto: etiquetas de sección, badges, errores de validación.
   { foreground: 'brass', background: 'background', min: 4.5, usage: 'etiqueta de sección' },
@@ -92,12 +104,25 @@ const AA_PAIRS: Pair[] = [
 ];
 
 /**
- * Pares que HOY no llegan a AA. Están reportados en `docs/plan/todo/arquitecto.md`
- * porque el arreglo es una decisión de paleta, no de una pantalla concreta.
+ * Pares que HOY no llegan a AA. El test fija el ratio actual como suelo: no
+ * exige el arreglo, pero impide que la situación empeore en silencio mientras
+ * se decide. Al arreglar un par, sube a `AA_PAIRS` y su entrada se borra.
  *
- * El test fija el ratio actual como suelo: no exige el arreglo, pero impide que
- * la situación empeore en silencio mientras se decide. Cuando `arquitecto` toque
- * los tokens, el par correspondiente sube a `AA_PAIRS` y esta entrada se borra.
+ * Hoy la lista está vacía. Los cuatro huecos que reportó `calidad` (2026-09-05)
+ * se cerraron el 2026-09-06:
+ *
+ * - `textMuted` sobre ambas superficies: resuelto en `Colors`. En claro se
+ *   retira el tercer nivel de tinta (`textMuted` = `textSecondary`), porque la
+ *   paleta clara no lo admite por encima de 4.5:1 sin que colapse contra el
+ *   segundo. En oscuro sí cabe: `#7D8874` -> `#828D79`. Los dos pares están
+ *   ahora en `AA_PAIRS`.
+ * - `border` sobre ambas superficies: NO APLICA, no es deuda. La regla 1.4.11
+ *   cubre los componentes de interfaz cuyo límite hace falta para identificarlos.
+ *   El borde de tarjeta es decoración, y los campos se identifican por su
+ *   etiqueta visible permanente (`src/features/profile/controls.tsx`), no por el
+ *   trazo. Subirlo a 3:1 volvería la interfaz un wireframe sin ganancia real de
+ *   accesibilidad. Si algún día un control depende solo del borde para
+ *   distinguirse, ese control sí entra aquí.
  */
 interface Gap extends Pair {
   /** Ratio medido hoy. Bajar de aquí rompe el test. */
@@ -105,42 +130,7 @@ interface Gap extends Pair {
   reason: string;
 }
 
-const KNOWN_GAPS: Gap[] = [
-  {
-    foreground: 'textMuted',
-    background: 'background',
-    min: 4.5,
-    usage: 'metadatos y marcas de tiempo',
-    current: { light: 3.42, dark: 4.84 },
-    reason:
-      'La paleta clara tiene tres niveles de tinta y el tercero no cabe por encima de 4.5:1 sin colapsar contra `textSecondary`.',
-  },
-  {
-    foreground: 'textMuted',
-    background: 'backgroundElement',
-    min: 4.5,
-    usage: 'placeholder y contador de campo',
-    current: { light: 3.14, dark: 4.26 },
-    reason: 'Mismo motivo, agravado porque la superficie de tarjeta es más clara aún.',
-  },
-  {
-    foreground: 'border',
-    background: 'background',
-    min: 3,
-    usage: 'borde de tarjeta y campo',
-    current: { light: 1.28, dark: 1.53 },
-    reason:
-      'Un trazo a 3:1 convierte la interfaz en un wireframe. Alternativa: que el relleno del campo distinga por sí solo y el borde pase a ser decorativo.',
-  },
-  {
-    foreground: 'border',
-    background: 'backgroundElement',
-    min: 3,
-    usage: 'separador dentro de tarjeta',
-    current: { light: 1.17, dark: 1.34 },
-    reason: 'Mismo motivo que el borde sobre el fondo de pantalla.',
-  },
-];
+const KNOWN_GAPS: Gap[] = [];
 
 const THEMES: ThemeName[] = ['light', 'dark'];
 
@@ -154,7 +144,10 @@ describe.each(THEMES)('contraste del tema %s', (theme) => {
     }
   );
 
-  it.each(KNOWN_GAPS)(
+  // `it.each` de Jest falla si recibe un array vacío, y hoy no queda ningún
+  // hueco. La guarda mantiene el bloque listo para cuando vuelva a haber uno.
+  const itGap = KNOWN_GAPS.length > 0 ? it.each(KNOWN_GAPS) : () => {};
+  itGap(
     '$foreground sobre $background no empeora respecto a lo reportado ($usage)',
     ({ foreground, background, current }) => {
       expect(contrastRatio(palette[foreground], palette[background])).toBeGreaterThanOrEqual(

@@ -28,8 +28,14 @@ export const Colors = {
     text: '#1B231E',
     /** Tinta secundaria (grafito-salvia). */
     textSecondary: '#5A6459',
-    /** Tinta terciaria: metadatos, marcas de tiempo. */
-    textMuted: '#7A8378',
+    /**
+     * Tinta terciaria. En claro NO existe como nivel propio: vale lo mismo que
+     * `textSecondary`. La paleta clara no admite un tercer nivel por encima de
+     * 4.5:1 sin que colapse contra el segundo (a 4.5:1 quedaría a 1.17 de
+     * `textSecondary`, la misma tinta a ojo). El token se mantiene para que las
+     * pantallas no tengan que ramificar por tema; en oscuro sí es un nivel real.
+     */
+    textMuted: '#5A6459',
     /** Trazo de separación. */
     border: '#D2D7C9',
     /** Acento latón: acción principal, marca. */
@@ -53,7 +59,7 @@ export const Colors = {
     backgroundSelected: '#2B3123',
     text: '#E9ECE1',
     textSecondary: '#A2AC98',
-    textMuted: '#7D8874',
+    textMuted: '#828D79',
     border: '#333A2B',
     brass: '#E0B04E',
     brassSoft: '#33280F',

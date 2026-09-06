@@ -123,20 +123,31 @@ decisión de paleta, no de una pantalla:
 | `border` sobre `background` | 1.28 | 1.53 | 3 | borde de tarjeta y de campo |
 | `border` sobre `backgroundElement` | 1.17 | 1.34 | 3 | separador dentro de tarjeta |
 
-- [ ] Decidir qué hacer con `textMuted`. El problema es estructural: la paleta
-      clara tiene tres niveles de tinta y el tercero no cabe por encima de 4.5:1
-      sin colapsar contra `textSecondary` (`#5A6459`). Opciones: renunciar al
-      tercer nivel en claro, o subir `backgroundElement`/`background` para hacerle
-      sitio.
-- [ ] Decidir qué hacer con `border`. Un trazo a 3:1 convierte la interfaz en un
-      wireframe y choca con la marca. La salida razonable es que el relleno del
-      campo (`backgroundElement`) lo distinga por sí solo y el borde quede como
-      decoración — pero entonces `backgroundElement` sobre `background` tiene que
-      ser perceptible, y hoy están a 1.09.
+- [x] **`textMuted` — decidido (2026-09-06): en claro se retira el tercer nivel.**
+      Se comprobó numéricamente que no hay salida: para llegar a 4.5:1 sobre la
+      superficie más oscura, `textMuted` tiene que caer en torno a `#646F60`, que
+      queda a 1.17 de `textSecondary` — la misma tinta a ojo. Subir las dos
+      superficies tampoco abre hueco (se probaron tres pares, ninguno pasa). Así
+      que en claro `textMuted` vale `#5A6459`, igual que `textSecondary`: 5.38 y
+      4.93, ambos AA. En oscuro el tercer nivel sí cabe y se conserva,
+      `#7D8874` → `#828D79`: 5.17 y 4.56, manteniendo la separación con
+      `textSecondary` (1.47, frente a 1.57 de antes). El token sigue existiendo en
+      los dos temas para que ninguna pantalla tenga que ramificar por tema.
 
-Mientras tanto, el test fija el ratio actual como suelo: no exige el arreglo,
-pero impide que empeore en silencio. Cuando se arregle un par, sube de
-`KNOWN_GAPS` a `AA_PAIRS` en ese archivo.
+- [x] **`border` — decidido (2026-09-06): no aplica, no es deuda.**
+      El planteamiento original era demasiado amplio. La regla WCAG 1.4.11 cubre
+      los componentes de interfaz cuyo límite hace falta para identificarlos: el
+      borde de una tarjeta es decoración y está exento, y los campos del
+      formulario se identifican por su etiqueta visible permanente
+      (`src/features/profile/controls.tsx`), no por el trazo. De los cuatro pares
+      reportados, los dos de `border` no aplicaban. No se cambia ningún color.
+      Si algún día un control depende solo del borde para distinguirse, ese
+      control sí entra en la lista.
+
+Con las dos decisiones aplicadas, `KNOWN_GAPS` en `theme.test.ts` queda vacío:
+los dos pares de `textMuted` subieron a `AA_PAIRS` y los dos de `border` se
+retiraron por no aplicar. El razonamiento completo vive en el comentario de
+`KNOWN_GAPS`, para que quien lo lea dentro de un año no lo reabra sin contexto.
 
 **Ya arreglado por `calidad`:** `brassSoft` claro pasa de `#F0E3C9` a `#F2E5CB`
 (el chip de marca seleccionado estaba en 4.44:1, a un pelo de AA). Es el mismo
