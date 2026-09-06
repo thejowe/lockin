@@ -19,7 +19,15 @@ module.exports = {
     '^@/assets/(.*)$': '<rootDir>/assets/$1',
     '^@/(.*)$': '<rootDir>/src/$1',
   },
-  testMatch: ['<rootDir>/src/**/*.test.ts', '<rootDir>/src/**/*.test.tsx'],
+  // Los tests de rutas viven en `test/app/` y no en `src/app/`: expo-router mete
+  // en el bundle todos los `.tsx` de su raíz, así que un test colocado ahí
+  // arrastraría `@testing-library/react-native` a la app y rompería Metro.
+  testMatch: [
+    '<rootDir>/src/**/*.test.ts',
+    '<rootDir>/src/**/*.test.tsx',
+    '<rootDir>/test/**/*.test.ts',
+    '<rootDir>/test/**/*.test.tsx',
+  ],
   transformIgnorePatterns: [
     'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|react-native-reanimated|react-native-worklets|react-native-gesture-handler|react-native-svg|@testing-library/react-native|standard-navigation)',
   ],
