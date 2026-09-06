@@ -43,6 +43,9 @@ const VISIBLE_CARDS = 3;
 
 const SPRING = { damping: 18, stiffness: 220, mass: 0.6 } as const;
 
+/** Identificador del gesto de la tarjeta superior. Lo usan los tests. */
+export const PAN_TEST_ID = 'swipe-deck-pan';
+
 export function SwipeDeck({
   profiles,
   onDecide,
@@ -91,6 +94,9 @@ export function SwipeDeck({
   }
 
   const pan = Gesture.Pan()
+    // El id es la única forma de alcanzar el gesto desde un test:
+    // `getByGestureTestId` de `react-native-gesture-handler/jest-utils`.
+    .withTestId(PAN_TEST_ID)
     .enabled(top !== null)
     .onUpdate((event) => {
       if (exiting.get()) return;

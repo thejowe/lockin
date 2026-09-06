@@ -78,6 +78,10 @@ Regla: las pantallas importan siempre de `@/data`, nunca de `@/data/mock`.
   shell enseñe algo. `perfil` es el dueño del catálogo: amplía esa lista hasta
   los 6-8 perfiles, sin crear otra aparte. `SEED_RECIPROCAL_IDS` marca quién da
   match recíproco.
+- ~~`src/components/ui/collapsible.tsx`~~ — retirado por `calidad` el 2026-09-06.
+  No lo importaba nadie. Con él desaparece el único uso de `expo-symbols` en el
+  código: **queda decidir si se quita la dependencia de `package.json`**. Es tuya
+  esa llamada — puede que la quieras para los iconos de las tabs nativas.
 
 ## Archivos tocados fuera del alcance declarado
 Se avisa por si choca con otra sesión:

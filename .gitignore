@@ -41,3 +41,6 @@ example
 # generated native folders
 /ios
 /android
+
+# Informes de cobertura de Jest: se regeneran con `npm run test:coverage`.
+/coverage

@@ -30,7 +30,8 @@ jobs:
           - { name: Lint, run: npm run lint }
           - { name: Formato, run: npm run format:check }
           - { name: Tipos, run: npm run typecheck }
-          - { name: Tests, run: npm test -- --ci }
+          # Con cobertura: es lo que hace efectivo el suelo de `coverageThreshold`.
+          - { name: Tests, run: npm run test:coverage -- --ci }
     steps:
       - uses: actions/checkout@v4
 
