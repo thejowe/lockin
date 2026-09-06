@@ -3,12 +3,12 @@
 Diseño del esquema que sostiene el contrato de repositorio de `arquitecto`
 (`src/data/repositories.ts` + `src/data/types.ts`).
 
-> **Estado: solo diseño.** En el momento de escribir esto no existen
-> `EXPO_PUBLIC_SUPABASE_URL` ni `EXPO_PUBLIC_SUPABASE_ANON_KEY` — ni en un `.env`
-> ni en el entorno de la sesión. Nada de esto se ha aplicado contra un proyecto
-> Supabase real, y no hay credenciales inventadas ni hardcodeadas en el repo.
-> La implementación de `src/data/supabase/` queda pendiente de que existan
-> (ver "Qué falta" al final).
+> **Estado: aplicado.** Las cinco migraciones están ejecutadas en el proyecto
+> `grrzmzktrhksbttpbblg` (2026-09-06, pegadas en el SQL Editor), y el cliente de
+> `src/data/supabase/` habla contra ellas. Comprobado en vivo con la clave
+> `anon`: `profiles` y `discovery_deck()` existen y devuelven
+> `42501 permission denied` sin sesión, que es justo lo que exige la migración
+> de RLS. `supabase/seed.sql` todavía no se ha ejecutado.
 
 ## Migraciones
 
@@ -162,15 +162,32 @@ totalmente cualificados.
 así que cada usuario solo recibe eventos de lo suyo. Eso es lo que sostiene
 `MatchRepository.subscribe` y `MessageRepository.subscribe`.
 
-## Qué falta (bloqueado por credenciales)
+## Cómo aplicarlas
 
-Nada de esto se puede hacer sin `EXPO_PUBLIC_SUPABASE_URL` y
-`EXPO_PUBLIC_SUPABASE_ANON_KEY`:
+Ninguno de los tres caminos necesita Docker: el proyecto es remoto.
 
-1. Cliente `@supabase/supabase-js` + auth por magic link.
-2. `createSupabaseRepositories()` en `src/data/supabase/`, cumpliendo
-   `Repositories` de `src/data/repositories.ts`.
-3. Cambiar la única línea de `src/data/active.ts` para elegir mock vs. real
-   según la variable de entorno. **Ninguna pantalla se toca.**
-4. `supabase/seed.sql` con perfiles de prueba (los de `src/data/mock/seed.ts`),
-   solo para desarrollo local — necesita crear usuarios en `auth.users`.
+1. **SQL Editor del dashboard.** Pega los cinco archivos en orden de nombre.
+   Es el camino sin credenciales extra, y el único disponible ahora mismo.
+2. **`supabase db push` con la contraseña de Postgres.** Con un
+   `SUPABASE_ACCESS_TOKEN` (Account → Access Tokens) en el entorno:
+
+   ```
+   npx supabase link --project-ref <ref>
+   npx supabase db push
+   ```
+
+3. **`supabase db push --db-url`**, si tienes la cadena de conexión del pooler.
+   El host directo `db.<ref>.supabase.co` solo resuelve por IPv6 y falla desde
+   una red sin IPv6; usa el pooler (`aws-0-<region>.pooler.supabase.com`).
+
+Después, para sembrar datos de desarrollo, ejecuta `supabase/seed.sql` (crea
+ocho usuarios con contraseña conocida: **nunca contra producción**).
+
+## Qué queda
+
+- Ejecutar las migraciones: sigue sin hacerse. Es el único bloqueo real.
+- Verificar el flujo completo (registro → perfil → deck → match → mensaje)
+  contra la base ya migrada. `src/data/supabase/README.md` mapea cada test de
+  `src/data/mock/index.test.ts` con la pieza que debe cumplirlo.
+- `seed_incoming_likes('<email>')`, en `seed.sql`, reproduce
+  `SEED_RECIPROCAL_IDS` del mock para tu usuario.

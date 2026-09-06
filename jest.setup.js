@@ -24,3 +24,11 @@ jest.mock('expo-font', () => ({
 // Matchers de accesibilidad de RNTL: `toBeSelected`, `toBeDisabled`,
 // `toBeOnTheScreen`… Son la forma legible de aseverar estado de a11y.
 require('@testing-library/react-native/dist/matchers/extend-expect');
+
+// `@supabase/supabase-js` guarda la sesión en AsyncStorage, que es un módulo
+// nativo: al importarlo bajo Jest revienta con "NativeModule: AsyncStorage is
+// null". Este es el mock oficial del paquete. Hace falta desde que
+// `src/data/active.ts` importa el backend de Supabase para poder elegirlo.
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock')
+);
