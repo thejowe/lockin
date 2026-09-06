@@ -31,7 +31,7 @@ Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>
 - [ ] Sustituir mock por Supabase real (bloqueado por credenciales)
 
 ## Calidad
-- [ ] ESLint/Prettier/TS estricto
-- [ ] Tests base (Jest + RNTL)
-- [ ] CI en GitHub Actions
-- [ ] Accesibilidad básica
+- [x] ESLint/Prettier/TS estricto
+- [x] Tests base (Jest + RNTL) — 102 tests en 5 suites
+- [x] CI en GitHub Actions — lint, formato, tipos, tests y export web
+- [x] Accesibilidad básica — labels, tamaño táctil y test de contraste; 4 pares de tokens siguen por debajo de AA (ver `todo/arquitecto.md`)
