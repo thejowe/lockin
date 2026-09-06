@@ -4,29 +4,29 @@ Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>
 
 ## Arquitectura
 - [x] Scaffold inicial de Expo + TypeScript + Expo Router
-- [ ] Sistema de diseño con la paleta de marca
-- [ ] Shell de navegación (tabs + onboarding)
-- [ ] Capa de datos abstracta (interfaz + implementación mock)
+- [x] Sistema de diseño con la paleta de marca
+- [x] Shell de navegación (tabs + onboarding)
+- [x] Capa de datos abstracta (interfaz + implementación mock)
 
 ## Onboarding y perfil
-- [ ] Selección de modo (Par / Lock-In)
-- [ ] Formulario de creación de perfil
-- [ ] Pantalla de perfil propio
-- [ ] Perfiles de ejemplo (seed)
+- [x] Selección de modo (Par / Lock-In)
+- [x] Formulario de creación de perfil
+- [x] Pantalla de perfil propio
+- [x] Perfiles de ejemplo (seed)
 
 ## Descubrir (swipe y matching)
-- [ ] Deck de tarjetas con gesto
-- [ ] Lógica de match mock
-- [ ] Pantalla de match
+- [x] Deck de tarjetas con gesto
+- [x] Lógica de match mock
+- [x] Pantalla de match
 
 ## Chat
-- [ ] Lista de matches
-- [ ] Chat 1:1 mock
-- [ ] Icebreakers sugeridos
-- [ ] Hueco visible para "agendar sesión Lock-In"
+- [x] Lista de matches
+- [x] Chat 1:1 mock
+- [x] Icebreakers sugeridos
+- [x] Hueco visible para "agendar sesión Lock-In"
 
 ## Datos y Supabase
-- [ ] Esquema SQL (perfiles, matches, mensajes)
+- [x] Esquema SQL (perfiles, matches, mensajes) — escrito, pero **nunca ejecutado** (no hay psql/CLI/docker en la máquina)
 - [ ] Integración de auth
 - [ ] Sustituir mock por Supabase real (bloqueado por credenciales)
 
