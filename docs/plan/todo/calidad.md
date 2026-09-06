@@ -208,28 +208,28 @@ necesitar un `testID` ni un export extra.
 - [x] Tests de la parte presentacional de `chat` (`match-row`, `message-bubble`,
       `message-composer`, `icebreakers.ts`). `icebreakers.ts` estaba a 0 % y era el
       que más lo pedía: los cuatro quedan al 100 % de sentencias.
-- [ ] **Delegado a `datos`** (sigue abierto, pero ya no es trabajo de este
-      bloque). Reutilizar `src/data/mock/index.test.ts` contra la implementación
-      de Supabase. No se hace desde aquí por dos razones:
-      `src/data/supabase/README.md` ya mapea, test a test, qué pieza cumple cada
-      uno (y nombra los tres que describen mecánica del mock —`CURRENT_USER_ID`,
-      `resetState`, `setProfileId`— y no se pueden ejecutar tal cual); y
-      ejecutarlos de verdad está **bloqueado por la configuración de Auth del
-      proyecto**, no por el código: con *Anonymous sign-ins* y *Confirm email*
-      ambos cerrados, `auth.ts` no puede abrir sesión y ninguna consulta llega a
-      correr. Ver `docs/plan/todo/datos.md` → "Verificado hasta donde se puede sin
-      base migrada". Cuando ese interruptor esté activado, el trabajo es de
-      `datos`; `calidad` vuelve a por el suelo de cobertura, que hoy carga con
-      `src/data/supabase/` al 6 %.
+- [x] **Delegado a `datos`, y ya hecho por otra vía.** La casilla estaba abierta
+      esperando a poder reutilizar `src/data/mock/index.test.ts` contra Supabase,
+      bloqueada por la configuración de Auth del proyecto (con *Anonymous
+      sign-ins* cerrado, `auth.ts` no abría sesión y ninguna consulta llegaba a
+      correr). Desde el commit b1472a6 ese interruptor está activo y el contrato
+      se ejecuta de verdad: `src/data/supabase/contract.test.ts` pasa **25/25**
+      contra el proyecto real, opt-in y fuera de `npm test` y de CI. No se
+      reutilizó el test del mock tal cual —tres de sus casos describen mecánica
+      interna del mock (`CURRENT_USER_ID`, `resetState`, `setProfileId`) y no son
+      trasladables—, pero el contrato que importaba está cubierto. El trabajo
+      queda en `datos`; `calidad` vuelve al suelo de cobertura, que ya no lo
+      arrastra `src/data/supabase/`.
 
 ## Siguiente hueco de cobertura
 Lo que queda sin tocar y sí tiene algo que guardar, por orden:
-1. `src/data/supabase/mappers.ts` (0 %) — traducción fila ↔ dominio. Son funciones
-   puras: se pueden probar sin red ni sesión, al margen del bloqueo de Auth.
-2. Los componentes presentacionales que quedan de `discover` (`mode-filter`,
+1. ~~`src/data/supabase/mappers.ts` (0 %)~~ — **ya no aplica**: existe
+   `src/data/supabase/mappers.test.ts` y el archivo está al 90 % de sentencias.
+   Lo escribió `datos`, que es dueño de esa carpeta.
+2. [x] Los componentes presentacionales que quedan de `discover` (`mode-filter`,
    `match-modal`, `deck-empty`) y de `chat` (`icebreaker-suggestions`,
    `conversation-intro`, `lock-in-cta`).
-3. Las rutas de `app/` (0 %). Es lo más caro y lo que menos lógica tiene.
+3. [x] Las rutas de `app/` (0 %). Es lo más caro y lo que menos lógica tiene.
 
 ## Cuarta pasada: deuda menor (2026-09-06)
 
@@ -290,3 +290,107 @@ No se modifica src/data/supabase/ ni supabase/seed.sql, ni se ejecuta la suite
 contra el proyecto Supabase real. Su verificación continúa en el bloque datos.
 Se consultó la documentación exacta del SDK antes de editar:
 https://docs.expo.dev/versions/v57.0.0/.
+
+## Quinta pasada: presentacionales que faltaban y rutas de `app/` (2026-09-06)
+
+Cierra los puntos 2 y 3 de "Siguiente hueco de cobertura". Solo se escriben
+tests: no se ha tocado el código de producto de `discover` ni de `chat`.
+
+- [x] Presentacionales de `discover`: `mode-filter`, `deck-empty`, `match-modal`.
+- [x] Presentacionales de `chat`: `icebreaker-suggestions`, `conversation-intro`,
+      `lock-in-cta`.
+- [x] Las siete rutas de `app/`: `index`, `(onboarding)/mode`,
+      `(onboarding)/profile-form`, `(tabs)/discover`, `(tabs)/matches`,
+      `(tabs)/profile` y `chat/[matchId]`.
+- [x] Los tres `_layout.tsx` (raíz, `(onboarding)` y `(tabs)`).
+- [x] Subido `coverageThreshold` a la cobertura medida.
+
+### Dónde viven los tests de ruta, y por qué no en `src/app/`
+
+`src/app/` es la raíz de `expo-router`: **todo** `.tsx` que cuelga de ahí entra
+en el bundle como ruta, así que un `discover.test.tsx` colocado al lado de
+`discover.tsx` arrastraría `@testing-library/react-native` a la app. Los tests de
+ruta viven por eso en `test/app/`, con `testMatch` de `jest.config.js` ampliado a
+`test/**`. Comprobado: `npx expo export --platform web` sigue generando las
+mismas **14 rutas** que antes de esta pasada.
+
+`test/routes.tsx` es el andamiaje común: el mock de `expo-router` (con espías de
+`push`/`replace` y el destino de cada `<Redirect>`), los repositorios mock, y un
+`renderRoute` que envuelve en `DataProvider` y `SafeAreaProvider` — sin el
+segundo, `useSafeAreaInsets` del chat lanza "No safe area value available".
+`resetRepositories()` llama a `jest.restoreAllMocks()` a propósito:
+`createMockRepositories()` devuelve siempre los mismos objetos de módulo, así que
+un `jest.spyOn` sobre un repositorio sobrevive al test siguiente si no se deshace.
+
+El test del chat se llama `matchId.test.tsx`, sin corchetes: `[matchId]` es
+sintaxis de ruta de `expo-router`, no de Jest, y un patrón `-t` sobre ella no
+encuentra nada.
+
+### Qué se prueba, y qué no
+
+Los presentacionales se leen por su API pública y por sus etiquetas accesibles
+(rol `radio` y `accessibilityState.selected` en el filtro, la pista "Escribe esta
+frase…" en los icebreakers, el `expanded` del CTA de Lock-In). En las rutas se
+prueban las decisiones que **no** viven en sus hooks: a dónde redirige `index`,
+que `mode` guarde antes de navegar, que `profile` cierre la edición **y** relea
+al guardar, que `discover` conserve el deck cuando falla guardar una decisión, y
+que el chat deje de ofrecer icebreakers en cuanto hay un mensaje.
+
+Dos dobles a propósito: `SwipeDeck` en el test de `discover` (su gesto ya está
+probado en `swipe-deck.test.tsx` y montarlo arrastraría Reanimated) y
+`ProfileForm` en los de `profile` y `profile-form` (ya tiene sus tests en
+`perfil`; aquí solo importa cuándo se monta y qué se hace con lo que envía).
+
+**Sin cubrir, y por qué:** el tirar-para-refrescar de `(tabs)/matches`. El
+`RefreshControl` no es alcanzable desde RNTL sin ponerle un `testID` a la
+`FlatList`, y esta pasada no toca código de producto. Su `refresh` ya está al
+100 % en `use-matches.test.tsx`. Es la línea 30 que aparece descubierta en
+`matches.tsx`.
+
+### Cobertura
+
+`coverageThreshold` pasa de **69.29/57.57/68.09/69.47** a
+**87.52/78.87/87.73/88.76** (sentencias/ramas/funciones/líneas), que son los
+porcentajes exactos medidos por Jest, no un número redondo. Sigue la misma regla:
+se suben cuando la cobertura suba, no se bajan ni se excluyen archivos para dejar
+pasar un cambio.
+
+Todo `app/` queda al 100 % salvo `(tabs)/matches.tsx` (87,5 %, la línea del
+`RefreshControl`), `(onboarding)/mode.tsx` (94,4 %) y `chat/[matchId].tsx`
+(96,5 %). `features/chat` sube a 99,5 % y `features/discover` a 97,5 %.
+
+Parte de la subida no es de esta pasada: `src/data/supabase/` va del 6 % al
+24,7 % gracias a `mappers.test.ts`, que es trabajo de `datos`.
+
+### Verificación hecha (2026-09-06, quinta pasada)
+
+- `npm run lint` — limpio.
+- `npm run typecheck` — limpio.
+- `npx prettier --check --end-of-line auto` sobre los archivos nuevos — limpio.
+- `npm run test:coverage -- --ci --runInBand` — **307 tests en 28 suites** pasan
+  (25 del contrato remoto omitidos por su opt-in) y el umbral nuevo se cumple.
+- `npx expo export --platform web` — 14 rutas, las mismas de antes.
+
+Aviso conocido, no es un fallo: el test de `(tabs)/matches` deja un `act(...)`
+warning de `VirtualizedList`, que viene de un `setTimeout` interno de
+`FlatList`. Y con caché fría el primer `render` de `test/app/layouts.test.tsx`
+tarda ~6 s (0,6 s en caliente), lo bastante cerca del timeout de 5 s de Jest para
+haber fallado una vez en una ejecución concurrente con `expo export`. No se tocan
+timeouts —misma decisión que en la cuarta pasada con `ProfileForm`—, pero queda
+anotado por si reaparece en CI.
+
+## Siguiente hueco de cobertura (tras la quinta pasada)
+
+Lo que queda a 0 % ya no es de este bloque, así que va como aviso:
+
+1. `src/components/screen-placeholder.tsx` y `src/components/themed-view.tsx`
+   están a 0 % y **no los importa nadie**. Es el mismo caso que
+   `components/ui/collapsible.tsx`, que se retiró en la tercera pasada: andamio
+   del scaffold de Expo. Borrarlos es decisión de `arquitecto` — no se tocan aquí
+   con otra sesión trabajando en paralelo.
+2. `src/components/app-tabs.tsx` y `app-tabs.web.tsx` (0 %). Son configuración
+   declarativa de `NativeTabs`; probarlos cuesta más de lo que protege.
+3. `src/data/supabase/auth.ts` (3 %) y `client.ts` (33 %). Alcance de `datos`:
+   solo se ejercitan contra el proyecto real, y ese contrato es opt-in.
+4. `src/hooks/use-color-scheme.ts` y `.web.ts` (0 %). Un re-export y un
+   equivalente para web; alcance de `arquitecto`.
