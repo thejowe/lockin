@@ -32,7 +32,7 @@ Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>
 - [x] Ejecutar `supabase/seed.sql` — los ocho perfiles están en el proyecto (verificado: con sesión devuelve las 8 filas, sin sesión da `42501`, o sea RLS funcionando)
 - [x] Configuración de Auth — `anonymous_users: true`; `POST /auth/v1/signup` devuelve `200` con `access_token`
 - [x] Contrato de `Repositories` ejecutable contra Supabase real — `src/data/supabase/contract.test.ts`, opt-in con `LOCKIN_SUPABASE_CONTRACT=1`
-- [ ] **Instalar `dev_reset_current_user()`** y dejar constancia de un 25/25 en la suite de contrato — ver "Al retomar" abajo
+- [x] **Instalar `dev_reset_current_user()`** y dejar constancia de un 25/25 en la suite de contrato — hecho el 2026-09-06, ver "Al retomar" abajo
 - [ ] Flujo real end-to-end **en la app** (registro → perfil → deck → match → mensaje). Nunca ejecutado: los 222 tests corren contra el mock, y los de contrato hablan con la base sin pasar por la interfaz.
 
 ## Calidad
@@ -47,33 +47,39 @@ Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>
 
 Los seis bloques están entregados y fusionados en
 `claude/startup-cofounder-matching-app-tfeai1`. `npm test` pasa: **222 tests en
-14 suites**, `tsc --noEmit` limpio con `strict`, lint limpio. Lo que queda no es
-código de producto — son dos cosas que necesitan el dashboard de Supabase y una
-pasada manual por la app.
+14 suites**, `tsc --noEmit` limpio con `strict`, lint limpio, y la suite de
+contrato contra Supabase real da **25/25**. Queda **una** sola cosa, y no es
+código: nadie ha recorrido nunca la app de extremo a extremo (punto 2).
 
-### 1. La suite de contrato falla 9 de 25 — y no es un bug
+### 1. La suite de contrato pasa 25/25 — cerrado el 2026-09-06
 
     LOCKIN_SUPABASE_CONTRACT=1 npx jest src/data/supabase/contract.test.ts
-    → Tests: 9 failed, 16 passed, 25 total
+    → Tests: 25 passed, 25 total  (31.9 s)
 
-El error que devuelven los nueve:
+Hizo falta desenredar dos causas encadenadas, y ninguna era un bug del código de
+producto:
 
-    Request rate limit reached. Sin dev_reset_current_user() esta suite necesita
-    un alta anónima por test y agota el límite por IP. Ejecuta supabase/seed.sql
-    en el proyecto para instalarla.
+1. **Faltaba `dev_reset_current_user()` en el proyecto.** Se añadió a
+   `supabase/seed.sql` en el mismo lote que la suite, y el seed que se había
+   ejecutado era el anterior. Sin ella el único estado limpio posible es un
+   usuario nuevo por test — las políticas RLS no dan `DELETE` sobre `decisions`,
+   `matches` ni `messages` a nadie, con razón: un swipe no se deshace — y eso
+   agota el límite de 30 altas anónimas por hora e IP. Resuelto pegándola en el
+   SQL Editor. Con ella, una pasada gasta cuatro altas en total.
+2. **La suite envenenaba el catálogo.** Su `teardown()` no borraba los cuatro
+   perfiles que creaba cada pasada: 68 residuos sobre los 8 de `seed.sql`. Como
+   `discovery_deck` pagina a `p_limit default 50`, el deck sin filtrar y el
+   filtrado por modo salían ambos llenos y «sin modo concreto devuelve el
+   catálogo entero» fallaba con un `Expected: > 50 / Received: 50` mudo.
+   Arreglado en `contract.test.ts`: el `teardown()` llama a
+   `dev_reset_current_user()` con los cuatro clientes, y una guardia en
+   `beforeAll` cuenta los perfiles y, si no caben en una página, falla diciendo
+   qué SQL ejecutar. Los residuos ya acumulados se limpiaron a mano con
+   `delete from auth.users where is_anonymous = true;`.
 
-**Causa.** `dev_reset_current_user()` se añadió a `supabase/seed.sql` en el mismo
-lote que la suite, y el seed que corrió en el proyecto es el anterior, que no la
-traía. Las políticas RLS no dan `DELETE` sobre `decisions`, `matches` ni
-`messages` a nadie — con razón: un swipe no se deshace —, así que sin esa función
-el único estado limpio posible es un usuario nuevo por test, y Supabase limita
-las altas anónimas a 30/hora por IP.
-
-**Arreglo.** Pegar `dev_reset_current_user()` (final de `supabase/seed.sql`,
-alrededor de la línea 242) en el SQL Editor de `grrzmzktrhksbttpbblg` y volver a
-ejecutar la suite. Con la función instalada una pasada gasta cuatro altas en
-total, no una por test. Puede hacer falta esperar a que se reponga el límite por
-IP si se ha ejecutado hace poco.
+Lección de proceso: el punto 2 estuvo un rato marcado como hecho en
+`todo/datos.md` sin estarlo, y lo destapó la guardia en la pasada siguiente, no
+nadie releyendo el TODO. Marcar una casilla no es haber verificado.
 
 ### 2. El flujo real en la app nunca se ha ejecutado
 
@@ -97,6 +103,7 @@ querying schema`**. El seed ya las rellena a cadena vacía, y lleva anotado el
   la sesión anónima. Si algún día se activa el registro por email para
   desarrollo, hay que revertirlo antes de producción: autoconfirmar permite
   registrarse con direcciones ajenas.
-- Cada pasada de la suite de contrato deja cuatro usuarios anónimos y sus
-  perfiles en el catálogo. No rompe nada, pero conviene limpiarlos de vez en
-  cuando con la clave `service_role` desde el dashboard.
+- Cada pasada de la suite de contrato deja cuatro filas en `auth.users`. Sus
+  perfiles sí los borra ya el `teardown()`, así que no vuelven a saturar la
+  paginación del deck; las cuentas anónimas en sí sobreviven porque borrarlas
+  exige la clave `service_role` desde el dashboard.

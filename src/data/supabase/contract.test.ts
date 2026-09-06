@@ -210,6 +210,41 @@ async function callDevReset(client: SupabaseClient<Database>): Promise<string | 
 }
 
 /**
+ * Tope de página de `discovery_deck` (`p_limit default 50`, ver
+ * `supabase/migrations/20260905000500_functions_and_realtime.sql`).
+ */
+const DECK_PAGE_LIMIT = 50;
+
+/**
+ * El catálogo es estado compartido, y hay un caso del contrato que depende de
+ * su tamaño: «sin modo concreto devuelve el catálogo entero» compara el deck
+ * sin filtrar con el filtrado por modo y exige que el primero sea mayor. En
+ * cuanto el catálogo pasa del tope de página los dos devuelven `DECK_PAGE_LIMIT`
+ * y el caso falla con un `Expected: > 50 / Received: 50` que no dice nada de la
+ * causa real.
+ *
+ * Así que se comprueba antes de empezar, y el fallo explica qué ejecutar. El
+ * margen deja sitio a los cuatro perfiles que crea la propia pasada.
+ */
+async function assertCatalogFitsInOneDeckPage(): Promise<void> {
+  const { count, error } = await appClient
+    .from('profiles')
+    .select('id', { count: 'exact', head: true });
+  if (error) throw error;
+  if (count === null || count + RECIPROCALS.length + 1 <= DECK_PAGE_LIMIT) return;
+
+  throw new Error(
+    `El catálogo tiene ${count} perfiles y discovery_deck pagina a ${DECK_PAGE_LIMIT}: ` +
+      'el deck sin filtrar y el filtrado por modo saldrían ambos llenos y el contrato ' +
+      'no podría distinguirlos. Son perfiles de pasadas antiguas de esta suite, de ' +
+      'cuando su teardown no los borraba. Límpialos en el SQL editor con\n\n' +
+      '    delete from auth.users where is_anonymous = true;\n\n' +
+      'que se lleva por cascada perfiles, decisiones, matches y mensajes de los ' +
+      'usuarios anónimos y deja intactos los ocho de supabase/seed.sql.'
+  );
+}
+
+/**
  * Devuelve al usuario de la sesión a "recién registrado".
  *
  * El camino bueno es `dev_reset_current_user()` (ver `supabase/seed.sql`): una
@@ -282,6 +317,23 @@ const supabaseBackend: ContractBackend = {
   },
 
   async teardown() {
+    // Deshacer lo que la pasada ha metido en el catálogo, ANTES de cerrar las
+    // sesiones: `dev_reset_current_user()` solo mira `auth.uid()`, así que sin
+    // sesión no hay nada que borrar.
+    //
+    // No es limpieza cosmética. Los cuatro usuarios de cada pasada (el del test
+    // y los tres de apoyo) dejaban su perfil en el catálogo para siempre, y el
+    // catálogo es un recurso compartido de los tests: `discovery_deck` pagina a
+    // 50 filas, así que a partir de la pasada número quince el deck sin filtrar
+    // y el filtrado por modo devolvían ambos 50 y «sin modo concreto devuelve el
+    // catálogo entero» fallaba con un `Expected: > 50 / Received: 50` que no
+    // apunta a nada. Los `auth.users` anónimos sí sobreviven —borrarlos exige la
+    // clave `service_role`—, pero sin perfil no salen en ningún deck.
+    await callDevReset(appClient);
+    for (const reciprocal of reciprocals) {
+      await callDevReset(reciprocal.client);
+    }
+
     // Sin esto Jest no termina: quedan vivos el websocket de realtime y el
     // temporizador de refresco del token.
     await appClient.removeAllChannels();
@@ -317,6 +369,8 @@ const supabaseBackend: ContractBackend = {
     // previa que reutilizar.
     const { error: sessionError } = await appClient.auth.signInAnonymously();
     if (sessionError) throw sessionError;
+
+    await assertCatalogFitsInOneDeckPage();
 
     // En serie, no en paralelo: tres altas anónimas simultáneas desde la misma
     // IP es justo la forma de tropezar con el limitador.

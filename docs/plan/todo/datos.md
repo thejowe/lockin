@@ -81,19 +81,49 @@
       en vivo contra los tres. El seed ya las pone; las filas ya creadas siguen
       rotas hasta que se reparen con el `update` que documenta el propio archivo.
 
-### Pendiente de un paso manual en el dashboard
-- [ ] Instalar `dev_reset_current_user()` (está al final de `supabase/seed.sql`)
-      pegándola en el SQL editor de `grrzmzktrhksbttpbblg`, y volver a ejecutar
-      la suite entera para dejar constancia de un 25/25.
-      Hoy la suite pasa cada caso que se le pide, pero no puede pasarlos todos
-      del tirón: sin esa función el único estado limpio posible es un usuario
-      anónimo nuevo POR TEST, y Supabase limita las altas anónimas a 30/hora por
-      IP — la pasada completa necesita 29 y muere a media con
-      `Request rate limit reached`. Con la función, una pasada gasta 4.
-      Verificado hasta ahora, en ejecuciones parciales: los tres casos de
-      `recordDecision` que no crean match pasan tras el arreglo, y en la primera
-      pasada completa (antes del arreglo) fueron 23/25 con esos dos como únicos
-      fallos.
+### Ejecutado el contrato entero contra Supabase
+- [x] Instalar `dev_reset_current_user()` (final de `supabase/seed.sql`) en
+      `grrzmzktrhksbttpbblg`. Hecho a mano en el SQL editor el 2026-09-06.
+      Funciona: la pasada siguiente gastó 4 altas anónimas en vez de 29 y
+      ningún test murió con `Request rate limit reached`.
+- [x] Volver a ejecutar la suite entera. Primera pasada con la función: **24/25**,
+      y el único fallo NO era ni el límite por IP ni un problema de la función.
+      Era esto:
+
+  **La propia suite envenenaba el catálogo.** Cada pasada creaba cuatro usuarios
+  (el del test y los tres de apoyo) con su perfil, y no borraba ninguno: 68
+  perfiles acumulados sobre los 8 de `seed.sql`, 76 en total. Como
+  `discovery_deck` pagina a `p_limit default 50`, el deck sin filtrar y el
+  filtrado por modo devolvían **ambos 50**, y `sin modo concreto devuelve el
+  catálogo entero` —que compara los dos tamaños— fallaba con un
+  `Expected: > 50 / Received: 50` que no apunta a la causa. Confirmado en vivo:
+  76 perfiles (`par` 10, `lockin` 10, `ambos` 56) y `discovery_deck` con
+  `p_limit=500` devolviendo los 76.
+
+- [x] Arreglado en `src/data/supabase/contract.test.ts`, sin tocar el contrato
+      compartido ni los tipos de `arquitecto`:
+  - **`teardown()` deshace lo que la pasada mete en el catálogo**: llama a
+    `dev_reset_current_user()` con cada uno de los cuatro clientes antes de
+    cerrar sesión. Los `auth.users` anónimos sobreviven —borrarlos exige
+    `service_role`— pero sin perfil no entran en ningún deck.
+  - **Guardia de prerequisito en `beforeAll`**: cuenta los perfiles y, si no
+    caben bajo el tope de página, falla diciendo qué ejecutar. El fallo críptico
+    de tamaño se convierte en instrucción.
+- [x] Limpieza puntual de los 68 residuos, ejecutada a mano por el usuario en el
+      SQL editor: `delete from auth.users where is_anonymous = true;` — cascada a
+      perfiles, `user_settings`, decisiones, matches y mensajes. Los ocho de
+      `seed.sql` no son anónimos y quedan intactos.
+
+      Ojo con el orden: esta casilla llegó a estar marcada **antes** de que la
+      limpieza se ejecutara de verdad, y la pasada siguiente lo destapó — el
+      catálogo seguía en 76 perfiles, el mismo número de antes. Lo destapó la
+      guardia, no un humano leyendo el TODO.
+- [x] Pasada final: **25/25**, el 2026-09-06.
+
+      `LOCKIN_SUPABASE_CONTRACT=1 npx jest src/data/supabase/contract.test.ts`
+      → `Tests: 25 passed, 25 total` en 31.9 s. Cuatro altas anónimas en toda la
+      pasada, ninguna cerca del límite de 30/hora, y el `teardown()` devuelve el
+      catálogo a los ocho de `seed.sql`.
 
 ## Deuda anotada
 - `initialsFrom()` está duplicada en `src/data/mock/store.ts` y `src/data/supabase/mappers.ts`. Es lógica de dominio compartida, pero subirla a `src/data/` es territorio de `arquitecto`. Si divergen, el avatar de un mismo perfil cambia al conectar Supabase.
