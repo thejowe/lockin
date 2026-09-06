@@ -1,6 +1,8 @@
 # TODO — calidad
 
-> **Estado: tercera pasada completa (2026-09-06).** La primera dejó el repo con
+> **Estado actual: cuarta pasada completa (2026-09-06).** Deuda menor cerrada; detalle y verificación al final. Los apartados anteriores son el historial de las primeras pasadas.
+
+> **Tercera pasada (histórico).** La primera dejó el repo con
 > lint, formato, tipos, CI y 102 tests. La segunda cubrió el bloque `chat` y el
 > gesto del deck y puso suelo de cobertura (154 tests). Esta cierra el último
 > hueco del bloque `chat`: `icebreakers.ts` — las reglas que eligen el primer
@@ -228,3 +230,63 @@ Lo que queda sin tocar y sí tiene algo que guardar, por orden:
    `match-modal`, `deck-empty`) y de `chat` (`icebreaker-suggestions`,
    `conversation-intro`, `lock-in-cta`).
 3. Las rutas de `app/` (0 %). Es lo más caro y lo que menos lógica tiene.
+
+## Cuarta pasada: deuda menor (2026-09-06)
+
+Trabajo aislado en el worktree ../lockin-codex-calidad, rama codex/calidad,
+partiendo de c546476 de claude/startup-cofounder-matching-app-tfeai1.
+Los apartados anteriores conservan el historial de las primeras pasadas.
+
+- [x] Quitar expo-symbols como dependencia directa y actualizar el lockfile.
+- [x] Revisar @expo/ui, expo-glass-effect, expo-device, expo-linking y expo-constants.
+- [x] Ignorar supabase/.temp/ generado por el CLI.
+- [x] Medir la cobertura real y subir coverageThreshold sin cambiar las exclusiones.
+- [x] Verificar instalación, lint, formato, tipos, tests con cobertura y export web.
+
+Se conservan expo-linking y expo-constants: son peers obligatorios de
+expo-router 57.0.19. @expo/ui, expo-glass-effect y expo-symbols son dependencias
+propias de ese router; quitar sus declaraciones directas no elimina sus
+entradas transitivas del lockfile. expo-device no tiene consumidores en la app
+ni en el árbol de dependencias del lockfile.
+
+### Resultado y verificación de la cuarta pasada
+
+- Retiradas de package.json las dependencias directas expo-symbols, @expo/ui,
+  expo-glass-effect y expo-device. npm actualizó el lockfile sin actualizar
+  versiones ajenas; desaparecen expo-device y su dependencia ua-parser-js.
+- expo-linking y expo-constants se conservan como peers obligatorios. Los otros
+  tres módulos siguen instalados de forma transitiva por expo-router, verificado
+  con npm ls y con las dependencies/peerDependencies del paquete 57.0.19.
+- /supabase/.temp/ queda ignorado; no se borra su contenido.
+- coverageThreshold pasa de 65/53/64/65 a **69.29/57.57/68.09/69.47**
+  (sentencias/ramas/funciones/líneas), exactamente los porcentajes medidos por
+  Jest. No se cambian collectCoverageFrom, las exclusiones ni los tests.
+- Ajuste de configuración necesario en checkout limpio: tsconfig.json declara
+  expo/types junto a jest y node. Sin ello tsc daba TS2882 al importar el CSS,
+  porque expo-env.d.ts está ignorado y solo existía en la carpeta original.
+  Los tipos oficiales de Expo ya declaran CSS; no se añade un stub propio.
+
+Comprobaciones sobre una instalación nueva en el worktree, sin compartir
+node_modules ni copiar variables de Supabase:
+
+- npm uninstall desde node_modules inexistente instaló el árbol actualizado.
+- npm run lint: limpio.
+- npm run typecheck: limpio con expo/types, sin necesitar expo-env.d.ts.
+- npm run test:coverage -- --ci --runInBand: **222 tests en 14 suites pasan**;
+  25 tests de contrato remoto omitidos por su opt-in. Cobertura: 650/938
+  sentencias, 327/568 ramas, 222/326 funciones y 569/819 líneas. Los nuevos
+  mínimos pasan. La primera ejecución, concurrente con export/lint/tipos y con
+  caché fría, agotó 5 s en un test de ProfileForm; la repetición completa aislada
+  pasó sin cambiar timeouts ni tests (48.8 s).
+- npx expo export --platform web: correcto, **14 rutas estáticas** generadas.
+- npm run format:check -- --end-of-line auto: limpio. El comando sin override
+  señala CRLF en 95 archivos debido al core.autocrlf=true local, mientras el
+  repositorio exige LF. Se formatearon solo package.json, jest.config.js y
+  tsconfig.json; no se reescribieron archivos de producto para resolver una
+  conversión local de Git.
+- git diff --check: limpio.
+
+No se modifica src/data/supabase/ ni supabase/seed.sql, ni se ejecuta la suite
+contra el proyecto Supabase real. Su verificación continúa en el bloque datos.
+Se consultó la documentación exacta del SDK antes de editar:
+https://docs.expo.dev/versions/v57.0.0/.

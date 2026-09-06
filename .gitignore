@@ -44,3 +44,6 @@ example
 
 # Informes de cobertura de Jest: se regeneran con `npm run test:coverage`.
 /coverage
+
+# Archivos temporales del CLI de Supabase.
+/supabase/.temp/

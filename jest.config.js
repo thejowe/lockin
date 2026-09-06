@@ -29,12 +29,10 @@ module.exports = {
     '!src/**/index.ts',
     '!src/data/test-fixtures.ts',
   ],
-  // Suelo, no objetivo: unos puntos por debajo de la cobertura real de hoy. Sirve
-  // para que un PR no pueda borrar tests ni añadir un bloque grande sin tocarlos;
-  // se sube cuando la cobertura suba, nunca se baja para dejar pasar un cambio.
-  // Subido tras los tests de `src/data/supabase/` (contrato parametrizado y
-  // `mappers`), que llevaron la cobertura real de 55 % a 69 %.
+  // Suelo fijado a la cobertura real de la suite local (2026-09-06).
+  // Se sube cuando la cobertura suba; no se bajan los umbrales ni se excluyen
+  // archivos para dejar pasar un cambio. El contrato remoto sigue siendo opt-in.
   coverageThreshold: {
-    global: { statements: 65, branches: 53, functions: 64, lines: 65 },
+    global: { statements: 69.29, branches: 57.57, functions: 68.09, lines: 69.47 },
   },
 };

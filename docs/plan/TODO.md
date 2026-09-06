@@ -37,7 +37,7 @@ Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>
 
 ## Calidad
 - [x] ESLint/Prettier/TS estricto
-- [x] Tests base (Jest + RNTL) — 222 tests en 14 suites, con suelo de cobertura en `jest.config.js` (65 %). Más 25 opt-in de contrato contra Supabase, fuera de `npm test` y de CI.
+- [x] Tests base (Jest + RNTL) — 222 tests en 14 suites, con suelo de cobertura en `jest.config.js` (69.29/57.57/68.09/69.47 %: sentencias/ramas/funciones/líneas). Más 25 opt-in de contrato contra Supabase, fuera de `npm test` y de CI.
 - [x] CI en GitHub Actions — lint, formato, tipos, tests y export web
 - [x] Accesibilidad básica — labels, tamaño táctil y test de contraste. Los 4 pares que estaban por debajo de AA se cerraron el 2026-09-06: `KNOWN_GAPS` en `theme.test.ts` está vacío (ver `todo/arquitecto.md`)
 
@@ -92,8 +92,7 @@ querying schema`**. El seed ya las rellena a cadena vacía, y lleva anotado el
 
 ### Deuda menor
 
-- `expo-symbols` se quedó en `package.json` sin ningún uso, desde que se retiró
-  `src/components/ui/collapsible.tsx`.
+- [x] Limpieza de dependencias directas, ignore de Supabase y subida del suelo de cobertura cerrados. Detalle y verificaciones en `todo/calidad.md`, cuarta pasada. `expo-symbols` sigue transitivamente por `expo-router`.
 - `mailer_autoconfirm` sigue en `false`. No estorba, porque la vía principal es
   la sesión anónima. Si algún día se activa el registro por email para
   desarrollo, hay que revertirlo antes de producción: autoconfirmar permite
