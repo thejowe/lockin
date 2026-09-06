@@ -29,11 +29,75 @@ Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>
 - [x] Esquema SQL (perfiles, matches, mensajes) — escrito **y aplicado** contra el proyecto real por el SQL Editor del dashboard
 - [x] Integración de auth — `src/data/supabase/auth.ts`, sesión automática sin tocar pantallas
 - [x] Sustituir mock por Supabase real — `src/data/supabase/`; `active.ts` elige por presencia de credenciales
-- [ ] Ejecutar `supabase/seed.sql` (los ocho perfiles de desarrollo). Sin él el deck sale vacío.
-- [ ] Flujo real end-to-end (registro → perfil → deck → match → mensaje). **Bloqueado por la configuración de Auth del proyecto, no por el código**: `anonymous_users: false` y `mailer_autoconfirm: false` impiden abrir sesión.
+- [x] Ejecutar `supabase/seed.sql` — los ocho perfiles están en el proyecto (verificado: con sesión devuelve las 8 filas, sin sesión da `42501`, o sea RLS funcionando)
+- [x] Configuración de Auth — `anonymous_users: true`; `POST /auth/v1/signup` devuelve `200` con `access_token`
+- [x] Contrato de `Repositories` ejecutable contra Supabase real — `src/data/supabase/contract.test.ts`, opt-in con `LOCKIN_SUPABASE_CONTRACT=1`
+- [ ] **Instalar `dev_reset_current_user()`** y dejar constancia de un 25/25 en la suite de contrato — ver "Al retomar" abajo
+- [ ] Flujo real end-to-end **en la app** (registro → perfil → deck → match → mensaje). Nunca ejecutado: los 222 tests corren contra el mock, y los de contrato hablan con la base sin pasar por la interfaz.
 
 ## Calidad
 - [x] ESLint/Prettier/TS estricto
-- [x] Tests base (Jest + RNTL) — 154 tests en 9 suites, con suelo de cobertura en `jest.config.js`
+- [x] Tests base (Jest + RNTL) — 222 tests en 14 suites, con suelo de cobertura en `jest.config.js` (65 %). Más 25 opt-in de contrato contra Supabase, fuera de `npm test` y de CI.
 - [x] CI en GitHub Actions — lint, formato, tipos, tests y export web
-- [x] Accesibilidad básica — labels, tamaño táctil y test de contraste; 4 pares de tokens siguen por debajo de AA (ver `todo/arquitecto.md`)
+- [x] Accesibilidad básica — labels, tamaño táctil y test de contraste. Los 4 pares que estaban por debajo de AA se cerraron el 2026-09-06: `KNOWN_GAPS` en `theme.test.ts` está vacío (ver `todo/arquitecto.md`)
+
+---
+
+## Al retomar (estado del 2026-09-06)
+
+Los seis bloques están entregados y fusionados en
+`claude/startup-cofounder-matching-app-tfeai1`. `npm test` pasa: **222 tests en
+14 suites**, `tsc --noEmit` limpio con `strict`, lint limpio. Lo que queda no es
+código de producto — son dos cosas que necesitan el dashboard de Supabase y una
+pasada manual por la app.
+
+### 1. La suite de contrato falla 9 de 25 — y no es un bug
+
+    LOCKIN_SUPABASE_CONTRACT=1 npx jest src/data/supabase/contract.test.ts
+    → Tests: 9 failed, 16 passed, 25 total
+
+El error que devuelven los nueve:
+
+    Request rate limit reached. Sin dev_reset_current_user() esta suite necesita
+    un alta anónima por test y agota el límite por IP. Ejecuta supabase/seed.sql
+    en el proyecto para instalarla.
+
+**Causa.** `dev_reset_current_user()` se añadió a `supabase/seed.sql` en el mismo
+lote que la suite, y el seed que corrió en el proyecto es el anterior, que no la
+traía. Las políticas RLS no dan `DELETE` sobre `decisions`, `matches` ni
+`messages` a nadie — con razón: un swipe no se deshace —, así que sin esa función
+el único estado limpio posible es un usuario nuevo por test, y Supabase limita
+las altas anónimas a 30/hora por IP.
+
+**Arreglo.** Pegar `dev_reset_current_user()` (final de `supabase/seed.sql`,
+alrededor de la línea 242) en el SQL Editor de `grrzmzktrhksbttpbblg` y volver a
+ejecutar la suite. Con la función instalada una pasada gasta cuatro altas en
+total, no una por test. Puede hacer falta esperar a que se reponga el límite por
+IP si se ha ejecutado hace poco.
+
+### 2. El flujo real en la app nunca se ha ejecutado
+
+Ni una sola vez de extremo a extremo. Los 222 tests corren contra el mock, y los
+de contrato hablan con la base sin pasar por la interfaz. Falta levantar Expo con
+`.env.local` puesto y recorrer registro → perfil → deck → match → mensaje contra
+Supabase real. Es el hueco de verificación más grande que queda en el proyecto.
+
+### Trampa de GoTrue, por si reaparece
+
+Insertar en `auth.users` a mano tiene una trampa cara de diagnosticar: GoTrue
+mapea sus ocho columnas de token a `string` de Go, no a puntero, así que **una
+sola en `NULL` hace que todo login con ese usuario devuelva `500 Database error
+querying schema`**. El seed ya las rellena a cadena vacía, y lleva anotado el
+`UPDATE` de reparación para bases sembradas antes de ese arreglo.
+
+### Deuda menor
+
+- `expo-symbols` se quedó en `package.json` sin ningún uso, desde que se retiró
+  `src/components/ui/collapsible.tsx`.
+- `mailer_autoconfirm` sigue en `false`. No estorba, porque la vía principal es
+  la sesión anónima. Si algún día se activa el registro por email para
+  desarrollo, hay que revertirlo antes de producción: autoconfirmar permite
+  registrarse con direcciones ajenas.
+- Cada pasada de la suite de contrato deja cuatro usuarios anónimos y sus
+  perfiles en el catálogo. No rompe nada, pero conviene limpiarlos de vez en
+  cuando con la clave `service_role` desde el dashboard.
