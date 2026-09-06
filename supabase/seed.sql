@@ -20,6 +20,24 @@ begin;
 --
 -- Se insertan a mano porque el seed corre como superusuario, sin pasar por la
 -- API de auth. Van con el email ya confirmado para poder entrar sin buzón.
+--
+-- Insertar en `auth.users` a mano tiene una trampa: GoTrue mapea sus columnas
+-- de token a `string` de Go, no a punteros, así que una sola de ellas en NULL
+-- hace que TODO login con ese usuario devuelva `500 Database error querying
+-- schema`. Por eso van las ocho explícitas a cadena vacía. Si vuelves a sembrar
+-- sobre una base donde ya se insertaron sin ellas, el `on conflict do nothing`
+-- NO lo arregla: hay que reparar las filas existentes con
+--
+--     update auth.users set
+--       confirmation_token = coalesce(confirmation_token, ''),
+--       recovery_token = coalesce(recovery_token, ''),
+--       email_change = coalesce(email_change, ''),
+--       email_change_token_new = coalesce(email_change_token_new, ''),
+--       email_change_token_current = coalesce(email_change_token_current, ''),
+--       phone_change = coalesce(phone_change, ''),
+--       phone_change_token = coalesce(phone_change_token, ''),
+--       reauthentication_token = coalesce(reauthentication_token, '')
+--     where email like '%@seed.lockin.app';
 
 insert into auth.users (
   id,
@@ -32,17 +50,29 @@ insert into auth.users (
   created_at,
   updated_at,
   raw_app_meta_data,
-  raw_user_meta_data
+  raw_user_meta_data,
+  -- GoTrue lee estas columnas como `string`, no como `*string`: si van NULL,
+  -- cualquier login con estos usuarios muere con un 500 opaco
+  -- ("Database error querying schema"). Se rellenan con cadena vacía porque
+  -- es lo que escribe la propia API de auth cuando crea una cuenta.
+  confirmation_token,
+  recovery_token,
+  email_change,
+  email_change_token_new,
+  email_change_token_current,
+  phone_change,
+  phone_change_token,
+  reauthentication_token
 )
 values
-  ('11111111-1111-4111-8111-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'nuria@seed.lockin.app', extensions.crypt('lockin-dev', extensions.gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}'),
-  ('11111111-1111-4111-8111-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'marc@seed.lockin.app',  extensions.crypt('lockin-dev', extensions.gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}'),
-  ('11111111-1111-4111-8111-000000000003', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'alba@seed.lockin.app',  extensions.crypt('lockin-dev', extensions.gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}'),
-  ('11111111-1111-4111-8111-000000000004', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'diego@seed.lockin.app', extensions.crypt('lockin-dev', extensions.gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}'),
-  ('11111111-1111-4111-8111-000000000005', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'ines@seed.lockin.app',  extensions.crypt('lockin-dev', extensions.gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}'),
-  ('11111111-1111-4111-8111-000000000006', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'tomas@seed.lockin.app', extensions.crypt('lockin-dev', extensions.gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}'),
-  ('11111111-1111-4111-8111-000000000007', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'lucia@seed.lockin.app', extensions.crypt('lockin-dev', extensions.gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}'),
-  ('11111111-1111-4111-8111-000000000008', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'omar@seed.lockin.app',  extensions.crypt('lockin-dev', extensions.gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}')
+  ('11111111-1111-4111-8111-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'nuria@seed.lockin.app', extensions.crypt('lockin-dev', extensions.gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}', '', '', '', '', '', '', '', ''),
+  ('11111111-1111-4111-8111-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'marc@seed.lockin.app',  extensions.crypt('lockin-dev', extensions.gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}', '', '', '', '', '', '', '', ''),
+  ('11111111-1111-4111-8111-000000000003', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'alba@seed.lockin.app',  extensions.crypt('lockin-dev', extensions.gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}', '', '', '', '', '', '', '', ''),
+  ('11111111-1111-4111-8111-000000000004', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'diego@seed.lockin.app', extensions.crypt('lockin-dev', extensions.gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}', '', '', '', '', '', '', '', ''),
+  ('11111111-1111-4111-8111-000000000005', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'ines@seed.lockin.app',  extensions.crypt('lockin-dev', extensions.gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}', '', '', '', '', '', '', '', ''),
+  ('11111111-1111-4111-8111-000000000006', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'tomas@seed.lockin.app', extensions.crypt('lockin-dev', extensions.gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}', '', '', '', '', '', '', '', ''),
+  ('11111111-1111-4111-8111-000000000007', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'lucia@seed.lockin.app', extensions.crypt('lockin-dev', extensions.gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}', '', '', '', '', '', '', '', ''),
+  ('11111111-1111-4111-8111-000000000008', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'omar@seed.lockin.app',  extensions.crypt('lockin-dev', extensions.gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}', '', '', '', '', '', '', '', '')
 on conflict (id) do nothing;
 
 
@@ -184,3 +214,67 @@ $fn$;
 
 comment on function public.seed_incoming_likes(text) is
   'Solo desarrollo: hace que los tres perfiles semilla den like al usuario indicado, replicando SEED_RECIPROCAL_IDS del mock.';
+
+
+-- ---------------------------------------------------------------------------
+-- dev_reset_current_user — el "resetState()" del backend real
+-- ---------------------------------------------------------------------------
+--
+-- Borra TODO lo que el usuario de la sesión ha generado: su perfil, su modo
+-- activo, sus swipes, los swipes que le han hecho a él, sus matches y los
+-- mensajes de esos matches. Lo deja como recién registrado.
+--
+-- Existe para `src/data/supabase/contract.test.ts`. Esa suite necesita estado
+-- limpio entre tests y las políticas RLS no dan DELETE sobre `decisions`,
+-- `matches` ni `messages` a nadie — con razón: un swipe no se deshace. Sin esta
+-- función, la única forma de empezar limpio era registrar un usuario anónimo
+-- nuevo por test, y eso agota el límite de altas por IP (30/hora) en una sola
+-- pasada de la suite.
+--
+-- SOLO DESARROLLO, y por eso vive aquí y no en `supabase/migrations/`: en
+-- producción esto es un botón de "bórrame los datos" para cualquier usuario
+-- autenticado. Si alguna vez hace falta esa función de verdad, se diseña como
+-- borrado de cuenta, con confirmación, no como esto.
+--
+-- Es `SECURITY DEFINER` porque tiene que saltarse las políticas, pero no toma
+-- parámetros y solo mira `auth.uid()`: no se puede apuntar contra otra persona.
+
+create or replace function public.dev_reset_current_user()
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $fn$
+declare
+  v_user uuid := (select auth.uid());
+begin
+  if v_user is null then
+    raise exception 'dev_reset_current_user: no hay sesión autenticada'
+      using errcode = '28000';
+  end if;
+
+  -- El orden lo imponen las claves ajenas: mensajes -> matches -> decisiones
+  -- -> perfil. `decisions` se borra por los dos lados para que los likes
+  -- entrantes tampoco sobrevivan al reset.
+  delete from public.messages
+   where match_id in (
+     select id from public.matches
+      where profile_a = v_user or profile_b = v_user
+   );
+
+  delete from public.matches
+   where profile_a = v_user or profile_b = v_user;
+
+  delete from public.decisions
+   where actor_id = v_user or target_id = v_user;
+
+  delete from public.user_settings where user_id = v_user;
+  delete from public.profiles where id = v_user;
+end;
+$fn$;
+
+revoke execute on function public.dev_reset_current_user() from public, anon;
+grant execute on function public.dev_reset_current_user() to authenticated;
+
+comment on function public.dev_reset_current_user() is
+  'Solo desarrollo: deja al usuario de la sesion como recien registrado. Lo usa src/data/supabase/contract.test.ts.';

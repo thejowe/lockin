@@ -25,7 +25,7 @@
 - [x] Verificado en vivo con la clave `anon`, sin sesión:
   - `GET /rest/v1/profiles` → `42501 permission denied for table profiles`. La tabla existe y `anon` está revocado, tal y como pide la migración de RLS.
   - `POST /rest/v1/rpc/discovery_deck` → `42501 permission denied for function discovery_deck`. La función existe y su `execute` está revocado de `anon`.
-- [ ] `supabase/seed.sql` ejecutado (crea los ocho perfiles de desarrollo). Sin hacer.
+- [x] `supabase/seed.sql` ejecutado (crea los ocho perfiles de desarrollo). Verificado el 2026-09-06: con sesión, `GET /rest/v1/profiles?select=id,name,looking_for` devuelve los ocho (Núria Bosch, Marc Oller, Alba Ferrer, Diego Salas, Inés Aranda, Tomás Ruiz, Lucía Pardo, Omar Chaib) con los UUID `11111111-…-00000000000N`.
 
 ## Integración
 - [x] Cliente de Supabase (`@supabase/supabase-js` 2.115 + `@react-native-async-storage/async-storage`) — `src/data/supabase/client.ts`. Normaliza la URL para aceptar tanto la raíz del proyecto como la variante con `/rest/v1/`.
@@ -39,24 +39,61 @@
 - [x] `npx tsc --noEmit` limpio con `strict`
 - [x] `npm run lint` limpio
 - [x] `npm test`: 154 tests en 9 suites, todos en verde. Hizo falta añadir el mock oficial de AsyncStorage a `jest.setup.js` — al importar `active.ts` el backend de Supabase, el módulo nativo entraba en Jest y tumbaba tres suites.
-- [ ] Flujo real contra Supabase (registro → perfil → deck → match → mensaje). **Bloqueado por la configuración de Auth del proyecto**, no por el código. Según `GET /auth/v1/settings`:
-  - `external.anonymous_users: false` → `signInAnonymously()` devuelve `422 anonymous_provider_disabled`.
-  - `mailer_autoconfirm: false` → la cuenta de dispositivo de respaldo se crea pero no recibe sesión, y encima mandaría correo a un buzón inexistente.
-  - Con las dos cerradas, `auth.ts` no puede abrir sesión y la app falla en la primera consulta con el mensaje explícito que lanza `signInWithDeviceAccount`.
-  - **Arreglo: un interruptor del dashboard.** Recomendado: activar Authentication → Providers → *Anonymous sign-ins* (después `linkEmailToCurrentUser()` convierte la cuenta en una con email sin perder datos). Alternativa: Authentication → Providers → Email → desactivar *Confirm email*.
+- [x] Flujo real contra Supabase (registro → perfil → deck → match → mensaje). **Ya no está bloqueado**: el interruptor del dashboard está puesto.
+  - Verificado el 2026-09-06 contra `grrzmzktrhksbttpbblg`: `GET /auth/v1/settings` devuelve `external.anonymous_users: true`, y `POST /auth/v1/signup` con cuerpo `{}` responde `200` con `access_token`. `signInAnonymously()` es ahora el camino bueno de `auth.ts` y la cuenta de dispositivo queda como respaldo que no se usa.
+  - `mailer_autoconfirm` sigue en `false`, pero ya da igual: solo afectaba al camino de respaldo.
+  - RLS sigue en pie: la misma consulta a `/rest/v1/profiles` **sin** sesión devuelve `42501 permission denied for table profiles`.
+  - El flujo entero queda cubierto por la suite de contrato — ver el bloque siguiente.
 
 ## Delegado desde `calidad`
-- [ ] Ejecutar `src/data/mock/index.test.ts` contra el repositorio de Supabase.
-      Es la especificación del contrato y `src/data/supabase/README.md` ya la mapea
-      test a test, pero hoy nadie la corre: `calidad` no puede, porque abrir sesión
-      está bloqueado por la configuración de Auth del proyecto (ver arriba), y el
-      mapeo es papel hasta que una ejecución lo confirme. Cuando *Anonymous
-      sign-ins* esté activado, el trabajo es de este bloque: parametrizar esa suite
-      por backend y saltarse los tres casos que describen mecánica del mock
-      (`CURRENT_USER_ID`, `resetState`, `setProfileId`). Mientras tanto,
-      `src/data/supabase/` está al 6 % de cobertura y arrastra el suelo global.
-- [ ] `mappers.ts` está al 0 % y **no depende del bloqueo de Auth**: son funciones
-      puras fila ↔ dominio. Se pueden probar hoy mismo, sin red ni sesión.
+- [x] Ejecutar `src/data/mock/index.test.ts` contra el repositorio de Supabase.
+      Los 25 casos salieron de ahí a `src/data/repositories.contract.ts`,
+      parametrizados por backend, y los ejecutan dos arneses: el mock
+      (`src/data/mock/index.test.ts`, siempre) y Supabase real
+      (`src/data/supabase/contract.test.ts`, con `LOCKIN_SUPABASE_CONTRACT=1`).
+      El mock pasa 28/28 — los 25 del contrato más 3 de mecánica propia.
+- [x] Adaptar o excluir, con motivo escrito, los tres casos que describen
+      mecánica del mock. Los tres siguen ejecutándose, pero en el bloque
+      `mecánica del mock` de `src/data/mock/index.test.ts`, fuera del contrato
+      compartido:
+  - `CURRENT_USER_ID` → **adaptado**. En el contrato es `fixture.currentUserId`;
+    en Supabase es el `auth.uid()`, que no se conoce hasta abrir sesión.
+  - `resetState()` → **excluido**. El estado vive en Postgres y las políticas RLS
+    no dan DELETE sobre `decisions`, `matches` ni `messages` a nadie. Su
+    equivalente es `dev_reset_current_user()` (ver abajo).
+  - `session.setProfileId()` → **adaptado**. En Supabase `profileId` es derivado y
+    `setProfileId` es un no-op, así que el contrato cierra el onboarding creando
+    el perfil, que es lo que promete el producto.
+- [x] `mappers.ts` — 17 tests puros en `src/data/supabase/mappers.test.ts`, sin
+      red ni sesión: aplanado de `availability`/`links`, herencia del acento del
+      avatar, y la reconstrucción del par `[propio, otro]` de un match.
+
+### Lo que encontró ejecutarlo de verdad
+- [x] **Bug de producción en `recordDecision`.** `record_decision()` devuelve
+      `public.matches`, un tipo COMPUESTO, y cuando devuelve NULL PostgREST manda
+      una fila con TODAS las columnas a null, no `null`. Con `if (!row)`, un
+      `pass` producía un `Match` falso con `id: null` que la pantalla de match
+      habría intentado abrir. Arreglado con `if (!row?.id)`.
+- [x] **`supabase/seed.sql` dejaba a los ocho usuarios sin poder entrar.** Se
+      insertan a mano en `auth.users` y les faltaban las ocho columnas de token
+      que GoTrue lee como `string` y no como puntero: con una sola en NULL,
+      cualquier login devuelve `500 Database error querying schema`. Comprobado
+      en vivo contra los tres. El seed ya las pone; las filas ya creadas siguen
+      rotas hasta que se reparen con el `update` que documenta el propio archivo.
+
+### Pendiente de un paso manual en el dashboard
+- [ ] Instalar `dev_reset_current_user()` (está al final de `supabase/seed.sql`)
+      pegándola en el SQL editor de `grrzmzktrhksbttpbblg`, y volver a ejecutar
+      la suite entera para dejar constancia de un 25/25.
+      Hoy la suite pasa cada caso que se le pide, pero no puede pasarlos todos
+      del tirón: sin esa función el único estado limpio posible es un usuario
+      anónimo nuevo POR TEST, y Supabase limita las altas anónimas a 30/hora por
+      IP — la pasada completa necesita 29 y muere a media con
+      `Request rate limit reached`. Con la función, una pasada gasta 4.
+      Verificado hasta ahora, en ejecuciones parciales: los tres casos de
+      `recordDecision` que no crean match pasan tras el arreglo, y en la primera
+      pasada completa (antes del arreglo) fueron 23/25 con esos dos como únicos
+      fallos.
 
 ## Deuda anotada
 - `initialsFrom()` está duplicada en `src/data/mock/store.ts` y `src/data/supabase/mappers.ts`. Es lógica de dominio compartida, pero subirla a `src/data/` es territorio de `arquitecto`. Si divergen, el avatar de un mismo perfil cambia al conectar Supabase.

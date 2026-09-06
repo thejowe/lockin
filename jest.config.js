@@ -32,7 +32,9 @@ module.exports = {
   // Suelo, no objetivo: unos puntos por debajo de la cobertura real de hoy. Sirve
   // para que un PR no pueda borrar tests ni añadir un bloque grande sin tocarlos;
   // se sube cuando la cobertura suba, nunca se baja para dejar pasar un cambio.
+  // Subido tras los tests de `src/data/supabase/` (contrato parametrizado y
+  // `mappers`), que llevaron la cobertura real de 55 % a 69 %.
   coverageThreshold: {
-    global: { statements: 55, branches: 47, functions: 55, lines: 55 },
+    global: { statements: 65, branches: 53, functions: 64, lines: 65 },
   },
 };

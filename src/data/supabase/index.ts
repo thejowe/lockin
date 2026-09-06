@@ -296,8 +296,14 @@ const discovery: DiscoveryRepository = {
       throw error;
     }
 
+    // `record_decision` devuelve `public.matches`, un tipo COMPUESTO, y cuando
+    // devuelve NULL PostgREST no manda `null`: manda una fila con todas las
+    // columnas a null. Sin mirar `id`, un `pass` o un like sin reciprocidad
+    // acababa produciendo un `Match` de mentira con id `null`, que la pantalla
+    // de match habría intentado abrir. Lo encontró
+    // `src/data/supabase/contract.test.ts`; el mock nunca pudo verlo.
     const row = data as MatchRow | null;
-    if (!row) return { decision, match: null };
+    if (!row?.id) return { decision, match: null };
 
     markEmitted(row.id);
     notify(MATCHES_TOPIC);
