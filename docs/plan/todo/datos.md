@@ -125,6 +125,52 @@
       pasada, ninguna cerca del límite de 30/hora, y el `teardown()` devuelve el
       catálogo a los ocho de `seed.sql`.
 
+## Flujo real en la app, a mano
+
+- [x] Recorrido de extremo a extremo el 2026-09-06: registro → perfil → deck →
+      match → mensaje, en la app levantada con `.env.local` puesto. Reportado
+      correcto por el usuario.
+- [x] Comprobado que fue **Supabase real y no el mock**. La señal obvia —ver los
+      ocho perfiles del seed— **no vale**: `supabase/seed.sql` es el catálogo de
+      `src/data/mock/seed.ts` traducido a filas, así que los dos backends
+      enseñan el mismo deck y los mismos nombres. La señal que sí discrimina es
+      la persistencia: el mock es estado en memoria (`src/data/mock/store.ts`,
+      "el MVP no promete persistencia"). El usuario cerró la app entera y al
+      reabrirla seguían su perfil, sus swipes y sus mensajes.
+
+      Se preguntó antes de marcar, a propósito: este bloque ya se llevó un susto
+      marcando una casilla sin verificarla (la limpieza de los 68 residuos, más
+      arriba).
+
+- Lo que este recorrido **no** es: una prueba automatizada. Fue una pasada
+  manual en un dispositivo. No hay E2E en CI, así que una regresión en el
+  pegamento pantalla ↔ repositorio seguiría sin tener quien la detecte — los 222
+  tests corren contra el mock y los 25 de contrato no pasan por la interfaz.
+
+## Deuda menor cerrada (2026-09-06)
+
+- [x] **`mailer_autoconfirm` se queda en `false`** — decisión, no olvido.
+      Autoconfirmar da por buena una dirección sin comprobar que quien se
+      registra la controla: permite registrarse con el email de otra persona. No
+      estorba porque la vía principal es `signInAnonymously()` y el camino por
+      email es solo el respaldo de `auth.ts` (cuenta de dispositivo con email y
+      contraseña aleatorios) más `linkEmailToCurrentUser()`, que precisamente sí
+      debe pedir confirmación. Los ocho de `seed.sql` no lo necesitan: se
+      insertan con `email_confirmed_at` puesto. Escrito en `supabase/README.md`
+      → "Configuración de Auth en el dashboard".
+- [x] **Procedimiento para borrar los usuarios anónimos de pruebas**, escrito en
+      `supabase/README.md` → "Mantenimiento: borrar los usuarios anónimos de
+      pruebas". Cada pasada de la suite deja cuatro filas en `auth.users`; sus
+      perfiles ya los borra el `teardown()` vía `dev_reset_current_user()`, así
+      que no vuelven a saturar la paginación del deck. Los dos caminos
+      documentados: `delete from auth.users where is_anonymous = true;` en el
+      SQL Editor (corre como superusuario, cascada a las cinco tablas, los ocho
+      del seed no son anónimos y sobreviven) o la Admin API con `service_role`.
+      Con el aviso importante: ese `delete` sin filtro solo es seguro mientras la
+      única fuente de cuentas anónimas sea la suite — la app usa
+      `signInAnonymously()` como vía principal, así que contra un proyecto con
+      usuarios reales borraría sus cuentas.
+
 ## Deuda anotada
 - `initialsFrom()` está duplicada en `src/data/mock/store.ts` y `src/data/supabase/mappers.ts`. Es lógica de dominio compartida, pero subirla a `src/data/` es territorio de `arquitecto`. Si divergen, el avatar de un mismo perfil cambia al conectar Supabase.
 - `MatchRepository.list()` resuelve el último mensaje de cada conversación con una ventana de los 200 mensajes más recientes (PostgREST no expone `distinct on`). El orden de la lista nunca se ve afectado — lo da `matches.last_message_at` —, solo la previsualización de un match muy antiguo.

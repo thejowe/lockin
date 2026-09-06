@@ -183,11 +183,96 @@ Ninguno de los tres caminos necesita Docker: el proyecto es remoto.
 Después, para sembrar datos de desarrollo, ejecuta `supabase/seed.sql` (crea
 ocho usuarios con contraseña conocida: **nunca contra producción**).
 
-## Qué queda
+## Configuración de Auth en el dashboard
 
-- Ejecutar las migraciones: sigue sin hacerse. Es el único bloqueo real.
-- Verificar el flujo completo (registro → perfil → deck → match → mensaje)
-  contra la base ya migrada. `src/data/supabase/README.md` mapea cada test de
-  `src/data/mock/index.test.ts` con la pieza que debe cumplirlo.
-- `seed_incoming_likes('<email>')`, en `seed.sql`, reproduce
-  `SEED_RECIPROCAL_IDS` del mock para tu usuario.
+Dos interruptores de Authentication → Providers importan aquí, y el estado
+actual del proyecto `grrzmzktrhksbttpbblg` es este:
+
+- **`external.anonymous_users: true`** (activado). Es la vía principal de
+  `src/data/supabase/auth.ts`: `signInAnonymously()` abre sesión sin pedir nada
+  al usuario, que es lo que permite que el contrato de repositorio no tenga
+  login y que ninguna pantalla sepa de autenticación. Verificable con
+  `GET /auth/v1/settings`.
+- **`mailer_autoconfirm: false`** (desactivado). **Decisión tomada: se queda
+  así.** Autoconfirmar da por buena cualquier dirección sin comprobar que quien
+  se registra la controla, o sea, permite registrarse con el email de otra
+  persona. No estorba porque el camino por email es solo el respaldo de
+  `auth.ts` (cuenta de dispositivo con email y contraseña aleatorios, que nadie
+  tiene que leer) y `linkEmailToCurrentUser()`, que sí debe pedir confirmación.
+  Los ocho usuarios de `seed.sql` no lo necesitan: se insertan con
+  `email_confirmed_at` ya puesto. Si algún día el registro por email se vuelve
+  la vía principal, se activa el envío de correos de verdad, no el autoconfirm.
+
+## Mantenimiento: borrar los usuarios anónimos de pruebas
+
+Cada pasada de `src/data/supabase/contract.test.ts` da de alta **cuatro**
+usuarios anónimos (el del test y tres de apoyo). Su `teardown()` llama a
+`dev_reset_current_user()` con los cuatro, así que sus perfiles, decisiones,
+matches y mensajes sí desaparecen y el catálogo vuelve a los ocho de
+`seed.sql`. Lo que sobrevive es la fila de `auth.users`: borrar ahí exige
+privilegios que la clave `anon` no tiene.
+
+No es urgente —sin perfil, esas cuentas no entran en ningún deck ni en ninguna
+consulta— pero conviene vaciarlas de vez en cuando para que la tabla no crezca
+sin fin. Dos caminos:
+
+**1. SQL Editor del dashboard** (corre como superusuario; es el camino usado
+hasta ahora). Mira primero cuántas hay:
+
+```sql
+select count(*) from auth.users where is_anonymous = true;
+```
+
+y bórralas:
+
+```sql
+delete from auth.users where is_anonymous = true;
+```
+
+El borrado va en cascada a `profiles`, `user_settings`, `decisions`, `matches`
+y `messages`. Los ocho de `seed.sql` **no** son anónimos y quedan intactos.
+
+> Este `delete` sin más filtro solo es seguro mientras la única fuente de
+> cuentas anónimas sea la suite de contrato. En cuanto la app tenga usuarios
+> reales entrando por `signInAnonymously()` —que es la vía principal— borraría
+> también sus cuentas. Acota entonces por antigüedad, p. ej.
+> `and created_at < now() - interval '1 day'`, o mejor: no ejecutes esto contra
+> un proyecto con usuarios reales.
+
+**2. Admin API con `service_role`** (Project Settings → API). La clave da acceso
+total saltándose RLS: úsala solo desde una terminal, nunca en el cliente ni en
+un `.env` versionado.
+
+```bash
+# Listar y quedarte con los anónimos
+curl -s "$SUPABASE_URL/auth/v1/admin/users?per_page=200" \
+  -H "apikey: $SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
+  | jq -r '.users[] | select(.is_anonymous == true) | .id'
+
+# Borrar uno
+curl -s -X DELETE "$SUPABASE_URL/auth/v1/admin/users/<user-id>" \
+  -H "apikey: $SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY"
+```
+
+Si en una pasada saltara `Request rate limit reached`, el motivo no es esta
+tabla sino el límite de GoTrue de 30 altas por hora e IP. Borrar las filas no lo
+reinicia: hay que esperar.
+
+## Estado
+
+Las cinco migraciones y `seed.sql` están **aplicados** contra
+`grrzmzktrhksbttpbblg` (2026-09-06), pegados en el SQL Editor, más
+`dev_reset_current_user()` del final de `seed.sql`.
+
+El flujo completo (registro → perfil → deck → match → mensaje) está verificado
+por dos caminos: la suite de contrato, 25/25 contra este proyecto
+(`LOCKIN_SUPABASE_CONTRACT=1 npx jest src/data/supabase/contract.test.ts`), y un
+recorrido a mano en la app con `.env.local` puesto, confirmado como Supabase
+real porque el estado sobrevivió a cerrar y reabrir la app — el mock es
+memoria y no habría sobrevivido.
+
+`seed_incoming_likes('<email>')`, en `seed.sql`, reproduce `SEED_RECIPROCAL_IDS`
+del mock para tu usuario, por si quieres que el deck te dé un match al primer
+like.

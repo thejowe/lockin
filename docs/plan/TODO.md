@@ -33,7 +33,7 @@ Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>
 - [x] Configuración de Auth — `anonymous_users: true`; `POST /auth/v1/signup` devuelve `200` con `access_token`
 - [x] Contrato de `Repositories` ejecutable contra Supabase real — `src/data/supabase/contract.test.ts`, opt-in con `LOCKIN_SUPABASE_CONTRACT=1`
 - [x] **Instalar `dev_reset_current_user()`** y dejar constancia de un 25/25 en la suite de contrato — hecho el 2026-09-06, ver "Al retomar" abajo
-- [ ] Flujo real end-to-end **en la app** (registro → perfil → deck → match → mensaje). Nunca ejecutado: los 222 tests corren contra el mock, y los de contrato hablan con la base sin pasar por la interfaz.
+- [x] Flujo real end-to-end **en la app** (registro → perfil → deck → match → mensaje) — recorrido a mano el 2026-09-06 contra **Supabase real**, no contra el mock. Ver "Al retomar" abajo para cómo se distinguió una cosa de la otra.
 
 ## Calidad
 - [x] ESLint/Prettier/TS estricto
@@ -48,8 +48,8 @@ Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>
 Los seis bloques están entregados y fusionados en
 `claude/startup-cofounder-matching-app-tfeai1`. `npm test` pasa: **222 tests en
 14 suites**, `tsc --noEmit` limpio con `strict`, lint limpio, y la suite de
-contrato contra Supabase real da **25/25**. Queda **una** sola cosa, y no es
-código: nadie ha recorrido nunca la app de extremo a extremo (punto 2).
+contrato contra Supabase real da **25/25**. El hueco de verificación que quedaba
+—recorrer la app entera a mano— está cerrado (punto 2).
 
 ### 1. La suite de contrato pasa 25/25 — cerrado el 2026-09-06
 
@@ -81,12 +81,27 @@ Lección de proceso: el punto 2 estuvo un rato marcado como hecho en
 `todo/datos.md` sin estarlo, y lo destapó la guardia en la pasada siguiente, no
 nadie releyendo el TODO. Marcar una casilla no es haber verificado.
 
-### 2. El flujo real en la app nunca se ha ejecutado
+### 2. El flujo real en la app — recorrido el 2026-09-06, contra Supabase real
 
-Ni una sola vez de extremo a extremo. Los 222 tests corren contra el mock, y los
-de contrato hablan con la base sin pasar por la interfaz. Falta levantar Expo con
-`.env.local` puesto y recorrer registro → perfil → deck → match → mensaje contra
-Supabase real. Es el hueco de verificación más grande que queda en el proyecto.
+El usuario levantó Expo con `.env.local` puesto y recorrió registro → perfil →
+deck → match → mensaje. Todo correcto. Era el hueco de verificación más grande
+que quedaba: los 222 tests corren contra el mock, y los de contrato hablan con
+la base sin pasar por la interfaz.
+
+**Cómo se comprobó que fue Supabase y no el mock.** `src/data/active.ts` elige
+por presencia de credenciales, así que un recorrido contra el mock no habría
+demostrado nada. Y el deck **no** sirve de señal: `supabase/seed.sql` es el
+catálogo de `src/data/mock/seed.ts` traducido a filas, así que los mismos ocho
+nombres (Núria Bosch … Omar Chaib) salen con los dos backends. Lo que sí
+distingue es la persistencia: el mock es estado en memoria
+(`src/data/mock/store.ts`, "el MVP no promete persistencia"). El usuario cerró
+la app entera y al reabrirla seguían su perfil, sus swipes y sus mensajes — eso
+solo puede venir de Postgres.
+
+Lo que **no** cubre este recorrido, por si alguien lo da por más de lo que es:
+fue una pasada manual en un dispositivo, no una prueba automatizada. No hay
+E2E en CI, así que una regresión en el pegamento pantalla ↔ repositorio seguiría
+sin tener quien la detecte.
 
 ### Trampa de GoTrue, por si reaparece
 
@@ -99,11 +114,16 @@ querying schema`**. El seed ya las rellena a cadena vacía, y lleva anotado el
 ### Deuda menor
 
 - [x] Limpieza de dependencias directas, ignore de Supabase y subida del suelo de cobertura cerrados. Detalle y verificaciones en `todo/calidad.md`, cuarta pasada. `expo-symbols` sigue transitivamente por `expo-router`.
-- `mailer_autoconfirm` sigue en `false`. No estorba, porque la vía principal es
-  la sesión anónima. Si algún día se activa el registro por email para
-  desarrollo, hay que revertirlo antes de producción: autoconfirmar permite
-  registrarse con direcciones ajenas.
-- Cada pasada de la suite de contrato deja cuatro filas en `auth.users`. Sus
-  perfiles sí los borra ya el `teardown()`, así que no vuelven a saturar la
-  paginación del deck; las cuentas anónimas en sí sobreviven porque borrarlas
-  exige la clave `service_role` desde el dashboard.
+- [x] `mailer_autoconfirm`: **decisión tomada, se queda en `false`** — y ya no
+  es deuda. Autoconfirmar da por buena una dirección sin comprobar que quien se
+  registra la controla, o sea, permite registrarse con el email de otra
+  persona. No estorba porque la vía principal es la sesión anónima y el camino
+  por email es solo el respaldo de `auth.ts`. Escrito, con el porqué, en
+  `supabase/README.md` → "Configuración de Auth en el dashboard".
+- [x] Las cuatro filas de `auth.users` que deja cada pasada de la suite de
+  contrato: **procedimiento de limpieza documentado** en `supabase/README.md` →
+  "Mantenimiento: borrar los usuarios anónimos de pruebas" (SQL Editor o Admin
+  API con `service_role`, con el aviso de que el `delete` sin filtro deja de ser
+  seguro en cuanto haya usuarios reales entrando por `signInAnonymously()`).
+  Sus perfiles ya los borra el `teardown()`, así que no saturan la paginación
+  del deck; queda solo la fila de la cuenta.

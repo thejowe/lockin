@@ -27,10 +27,14 @@
  *   por IP a 30/hora: la suite se queda a medias con `Request rate limit
  *   reached`. Con la función, una pasada gasta cuatro altas en total. El
  *   respaldo sigue ahí y avisa por qué falla.
- * - **Deja rastro.** Los cuatro usuarios anónimos de cada pasada y sus perfiles
- *   se quedan en el catálogo. No rompe nada — ningún test exige que un perfil
- *   concreto salga en el deck —, pero conviene limpiarlos de vez en cuando con
- *   la clave `service_role` desde el dashboard.
+ * - **Deja rastro.** Cada pasada da de alta cuatro usuarios anónimos. Sus
+ *   perfiles, decisiones, matches y mensajes los borra el `teardown()` con
+ *   `dev_reset_current_user()`, así que el catálogo vuelve a los ocho de
+ *   `seed.sql`; lo que sobrevive es la fila de `auth.users`, que exige
+ *   privilegios que la clave `anon` no tiene. No rompe nada —sin perfil, esas
+ *   cuentas no salen en ningún deck—, pero conviene vaciarlas de vez en cuando:
+ *   el procedimiento está en `supabase/README.md`, sección "Mantenimiento:
+ *   borrar los usuarios anónimos de pruebas".
  *
  * ## Cómo se consigue la reciprocidad
  *
