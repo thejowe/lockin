@@ -20,9 +20,11 @@ export default function ProfileScreen() {
   const repositories = useRepositories();
 
   const [editing, setEditing] = useState(false);
-  const { data: profile, loading, refresh } = useQuery('profile:current', () =>
-    repositories.profiles.getCurrent()
-  );
+  const {
+    data: profile,
+    loading,
+    refresh,
+  } = useQuery('profile:current', () => repositories.profiles.getCurrent());
 
   async function handleSubmit(input: ProfileInput) {
     await repositories.profiles.saveCurrent(input);

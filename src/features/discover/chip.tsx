@@ -13,7 +13,11 @@ export function Chip({ label, tone = 'neutral' }: { label: string; tone?: ChipTo
   const theme = useTheme();
 
   const background =
-    tone === 'brass' ? theme.brassSoft : tone === 'teal' ? theme.tealSoft : theme.backgroundSelected;
+    tone === 'brass'
+      ? theme.brassSoft
+      : tone === 'teal'
+        ? theme.tealSoft
+        : theme.backgroundSelected;
   const color = tone === 'brass' ? theme.brass : tone === 'teal' ? theme.teal : theme.textSecondary;
 
   return (

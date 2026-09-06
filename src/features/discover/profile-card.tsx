@@ -34,7 +34,10 @@ export function ProfileCard({ profile }: { profile: Profile }) {
 
   return (
     <View
-      style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+      style={[
+        styles.card,
+        { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+      ]}>
       <View style={styles.header}>
         <ProfileAvatar avatar={profile.avatar} />
 

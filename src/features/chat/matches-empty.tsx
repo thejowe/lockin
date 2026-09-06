@@ -22,8 +22,8 @@ export function MatchesEmpty() {
       </ThemedText>
 
       <ThemedText type="body" themeColor="textSecondary" style={styles.centered}>
-        Un match aparece aquí cuando dos personas se dan like. Sigue pasando tarjetas en Descubrir
-        y en cuanto haya reciprocidad tendrás con quién hablar.
+        Un match aparece aquí cuando dos personas se dan like. Sigue pasando tarjetas en Descubrir y
+        en cuanto haya reciprocidad tendrás con quién hablar.
       </ThemedText>
 
       <Link href="/discover" asChild>

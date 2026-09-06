@@ -31,7 +31,10 @@ export default function AppTabs() {
       <NativeTabs.Trigger name="matches">
         <NativeTabs.Trigger.Label>Matches</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          sf={{ default: 'bubble.left.and.bubble.right', selected: 'bubble.left.and.bubble.right.fill' }}
+          sf={{
+            default: 'bubble.left.and.bubble.right',
+            selected: 'bubble.left.and.bubble.right.fill',
+          }}
           md="forum"
           selectedColor={palette.brass}
         />

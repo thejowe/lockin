@@ -35,7 +35,7 @@ export const Colors = {
     /** Acento latón: acción principal, marca. */
     brass: '#8C5E10',
     /** Latón como relleno suave (fondo de chip/badge). */
-    brassSoft: '#F0E3C9',
+    brassSoft: '#F2E5CB',
     /** Acento verde-azulado: confirmación, match, modo Lock-In. */
     teal: '#285F52',
     /** Verde-azulado como relleno suave. */

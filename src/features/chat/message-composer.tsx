@@ -30,7 +30,8 @@ export const MessageComposer = forwardRef<TextInput, MessageComposerProps>(funct
   const canSend = value.trim().length > 0 && !sending;
 
   return (
-    <View style={[styles.root, { borderTopColor: theme.border, backgroundColor: theme.background }]}>
+    <View
+      style={[styles.root, { borderTopColor: theme.border, backgroundColor: theme.background }]}>
       <TextInput
         ref={ref}
         value={value}
@@ -66,9 +67,7 @@ export const MessageComposer = forwardRef<TextInput, MessageComposerProps>(funct
             opacity: pressed ? 0.85 : 1,
           },
         ]}>
-        <ThemedText
-          type="smallBold"
-          style={{ color: canSend ? theme.onAccent : theme.textMuted }}>
+        <ThemedText type="smallBold" style={{ color: canSend ? theme.onAccent : theme.textMuted }}>
           Enviar
         </ThemedText>
       </Pressable>

@@ -34,11 +34,7 @@ const STARTING_POINT_OPENERS: Record<StartingPoint, string> = {
  *   aplican las reglas que dependen del otro perfil.
  * @param mode Modo bajo el que nació el match: decide el tono del fallback.
  */
-export function suggestIcebreakers(
-  counterpart: Profile,
-  me: Profile | null,
-  mode: Mode
-): string[] {
+export function suggestIcebreakers(counterpart: Profile, me: Profile | null, mode: Mode): string[] {
   const suggestions: string[] = [];
 
   const push = (line: string | null) => {

@@ -46,6 +46,9 @@ export function ModeFilter({
             accessibilityRole="radio"
             accessibilityLabel={modeLabel(filter.value)}
             accessibilityState={{ selected }}
+            // El chip mide 32 px de alto: el hitSlop lo lleva a los 44 mínimos
+            // sin cambiar cómo se ve la fila de filtros.
+            hitSlop={{ top: 6, bottom: 6 }}
             onPress={() => onChange(filter.value)}
             style={({ pressed }) => [
               styles.chip,

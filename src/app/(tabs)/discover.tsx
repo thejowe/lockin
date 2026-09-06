@@ -17,7 +17,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useQuery, useRepositories } from '@/data';
-import { ActionButton, DeckEmpty, MatchModal, ModeFilter, SwipeDeck, useDeck } from '@/features/discover';
+import {
+  ActionButton,
+  DeckEmpty,
+  MatchModal,
+  ModeFilter,
+  SwipeDeck,
+  useDeck,
+} from '@/features/discover';
 import { useTheme } from '@/hooks/use-theme';
 
 import type { ModePreference } from '@/data';

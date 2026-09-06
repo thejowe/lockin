@@ -107,6 +107,9 @@ export function Chip({
       accessibilityRole={multiple ? 'checkbox' : 'radio'}
       accessibilityState={{ checked: selected, selected }}
       accessibilityLabel={label}
+      // El chip mide 36 px de alto: el hitSlop lo lleva a los 44 mínimos sin
+      // engordarlo visualmente ni descuadrar la rejilla.
+      hitSlop={{ top: 6, bottom: 6 }}
       onPress={onPress}
       style={({ pressed }) => [
         styles.chip,

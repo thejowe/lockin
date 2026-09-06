@@ -35,6 +35,9 @@ export function IcebreakerSuggestions({
           key={suggestion}
           accessibilityRole="button"
           accessibilityHint="Escribe esta frase en el campo de mensaje para que puedas editarla"
+          // Una sugerencia de una línea mide 36 px: el hitSlop la lleva a los 44
+          // mínimos sin separar las sugerencias entre sí.
+          hitSlop={{ top: 4, bottom: 4 }}
           onPress={() => onPick(suggestion)}
           style={({ pressed }) => [
             styles.chip,

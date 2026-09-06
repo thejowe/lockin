@@ -182,7 +182,9 @@ const matches: MatchRepository = {
     return getState()
       .matches.map(withCounterpart)
       .filter((match): match is MatchWithProfile => match !== null)
-      .sort((a, b) => (b.lastMessageAt ?? b.createdAt).localeCompare(a.lastMessageAt ?? a.createdAt));
+      .sort((a, b) =>
+        (b.lastMessageAt ?? b.createdAt).localeCompare(a.lastMessageAt ?? a.createdAt)
+      );
   },
 
   async getById(matchId) {

@@ -1,4 +1,11 @@
-import { TabList, TabListProps, Tabs, TabSlot, TabTrigger, TabTriggerSlotProps } from 'expo-router/ui';
+import {
+  TabList,
+  TabListProps,
+  Tabs,
+  TabSlot,
+  TabTrigger,
+  TabTriggerSlotProps,
+} from 'expo-router/ui';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from './themed-text';
@@ -35,7 +42,12 @@ function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
   const theme = useTheme();
 
   return (
-    <Pressable {...props} style={({ pressed }) => pressed && styles.pressed}>
+    <Pressable
+      {...props}
+      // La pastilla mide 28 px de alto: el hitSlop la lleva a los 44 mínimos sin
+      // engordar la barra superior.
+      hitSlop={{ top: 8, bottom: 8 }}
+      style={({ pressed }) => pressed && styles.pressed}>
       <View
         style={[
           styles.tabButton,

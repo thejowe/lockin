@@ -1,0 +1,15 @@
+node_modules
+.expo
+dist
+coverage
+android
+ios
+
+# El lock lo escribe npm: reformatearlo solo genera conflictos.
+package-lock.json
+
+# La prosa la escriben las personas y los agentes; Prettier reflow de tablas y
+# listas ensucia el diff sin mejorar nada.
+*.md
+.claude
+docs

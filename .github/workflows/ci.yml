@@ -1,0 +1,63 @@
+name: CI
+
+# Cada push y cada PR pasa por aquí. Los cuatro trabajos son independientes a
+# propósito: si el formato está mal, quieres seguir viendo si los tests pasan.
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+# Un push nuevo sobre la misma rama cancela la ejecución anterior: nadie espera
+# el resultado de un commit que ya ha sido reemplazado.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Expo manda telemetría y comprueba actualizaciones; en CI solo añade ruido.
+  EXPO_NO_TELEMETRY: '1'
+  CI: 'true'
+
+jobs:
+  quality:
+    name: ${{ matrix.task.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      # Sin fail-fast: un lint roto no debe ocultar un test roto.
+      fail-fast: false
+      matrix:
+        task:
+          - { name: Lint, run: npm run lint }
+          - { name: Formato, run: npm run format:check }
+          - { name: Tipos, run: npm run typecheck }
+          - { name: Tests, run: npm test -- --ci }
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # `npm ci` en vez de `npm install`: instala exactamente el lock y falla si
+      # el lock y el package.json se han desincronizado.
+      - run: npm ci
+
+      - run: ${{ matrix.task.run }}
+
+  build:
+    name: Export web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # El export de web es la comprobación más barata de que el bundle entero
+      # se construye: resuelve todos los imports y renderiza las rutas estáticas.
+      - run: npx expo export --platform web --output-dir dist

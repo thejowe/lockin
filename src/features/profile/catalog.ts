@@ -9,13 +9,7 @@
  * de onboarding, la edición y la ficha de perfil no se desincronizan.
  */
 
-import type {
-  Ambition,
-  ModePreference,
-  Specialty,
-  StartingPoint,
-  TimeBand,
-} from '@/data';
+import type { Ambition, ModePreference, Specialty, StartingPoint, TimeBand } from '@/data';
 
 /** Una opción seleccionable: código estable, etiqueta y explicación opcional. */
 export interface Option<T extends string> {
@@ -132,8 +126,7 @@ function labelOf<T extends string>(options: Option<T>[], value: T): string {
 
 export const modeLabel = (value: ModePreference) => labelOf(MODE_OPTIONS, value);
 export const specialtyLabel = (value: Specialty) => labelOf(SPECIALTY_OPTIONS, value);
-export const startingPointLabel = (value: StartingPoint) =>
-  labelOf(STARTING_POINT_OPTIONS, value);
+export const startingPointLabel = (value: StartingPoint) => labelOf(STARTING_POINT_OPTIONS, value);
 export const ambitionLabel = (value: Ambition) => labelOf(AMBITION_OPTIONS, value);
 export const timeBandLabel = (value: TimeBand) => labelOf(TIME_BAND_OPTIONS, value);
 
