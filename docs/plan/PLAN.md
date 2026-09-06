@@ -7,6 +7,18 @@
 - Para saber por dónde seguir y qué lanzar a continuación, invoca la skill `/pilar` en cualquier sesión de este repo — lee el estado real del código y de los TODO, y genera las órdenes exactas para lanzar el siguiente bloque en otra sesión.
 - Regla de oro: **cada bloque toca solo sus propios archivos** (ver "Alcance de archivos" de cada uno más abajo). Si una sesión necesita tocar algo fuera de su bloque, para y dilo en vez de improvisar — así evitamos pisarnos entre sesiones que puedan estar corriendo en paralelo.
 
+## Trabajar con varias herramientas (Claude Code + Codex)
+
+`CONCEPTO.md`, este archivo, `TODO.md` y `todo/*.md` son markdown normal — los puede leer cualquier agente de código, no solo Claude Code. Lo único específico de Claude Code es `.claude/agents/*.md` (subagentes con enrutado automático) y `.claude/skills/pilar/` (el comando `/pilar`).
+
+Si repartes bloques entre Claude Code y Codex:
+
+1. Mantén la misma división de bloques y el mismo "alcance de archivos" de cada uno (más abajo) — es lo que evita que dos herramientas se pisen.
+2. Codex no tiene `/pilar` ni subagentes automáticos: dale la instrucción a mano, por ejemplo:
+   > Lee `docs/plan/CONCEPTO.md`, `docs/plan/PLAN.md` y `.claude/agents/calidad.md`. Continúa `docs/plan/todo/calidad.md` desde donde está y marca las casillas según avances.
+3. Si vas a correr las dos herramientas **a la vez** en la misma máquina, dales cada una su propio `git worktree` (`git worktree add ../lockin-codex-calidad -b codex/calidad`) — dos herramientas no pueden tener la misma carpeta en dos ramas distintas a la vez, y así ninguna pisa archivos sin commitear de la otra. Si las usas una detrás de otra, basta con cambiar de rama en la misma carpeta.
+4. `TODO.md` y `todo/*.md` son el tablero de estado compartido: sea cual sea la herramienta que complete algo, debe marcarlo ahí — así se puede reconstruir el estado real venga el trabajo de donde venga.
+
 ## Mapa mental
 
 ```mermaid
