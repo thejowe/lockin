@@ -105,6 +105,33 @@ Los ids `seed-*` tampoco existen aquí: el catálogo equivalente está en
 alguien tiene que darlos de verdad, y eso es lo que hace `prepareSwiper()` del
 fixture.
 
+## Builds de EAS: la trampa del fallback silencioso
+
+`src/data/active.ts` elige backend por **presencia** de credenciales: si
+`EXPO_PUBLIC_SUPABASE_URL` y `EXPO_PUBLIC_SUPABASE_ANON_KEY` no están definidas,
+cae al mock en memoria sin avisar. En desarrollo eso es cómodo. En un build de
+EAS es una trampa.
+
+`.env.local` está en `.gitignore` (`.env*.local`), así que **el servidor de build
+no lo tiene**. Un `eas build` lanzado sin más produce un `.apk`/`.ipa` que
+arranca, navega y deja hacer swipe contra datos falsos, sin un solo error en
+pantalla. Parece que funciona.
+
+Las variables `EXPO_PUBLIC_*` se incrustan en el bundle **en tiempo de build**,
+no se leen en el dispositivo. Hay que dárselas a EAS antes de construir:
+
+    npx eas env:create --name EXPO_PUBLIC_SUPABASE_URL --value https://... --environment production
+    npx eas env:create --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value ey... --environment production
+
+La `anon key` está pensada para viajar en el cliente —- la protege RLS, no el
+secreto—, así que no es una credencial que haya que esconder del bundle. Pero sí
+conviene mantenerla fuera del repositorio, que es por lo que no va escrita en
+`eas.json`.
+
+Comprobación después del primer build: si el deck muestra los ocho perfiles de
+`seed.sql` estás contra Supabase; si muestra los del mock, las variables no
+llegaron.
+
 ## Estado
 
 Las migraciones están aplicadas en `grrzmzktrhksbttpbblg` y `supabase/seed.sql`
