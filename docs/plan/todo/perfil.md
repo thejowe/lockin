@@ -1,27 +1,33 @@
 # TODO — perfil
 
 ## Onboarding
-- [ ] Pantalla de selección de modo (Par / Lock-In / ambos)
-- [ ] Guardar el modo elegido (a través de la capa de datos de `arquitecto`)
+- [x] Pantalla de selección de modo (Par / Lock-In / ambos)
+- [x] Guardar el modo elegido (a través de la capa de datos de `arquitecto`)
 
 ## Formulario de perfil
-- [ ] Campos: nombre, edad, ubicación/zona horaria
-- [ ] Especialidades (selección múltiple de tags)
-- [ ] Qué busco (Cofundador / Compañero de lock-in / Ambos)
-- [ ] Punto de partida (las 3 opciones de `docs/plan/CONCEPTO.md`)
-- [ ] Disponibilidad (horas/semana + franja horaria)
-- [ ] Ambición/compromiso (escala o selección)
-- [ ] Enlaces opcionales (GitHub / portfolio / LinkedIn)
-- [ ] 1-2 prompts de texto libre corto
-- [ ] Validación básica (campos obligatorios mínimos)
+- [x] Campos: nombre, edad, ubicación/zona horaria
+- [x] Especialidades (selección múltiple de tags)
+- [x] Qué busco (Cofundador / Compañero de lock-in / Ambos)
+- [x] Punto de partida (las 3 opciones de `docs/plan/CONCEPTO.md`)
+- [x] Disponibilidad (horas/semana + franja horaria)
+- [x] Ambición/compromiso (escala o selección)
+- [x] Enlaces opcionales (GitHub / portfolio / LinkedIn)
+- [x] 1-2 prompts de texto libre corto
+- [x] Validación básica (campos obligatorios mínimos)
 
 ## Perfil propio
-- [ ] Pantalla de ver/editar perfil en la tab Perfil
-- [ ] Reutilizar el formulario de creación para la edición
+- [x] Pantalla de ver/editar perfil en la tab Perfil
+- [x] Reutilizar el formulario de creación para la edición
 
 ## Datos de ejemplo
-- [ ] Al menos 6-8 perfiles mock variados (distintos modos, especialidades, puntos de partida) para que `descubrir` tenga un deck creíble
-- [ ] Al menos 2 de esos perfiles "sembrados" para dar match recíproco en el mock de `descubrir`
+- [x] Al menos 6-8 perfiles mock variados (distintos modos, especialidades, puntos de partida) para que `descubrir` tenga un deck creíble
+- [x] Al menos 2 de esos perfiles "sembrados" para dar match recíproco en el mock de `descubrir`
+
+## Dónde ha quedado
+
+- `src/features/profile/` — `catalog.ts` (opciones y etiquetas), `controls.tsx` (primitivas de formulario), `profile-form.tsx` (formulario único de alta y edición), `profile-details.tsx` (ficha en lectura), `profile-avatar.tsx`.
+- Rutas: `src/app/(onboarding)/mode.tsx`, `src/app/(onboarding)/profile-form.tsx`, `src/app/(tabs)/profile.tsx` — ya no usan `ScreenPlaceholder`.
+- Catálogo mock: `src/data/mock/seed.ts`, 8 perfiles y 3 recíprocos (uno por modo, para que cualquier filtro de `descubrir` tenga match posible).
 
 ## Recuerda
 Nadie contrata a nadie: no metas campos de "salario" o "equity que ofrezco" — eso es Modo Talento, Fase 4, fuera de este MVP.
