@@ -45,6 +45,19 @@
   - Con las dos cerradas, `auth.ts` no puede abrir sesión y la app falla en la primera consulta con el mensaje explícito que lanza `signInWithDeviceAccount`.
   - **Arreglo: un interruptor del dashboard.** Recomendado: activar Authentication → Providers → *Anonymous sign-ins* (después `linkEmailToCurrentUser()` convierte la cuenta en una con email sin perder datos). Alternativa: Authentication → Providers → Email → desactivar *Confirm email*.
 
+## Delegado desde `calidad`
+- [ ] Ejecutar `src/data/mock/index.test.ts` contra el repositorio de Supabase.
+      Es la especificación del contrato y `src/data/supabase/README.md` ya la mapea
+      test a test, pero hoy nadie la corre: `calidad` no puede, porque abrir sesión
+      está bloqueado por la configuración de Auth del proyecto (ver arriba), y el
+      mapeo es papel hasta que una ejecución lo confirme. Cuando *Anonymous
+      sign-ins* esté activado, el trabajo es de este bloque: parametrizar esa suite
+      por backend y saltarse los tres casos que describen mecánica del mock
+      (`CURRENT_USER_ID`, `resetState`, `setProfileId`). Mientras tanto,
+      `src/data/supabase/` está al 6 % de cobertura y arrastra el suelo global.
+- [ ] `mappers.ts` está al 0 % y **no depende del bloqueo de Auth**: son funciones
+      puras fila ↔ dominio. Se pueden probar hoy mismo, sin red ni sesión.
+
 ## Deuda anotada
 - `initialsFrom()` está duplicada en `src/data/mock/store.ts` y `src/data/supabase/mappers.ts`. Es lógica de dominio compartida, pero subirla a `src/data/` es territorio de `arquitecto`. Si divergen, el avatar de un mismo perfil cambia al conectar Supabase.
 - `MatchRepository.list()` resuelve el último mensaje de cada conversación con una ventana de los 200 mensajes más recientes (PostgREST no expone `distinct on`). El orden de la lista nunca se ve afectado — lo da `matches.last_message_at` —, solo la previsualización de un match muy antiguo.

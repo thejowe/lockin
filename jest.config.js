@@ -33,6 +33,6 @@ module.exports = {
   // para que un PR no pueda borrar tests ni añadir un bloque grande sin tocarlos;
   // se sube cuando la cobertura suba, nunca se baja para dejar pasar un cambio.
   coverageThreshold: {
-    global: { statements: 50, branches: 42, functions: 50, lines: 50 },
+    global: { statements: 55, branches: 47, functions: 55, lines: 55 },
   },
 };
