@@ -26,12 +26,14 @@ Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>
 - [x] Hueco visible para "agendar sesión Lock-In"
 
 ## Datos y Supabase
-- [x] Esquema SQL (perfiles, matches, mensajes) — escrito, pero **nunca ejecutado** (no hay psql/CLI/docker en la máquina)
-- [ ] Integración de auth
-- [ ] Sustituir mock por Supabase real (bloqueado por credenciales)
+- [x] Esquema SQL (perfiles, matches, mensajes) — escrito **y aplicado** contra el proyecto real por el SQL Editor del dashboard
+- [x] Integración de auth — `src/data/supabase/auth.ts`, sesión automática sin tocar pantallas
+- [x] Sustituir mock por Supabase real — `src/data/supabase/`; `active.ts` elige por presencia de credenciales
+- [ ] Ejecutar `supabase/seed.sql` (los ocho perfiles de desarrollo). Sin él el deck sale vacío.
+- [ ] Flujo real end-to-end (registro → perfil → deck → match → mensaje). **Bloqueado por la configuración de Auth del proyecto, no por el código**: `anonymous_users: false` y `mailer_autoconfirm: false` impiden abrir sesión.
 
 ## Calidad
 - [x] ESLint/Prettier/TS estricto
-- [x] Tests base (Jest + RNTL) — 102 tests en 5 suites
+- [x] Tests base (Jest + RNTL) — 154 tests en 9 suites, con suelo de cobertura en `jest.config.js`
 - [x] CI en GitHub Actions — lint, formato, tipos, tests y export web
 - [x] Accesibilidad básica — labels, tamaño táctil y test de contraste; 4 pares de tokens siguen por debajo de AA (ver `todo/arquitecto.md`)
