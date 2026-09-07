@@ -1,0 +1,99 @@
+# SONDA DE DIAGNÓSTICO, no es una prueba de producto. Se puede borrar en cuanto
+# el compositor esté verificado.
+#
+# Pregunta: con el teclado abierto, ¿está el compositor por encima de él?
+#
+# Es la misma pregunta que responde el recorrido completo en su comando 38, pero
+# por el camino más corto que existe: crear perfil, un Like, abrir el chat desde
+# el modal de match y escribir. Sin reinicio ni segunda entrada desde Matches.
+# Existe por dos razones:
+#
+#   1. Da la respuesta en la mitad de comandos, así que la flake del emulador
+#      (`device offline`, `StatusRuntimeException: UNAVAILABLE`, que se llevó
+#      3 de 7 trabajos el 2026-09-07) tiene la mitad de superficie para pegar.
+#   2. Corre en paralelo al recorrido completo con el MISMO APK: dos tiros
+#      independientes a la misma pregunta en una sola pasada de CI.
+#
+# La versión anterior de este archivo respondía si el `Modal` de match era la
+# causa. No lo es — run 34127177679; ver `docs/plan/todo/chat.md`. Por eso ya no
+# hace falta el reinicio que aquella necesitaba.
+#
+# Necesita el APK de Supabase: el perfil y el match tienen que persistir.
+appId: app.lockin.mobile
+name: Sonda - el compositor por encima del teclado
+---
+- assertTrue: ${PROFILE_NAME && MESSAGE}
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: 'Cofundador'
+    timeout: 60000
+- tapOn: 'Ambos'
+- tapOn: 'Continuar'
+- tapOn:
+    text: 'Nombre|Cómo te llamas'
+    below: 'Nombre'
+- inputText: ${PROFILE_NAME}
+- tapOn:
+    text: 'Edad|28'
+    below: 'Edad'
+- inputText: '28'
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      text: 'Ubicación|Barcelona'
+      below: 'Ubicación'
+    direction: DOWN
+- tapOn:
+    text: 'Ubicación|Barcelona'
+    below: 'Ubicación'
+- inputText: 'Barcelona'
+- hideKeyboard
+- scrollUntilVisible:
+    element: 'Desarrollo'
+    direction: DOWN
+- tapOn: 'Desarrollo'
+- scrollUntilVisible:
+    element: 'Solo ganas'
+    direction: DOWN
+- tapOn: 'Solo ganas'
+- scrollUntilVisible:
+    element: 'Tarde · 12–20'
+    direction: DOWN
+- tapOn: 'Tarde · 12–20'
+- scrollUntilVisible:
+    element: 'En serio, con equilibrio'
+    direction: DOWN
+- tapOn: 'En serio, con equilibrio'
+- scrollUntilVisible:
+    element:
+      text: 'Lo que quiero construir es…|Tu respuesta'
+      below: 'Busco a alguien que…'
+    direction: DOWN
+- tapOn:
+    text: 'Lo que quiero construir es…|Tu respuesta'
+    below: 'Busco a alguien que…'
+- inputText: 'Una herramienta para construir en equipo'
+- hideKeyboard
+- scrollUntilVisible:
+    element: 'Crear perfil'
+    direction: DOWN
+- tapOn: 'Crear perfil'
+- extendedWaitUntil:
+    visible: 'Like'
+    timeout: 60000
+- tapOn: 'Like'
+- extendedWaitUntil:
+    visible: '¡Match!'
+    timeout: 30000
+- tapOn: 'Abrir chat'
+- extendedWaitUntil:
+    visible: 'Mensaje'
+    timeout: 30000
+# Aquí está la pregunta. Con el teclado abierto, ¿sigue visible el compositor?
+- tapOn: 'Mensaje'
+- inputText: ${MESSAGE}
+- assertVisible: 'Enviar mensaje'
+- tapOn: 'Enviar mensaje'
+- hideKeyboard
+- assertVisible: ${MESSAGE}

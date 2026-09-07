@@ -13,9 +13,8 @@
 
 import { Link, Stack, useLocalSearchParams } from 'expo-router';
 import { Fragment, useMemo, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Radii, Spacing } from '@/constants/theme';
@@ -33,12 +32,8 @@ import {
 } from '@/features/chat';
 import { useTheme } from '@/hooks/use-theme';
 
-/** Altura de la barra de navegación nativa, para descontarla al subir el teclado. */
-const HEADER_HEIGHT = 44;
-
 export default function ChatScreen() {
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ matchId: string }>();
   const matchId = Array.isArray(params.matchId) ? params.matchId[0] : (params.matchId ?? '');
 
@@ -80,15 +75,22 @@ export default function ChatScreen() {
         (comprobado en emulador: falla igual con `height` que con `padding`).
         El de la librería lee los WindowInsets del IME, que sí llegan.
 
+        `automaticOffset` no es un extra: sin él, `frame` sale del `onLayout`, y
+        `onLayout` da coordenadas RELATIVAS AL PADRE. El componente compara
+        `frame.y + frame.height` contra `screenHeight - alturaTeclado`, donde
+        `screenHeight` sí es la ventana entera (`Dimensions.get('window')`). Con
+        `frame.y = 0` bajo una cabecera nativa, el relleno sale corto justo por
+        la altura de barra de estado + cabecera (~80 dp aquí), que es más que el
+        compositor entero. Con `automaticOffset` la posición se pide al nativo
+        (`viewPositionInWindow`) y `keyboardVerticalOffset` pasa a ser aditivo,
+        por eso ya no hace falta el que se pasaba a mano en iOS.
+
         Dejaba el compositor entero debajo del teclado: no se veía lo escrito ni
         había forma de enviar — `returnKeyType` es `default` a propósito, por ser
         multilínea. Lo encontró el E2E en emulador real y es su guardián; ver
         `docs/plan/todo/chat.md`.
       */}
-      <KeyboardAvoidingView
-        style={styles.root}
-        behavior="padding"
-        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + HEADER_HEIGHT : 0}>
+      <KeyboardAvoidingView style={styles.root} behavior="padding" automaticOffset>
         {loading && !match ? (
           <Centered>
             <ThemedText type="body" themeColor="textSecondary">

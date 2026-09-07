@@ -24,9 +24,9 @@ const runtime = join(root, 'e2e/.runtime');
 // Si algún día pasara en verde, el caso positivo no estaría probando Supabase.
 const negative = process.env.E2E_NEGATIVE_CONTROL === '1';
 // Sonda de diagnóstico, temporal: mismo APK que el caso positivo (credenciales
-// reales incluidas), pero corre `keyboard-modal-probe.yaml` en vez del recorrido
-// completo, para responder si el Modal de match es lo que rompe el teclado.
-// Se retira junto con el .yaml en cuanto la pregunta esté cerrada.
+// reales incluidas), pero corre `keyboard-probe.yaml` en vez del recorrido
+// completo: el camino más corto hasta "¿el compositor está por encima del
+// teclado?". Se retira junto con el .yaml en cuanto eso esté verificado.
 const probe = process.env.E2E_KEYBOARD_PROBE === '1';
 assert(!(negative && probe), 'La sonda de teclado y el control negativo se excluyen');
 const variant = negative ? 'mock' : probe ? 'probe' : 'supabase';
@@ -242,7 +242,7 @@ if (command === 'test') {
     'PROFILE_NAME=' + profileName,
     '-e',
     'MESSAGE=' + message,
-    join(root, probe ? 'e2e/keyboard-modal-probe.yaml' : 'e2e/full-journey.yaml'),
+    join(root, probe ? 'e2e/keyboard-probe.yaml' : 'e2e/full-journey.yaml'),
   ];
   try {
     if (negative) {
@@ -280,9 +280,10 @@ if (command === 'test') {
         )
       );
     } else if (probe) {
-      // La sonda se afirma a sí misma dentro del .yaml: si el `assertVisible` de
-      // "Enviar mensaje" pasa con el teclado abierto, el Modal es la causa. No
-      // se comprueba persistencia — no es lo que se está preguntando.
+      // La sonda se afirma a sí misma dentro del .yaml: si el `assertVisible`
+      // de "Enviar mensaje" pasa con el teclado abierto, el compositor está por
+      // encima. No se comprueba persistencia — no es lo que se pregunta, y la
+      // sonda ya no reinicia la app.
       run('maestro', maestro);
     } else {
       run('maestro', maestro);

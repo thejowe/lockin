@@ -32,8 +32,9 @@ jobs:
           - variant: mock
             negative: '1'
             probe: '0'
-          # Sonda temporal: ¿el Modal de match es lo que rompe el teclado? Mismo
-          # APK que `supabase`, otro .yaml. Se retira con el diagnóstico cerrado.
+          # Sonda temporal: mismo APK que `supabase`, otro .yaml, camino corto
+          # hasta el compositor con el teclado abierto. Segundo tiro a la misma
+          # pregunta en la misma pasada. Se retira con el compositor verificado.
           - variant: probe
             negative: '0'
             probe: '1'

@@ -229,13 +229,16 @@ automatización, no solo por el recorrido manual del 2026-09-06.
 
 **Quedan dos hipótesis, independientes y probables en la misma pasada:**
 
-- [ ] `KeyboardProvider` se montó sin `statusBarTranslucent` ni
+- [x] `KeyboardProvider` se montó sin `statusBarTranslucent` ni
       `navigationBarTranslucent` (`src/app/_layout.tsx`). Bajo edge-to-edge
       obligatorio es candidato serio a que los insets del IME no lleguen bien.
-- [ ] La estructura del `KeyboardAvoidingView`. La librería exporta
+- [x] La estructura del `KeyboardAvoidingView`. La librería exporta
       `KeyboardChatScrollView`, pensado para esta pantalla exacta; aquí se usó el
       genérico envolviendo `View` + `ScrollView` + compositor, que puede no ser
-      lo que espera.
+      lo que espera. — descartada por lectura del código: `KeyboardChatScrollView`
+      solo rellena el `contentInset` del scroll, **no mueve el compositor**; para
+      eso la librería quiere `KeyboardStickyView`. Cambiar a esa pareja no habría
+      arreglado nada por sí solo. Ver la sección siguiente.
 
 **Antes de gastar otra pasada**: la flake del emulador
 (`device offline` / `StatusRuntimeException: UNAVAILABLE`) ha tumbado **3 de los
@@ -243,6 +246,75 @@ automatización, no solo por el recorrido manual del 2026-09-06.
 en el paso del emulador, cada pasada devuelve menos de la mitad de la señal que
 debería. Eso es de `calidad`, no de este bloque.
 
-**Limpieza pendiente**: `e2e/keyboard-modal-probe.yaml`, la variante `probe` de
+**Limpieza pendiente**: `e2e/keyboard-probe.yaml` (antes
+`keyboard-modal-probe.yaml`), la variante `probe` de
 la matriz en `.github/workflows/e2e.yml` y la rama `probe` de `e2e/run.mjs` son
 temporales. Se retiran en cuanto el compositor esté arreglado y verificado.
+
+### Ronda 3: dos restas de más, ambas medibles (2026-09-07)
+
+Las dos hipótesis anteriores se resolvieron leyendo el código de la librería —
+JS y Kotlin—, y dejaron una tercera que ninguna de las dos contemplaba y que es
+la que explica la magnitud del fallo. Las tres se atacan a la vez porque las tres
+son incorrectas por separado bajo edge-to-edge; ninguna es una apuesta.
+
+**1. El desfase de la cabecera (dominante).** `KeyboardAvoidingView` calcula así
+(`node_modules/react-native-keyboard-controller/src/components/KeyboardAvoidingView/index.tsx`):
+
+```
+keyboardY = screenHeight - keyboard.heightWhenOpened - keyboardVerticalOffset
+bottom    = max(frame.y + frame.height - keyboardY, 0)
+```
+
+`screenHeight` es la ventana entera (`Dimensions.get('window')`, vía el
+`useWindowDimensions` propio de la librería). `frame`, en cambio, sale del
+`onLayout` del propio componente, y `onLayout` da coordenadas **relativas al
+padre**. Bajo una cabecera nativa de `expo-router`, `frame.y` es 0 y
+`frame.height` es la ventana menos la barra de estado y la cabecera. Así que
+
+```
+bottom = alturaTeclado - (barraDeEstado + cabecera)
+```
+
+es decir, el relleno sale corto exactamente por esos ~80 dp (~210 px a densidad
+2.625). El compositor mide 170 px según el volcado de `uiautomator` de la ronda
+anterior: se queda entero por debajo. Eso encaja con que la jerarquía del momento
+del tap no tuviera ni un nodo del compositor.
+
+En iOS esto se compensaba a mano con
+`keyboardVerticalOffset={insets.top + HEADER_HEIGHT}`. En Android se pasaba 0, y
+ahí está el agujero. El arreglo no es adivinar el número: es `automaticOffset`,
+que pide la posición real al nativo (`viewPositionInWindow`) y deja
+`keyboardVerticalOffset` como puro extra aditivo. Se quita el cálculo manual de
+iOS con él.
+
+**2. La barra de navegación se restaba dos veces.** En
+`KeyboardAnimationCallback.kt:438` y `:253`, con `hasTranslucentNavigationBar =
+false` (el valor por defecto), la altura de teclado que la librería publica es
+`ime - navigationBars`. Esa resta solo es correcta cuando el contenido **no** se
+dibuja debajo de la barra de navegación. Con edge-to-edge sí se dibuja, así que
+son ~24 dp (63 px) más de recorte. Por sí sola no bastaba para esconder el
+compositor entero, pero sí para que su centro —donde Maestro toca— cayera bajo el
+teclado. `KeyboardProvider` va ahora con `statusBarTranslucent` y
+`navigationBarTranslucent`.
+
+**3. Consecuencia de (2): el hueco de la barra de navegación hay que reservarlo.**
+Al dejar de restarlo la librería, con el teclado cerrado el compositor quedaría
+debajo de la barra de gestos. `MessageComposer` añade `insets.bottom` a su
+`paddingBottom`. Es el mismo hueco de antes, puesto donde se sabe cuánto mide.
+
+Cambios: `src/app/_layout.tsx`, `src/app/chat/[matchId].tsx`,
+`src/features/chat/message-composer.tsx`, y `jest.setup.js` (el mock oficial de
+`react-native-safe-area-context`, sin el cual el compositor revienta en Jest con
+"No safe area value available").
+
+La sonda se reaprovecha en vez de retirarse: `e2e/keyboard-modal-probe.yaml` pasa
+a `e2e/keyboard-probe.yaml` y se recorta al camino más corto hasta el compositor
+con el teclado abierto —sin reinicio ni segunda entrada desde Matches—. Mismo
+APK que `supabase`, en paralelo: dos tiros independientes a la misma pregunta en
+una pasada, y el corto expone la mitad de superficie a la flake del emulador.
+
+- [ ] **Sin verificar en emulador.** `npm test` (313 en 29 suites), `tsc` y lint
+      pasan, y —otra vez— eso no dice nada de este fallo: Jest no reproduce el
+      teclado. Lo cierra el trabajo `probe` o `supabase` del workflow
+      `E2E Android` pasando del `assertVisible: 'Enviar mensaje'`.

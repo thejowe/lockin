@@ -55,7 +55,18 @@ export default function RootLayout() {
     // resize no hay evento, así que ahí es inerte con cualquier `behavior`.
     // Ver `docs/plan/todo/chat.md`.
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: palette.background }}>
-      <KeyboardProvider>
+      {/*
+        Las dos props son obligatorias aquí porque edge-to-edge lo es desde Expo
+        SDK 54: la app dibuja debajo de la barra de estado y de la de navegación.
+        Sin `navigationBarTranslucent`, `KeyboardAnimationCallback` resta el
+        inset de la barra de navegación a la altura del teclado que publica
+        (`getCurrentKeyboardHeight`, y otra vez en `onApplyWindowInsets`), que es
+        lo correcto solo cuando el contenido NO se dibuja debajo de ella. Con
+        edge-to-edge sí se dibuja, así que esa resta deja el compositor ~24 dp
+        por debajo del borde del teclado. `statusBarTranslucent` es el mismo
+        razonamiento por arriba.
+      */}
+      <KeyboardProvider statusBarTranslucent navigationBarTranslucent>
         <ThemeProvider value={navigationTheme(scheme)}>
           <DataProvider>
             <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />

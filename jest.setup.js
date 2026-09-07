@@ -38,3 +38,11 @@ require('@testing-library/react-native/dist/matchers/extend-expect');
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
+
+// `react-native-safe-area-context` lee insets del nativo: bajo Jest no hay
+// ninguno y `useSafeAreaInsets` lanza "No safe area value available". Este es el
+// mock oficial del paquete; devuelve insets a cero, que es justo lo que Jest no
+// puede medir de todos modos.
+jest.mock('react-native-safe-area-context', () =>
+  require('react-native-safe-area-context/jest/mock').default
+);
