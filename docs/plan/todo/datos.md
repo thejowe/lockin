@@ -296,6 +296,37 @@ Dos herramientas, complementarias a propósito:
       `dev-teardown.sql` y las cinco migraciones. Pendiente de una máquina con
       Docker.
 
+      Comprobado a conciencia el 2026-09-07 en esta máquina, no dado por
+      supuesto — la ausencia es el hallazgo, así que se deja con evidencia:
+
+      - Ni en `PATH` ni instalados: `docker`, `docker-compose`, `psql`,
+        `pg_dump`, `pg_ctl`, `postgres`. No existen `C:\Program Files\Docker`,
+        `C:\Program Files\PostgreSQL`, `%LOCALAPPDATA%\Programs\Docker` ni
+        `pgAdmin 4`, y `Get-Service *docker* *postgres*` no devuelve nada.
+      - `wsl.exe` existe pero **sin distribuciones instaladas**, así que tampoco
+        hay esa vía para un Postgres local.
+      - `npx supabase` está, pero no sirve: `supabase start` necesita Docker, y
+        `db diff --linked` / `--db-url` siguen exigiendo `SUPABASE_ACCESS_TOKEN`
+        o la contraseña de Postgres, que no están aquí y no deben estar en el
+        repo.
+      - Tampoco vale hacer solo el lado remoto: la huella lee `pg_catalog`, que
+        la clave `anon` no alcanza, y aunque se alcanzara una huella sin la otra
+        no compara nada.
+
+      Lo que sí se reverificó hoy, que es todo lo que esta máquina puede dar:
+      `node supabase/drift-check.mjs` contra `grrzmzktrhksbttpbblg` → **sin
+      deriva**, código de salida 0 (5 tablas / 38 columnas, 8 enums / 29
+      valores, 6 funciones con su firma, `anon` denegado en las cinco tablas).
+      Sigue sin ver políticas, CHECKs, índices, triggers ni objetos de más:
+      justo el hueco que esta casilla cubriría.
+
+      **Cómo cerrarla** cuando haya una máquina con Docker y `psql`
+      (procedimiento completo en la cabecera del propio archivo):
+      `npx supabase start` + `npx supabase db reset` para el lado del repo, la
+      huella contra la base local, la misma huella contra el proyecto remoto por
+      la cadena de conexión de Postgres, y `diff` de las dos salidas — o solo de
+      la primera fila, el `digest`, si coinciden.
+
 ### Deuda de documentación cerrada de paso
 
 - [x] `src/data/supabase/README.md` decía que ver los ocho perfiles del seed
