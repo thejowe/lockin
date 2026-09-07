@@ -1,6 +1,6 @@
 # TODO — calidad
 
-> **Estado actual: cuarta pasada completa (2026-09-06).** Deuda menor cerrada; detalle y verificación al final. Los apartados anteriores son el historial de las primeras pasadas.
+> **Estado actual: undécima pasada (2026-09-07).** CI verde otra vez: se cubrió el código de `seekingSpecialties` que llegó sin tests. Detalle en "Undécima pasada", justo debajo. Lo de más abajo es el historial de las pasadas anteriores.
 
 > **Tercera pasada (histórico).** La primera dejó el repo con
 > lint, formato, tipos, CI y 102 tests. La segunda cubrió el bloque `chat` y el
@@ -457,6 +457,99 @@ no se modifica la lista de archivos medida por cobertura.
   inexistente (306 pasaron). La repetición completa pasó en 41,6 s sin tocar
   timeout, test ni código de producto. Se conserva el antecedente de lentitud
   con caché fría documentado en pasadas anteriores.
+
+## Undécima pasada: cubrir `seekingSpecialties` (2026-09-07)
+
+Contexto: `arquitecto`, `datos`, `descubrir` y `perfil` entregaron la feature
+(`7abbb0c`, `eb3867f`, `01c3a52`, `3eea69e`) y la migración ya está aplicada en
+el proyecto real. `npm test` daba 353 verdes, `tsc` y lint limpios — pero CI en
+rojo: **ninguno de los cuatro bloques corrió jest con `--coverage`**, así que
+nadie vio el único gate que mira los umbrales.
+
+    Jest: "global" coverage threshold for functions (89.84%) not met: 89.73%
+
+`npm test` no aplica el suelo; `npm run test:coverage` sí. Es la misma lección
+de la décima pasada dicha de otra forma: verificar con el comando que corre CI,
+no con el que va más rápido.
+
+### El suelo no se baja: se cubre lo que faltaba
+
+Los huecos eran exactamente el código nuevo, más un botón que nunca se había
+pulsado:
+
+| Archivo | Hueco | Qué se cubrió |
+|---|---|---|
+| `catalog.ts` | ramas al 60 % (124, 148-158) | `catalog.test.ts`, nuevo |
+| `profile-details.tsx` | funciones al 85,71 % (128) | la sección "Enlaces" |
+| `profile-form.tsx` | 86, 289, 412, 445-454 | respaldo de `Intl`, zona horaria, cambio de pregunta, portfolio y LinkedIn |
+| `controls.tsx` | función 227 | el "+" del `Stepper` |
+
+Los tres archivos del bloque `perfil` quedan al 100 % en funciones y líneas, y
+`catalog.ts` al 100 % en las cuatro métricas.
+
+Lo que cubren esos tests no es relleno de cobertura:
+
+- **`labelOf` cae al código si no está en el catálogo.** Un perfil guardado
+  antes de retirar una opción sigue en la base de datos; pintar `quantica` es
+  feo, pintar un hueco es un perfil que miente.
+- **`availabilitySummary` con cero franjas** dice "sin franja". El formulario
+  exige al menos una, pero la ficha también pinta filas que vienen de Supabase.
+- **`deviceTimezone` sin `Intl`.** Hermes sin ICU no lo trae. Sin el respaldo el
+  alta arrancaría con un campo obligatorio vacío y el formulario se negaría a
+  guardar. El test lo distingue del camino feliz mockeando `Intl` para que
+  devuelva `America/Bogota`: si el respaldo se rompe, los dos casos ya no dan lo
+  mismo.
+- **Los enlaces de la ficha.** El doble de `ExternalLink` apunta el `href` que
+  recibe, así que el test comprueba que GitHub lleva a GitHub y que un portfolio
+  ausente no se pinta con `href` vacío — no solo que salen tres textos.
+- **Cambiar la pregunta de un prompt** sin perder la respuesta ya escrita.
+- **El "+" del `Stepper` respeta el máximo.** El "−" tenía test desde la primera
+  pasada; el "+" no lo había pulsado nadie.
+
+**Comprobado que no son tests vacíos**: con seis mutaciones a la vez sobre el
+código de producto —quitar el `?? value` de `labelOf`, el `?? 'Sin franja'`, el
+`return 'Europe/Madrid'` del `catch`, el `updatePrompt` del chip y el `filter`
+de enlaces— caen **7 de los 45** tests del bloque. Las mutaciones se revirtieron
+con `git checkout`; no se ha tocado código de producto en esta pasada.
+
+### El suelo sube: 89.82 / 82.56 / 91.49 / 91.38
+
+De 88.87/80.24/89.84/90.31. Mismo criterio de siempre: el suelo se sube a la
+cobertura real medida, nunca se baja ni se excluyen archivos para dejar pasar un
+cambio. **No hizo falta tocar los umbrales a la baja**: con los tests nuevos la
+suite ya pasa el suelo viejo con margen.
+
+### Dos casillas de `TODO.md` estaban mal
+
+En "Especialidades buscadas", ambas marcadas como pendientes cuando ya no lo
+están:
+
+- **La migración sí está aplicada.** Verificado consultando `seeking_specialties`
+  con la clave `anon`: responde `42501` (RLS) y no `42703` (columna inexistente).
+  La distinción es la prueba: un `42501` solo puede venir de una columna que
+  existe.
+- **El campo del formulario y la ficha sí está hecho**, en `3eea69e`.
+
+De paso, la línea de "Calidad" del mismo archivo seguía diciendo 222 tests y el
+suelo de la segunda pasada. Actualizada.
+
+### Verificación de esta pasada
+
+- `npm run test:coverage -- --ci --runInBand` — **374 tests en 34 suites**
+  (27 del contrato remoto omitidos por su opt-in), cobertura
+  89.82/82.56/91.49/91.38, `EXIT=0` y sin línea de `threshold`. Es el comando
+  que corre CI, y es el que se saltaron los cuatro bloques.
+- `npm run lint` — limpio.
+- `npm run typecheck` — limpio.
+- `npx prettier --check` sobre lo tocado — limpio. (`format:check` completo
+  sigue fallando en este checkout Windows por CRLF, como está documentado
+  arriba; en CI se comprueba sobre LF.)
+- `git status` — solo tests, `jest.config.js` y los dos TODO. Ningún archivo de
+  producto modificado.
+- **No ejecutado aquí**: build Android, Maestro y emulador — este host sigue sin
+  Android SDK, Java ni Maestro. Las dos casillas de E2E siguen abiertas y
+  bloqueadas por el compositor de `chat`, igual que en las dos pasadas
+  anteriores; nada de esta pasada las toca.
 
 ## Décima pasada: arreglar CI en rojo tras la novena (2026-09-07)
 

@@ -7,7 +7,9 @@
  * se comprueba aquí, más la invariante de lock-in (que no busca skills).
  *
  * `ExternalLink` se sustituye porque abrir el navegador no es asunto de esta
- * ficha y arrastra `expo-router` sin necesidad.
+ * ficha y arrastra `expo-router` sin necesidad. El doble apunta el `href` que
+ * recibe: así el test puede comprobar que cada etiqueta lleva a su enlace y no
+ * solo que se pintan tres textos.
  */
 
 import { render, screen } from '@testing-library/react-native';
@@ -16,9 +18,18 @@ import { buildProfile } from '@/data/test-fixtures';
 
 import { ProfileDetails } from './profile-details';
 
+const mockLinkHrefs: string[] = [];
+
 jest.mock('@/components/external-link', () => ({
-  ExternalLink: ({ children }: { children: React.ReactNode }) => children,
+  ExternalLink: ({ href, children }: { href: string; children: React.ReactNode }) => {
+    mockLinkHrefs.push(href);
+    return children;
+  },
 }));
+
+beforeEach(() => {
+  mockLinkHrefs.length = 0;
+});
 
 describe('ProfileDetails', () => {
   it('separa lo que domina de lo que busca', async () => {
@@ -53,5 +64,34 @@ describe('ProfileDetails', () => {
     expect(screen.getByText('Lo que domina')).toBeTruthy();
     expect(screen.queryByText('Lo que busca')).toBeNull();
     expect(screen.queryByText('Abierto a cualquier especialidad.')).toBeNull();
+  });
+
+  describe('enlaces', () => {
+    it('pinta solo los que el perfil tiene, cada uno con su href', async () => {
+      await render(
+        <ProfileDetails
+          profile={buildProfile({
+            links: {
+              github: 'https://github.com/nuria',
+              linkedin: 'https://linkedin.com/in/nuria',
+            },
+          })}
+        />
+      );
+
+      expect(screen.getByText('Enlaces')).toBeTruthy();
+      expect(screen.getByText('GitHub')).toBeTruthy();
+      expect(screen.getByText('LinkedIn')).toBeTruthy();
+      // El portfolio no está en el perfil: no puede aparecer con un href vacío.
+      expect(screen.queryByText('Portfolio')).toBeNull();
+      expect(mockLinkHrefs).toEqual(['https://github.com/nuria', 'https://linkedin.com/in/nuria']);
+    });
+
+    it('se calla la sección entera cuando no hay ningún enlace', async () => {
+      await render(<ProfileDetails profile={buildProfile({ links: {} })} />);
+
+      expect(screen.queryByText('Enlaces')).toBeNull();
+      expect(mockLinkHrefs).toEqual([]);
+    });
   });
 });

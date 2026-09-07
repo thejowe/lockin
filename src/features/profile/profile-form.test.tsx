@@ -291,4 +291,105 @@ describe('ProfileForm', () => {
 
     expect(onCancel).toHaveBeenCalled();
   });
+
+  describe('zona horaria', () => {
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it('precarga la que expone el dispositivo', async () => {
+      jest.spyOn(Intl, 'DateTimeFormat').mockReturnValue({
+        resolvedOptions: () => ({ timeZone: 'America/Bogota' }),
+      } as unknown as Intl.DateTimeFormat);
+
+      await render(<ProfileForm submitLabel="Guardar" onSubmit={jest.fn()} />);
+
+      expect(screen.getByLabelText('Zona horaria').props.value).toBe('America/Bogota');
+    });
+
+    it('cae a Europe/Madrid si el runtime no la expone', async () => {
+      // Hermes sin ICU no trae `Intl`. Sin el respaldo, el alta arrancaría con
+      // un campo obligatorio vacío y el formulario se negaría a guardar.
+      jest.spyOn(Intl, 'DateTimeFormat').mockImplementation(() => {
+        throw new Error('Intl no disponible');
+      });
+
+      await render(<ProfileForm submitLabel="Guardar" onSubmit={jest.fn()} />);
+
+      expect(screen.getByLabelText('Zona horaria').props.value).toBe('Europe/Madrid');
+    });
+
+    it('se puede corregir a mano y viaja recortada', async () => {
+      const onSubmit = jest.fn<Promise<void>, [ProfileInput]>().mockResolvedValue(undefined);
+      await render(<ProfileForm submitLabel="Guardar" onSubmit={onSubmit} />);
+
+      await fillValidForm();
+      await fireEvent.changeText(screen.getByLabelText('Zona horaria'), '  America/Bogota  ');
+      await fireEvent.press(screen.getByText('Guardar'));
+
+      await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+      expect(onSubmit.mock.calls[0][0].timezone).toBe('America/Bogota');
+    });
+
+    it('no guarda si se deja vacía', async () => {
+      const onSubmit = jest.fn();
+      await render(<ProfileForm submitLabel="Guardar" onSubmit={onSubmit} />);
+
+      await fillValidForm();
+      await fireEvent.changeText(screen.getByLabelText('Zona horaria'), '   ');
+      await fireEvent.press(screen.getByText('Guardar'));
+
+      expect(await screen.findByText('Necesitamos tu zona horaria.')).toBeTruthy();
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+  });
+
+  it('guarda los tres enlaces recortados', async () => {
+    const onSubmit = jest.fn<Promise<void>, [ProfileInput]>().mockResolvedValue(undefined);
+    await render(<ProfileForm submitLabel="Guardar" onSubmit={onSubmit} />);
+
+    await fillValidForm();
+    await fireEvent.changeText(screen.getByLabelText('GitHub'), ' https://github.com/nuria ');
+    await fireEvent.changeText(screen.getByLabelText('Portfolio'), 'https://nuria.dev');
+    await fireEvent.changeText(screen.getByLabelText('LinkedIn'), 'https://linkedin.com/in/nuria');
+    await fireEvent.press(screen.getByText('Guardar'));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    expect(onSubmit.mock.calls[0][0].links).toEqual({
+      github: 'https://github.com/nuria',
+      portfolio: 'https://nuria.dev',
+      linkedin: 'https://linkedin.com/in/nuria',
+    });
+  });
+
+  it('cambia la pregunta de un prompt sin perder la respuesta ya escrita', async () => {
+    const onSubmit = jest.fn<Promise<void>, [ProfileInput]>().mockResolvedValue(undefined);
+    await render(<ProfileForm submitLabel="Guardar" onSubmit={onSubmit} />);
+
+    await fillValidForm();
+    // La misma pregunta aparece como chip en los dos prompts; el primero es el
+    // que estamos rellenando.
+    await fireEvent.press(screen.getAllByLabelText('Necesito compañía para…')[0]);
+    await fireEvent.press(screen.getByText('Guardar'));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    expect(onSubmit.mock.calls[0][0].prompts).toEqual([
+      { question: 'Necesito compañía para…', answer: 'Un CRM.' },
+    ]);
+  });
+
+  it('el stepper de disponibilidad respeta el máximo', async () => {
+    const onSubmit = jest.fn<Promise<void>, [ProfileInput]>().mockResolvedValue(undefined);
+    const profile = buildProfile({ availability: { hoursPerWeek: 58, bands: ['noche'] } });
+    await render(<ProfileForm initial={profile} submitLabel="Guardar" onSubmit={onSubmit} />);
+
+    // Arranca en 58 h y el máximo es 60: cinco sumas no pueden pasar de ahí.
+    for (let index = 0; index < 5; index += 1) {
+      await fireEvent.press(screen.getByLabelText('Sumar'));
+    }
+    await fireEvent.press(screen.getByText('Guardar'));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    expect(onSubmit.mock.calls[0][0].availability.hoursPerWeek).toBe(60);
+  });
 });
