@@ -353,3 +353,64 @@ alguna de: `gh` CLI instalado en esta máquina, un token de GitHub con permiso
 `actions:read` para leer logs/artefactos por API, o que alguien revise el run
 a mano en el navegador y pegue aquí qué comando de Maestro falló y el
 `screen.png`/jerarquía de ese paso.
+
+### Desbloqueado: `gh` instalado, y la ronda 3 sigue en rojo (2026-09-07)
+
+Se instaló `gh` CLI en esta máquina (`winget install GitHub.cli` + `gh auth
+login`) y con eso sí se pudieron leer logs y artefactos reales del run
+[34144931734](https://github.com/thejowe/lockin/actions/runs/34144931734)
+(commit `cea5712`).
+
+**`supabase` y `probe` siguen fallando por el compositor.** `gh run view
+34144931734 --log-failed` da el mismo fallo de siempre en ambos:
+`supabase` → `Element not found: Text matching regex: Enviar mensaje`;
+`probe` → `Assertion is false: "Enviar mensaje" is visible`. La ronda 3
+(`automaticOffset` + `navigationBarTranslucent`/`statusBarTranslucent` +
+reserva en `MessageComposer`) **no cerró el bug**, aunque sí mejoró mucho la
+posición.
+
+**`mock` no es un fallo nuevo, es el mismo bug visto por otro lado.**
+`gh run download` + revisar `maestro.xml`: `mock` corre `full-journey.yaml`
+igual que `supabase`, así que también se atasca en "Enviar mensaje" — mucho
+antes de llegar al comando `stopApp`. `firstFailure()` en `e2e/run.mjs:163`
+busca `stopApp` entre los comandos que Maestro llegó a intentar; como el
+recorrido nunca llega tan lejos, no lo encuentra y salta
+`'El caso ya no reinicia la app: el control negativo perdería su sentido'`
+antes de comparar `failed` contra `stopApp`. Es el mismo bug del compositor
+disfrazado de mensaje distinto, no una regresión de `cea5712` en `run.mjs`.
+
+**Medidas reales (no estimadas) del job `probe`**, de
+`window.xml`/`screen.png` descargados con `gh run download`: pantalla
+1080×2400; el contenido de la app (bajo barra de estado + cabecera nativa)
+empieza en `y=482`; el contenedor de `MessageComposer` queda en
+`[0,1516]-[1080,1792]`, con el `EditText` en `y=1538-1708` y el botón
+`Enviar mensaje` en `y=1593-1708`; el teclado visible en la captura empieza
+sobre `y≈1516-1530`. O sea: el `paddingBottom` real que aplicó la ronda 3 es
+`2400-1792=608px`, y el compositor entero cae dentro de los primeros ~170px
+del teclado. Antes de la ronda 3 el compositor estaba en `y≈2264-2380`
+(round 2): la ronda 3 sí lo subió ~670-730px, pero se queda corto por
+~250-260px — casi lo justo, no lo bastante.
+
+**Dos hipótesis quedan sin descartar, y no se puede elegir entre ellas solo
+con capturas:**
+
+1. El teclado real mide más de lo que `heightWhenOpened` (el `e.height` que
+   la librería reporta a `KeyboardAvoidingView`) está publicando — un bug de
+   insets nativo, pese a `navigationBarTranslucent`/`statusBarTranslucent`.
+2. `automaticOffset` sigue sin resolver del todo el offset de la cabecera
+   nativa (el `viewPositionInWindow` no da la `y` absoluta correcta, o
+   `frame.height` no es la que se necesita).
+
+**Sonda añadida para la próxima pasada.** `src/app/chat/[matchId].tsx` ahora
+llama a `useKeyboardHandler` (de `react-native-keyboard-controller`) solo
+para loguear `e.height` y el alto de ventana (`useWindowDimensions` de la
+misma librería) por `console.log` en cuanto arranca la animación del
+teclado. Es temporal y no condiciona nada — no depende de
+`E2E_KEYBOARD_PROBE` porque esa variable solo existe en el proceso de CI
+(`e2e/run.mjs`), no llega a la app en build. El próximo `logcat.txt` del
+workflow dirá si `e.height` ya viene corto (hipótesis 1) o si viene
+correcto y el offset se pierde después (hipótesis 2), sin adivinar por
+píxeles de captura. Se retira en cuanto el bug cierre.
+
+`npm test` (314, incluye el nuevo hook), `tsc` y lint siguen en verde — la
+sonda no toca lógica de producto, solo añade un log.

@@ -14,7 +14,11 @@
 import { Link, Stack, useLocalSearchParams } from 'expo-router';
 import { Fragment, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import {
+  KeyboardAvoidingView,
+  useKeyboardHandler,
+  useWindowDimensions as useKeyboardWindowDimensions,
+} from 'react-native-keyboard-controller';
 
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Radii, Spacing } from '@/constants/theme';
@@ -47,6 +51,25 @@ export default function ChatScreen() {
   const icebreakers = useMemo(
     () => (match ? suggestIcebreakers(match.counterpart, me, match.mode) : []),
     [match, me]
+  );
+
+  // Sonda temporal: la ronda 3 del arreglo del compositor (ver
+  // docs/plan/todo/chat.md) sigue en rojo en el E2E aunque movió el compositor
+  // muy por encima de donde estaba, y sin este dato no se puede distinguir
+  // entre "el teclado reporta mal su altura" y "el offset del automaticOffset
+  // sigue corto" solo con capturas de pantalla. Se retira en cuanto ese TODO
+  // se cierre.
+  const { height: keyboardProbeWindowHeight } = useKeyboardWindowDimensions();
+  useKeyboardHandler(
+    {
+      onStart: (e) => {
+        'worklet';
+        console.log(
+          '[keyboard-probe] onStart height=' + e.height + ' windowHeight=' + keyboardProbeWindowHeight
+        );
+      },
+    },
+    [keyboardProbeWindowHeight]
   );
 
   const handleSend = async () => {
