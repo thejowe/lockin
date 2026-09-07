@@ -17,7 +17,7 @@ import { buildProfileInput } from '@/data/test-fixtures';
 
 import { useConversation } from './use-conversation';
 
-import type { Repositories } from '@/data';
+import type { MatchWithProfile, Repositories } from '@/data';
 
 const COUNTERPART_ID = SEED_RECIPROCAL_IDS[0];
 
@@ -103,6 +103,46 @@ describe('useConversation', () => {
 
     await waitFor(() => expect(result.current.match!.lastMessage).not.toBeNull());
     expect(result.current.match!.lastMessage!.body).toBe('Hola');
+  });
+
+  it('enviar no vacía el match ni el hilo en ningún render intermedio', async () => {
+    // El envío dispara `refresh()` de las dos consultas, y `useQuery` publica
+    // `data: null, loading: true` en cuanto sube el `nonce`, antes de que la
+    // relectura resuelva. Si eso llegara a la pantalla, la rama
+    // `loading && !match` remontaría el árbol entero: el compositor se
+    // desmontaría con el teclado abierto, Android lo cerraría, y el recorrido
+    // E2E se sale del chat al `hideKeyboard` siguiente (run 34160309273, ver
+    // docs/plan/todo/chat.md). Así que ningún render puede volver a vacío una
+    // vez cargado.
+    const matches: (MatchWithProfile | null)[] = [];
+    const threads: number[] = [];
+
+    const { result } = await renderHook(
+      () => {
+        const conversation = useConversation(matchId);
+        matches.push(conversation.match);
+        threads.push(conversation.messages.length);
+        return conversation;
+      },
+      { wrapper }
+    );
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    const firstResolved = matches.findIndex((match) => match !== null);
+    expect(firstResolved).toBeGreaterThanOrEqual(0);
+
+    await act(async () => {
+      await result.current.send('Hola');
+    });
+    await waitFor(() => expect(result.current.messages).toHaveLength(1));
+
+    expect(matches.slice(firstResolved).every((match) => match !== null)).toBe(true);
+
+    // Y el hilo tampoco puede volver a cero: eso haría reaparecer los
+    // icebreakers de golpe entre el mensaje enviado y su relectura.
+    const firstMessage = threads.findIndex((length) => length > 0);
+    expect(firstMessage).toBeGreaterThanOrEqual(0);
+    expect(threads.slice(firstMessage).every((length) => length > 0)).toBe(true);
   });
 
   it('un mensaje solo de espacios no llega al repositorio', async () => {

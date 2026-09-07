@@ -502,3 +502,74 @@ calculado, no el teclado.
       pasan, y como siempre eso no dice nada de este fallo: Jest no reproduce el
       teclado. Lo cierra el trabajo `supabase` o `probe` del workflow
       `E2E Android` pasando del `assertVisible: 'Enviar mensaje'`.
+
+### La ronda 4 arregla el compositor. Y detrás había un segundo bug (2026-09-07)
+
+[Run 34160309273](https://github.com/thejowe/lockin/actions/runs/34160309273),
+commit `71c4eaa`. Los tres trabajos siguen en rojo, pero **el fallo ya no es el
+mismo, y eso es la noticia**: `supabase` y `probe` pasan por primera vez del
+`assertVisible: 'Enviar mensaje'` y mueren dos comandos más allá.
+
+**El compositor está donde tiene que estar, medido.** Maestro registró el tap en
+`bounds=[845,1318][1038,1433]`. La predicción del arreglo era: fondo del
+compositor en el borde del teclado (1517), menos `Spacing.two + insets.bottom`
+(84 px) y menos la altura del botón (115 px) → `1318..1433`. Clavado. El
+compositor entero está por encima del teclado y Maestro toca el botón de verdad.
+
+**El segundo bug: enviar desmonta la pantalla.** En el logcat, a los 0,5 s del
+tap:
+
+```
+ReactNativeJNI: instanceHandle is null, event of type topBlur will be dropped
+ImeTracker: onRequestHide ... reason HIDE_SOFT_INPUT_CLOSE_CURRENT_SESSION
+```
+
+O sea: el `TextInput` no se desenfoca, **desaparece**. La cadena es
+
+1. `send()` resuelve y la suscripción de `useConversation` llama a
+   `refreshMessages()` y `refreshMatch()`.
+2. `useQuery` (`src/data/provider.tsx:100-101`) publica `data: null` y
+   `loading: true` **en cuanto sube el `nonce`**, antes de que la relectura
+   resuelva.
+3. La pantalla cae en su rama `loading && !match` → "Cargando la conversación…",
+   y con ella se desmonta el compositor.
+4. Android cierra el teclado al perder el `TextInput`.
+5. El `hideKeyboard` siguiente del caso ya no encuentra teclado, así que su
+   `pressBack()` llega a la app y **saca el recorrido del chat**. Por eso las
+   dos jerarquías del paso que falla salen en Descubrir y no en la conversación,
+   y por eso los dos trabajos fallan con mensajes distintos: `supabase` no
+   encuentra `Enviar mensaje` deshabilitado y `probe` no encuentra la burbuja —
+   ninguno de los dos está ya en la pantalla donde mirar.
+
+Esto no es solo cosa del E2E: cada mensaje enviado hace parpadear "Cargando la
+conversación…" y cierra el teclado al usuario.
+
+**Arreglado dentro del bloque.** `useConversation` retiene el último valor
+resuelto mientras se relee (`useResolvedOrPrevious`), así que la pantalla nunca
+vuelve a vacío una vez cargada y el compositor no se desmonta. Solo retiene
+durante `loading`: si la consulta resuelve `null` de verdad, eso manda, y un
+match borrado sigue apareciendo como borrado. El test
+`enviar no vacía el match ni el hilo en ningún render intermedio` graba todos
+los renders y falla si alguno vuelve a vacío — reproduce el bug en Jest, sin
+emulador, que es lo que no se había conseguido en ninguna ronda anterior.
+
+- [x] **El compositor queda debajo del teclado en Android.** Cerrado: los dos
+      trabajos pasan del `assertVisible: 'Enviar mensaje'` y el tap aterriza en
+      el botón real, en las coordenadas que predecía el cálculo.
+- [ ] **Recorrido completo en verde.** Pendiente del run del arreglo de
+      `useConversation`.
+
+## Encontrado fuera de mi alcance (ronda 4)
+
+- `src/data/provider.tsx`: `useQuery` vacía `data` a `null` y pone
+  `loading: true` en cuanto se llama a `refresh()`, antes de tener el dato
+  nuevo. Cualquier pantalla que relea datos parpadea a su estado de carga y
+  remonta su árbol — en el chat eso cerraba el teclado; en Descubrir, Matches y
+  Perfil será un parpadeo. Lo suyo es que `useQuery` conserve el valor anterior
+  mientras revalida (stale-while-revalidate), y entonces el apaño de
+  `useConversation` sobra. Es de `arquitecto`.
+- `e2e/full-journey.yaml` y `e2e/keyboard-probe.yaml`: el `hideKeyboard` de
+  después de enviar hace `pressBack()` cuando no hay teclado, y eso navega hacia
+  atrás en vez de no hacer nada. Hoy queda tapado porque el teclado sí seguirá
+  abierto, pero es una trampa: cualquier cambio que cierre el teclado antes
+  convierte ese comando en un "volver atrás" silencioso. Es de `calidad`.

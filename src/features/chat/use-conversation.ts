@@ -78,9 +78,22 @@ export function useConversation(matchId: string): Conversation {
     [repositories, matchId, sending]
   );
 
+  // Enviar un mensaje relee el hilo y el match, y `useQuery` publica
+  // `data: null, loading: true` en cuanto arranca la relectura — antes de tener
+  // el dato nuevo. Sin retener el anterior, la pantalla cae en su rama
+  // `loading && !match` y remonta el árbol entero: el compositor se desmonta
+  // con el teclado abierto, Android lo cierra al perder el `TextInput`, y el
+  // recorrido E2E se sale del chat en el `hideKeyboard` siguiente. Se vio en el
+  // run 34160309273; ver `docs/plan/todo/chat.md`.
+  //
+  // Esto no arregla `useQuery`, que le hace lo mismo a Descubrir, Matches y
+  // Perfil: eso es de `arquitecto` y queda anotado en ese TODO.
+  const match = useResolvedOrPrevious(matchQuery.data, matchQuery.loading);
+  const messages = useResolvedOrPrevious(messagesQuery.data, messagesQuery.loading);
+
   return {
-    match: matchQuery.data,
-    messages: messagesQuery.data ?? [],
+    match,
+    messages: messages ?? [],
     me: meQuery.data,
     loading: matchQuery.loading || messagesQuery.loading,
     error: matchQuery.error ?? messagesQuery.error,
@@ -88,4 +101,32 @@ export function useConversation(matchId: string): Conversation {
     sending,
     send,
   };
+}
+
+/**
+ * El último valor resuelto mientras se relee.
+ *
+ * Solo retiene durante `loading`: en cuanto la consulta resuelve, manda lo que
+ * traiga — incluido `null`. Así un match que de verdad ha desaparecido sigue
+ * apareciendo como desaparecido, y solo se tapa el hueco de la relectura.
+ *
+ * El valor se guarda ajustando estado durante el render, no en un `useEffect`:
+ * un efecto llegaría un render tarde, y ese render tardío es exactamente el que
+ * desmonta el compositor y cierra el teclado. React vuelve a renderizar sin
+ * pintar el intermedio, así que no hay parpadeo. Con una ref no se puede: el
+ * lint lo prohíbe, y con razón —leer o escribir `current` en render se salta al
+ * compilador de React—.
+ */
+function useResolvedOrPrevious<T>(data: T | null, loading: boolean): T | null {
+  const [lastResolved, setLastResolved] = useState<T | null>(null);
+
+  if (!loading) {
+    if (lastResolved !== data) {
+      setLastResolved(data);
+    }
+
+    return data;
+  }
+
+  return lastResolved;
 }
