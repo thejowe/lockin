@@ -202,3 +202,47 @@ El trabajo `mock` falló por infraestructura, no por lógica: el driver de Maest
 perdió la conexión gRPC con el emulador (`StatusRuntimeException: UNAVAILABLE`,
 `Command failed (tcp:34809): closed`). No dice ni que el control negativo esté
 bien ni que esté mal. Hay que volver a mirarlo cuando el positivo pase.
+
+### El `Modal` de match está DESCARTADO como causa (2026-09-07)
+
+Hipótesis que se probó: `ModalAttachedWatcher.kt:66` de
+`react-native-keyboard-controller` suspende el callback de teclado de la ventana
+principal en cuanto se muestra un `Modal`, y solo lo reanuda en el
+`OnDismissListener` del diálogo (`:89`). El recorrido pasa por el modal de match
+justo antes de abrir el chat, así que encajaba con el síntoma.
+
+**Es falsa.** Lo dice la sonda `e2e/keyboard-modal-probe.yaml`
+([run 34127177679](https://github.com/thejowe/lockin/actions/runs/34127177679),
+variante `probe`): llega al chat en un proceso que **nunca** ha mostrado un
+Modal —crea perfil y match, no escribe, reinicia, entra desde Matches— y el
+compositor sigue debajo del teclado. Falló el comando 46,
+`assertVisible 'Enviar mensaje'`, con la misma captura que el recorrido normal.
+
+También queda descartado, por tanto, que el error nativo
+`IllegalStateException: Fabric View [-1] does not have SurfaceId` (que sale del
+mismo watcher al abrirse el modal) sea lo que rompe el teclado: es ruido.
+
+**Lo que la sonda sí demostró de paso**, aunque no era su objetivo: los comandos
+38-39 (`assert 'Descubrir'`, `assertNotVisible 'Paso 1 de 2'`) pasaron tras
+`stopApp` + `launchApp`. O sea, persistencia real contra Supabase verificada por
+automatización, no solo por el recorrido manual del 2026-09-06.
+
+**Quedan dos hipótesis, independientes y probables en la misma pasada:**
+
+- [ ] `KeyboardProvider` se montó sin `statusBarTranslucent` ni
+      `navigationBarTranslucent` (`src/app/_layout.tsx`). Bajo edge-to-edge
+      obligatorio es candidato serio a que los insets del IME no lleguen bien.
+- [ ] La estructura del `KeyboardAvoidingView`. La librería exporta
+      `KeyboardChatScrollView`, pensado para esta pantalla exacta; aquí se usó el
+      genérico envolviendo `View` + `ScrollView` + compositor, que puede no ser
+      lo que espera.
+
+**Antes de gastar otra pasada**: la flake del emulador
+(`device offline` / `StatusRuntimeException: UNAVAILABLE`) ha tumbado **3 de los
+7 trabajos** lanzados el 2026-09-07, sin relación con el código. Sin un reintento
+en el paso del emulador, cada pasada devuelve menos de la mitad de la señal que
+debería. Eso es de `calidad`, no de este bloque.
+
+**Limpieza pendiente**: `e2e/keyboard-modal-probe.yaml`, la variante `probe` de
+la matriz en `.github/workflows/e2e.yml` y la rama `probe` de `e2e/run.mjs` son
+temporales. Se retiran en cuanto el compositor esté arreglado y verificado.
