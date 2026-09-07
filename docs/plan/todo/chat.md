@@ -414,3 +414,91 @@ píxeles de captura. Se retira en cuanto el bug cierre.
 
 `npm test` (314, incluye el nuevo hook), `tsc` y lint siguen en verde — la
 sonda no toca lógica de producto, solo añade un log.
+
+### Ronda 4: la sonda decide — es el offset, y `automaticOffset` no se aplica (2026-09-07)
+
+[Run 34151655965](https://github.com/thejowe/lockin/actions/runs/34151655965),
+commit `542ff47`. La sonda de teclado logueó una sola línea, y basta:
+
+```
+[keyboard-probe] onStart height=336.3809509277344 windowHeight=914.2857055664062
+```
+
+**La hipótesis 1 queda descartada.** La pantalla es de 1080×2400 px y la ventana
+mide 914.2857 dp, luego la densidad es `2400 / 914.2857 = 2.625`. El teclado que
+reporta la librería son `336.381 × 2.625 = 883 px`, y el `window.xml` del mismo
+paso sitúa el teclado real empezando en `y≈1516`, o sea 884 px de alto. La
+librería mide bien: 1 px de redondeo. No hay ningún bug de insets nativo.
+
+**La hipótesis 2 queda confirmada, y con la cuenta exacta.** La fórmula del
+componente está en
+`node_modules/react-native-keyboard-controller/src/components/KeyboardAvoidingView/index.tsx:102-108`:
+
+```
+padding = max(frame.y + frame.height - (screenHeight - alturaTeclado - keyboardVerticalOffset), 0)
+```
+
+Con los números del run: `keyboardY = 914.286 - 336.381 = 577.9 dp = 1517 px`,
+que es clavado el borde superior del teclado real. Metiendo `frame.y = 0` sale
+`padding = 608 px` y fondo del compositor en `1792 px` — exactamente lo medido.
+Metiendo la `frame.y` correcta sale `padding = 883 px` y fondo en `1517 px`, que
+es lo que hace falta. O sea: **`frame.y` vale 0**, la coordenada relativa que da
+`onLayout`, no la absoluta.
+
+Y el hueco que falta se explica entero: la barra de estado de este emulador mide
+128 px (se ve en el propio `window.xml`: el botón "Navigate up" ocupa
+`[0,128]-[147,275]`, y el contenido de la app empieza en `y=275`), y la cabecera
+nativa 56 dp = 147 px. `128 + 147 = 275 px = 104.76 dp`, que es justo lo que le
+faltaba al relleno.
+
+**Por qué `automaticOffset` no lo arregla.** El componente pide la posición
+absoluta al nativo, pero si eso falla el `.catch` de `index.tsx:156` se traga el
+error en silencio y vuelve a la posición relativa — que es el estado observado.
+Del lado nativo hay al menos un camino que rechaza sin dejar rastro en logcat
+(`KeyboardControllerModuleImpl.kt:91-114`: si la vista no resuelve, rechaza con
+`E_VIEW_NOT_FOUND` sin loguear nada; y `uiManager` se captura una sola vez al
+construir el módulo, en la línea 26). El logcat del run no trae ni un
+`Could not resolve view`, coherente con ese camino silencioso. **No se ha
+confirmado cuál de los dos fallos es**, y da igual: el arreglo no depende de
+saberlo.
+
+**El arreglo: calcular el offset sin llamadas nativas.** De los dos términos que
+usa la fórmula, `frame.height` sí es correcta (2125 px medidos = ventana menos
+los 275 px de arriba). Y la vista llega hasta el borde inferior de la ventana,
+que es la premisa de `behavior="padding"` y con edge-to-edge se cumple. Luego lo
+que le falta por arriba es exactamente lo que a su altura le falta para ser la
+ventana:
+
+```
+keyboardVerticalOffset = windowHeight - alturaDeLaVista = 914.286 - 809.524 = 104.76 dp = 275 px
+```
+
+Sin barra de estado ni cabecera cableadas: la resta ya las incluye, y sigue
+valiendo si cambian. La altura se recoge con el `onLayout` que el propio
+componente reexpone, y la cuenta vive en `src/features/chat/keyboard-offset.ts`
+con un test que fija las medidas reales del emulador
+(`keyboard-offset.test.ts`) — este bug ya se ha escapado dos veces por restas
+mal puestas (`cfadf27`), así que la aritmética queda clavada.
+
+`automaticOffset` **se retira y no puede volver**: si algún día empieza a
+funcionar, sumaría la misma distancia que el offset a mano y el compositor
+subiría 275 px de más. Está dicho en el comentario del componente.
+
+Cambios: `src/app/chat/[matchId].tsx` (offset a mano, fuera `automaticOffset`,
+fuera la sonda), `src/features/chat/keyboard-offset.ts` + su test (nuevos),
+`src/features/chat/index.ts`, y `test/app/matchId.test.tsx` (se va el test que
+cubría la sonda; el comentario del final apunta ahora a dónde queda fijada la
+cuenta).
+
+La sonda se retira aquí porque ya ha respondido a lo que se le preguntó: la
+altura del teclado es correcta y el problema es el offset. Si la ronda 4 vuelve
+en rojo, la siguiente sonda tiene que loguear el `keyboardVerticalOffset`
+calculado, no el teclado.
+
+- [x] **Causa raíz identificada con números, no con capturas.** `frame.y = 0`
+      porque `automaticOffset` no llega a aplicarse; el relleno sale 275 px
+      corto, que es barra de estado + cabecera.
+- [ ] **Sin verificar en emulador.** `npm test` (319 en 30 suites), `tsc` y lint
+      pasan, y como siempre eso no dice nada de este fallo: Jest no reproduce el
+      teclado. Lo cierra el trabajo `supabase` o `probe` del workflow
+      `E2E Android` pasando del `assertVisible: 'Enviar mensaje'`.

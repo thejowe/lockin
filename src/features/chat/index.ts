@@ -15,5 +15,6 @@ export { MessageComposer } from './message-composer';
 export { ProfileAvatar } from './profile-avatar';
 export { suggestIcebreakers } from './icebreakers';
 export { formatClock, formatDayHeading, formatRelative, isSameDayIso } from './format';
+export { keyboardVerticalOffset } from './keyboard-offset';
 export { useConversation, type Conversation } from './use-conversation';
 export { useMatches } from './use-matches';

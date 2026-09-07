@@ -12,11 +12,17 @@
  */
 
 import { Link, Stack, useLocalSearchParams } from 'expo-router';
-import { Fragment, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Fragment, useCallback, useMemo, useRef, useState } from 'react';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
+  type LayoutChangeEvent,
+} from 'react-native';
 import {
   KeyboardAvoidingView,
-  useKeyboardHandler,
   useWindowDimensions as useKeyboardWindowDimensions,
 } from 'react-native-keyboard-controller';
 
@@ -31,6 +37,7 @@ import {
   MessageComposer,
   formatDayHeading,
   isSameDayIso,
+  keyboardVerticalOffset,
   suggestIcebreakers,
   useConversation,
 } from '@/features/chat';
@@ -53,27 +60,18 @@ export default function ChatScreen() {
     [match, me]
   );
 
-  // Sonda temporal: la ronda 3 del arreglo del compositor (ver
-  // docs/plan/todo/chat.md) sigue en rojo en el E2E aunque movió el compositor
-  // muy por encima de donde estaba, y sin este dato no se puede distinguir
-  // entre "el teclado reporta mal su altura" y "el offset del automaticOffset
-  // sigue corto" solo con capturas de pantalla. Se retira en cuanto ese TODO
-  // se cierre.
-  const { height: keyboardProbeWindowHeight } = useKeyboardWindowDimensions();
-  useKeyboardHandler(
-    {
-      onStart: (e) => {
-        'worklet';
-        console.log(
-          '[keyboard-probe] onStart height=' +
-            e.height +
-            ' windowHeight=' +
-            keyboardProbeWindowHeight
-        );
-      },
-    },
-    [keyboardProbeWindowHeight]
-  );
+  // El offset que el `KeyboardAvoidingView` de abajo no sabe calcular solo: la
+  // distancia entre el borde de la ventana y el de esta vista (barra de estado
+  // + cabecera nativa). Se deduce de su propia altura medida — ver
+  // `keyboardVerticalOffset` para por qué y para las cifras del emulador.
+  const { height: windowHeight } = useKeyboardWindowDimensions();
+  const [avoidingViewHeight, setAvoidingViewHeight] = useState(0);
+  const handleAvoidingViewLayout = useCallback((event: LayoutChangeEvent) => {
+    const { height } = event.nativeEvent.layout;
+    // `onLayout` puede repetirse con la misma altura; sin esta guarda cada
+    // repetición sería un render de más.
+    setAvoidingViewHeight((previous) => (previous === height ? previous : height));
+  }, []);
 
   const handleSend = async () => {
     const sent = await send(draft);
@@ -101,22 +99,31 @@ export default function ChatScreen() {
         (comprobado en emulador: falla igual con `height` que con `padding`).
         El de la librería lee los WindowInsets del IME, que sí llegan.
 
-        `automaticOffset` no es un extra: sin él, `frame` sale del `onLayout`, y
-        `onLayout` da coordenadas RELATIVAS AL PADRE. El componente compara
-        `frame.y + frame.height` contra `screenHeight - alturaTeclado`, donde
-        `screenHeight` sí es la ventana entera (`Dimensions.get('window')`). Con
+        `keyboardVerticalOffset` tampoco es un extra: sin él, `frame` sale del
+        `onLayout`, y `onLayout` da coordenadas RELATIVAS AL PADRE. El
+        componente compara `frame.y + frame.height` contra `screenHeight -
+        alturaTeclado`, donde `screenHeight` sí es la ventana entera. Con
         `frame.y = 0` bajo una cabecera nativa, el relleno sale corto justo por
-        la altura de barra de estado + cabecera (~80 dp aquí), que es más que el
-        compositor entero. Con `automaticOffset` la posición se pide al nativo
-        (`viewPositionInWindow`) y `keyboardVerticalOffset` pasa a ser aditivo,
-        por eso ya no hace falta el que se pasaba a mano en iOS.
+        la altura de barra de estado + cabecera, que es más que el compositor
+        entero.
+
+        `automaticOffset` promete arreglar eso pidiendo la posición absoluta al
+        nativo, pero aquí NO se aplica: su `.catch` se traga el fallo en
+        silencio y vuelve a la posición relativa. Con él puesto, el relleno
+        medido en emulador fue exactamente el de `frame.y = 0`. Por eso va el
+        offset a mano, y por eso `automaticOffset` NO puede volver: los dos
+        juntos cuentan la misma distancia dos veces.
 
         Dejaba el compositor entero debajo del teclado: no se veía lo escrito ni
         había forma de enviar — `returnKeyType` es `default` a propósito, por ser
         multilínea. Lo encontró el E2E en emulador real y es su guardián; ver
         `docs/plan/todo/chat.md`.
       */}
-      <KeyboardAvoidingView style={styles.root} behavior="padding" automaticOffset>
+      <KeyboardAvoidingView
+        style={styles.root}
+        behavior="padding"
+        keyboardVerticalOffset={keyboardVerticalOffset(windowHeight, avoidingViewHeight)}
+        onLayout={handleAvoidingViewLayout}>
         {loading && !match ? (
           <Centered>
             <ThemedText type="body" themeColor="textSecondary">
