@@ -1,24 +1,39 @@
 // Linux/macOS runner. Backend state stays in e2e/.runtime; the app uses OS temp.
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash, randomUUID } from 'node:crypto';
 import { tmpdir } from 'node:os';
-import { verifyPersistence } from './verify.mjs';
+import { verifyAbsence, verifyPersistence } from './verify.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const runtime = join(root, 'e2e/.runtime');
+// Control negativo: mismo caso, mismo backend levantado y mismo `adb reverse`.
+// Lo único que cambia es que el APK se compila SIN credenciales, así que
+// active.ts elige el mock en memoria y el recorrido debe romperse al reiniciar.
+// Si algún día pasara en verde, el caso positivo no estaría probando Supabase.
+const negative = process.env.E2E_NEGATIVE_CONTROL === '1';
+const variant = negative ? 'mock' : 'supabase';
 // Expo ignores tsconfig aliases for any source path containing /node_modules/.
 // Keep the disposable app outside that path AND outside the checkout's TS glob.
 const appParent = resolve(tmpdir());
 const app = join(
   appParent,
-  'lockin-e2e-' + createHash('sha256').update(root).digest('hex').slice(0, 16)
+  'lockin-e2e-' + variant + '-' + createHash('sha256').update(root).digest('hex').slice(0, 16)
 );
 assert(!app.split(/[\\/]/).includes('node_modules'), 'TEMP no puede estar dentro de node_modules');
-const artifacts = join(root, 'e2e/artifacts');
+// Cada variante guarda su evidencia aparte: ninguna pisa las capturas de la otra.
+const artifacts = join(root, 'e2e/artifacts', variant);
 const command = process.argv[2];
 assert(
   ['prepare', 'build', 'test', 'stop'].includes(command),
@@ -54,14 +69,39 @@ function buildEnv(status) {
   for (const key of Object.keys(env)) {
     if (/SUPABASE|^EXPO_PUBLIC_/.test(key)) delete env[key];
   }
+  const base = { ...env, CI: '1', EXPO_NO_DOTENV: '1', EXPO_NO_TELEMETRY: '1' };
+  // El control negativo se queda aquí: sin estas dos variables el bundle no
+  // lleva credenciales y `hasSupabaseCredentials` es falso dentro del APK.
+  if (negative) return base;
   return {
-    ...env,
-    CI: '1',
-    EXPO_NO_DOTENV: '1',
-    EXPO_NO_TELEMETRY: '1',
+    ...base,
     EXPO_PUBLIC_SUPABASE_URL: status.API_URL,
     EXPO_PUBLIC_SUPABASE_ANON_KEY: status.ANON_KEY,
   };
+}
+
+/**
+ * Primer comando fallido del recorrido, leído del volcado de Maestro.
+ * `maestro.xml` solo trae un mensaje; commands.json trae el orden y el estado
+ * de cada paso, que es lo que permite decir DÓNDE se rompió.
+ */
+function firstFailure() {
+  const dumps = [];
+  for (const entry of readdirSync(artifacts, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const file = join(artifacts, entry.name, 'commands.json');
+    if (existsSync(file)) dumps.push(file);
+  }
+  assert.equal(dumps.length, 1, 'Se esperaba un único volcado de comandos de Maestro');
+  const commands = JSON.parse(readFileSync(dumps[0], 'utf8'));
+  // Maestro no es uniforme al nombrar las claves (`launchAppCommand`, pero
+  // `tapOnElement`), así que se busca por prefijo en vez de por nombre exacto.
+  const stopApp = commands.findIndex((entry) =>
+    Object.keys(entry.command).some((key) => /^stopApp/i.test(key))
+  );
+  assert(stopApp > 0, 'El caso ya no reinicia la app: el control negativo perdería su sentido');
+  const failed = commands.findIndex((entry) => entry.metadata?.status === 'FAILED');
+  return { stopApp, failed, commands };
 }
 
 if (command === 'prepare') {
@@ -116,6 +156,11 @@ if (command === 'build') {
     if (existsSync(join(root, entry))) cpSync(join(root, entry), join(app, entry));
   }
   const env = buildEnv(status);
+  assert.equal(
+    negative,
+    !('EXPO_PUBLIC_SUPABASE_URL' in env) && !('EXPO_PUBLIC_SUPABASE_ANON_KEY' in env),
+    'La variante y las credenciales del build no concuerdan'
+  );
   run('npm', ['ci'], { cwd: app, env });
   run('npx', ['expo', 'prebuild', '--platform', 'android', '--no-install'], { cwd: app, env });
   // Release APK with embedded JS; allow HTTP ONLY in this disposable native build.
@@ -136,47 +181,88 @@ if (command === 'build') {
     { cwd: join(app, 'android'), env }
   );
   writeFileSync(
-    join(runtime, 'build-backend.json'),
-    JSON.stringify({ url: status.API_URL, anonKey: status.ANON_KEY })
+    join(runtime, 'build-backend-' + variant + '.json'),
+    JSON.stringify(
+      negative ? { variant } : { variant, url: status.API_URL, anonKey: status.ANON_KEY }
+    )
   );
 }
 
 if (command === 'test') {
   const status = localBackend();
   assert.deepEqual(
-    JSON.parse(readFileSync(join(runtime, 'build-backend.json'), 'utf8')),
-    { url: status.API_URL, anonKey: status.ANON_KEY },
+    JSON.parse(readFileSync(join(runtime, 'build-backend-' + variant + '.json'), 'utf8')),
+    negative ? { variant } : { variant, url: status.API_URL, anonKey: status.ANON_KEY },
     'Reconstruir APK: backend distinto'
   );
   mkdirSync(artifacts, { recursive: true });
   const runId = randomUUID();
   const profileName = 'E2E-' + runId;
   const message = 'Mensaje E2E ' + runId;
+  // El `adb reverse` se mantiene también en el control negativo: la única
+  // variable que cambia entre las dos ejecuciones son las credenciales del APK.
   run('adb', ['reverse', 'tcp:54321', 'tcp:54321']);
   run('adb', ['install', '-r', join(app, 'android/app/build/outputs/apk/release/app-release.apk')]);
+  const maestro = [
+    'test',
+    '--format',
+    'junit',
+    '--output',
+    join(artifacts, 'maestro.xml'),
+    '--debug-output',
+    artifacts,
+    '--test-output-dir',
+    artifacts,
+    '--flatten-debug-output',
+    '-e',
+    'PROFILE_NAME=' + profileName,
+    '-e',
+    'MESSAGE=' + message,
+    join(root, 'e2e/full-journey.yaml'),
+  ];
   try {
-    run('maestro', [
-      'test',
-      '--format',
-      'junit',
-      '--output',
-      join(artifacts, 'maestro.xml'),
-      '--debug-output',
-      artifacts,
-      '--test-output-dir',
-      artifacts,
-      '--flatten-debug-output',
-      '-e',
-      'PROFILE_NAME=' + profileName,
-      '-e',
-      'MESSAGE=' + message,
-      join(root, 'e2e/full-journey.yaml'),
-    ]);
-    await verifyPersistence(status, profileName, message);
-    writeFileSync(
-      join(artifacts, 'postgres.json'),
-      JSON.stringify({ runId, persistence: 'verified' }, null, 2)
-    );
+    if (negative) {
+      const result = spawnSync('maestro', maestro, { cwd: root, stdio: 'inherit' });
+      if (result.error) throw result.error;
+      assert.notEqual(
+        result.status,
+        0,
+        'El recorrido pasó con el mock: el caso positivo no prueba Supabase'
+      );
+      const { stopApp, failed, commands } = firstFailure();
+      assert(failed >= 0, 'Maestro devolvió error sin marcar ningún comando como fallido');
+      assert(
+        failed > stopApp,
+        'El mock falló ANTES del reinicio (paso ' +
+          failed +
+          ' de ' +
+          commands.length +
+          '); el control solo vale si lo que rompe es la persistencia'
+      );
+      await verifyAbsence(status, profileName, message);
+      writeFileSync(
+        join(artifacts, 'postgres.json'),
+        JSON.stringify(
+          {
+            runId,
+            variant,
+            control: 'negativo',
+            failedCommand: failed,
+            stopAppCommand: stopApp,
+            persistence: 'ausente, como se esperaba',
+          },
+          null,
+          2
+        )
+      );
+    } else {
+      run('maestro', maestro);
+      await verifyPersistence(status, profileName, message);
+      writeFileSync(
+        join(artifacts, 'postgres.json'),
+        JSON.stringify({ runId, variant, persistence: 'verified' }, null, 2)
+      );
+    }
   } finally {
     const logs = spawnSync('adb', ['logcat', '-d'], {
       encoding: 'utf8',

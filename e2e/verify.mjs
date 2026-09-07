@@ -42,3 +42,30 @@ export async function verifyPersistence(status, profileName, message) {
   assert(match.last_message_at, 'El trigger debe actualizar la actividad del match');
   console.log('Postgres: alta, perfil, modo, like, match y mensaje verificados.');
 }
+
+/**
+ * Oráculo del control negativo: el APK sin credenciales no debe haber escrito
+ * NADA en Postgres.
+ *
+ * Comprueba primero que la base sí responde y sí tiene el seed. Sin eso, una
+ * base caída o vacía daría "ausencia" y el control pasaría por el motivo
+ * equivocado — que es justo el fallo que este control existe para detectar.
+ */
+export async function verifyAbsence(status, profileName, message) {
+  assert.equal(status.API_URL, 'http://127.0.0.1:54321');
+  const client = createClient(status.API_URL, status.SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  async function count(table, column, value) {
+    let query = client.from(table).select('*', { count: 'exact', head: true });
+    if (column) query = query.eq(column, value);
+    const { count: total, error } = await query;
+    assert.ifError(error);
+    return total;
+  }
+  const seeded = await count('profiles');
+  assert(seeded > 0, 'La base no responde o no tiene seed: la ausencia no probaría nada');
+  assert.equal(await count('profiles', 'name', profileName), 0, 'El mock no debe crear el perfil');
+  assert.equal(await count('messages', 'body', message), 0, 'El mock no debe crear el mensaje');
+  console.log('Postgres: el APK sin credenciales no ha escrito perfil ni mensaje.');
+}

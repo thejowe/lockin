@@ -414,9 +414,16 @@ Worktree `../lockin-codex-calidad`, actualizado con `git fetch` y
       artefactos de Maestro/logcat y parada del backend incluso al fallar.
 - [x] Documentar comandos, requisitos, aislamiento, fuentes y limitaciones en
       `e2e/README.md`.
-- [ ] Confirmar primer recorrido completo verde en emulador y guardar su evidencia.
-- [ ] Ejecutar control negativo con APK sin credenciales y confirmar que falla
-      al intentar recuperar el estado tras el reinicio.
+- [x] Ejecutar el workflow en Actions y revisar su primer resultado real
+      (build, KVM, emulador y Maestro conduciendo la app: ver séptima pasada).
+- [x] Montar el control negativo con APK sin credenciales: variante del runner,
+      oráculo invertido y matriz en el workflow.
+- [ ] Confirmar primer recorrido completo verde en emulador y guardar su
+      evidencia. **Bloqueado** por el bug de `chat` (compositor bajo el teclado
+      en Android 15+), reportado en `docs/plan/todo/chat.md`.
+- [ ] Confirmar que el control negativo falla **después** del reinicio.
+      **Bloqueado por lo mismo**: hoy el APK con mock se rompe antes de llegar
+      al reinicio, en ese mismo paso, y el propio control lo dice y lo rechaza.
 
 ### Alcance y viabilidad
 
@@ -529,3 +536,97 @@ revisado: JUnit, logcat, build y fases; no hay crash JS/nativo de la app registr
 Faltan captura y árbol: `--debug-output` no configura el destino de capturas en
 Maestro 2.10; requiere `--test-output-dir`. Se añaden ambos flags y captura/árbol
 por ADB independiente. No se cambian selectores ni esperas sin ver esa evidencia.
+## Séptima pasada: el E2E se ejecuta de verdad (2026-09-07)
+
+Se fusionó `codex/calidad` y se subió la rama. Corrección al contexto con el que
+se abrió esta sesión: el workflow **sí se había ejecutado ya en Actions** — tres
+veces antes de esta pasada. Esta sesión revisa esos resultados y los dos que se
+lanzaron después.
+
+### Lo que las ejecuciones reales demuestran
+
+| Run | Commit | Hasta dónde llega |
+|---|---|---|
+| [34069732039](https://github.com/thejowe/lockin/actions/runs/34069732039) | 89a8fb2 | Supabase levanta; el bundle Android falla por los alias `@/`. Cero artefactos. |
+| [34070646301](https://github.com/thejowe/lockin/actions/runs/34070646301) | 0f9be5b | `BUILD SUCCESSFUL in 8m 44s`, KVM arranca el AVD (`Boot completed in 77441 ms`), Maestro conduce la app. Falla en el primer paso por arranque en frío. |
+| [34115169719](https://github.com/thejowe/lockin/actions/runs/34115169719) | b77b9d7 | **38 de 48 comandos COMPLETED** contra Supabase local real. Falla en `tapOn "Enviar mensaje"`. |
+
+La tercera es la que importa. Sin tocar el caso, el mismo primer paso que había
+fallado pasa — con lo que aquello queda identificado como arranque en frío del
+emulador y no como un selector equivocado. Y a partir de ahí el recorrido
+completo se ejecuta sobre la app real: alta anónima automática, selección de
+modo, el formulario entero con sus scrolls, `Crear perfil`, deck, `Like`,
+`¡Match!`, `Abrir chat` y el mensaje escrito en el compositor.
+
+Es decir: la viabilidad del emulador en Actions ya no es una cita de
+documentación. KVM funciona, el APK release se compila e instala, Maestro
+maneja la interfaz de React Native y la app habla con Supabase local por
+`adb reverse`.
+
+### Por qué las dos casillas siguen abiertas
+
+`tapOn "Enviar mensaje"` → `Element not found`. La captura y el volcado de
+jerarquía del paso 038 dicen exactamente por qué: con el teclado abierto la
+ventana no se redimensiona y el compositor entero desaparece del árbol de
+accesibilidad. Es Android 15+ con edge-to-edge, donde `adjustResize` ya no
+redimensiona, contra `behavior="height"` en `src/app/chat/[matchId].tsx:82`.
+
+Es un defecto de producto del bloque `chat`, no del caso E2E. Está reportado en
+`docs/plan/todo/chat.md` con la evidencia y dos caminos de arreglo. Aquí no se
+toca su código —regla de alcance— y **tampoco se esquiva**: bastaría con mover
+el `hideKeyboard` delante del envío para dejar el workflow en verde, y sería
+declarar bueno un recorrido que un usuario real no puede completar.
+
+Dicho de otro modo: el E2E no ha fallado. Ha encontrado un bug real que 313
+tests unitarios no podían encontrar, que es exactamente para lo que se montó.
+
+### Control negativo: montado, pendiente de poder ejecutarse
+
+`E2E_NEGATIVE_CONTROL=1` compila el APK **sin** `EXPO_PUBLIC_SUPABASE_*`, con lo
+que `src/data/active.ts` elige el mock en memoria. Todo lo demás es idéntico —
+mismo Supabase levantado, mismo `adb reverse`, mismo `full-journey.yaml`—, así
+que la única variable entre las dos ejecuciones son las credenciales del bundle.
+
+En esa variante el runner invierte el criterio y exige tres cosas:
+
+1. Maestro termina con error.
+2. El primer comando fallido está **después** del `stopApp`, leído de
+   `commands.json` (`maestro.xml` solo trae un mensaje; el volcado trae el orden
+   y el estado de cada paso). Si el mock se rompiese antes, el control no
+   probaría que lo que falta es la persistencia — y el runner lo rechaza
+   diciendo en qué paso se rompió.
+3. Postgres no tiene ni el perfil ni el mensaje de esa ejecución, comprobando
+   antes que la base responde y tiene seed: una base caída daría "ausencia" y
+   pasaría por el motivo equivocado.
+
+Ese punto 2 es justo el que hoy no se puede satisfacer: con el bug del
+compositor, el APK con mock se rompe en el mismo paso 38, antes del reinicio.
+El control funciona —detecta y nombra la situación— pero no puede dar por
+válida la prueba todavía.
+
+Las dos variantes corren como matriz en el mismo workflow, con
+`fail-fast: false` y artefactos separados (`e2e-android-supabase`,
+`e2e-android-mock`). El negativo corre en cada push, no a mano: si algún día
+pasara en verde, el caso positivo habría dejado de probar Supabase.
+
+### Cambios de esta pasada
+
+- `e2e/run.mjs` — variante `supabase`/`mock` por `E2E_NEGATIVE_CONTROL`,
+  directorio de build y de evidencia separados por variante, `build-backend`
+  por variante, y el criterio invertido con `firstFailure()` leyendo
+  `commands.json`.
+- `e2e/verify.mjs` — `verifyAbsence()`, el oráculo del control negativo.
+- `.github/workflows/e2e.yml` — matriz de dos variantes con artefactos propios.
+- `e2e/README.md` — control negativo y diagnóstico de las ejecuciones reales.
+- `docs/plan/todo/chat.md` — el bug reportado con su evidencia.
+
+### Verificación de esta pasada
+
+- `npm run lint` — limpio.
+- `npm run typecheck` — limpio.
+- `npx prettier --check` sobre `e2e/run.mjs` y `e2e/verify.mjs` — limpio.
+- `node e2e/run.mjs badcmd` y la importación de `verify.mjs` — ambos módulos
+  parsean y ejecutan; el workflow parsea como YAML con la matriz esperada.
+- **No ejecutado en esta máquina**: build Android, Maestro y emulador. Sigue sin
+  Android SDK, Java, Maestro ni Docker. La validación es Actions, y por eso lo
+  que se afirma arriba son números leídos de sus logs y artefactos, no de aquí.

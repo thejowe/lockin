@@ -43,3 +43,45 @@ en la conversación. Estado vacío y `matchId` inexistente, también.
 - Hidratación: el render estático de web lanza `React error #418` (desajuste de
   texto entre servidor y cliente) en **todas** las rutas, incluida `/+not-found`.
   No viene de ninguna pantalla concreta.
+
+## Bug abierto, reportado por `calidad` (2026-09-07)
+
+- [ ] **El compositor queda debajo del teclado en Android.** Con el teclado
+      abierto, `MessageComposer` entero — el `TextInput` y el botón `Enviar
+      mensaje` — desaparece de la pantalla y del árbol de accesibilidad. No se
+      ve lo que se escribe y no hay forma de enviar: `returnKeyType` es
+      `default` a propósito (multilínea), así que tampoco vale la tecla Intro.
+      En la práctica, en Android no se puede mandar un mensaje.
+
+**Dónde**: `src/app/chat/[matchId].tsx:80-83`,
+`behavior={Platform.OS === 'ios' ? 'padding' : 'height'}`.
+
+**Por qué**: la rama de Android depende de que la ventana se redimensione
+(`adjustResize`). Con edge-to-edge —el modo por defecto en Expo 57— Android 15+
+(API 35+) ya no redimensiona la ventana de la app al abrir el teclado, así que
+`behavior="height"` no mueve nada. Es un cambio de plataforma, no una regresión
+del código: en iOS la rama `padding` sigue funcionando.
+
+**Evidencia** — no es una lectura de código, es un emulador API 36 real:
+[run 34115169719](https://github.com/thejowe/lockin/actions/runs/34115169719),
+artefacto `e2e-android`, paso `038-tapOnElement-Enviar_mensaje`. La captura
+muestra la conversación con el teclado encima; el volcado de jerarquía del
+mismo paso no contiene ningún nodo del compositor. Los 37 comandos anteriores
+del recorrido (alta anónima, perfil, deck, like, match, abrir chat, escribir el
+mensaje) pasan contra Supabase real.
+
+**Qué desbloquea**: es lo único que impide cerrar las dos últimas casillas de
+`docs/plan/todo/calidad.md` (recorrido completo verde y control negativo). El
+E2E no se ha modificado para esquivarlo: meter un `hideKeyboard` antes de
+pulsar `Enviar mensaje` lo dejaría verde sobre una pantalla que un usuario real
+no puede usar.
+
+**Camino sugerido** (decisión de este bloque, no de `calidad`): Expo 57
+documenta `react-native-keyboard-controller` como la vía con comportamiento
+igual en Android e iOS bajo edge-to-edge
+(https://docs.expo.dev/versions/v57.0.0/sdk/keyboard-controller/). Si se
+prefiere no añadir dependencia, la alternativa dentro de React Native es usar
+`behavior="padding"` también en Android, que aplica relleno con la altura que
+llega en el evento de teclado en vez de esperar a que la ventana se
+redimensione. Sea cual sea la elección, la comprobación es relanzar el workflow
+`E2E Android`: llega hasta ese paso en unos 25 minutos.

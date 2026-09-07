@@ -13,11 +13,28 @@ concurrency:
 
 jobs:
   android:
+    # Dos ejecuciones del MISMO caso sobre el mismo backend levantado y el mismo
+    # `adb reverse`. Lo único que cambia es si el APK lleva credenciales:
+    #   supabase → debe pasar entero y dejar las filas en Postgres.
+    #   mock     → debe fallar DESPUÉS del reinicio y no escribir nada.
+    # Si el control negativo pasara en verde, el caso positivo no estaría
+    # probando la integración; por eso corre en cada push, no solo a mano.
+    name: E2E Android (${{ matrix.variant }})
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: supabase
+            negative: '0'
+          - variant: mock
+            negative: '1'
     env:
       CI: '1'
       EXPO_NO_TELEMETRY: '1'
+      E2E_NEGATIVE_CONTROL: ${{ matrix.negative }}
+      E2E_ARTIFACTS: e2e/artifacts/${{ matrix.variant }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -40,14 +57,14 @@ jobs:
           echo "$HOME/.maestro/maestro/bin" >> "$GITHUB_PATH"
       - run: npm ci
       - name: Preparar evidencias
-        run: mkdir -p e2e/artifacts
+        run: mkdir -p "$E2E_ARTIFACTS"
       - name: Supabase desechable con migraciones reales
         id: backend
         run: node e2e/run.mjs prepare
-      - name: Build release con JS y credenciales locales embebidos
+      - name: Build release del APK (${{ matrix.variant }})
         id: build
         shell: bash
-        run: node e2e/run.mjs build 2>&1 | tee e2e/artifacts/build.log
+        run: node e2e/run.mjs build 2>&1 | tee "$E2E_ARTIFACTS/build.log"
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -69,14 +86,14 @@ jobs:
         env:
           PHASES: ${{ toJSON(steps) }}
         run: |
-          mkdir -p e2e/artifacts
-          printf '%s\n' "$PHASES" > e2e/artifacts/phases.json
-          df -h > e2e/artifacts/disk.txt
+          mkdir -p "$E2E_ARTIFACTS"
+          printf '%s\n' "$PHASES" > "$E2E_ARTIFACTS/phases.json"
+          df -h > "$E2E_ARTIFACTS/disk.txt"
       - name: Evidencia (también si falla)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-android
+          name: e2e-android-${{ matrix.variant }}
           path: e2e/artifacts/
           if-no-files-found: warn
           retention-days: 7

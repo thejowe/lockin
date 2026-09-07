@@ -1,7 +1,9 @@
 # E2E Android — Maestro + Supabase local
 
 Caso: `full-journey.yaml`. Runner: `node e2e/run.mjs <fase>`.
-Estado: primer CI revisado; falló el bundle Android antes del emulador. **Recorrido verde pendiente**.
+Estado: build, emulador y 38 de los 48 pasos del recorrido verificados en
+Actions contra Supabase real. **Bloqueado por un defecto de producto en `chat`**
+(el compositor queda bajo el teclado en Android 15+); detalle al final.
 No se declara un E2E verde por validar YAML, ni por pasar Jest.
 
 ## Qué demuestra
@@ -38,7 +40,7 @@ Cada ejecución usa un nombre y mensaje con UUID. La base completa es desechable
 No usar las credenciales de staging ni ejecutar la fixture allí. Se rechaza toda
 URL diferente de `http://127.0.0.1:54321`.
 
-`build` copia la app a `<temporal del sistema>/lockin-e2e-<hash del checkout>`, instala su lockfile y genera allí el
+`build` copia la app a `<temporal del sistema>/lockin-e2e-<variante>-<hash del checkout>`, instala su lockfile y genera allí el
 proyecto Android. Así `expo prebuild` no reescribe package.json ni archivos
 nativos del checkout. El release APK incluye JS y las dos variables públicas
 del backend local, sin Metro ni Expo Go. La copia nativa admite HTTP local;
@@ -73,9 +75,41 @@ El runner rechaza reutilizar un directorio de preparación/build para evitar
 mezclar migraciones o APK antiguos. Por defecto compila x86_64; con emulador
 ARM64 en macOS usar `E2E_ANDROID_ARCH=arm64-v8a node e2e/run.mjs build`.
 
-Evidencia en `e2e/artifacts`: JUnit, diagnóstico/capturas de Maestro, logcat
-y `postgres.json` solo si todas las verificaciones pasan. Ningún archivo con
-las claves del backend forma parte del artefacto que sube CI.
+Evidencia en `e2e/artifacts/<variante>`: JUnit, diagnóstico/capturas de Maestro,
+logcat, `screen.png`/`window.xml` tomados por `adb` y `postgres.json` solo si
+todas las verificaciones pasan. Ningún archivo con las claves del backend forma
+parte del artefacto que sube CI.
+
+## Control negativo: el mismo caso con un APK sin credenciales
+
+`E2E_NEGATIVE_CONTROL=1` compila el APK **sin** `EXPO_PUBLIC_SUPABASE_*`, así que
+`src/data/active.ts` elige el mock en memoria. Todo lo demás es idéntico: el
+mismo Supabase levantado, el mismo `adb reverse` y el mismo `full-journey.yaml`.
+La única variable que cambia son las credenciales del bundle.
+
+En esa variante el runner invierte el criterio y exige tres cosas:
+
+1. Maestro termina con error.
+2. El primer comando fallido está **después** del `stopApp`, leído de
+   `commands.json`. Si el mock se rompiera antes, el control no probaría que lo
+   que falta es la persistencia, y el runner lo rechaza diciéndolo.
+3. Postgres no tiene ni el perfil ni el mensaje de esa ejecución — comprobando
+   primero que la base responde y tiene seed, para que una base caída no se
+   confunda con una ausencia legítima.
+
+Las dos variantes corren como una matriz en el mismo workflow, con
+`fail-fast: false` y artefactos separados (`e2e-android-supabase` y
+`e2e-android-mock`). El control negativo corre en cada push, no solo a mano: si
+algún día pasara en verde, el caso positivo habría dejado de probar Supabase y
+hay que enterarse ese día.
+
+```sh
+# En local, secuencialmente: cada variante necesita su propio prepare/stop.
+E2E_NEGATIVE_CONTROL=1 node e2e/run.mjs prepare
+E2E_NEGATIVE_CONTROL=1 node e2e/run.mjs build
+E2E_NEGATIVE_CONTROL=1 node e2e/run.mjs test
+E2E_NEGATIVE_CONTROL=1 node e2e/run.mjs stop
+```
 
 ## GitHub Actions: viable y activo
 
@@ -86,12 +120,9 @@ evidencia incluso al fallar y detiene Supabase con `if: always()`.
 Tiene límite de 60 minutos y cancela ejecuciones anteriores de la rama.
 Jest/contrato remoto permanecen separados y el suelo de cobertura no cambia.
 
-El soporte de KVM permite intentar este job, pero la primera ejecución falló
-antes del emulador (diagnóstico abajo). La corrección se valida en Actions:
-esta máquina no dispone de Android SDK, Java, Maestro ni Docker. Una fase de
-build verde aún no demuestra el recorrido de UI y persistencia.
-Conviene también ejecutar una vez un APK sin credenciales para comprobar que
-el caso falla después del reinicio (control negativo aún pendiente).
+El soporte de KVM se ha confirmado ejecutando: el AVD API 36 arranca en ~77 s y
+Maestro conduce la app real. Esta máquina no dispone de Android SDK, Java,
+Maestro ni Docker, así que toda corrección se valida en Actions.
 
 ## Decisión y fuentes consultadas
 
@@ -124,3 +155,29 @@ CI guarda `build.log`, `phases.json` (resultados de backend/build/journey) y
 que activa `pipefail`: `tee` no convierte un build fallido en verde.
 Los logs completos de preparación siguen en Actions; no se copian al artefacto
 porque Supabase imprime sus claves locales.
+## Diagnóstico de la segunda y tercera ejecución (2026-09-07 UTC)
+
+[Run 34070646301](https://github.com/thejowe/lockin/actions/runs/34070646301),
+commit 0f9be5b: el bundle ya resuelve los alias. `BUILD SUCCESSFUL in 8m 44s`,
+KVM levanta el AVD (`Boot completed in 77441 ms`) y Maestro arranca la app.
+Falló en el primer paso, `extendedWaitUntil "Cofundador"` (60 s), con la app
+viva y sin excepción en logcat: arranque en frío del emulador. El artefacto de
+ese run no traía capturas — `--debug-output` no las escribió — y por eso
+b77b9d7 añadió `--test-output-dir`, `--flatten-debug-output` y una captura
+propia por `adb`.
+
+[Run 34115169719](https://github.com/thejowe/lockin/actions/runs/34115169719),
+commit b77b9d7: el mismo paso pasa sin cambios en el caso, lo que confirma que
+aquello fue arranque en frío y no un selector equivocado. El recorrido llega a
+**38 de 48 comandos**, todos COMPLETED: alta anónima, modo, formulario entero
+con sus scrolls, `Crear perfil`, deck, `Like`, `¡Match!`, `Abrir chat` y el
+texto escrito en el compositor, contra Supabase local real.
+
+Falla en `tapOn "Enviar mensaje"`: `Element not found`. La captura y el volcado
+de jerarquía del paso 038 muestran por qué — con el teclado abierto, la ventana
+**no se redimensiona** y el compositor entero (`EditText "Mensaje"` y el botón
+`Enviar mensaje`) desaparece del árbol de accesibilidad. Es un defecto de
+producto del bloque `chat` en Android 15+ con edge-to-edge, no del caso E2E;
+está reportado en `docs/plan/todo/chat.md` con esa evidencia. No se corrige
+aquí ni se esquiva metiendo un `hideKeyboard` antes del envío: eso dejaría el
+E2E en verde sobre una pantalla que un usuario real no puede usar.
