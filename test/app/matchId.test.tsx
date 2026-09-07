@@ -241,6 +241,27 @@ describe('ChatScreen', () => {
       expect(message.senderId).toBe(CURRENT_USER_ID);
     });
 
+    it('la sonda temporal del compositor loguea la altura que reporta el teclado', async () => {
+      // Cubre `useKeyboardHandler(...)` en `[matchId].tsx`, añadido para
+      // diagnosticar la ronda 3 del arreglo del compositor (ver
+      // docs/plan/todo/chat.md). El mock oficial de `react-native-keyboard-controller`
+      // no invoca `onStart` por sí solo, así que se dispara a mano contra la
+      // última llamada registrada. Se retira junto con la sonda en cuanto ese
+      // TODO se cierre.
+      const { useKeyboardHandler } = jest.requireMock('react-native-keyboard-controller');
+      const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+      await seedMatch();
+
+      await renderRoute(<ChatScreen />);
+      await waitFor(() => expect(screen.getByLabelText('Mensaje')).toBeTruthy());
+
+      const [{ onStart }] = useKeyboardHandler.mock.calls.at(-1)!;
+      onStart({ height: 500 });
+
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('height=500'));
+      logSpy.mockRestore();
+    });
+
     // Que el compositor siga alcanzable con el teclado abierto NO se comprueba
     // aquí, y no por descuido: el fallo es que Android 15+ con edge-to-edge no
     // redimensiona la ventana, y eso Jest no lo reproduce —`measureInWindow`

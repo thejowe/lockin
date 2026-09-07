@@ -65,7 +65,10 @@ export default function ChatScreen() {
       onStart: (e) => {
         'worklet';
         console.log(
-          '[keyboard-probe] onStart height=' + e.height + ' windowHeight=' + keyboardProbeWindowHeight
+          '[keyboard-probe] onStart height=' +
+            e.height +
+            ' windowHeight=' +
+            keyboardProbeWindowHeight
         );
       },
     },

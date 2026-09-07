@@ -43,6 +43,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 // ninguno y `useSafeAreaInsets` lanza "No safe area value available". Este es el
 // mock oficial del paquete; devuelve insets a cero, que es justo lo que Jest no
 // puede medir de todos modos.
-jest.mock('react-native-safe-area-context', () =>
-  require('react-native-safe-area-context/jest/mock').default
+jest.mock(
+  'react-native-safe-area-context',
+  () => require('react-native-safe-area-context/jest/mock').default
 );

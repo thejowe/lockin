@@ -457,6 +457,80 @@ no se modifica la lista de archivos medida por cobertura.
   inexistente (306 pasaron). La repetición completa pasó en 41,6 s sin tocar
   timeout, test ni código de producto. Se conserva el antecedente de lentitud
   con caché fría documentado en pasadas anteriores.
+
+## Décima pasada: arreglar CI en rojo tras la novena (2026-09-07)
+
+Contexto de arranque: CI en rojo en `cfadf27` y `cea5712` — "Formato" fallando
+en `format:check`, y las 3 variantes de "E2E Android" (`probe`/`mock`/`supabase`)
+en "UI y persistencia real". Se pidió revisar primero el run
+[34144931734](https://github.com/thejowe/lockin/actions/runs/34144931734) para
+saber si la ronda 3 del compositor (`cfadf27`) ya pasaba.
+
+### Ronda 3 del compositor: sigue en rojo, y el reintento de la novena pasada acertó
+
+Las 3 variantes fallan en el mismo sitio que antes de `cfadf27`: `"Enviar
+mensaje"` no aparece (`Element not found` en `mock`/`supabase`, `Assertion is
+false` en `probe`). Las tres se clasificaron como fallo del **caso**, no del
+runner, y el paso de reintento (montado en la novena pasada) las dejó correr
+una sola vez cada una — exactamente la regla que se escribió: "repetirlo lo
+enmascararía". Es la primera confirmación en Actions de que esa clasificación
+distingue bien un fallo real de una caída de infraestructura. El arreglo del
+compositor sigue siendo trabajo de `chat` (ver su TODO); aquí no se toca.
+
+### "Formato" en rojo: dos archivos de otros bloques sin pasar por Prettier
+
+`npm run format:check -- --end-of-line auto` señalaba `jest.setup.js` (el mock
+de `react-native-safe-area-context` que añadió `cfadf27`) y
+`src/app/chat/[matchId].tsx` (la sonda de `console.log` que añadió `54359c6`).
+Los dos tenían una llamada con formato de argumento distinto al que exige
+Prettier — mismo patrón que el `.prettierrc` con `bracketSameLine` documentado
+arriba: quien no corre `npm run format` antes de comitar dijo formatos legibles
+pero distintos. `npx prettier --write` en ambos, sin tocar significado.
+
+### El suelo de cobertura bajaba 0,03-0,04 puntos: la sonda temporal no tenía test
+
+Con "Formato" ya arreglado, `npm run test:coverage` seguía en rojo:
+`statements 88.84 → 88.77`, `functions 89.81 → 89.53`, `lines 90.28 → 90.19`.
+La sonda de `54359c6` (`useKeyboardHandler(...)` en `[matchId].tsx`, explícita
+en su propio commit como temporal — "se retira en cuanto ese TODO se cierre")
+no tenía ningún test que disparara su `onStart`, y el mock oficial de
+`react-native-keyboard-controller` no lo invoca solo. Mismo criterio que en la
+novena pasada con `onContentSizeChange`: el suelo no se baja, se cubre lo que
+falta.
+
+Test nuevo en `test/app/matchId.test.tsx`: coge la última llamada registrada en
+el mock de `useKeyboardHandler` y dispara `onStart` a mano, comprobando que el
+`console.log` sale con la altura recibida. **Comprobado que no es un test
+vacío**: cambiar el texto logueado (`height=` → `altura=`) tumba la aserción.
+Se retira junto con la sonda cuando `chat` cierre esa ronda — anotado en el
+propio test para que no se quede huérfano.
+
+Suelo subido a los números exactos medidos: **88.87 / 80.24 / 89.84 / 90.31**
+(sentencias/ramas/funciones/líneas). Rama sin cambio: la sonda no añade ninguna.
+
+### Verificación de esta pasada
+
+- `npm run lint` — limpio.
+- `npm run typecheck` — limpio.
+- `npm run format:check -- --end-of-line auto` — limpio (antes: 2 archivos).
+- `npm run test:e2e` — 22/22.
+- `npm run test:coverage -- --ci --runInBand` — **315 tests en 29 suites**
+  pasan (25 del contrato remoto omitidos por opt-in), cobertura
+  88.87/80.24/89.84/90.31 cumpliendo el nuevo suelo. Dos ejecuciones previas de
+  esta misma pasada, con el suelo todavía viejo, dieron sendos timeouts de 5 s
+  en pruebas distintas (`swipe-deck` una vez, `profile-form` la otra) con caché
+  fría — mismo patrón de flake ya documentado en pasadas anteriores, no una
+  regresión: una tercera ejecución con caché caliente pasó completa sin tocar
+  nada.
+- `npx expo export --platform web` — 14 rutas, sin cambios.
+- **No ejecutado aquí**: build Android, Maestro y emulador. Su estado es el que
+  reportan las tres variantes del run 34144931734, leído con `gh run view`.
+
+### Qué queda abierto
+
+Las mismas dos casillas de la novena pasada, sin mover: recorrido completo
+verde y control negativo correcto, ambas bloqueadas por el compositor de
+`chat`. Nada de esta pasada las toca ni las esquiva.
 - Comprobado que el oráculo rechaza una URL remota antes de intentar conectar.
 - `git diff --check`: limpio.
 - **No ejecutados**: build Android, Maestro en emulador y workflow remoto,

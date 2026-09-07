@@ -41,6 +41,6 @@ module.exports = {
   // Se sube cuando la cobertura suba; no se bajan los umbrales ni se excluyen
   // archivos para dejar pasar un cambio. El contrato remoto sigue siendo opt-in.
   coverageThreshold: {
-    global: { statements: 88.84, branches: 80.24, functions: 89.81, lines: 90.28 },
+    global: { statements: 88.87, branches: 80.24, functions: 89.84, lines: 90.31 },
   },
 };
