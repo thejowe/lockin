@@ -30,7 +30,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { DeckActions } from './deck-actions';
 import { ProfileCard } from './profile-card';
 
-import type { Decision, Profile } from '@/data';
+import type { Decision, Profile, Specialty } from '@/data';
 
 /** Desplazamiento a partir del cual soltar cuenta como decisión. */
 const SWIPE_THRESHOLD = 110;
@@ -49,10 +49,13 @@ export const PAN_TEST_ID = 'swipe-deck-pan';
 export function SwipeDeck({
   profiles,
   onDecide,
+  viewerSpecialties,
 }: {
   profiles: Profile[];
   /** Se llama una vez por tarjeta, cuando la animación de salida termina. */
   onDecide: (profile: Profile, decision: Decision) => void;
+  /** Lo que domina quien swipea. Solo lo reenvía a la tarjeta, que lo resalta. */
+  viewerSpecialties?: Specialty[];
 }) {
   const theme = useTheme();
   const { width } = useWindowDimensions();
@@ -179,7 +182,7 @@ export function SwipeDeck({
                   styles.cardBehind,
                   { transform: [{ scale: 1 - depth * 0.04 }, { translateY: depth * 14 }] },
                 ]}>
-                <ProfileCard profile={profile} />
+                <ProfileCard profile={profile} viewerSpecialties={viewerSpecialties} />
               </View>
             );
           }
@@ -187,7 +190,7 @@ export function SwipeDeck({
           return (
             <GestureDetector key={profile.id} gesture={pan}>
               <Animated.View style={[styles.card, cardStyle]}>
-                <ProfileCard profile={profile} />
+                <ProfileCard profile={profile} viewerSpecialties={viewerSpecialties} />
 
                 <Animated.View
                   style={[

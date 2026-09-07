@@ -18,10 +18,15 @@ import { MatchModal } from './match-modal';
 
 import type { MatchEvent } from './use-deck';
 
+import type { Specialty } from '@/data';
+
 const PROFILE = buildProfile({
   id: 'them',
   name: 'Núria Bosch',
   avatar: { initials: 'NB', accent: 'teal' },
+  lookingFor: 'par',
+  specialties: ['dev'],
+  seekingSpecialties: ['marketing', 'ventas'],
 });
 
 function buildEvent(overrides: Partial<MatchEvent['match']> = {}): MatchEvent {
@@ -38,13 +43,20 @@ function buildEvent(overrides: Partial<MatchEvent['match']> = {}): MatchEvent {
   };
 }
 
-function setup(event: MatchEvent | null) {
+function setup(event: MatchEvent | null, viewerSpecialties: Specialty[] = []) {
   const onOpenChat = jest.fn();
   const onDismiss = jest.fn();
   return {
     onOpenChat,
     onDismiss,
-    ui: <MatchModal event={event} onOpenChat={onOpenChat} onDismiss={onDismiss} />,
+    ui: (
+      <MatchModal
+        event={event}
+        onOpenChat={onOpenChat}
+        onDismiss={onDismiss}
+        viewerSpecialties={viewerSpecialties}
+      />
+    ),
   };
 }
 
@@ -99,6 +111,20 @@ describe('MatchModal', () => {
 
       expect(onDismiss).toHaveBeenCalledTimes(1);
       expect(onOpenChat).not.toHaveBeenCalled();
+    });
+
+    it('nombra el encaje cuando la otra persona busca lo que uno domina', async () => {
+      const { ui } = setup(buildEvent(), ['marketing', 'ventas']);
+      await render(ui);
+
+      expect(screen.getByText(/busca justo lo que tú dominas: Marketing y Ventas/)).toBeTruthy();
+    });
+
+    it('sin encaje no dice nada: el match no se adorna con algo que no hay', async () => {
+      const { ui } = setup(buildEvent(), ['legal']);
+      await render(ui);
+
+      expect(screen.queryByText(/busca justo lo que tú dominas/)).toBeNull();
     });
 
     it('el botón atrás de Android cierra el modal, no la pantalla de debajo', async () => {

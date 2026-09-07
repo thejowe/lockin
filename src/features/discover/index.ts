@@ -7,6 +7,7 @@
 
 export { ActionButton } from './action-button';
 export { Chip, type ChipTone } from './chip';
+export { complementWith } from './complement';
 export { DeckActions } from './deck-actions';
 export { DeckEmpty } from './deck-empty';
 export { MatchModal } from './match-modal';

@@ -7,6 +7,11 @@
  * El filtro arranca en el modo elegido en el onboarding y se puede cambiar sin
  * salir de aquí; mientras la sesión se resuelve el deck se lee sin filtrar, que
  * es lo mismo que hace la capa de datos por debajo.
+ *
+ * También lee el perfil propio, y solo por una cosa: qué domina uno, para que
+ * la tarjeta pueda resaltar el encaje con lo que la otra persona busca. Es una
+ * señal para quien decide, no un filtro — el deck y el match no la miran (ver
+ * `features/discover/complement.ts`).
  */
 
 import { useRouter } from 'expo-router';
@@ -27,7 +32,10 @@ import {
 } from '@/features/discover';
 import { useTheme } from '@/hooks/use-theme';
 
-import type { ModePreference } from '@/data';
+import type { ModePreference, Specialty } from '@/data';
+
+/** Constante para no crear un array nuevo en cada render mientras no hay perfil. */
+const EMPTY_SPECIALTIES: Specialty[] = [];
 
 export default function DiscoverScreen() {
   const theme = useTheme();
@@ -35,6 +43,9 @@ export default function DiscoverScreen() {
   const repositories = useRepositories();
 
   const { data: session } = useQuery('session:discover', () => repositories.session.get());
+  const { data: viewer } = useQuery('profile:discover', () => repositories.profiles.getCurrent());
+  /** Vacío mientras el perfil carga: la tarjeta simplemente no resalta nada. */
+  const viewerSpecialties = viewer?.specialties ?? EMPTY_SPECIALTIES;
   /** Modo elegido en esta pantalla; `null` mientras mande el del onboarding. */
   const [override, setOverride] = useState<ModePreference | null>(null);
   const mode: ModePreference = override ?? session?.activeMode ?? 'ambos';
@@ -77,7 +88,7 @@ export default function DiscoverScreen() {
                 <ActionButton label="Reintentar" onPress={refresh} />
               </Centered>
             ) : cards && cards.length > 0 ? (
-              <SwipeDeck profiles={cards} onDecide={decide} />
+              <SwipeDeck profiles={cards} onDecide={decide} viewerSpecialties={viewerSpecialties} />
             ) : (
               <DeckEmpty
                 mode={mode}
@@ -95,7 +106,12 @@ export default function DiscoverScreen() {
         </View>
       </SafeAreaView>
 
-      <MatchModal event={match} onOpenChat={openChat} onDismiss={dismissMatch} />
+      <MatchModal
+        event={match}
+        onOpenChat={openChat}
+        onDismiss={dismissMatch}
+        viewerSpecialties={viewerSpecialties}
+      />
     </View>
   );
 }

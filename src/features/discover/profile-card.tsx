@@ -2,8 +2,13 @@
  * Tarjeta de perfil del deck.
  *
  * Presentacional: no sabe nada del gesto ni de la capa de datos. El orden de
- * lectura es deliberado — primero quién es, luego qué busca y con qué encaje, y
+ * lectura es deliberado — primero quién es, luego qué aporta y qué le falta, y
  * el prompt al final: es lo que decide el swipe (ver `CONCEPTO.md`).
+ *
+ * Lo que domina y lo que busca van en dos filas etiquetadas y con acentos
+ * distintos (verde-azulado / latón, los mismos que `ProfileDetails`), porque en
+ * una sola lista de chips no hay forma de saber cuál es cuál — y son datos
+ * opuestos: confundirlos invierte la lectura del perfil entero.
  *
  * Es una versión compacta y de altura fija a propósito. La ficha larga
  * (`ProfileDetails` de `perfil`) se lee con scroll, y aquí el scroll pelearía
@@ -19,18 +24,34 @@ import {
   ambitionLabel,
   availabilitySummary,
   modeLabel,
+  seeksComplement,
   specialtyLabel,
   startingPointLabel,
 } from '@/features/profile';
 import { useTheme } from '@/hooks/use-theme';
 
 import { Chip } from './chip';
+import { complementWith } from './complement';
 
-import type { Profile } from '@/data';
+import type { ChipTone } from './chip';
 
-export function ProfileCard({ profile }: { profile: Profile }) {
+import type { Profile, Specialty } from '@/data';
+
+export function ProfileCard({
+  profile,
+  /**
+   * Lo que domina quien está swipeando. Solo sirve para resaltar el encaje; sin
+   * ello la tarjeta se pinta igual, sin señal — que es lo correcto mientras el
+   * perfil propio se está cargando.
+   */
+  viewerSpecialties = [],
+}: {
+  profile: Profile;
+  viewerSpecialties?: Specialty[];
+}) {
   const theme = useTheme();
   const prompt = profile.prompts[0];
+  const complement = complementWith(profile, viewerSpecialties);
 
   return (
     <View
@@ -48,14 +69,34 @@ export function ProfileCard({ profile }: { profile: Profile }) {
           <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
             {profile.age} · {profile.location}
           </ThemedText>
+
+          <View style={styles.headerChips}>
+            <Chip label={`Quiere: ${modeLabel(profile.lookingFor)}`} />
+            {complement.length > 0 ? <Chip label="✓ Encajas" tone="match" /> : null}
+          </View>
         </View>
       </View>
 
-      <View style={styles.chips}>
-        <Chip label={`Busca: ${modeLabel(profile.lookingFor)}`} tone="teal" />
-        {profile.specialties.map((specialty) => (
-          <Chip key={specialty} label={specialtyLabel(specialty)} />
-        ))}
+      <View style={styles.complement}>
+        <SpecialtyRow label="Domina" values={profile.specialties} tone="teal" />
+
+        {seeksComplement(profile.lookingFor) ? (
+          profile.seekingSpecialties.length > 0 ? (
+            <SpecialtyRow
+              label="Busca"
+              values={profile.seekingSpecialties}
+              tone="brass"
+              highlight={complement}
+            />
+          ) : (
+            // Vacío no es un dato que falte: es «ábreme a cualquiera».
+            <Row label="Busca">
+              <ThemedText type="small" themeColor="textSecondary">
+                Cualquier especialidad
+              </ThemedText>
+            </Row>
+          )
+        ) : null}
       </View>
 
       <View style={[styles.divider, { backgroundColor: theme.border }]} />
@@ -80,6 +121,52 @@ export function ProfileCard({ profile }: { profile: Profile }) {
           </ThemedText>
         </View>
       ) : null}
+    </View>
+  );
+}
+
+/**
+ * Fila de especialidades con su etiqueta al lado.
+ *
+ * Las de `highlight` salen en latón sólido y con "✓" delante: el color solo no
+ * vale — ni para quien no distingue latón de latón suave, ni para un lector de
+ * pantalla, que de un chip solo lee el texto.
+ */
+function SpecialtyRow({
+  label,
+  values,
+  tone,
+  highlight = [],
+}: {
+  label: string;
+  values: Specialty[];
+  tone: ChipTone;
+  highlight?: Specialty[];
+}) {
+  return (
+    <Row label={label}>
+      {values.map((specialty) => {
+        const matched = highlight.includes(specialty);
+        return (
+          <Chip
+            key={specialty}
+            label={matched ? `✓ ${specialtyLabel(specialty)}` : specialtyLabel(specialty)}
+            tone={matched ? 'match' : tone}
+          />
+        );
+      })}
+    </Row>
+  );
+}
+
+/** Etiqueta en versales a la izquierda y contenido que envuelve a la derecha. */
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <View style={styles.row}>
+      <ThemedText type="label" themeColor="textMuted" style={styles.rowLabel}>
+        {label}
+      </ThemedText>
+      <View style={styles.rowContent}>{children}</View>
     </View>
   );
 }
@@ -114,11 +201,32 @@ const styles = StyleSheet.create({
   },
   identity: {
     flex: 1,
+    gap: Spacing.half,
   },
-  chips: {
+  headerChips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: Spacing.one,
+    marginTop: Spacing.half,
+  },
+  complement: {
     gap: Spacing.two,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  rowLabel: {
+    width: 64,
+  },
+  rowContent: {
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: Spacing.one,
   },
   divider: {
     height: StyleSheet.hairlineWidth,

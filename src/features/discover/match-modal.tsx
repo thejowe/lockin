@@ -6,30 +6,42 @@
  *
  * La salida a chat es la acción principal a propósito. Un match que se queda en
  * un cartel bonito no sirve de nada; el producto empieza en la conversación.
+ *
+ * Si además hay complementariedad, se nombra aquí: es el mejor icebreaker que
+ * hay, y llega justo cuando la persona decide si abre el chat o cierra el modal.
+ * No cambia nada del match — ya está creado, y sigue siendo un like recíproco
+ * (ver `complement.ts`).
  */
 
 import { Modal, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Radii, Spacing } from '@/constants/theme';
-import { ProfileAvatar, modeLabel } from '@/features/profile';
+import { ProfileAvatar, modeLabel, specialtyLabel } from '@/features/profile';
 import { useTheme } from '@/hooks/use-theme';
 
 import { ActionButton } from './action-button';
+import { complementWith } from './complement';
 
 import type { MatchEvent } from './use-deck';
+
+import type { Specialty } from '@/data';
 
 export function MatchModal({
   event,
   onOpenChat,
   onDismiss,
+  viewerSpecialties = [],
 }: {
   /** El match a celebrar, o `null` para no mostrar nada. */
   event: MatchEvent | null;
   onOpenChat: (matchId: string) => void;
   onDismiss: () => void;
+  /** Lo que domina quien swipea, para nombrar el encaje si lo hay. */
+  viewerSpecialties?: Specialty[];
 }) {
   const theme = useTheme();
+  const complement = event ? complementWith(event.profile, viewerSpecialties) : [];
 
   return (
     <Modal
@@ -59,6 +71,12 @@ export function MatchModal({
               <ThemedText type="body" themeColor="textSecondary" style={styles.blurb}>
                 {event.profile.name} ya te había dado like. Ahora os toca hablar.
               </ThemedText>
+
+              {complement.length > 0 ? (
+                <ThemedText type="smallBold" themeColor="brass" style={styles.blurb}>
+                  Y busca justo lo que tú dominas: {listLabels(complement)}.
+                </ThemedText>
+              ) : null}
             </View>
 
             <View style={styles.actions}>
@@ -70,6 +88,13 @@ export function MatchModal({
       ) : null}
     </Modal>
   );
+}
+
+/** "Diseño", "Diseño y Ventas", "Diseño, Ventas y Datos". */
+function listLabels(values: Specialty[]): string {
+  const labels = values.map(specialtyLabel);
+  if (labels.length <= 1) return labels.join('');
+  return `${labels.slice(0, -1).join(', ')} y ${labels[labels.length - 1]}`;
 }
 
 const styles = StyleSheet.create({
