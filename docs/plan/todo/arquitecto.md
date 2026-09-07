@@ -70,10 +70,13 @@ Material Symbols en Android — sin assets propios) y la variante web en
 Regla: las pantallas importan siempre de `@/data`, nunca de `@/data/mock`.
 
 ## Andamios que hay que retirar
-- `src/components/screen-placeholder.tsx` y las 6 pantallas que lo usan son
-  **temporales**: existen para que las rutas resuelvan. Cada bloque sustituye las
-  suyas (el `owner` está anotado en cada archivo). Cuando no quede ninguna,
-  borra el componente.
+- ~~`src/components/screen-placeholder.tsx`~~ — retirado el 2026-09-06.
+  Era temporal: existía para que las rutas resolvieran mientras cada bloque
+  sustituía las suyas. Las 6 pantallas ya son reales y no quedaba ni un import.
+- ~~`src/components/themed-view.tsx`~~ — retirado el 2026-09-06 en la misma
+  pasada. Andamio del scaffold de Expo: el sistema de diseño acabó siendo
+  `themed-text.tsx` + los tokens de `@/constants/theme`, y las vistas pintan su
+  fondo con `useTheme()`. Cero referencias en `src/`, `app/` y `test/`.
 - Los perfiles semilla de `src/data/mock/seed.ts` son 3, el mínimo para que el
   shell enseñe algo. `perfil` es el dueño del catálogo: amplía esa lista hasta
   los 6-8 perfiles, sin crear otra aparte. `SEED_RECIPROCAL_IDS` marca quién da
@@ -152,3 +155,78 @@ retiraron por no aplicar. El razonamiento completo vive en el comentario de
 **Ya arreglado por `calidad`:** `brassSoft` claro pasa de `#F0E3C9` a `#F2E5CB`
 (el chip de marca seleccionado estaba en 4.44:1, a un pelo de AA). Es el mismo
 color a ojo y no toca ninguno de los cinco literales de marca de `CONCEPTO.md`.
+
+## Limpieza de código muerto y cobertura (2026-09-06)
+
+Pasada delegada por `calidad` desde su quinta ronda ("Siguiente hueco de
+cobertura"): borrar archivos de este alcance no le tocaba a ella con otra
+sesión trabajando en paralelo.
+
+Retirados `screen-placeholder.tsx` y `themed-view.tsx` (anotado arriba). Se
+confirmó a mano que no quedaba ni una referencia en `src/`, `app/` ni `test/`
+antes de borrar: los únicos aciertos del grep eran sus propias definiciones,
+artefactos de `coverage/` y estas notas.
+
+**`src/hooks/use-color-scheme.ts` no se toca.** Sale al 0 % en la misma lista,
+pero no está muerto: `use-theme.ts` lo importa y `test/app/layouts.test.tsx` lo
+mockea. Es cobertura ausente, no código muerto — el 0 % viene de que todo lo
+que lo consume lo hace a través de un mock. Borrarlo rompería la app.
+
+### Decidido — cobertura de `app-tabs`
+
+`calidad` propone eximir `app-tabs.tsx` y `app-tabs.web.tsx` porque son
+"configuración declarativa de NativeTabs; probarlos cuesta más de lo que
+protege". El veredicto se parte: comparten nombre pero no son el mismo caso.
+
+- [x] **`app-tabs.tsx` — exento, se compra el argumento.** Es JSX declarativo
+      sin una sola rama; la única expresión es `Colors[useThemeName()]`, y
+      `use-theme.ts` ya está al 100 %. Probarlo obliga a mockear
+      `expo-router/unstable-native-tabs` entero y después afirmar sobre los
+      props que reciben los mocks: el test sería una transcripción del JSX y
+      rompería al renombrar un SF Symbol sin que nada se hubiera roto de
+      verdad. Lo que sí importa —que las rutas `discover` / `matches` /
+      `profile` existan y resuelvan— ya lo cubre `npx expo export` con sus 14
+      rutas. Exento a propósito, no por olvido.
+
+- [ ] **`app-tabs.web.tsx` — NO exento; tiene lógica real.** No es declarativo.
+      `TabButton` ramifica dos veces sobre `isFocused` (el `backgroundColor` de
+      la pastilla y el `themeColor` del label) y lleva un
+      `hitSlop={{ top: 8, bottom: 8 }}` que es una decisión de accesibilidad
+      deliberada y comentada: la pastilla mide 28 px de alto y el hitSlop la
+      lleva al objetivo mínimo de 44. Eso es justo lo que una regresión
+      silenciosa se lleva por delante, y se prueba con RNTL sin mockear nada
+      exótico. Detalle de resolución para quien lo escriba: bajo el preset
+      `jest-expo` de este repo ganan las extensiones nativas, así que el test
+      tiene que importar `@/components/app-tabs.web` explícitamente —
+      `@/components/app-tabs` a secas resuelve al `.tsx`. Escribirlo cae en
+      `test/`, que es alcance de `calidad`, no de este bloque.
+
+### Efecto en cobertura
+
+Las cuatro métricas suben y ninguna baja. El numerador es idéntico antes y
+después: solo encogió el denominador, que es exactamente lo que tiene que
+pasar al borrar código muerto.
+
+| Métrica | Antes | Ahora |
+|---|---|---|
+| statements | 87.52 (821/938) | **88.00** (821/933) |
+| branches | 78.87 (448/568) | **79.15** (448/566) |
+| functions | 87.73 (286/326) | **88.27** (286/324) |
+| lines | 88.76 (727/819) | **89.31** (727/814) |
+
+**Para `calidad`:** el `coverageThreshold` de `jest.config.js` sigue clavado en
+el suelo viejo (87.52 / 78.87 / 87.73 / 88.76). Pasa, porque es un suelo, pero
+por vuestra propia regla ("se sube cuando la cobertura suba") toca subirlo a
+los números de arriba. No se toca aquí: `jest.config.js` es vuestro y estáis
+en paralelo montando el E2E. Ojo también con `coverage/coverage-summary.json`,
+que está obsoleto — `json-summary` no está en `coverageReporters`, así que ese
+archivo no lo regenera `npm run test:coverage` y todavía lista los dos
+componentes borrados. El fresco es `coverage-final.json`.
+
+### Verificación de esta pasada
+
+- `npm run lint` — limpio.
+- `npm run typecheck` — limpio.
+- `npm run test:coverage -- --ci --runInBand` — **307 tests en 28 suites**, los
+  mismos de antes (25 omitidos por el opt-in del contrato remoto).
+- `npx expo export --platform web` — **14 rutas**, las mismas de antes.
