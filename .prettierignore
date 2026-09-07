@@ -13,3 +13,6 @@ package-lock.json
 *.md
 .claude
 docs
+
+e2e/.runtime/
+e2e/artifacts/

@@ -1,0 +1,109 @@
+# AVISO: si corre contra el mock NO demuestra integración con Supabase.
+# active.ts elige por credenciales. seed.sql y mock/seed.ts tienen los mismos
+# ocho nombres. La persistencia tras stopApp + launchApp distingue Postgres del
+# estado en memoria de mock/store.ts. NO quitar el reinicio ni recrear el perfil.
+# Ejecutar mediante run.mjs: además verifica las filas reales. No usar Expo Go.
+appId: app.lockin.mobile
+name: Alta, perfil, deck, match, mensaje y persistencia
+---
+- assertTrue: ${PROFILE_NAME && MESSAGE}
+# Registro actual: Auth anónimo automático; no existe pantalla de login.
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: 'Cofundador'
+    timeout: 60000
+- tapOn: 'Ambos'
+- tapOn: 'Continuar'
+- tapOn:
+    text: 'Nombre|Cómo te llamas'
+    below: 'Nombre'
+- inputText: ${PROFILE_NAME}
+- tapOn:
+    text: 'Edad|28'
+    below: 'Edad'
+- inputText: '28'
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      text: 'Ubicación|Barcelona'
+      below: 'Ubicación'
+    direction: DOWN
+- tapOn:
+    text: 'Ubicación|Barcelona'
+    below: 'Ubicación'
+- inputText: 'Barcelona'
+- hideKeyboard
+- scrollUntilVisible:
+    element: 'Desarrollo'
+    direction: DOWN
+- tapOn: 'Desarrollo'
+- scrollUntilVisible:
+    element: 'Solo ganas'
+    direction: DOWN
+- tapOn: 'Solo ganas'
+- scrollUntilVisible:
+    element: 'Tarde · 12–20'
+    direction: DOWN
+- tapOn: 'Tarde · 12–20'
+- scrollUntilVisible:
+    element: 'En serio, con equilibrio'
+    direction: DOWN
+- tapOn: 'En serio, con equilibrio'
+- scrollUntilVisible:
+    element:
+      text: 'Lo que quiero construir es…|Tu respuesta'
+      below: 'Busco a alguien que…'
+    direction: DOWN
+- tapOn:
+    text: 'Lo que quiero construir es…|Tu respuesta'
+    below: 'Busco a alguien que…'
+- inputText: 'Una herramienta para construir en equipo'
+- hideKeyboard
+- scrollUntilVisible:
+    element: 'Crear perfil'
+    direction: DOWN
+- tapOn: 'Crear perfil'
+- extendedWaitUntil:
+    visible: 'Like'
+    timeout: 60000
+# Fixture: solo likes entrantes. El like propio y el match pasan por UI/RPC.
+- tapOn: 'Like'
+- extendedWaitUntil:
+    visible: '¡Match!'
+    timeout: 30000
+- tapOn: 'Abrir chat'
+- extendedWaitUntil:
+    visible: 'Mensaje'
+    timeout: 30000
+- tapOn: 'Mensaje'
+- inputText: ${MESSAGE}
+- tapOn: 'Enviar mensaje'
+- hideKeyboard
+# Esperar al editor vacío evita confundir borrador y burbuja enviada.
+- assertVisible:
+    text: 'Enviar mensaje'
+    enabled: false
+- assertVisible: ${MESSAGE}
+- stopApp
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible: 'Descubrir'
+    timeout: 60000
+- assertNotVisible: 'Paso 1 de 2'
+- tapOn: 'Perfil'
+- extendedWaitUntil:
+    visible: ${PROFILE_NAME}
+    timeout: 30000
+- tapOn: 'Matches'
+- extendedWaitUntil:
+    visible: 'Conversación con .*${MESSAGE}'
+    timeout: 30000
+- tapOn: 'Conversación con .*${MESSAGE}'
+- extendedWaitUntil:
+    visible: ${MESSAGE}
+    timeout: 30000
+- assertVisible:
+    text: 'Enviar mensaje'
+    enabled: false
