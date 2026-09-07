@@ -16,7 +16,11 @@ export async function verifyPersistence(status, profileName, message) {
   assert.equal(profile.age, 28);
   assert.equal(profile.location, 'Barcelona');
   assert.equal(profile.looking_for, 'ambos');
-  assert.deepEqual(profile.specialties, ['dev']);
+  assert.deepEqual(profile.specialties, ['dev', 'marketing']);
+  // Lo que la UI declaró en "Lo que debe dominar quien busco". Que llegue a
+  // Postgres es lo único que distingue la feature de un estado local: los tests
+  // unitarios hablan con el mock y los de contrato no pasan por la pantalla.
+  assert.deepEqual(profile.seeking_specialties, ['diseno']);
   assert.equal(profile.starting_point, 'solo-ganas');
   assert.equal(profile.ambition, 'equilibrado');
   assert.deepEqual(profile.availability_bands, ['tarde']);
@@ -34,13 +38,20 @@ export async function verifyPersistence(status, profileName, message) {
   const match = await rows(client.from('matches').select('*').eq('id', sent.match_id).single());
   assert([match.profile_a, match.profile_b].includes(profile.id));
   const other = match.profile_a === profile.id ? match.profile_b : match.profile_a;
-  assert(other.startsWith('11111111-1111-4111-8111-'));
+  // La tarjeta de arriba, fijada por el `update` de `created_at` de
+  // `incoming-likes.sql`. Es lo que hace comprobables las aserciones del deck:
+  // sin esto, "Busca" y el ✓ podrían ser de una tarjeta y el like de otra.
+  assert.equal(
+    other,
+    '11111111-1111-4111-8111-000000000001',
+    'El like no cayó sobre la primera tarjeta del deck (Núria Bosch)'
+  );
   const decision = await rows(
     client.from('decisions').select('*').eq('actor_id', profile.id).eq('target_id', other).single()
   );
   assert.equal(decision.decision, 'like');
   assert(match.last_message_at, 'El trigger debe actualizar la actividad del match');
-  console.log('Postgres: alta, perfil, modo, like, match y mensaje verificados.');
+  console.log('Postgres: alta, perfil, lo que busca, modo, like, match y mensaje verificados.');
 }
 
 /**

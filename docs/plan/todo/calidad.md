@@ -419,11 +419,11 @@ Worktree `../lockin-codex-calidad`, actualizado con `git fetch` y
 - [x] Montar el control negativo con APK sin credenciales: variante del runner,
       oráculo invertido y matriz en el workflow.
 - [ ] Confirmar primer recorrido completo verde en emulador y guardar su
-      evidencia. **Bloqueado** por el bug de `chat` (compositor bajo el teclado
-      en Android 15+), reportado en `docs/plan/todo/chat.md`.
-- [ ] Confirmar que el control negativo falla **después** del reinicio.
-      **Bloqueado por lo mismo**: hoy el APK con mock se rompe antes de llegar
-      al reinicio, en ese mismo paso, y el propio control lo dice y lo rechaza.
+      evidencia. El bug de `chat` ya está arreglado; lo que falta es cerrar la
+      variante `supabase`, ver novena y décima pasada.
+- [x] Confirmar que el control negativo falla **después** del reinicio.
+      Cerrado en 696408a, ver novena pasada: el APK con mock llega al reinicio,
+      falla allí y no escribe nada.
 
 ### Alcance y viabilidad
 
@@ -668,7 +668,9 @@ ni `docs/plan/TODO.md`. Se conserva la integración y el umbral 88.74/80.03/89.5
 - [x] Diagnosticar el fallo de bundle con logs y código del resolver instalado.
 - [x] Corregir la ubicación de la copia de build y recoger evidencia antes de Maestro.
 - [ ] Confirmar recorrido completo verde en CI, con evidencia de UI y Postgres.
-- [ ] Comprobar estabilidad y resolver el coste de carga dentro del test de layouts.
+      Sigue abierta: en 696408a el trabajo `supabase` falla y el log y el
+      artefacto piden permisos de administración del repositorio.
+- [x] Comprobar estabilidad y resolver el coste de carga dentro del test de layouts.
 
 Primera ejecución: https://github.com/thejowe/lockin/actions/runs/34069732039.
 Supabase local pasó. Falló `:app:createBundleReleaseJsAndAssets`: Metro no resolvía
@@ -851,10 +853,13 @@ y el bloque `chat` lo señaló al final de su TODO como trabajo de `calidad`.
 - [x] Clasificación con lista cerrada y tests que la fijan (`npm run test:e2e`).
 - [x] Evidencia por intento, sin que un reintento pise la del anterior.
 - [ ] Confirmar primer recorrido completo verde en emulador y guardar su
-      evidencia. **Sigue bloqueado** por el compositor de `chat`; el arreglo de
-      `cfadf27` está sin verificar en emulador.
-- [ ] Confirmar que el control negativo falla **después** del reinicio.
-      **Bloqueado por lo mismo.**
+      evidencia. **Ya no lo bloquea `chat`**: en el mismo run la sonda del
+      teclado pasa y el control negativo llega entero hasta el reinicio. Lo que
+      sigue en rojo es la variante `supabase`, en "Resultado del recorrido".
+- [x] Confirmar que el control negativo falla **después** del reinicio.
+      Confirmado en [run 34162107392](https://github.com/thejowe/lockin/actions/runs/34162107392)
+      (696408a): el trabajo `mock` pasa, y solo pasa si el primer comando
+      fallido está tras el `stopApp` y Postgres no tiene ni perfil ni mensaje.
 
 ### La regla, que es lo único que importa aquí
 
@@ -942,3 +947,110 @@ manejador por `() => {}` lo tumba. No se ha tocado código de `chat`.
   Android SDK, Java, Maestro ni Docker. Lo que el reintento hace de verdad lo
   dirá el primer run que se cruce con la flake; hasta entonces, lo verificado es
   la clasificación, que es donde estaba el riesgo.
+
+## Décima pasada: `seekingSpecialties` entra en el E2E (2026-09-07)
+
+`seekingSpecialties` estaba entregada por los cuatro bloques y verificada contra
+Supabase real (contrato 27/27), pero `e2e/full-journey.yaml` no la mencionaba.
+El recorrido pasaba por el formulario y por el deck sin preguntar ni una vez qué
+debe dominar la otra persona, así que una regresión en el pegamento pantalla ↔
+repositorio no la veía nadie: los 222+ tests unitarios corren contra el mock y
+los de contrato hablan con Postgres sin pasar por la interfaz.
+
+- [x] Declarar en el formulario lo que debe dominar quien busco.
+- [x] Leer en la tarjeta del deck la fila "Busca" y el ✓ de complementariedad.
+- [x] Releer la propia después del reinicio, que es lo que separa Postgres del
+      estado en memoria.
+- [x] Fijar el orden del deck, sin el cual esas aserciones no dicen nada.
+- [x] Extender el oráculo de Postgres a `seeking_specialties`.
+- [x] Guardia en `node --test` para que esos pasos no se puedan borrar en
+      silencio.
+
+### Los dos lados, y por qué hacen falta los dos
+
+La feature tiene dos mitades y solo juntas prueban algo:
+
+1. **Escribir.** El bloque "Lo que debe dominar quien busco" solo se pinta con
+   `par` o `ambos` —la invariante de `Profile.seekingSpecialties`—, y el
+   recorrido ya elegía `Ambos` en la primera pantalla, así que el campo existe.
+   Se toca por `Busco Diseño`, el `accessibilityLabel` que puso `perfil`: por
+   texto visible, "Diseño" nombra dos chips distintos del mismo formulario.
+2. **Leer la de otra persona.** En la tarjeta se afirma la fila `Busca` y los
+   dos ✓ —el del chip complementario y el de la cabecera—. Ese ✓ es el cruce
+   entre lo que ella busca y lo que yo domino, así que el recorrido ahora
+   también domina marketing: sin eso, las dos aserciones comprobarían el vacío.
+
+Y una tercera, que es la que distingue esta feature de un estado local: tras
+`stopApp` + `launchApp`, en Perfil se vuelve a ver `Diseño`. En este recorrido lo
+que domino es Desarrollo y Marketing, así que esa palabra solo puede venir de
+Postgres.
+
+### El orden del deck, que era la parte que no era obvia
+
+`discovery_deck` ordena por `created_at desc` y `supabase/seed.sql` inserta los
+ocho perfiles en la misma transacción: los ocho valores son iguales y el
+desempate lo elige el planificador. Mientras el recorrido solo daba `Like` daba
+igual —la fixture da likes entrantes desde los ocho, así que cualquiera
+correspondía—, pero afirmar qué pone en la tarjeta exige saber de quién es.
+
+`e2e/incoming-likes.sql` separa ahora las fechas y deja arriba a Núria Bosch,
+que es el orden que `src/data/mock/seed.ts` da de todas formas: las dos
+variantes ven la misma tarjeta, que es lo que el control negativo necesita para
+seguir fallando donde debe. Solo toca la base desechable de `e2e/.runtime`.
+`verify.mjs` comprueba en Postgres que el like cayó justo en ese id: sin eso,
+"Busca" y el ✓ podrían ser de una tarjeta y el like de otra.
+
+### Casillas que se cierran, y las tres que no
+
+- **[x] El control negativo falla después del reinicio.**
+  [Run 34162107392](https://github.com/thejowe/lockin/actions/runs/34162107392)
+  (696408a): el trabajo `mock` **pasa**, y en esa variante el runner solo da por
+  bueno el resultado si Maestro falla, si el primer comando fallido está después
+  del `stopApp` y si Postgres no tiene ni el perfil ni el mensaje. Es decir: con
+  el mock el recorrido llegó **entero** hasta el reinicio, envío del mensaje
+  incluido. Cierra las casillas de la octava y de la novena pasada.
+  Aviso honesto: eso se midió con el `.yaml` de 696408a. Los pasos que añade esta
+  pasada van antes del reinicio y todavía no han visto un emulador; si alguno
+  fallara ahí, el propio control lo diría y lo rechazaría.
+- **[x] Estabilidad y coste de carga del test de layouts.** El traslado de la
+  importación a la preparación de la suite (séptima pasada) está verificado
+  aquí: `test/app/layouts.test.tsx` da 7/7 en tres ejecuciones —dos con caché
+  (11,7 s y 11,1 s) y una con `--no-cache`— y el primer caso tarda **61 ms**,
+  frente a los 43,8 s de antes. El coste no desaparece, se paga una vez en la
+  preparación de la suite; con caché fría son ~60 s de suite para 7 casos que
+  suman 148 ms. Eso era lo que se buscaba y es estable, así que la casilla se
+  cierra.
+- **[ ] Recorrido completo verde en emulador** (octava y novena pasada) y
+  **[ ] recorrido completo verde en CI** (séptima). No se cierran, y el motivo
+  ya no es `chat`: en ese mismo run la sonda del teclado pasa y el control
+  negativo llega al reinicio. Lo que falla es la variante `supabase`, en el paso
+  "Resultado del recorrido". Dónde exactamente no se puede decir desde aquí: el
+  log del trabajo y el artefacto `e2e-android-supabase` responden
+  `403 Must have admin rights to Repository` sin credenciales del repo, y esta
+  máquina no tiene Android SDK, Java, Maestro ni Docker para reproducirlo. Se
+  cierra leyendo `maestro.xml`, `commands.json` y `postgres.json` del artefacto
+  de la próxima ejecución.
+
+### Encontrado y no tocado
+
+`chat` deja apuntado que el `hideKeyboard` posterior al envío hace `pressBack()`
+cuando no hay teclado, y eso navega hacia atrás en vez de no hacer nada. Es
+real y es de este bloque, pero cambiarlo ahora mueve una pieza del único tramo
+del recorrido que acaba de ponerse verde bajo el mock. Se toca cuando la
+variante `supabase` cierre, no antes, y con la evidencia del run delante.
+
+### Verificación de esta pasada
+
+- `npm run test:coverage -- --ci` — **374 tests en 34 suites** (1 suite y 27
+  casos del contrato remoto omitidos por su opt-in), verde con el suelo en
+  89.82/82.56/91.49/91.38. No con `npx jest` a secas: el suelo solo se evalúa
+  con cobertura, y saltárselo es lo que dejó CI en rojo la vez anterior.
+- `npm run test:e2e` — **29 casos en 6 suites**, verdes. Los 7 nuevos son la
+  guardia de `full-journey.yaml`.
+- **Comprobado que la guardia no es un test vacío**: quitando del `.yaml` el
+  `tapOn: 'Busco Diseño'` y el `assertVisible` del ✓ de cabecera, caen 2 casos.
+- `npm run lint` y `npm run typecheck` — limpios.
+- `npm run format:check` — los archivos tocados no aparecen. El comando completo
+  sigue avisando de 155 archivos **también sin estos cambios**: es el checkout
+  Windows con CRLF de esta máquina (`core.autocrlf=true`), no el repo.
+- **No ejecutado aquí**: build Android, Maestro y emulador, por lo dicho arriba.

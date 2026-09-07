@@ -3,6 +3,9 @@
 # ocho nombres. La persistencia tras stopApp + launchApp distingue Postgres del
 # estado en memoria de mock/store.ts. NO quitar el reinicio ni recrear el perfil.
 # Ejecutar mediante run.mjs: además verifica las filas reales. No usar Expo Go.
+# El orden del deck lo fija el `update` de `created_at` de `incoming-likes.sql`:
+# lo que se afirma de la tarjeta son datos de una persona concreta, y sin un
+# orden fijo no querrían decir nada. `full-journey.test.mjs` fija esa relación.
 appId: app.lockin.mobile
 name: Alta, perfil, deck, match, mensaje y persistencia
 ---
@@ -38,6 +41,20 @@ name: Alta, perfil, deck, match, mensaje y persistencia
     element: 'Desarrollo'
     direction: DOWN
 - tapOn: 'Desarrollo'
+# Marketing no es decorado: es lo que hace aparecer el ✓ en la primera tarjeta
+# del deck, porque Núria busca marketing y ventas.
+- scrollUntilVisible:
+    element: 'Marketing'
+    direction: DOWN
+- tapOn: 'Marketing'
+# "Lo que debe dominar quien busco". Solo se pinta con `par` o `ambos` —aquí,
+# `ambos`—: es la invariante de `Profile.seekingSpecialties`. Se toca por su
+# etiqueta de accesibilidad porque "Diseño" nombra dos chips de esta pantalla,
+# el que domino y el que busco, y por texto visible serían el mismo.
+- scrollUntilVisible:
+    element: 'Busco Diseño'
+    direction: DOWN
+- tapOn: 'Busco Diseño'
 - scrollUntilVisible:
     element: 'Solo ganas'
     direction: DOWN
@@ -67,6 +84,15 @@ name: Alta, perfil, deck, match, mensaje y persistencia
 - extendedWaitUntil:
     visible: 'Like'
     timeout: 60000
+# La otra mitad de `seekingSpecialties`: lo que busca OTRA persona, leído del
+# backend y pintado en la tarjeta. `incoming-likes.sql` fija el orden del deck,
+# así que arriba está Núria Bosch, que es `par` y por tanto tiene fila "Busca";
+# el ✓ sale de cruzar lo que ella busca con lo que yo domino (marketing).
+# Las etiquetas van en versales (`Typography.label`): de ahí el `(?i)`.
+- assertVisible: 'Núria Bosch'
+- assertVisible: '(?i)busca'
+- assertVisible: '(?i)✓ marketing'
+- assertVisible: '(?i)✓ encajas'
 # Fixture: solo likes entrantes. El like propio y el match pasan por UI/RPC.
 - tapOn: 'Like'
 - extendedWaitUntil:
@@ -96,6 +122,14 @@ name: Alta, perfil, deck, match, mensaje y persistencia
 - extendedWaitUntil:
     visible: ${PROFILE_NAME}
     timeout: 30000
+# `seekingSpecialties` propia, declarada en el formulario y releída de Postgres
+# después del reinicio. "Diseño" solo puede venir de ahí: lo que domino en este
+# recorrido es Desarrollo y Marketing.
+- scrollUntilVisible:
+    element: '(?i)lo que busca'
+    direction: DOWN
+- assertVisible: '(?i)lo que busca'
+- assertVisible: 'Diseño'
 - tapOn: 'Matches'
 - extendedWaitUntil:
     visible: 'Conversación con .*${MESSAGE}'

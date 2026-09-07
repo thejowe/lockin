@@ -1,10 +1,15 @@
 # E2E Android — Maestro + Supabase local
 
 Caso: `full-journey.yaml`. Runner: `node e2e/run.mjs <fase>`.
-Estado: build, emulador y 38 de los 48 pasos del recorrido verificados en
-Actions contra Supabase real. **Bloqueado por un defecto de producto en `chat`**
-(el compositor queda bajo el teclado en Android 15+); detalle al final.
-No se declara un E2E verde por validar YAML, ni por pasar Jest.
+Estado: en la última ejecución con emulador
+([run 34162107392](https://github.com/thejowe/lockin/actions/runs/34162107392),
+commit 696408a) el **control negativo pasó** —el APK con mock llegó al reinicio,
+falló allí y no dejó nada en Postgres— y la sonda del teclado también, así que el
+compositor de `chat` ya no bloquea. La variante `supabase` sigue en rojo en
+"Resultado del recorrido": **el recorrido completo contra Postgres todavía no
+está verde**. Los pasos de `seekingSpecialties` son posteriores a esa ejecución y
+no han visto un emulador. No se declara un E2E verde por validar YAML, ni por
+pasar Jest.
 
 ## Qué demuestra
 
@@ -12,6 +17,14 @@ Alta anónima automática (el MVP no tiene pantalla de registro/login) → selec
 de modo → formulario completo → deck → like → modal de match → chat → envío →
 **parada del proceso y relanzamiento sin borrar almacenamiento** → perfil y
 conversación recuperados desde la UI.
+
+Incluye los dos lados de `seekingSpecialties`, que es lo único que la prueba de
+punta a punta: se declara en el formulario ("Lo que debe dominar quien busco",
+que solo existe con `par` o `ambos`), se lee en la tarjeta del deck la de otra
+persona —fila "Busca" y el ✓ de lo que ella busca y yo domino— y se vuelve a
+leer la propia en el Perfil **después** del reinicio. Los tests unitarios corren
+contra el mock y los de contrato hablan con Postgres sin pasar por la pantalla:
+el pegamento pantalla ↔ repositorio solo lo mira este recorrido.
 
 **Si corre contra el mock no demuestra nada sobre Supabase.** El deck tiene los
 mismos ocho nombres con ambos backends. `src/data/active.ts` selecciona por
@@ -30,10 +43,18 @@ pasa al build ni a Maestro. No se precrea el perfil/match/mensaje bajo prueba.
 `prepare` genera un proyecto Supabase con id `lockin-e2e` en
 `e2e/.runtime/supabase`, copia las migraciones y seed del repo y añade
 `incoming-likes.sql`. El trigger de fixture solo da likes **entrantes** desde
-los ocho perfiles seed al nuevo perfil E2E. Cualquiera que salga primero en el
-deck puede corresponder; no dependemos del orden SQL cuando coinciden fechas.
-El like propio entra por la UI y la RPC real crea el match con las políticas
-y triggers de producto. No se prueba aquí la UI de un segundo dispositivo.
+los ocho perfiles seed al nuevo perfil E2E, así que cualquiera que salga primero
+en el deck corresponde. El like propio entra por la UI y la RPC real crea el
+match con las políticas y triggers de producto. No se prueba aquí la UI de un
+segundo dispositivo.
+
+El mismo archivo separa los `created_at` del catálogo. `discovery_deck` ordena
+por `created_at desc` y el seed inserta los ocho perfiles en la misma
+transacción: con las fechas iguales, la tarjeta de arriba la elige el
+planificador. Desde que el recorrido afirma qué pone en esa tarjeta hace falta
+saber de quién es, y el orden fijado —Núria Bosch primero— es el mismo que da
+`src/data/mock/seed.ts`, para que el control negativo vea la tarjeta que ve el
+caso positivo. `verify.mjs` comprueba en Postgres que el like cayó justo ahí.
 
 Cada ejecución usa un nombre y mensaje con UUID. La base completa es desechable;
 `stop` descarta sus contenedores/volúmenes sin tocar el proyecto compartido.
@@ -219,3 +240,27 @@ producto del bloque `chat` en Android 15+ con edge-to-edge, no del caso E2E;
 está reportado en `docs/plan/todo/chat.md` con esa evidencia. No se corrige
 aquí ni se esquiva metiendo un `hideKeyboard` antes del envío: eso dejaría el
 E2E en verde sobre una pantalla que un usuario real no puede usar.
+
+## Diagnóstico de la ejecución del 696408a (2026-09-07 UTC)
+
+[Run 34162107392](https://github.com/thejowe/lockin/actions/runs/34162107392),
+tres trabajos:
+
+| Variante | Resultado | Qué significa |
+| --- | --- | --- |
+| `probe` | pasa | el compositor está por encima del teclado |
+| `mock` | pasa | el control negativo **falla después del reinicio** y no escribe |
+| `supabase` | falla en "Resultado del recorrido" | el caso positivo sigue sin cerrar |
+
+Que el control negativo pase es un resultado de por sí: el runner solo lo da por
+bueno si el primer comando fallido está después del `stopApp` y si Postgres no
+tiene ni perfil ni mensaje. Es decir, con el mock el recorrido **llegó entero
+hasta el reinicio**, incluido el envío del mensaje que llevaba tres rondas
+atascado. El compositor de `chat` deja de ser el bloqueo.
+
+Lo que falla es la variante con credenciales, y en un punto que los conclusions
+de la API no dicen. El log del trabajo y el artefacto `e2e-android-supabase`
+necesitan permisos de administración del repositorio
+(`403 Must have admin rights to Repository`) que esta sesión no tiene, así que
+aquí no se puede nombrar la causa. Se nombra en la próxima ejecución, leyendo
+`maestro.xml`, `commands.json` y `postgres.json` del artefacto.
