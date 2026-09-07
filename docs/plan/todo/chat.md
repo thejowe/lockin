@@ -85,3 +85,44 @@ prefiere no añadir dependencia, la alternativa dentro de React Native es usar
 llega en el evento de teclado en vez de esperar a que la ventana se
 redimensione. Sea cual sea la elección, la comprobación es relanzar el workflow
 `E2E Android`: llega hasta ese paso en unos 25 minutos.
+
+### Arreglado el 2026-09-07 — `behavior="padding"` en las dos plataformas
+
+`src/app/chat/[matchId].tsx` ya no ramifica por plataforma: `behavior="padding"`
+siempre. `keyboardVerticalOffset` sí sigue ramificando (`insets.top +
+HEADER_HEIGHT` en iOS, `0` en Android), que es lo que de verdad depende de la
+plataforma.
+
+Se eligió la alternativa sin dependencia, no `react-native-keyboard-controller`,
+por tres razones concretas:
+
+1. `KeyboardProvider` va en la raíz, o sea `src/app/_layout.tsx`, que es alcance
+   de `arquitecto`. El arreglo habría cruzado a un tercer bloque.
+2. Es un módulo nativo nuevo y en esta máquina no hay Android SDK ni Docker: la
+   única forma de comprobar que no rompe el build sería empujar y esperar ~25
+   min por vuelta, a ciegas.
+3. Leído el algoritmo real de `KeyboardAvoidingView` en el RN 0.86.3 instalado
+   (`node_modules/react-native/Libraries/Components/Keyboard/KeyboardAvoidingView.js`),
+   `padding` no depende del resize: calcula `frame.y + frame.height - keyboardY`
+   con las coordenadas del evento de teclado, que sí llegan bien bajo
+   edge-to-edge, y lo aplica como `paddingBottom`. La rama `height` sí depende,
+   porque fija `height: _initialFrameHeight - bottomHeight` sobre una ventana
+   que ya no encoge.
+
+`keyboard-controller` sigue siendo la vía más robusta a largo plazo (anima con
+el teclado en vez de saltar al final del gesto). Si algún día se adopta, es
+decisión conjunta con `arquitecto`, no un parche de este bloque.
+
+**Sin test de Jest, a propósito.** El fallo es que la ventana no se
+redimensiona, y Jest no lo reproduce: `measureInWindow` devuelve ceros, así que
+`KeyboardAvoidingView` nunca calcula solape. Y afirmar la prop `behavior`
+tampoco valdría —RNTL 14 solo consulta elementos host, no compuestos—, además
+de comprobar que el código dice "padding" en vez de que el teclado se esquiva.
+El guardián es `e2e/full-journey.yaml` en emulador real, que es quien lo
+encontró. Queda anotado en `test/app/matchId.test.tsx` para que nadie lo lea
+como un hueco de cobertura.
+
+- [ ] **Sin verificar en emulador todavía.** `npm test` (313), `tsc` y lint
+      pasan, pero eso no dice nada sobre este fallo por lo de arriba. Lo cierra
+      el workflow `E2E Android`: el caso positivo debe pasar de los 38 comandos
+      y completar los 48.

@@ -217,5 +217,14 @@ describe('ChatScreen', () => {
       const [message] = await repositories.messages.listByMatch(matchId);
       expect(message.senderId).toBe(CURRENT_USER_ID);
     });
+
+    // Que el compositor siga alcanzable con el teclado abierto NO se comprueba
+    // aquí, y no por descuido: el fallo es que Android 15+ con edge-to-edge no
+    // redimensiona la ventana, y eso Jest no lo reproduce —`measureInWindow`
+    // devuelve ceros, así que `KeyboardAvoidingView` nunca calcula solape—.
+    // Un test de la prop `behavior` tampoco vale: RNTL 14 solo consulta
+    // elementos host y afirmaría que el código dice "padding", no que el
+    // teclado se esquiva. El guardián de esa regresión es `e2e/full-journey.yaml`
+    // en emulador real. Ver `docs/plan/todo/chat.md`.
   });
 });

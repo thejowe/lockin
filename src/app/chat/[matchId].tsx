@@ -77,9 +77,21 @@ export default function ChatScreen() {
     <View style={[styles.root, { backgroundColor: theme.background }]}>
       <Stack.Screen options={{ title }} />
 
+      {/*
+        `padding` en las dos plataformas. La rama de Android era `height`, que
+        depende de que la ventana se redimensione al abrir el teclado
+        (`adjustResize`); con edge-to-edge —obligatorio desde Expo SDK 54, sin
+        opción de salida— Android 15+ ya no la redimensiona, así que `height` no
+        movía nada y el compositor entero quedaba debajo del teclado: no se veía
+        lo que se escribía ni había forma de enviar (`returnKeyType` es `default`
+        a propósito, por ser multilínea). `padding` no depende del resize: mide
+        el solape contra las coordenadas del teclado, que sí se reportan bien.
+        Lo encontró el E2E en emulador real, y es su guardián — ver
+        `docs/plan/todo/chat.md`.
+      */}
       <KeyboardAvoidingView
         style={styles.root}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior="padding"
         keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + HEADER_HEIGHT : 0}>
         {loading && !match ? (
           <Centered>
