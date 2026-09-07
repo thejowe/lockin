@@ -1,7 +1,7 @@
 # E2E Android — Maestro + Supabase local
 
 Caso: `full-journey.yaml`. Runner: `node e2e/run.mjs <fase>`.
-Estado: caso y CI implementados; **primera ejecución completa en emulador pendiente**.
+Estado: primer CI revisado; falló el bundle Android antes del emulador. **Recorrido verde pendiente**.
 No se declara un E2E verde por validar YAML, ni por pasar Jest.
 
 ## Qué demuestra
@@ -38,7 +38,7 @@ Cada ejecución usa un nombre y mensaje con UUID. La base completa es desechable
 No usar las credenciales de staging ni ejecutar la fixture allí. Se rechaza toda
 URL diferente de `http://127.0.0.1:54321`.
 
-`build` copia la app a `e2e/.runtime/node_modules/lockin-e2e-app`, instala su lockfile y genera allí el
+`build` copia la app a `<temporal del sistema>/lockin-e2e-<hash del checkout>`, instala su lockfile y genera allí el
 proyecto Android. Así `expo prebuild` no reescribe package.json ni archivos
 nativos del checkout. El release APK incluye JS y las dos variables públicas
 del backend local, sin Metro ni Expo Go. La copia nativa admite HTTP local;
@@ -109,3 +109,21 @@ Se usa el botón accesible Like; la mecánica del gesto tiene sus tests propios.
 - [Maestro launchApp y clearState](https://docs.maestro.dev/api-reference/commands/launchapp).
 - [Selectores Maestro](https://docs.maestro.dev/api-reference/selectors).
 - [Configuración Auth local Supabase](https://supabase.com/docs/guides/local-development/cli/config).
+## Diagnóstico de la primera ejecución (2026-09-07 UTC)
+
+[Run 34069732039](https://github.com/thejowe/lockin/actions/runs/34069732039),
+commit 89a8fb2: Supabase pasó; falló `:app:createBundleReleaseJsAndAssets`:
+`Unable to resolve module @/components/themed-text`. No llegó a KVM/Maestro.
+La API confirma cero artefactos: upload-artifact avisó `No files were found`.
+
+La copia estaba bajo `node_modules`. El resolver de TypeScript de Expo 57
+(`createTypescriptResolver` en el CLI instalado) descarta los alias para cualquier
+origen que contenga ese segmento. Ahora la copia vive en el temporal del sistema,
+fuera del checkout y de `node_modules`, y `stop` la retira. Se conservan las
+configuraciones de producto y todos los pasos del caso.
+
+CI guarda `build.log`, `phases.json` (resultados de backend/build/journey) y
+`disk.txt` aunque no se alcance Maestro. El pipe del build usa `shell: bash`,
+que activa `pipefail`: `tee` no convierte un build fallido en verde.
+Los logs completos de preparación siguen en Actions; no se copian al artefacto
+porque Supabase imprime sus claves locales.
