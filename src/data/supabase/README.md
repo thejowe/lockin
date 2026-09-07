@@ -140,9 +140,24 @@ estado en memoria (`src/data/mock/store.ts`) y no sobrevive.
 
 ## Estado
 
-Las migraciones están aplicadas en `grrzmzktrhksbttpbblg` y `supabase/seed.sql`
-ejecutado: con sesión, `/rest/v1/profiles` devuelve los ocho perfiles; sin
-sesión, `42501 permission denied`. *Anonymous sign-ins* está activado, así que
+> **Salvedad al 2026-09-07:** la migración
+> `supabase/migrations/20260907000100_profiles_seeking_specialties.sql` **no está
+> aplicada** en `grrzmzktrhksbttpbblg` — es un paso manual en el SQL Editor, y
+> desde aquí no hay acceso SQL al proyecto (solo la clave `anon`). Hasta que se
+> pegue, **`saveCurrent` contra Supabase falla**: `toProfileInsert` manda
+> `seeking_specialties` y PostgREST responde `Could not find the
+> 'seeking_specialties' column of 'profiles' in the schema cache`. Eso tumba la
+> suite de contrato entera (27/27 fallidos, casi todos los casos empiezan
+> creando un perfil) y también deja a la app sin poder crear ni editar perfil
+> mientras apunte a este proyecto.
+>
+> Antes de este cambio el campo se descartaba en silencio, que es peor: el
+> perfil se guardaba a medias y nadie se enteraba. Procedimiento para aplicarla,
+> en `supabase/README.md` → "Estado".
+
+Las cinco primeras migraciones están aplicadas en `grrzmzktrhksbttpbblg` y
+`supabase/seed.sql` ejecutado: con sesión, `/rest/v1/profiles` devuelve los ocho
+perfiles; sin sesión, `42501 permission denied`. *Anonymous sign-ins* está activado, así que
 `signInAnonymously()` —el camino bueno de `auth.ts`— funciona y la cuenta de
 dispositivo queda como respaldo que no se usa.
 

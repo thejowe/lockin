@@ -36,6 +36,12 @@ export type ProfileRow = {
   avatar_initials: string;
   avatar_accent: Avatar['accent'];
   specialties: Specialty[];
+  /**
+   * Lo que el perfil busca que domine la otra persona. Puede ir vacío —es lo
+   * que declara un perfil de lock-in—, al contrario que `specialties`, que
+   * exige al menos una.
+   */
+  seeking_specialties: Specialty[];
   looking_for: ModePreference;
   starting_point: StartingPoint;
   availability_hours_per_week: number;

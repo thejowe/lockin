@@ -82,9 +82,10 @@ const GARBAGE = 'zz-lockin-drift-probe';
 // Un archivo de referencia mantenido a mano sería otra copia más que puede
 // divergir — justo el problema que este script existe para detectar. Así que la
 // referencia se saca de las migraciones en cada ejecución, con un parser
-// deliberadamente estricto: solo entiende las formas que usan nuestras cinco
-// migraciones y grita si encuentra algo que no sabe leer, en vez de callarse y
-// dar un falso verde.
+// deliberadamente estricto: solo entiende las formas que usan nuestras
+// migraciones —`create table`, `alter table … add column`, `create type … as
+// enum` y `create function`— y grita si encuentra algo que no sabe leer, en vez
+// de callarse y dar un falso verde.
 
 function migrationSql() {
   const dir = join(root, 'supabase/migrations');
@@ -193,6 +194,40 @@ function parseMigrations(sql) {
     }
     if (columns.length === 0) throw new Error(`Tabla ${m[1]} sin columnas: parser desfasado`);
     tables.set(m[1], columns);
+  }
+
+  // `alter table … add column`. Una columna añadida por una migración posterior
+  // no aparece en ningún `create table`, así que sin esto el detector se queda
+  // ciego justo a lo más nuevo —que es lo más probable que falte en el
+  // despliegue—. La primera fue `profiles.seeking_specialties`
+  // (`20260907000100`): las migraciones ya aplicadas no se editan, se añaden.
+  //
+  // El resto de `alter table` (RLS, `replica identity`) no trae `add column` y
+  // pasa de largo. La forma que no sepa leer la deja sin tipo y revienta, que es
+  // la misma regla que arriba: antes un error que un verde falso.
+  for (const m of sql.matchAll(/alter table (?:only\s+)?public\.(\w+)([\s\S]*?);/gi)) {
+    const columns = tables.get(m[1]);
+    const clauses = [
+      ...m[2].matchAll(
+        /add column\s+(?:if not exists\s+)?(\w+)\s+([\s\S]*?)(?=\s*,\s*(?:add|alter|drop)\s|\s*$)/gi
+      ),
+    ];
+    if (clauses.length === 0) continue;
+    if (!columns) {
+      throw new Error(
+        `add column sobre public.${m[1]}, que no tiene create table: parser desfasado`
+      );
+    }
+    for (const clause of clauses) {
+      const name = clause[1];
+      const type = [];
+      for (const token of clause[2].split(/\s+/).filter(Boolean)) {
+        if (AFTER_TYPE.has(token.toLowerCase())) break;
+        type.push(token);
+      }
+      if (type.length === 0) throw new Error(`Columna ${m[1]}.${name} sin tipo: parser desfasado`);
+      columns.push({ name, type: type.join(' ').replace(/^public\./, '') });
+    }
   }
 
   const functions = [];

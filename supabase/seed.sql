@@ -83,11 +83,24 @@ on conflict (id) do nothing;
 -- El catálogo cubre a propósito los tres valores de `looking_for`, los tres
 -- puntos de partida, los tres niveles de ambición y las cuatro franjas: así
 -- cualquier filtro del deck encuentra algo que enseñar.
+--
+-- `seeking_specialties` respeta la invariante del dominio y cubre sus DOS
+-- lecturas del array vacío, igual que `src/data/mock/seed.ts`:
+--
+--   - Alba y Tomás son `lockin` y lo llevan vacío porque ahí no aplica: un
+--     compañero de enfoque se elige por franja horaria, no por skills.
+--   - Omar lo lleva vacío siendo `ambos`, que es la otra lectura —«abierto a
+--     cualquiera»—. Hace falta en el catálogo para que nadie que lea estos
+--     datos se quede solo con la primera.
+--
+-- En el resto complementa a `specialties` sin repetirla: quien construye busca
+-- quien vende y al revés. Si cambias un perfil aquí, cámbialo también allí.
 
 insert into public.profiles (
   id, name, age, location, timezone,
   avatar_initials, avatar_accent,
-  specialties, looking_for, starting_point,
+  specialties, seeking_specialties,
+  looking_for, starting_point,
   availability_hours_per_week, availability_bands,
   ambition, link_github, link_portfolio, link_linkedin, prompts
 )
@@ -95,7 +108,9 @@ values
   (
     '11111111-1111-4111-8111-000000000001', 'Núria Bosch', 29, 'Barcelona', 'Europe/Madrid',
     'NB', 'teal',
-    array['dev', 'datos']::public.specialty[], 'par', 'idea-sin-empezar',
+    array['dev', 'datos']::public.specialty[],
+    array['marketing', 'ventas']::public.specialty[],
+    'par', 'idea-sin-empezar',
     25, array['tarde', 'noche']::public.time_band[],
     'todo-o-nada', 'https://github.com/example-nuria', null, null,
     '[{"question":"Lo que quiero construir es…","answer":"Herramientas para equipos pequeños que odian las hojas de cálculo."}]'::jsonb
@@ -103,7 +118,9 @@ values
   (
     '11111111-1111-4111-8111-000000000002', 'Marc Oller', 34, 'Valencia', 'Europe/Madrid',
     'MO', 'brass',
-    array['diseno', 'producto']::public.specialty[], 'ambos', 'algo-empezado',
+    array['diseno', 'producto']::public.specialty[],
+    array['dev', 'ventas']::public.specialty[],
+    'ambos', 'algo-empezado',
     15, array['manana']::public.time_band[],
     'equilibrado', null, 'https://example.com/marc', null,
     '[{"question":"Mi mejor sesión de trabajo empieza…","answer":"A las siete de la mañana, con el café todavía hirviendo."}]'::jsonb
@@ -111,7 +128,9 @@ values
   (
     '11111111-1111-4111-8111-000000000003', 'Alba Ferrer', 26, 'Ciudad de México', 'America/Mexico_City',
     'AF', 'teal',
-    array['marketing', 'contenido']::public.specialty[], 'lockin', 'solo-ganas',
+    array['marketing', 'contenido']::public.specialty[],
+    array[]::public.specialty[],
+    'lockin', 'solo-ganas',
     10, array['noche']::public.time_band[],
     'lifestyle', null, null, null,
     '[{"question":"Necesito compañía para…","answer":"Sentarme a escribir sin abrir otra pestaña. Dos horas, sin excusas."}]'::jsonb
@@ -119,7 +138,9 @@ values
   (
     '11111111-1111-4111-8111-000000000004', 'Diego Salas', 31, 'Bogotá', 'America/Bogota',
     'DS', 'brass',
-    array['ventas', 'marketing']::public.specialty[], 'par', 'solo-ganas',
+    array['ventas', 'marketing']::public.specialty[],
+    array['dev', 'producto']::public.specialty[],
+    'par', 'solo-ganas',
     30, array['manana', 'tarde']::public.time_band[],
     'todo-o-nada', null, null, 'https://linkedin.com/in/example-diego',
     '[{"question":"Lo que aporto desde el día uno es…","answer":"Conseguir los diez primeros clientes antes de que exista el producto."},{"question":"Busco a alguien que…","answer":"Sepa construir lo que yo ya sé vender."}]'::jsonb
@@ -127,7 +148,9 @@ values
   (
     '11111111-1111-4111-8111-000000000005', 'Inés Aranda', 24, 'Sevilla', 'Europe/Madrid',
     'IA', 'teal',
-    array['producto', 'dev']::public.specialty[], 'ambos', 'idea-sin-empezar',
+    array['producto', 'dev']::public.specialty[],
+    array['diseno', 'marketing']::public.specialty[],
+    'ambos', 'idea-sin-empezar',
     20, array['noche', 'madrugada']::public.time_band[],
     'equilibrado', 'https://github.com/example-ines', 'https://example.com/ines', null,
     '[{"question":"Lo que quiero construir es…","answer":"Algo aburrido y necesario para gremios que aún trabajan por WhatsApp."},{"question":"Mi mejor sesión de trabajo empieza…","answer":"Cuando el resto del mundo ya se ha ido a dormir."}]'::jsonb
@@ -135,7 +158,9 @@ values
   (
     '11111111-1111-4111-8111-000000000006', 'Tomás Ruiz', 38, 'Buenos Aires', 'America/Argentina/Buenos_Aires',
     'TR', 'brass',
-    array['finanzas', 'operaciones']::public.specialty[], 'lockin', 'algo-empezado',
+    array['finanzas', 'operaciones']::public.specialty[],
+    array[]::public.specialty[],
+    'lockin', 'algo-empezado',
     8, array['manana']::public.time_band[],
     'lifestyle', null, null, null,
     '[{"question":"Necesito compañía para…","answer":"Las dos horas de antes del trabajo. Solo no las cumplo nunca."}]'::jsonb
@@ -143,7 +168,9 @@ values
   (
     '11111111-1111-4111-8111-000000000007', 'Lucía Pardo', 27, 'Lisboa', 'Europe/Lisbon',
     'LP', 'teal',
-    array['diseno', 'contenido']::public.specialty[], 'par', 'algo-empezado',
+    array['diseno', 'contenido']::public.specialty[],
+    array['dev', 'producto']::public.specialty[],
+    'par', 'algo-empezado',
     35, array['tarde', 'noche']::public.time_band[],
     'todo-o-nada', null, 'https://example.com/lucia', null,
     '[{"question":"Lo que ya intenté y no salió…","answer":"Una marca de cerámica preciosa que no vendió nada. Aprendí a validar antes."},{"question":"Busco a alguien que…","answer":"Se enfade conmigo cuando me pase tres días puliendo un icono."}]'::jsonb
@@ -151,12 +178,39 @@ values
   (
     '11111111-1111-4111-8111-000000000008', 'Omar Chaib', 33, 'Madrid', 'Europe/Madrid',
     'OC', 'brass',
-    array['legal', 'producto']::public.specialty[], 'ambos', 'idea-sin-empezar',
+    array['legal', 'producto']::public.specialty[],
+    array[]::public.specialty[],
+    'ambos', 'idea-sin-empezar',
     12, array['noche']::public.time_band[],
     'equilibrado', null, null, 'https://linkedin.com/in/example-omar',
     '[{"question":"Lo que aporto desde el día uno es…","answer":"Que el pacto entre nosotros esté escrito antes de que haga falta."}]'::jsonb
   )
 on conflict (id) do nothing;
+
+-- Ojo si el catálogo YA está sembrado, que es el caso de `grrzmzktrhksbttpbblg`:
+-- el `do nothing` de arriba no toca las filas existentes, así que volver a
+-- ejecutar este archivo NO les pone `seeking_specialties`. Se quedan con el
+-- `default` de la migración `20260907000100`, `{}`, que en `ambos`/`par` se lee
+-- como «abierto a cualquiera» y disimula perfectamente la diferencia. Para
+-- ponerlas al día sin borrar nada, en el SQL Editor:
+--
+--     update public.profiles p set seeking_specialties = v.seeking
+--     from (values
+--       ('11111111-1111-4111-8111-000000000001'::uuid, array['marketing','ventas']),
+--       ('11111111-1111-4111-8111-000000000002'::uuid, array['dev','ventas']),
+--       ('11111111-1111-4111-8111-000000000003'::uuid, array[]::text[]),
+--       ('11111111-1111-4111-8111-000000000004'::uuid, array['dev','producto']),
+--       ('11111111-1111-4111-8111-000000000005'::uuid, array['diseno','marketing']),
+--       ('11111111-1111-4111-8111-000000000006'::uuid, array[]::text[]),
+--       ('11111111-1111-4111-8111-000000000007'::uuid, array['dev','producto']),
+--       ('11111111-1111-4111-8111-000000000008'::uuid, array[]::text[])
+--     ) as v(id, seeking)
+--     where p.id = v.id
+--       and p.seeking_specialties <> v.seeking::public.specialty[];
+--
+-- Mismo patrón que el `update` de las columnas de token de `auth.users` de más
+-- arriba, y por el mismo motivo: un seed idempotente crea lo que falta, no
+-- repara lo que ya existe.
 
 commit;
 

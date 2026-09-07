@@ -9,7 +9,7 @@
 - [x] Tabla `matches` — par ordenado canónicamente (`profile_a < profile_b`) + `unique`, para que no existan dos matches entre las mismas dos personas
 - [x] Tabla `messages` — con trigger que mantiene `matches.last_message_at`
 - [x] Políticas de Row Level Security (cada usuario ve solo sus propios matches/mensajes) — activas en las cinco tablas, `anon` revocado en todas
-- [x] Migraciones en `supabase/migrations/` — cinco archivos, aplicables con `supabase db reset`
+- [x] Migraciones en `supabase/migrations/` — seis archivos, aplicables con `supabase db reset`. Las cinco primeras del 2026-09-05; la sexta, `20260907000100_profiles_seeking_specialties.sql`, del 2026-09-07 (ver "Especialidades buscadas" al final)
 
 ### Extra necesario para cumplir el contrato de `arquitecto`
 - [x] Tabla `decisions` (swipes) — la exige `DiscoveryRepository`: `recordDecision` necesita la reciprocidad y `getDeck`/`listDecided` los ya vistos
@@ -338,6 +338,138 @@ Dos herramientas, complementarias a propósito:
 - [x] La cabecera de `supabase/README.md` decía "`supabase/seed.sql` todavía no
       se ha ejecutado" mientras su propia sección "Estado", al final, decía que
       sí. Corregido.
+
+## Especialidades buscadas — `seeking_specialties` (2026-09-07)
+
+`arquitecto` amplió el contrato con `Profile.seekingSpecialties` (commit
+`7abbb0c`) y dejó el lado de Postgres marcado como trabajo de este bloque, con
+un `TODO(datos)` en `mappers.ts` y un caso de contrato en rojo a propósito para
+que la pérdida de datos no fuera muda. Esto lo cierra por el lado del repo.
+
+### Lo que se hizo
+
+- [x] **Migración nueva**, `supabase/migrations/20260907000100_profiles_seeking_specialties.sql`.
+      No se tocó `20260905000200`: ya está aplicada contra `grrzmzktrhksbttpbblg`,
+      y reescribir una migración aplicada es fabricar deriva.
+      `add column seeking_specialties public.specialty[] not null default '{}'`
+      con `check (cardinality <= 10 and not array_has_duplicates)`.
+- [x] **Tres decisiones de esquema, escritas en la propia migración:**
+  - **El vacío es válido** (`<= 10`, no `between 1 and 10` como `specialties`):
+    es el único valor legal en `lockin` y significa «abierto a cualquiera» en
+    `par`/`ambos`.
+  - **La invariante de lockin NO se fuerza en la base.** Un `check (looking_for
+    <> 'lockin' or cardinality = 0)` era tentador; lo decidido por `arquitecto`
+    es que la mantenga quien escribe el perfil. Meterla aquí la pondría en un
+    sitio que el mock no puede replicar, y los dos backends cumplen el mismo
+    contrato.
+  - **`default '{}'`**, para que la columna sea retrocompatible sin backfill:
+    las filas que ya existen quedan con un valor que significa algo, no con un
+    `null` que habría que interpretar.
+- [x] **Sin índice GIN, y argumentado.** `specialties` lo tiene porque el deck
+      filtra por él (`discovery_deck` hace `&&`, y `ProfileFilter.specialties`
+      se traduce a `overlaps`). Sobre lo *buscado* no hay hoy ninguna consulta:
+      `arquitecto` dejó escrito que un filtro así sería otro campo de
+      `ProfileFilter` y hay que hablarlo con `descubrir`. Un GIN que nadie lee
+      solo cuesta mantenimiento en cada escritura de perfil. El `create index`
+      exacto queda escrito en la migración para cuando llegue ese filtro.
+- [x] `src/data/supabase/database.types.ts` — `seeking_specialties` en `ProfileRow`.
+- [x] `src/data/supabase/mappers.ts` — `toProfile` lee la columna y
+      `toProfileInsert` la escribe; fuera los dos `TODO(datos)`. Sin
+      `seekingSpecialties` en el input se escribe `[]` y **no** se hereda del
+      perfil existente, al revés que el acento del avatar: heredar dejaría al
+      usuario con una preferencia que su formulario todavía no le deja ver ni
+      cambiar. Cuatro tests nuevos en `mappers.test.ts` cubren las dos
+      direcciones, el vacío, y que no se crucen `specialties` y lo buscado.
+- [x] `src/data/supabase/index.ts` — **sin cambios, y no es un olvido**: todas
+      sus lecturas de perfil son `select('*')` y todas sus escrituras pasan por
+      `toProfileInsert`, así que la columna nueva entra sola. El único filtro por
+      especialidad que tiene (`overlaps('specialties', …)`) es el de lo que la
+      otra persona **domina**, que es lo que `ProfileFilter` sigue declarando.
+- [x] `supabase/seed.sql` — los ocho perfiles la rellenan igual que
+      `src/data/mock/seed.ts`, verificado campo a campo: Alba y Tomás vacíos por
+      ser `lockin`, Omar vacío siendo `ambos` (la otra lectura del vacío), y los
+      cinco restantes complementando a `specialties` sin repetirla.
+- [x] **`supabase/drift-check.mjs` parseaba solo `create table`.** Una columna
+      añadida por una migración posterior era invisible para él: habría dado
+      «sin deriva» con la columna sin aplicar. Ahora también lee
+      `alter table … add column`. Es justo el punto ciego que este cambio
+      estrenaba, porque es la primera migración que añade una columna.
+
+### Verificación
+
+- `npx tsc --noEmit` — limpio.
+- `npm run lint` — limpio.
+- `npx jest --ci --runInBand` — **338 pasados, 31 suites**, 27 omitidos (la
+  suite de contrato remota, que es opt-in). Sin fallos.
+- `node supabase/drift-check.mjs` — **1 deriva**, exactamente la esperada:
+  `falta la columna profiles.seeking_specialties`, código de salida 1. Sirve de
+  control positivo del parser nuevo: la columna no aparece en ningún
+  `create table`, así que solo puede haber salido de la rama nueva. Y no inventa
+  ninguna otra: las otras cuatro tablas siguen dando su cuenta de columnas.
+- Control del parser aparte, con el mismo método que la vez anterior (copia de
+  `supabase/` en un temporal, migración inventada): dos `add column` en **una
+  sola** sentencia, uno `text` y otro `specialty[]`. Los dos salieron marcados
+  y el proceso terminó con código 1. La copia se borró después, porque para
+  ejecutarse necesita una copia de `.env.local`.
+- Sintaxis SQL de la migración nueva y del `seed.sql` modificado, validada
+  contra la gramática real de PostgreSQL (libpg_query vía `pgsql-parser`), como
+  se hizo con las cinco anteriores: 2 y 10 sentencias, sin errores. Con control
+  negativo — un `alter table` con un corchete sin cerrar sí revienta.
+- Prettier: los cuatro archivos de código tocados salen conformes con final de
+  línea LF. `prettier --check` sobre el árbol de trabajo los marca igual **antes
+  y después** del cambio, por el CRLF de este checkout de Windows contra el
+  `endOfLine: "lf"` de `.prettierrc`; en CI (Linux) no pasa. Ya estaba anotado
+  por `arquitecto`.
+
+### Lo que queda, y es del usuario
+
+- [ ] **Pegar `20260907000100_profiles_seeking_specialties.sql` en el SQL Editor
+      del dashboard.** Desde esta máquina no hay forma: solo está la clave
+      `anon`, y `db push` exige `SUPABASE_ACCESS_TOKEN` o la contraseña de
+      Postgres (mismo motivo por el que las cinco anteriores también se pegaron
+      a mano). **Hasta que se pegue, escribir un perfil contra Supabase falla**,
+      y el alcance real es mayor de lo que anticipaba `arquitecto` — medido, no
+      supuesto:
+
+      `LOCKIN_SUPABASE_CONTRACT=1 npx jest src/data/supabase/contract.test.ts`
+      → **27 fallidos de 27**, todos con el mismo error:
+
+          Could not find the 'seeking_specialties' column of 'profiles'
+          in the schema cache
+
+      No es que fallen los dos casos de `seekingSpecialties`: es que casi todos
+      los casos empiezan creando un perfil, y `saveCurrent` ahora manda la
+      columna. PostgREST la rechaza y la pasada entera se cae en 3,5 s.
+
+      Lo mismo le pasa a **la app** mientras apunte a este proyecto con
+      `.env.local`: crear o editar perfil devuelve error. No hay a medias —
+      antes el campo se perdía en silencio, ahora la escritura no pasa. Es lo
+      correcto (un perfil guardado a medias no lo nota nadie; esto sí) y se
+      arregla pegando la migración, pero conviene saberlo antes de abrir la app
+      y pensar que se ha roto otra cosa.
+- [ ] **Actualizar los ocho perfiles ya sembrados.** El `on conflict (id) do
+      nothing` del seed no toca filas existentes, así que volver a ejecutarlo NO
+      les pone el campo: se quedan con el `{}` del `default`, que en `par`/`ambos`
+      se lee como «abierto a cualquiera» y disimula la diferencia. El `update`
+      exacto está en `supabase/seed.sql`, justo debajo del insert de perfiles.
+
+### Hallazgo colateral: las funciones de desarrollo ya no están instaladas
+
+`node supabase/drift-check.mjs` del 2026-09-07 dice que
+`dev_reset_current_user()` y `seed_incoming_likes(p_email)` **NO están
+instaladas** en `grrzmzktrhksbttpbblg`. El 2026-09-06 sí lo estaban (ver más
+arriba, sección "Deriva … / 3. Ejecutado contra el proyecto real"). Alguien
+ejecutó `supabase/dev-teardown.sql`, o el proyecto se reconstruyó.
+
+Consecuencia práctica, y explica un fallo que si no parecería aleatorio: sin
+`dev_reset_current_user()` la suite de contrato necesita **un alta anónima por
+test** en vez de cuatro por pasada, y con 27 casos se come el límite de GoTrue
+de 30 altas por hora e IP. La pasada de referencia de hoy murió justamente así
+en el último test (`Request rate limit reached`), no por nada del esquema.
+
+Para volver a poder ejecutar el contrato entero hay que reinstalarla pegando el
+final de `supabase/seed.sql`. Y el límite ya gastado no se reinicia borrando
+nada: hay que esperar a la hora siguiente.
 
 ## Deuda anotada
 - `initialsFrom()` está duplicada en `src/data/mock/store.ts` y `src/data/supabase/mappers.ts`. Es lógica de dominio compartida, pero subirla a `src/data/` es territorio de `arquitecto`. Si divergen, el avatar de un mismo perfil cambia al conectar Supabase.

@@ -43,14 +43,7 @@ export function toProfile(row: ProfileRow): Profile {
     timezone: row.timezone,
     avatar: { initials: row.avatar_initials, accent: row.avatar_accent },
     specialties: row.specialties,
-    // TODO(datos): la columna `seeking_specialties` todavía no existe en
-    // `supabase/migrations/`, así que aquí no hay nada que leer y se devuelve
-    // el array vacío. No es el «abierto a cualquiera» del dominio: es un hueco.
-    // Cuando exista la migración, esto pasa a `row.seeking_specialties` (y
-    // `toProfileInsert` deja de descartar el campo). El caso «guarda
-    // seekingSpecialties tal y como se envía» de `repositories.contract.ts`
-    // falla hasta entonces, a propósito.
-    seekingSpecialties: [],
+    seekingSpecialties: row.seeking_specialties,
     lookingFor: row.looking_for,
     startingPoint: row.starting_point,
     availability: {
@@ -90,8 +83,12 @@ export function toProfileInsert(
     avatar_initials: input.avatar?.initials ?? initialsFrom(input.name),
     avatar_accent: input.avatar?.accent ?? existing?.avatar.accent ?? 'brass',
     specialties: input.specialties,
-    // `input.seekingSpecialties` se descarta aquí: no hay columna donde
-    // ponerlo. Ver el TODO de `toProfile`.
+    // Ausente significa «abierto a cualquiera», igual que en el mock: se guarda
+    // `[]`, no se hereda lo que hubiera antes. `saveCurrent` pisa el perfil
+    // entero con lo que manda el formulario, y heredar aquí haría que un
+    // formulario que todavía no pregunta por el campo conservara para siempre
+    // un valor que su usuario ya no puede ver ni cambiar.
+    seeking_specialties: input.seekingSpecialties ?? [],
     looking_for: input.lookingFor,
     starting_point: input.startingPoint,
     availability_hours_per_week: input.availability.hoursPerWeek,

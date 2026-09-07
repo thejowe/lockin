@@ -3,12 +3,21 @@
 Diseño del esquema que sostiene el contrato de repositorio de `arquitecto`
 (`src/data/repositories.ts` + `src/data/types.ts`).
 
-> **Estado: aplicado.** Las cinco migraciones están ejecutadas en el proyecto
-> `grrzmzktrhksbttpbblg` (2026-09-06, pegadas en el SQL Editor), y el cliente de
-> `src/data/supabase/` habla contra ellas. Comprobado en vivo con la clave
-> `anon`: `profiles` y `discovery_deck()` existen y devuelven
-> `42501 permission denied` sin sesión, que es justo lo que exige la migración
-> de RLS. `supabase/seed.sql` también está ejecutado (ver "Estado", al final).
+> **Estado: aplicado hasta la quinta migración.** Las cinco primeras están
+> ejecutadas en el proyecto `grrzmzktrhksbttpbblg` (2026-09-06, pegadas en el
+> SQL Editor), y el cliente de `src/data/supabase/` habla contra ellas.
+> Comprobado en vivo con la clave `anon`: `profiles` y `discovery_deck()`
+> existen y devuelven `42501 permission denied` sin sesión, que es justo lo que
+> exige la migración de RLS. `supabase/seed.sql` también está ejecutado (ver
+> "Estado", al final).
+>
+> **`20260907000100_profiles_seeking_specialties.sql` está SIN APLICAR** a fecha
+> de 2026-09-07: se escribió desde una máquina sin acceso SQL al proyecto, y
+> pegarla en el SQL Editor es un paso manual del usuario. Hasta que se pegue,
+> **escribir un perfil contra este proyecto falla** con `Could not find the
+> 'seeking_specialties' column of 'profiles' in the schema cache` — la suite de
+> contrato da 27/27 fallidos y la app no puede crear ni editar perfil. Ver
+> "Estado".
 
 ## Migraciones
 
@@ -21,6 +30,12 @@ Se aplican en orden de nombre:
 | `20260905000300_decisions_matches_messages.sql` | `decisions`, `matches`, `messages` y `is_match_member()` |
 | `20260905000400_rls_policies.sql` | Row Level Security de las cinco tablas |
 | `20260905000500_functions_and_realtime.sql` | `record_decision()`, `discovery_deck()`, trigger de `last_message_at`, realtime |
+| `20260907000100_profiles_seeking_specialties.sql` | `profiles.seeking_specialties` — qué busca el perfil en la otra persona |
+
+Las aplicadas no se editan nunca: un cambio de esquema entra como archivo nuevo.
+Editar `20260905000200` para meterle una columna dejaría el repo diciendo una
+cosa y `grrzmzktrhksbttpbblg` otra, que es exactamente la deriva que
+`drift-check.mjs` existe para cazar.
 
 Aplicar en local:
 
@@ -68,7 +83,8 @@ alcance inventado:
 | `timezone` | `timezone` | IANA. Se valida en la app, no en un `check` que caduque con tzdata |
 | `avatar.initials` | `avatar_initials` | 1-2 letras mayúsculas |
 | `avatar.accent` | `avatar_accent` | enum `brass \| teal` |
-| `specialties` | `specialties` | `specialty[]`, 1-10, sin repetidos, índice GIN |
+| `specialties` | `specialties` | Lo que **domina**. `specialty[]`, 1-10, sin repetidos, índice GIN |
+| `seekingSpecialties` | `seeking_specialties` | Lo que **busca en la otra persona**. `specialty[]`, 0-10, sin repetidos. Sin índice: hoy no lo filtra nadie |
 | `lookingFor` | `looking_for` | enum `mode_preference` |
 | `startingPoint` | `starting_point` | |
 | `availability.hoursPerWeek` | `availability_hours_per_week` | |
@@ -84,7 +100,21 @@ que hoy hace el mock.
 
 **Sin `image_url`, sin sueldo, sin equity, sin rol vacante.** El MVP no sube
 imágenes y el Modo Talento es Fase 4 — el enum `mode` ni siquiera puede
-representarlo.
+representarlo. `seeking_specialties` es lo más cerca que el esquema llega de
+«qué busco», y es simétrico a propósito: las dos personas de un match lo
+declaran, ninguna publica una vacante. No lo acompañes nunca de sueldo,
+seniority ni número de puestos.
+
+Dos cosas de `seeking_specialties` que no se ven en la tabla de arriba:
+
+- **El vacío tiene dos lecturas**, según `looking_for`. Con `lockin` es «no
+  aplica» —un compañero de enfoque se elige por franja horaria, no por skills— y
+  es el único valor legal. Con `par`/`ambos` es «abierto a cualquiera». Nunca es
+  «no busco a nadie», y nunca es «dato ausente».
+- **Esa invariante no la fuerza la base.** El CHECK solo mira cardinalidad y
+  duplicados; que un perfil de `lockin` lo lleve vacío lo mantiene quien escribe
+  el perfil. Es decisión de `arquitecto` (ver `docs/plan/todo/arquitecto.md`):
+  el mock tampoco la fuerza, y los dos backends cumplen el mismo contrato.
 
 ### `Match` → `public.matches`
 
@@ -166,8 +196,10 @@ así que cada usuario solo recibe eventos de lo suyo. Eso es lo que sostiene
 
 Ninguno de los tres caminos necesita Docker: el proyecto es remoto.
 
-1. **SQL Editor del dashboard.** Pega los cinco archivos en orden de nombre.
-   Es el camino sin credenciales extra, y el único disponible ahora mismo.
+1. **SQL Editor del dashboard.** Pega los archivos en orden de nombre. Es el
+   camino sin credenciales extra, y el único disponible ahora mismo. Sobre una
+   base que ya tiene las cinco primeras aplicadas basta con pegar las nuevas —
+   hoy, `20260907000100_profiles_seeking_specialties.sql`.
 2. **`supabase db push` con la contraseña de Postgres.** Con un
    `SUPABASE_ACCESS_TOKEN` (Account → Access Tokens) en el entorno:
 
@@ -366,9 +398,32 @@ reinicia: hay que esperar.
 
 ## Estado
 
-Las cinco migraciones y `seed.sql` están **aplicados** contra
+Las cinco primeras migraciones y `seed.sql` están **aplicados** contra
 `grrzmzktrhksbttpbblg` (2026-09-06), pegados en el SQL Editor, más
 `dev_reset_current_user()` del final de `seed.sql`.
+
+`20260907000100_profiles_seeking_specialties.sql` (2026-09-07) **no lo está**, y
+por eso el repo y el despliegue difieren a propósito ahora mismo. Para cerrarlo,
+en el SQL Editor del dashboard:
+
+1. Pega el archivo entero de la migración y ejecútalo. Añade
+   `profiles.seeking_specialties` con `default '{}'`, así que las filas que ya
+   existen no se rompen: quedan con el array vacío.
+2. Los ocho perfiles de `seed.sql` se quedan con ese `{}` aunque vuelvas a
+   ejecutar el seed — su `on conflict (id) do nothing` no toca lo que ya está.
+   Para ponerlos al día, el `update` que documenta `supabase/seed.sql` justo
+   debajo del insert de perfiles.
+3. Comprueba con `node supabase/drift-check.mjs`: hoy dice
+   `x falta la columna profiles.seeking_specialties` y sale con código 1;
+   después debe decir `public.profiles — 20 columnas con el tipo esperado` y
+   salir con 0.
+4. Y con `LOCKIN_SUPABASE_CONTRACT=1 npx jest src/data/supabase/contract.test.ts`
+   (27/27). Ojo: eso **también necesita `dev_reset_current_user()` instalada**, y
+   el 2026-09-07 no lo está — `drift-check.mjs` la da por ausente junto a
+   `seed_incoming_likes()`. Sin ella la suite gasta un alta anónima por test y
+   muere con `Request rate limit reached` (30/hora por IP). Se instala pegando
+   el final de `supabase/seed.sql`, y el límite gastado no se reinicia: hay que
+   esperar a la hora siguiente.
 
 Que sigan coincidiendo con `supabase/migrations/` ya no es un acto de fe:
 `node supabase/drift-check.mjs` lo comprueba en un comando y con la clave `anon`
@@ -378,11 +433,16 @@ Que sigan coincidiendo con `supabase/migrations/` ya no es un acto de fe:
 "Deriva de esquema".
 
 El flujo completo (registro → perfil → deck → match → mensaje) está verificado
-por dos caminos: la suite de contrato, 25/25 contra este proyecto
+por dos caminos: la suite de contrato, 25/25 contra este proyecto el 2026-09-06
 (`LOCKIN_SUPABASE_CONTRACT=1 npx jest src/data/supabase/contract.test.ts`), y un
 recorrido a mano en la app con `.env.local` puesto, confirmado como Supabase
 real porque el estado sobrevivió a cerrar y reabrir la app — el mock es
 memoria y no habría sobrevivido.
+
+Desde el 2026-09-07 la suite tiene 27 casos, no 25: `arquitecto` añadió dos por
+`seekingSpecialties`. El que comprueba que el campo se guarda **falla mientras
+`20260907000100` no esté aplicada**, y ese rojo es el aviso de que el dato se
+pierde, no un test defectuoso.
 
 `seed_incoming_likes('<email>')`, en `seed.sql`, reproduce `SEED_RECIPROCAL_IDS`
 del mock para tu usuario, por si quieres que el deck te dé un match al primer

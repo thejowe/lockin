@@ -33,6 +33,7 @@ function buildProfileRow(overrides: Partial<ProfileRow> = {}): ProfileRow {
     avatar_initials: 'NB',
     avatar_accent: 'teal',
     specialties: ['dev', 'datos'],
+    seeking_specialties: ['marketing', 'ventas'],
     looking_for: 'par',
     starting_point: 'idea-sin-empezar',
     availability_hours_per_week: 25,
@@ -100,6 +101,23 @@ describe('toProfile', () => {
     expect(profile.createdAt).toBe('2026-01-01T09:00:00.000Z');
     expect(profile.updatedAt).toBe('2026-01-02T09:00:00.000Z');
   });
+
+  it('distingue lo que el perfil domina de lo que busca', () => {
+    // Son dos columnas distintas y es fácil cruzarlas al mapear: `specialties`
+    // es lo que aporta esta persona, `seeking_specialties` lo que quiere de la
+    // otra. La fila de prueba las lleva disjuntas justo para que un cruce se
+    // vea.
+    const profile = toProfile(buildProfileRow());
+
+    expect(profile.specialties).toEqual(['dev', 'datos']);
+    expect(profile.seekingSpecialties).toEqual(['marketing', 'ventas']);
+  });
+
+  it('el array vacío llega como array vacío, que es «abierto a cualquiera»', () => {
+    const profile = toProfile(buildProfileRow({ looking_for: 'lockin', seeking_specialties: [] }));
+
+    expect(profile.seekingSpecialties).toEqual([]);
+  });
 });
 
 describe('toProfileInsert', () => {
@@ -148,6 +166,32 @@ describe('toProfileInsert', () => {
     expect(row.id).toBe(ME);
     expect(row).not.toHaveProperty('created_at');
     expect(row).not.toHaveProperty('updated_at');
+  });
+
+  it('guarda seekingSpecialties tal cual, sin deducirlo de specialties', () => {
+    const row = toProfileInsert(
+      ME,
+      buildProfileInput({
+        lookingFor: 'par',
+        specialties: ['dev'],
+        seekingSpecialties: ['diseno', 'ventas'],
+      }),
+      null
+    );
+
+    expect(row.seeking_specialties).toEqual(['diseno', 'ventas']);
+    expect(row.specialties).toEqual(['dev']);
+  });
+
+  it('sin seekingSpecialties escribe [] y no lo hereda del perfil existente', () => {
+    // `ProfileInput` lo declara opcional para que un formulario que todavía no
+    // pregunta por el campo no se invente un valor. Heredar aquí dejaría al
+    // usuario con una preferencia que ya no puede ver ni cambiar.
+    const input = buildProfileInput({ lookingFor: 'par', seekingSpecialties: undefined });
+    const existing = buildProfile({ seekingSpecialties: ['legal'] });
+
+    expect(toProfileInsert(ME, input, existing).seeking_specialties).toEqual([]);
+    expect(toProfileInsert(ME, input, null).seeking_specialties).toEqual([]);
   });
 
   it('no arrastra un id del input', () => {
