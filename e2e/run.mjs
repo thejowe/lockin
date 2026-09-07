@@ -163,6 +163,9 @@ if (command === 'test') {
       join(artifacts, 'maestro.xml'),
       '--debug-output',
       artifacts,
+      '--test-output-dir',
+      artifacts,
+      '--flatten-debug-output',
       '-e',
       'PROFILE_NAME=' + profileName,
       '-e',
@@ -180,6 +183,16 @@ if (command === 'test') {
       maxBuffer: 16 * 1024 * 1024,
     });
     writeFileSync(join(artifacts, 'logcat.txt'), logs.stdout ?? '');
+    // Independent evidence even if Maestro's own artifact writer fails.
+    const screen = spawnSync('adb', ['exec-out', 'screencap', '-p'], { timeout: 10000 });
+    if (screen.status === 0) writeFileSync(join(artifacts, 'screen.png'), screen.stdout);
+    spawnSync('adb', ['shell', 'uiautomator', 'dump', '/sdcard/lockin-window.xml'], {
+      timeout: 10000,
+    });
+    const hierarchy = spawnSync('adb', ['exec-out', 'cat', '/sdcard/lockin-window.xml'], {
+      timeout: 10000,
+    });
+    if (hierarchy.status === 0) writeFileSync(join(artifacts, 'window.xml'), hierarchy.stdout);
     run('adb', ['reverse', '--remove', 'tcp:54321']);
   }
 }

@@ -522,3 +522,10 @@ ProfileForm (312/313). Se midió la inicialización diferida de los hosts nativo
 el primer render baja a 270 ms y ProfileForm pasa 12/12. `test/native-hosts.js`
 carga esos módulos para suites TSX antes de sus casos; no renderiza, no añade
 dobles y no altera temporizadores. La suite completa con --ci --runInBand --no-cache pasa 313/313 en 29 suites (110,4 s), con la misma cobertura 88.74/80.03/89.5/90.17. El contrato remoto conserva sus 25 casos opt-in omitidos.
+Segundo run: https://github.com/thejowe/lockin/actions/runs/34070646301 (0f9be5b).
+Backend y APK release pasan (build 8m44s). El emulador arranca y ejecuta la app;
+Maestro falla esperando `Cofundador` en la primera pantalla. Artefacto 10000604372
+revisado: JUnit, logcat, build y fases; no hay crash JS/nativo de la app registrado.
+Faltan captura y árbol: `--debug-output` no configura el destino de capturas en
+Maestro 2.10; requiere `--test-output-dir`. Se añaden ambos flags y captura/árbol
+por ADB independiente. No se cambian selectores ni esperas sin ver esa evidencia.
