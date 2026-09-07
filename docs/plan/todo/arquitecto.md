@@ -188,7 +188,7 @@ protege". El veredicto se parte: comparten nombre pero no son el mismo caso.
       `profile` existan y resuelvan— ya lo cubre `npx expo export` con sus 14
       rutas. Exento a propósito, no por olvido.
 
-- [ ] **`app-tabs.web.tsx` — NO exento; tiene lógica real.** No es declarativo.
+- [x] **`app-tabs.web.tsx` — NO exento; tiene lógica real.** No es declarativo.
       `TabButton` ramifica dos veces sobre `isFocused` (el `backgroundColor` de
       la pastilla y el `themeColor` del label) y lleva un
       `hitSlop={{ top: 8, bottom: 8 }}` que es una decisión de accesibilidad
@@ -230,3 +230,14 @@ componentes borrados. El fresco es `coverage-final.json`.
 - `npm run test:coverage -- --ci --runInBand` — **307 tests en 28 suites**, los
   mismos de antes (25 omitidos por el opt-in del contrato remoto).
 - `npx expo export --platform web` — **14 rutas**, las mismas de antes.
+
+**Cerrado el 2026-09-06** en `src/components/app-tabs.web.test.tsx` (6 tests):
+las dos ramas de `isFocused` en los dos sitios donde decide, el `hitSlop` de las
+tres pastillas y la paleta oscura. Se comprobó que no son tests vacíos mutando
+el componente: quitar el `hitSlop` tumba 1 test, fijar el fondo a `transparent`
+tumba 3. Vive en `src/components/` y no en `test/` porque solo `src/app/` es
+raíz de expo-router — el aviso de `calidad` sobre arrastrar RNTL al bundle no
+aplica aquí. La trampa de resolución que avisabas es real: el import es
+`@/components/app-tabs.web` explícito. `jest.mock` se iza por encima de los
+imports, así que la fábrica usa alias `mockCloneElement` / `MockView` en vez de
+`require()`, que el lint prohíbe.

@@ -455,3 +455,31 @@ no se modifica la lista de archivos medida por cobertura.
 - **No ejecutados**: build Android, Maestro en emulador y workflow remoto,
   por los requisitos del host anotados arriba. Las casillas correspondientes
   continúan abiertas; no se modifica el estado global del MVP en TODO.md.
+## Sexta pasada — integración de `arquitecto` + E2E (2026-09-06)
+
+Costura entre las dos sesiones paralelas, hecha desde la principal tras
+fusionar `codex/calidad`. Ninguna de las dos podía cerrarla sola: cada una veía
+solo la mitad del cambio.
+
+- `coverageThreshold` sube a **88.74 / 80.03 / 89.5 / 90.17**
+  (sentencias/ramas/funciones/líneas). Dos causas suman: el borrado de
+  `screen-placeholder.tsx` y `themed-view.tsx` por `arquitecto` encogió el
+  denominador sin tocar el numerador, y el test nuevo de `app-tabs.web.tsx`
+  añade cobertura. Medidos por Jest, no redondeados.
+- `src/components/app-tabs.web.test.tsx` — cierra la casilla que `arquitecto`
+  dejó abierta al rechazar la exención de este archivo. Ver su TODO para el
+  razonamiento; aquí lo relevante es que **se verificó que no son tests vacíos
+  mutando el componente**: quitar el `hitSlop` tumba 1 test, fijar el fondo a
+  `transparent` tumba 3.
+- `app-tabs.tsx` (el nativo) sigue exento a propósito y a 0 %. El argumento de
+  la quinta pasada se mantiene y `arquitecto` lo compró explícitamente.
+
+**Verificación:** `npm run lint` limpio, `npm run typecheck` limpio,
+`npx prettier --check` limpio, `npm run test:coverage -- --ci --runInBand` con
+**313 tests en 29 suites** (25 del contrato remoto omitidos por su opt-in) y el
+umbral nuevo cumpliéndose, `npx expo export --platform web` con 14 rutas.
+
+**Sigue pendiente y no lo tapa nada de esto:** el caso E2E de `e2e/` nunca se ha
+ejecutado en un emulador. Su propio README lo dice y hace bien: "no se declara un
+E2E verde por validar YAML, ni por pasar Jest". Hasta esa primera pasada, el
+workflow `e2e.yml` es código sin ejecutar.
