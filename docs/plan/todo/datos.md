@@ -494,10 +494,12 @@ nada: hay que esperar a la hora siguiente.
   permisos y RLS. Clasifica antes del límite de 50 sin eliminar puntuación cero.
 - [x] Casos compartidos añadidos en repositories.contract.ts; los actores remotos
   son los tres usuarios de apoyo existentes, sin modificar semillas reales.
-- [ ] Pegar la nueva migración en SQL Editor de grrzmzktrhksbttpbblg. Solo hay
-  clave anon en .env.local; esta sesión NO la ha aplicado.
-- [ ] Después de pegarla: ejecutar LOCKIN_SUPABASE_CONTRACT=1 npx jest
-  src/data/supabase/contract.test.ts y registrar el resultado de los 35 casos.
+- [x] Migración nueva ejecutada por el usuario en SQL Editor de grrzmzktrhksbttpbblg
+  (2026-09-07); comportamiento desplegado verificado con los ocho casos de ranking.
+- [x] LOCKIN_SUPABASE_CONTRACT=1 npx jest src/data/supabase/contract.test.ts:
+  **35/35 pasados**, una suite, 53.912 s (2026-09-07), contra el proyecto real.
+  Incluye orden mutuo, empates por id, vacíos, Lock-In, edición de perfil,
+  consumo completo y match recíproco con cero encaje.
 
 ### Verificación local de esta entrega
 

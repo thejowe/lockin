@@ -3,12 +3,12 @@
 Diseño del esquema que sostiene el contrato de repositorio de `arquitecto`
 (`src/data/repositories.ts` + `src/data/types.ts`).
 
-> **Estado (2026-09-07): aplicada hasta 20260907000100.** La consulta
+> **Estado (2026-09-07): aplicada hasta 20260907000200.** La consulta
 > autenticada de esta sesión devuelve los nueve perfiles y confirma los valores
 > de seeking_specialties de los ocho seed (evidencia en todo/datos.md).
-> **20260907000200_discovery_mutual_complement.sql está preparada, SIN APLICAR.**
-> Pegar solo esta migración nueva en el SQL Editor; después ejecutar el contrato
-> remoto de 35 casos. No volver a aplicar ni editar migraciones anteriores.
+> **20260907000200_discovery_mutual_complement.sql aplicada por el usuario.**
+> Contrato remoto verificado después: **35/35 pasados**, 53.912 s.
+> No volver a aplicar ni editar migraciones anteriores.
 
 ## Migraciones
 
@@ -397,9 +397,9 @@ Las cinco primeras migraciones y `seed.sql` están **aplicados** contra
 La columna y el backfill de 20260907000100 están verificados por lectura
 propia el 2026-09-07: nueve perfiles, ocho semillas con sus arrays esperados.
 
-Pendiente: pegar **20260907000200_discovery_mutual_complement.sql** completo
-en el SQL Editor de grrzmzktrhksbttpbblg. Solo disponemos de clave anon;
-no se ha aplicado desde esta sesión. Después, desde el worktree:
+**20260907000200_discovery_mutual_complement.sql** ejecutada por el usuario
+en el SQL Editor de grrzmzktrhksbttpbblg el 2026-09-07. Verificación posterior:
+**35/35 casos pasados**, una suite, 53.912 s. Comando desde el worktree:
 
 ```powershell
 $env:LOCKIN_SUPABASE_CONTRACT = '1'
@@ -426,10 +426,8 @@ recorrido a mano en la app con `.env.local` puesto, confirmado como Supabase
 real porque el estado sobrevivió a cerrar y reabrir la app — el mock es
 memoria y no habría sobrevivido.
 
-Desde el 2026-09-07 la suite tiene 27 casos, no 25: `arquitecto` añadió dos por
-`seekingSpecialties`. El que comprueba que el campo se guarda **falla mientras
-`20260907000100` no esté aplicada**, y ese rojo es el aviso de que el dato se
-pierde, no un test defectuoso.
+El 2026-09-07 la suite pasó de 25 a 27 casos por seekingSpecialties y después
+a 35 por el ranking mutuo. Los 35 están verificados contra este proyecto.
 
 `seed_incoming_likes('<email>')`, en `seed.sql`, reproduce `SEED_RECIPROCAL_IDS`
 del mock para tu usuario, por si quieres que el deck te dé un match al primer

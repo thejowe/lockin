@@ -56,7 +56,8 @@ Si en algún momento se quiere que pese de verdad, el sitio es el orden del deck
   carga; el botón de recarga permite avanzar a la siguiente al agotarla. No
   reciclamos passes ni aleatorizamos recargas. Sin nuevas decisiones, la misma
   persona sigue arriba deliberadamente: eso garantiza estabilidad.
-- [ ] Verificación remota tras pegar 20260907000200 (véase datos.md).
+- [x] Verificación remota tras pegar 20260907000200: **35/35** del contrato
+  contra Supabase real el 2026-09-07 (53.912 s; véase datos.md).
 - [x] Coverage completo en serie: 382 tests, 34 suites, suelo superado.
   Ocho casos nuevos del contrato prueban ranking, estabilidad, modo, consumo
   y match recíproco sin encaje. SQL validado localmente antes de LIMIT.
