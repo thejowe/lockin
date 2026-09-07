@@ -325,3 +325,31 @@ una pasada, y el corto expone la mitad de superficie a la flake del emulador.
       pasan, y —otra vez— eso no dice nada de este fallo: Jest no reproduce el
       teclado. Lo cierra el trabajo `probe` o `supabase` del workflow
       `E2E Android` pasando del `assertVisible: 'Enviar mensaje'`.
+
+### Ronda 3 en CI: los tres trabajos siguen en rojo (2026-09-07)
+
+[Run 34144931734](https://github.com/thejowe/lockin/actions/runs/34144931734),
+commit `cea5712` (compositor ronda 3 + reintento restringido a caída real del
+emulador). Los tres trabajos —`supabase`, `mock` y `probe`— terminaron el paso
+"UI y persistencia real" y no se reintentaron (`triage` decidió que no hubo
+caída de runner), pero el paso final "Resultado del recorrido" falló en los
+tres.
+
+Eso es esperable en `mock` (control negativo) pero **no** en `supabase` ni en
+`probe`, que deberían llegar verdes si la ronda 3 arregló el compositor.
+
+**No hay confirmación de la causa.** En esta máquina no hay `gh` CLI instalado
+(no está en PATH de bash ni PowerShell, y no se encontró el binario), así que
+solo se pudo leer la API de GitHub sin autenticación: eso da nombre y
+conclusión de cada step, pero el endpoint de logs (`/actions/jobs/{id}/logs`)
+devuelve 403 sin token, y los artefactos de Maestro (`screen.png`,
+`step-*.json` de jerarquía) no son accesibles por API pública sin auth. No se
+puede saber por lectura de API en qué comando de Maestro falló `supabase` ni
+`probe`, así que no se descarta ni se confirma que sea el mismo bug del
+compositor u otra causa.
+
+**Bloqueado en herramienta, no en código.** Para cerrar esta casilla hace falta
+alguna de: `gh` CLI instalado en esta máquina, un token de GitHub con permiso
+`actions:read` para leer logs/artefactos por API, o que alguien revise el run
+a mano en el navegador y pegue aquí qué comando de Maestro falló y el
+`screen.png`/jerarquía de ese paso.
