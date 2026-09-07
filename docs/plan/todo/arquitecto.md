@@ -4,6 +4,10 @@
 > **congelado**: `perfil`, `descubrir`, `chat` y `datos` construyen sobre él.
 > Cualquier cambio de tipos o de firmas de repositorio debe avisarse antes,
 > porque rompe pantallas de otros bloques.
+>
+> **Ampliado el 2026-09-07** con `Profile.seekingSpecialties` — aditivo, no
+> rompe nada hoy, pero deja trabajo a `datos`, `perfil` y `descubrir`. Ver
+> "Especialidades buscadas" al final de este archivo.
 
 ## Proyecto base
 - [x] Scaffold Expo + TypeScript + Expo Router (SDK 57)
@@ -241,3 +245,102 @@ aplica aquí. La trampa de resolución que avisabas es real: el import es
 `@/components/app-tabs.web` explícito. `jest.mock` se iza por encima de los
 imports, así que la fábrica usa alias `mockCloneElement` / `MockView` en vez de
 `require()`, que el lint prohíbe.
+
+---
+
+## Especialidades buscadas — `seekingSpecialties` (2026-09-07)
+
+Primera ampliación del contrato **después** de haberlo congelado. Se avisa aquí
+porque `perfil`, `descubrir` y `datos` construyen sobre `src/data/`: el cambio
+es aditivo y no rompe nada suyo hoy, pero les deja trabajo.
+
+### Qué se añadió
+
+- [x] `Profile.seekingSpecialties: Specialty[]` — lo que la persona quiere que
+      **domine la otra**, frente a `specialties`, que es lo que domina ella.
+- [x] `ProfileInput.seekingSpecialties?: Specialty[]` — opcional, igual que
+      `avatar` y por el mismo motivo (ver más abajo).
+- [x] Propagado a los ocho perfiles de `src/data/mock/seed.ts`.
+- [x] Propagado a `src/data/test-fixtures.ts`.
+- [x] Dos casos nuevos en `src/data/repositories.contract.ts`.
+- [x] `src/data/mock/index.ts`: `saveCurrent` guarda `[]` si no se envía.
+- [x] `src/data/supabase/mappers.ts`: tapado con `[]` y un `TODO(datos)`.
+
+### Las dos decisiones que había que tomar
+
+**1. Va siempre vacío cuando `lookingFor` es `'lockin'`.** Escrito en el JSDoc
+de `types.ts`. Un compañero de lock-in se elige por franja horaria y compromiso
+con la sesión — cada uno trabaja en lo suyo, así que no hay complementariedad de
+skills que declarar. Con `'par'` o `'ambos'` sí puede llevar valores.
+
+Corolario: el array vacío tiene **dos** lecturas según el modo. En `lockin` es
+«no aplica»; en `par`/`ambos` es «me da igual, ábreme a cualquiera». Nunca es
+«no busco a nadie». El catálogo seed cubre los dos casos a propósito — Alba y
+Tomás son `lockin` con `[]`, y Omar es `ambos` con `[]` — para que nadie que lea
+los datos de ejemplo se lleve una sola de las dos lecturas.
+
+La invariante **no la fuerza el repositorio**: la mantiene quien escribe el
+perfil (formulario o seed). Meter la validación en el repositorio significaría
+que el mock y Supabase tienen que coincidir en una regla de producto que hoy no
+tiene ninguna pantalla detrás; cuando `perfil` construya el campo, el sitio
+natural para exigirla es el formulario. `buildProfile`/`buildProfileInput` sí la
+aplican solos (`withSeekingRule` en `test-fixtures.ts`), porque el caso típico
+de un test es `buildProfile({ lookingFor: 'lockin' })` y ahí el campo es relleno.
+
+**2. Opcional en `ProfileInput`, obligatorio en `Profile`.** El contrato de
+lectura queda firme: toda pantalla que pinte un perfil recibe el array, aunque
+sea vacío, y no tiene que ramificar por `undefined`. El de escritura es
+tolerante, exactamente como ya lo era `avatar`: un formulario que todavía no
+pregunta por el campo no se inventa un valor, y el repositorio guarda `[]`.
+
+Esto es lo que permite cumplir el encargo de no tocar `src/features/**`: con el
+campo obligatorio en `ProfileInput`, `src/features/profile/profile-form.tsx:151`
+dejaba de compilar y había que entrar en territorio de `perfil`.
+
+### Y el principio innegociable
+
+`seekingSpecialties` es simétrico: las dos personas de un match lo declaran y
+ninguna «ofrece» nada a la otra. Eso es complementariedad, no una vacante. El
+JSDoc lo dice explícitamente y prohíbe lo que lo convertiría en Modo Talento:
+nada de sueldo, equity, seniority ni número de puestos, y nada de renombrarlo a
+`role` o `hiringFor`.
+
+### Lo que queda, y de quién es
+
+- **`datos`** — la columna `seeking_specialties` no existe en
+  `supabase/migrations/`, que es alcance suyo y estaba fuera del encargo. Hoy
+  `toProfile` devuelve `[]` y `toProfileInsert` descarta el campo: **contra
+  Supabase el dato se pierde al guardar**. Está marcado con `TODO(datos)` en
+  `mappers.ts`, y el caso «guarda seekingSpecialties tal y como se envía» del
+  contrato **falla contra Supabase a propósito** hasta que exista la columna. Es
+  el aviso, no un descuido: sin ese test en rojo la pérdida de datos sería muda.
+  La suite remota es opt-in (`LOCKIN_SUPABASE_CONTRACT=1`), así que ni `npm test`
+  ni CI se ven afectados — pasa de 25 casos a 27, con 2 en rojo.
+- **`perfil`** — el formulario y la ficha de perfil. Mientras no lo construya,
+  todo perfil creado desde la app nace con `[]`.
+- **`descubrir`** — cualquier uso en el deck. `ProfileFilter.specialties` se
+  dejó como estaba: filtra por lo que el otro **domina**. Un filtro sobre lo
+  buscado sería un campo distinto del filtro, y eso hay que hablarlo antes.
+
+### Verificación de esta pasada
+
+- `npx tsc --noEmit` — limpio (exit 0).
+- `npm run lint` — limpio.
+- `npm test -- --ci --runInBand` — **322 pasados, 30 suites**; 27 omitidos, que
+  son los 25 del contrato remoto más los 2 nuevos.
+- Prettier — los seis archivos tocados salen conformes. Ojo: `npm run
+  format:check` falla en este checkout de Windows **antes y después** del
+  cambio (34 archivos en `HEAD`, 29 después), porque el árbol de trabajo está en
+  CRLF y `.prettierrc` pide `endOfLine: "lf"`. Es artefacto de `core.autocrlf`,
+  no del contenido; en CI (Linux) no se da.
+
+### Aviso para `calidad` — el suelo de cobertura ya estaba en rojo
+
+`npm run test:coverage` no pasa, y **no es por este cambio**. En `HEAD`
+(`696408a`) da 88.72 / 80.24 / 89.32 / 90.22 contra un suelo de
+88.87 / 80.24 / 89.84 / 90.31: tres métricas por debajo. Este cambio las **sube**
+a 88.80 / 80.24 / 89.39 / 90.31 (líneas vuelve a cumplir), porque los dos casos
+nuevos del contrato ejecutan más de `repositories.contract.ts`. Sigue faltando
+en sentencias y funciones. No se ha tocado `jest.config.js`: es vuestro, y
+bajar un suelo para dejar pasar un cambio va contra vuestra propia regla — lo
+que toca es cubrir lo que entró con `696408a`.

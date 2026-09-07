@@ -87,7 +87,25 @@ export interface Profile {
   /** Identificador IANA, p. ej. `Europe/Madrid`. */
   timezone: string;
   avatar: Avatar;
+  /** Lo que esta persona domina y aporta. */
   specialties: Specialty[];
+  /**
+   * Lo que esta persona quiere que domine la otra: el otro lado de la
+   * complementariedad. Simétrico por definición — las dos personas de un match
+   * lo declaran, y ninguna «ofrece» nada a la otra. Ojo con el principio
+   * innegociable de `CONCEPTO.md`: esto NO es un rol vacante. No lo acompañes
+   * nunca de sueldo, equity, seniority ni número de puestos, ni lo renombres a
+   * algo tipo `role`/`hiringFor` — eso sería Modo Talento (Fase 4).
+   *
+   * Vacío significa «me da igual, ábreme a cualquiera», no «no busco a nadie».
+   *
+   * **Va siempre vacío cuando `lookingFor` es `'lockin'`.** Un compañero de
+   * lock-in se elige por franja horaria y compromiso con la sesión, no por
+   * skills: no hay nada que complementar cuando cada uno trabaja en lo suyo.
+   * Con `'par'` o `'ambos'` puede llevar valores. Quien escribe un perfil
+   * (formulario o seed) mantiene esta invariante; el repositorio no la fuerza.
+   */
+  seekingSpecialties: Specialty[];
   /** Qué busca esta persona: cofundador, compañero de lock-in o ambos. */
   lookingFor: ModePreference;
   startingPoint: StartingPoint;
@@ -100,10 +118,23 @@ export interface Profile {
   updatedAt: string;
 }
 
-/** Datos que envía el formulario de perfil. El repositorio pone id y timestamps. */
-export type ProfileInput = Omit<Profile, 'id' | 'createdAt' | 'updatedAt' | 'avatar'> & {
+/**
+ * Datos que envía el formulario de perfil. El repositorio pone id y timestamps.
+ */
+export type ProfileInput = Omit<
+  Profile,
+  'id' | 'createdAt' | 'updatedAt' | 'avatar' | 'seekingSpecialties'
+> & {
   /** Opcional: si no se envía, el repositorio deriva las iniciales del nombre. */
   avatar?: Partial<Avatar>;
+  /**
+   * Opcional igual que `avatar`, y por el mismo motivo: un formulario que
+   * todavía no pregunta por ello no tiene que inventarse un valor. Si no se
+   * envía, el repositorio guarda `[]` — que en el dominio significa «abierto a
+   * cualquiera», no «dato ausente». Mantiene la invariante de
+   * `Profile.seekingSpecialties`: vacío cuando `lookingFor` es `'lockin'`.
+   */
+  seekingSpecialties?: Specialty[];
 };
 
 /** Filtro del deck de descubrimiento. */
@@ -112,6 +143,11 @@ export interface ProfileFilter {
   mode?: ModePreference;
   /** Ids a excluir (ya vistos, o el propio usuario). */
   excludeIds?: string[];
+  /**
+   * Filtra por lo que el perfil **domina** (`Profile.specialties`), no por lo
+   * que busca. Un filtro sobre `seekingSpecialties` sería otro campo distinto:
+   * no lo metas aquí sin avisar a `descubrir`, que es quien lo consume.
+   */
   specialties?: Specialty[];
 }
 

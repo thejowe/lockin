@@ -320,6 +320,39 @@ export function describeRepositoryContract(backend: ContractBackend): void {
     });
 
     describe('profiles.saveCurrent', () => {
+      /**
+       * `seekingSpecialties` es lo que el perfil quiere que domine la otra
+       * persona. Se guarda tal cual: el repositorio no lo deduce de
+       * `specialties` ni lo vacía por su cuenta cuando `lookingFor` es
+       * `'lockin'` — esa invariante la mantiene quien escribe el perfil, y así
+       * queda escrito en `types.ts`.
+       *
+       * **Contra Supabase este test falla hoy**, y es a propósito: la columna
+       * `seeking_specialties` todavía no existe en `supabase/migrations/`, que
+       * es territorio del bloque `datos`. `src/data/supabase/mappers.ts`
+       * devuelve `[]` mientras tanto. Este caso es el que avisa de que el dato
+       * se pierde; cuando `datos` añada la columna y el mapeo, pasa solo.
+       */
+      it('guarda seekingSpecialties tal y como se envía', async () => {
+        const saved = await repositories.profiles.saveCurrent(
+          buildProfileInput({ lookingFor: 'par', seekingSpecialties: ['diseno', 'ventas'] })
+        );
+
+        expect(saved.seekingSpecialties).toEqual(['diseno', 'ventas']);
+        expect((await repositories.profiles.getCurrent())?.seekingSpecialties).toEqual([
+          'diseno',
+          'ventas',
+        ]);
+      });
+
+      it('acepta seekingSpecialties vacío, que es lo que declara un perfil de lock-in', async () => {
+        const saved = await repositories.profiles.saveCurrent(
+          buildProfileInput({ lookingFor: 'lockin', seekingSpecialties: [] })
+        );
+
+        expect(saved.seekingSpecialties).toEqual([]);
+      });
+
       it('deriva las iniciales del nombre si no se envía avatar', async () => {
         const profile = await repositories.profiles.saveCurrent(
           buildProfileInput({ name: 'Núria Bosch', avatar: undefined })

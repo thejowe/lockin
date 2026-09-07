@@ -35,6 +35,13 @@ Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>
 - [x] **Instalar `dev_reset_current_user()`** y dejar constancia de un 25/25 en la suite de contrato — hecho el 2026-09-06, ver "Al retomar" abajo
 - [x] Flujo real end-to-end **en la app** (registro → perfil → deck → match → mensaje) — recorrido a mano el 2026-09-06 contra **Supabase real**, no contra el mock. Ver "Al retomar" abajo para cómo se distinguió una cosa de la otra.
 
+## Especialidades buscadas (post-MVP)
+- [x] Contrato de dominio: `Profile.seekingSpecialties` / `ProfileInput.seekingSpecialties` — qué quiere el perfil que domine la otra persona. Decidido y escrito en el JSDoc: **vacío siempre cuando `lookingFor` es `lockin`**; vacío en `par`/`ambos` significa «abierto a cualquiera». Ver `todo/arquitecto.md`
+- [x] Propagado por `src/data/mock/` (los 8 perfiles seed), `src/data/test-fixtures.ts` y `src/data/repositories.contract.ts`
+- [ ] Columna `seeking_specialties` en `supabase/migrations/` + mapeo real en `src/data/supabase/mappers.ts` — **de `datos`**. Hoy el mapper devuelve `[]` y el insert descarta el campo, así que contra Supabase el dato se pierde. El caso «guarda seekingSpecialties tal y como se envía» del contrato lo deja en rojo a propósito hasta que exista la columna
+- [ ] Campo en el formulario de perfil y en la ficha — **de `perfil`**. `ProfileInput` lo declara opcional justo para que el formulario actual siga compilando mientras tanto
+- [ ] Uso en el deck / matching — **de `descubrir`**. `ProfileFilter.specialties` sigue filtrando por lo que la otra persona **domina**; un filtro sobre lo buscado sería otro campo distinto
+
 ## Calidad
 - [x] ESLint/Prettier/TS estricto
 - [x] Tests base (Jest + RNTL) — 222 tests en 14 suites, con suelo de cobertura en `jest.config.js` (69.29/57.57/68.09/69.47 %: sentencias/ramas/funciones/líneas). Más 25 opt-in de contrato contra Supabase, fuera de `npm test` y de CI.

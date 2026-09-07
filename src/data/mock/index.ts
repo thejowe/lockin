@@ -106,6 +106,8 @@ const profiles: ProfileRepository = {
     const profile: Profile = {
       ...input,
       id: existing?.id ?? CURRENT_USER_ID,
+      // Ausente significa «abierto a cualquiera»; ver `ProfileInput` en types.ts.
+      seekingSpecialties: input.seekingSpecialties ?? [],
       avatar: {
         initials: input.avatar?.initials ?? initialsFrom(input.name),
         accent: input.avatar?.accent ?? existing?.avatar.accent ?? 'brass',

@@ -9,6 +9,13 @@
  * puntos de partida, los tres niveles de ambición y las cuatro franjas horarias:
  * así cualquier filtro de `descubrir` encuentra algo que enseñar.
  *
+ * `seekingSpecialties` respeta la invariante de `types.ts`: los dos perfiles de
+ * `lockin` (Alba, Tomás) lo llevan vacío. Omar lo lleva vacío siendo `ambos`,
+ * que es el otro significado del array vacío —«abierto a cualquiera»— y hace
+ * falta en el catálogo para que nadie confunda ambos casos. En el resto,
+ * complementa a `specialties` sin repetirla: quien construye busca quien vende
+ * y al revés.
+ *
  * `SEED_RECIPROCAL_IDS` son los perfiles que ya han dado like al usuario: darles
  * like genera match al instante. Es lo que hace demostrable el flujo de
  * `descubrir` sin backend.
@@ -27,6 +34,7 @@ export const SEED_PROFILES: Profile[] = [
     timezone: 'Europe/Madrid',
     avatar: { initials: 'NB', accent: 'teal' },
     specialties: ['dev', 'datos'],
+    seekingSpecialties: ['marketing', 'ventas'],
     lookingFor: 'par',
     startingPoint: 'idea-sin-empezar',
     availability: { hoursPerWeek: 25, bands: ['tarde', 'noche'] },
@@ -49,6 +57,7 @@ export const SEED_PROFILES: Profile[] = [
     timezone: 'Europe/Madrid',
     avatar: { initials: 'MO', accent: 'brass' },
     specialties: ['diseno', 'producto'],
+    seekingSpecialties: ['dev', 'ventas'],
     lookingFor: 'ambos',
     startingPoint: 'algo-empezado',
     availability: { hoursPerWeek: 15, bands: ['manana'] },
@@ -71,6 +80,7 @@ export const SEED_PROFILES: Profile[] = [
     timezone: 'America/Mexico_City',
     avatar: { initials: 'AF', accent: 'teal' },
     specialties: ['marketing', 'contenido'],
+    seekingSpecialties: [],
     lookingFor: 'lockin',
     startingPoint: 'solo-ganas',
     availability: { hoursPerWeek: 10, bands: ['noche'] },
@@ -93,6 +103,7 @@ export const SEED_PROFILES: Profile[] = [
     timezone: 'America/Bogota',
     avatar: { initials: 'DS', accent: 'brass' },
     specialties: ['ventas', 'marketing'],
+    seekingSpecialties: ['dev', 'producto'],
     lookingFor: 'par',
     startingPoint: 'solo-ganas',
     availability: { hoursPerWeek: 30, bands: ['manana', 'tarde'] },
@@ -119,6 +130,7 @@ export const SEED_PROFILES: Profile[] = [
     timezone: 'Europe/Madrid',
     avatar: { initials: 'IA', accent: 'teal' },
     specialties: ['producto', 'dev'],
+    seekingSpecialties: ['diseno', 'marketing'],
     lookingFor: 'ambos',
     startingPoint: 'idea-sin-empezar',
     availability: { hoursPerWeek: 20, bands: ['noche', 'madrugada'] },
@@ -148,6 +160,7 @@ export const SEED_PROFILES: Profile[] = [
     timezone: 'America/Argentina/Buenos_Aires',
     avatar: { initials: 'TR', accent: 'brass' },
     specialties: ['finanzas', 'operaciones'],
+    seekingSpecialties: [],
     lookingFor: 'lockin',
     startingPoint: 'algo-empezado',
     availability: { hoursPerWeek: 8, bands: ['manana'] },
@@ -170,6 +183,7 @@ export const SEED_PROFILES: Profile[] = [
     timezone: 'Europe/Lisbon',
     avatar: { initials: 'LP', accent: 'teal' },
     specialties: ['diseno', 'contenido'],
+    seekingSpecialties: ['dev', 'producto'],
     lookingFor: 'par',
     startingPoint: 'algo-empezado',
     availability: { hoursPerWeek: 35, bands: ['tarde', 'noche'] },
@@ -196,6 +210,7 @@ export const SEED_PROFILES: Profile[] = [
     timezone: 'Europe/Madrid',
     avatar: { initials: 'OC', accent: 'brass' },
     specialties: ['legal', 'producto'],
+    seekingSpecialties: [],
     lookingFor: 'ambos',
     startingPoint: 'idea-sin-empezar',
     availability: { hoursPerWeek: 12, bands: ['noche'] },
