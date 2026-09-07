@@ -12,6 +12,12 @@ require('react-native-gesture-handler/jestSetup');
 
 jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
 
+// `react-native-keyboard-controller` es un módulo nativo: sin el mock oficial,
+// importar `src/app/_layout.tsx` revienta con "doesn't seem to be linked".
+jest.mock('react-native-keyboard-controller', () =>
+  require('react-native-keyboard-controller/jest')
+);
+
 // `expo-font` intenta cargar las fuentes de marca; en tests damos por hecho que
 // ya están listas para que las pantallas rendericen su árbol real.
 jest.mock('expo-font', () => ({

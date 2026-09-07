@@ -4,6 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 import { BrandFonts } from '@/constants/fonts';
 import { Colors, FontFamily } from '@/constants/theme';
@@ -46,31 +47,40 @@ export default function RootLayout() {
   if (!fontsLoaded && !fontError) return null;
 
   return (
+    // `KeyboardProvider` va aquí, en la raíz, porque es donde se engancha a los
+    // WindowInsets del IME. Lo pide `chat/[matchId]`: bajo edge-to-edge
+    // —obligatorio desde Expo SDK 54— Android 15+ ya no redimensiona la ventana
+    // al abrir el teclado, y el `KeyboardAvoidingView` de React Native se entera
+    // por `keyboardDidShow`, que se emite justamente al observar ese resize. Sin
+    // resize no hay evento, así que ahí es inerte con cualquier `behavior`.
+    // Ver `docs/plan/todo/chat.md`.
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: palette.background }}>
-      <ThemeProvider value={navigationTheme(scheme)}>
-        <DataProvider>
-          <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: palette.background },
-            }}>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="(onboarding)" />
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen
-              name="chat/[matchId]"
-              options={{
-                headerShown: true,
-                headerBackButtonDisplayMode: 'minimal',
-                headerStyle: { backgroundColor: palette.background },
-                headerTintColor: palette.brass,
-                headerTitleStyle: { color: palette.text, fontFamily: FontFamily.display },
-              }}
-            />
-          </Stack>
-        </DataProvider>
-      </ThemeProvider>
+      <KeyboardProvider>
+        <ThemeProvider value={navigationTheme(scheme)}>
+          <DataProvider>
+            <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: palette.background },
+              }}>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="(onboarding)" />
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen
+                name="chat/[matchId]"
+                options={{
+                  headerShown: true,
+                  headerBackButtonDisplayMode: 'minimal',
+                  headerStyle: { backgroundColor: palette.background },
+                  headerTintColor: palette.brass,
+                  headerTitleStyle: { color: palette.text, fontFamily: FontFamily.display },
+                }}
+              />
+            </Stack>
+          </DataProvider>
+        </ThemeProvider>
+      </KeyboardProvider>
     </GestureHandlerRootView>
   );
 }

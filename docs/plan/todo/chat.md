@@ -162,3 +162,43 @@ depender de los eventos de teclado de RN. Su `KeyboardProvider` va en
 `src/app/_layout.tsx`, que es de `arquitecto` — probablemente haya que
 coordinarse con ese bloque. El E2E sigue siendo el guardián: el workflow
 `E2E Android` llega a ese paso en ~27 minutos.
+
+### Corrección del 2026-09-07 — el primer arreglo no servía
+
+`behavior="padding"` **no arregló nada**. Lo dijo el emulador, no una relectura:
+el run [34118890956](https://github.com/thejowe/lockin/actions/runs/34118890956)
+volvió a morir en el comando 38 con el mismo `Element not found: Text matching
+regex: Enviar mensaje`, y el volcado de jerarquía de ese paso
+(`step-038-tapOnElement-Enviar_mensaje.json`) no tiene ningún nodo del
+compositor: la pantalla acaba en los icebreakers a `y=1579` y el teclado ocupa
+de `y=1517` a `2400`.
+
+**Lo que se leyó mal.** El algoritmo de `KeyboardAvoidingView` sí era correcto —
+`padding` calcula el solape contra las coordenadas del teclado y no depende del
+resize—, pero eso solo importa si el componente llega a ejecutarlo. En Android
+escucha `keyboardDidShow` (`KeyboardAvoidingView.js:209-213`), y Android emite
+ese evento al observar que la ventana se redimensiona. Sin resize no hay evento,
+`state.bottom` se queda en 0 y **ningún `behavior` mueve nada**. Se comprobó leer
+la mitad del camino: el cálculo, sin comprobar que se dispara.
+
+**Arreglo real**: `react-native-keyboard-controller` 1.21.9, que lee los
+WindowInsets del IME en vez de esperar el resize.
+
+- `src/app/_layout.tsx` — `KeyboardProvider` en la raíz, dentro de
+  `GestureHandlerRootView`. Es archivo de `arquitecto`: cambio mínimo y
+  comentado, pero queda anotado como cruce de alcance.
+- `src/app/chat/[matchId].tsx` — `KeyboardAvoidingView` importado de la
+  librería, no de `react-native`.
+- `jest.setup.js` — mock oficial (`react-native-keyboard-controller/jest`), sin
+  el cual importar el layout revienta con "doesn't seem to be linked".
+
+- [ ] **Sigue sin verificar en emulador.** `npm test` (313 en 29 suites), `tsc`
+      y lint pasan, y otra vez eso no dice nada sobre este fallo. Lo cierra el
+      caso positivo del workflow `E2E Android` pasando del comando 38.
+
+### Nota aparte: el control negativo de ese run no probó nada
+
+El trabajo `mock` falló por infraestructura, no por lógica: el driver de Maestro
+perdió la conexión gRPC con el emulador (`StatusRuntimeException: UNAVAILABLE`,
+`Command failed (tcp:34809): closed`). No dice ni que el control negativo esté
+bien ni que esté mal. Hay que volver a mirarlo cuando el positivo pase.

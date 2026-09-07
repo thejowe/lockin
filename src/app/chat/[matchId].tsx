@@ -13,15 +13,8 @@
 
 import { Link, Stack, useLocalSearchParams } from 'expo-router';
 import { Fragment, useMemo, useRef, useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  View,
-} from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -78,15 +71,18 @@ export default function ChatScreen() {
       <Stack.Screen options={{ title }} />
 
       {/*
-        `padding` en las dos plataformas. La rama de Android era `height`, que
-        depende de que la ventana se redimensione al abrir el teclado
-        (`adjustResize`); con edge-to-edge —obligatorio desde Expo SDK 54, sin
-        opción de salida— Android 15+ ya no la redimensiona, así que `height` no
-        movía nada y el compositor entero quedaba debajo del teclado: no se veía
-        lo que se escribía ni había forma de enviar (`returnKeyType` es `default`
-        a propósito, por ser multilínea). `padding` no depende del resize: mide
-        el solape contra las coordenadas del teclado, que sí se reportan bien.
-        Lo encontró el E2E en emulador real, y es su guardián — ver
+        `KeyboardAvoidingView` de `react-native-keyboard-controller`, NO el de
+        React Native. El de RN es inerte en Android bajo edge-to-edge —el modo
+        obligatorio desde Expo SDK 54—: se entera del teclado por
+        `keyboardDidShow`, que Android emite al observar que la ventana se
+        redimensiona, y desde Android 15 la ventana ya no se redimensiona. Sin
+        evento, `state.bottom` se queda en 0 y ningún `behavior` mueve nada
+        (comprobado en emulador: falla igual con `height` que con `padding`).
+        El de la librería lee los WindowInsets del IME, que sí llegan.
+
+        Dejaba el compositor entero debajo del teclado: no se veía lo escrito ni
+        había forma de enviar — `returnKeyType` es `default` a propósito, por ser
+        multilínea. Lo encontró el E2E en emulador real y es su guardián; ver
         `docs/plan/todo/chat.md`.
       */}
       <KeyboardAvoidingView
