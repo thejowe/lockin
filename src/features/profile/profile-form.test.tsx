@@ -170,6 +170,97 @@ describe('ProfileForm', () => {
     expect(screen.getByText('Guardar')).toBeTruthy();
   });
 
+  describe('lo que debe dominar quien busco', () => {
+    it('no se pregunta hasta saber qué busca la persona', async () => {
+      await render(<ProfileForm submitLabel="Guardar" onSubmit={jest.fn()} />);
+
+      expect(screen.queryByText('Lo que debe dominar quien busco')).toBeNull();
+      expect(screen.queryByLabelText('Busco Desarrollo')).toBeNull();
+    });
+
+    it('no se pregunta a quien busca compañero de lock-in', async () => {
+      await render(<ProfileForm submitLabel="Guardar" onSubmit={jest.fn()} />);
+
+      await fireEvent.press(screen.getByLabelText('Compañero de Lock-In'));
+
+      expect(screen.queryByText('Lo que debe dominar quien busco')).toBeNull();
+    });
+
+    it.each(['Cofundador', 'Ambos'])('se pregunta a quien elige "%s"', async (mode) => {
+      await render(<ProfileForm submitLabel="Guardar" onSubmit={jest.fn()} />);
+
+      await fireEvent.press(screen.getByLabelText(mode));
+
+      expect(screen.getByText('Lo que debe dominar quien busco')).toBeTruthy();
+      expect(screen.getByLabelText('Busco Desarrollo')).toBeTruthy();
+    });
+
+    it('distingue en accesibilidad lo que domino de lo que busco', async () => {
+      await render(
+        <ProfileForm defaultLookingFor="par" submitLabel="Guardar" onSubmit={jest.fn()} />
+      );
+
+      // Mismo texto visible en dos grupos: si compartieran nombre accesible,
+      // quien navega a ciegas no podría saber cuál está marcando.
+      await fireEvent.press(screen.getByLabelText('Busco Diseño'));
+
+      expect(screen.getByLabelText('Busco Diseño')).toBeSelected();
+      expect(screen.getByLabelText('Diseño')).not.toBeSelected();
+    });
+
+    it('envía las especialidades buscadas', async () => {
+      const onSubmit = jest.fn<Promise<void>, [ProfileInput]>().mockResolvedValue(undefined);
+      await render(<ProfileForm submitLabel="Guardar" onSubmit={onSubmit} />);
+
+      await fillValidForm();
+      await fireEvent.press(screen.getByLabelText('Busco Marketing'));
+      await fireEvent.press(screen.getByLabelText('Busco Ventas'));
+      await fireEvent.press(screen.getByText('Guardar'));
+
+      await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+      expect(onSubmit.mock.calls[0][0].seekingSpecialties).toEqual(['marketing', 'ventas']);
+    });
+
+    it('deja el campo vacío si no se marca nada: abierto a cualquiera', async () => {
+      const onSubmit = jest.fn<Promise<void>, [ProfileInput]>().mockResolvedValue(undefined);
+      await render(<ProfileForm submitLabel="Guardar" onSubmit={onSubmit} />);
+
+      await fillValidForm();
+      await fireEvent.press(screen.getByText('Guardar'));
+
+      await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+      expect(onSubmit.mock.calls[0][0].seekingSpecialties).toEqual([]);
+    });
+
+    it('lo vacía si al final se busca compañero de lock-in', async () => {
+      const onSubmit = jest.fn<Promise<void>, [ProfileInput]>().mockResolvedValue(undefined);
+      await render(<ProfileForm submitLabel="Guardar" onSubmit={onSubmit} />);
+
+      await fillValidForm();
+      await fireEvent.press(screen.getByLabelText('Busco Marketing'));
+      // Cambiar de idea después de marcar chips no puede colar un perfil de
+      // lock-in con especialidades buscadas: la invariante de `types.ts`.
+      await fireEvent.press(screen.getByLabelText('Compañero de Lock-In'));
+      await fireEvent.press(screen.getByText('Guardar'));
+
+      await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+      expect(onSubmit.mock.calls[0][0]).toMatchObject({
+        lookingFor: 'lockin',
+        seekingSpecialties: [],
+      });
+    });
+
+    it('precarga lo que ya buscaba al editar', async () => {
+      const profile = buildProfile({ lookingFor: 'par', seekingSpecialties: ['diseno'] });
+      await render(
+        <ProfileForm initial={profile} submitLabel="Guardar cambios" onSubmit={jest.fn()} />
+      );
+
+      expect(screen.getByLabelText('Busco Diseño')).toBeSelected();
+      expect(screen.getByLabelText('Busco Desarrollo')).not.toBeSelected();
+    });
+  });
+
   it('precarga los datos al editar un perfil existente', async () => {
     const profile = buildProfile({ name: 'Alba Ferrer', age: 27, location: 'Valencia' });
     await render(

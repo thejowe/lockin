@@ -93,12 +93,19 @@ export function Chip({
   selected,
   onPress,
   multiple = false,
+  accessibilityLabel = label,
 }: {
   label: string;
   selected: boolean;
   onPress: () => void;
   /** `true` cuando forma parte de una selección múltiple: cambia el rol de a11y. */
   multiple?: boolean;
+  /**
+   * Cómo se anuncia el chip, si la etiqueta visible no basta. Hace falta cuando
+   * dos grupos comparten opciones —«Desarrollo» como algo que dominas y como
+   * algo que buscas—: sin esto, quien navega a ciegas oye dos veces lo mismo.
+   */
+  accessibilityLabel?: string;
 }) {
   const theme = useTheme();
 
@@ -106,7 +113,7 @@ export function Chip({
     <Pressable
       accessibilityRole={multiple ? 'checkbox' : 'radio'}
       accessibilityState={{ checked: selected, selected }}
-      accessibilityLabel={label}
+      accessibilityLabel={accessibilityLabel}
       // El chip mide 36 px de alto: el hitSlop lo lleva a los 44 mínimos sin
       // engordarlo visualmente ni descuadrar la rejilla.
       hitSlop={{ top: 6, bottom: 6 }}

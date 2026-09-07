@@ -17,6 +17,7 @@ import {
   ambitionLabel,
   availabilitySummary,
   modeLabel,
+  seeksComplement,
   specialtyLabel,
   startingPointSentence,
 } from './catalog';
@@ -24,7 +25,7 @@ import { ProfileAvatar } from './profile-avatar';
 
 import type { Href } from 'expo-router';
 
-import type { Profile } from '@/data';
+import type { Profile, Specialty } from '@/data';
 
 export function ProfileDetails({ profile }: { profile: Profile }) {
   const theme = useTheme();
@@ -52,24 +53,46 @@ export function ProfileDetails({ profile }: { profile: Profile }) {
 
       <View style={[styles.banner, { backgroundColor: theme.brassSoft }]}>
         <ThemedText type="label" themeColor="brass">
-          Busca
+          Quiere encontrar
         </ThemedText>
         <ThemedText type="bodyStrong">{modeLabel(profile.lookingFor)}</ThemedText>
       </View>
 
-      <Section title="Especialidades">
-        <View style={styles.tags}>
-          {profile.specialties.map((specialty) => (
-            <View
-              key={specialty}
-              style={[styles.tag, { backgroundColor: theme.tealSoft, borderColor: theme.border }]}>
-              <ThemedText type="smallBold" themeColor="teal">
-                {specialtyLabel(specialty)}
-              </ThemedText>
-            </View>
-          ))}
+      {/*
+        Los dos lados de la complementariedad, uno encima del otro y en colores
+        distintos: verde lo que aporta, latón lo que le falta. Separarlos así es
+        lo único que evita leer una sola lista de tags y no saber cuál es cuál.
+      */}
+      <View style={styles.complement}>
+        <View style={styles.complementSide}>
+          <ThemedText type="label" themeColor="teal">
+            Lo que domina
+          </ThemedText>
+          <SpecialtyTags values={profile.specialties} tone="teal" />
         </View>
-      </Section>
+
+        {seeksComplement(profile.lookingFor) ? (
+          <View
+            style={[
+              styles.complementSide,
+              styles.complementSeeking,
+              { borderTopColor: theme.border },
+            ]}>
+            <ThemedText type="label" themeColor="brass">
+              Lo que busca
+            </ThemedText>
+
+            {profile.seekingSpecialties.length > 0 ? (
+              <SpecialtyTags values={profile.seekingSpecialties} tone="brass" />
+            ) : (
+              // Vacío no es un dato que falte: es «ábreme a cualquiera».
+              <ThemedText type="small" themeColor="textSecondary">
+                Abierto a cualquier especialidad.
+              </ThemedText>
+            )}
+          </View>
+        ) : null}
+      </View>
 
       <Section title="Punto de partida">
         <ThemedText type="body">{startingPointSentence(profile.startingPoint)}</ThemedText>
@@ -114,6 +137,27 @@ export function ProfileDetails({ profile }: { profile: Profile }) {
   );
 }
 
+/**
+ * Lista de especialidades en tags. El tono es lo que las separa de un vistazo:
+ * `teal` para lo que la persona aporta, `brass` para lo que busca.
+ */
+function SpecialtyTags({ values, tone }: { values: Specialty[]; tone: 'teal' | 'brass' }) {
+  const theme = useTheme();
+  const backgroundColor = tone === 'teal' ? theme.tealSoft : theme.brassSoft;
+
+  return (
+    <View style={styles.tags}>
+      {values.map((specialty) => (
+        <View key={specialty} style={[styles.tag, { backgroundColor, borderColor: theme.border }]}>
+          <ThemedText type="smallBold" themeColor={tone}>
+            {specialtyLabel(specialty)}
+          </ThemedText>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View style={styles.section}>
@@ -145,6 +189,16 @@ const styles = StyleSheet.create({
   },
   section: {
     gap: Spacing.two,
+  },
+  complement: {
+    gap: Spacing.three,
+  },
+  complementSide: {
+    gap: Spacing.two,
+  },
+  complementSeeking: {
+    paddingTop: Spacing.three,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   tags: {
     flexDirection: 'row',

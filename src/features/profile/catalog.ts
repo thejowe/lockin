@@ -130,6 +130,18 @@ export const startingPointLabel = (value: StartingPoint) => labelOf(STARTING_POI
 export const ambitionLabel = (value: Ambition) => labelOf(AMBITION_OPTIONS, value);
 export const timeBandLabel = (value: TimeBand) => labelOf(TIME_BAND_OPTIONS, value);
 
+/**
+ * Si a esta persona le tiene sentido declarar qué debe dominar la otra.
+ *
+ * Solo con `par` o `ambos`. Un compañero de lock-in se elige por franja horaria
+ * y compromiso con la sesión, no por skills — no hay nada que complementar
+ * cuando cada uno trabaja en lo suyo. Es la invariante de
+ * `Profile.seekingSpecialties`, y quien pinta o guarda un perfil la mantiene.
+ */
+export function seeksComplement(lookingFor: ModePreference | null): boolean {
+  return lookingFor === 'par' || lookingFor === 'ambos';
+}
+
 /** Frase completa del punto de partida, para la ficha de perfil. */
 export function startingPointSentence(value: StartingPoint): string {
   return (

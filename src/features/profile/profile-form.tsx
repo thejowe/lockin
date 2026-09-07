@@ -31,6 +31,7 @@ import {
   PROMPT_QUESTIONS,
   SPECIALTY_OPTIONS,
   STARTING_POINT_OPTIONS,
+  seeksComplement,
   TIME_BAND_OPTIONS,
 } from './catalog';
 import {
@@ -61,6 +62,8 @@ interface Draft {
   location: string;
   timezone: string;
   specialties: Specialty[];
+  /** Lo que quiere que domine la otra persona. Vacío = «me da igual». */
+  seekingSpecialties: Specialty[];
   lookingFor: ModePreference | null;
   startingPoint: StartingPoint | null;
   hoursPerWeek: number;
@@ -96,6 +99,7 @@ function initialDraft(profile: Profile | null, defaultLookingFor: ModePreference
     location: profile?.location ?? '',
     timezone: profile?.timezone ?? deviceTimezone(),
     specialties: profile?.specialties ?? [],
+    seekingSpecialties: profile?.seekingSpecialties ?? [],
     lookingFor: profile?.lookingFor ?? defaultLookingFor,
     startingPoint: profile?.startingPoint ?? null,
     hoursPerWeek: profile?.availability.hoursPerWeek ?? 10,
@@ -154,6 +158,10 @@ function toInput(draft: Draft): ProfileInput {
     location: draft.location.trim(),
     timezone: draft.timezone.trim(),
     specialties: draft.specialties,
+    // La invariante de `Profile.seekingSpecialties`: un perfil de lock-in lo
+    // guarda vacío pase lo que pase, aunque el usuario llegara a marcar chips
+    // y luego cambiara de modo.
+    seekingSpecialties: seeksComplement(draft.lookingFor) ? draft.seekingSpecialties : [],
     // Validado antes de llegar aquí: `validate` exige las tres elecciones.
     lookingFor: draft.lookingFor as ModePreference,
     startingPoint: draft.startingPoint as StartingPoint,
@@ -287,7 +295,7 @@ export function ProfileForm({
         </Field>
 
         <Field
-          label="Especialidades"
+          label="Lo que domino"
           hint="Lo que sabes hacer. Elige todas las que apliquen."
           error={errors.specialties}>
           <ChipRow>
@@ -313,6 +321,34 @@ export function ProfileForm({
             />
           ))}
         </Field>
+
+        {/*
+          Solo con `par` o `ambos`: a un compañero de lock-in se le pide franja
+          horaria, no skills. Va justo detrás de "Qué busco" porque es la misma
+          pregunta afinada, y aparece o desaparece al cambiar de modo.
+        */}
+        {seeksComplement(draft.lookingFor) ? (
+          <Field
+            label="Lo que debe dominar quien busco"
+            hint="Lo que a ti te falta. Si lo dejas vacío, te enseñamos a todo el mundo.">
+            <ChipRow>
+              {SPECIALTY_OPTIONS.map((option) => (
+                <Chip
+                  key={option.value}
+                  label={option.label}
+                  // Sin esto, "Desarrollo" nombraría dos chips distintos del
+                  // mismo formulario: el que domino y el que busco.
+                  accessibilityLabel={`Busco ${option.label}`}
+                  multiple
+                  selected={draft.seekingSpecialties.includes(option.value)}
+                  onPress={() =>
+                    update('seekingSpecialties', toggle(draft.seekingSpecialties, option.value))
+                  }
+                />
+              ))}
+            </ChipRow>
+          </Field>
+        ) : null}
 
         <Field label="Punto de partida" error={errors.startingPoint}>
           {STARTING_POINT_OPTIONS.map((option) => (
