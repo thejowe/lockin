@@ -1,0 +1,41 @@
+-- LockIn — retirar las herramientas de desarrollo de una base desplegada.
+--
+-- ## Qué retira y por qué
+--
+-- `supabase/seed.sql` define dos funciones que NO están en
+-- `supabase/migrations/` a propósito, porque `migrations/` es la definición de
+-- lo que llega a producción y ninguna de las dos debería estar allí:
+--
+-- - `dev_reset_current_user()` — borra el perfil, el modo, los swipes, los
+--   matches y los mensajes del usuario de la sesión. Es `SECURITY DEFINER` y
+--   solo mira `auth.uid()`, así que nadie puede apuntarla contra otra persona;
+--   el problema no es ese. El problema es el daño colateral: al borrar un match
+--   se llevan por delante los mensajes de la OTRA persona y los likes que esa
+--   persona te dio. Un usuario cualquiera, sin confirmación de nada, destruye
+--   datos que no son solo suyos.
+--
+-- - `seed_incoming_likes(text)` — inserta likes en nombre de tres perfiles
+--   semilla. Escribe en `decisions` saltándose las políticas RLS.
+--
+-- ## Cuándo ejecutarlo
+--
+-- Antes de que el proyecto tenga usuarios reales. Hoy `grrzmzktrhksbttpbblg` es
+-- a la vez desarrollo, staging y el proyecto al que apunta la app, y tiene las
+-- dos instaladas: `node supabase/drift-check.mjs` lo dice en cada ejecución.
+-- Mientras siga siendo así, retirarlas rompe
+-- `src/data/supabase/contract.test.ts`, que necesita `dev_reset_current_user()`
+-- para no gastar un alta anónima por test. La salida correcta de ese nudo es
+-- separar los dos papeles: la suite de contrato contra una base desechable
+-- (`supabase start` + `db reset`, que aplica migraciones y seed), y el proyecto
+-- remoto sin nada de esto. Ver `supabase/README.md` → "Deriva de esquema".
+--
+-- ## Cómo
+--
+-- Pega este archivo en el SQL Editor del dashboard y ejecútalo. Después,
+-- `node supabase/drift-check.mjs` debe decir "NO está instalada" de las dos.
+--
+-- Borra las funciones, no los datos. Para los usuarios anónimos que deja la
+-- suite de contrato, ver `supabase/README.md` → "Mantenimiento".
+
+drop function if exists public.dev_reset_current_user();
+drop function if exists public.seed_incoming_likes(text);

@@ -233,8 +233,16 @@ comment on function public.seed_incoming_likes(text) is
 --
 -- SOLO DESARROLLO, y por eso vive aquí y no en `supabase/migrations/`: en
 -- producción esto es un botón de "bórrame los datos" para cualquier usuario
--- autenticado. Si alguna vez hace falta esa función de verdad, se diseña como
--- borrado de cuenta, con confirmación, no como esto.
+-- autenticado, y el daño no se queda en él — al borrar un match se van los
+-- mensajes de la OTRA persona y los likes que esa persona le dio. Si alguna vez
+-- hace falta esa función de verdad, se diseña como borrado de cuenta, con
+-- confirmación, no como esto.
+--
+-- La decisión completa (y las dos alternativas descartadas: una migración con
+-- guardia de entorno, y un archivo aparte fuera de `seed.sql`) está en
+-- `supabase/README.md` → "Deriva de esquema". Que esté instalada o no en un
+-- proyecto concreto lo dice `node supabase/drift-check.mjs`, y
+-- `supabase/dev-teardown.sql` la retira.
 --
 -- Es `SECURITY DEFINER` porque tiene que saltarse las políticas, pero no toma
 -- parámetros y solo mira `auth.uid()`: no se puede apuntar contra otra persona.

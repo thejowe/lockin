@@ -8,7 +8,7 @@ Diseño del esquema que sostiene el contrato de repositorio de `arquitecto`
 > `src/data/supabase/` habla contra ellas. Comprobado en vivo con la clave
 > `anon`: `profiles` y `discovery_deck()` existen y devuelven
 > `42501 permission denied` sin sesión, que es justo lo que exige la migración
-> de RLS. `supabase/seed.sql` todavía no se ha ejecutado.
+> de RLS. `supabase/seed.sql` también está ejecutado (ver "Estado", al final).
 
 ## Migraciones
 
@@ -183,6 +183,110 @@ Ninguno de los tres caminos necesita Docker: el proyecto es remoto.
 Después, para sembrar datos de desarrollo, ejecuta `supabase/seed.sql` (crea
 ocho usuarios con contraseña conocida: **nunca contra producción**).
 
+## Deriva de esquema
+
+Hay dos bases y ningún mecanismo que garantizara que coinciden:
+
+- La **local**, que `e2e/run.mjs` construye copiando `supabase/migrations/` y
+  `supabase/seed.sql` a una Supabase desechable. Sale de los archivos del repo,
+  así que es reproducible por definición.
+- La **desplegada** (`grrzmzktrhksbttpbblg`), cuyo esquema se aplicó pegando SQL
+  a mano en el SQL Editor, porque el CLI exige un `SUPABASE_ACCESS_TOKEN` o la
+  contraseña de Postgres y ninguna de las dos está —ni debe estar— en el repo.
+
+`src/data/supabase/contract.test.ts` habla con la desplegada. O sea que el 25/25
+de esa suite y el verde del E2E local pueden convivir con las dos bases
+divergidas y nadie se enteraría. Es el mismo patrón que ya costó una tarde
+("el seed que se había ejecutado era el anterior", en `docs/plan/TODO.md`).
+
+Dos herramientas lo detectan, y son complementarias a propósito:
+
+| | `supabase/drift-check.mjs` | `supabase/schema-fingerprint.sql` |
+|---|---|---|
+| Cómo se ejecuta | `node supabase/drift-check.mjs` | pegar en el SQL Editor, y en la base local |
+| Qué necesita | la clave `anon` de `.env.local` | acceso SQL a las dos bases (Docker para la local) |
+| Qué ve | tablas, columnas y sus tipos, valores de enum, firmas de las funciones RPC, y que `anon` siga revocado | **todo**: además políticas, CHECKs, índices, triggers, defaults, permisos, y los objetos que sobren |
+| Qué NO ve | nada de lo anterior, ni los objetos que existan **de más** en el despliegue | — |
+| Automatizable | sí, sale con código 1 si hay deriva | no, son dos pegadas manuales |
+
+Ninguna de las dos usa `service_role`. `drift-check.mjs` no puede: el endpoint
+OpenAPI de PostgREST (`GET /rest/v1/`), que daría el catálogo entero de un
+tirón, lo bloquea la pasarela de Supabase con *"Only the service_role API key
+can be used for this endpoint"*. Así que deduce el esquema a base de sondas sin
+efectos, leyendo los códigos de error de PostgREST (`PGRST205` tabla que falta,
+`42703` columna que falta, `22P02` que además nombra el tipo o el enum,
+`PGRST202` firma de función que no existe). Lo esperado no está escrito a mano
+en ningún sitio: se saca de `supabase/migrations/` en cada ejecución, para que
+la referencia no pueda quedarse atrás.
+
+`schema-fingerprint.sql` emite una línea por objeto y, la primera, un `digest`
+md5 de todas: si los dos `digest` coinciden no hay nada más que mirar. Sus
+instrucciones de uso están en la cabecera del propio archivo.
+
+### Dónde vive `dev_reset_current_user()`, y por qué
+
+**Se queda en `supabase/seed.sql`.** No entra en `supabase/migrations/`.
+
+El motivo no es que sea `SECURITY DEFINER`: no toma parámetros y solo mira
+`auth.uid()`, así que nadie puede apuntarla contra otra persona. El motivo es el
+daño colateral. Borra los matches del usuario, y con cada match se van los
+mensajes de la **otra** persona y los likes que esa persona le dio. En
+producción sería un botón de "destruye datos que no son solo tuyos" sin
+confirmación, al alcance de cualquier cliente con sesión. Si algún día hace
+falta un borrado de cuenta de verdad, se diseña como tal.
+
+Las otras dos opciones que se consideraron, y por qué no:
+
+- **Una migración con guardia de entorno.** La guardia tendría que distinguir
+  una base de desarrollo de una de producción, y aquí no hay forma limpia de
+  hacerlo: la app usa `signInAnonymously()` como vía principal, así que "el que
+  llama es un usuario anónimo" describe tanto a la suite de contrato como a un
+  usuario real. Y una migración condicional haría que la base local y la
+  desplegada difieran *legítimamente*, que es exactamente lo que rompe el
+  cotejo que acabamos de montar.
+- **Un archivo aparte en `supabase/dev/`.** Más limpio de leer, pero
+  `e2e/run.mjs` copia solo `migrations/` y `seed.sql`: sacarla de ahí la
+  quitaría en silencio de la única base local que el repo sabe construir, y
+  `e2e/` es de otro bloque.
+
+Lo que sí faltaba no era el archivo, era que su instalación en el despliegue
+fuera **verificable** en vez de "alguien la pegó un día". Ahora:
+
+- `drift-check.mjs` informa en cada ejecución de si está instalada.
+- `supabase/dev-teardown.sql` la retira (y a `seed_incoming_likes`) de una
+  pegada.
+
+Y queda apuntado el nudo de fondo: hoy `grrzmzktrhksbttpbblg` es a la vez
+desarrollo, staging y el proyecto al que apunta la app, así que la suite de
+contrato obliga a tener instalada en él una función que no debería estar donde
+hay usuarios reales. La salida no es esconder la función: es que la suite corra
+contra una base desechable. `contract.test.ts` lee la URL y la clave de
+`.env.local`, así que basta apuntarlo a una Supabase local
+(`supabase start` + `supabase db reset --local`, que aplica migraciones y seed)
+para que el proyecto remoto pueda quedarse limpio.
+
+### Resultado de la ejecución del 2026-09-06
+
+`node supabase/drift-check.mjs` contra `grrzmzktrhksbttpbblg`: **sin deriva**.
+
+- Las 5 tablas y sus 38 columnas existen con el tipo que declaran las
+  migraciones.
+- Los 8 enums admiten sus 29 valores.
+- Las 6 funciones que PostgREST expone responden con la firma esperada
+  (`array_has_duplicates`, `is_valid_prompts`, `is_match_member`,
+  `resolve_match_mode`, `record_decision`, `discovery_deck`). Las dos que
+  devuelven `trigger` —`touch_updated_at`, `messages_touch_match`— PostgREST no
+  las expone y no se pueden sondear desde el cliente.
+- `anon` sin sesión sigue recibiendo `42501` en las cinco tablas.
+- `dev_reset_current_user()` y `seed_incoming_likes(p_email)` están instaladas,
+  como se esperaba y como no debería quedarse cuando haya usuarios reales.
+
+`schema-fingerprint.sql` **no se ha ejecutado todavía**: el lado del repo exige
+Docker para levantar la base local y en esta máquina no hay ni Docker ni `psql`,
+así que solo se habría podido generar la mitad del cotejo, y media huella no
+compara con nada. Su sintaxis sí está verificada contra la gramática real de
+PostgreSQL (libpg_query). Queda pendiente ejecutarlo en una máquina con Docker.
+
 ## Configuración de Auth en el dashboard
 
 Dos interruptores de Authentication → Providers importan aquí, y el estado
@@ -265,6 +369,13 @@ reinicia: hay que esperar.
 Las cinco migraciones y `seed.sql` están **aplicados** contra
 `grrzmzktrhksbttpbblg` (2026-09-06), pegados en el SQL Editor, más
 `dev_reset_current_user()` del final de `seed.sql`.
+
+Que sigan coincidiendo con `supabase/migrations/` ya no es un acto de fe:
+`node supabase/drift-check.mjs` lo comprueba en un comando y con la clave `anon`
+(última pasada, 2026-09-06: sin deriva). Lo que ese script no alcanza a ver
+—políticas, CHECKs, índices, triggers, permisos, objetos de más— lo cubre
+`supabase/schema-fingerprint.sql`, pendiente de una máquina con Docker. Ver
+"Deriva de esquema".
 
 El flujo completo (registro → perfil → deck → match → mensaje) está verificado
 por dos caminos: la suite de contrato, 25/25 contra este proyecto

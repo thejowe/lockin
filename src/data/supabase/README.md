@@ -94,7 +94,10 @@ de `src/data/mock/index.test.ts`:
 - **`resetState()`.** No existe: el estado está en Postgres y las políticas RLS
   no dan DELETE sobre `decisions`, `matches` ni `messages` a nadie. El
   equivalente es `dev_reset_current_user()`, una función SOLO de desarrollo que
-  vive en `supabase/seed.sql` — nunca en `migrations/`.
+  vive en `supabase/seed.sql` — nunca en `migrations/`, porque al borrar un
+  match se lleva por delante los mensajes de la otra persona. El razonamiento
+  entero y las alternativas descartadas están en `supabase/README.md` →
+  "Deriva de esquema".
 - **`session.setProfileId()`.** En el mock escribe un dato; aquí `profileId` es
   derivado (hay perfil si existe la fila en `profiles`), así que es un no-op y
   `isOnboarded()` solo pasa a `true` cuando `saveCurrent` ha creado la fila. El
@@ -128,9 +131,12 @@ secreto—, así que no es una credencial que haya que esconder del bundle. Pero
 conviene mantenerla fuera del repositorio, que es por lo que no va escrita en
 `eas.json`.
 
-Comprobación después del primer build: si el deck muestra los ocho perfiles de
-`seed.sql` estás contra Supabase; si muestra los del mock, las variables no
-llegaron.
+Comprobación después del primer build: **no vale mirar el deck**.
+`supabase/seed.sql` es el catálogo de `src/data/mock/seed.ts` traducido a filas,
+así que los dos backends enseñan los mismos ocho nombres. Lo que sí discrimina
+es la persistencia: crea tu perfil, da un par de swipes, cierra la app entera y
+vuelve a abrirla. Si tu perfil y tus swipes siguen ahí, es Supabase; el mock es
+estado en memoria (`src/data/mock/store.ts`) y no sobrevive.
 
 ## Estado
 
@@ -141,5 +147,6 @@ sesión, `42501 permission denied`. *Anonymous sign-ins* está activado, así qu
 dispositivo queda como respaldo que no se usa.
 
 El código compila con `tsc --noEmit`, pasa `expo lint` y la suite de contrato
-corre contra Supabase de verdad. Lo que falta está anotado en
-`docs/plan/todo/datos.md`.
+corre contra Supabase de verdad. Que el esquema desplegado siga siendo el de
+`supabase/migrations/` lo comprueba `node supabase/drift-check.mjs`. Lo que
+falta está anotado en `docs/plan/todo/datos.md`.

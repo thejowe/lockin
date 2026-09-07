@@ -171,6 +171,143 @@
       `signInAnonymously()` como vía principal, así que contra un proyecto con
       usuarios reales borraría sus cuentas.
 
+## Deriva entre `supabase/migrations/` y el esquema desplegado (2026-09-06)
+
+El hueco: `dev_reset_current_user()` no está en `migrations/`, vive solo en
+`supabase/seed.sql`, y al proyecto remoto entró pegada a mano por el SQL Editor
+— igual que las cinco migraciones. Así que había dos esquemas y ninguna garantía
+de que coincidieran: `e2e/run.mjs` construye la base local desde los archivos del
+repo, `src/data/supabase/contract.test.ts` habla con el proyecto remoto, y los
+dos podían estar en verde con las bases divergidas. El mismo patrón que ya costó
+una tarde ("el seed que se había ejecutado era el anterior", en `TODO.md`).
+
+### 1. Dónde vive `dev_reset_current_user()`
+
+- [x] **Decidido: se queda en `supabase/seed.sql`.** Argumentado, no improvisado.
+
+  El motivo para no meterla en `migrations/` no es que sea `SECURITY DEFINER`
+  —no toma parámetros y solo mira `auth.uid()`, así que nadie puede apuntarla
+  contra otra persona—. Es el **daño colateral**: borra los matches del usuario,
+  y con cada match se van los mensajes de la **otra** persona y los likes que esa
+  persona le dio. En producción sería un botón de "destruye datos que no son solo
+  tuyos", sin confirmación, al alcance de cualquier cliente con sesión.
+
+  Las dos alternativas que se consideraron y por qué no:
+
+  - **Migración con guardia de entorno.** La guardia tendría que distinguir una
+    base de desarrollo de una de producción y aquí no hay forma limpia: la app
+    usa `signInAnonymously()` como vía principal, así que "quien llama es un
+    usuario anónimo" describe igual de bien a la suite de contrato que a un
+    usuario real. Y una migración condicional haría que la base local y la
+    desplegada difieran *legítimamente*, que es justo lo que rompe el cotejo de
+    deriva que se monta en el punto 2.
+  - **Archivo aparte en `supabase/dev/`.** Se lee mejor, pero `e2e/run.mjs` copia
+    solo `migrations/` y `seed.sql`: sacarla de ahí la quitaría en silencio de la
+    única base local que el repo sabe construir, y `e2e/` es de `calidad`.
+
+  Lo que faltaba no era el archivo, era que su instalación en el despliegue fuera
+  **verificable** en vez de "alguien la pegó un día".
+
+- [x] `supabase/dev-teardown.sql` — retira `dev_reset_current_user()` y
+      `seed_incoming_likes(text)` de una pegada, con el motivo escrito arriba.
+- [x] El razonamiento entero, en `supabase/README.md` → "Deriva de esquema", con
+      referencias cruzadas desde `supabase/seed.sql` y `src/data/supabase/README.md`.
+
+- **Nudo de fondo anotado, no resuelto:** hoy `grrzmzktrhksbttpbblg` es a la vez
+  desarrollo, staging y el proyecto al que apunta la app, así que la suite de
+  contrato obliga a tener instalada ahí una función que no debería estar donde
+  hay usuarios reales. La salida no es esconder la función: es apuntar
+  `contract.test.ts` a una base desechable (lee URL y clave de `.env.local`, así
+  que basta cambiarlas por las de `supabase start` + `db reset --local`) y dejar
+  el proyecto remoto limpio con `dev-teardown.sql`. Necesita Docker; en esta
+  máquina no hay.
+
+### 2. Cómo se detecta la deriva
+
+`supabase db diff` no es una opción desde aquí, y no por pereza: `--linked`
+exige `SUPABASE_ACCESS_TOKEN`, `--db-url` la contraseña de Postgres, y la
+variante local necesita Docker. En esta máquina no hay Docker, ni `psql`, ni
+ninguna de esas dos credenciales (`npx supabase` 2.116.0 sí está). La
+`service_role` no está en el repo y no debe estarlo, así que tampoco se usó.
+
+Dos herramientas, complementarias a propósito:
+
+- [x] **`supabase/drift-check.mjs`** — automático, un comando, solo con la clave
+      `anon` de `.env.local`. `node supabase/drift-check.mjs`; sale con 1 si hay
+      deriva.
+
+      El endpoint OpenAPI de PostgREST (`GET /rest/v1/`), que daría el catálogo
+      entero de un tirón, lo bloquea la pasarela de Supabase
+      (*"Only the service_role API key can be used for this endpoint"*). Así que
+      el esquema se deduce a base de sondas sin efectos, leyendo los códigos de
+      error: `PGRST205` tabla que falta, `42703` columna que falta, `22P02`/
+      `22007` que además **nombran el tipo o el enum** de la columna, `PGRST202`
+      firma de función que no existe, `42501` que `anon` sigue revocado.
+
+      Lo esperado no está escrito a mano en ningún archivo: se **parsea de
+      `supabase/migrations/`** en cada ejecución. Un archivo de referencia
+      mantenido a mano sería otra copia que puede divergir, o sea el mismo
+      problema otra vez. El parser es estricto y lanza si encuentra una forma que
+      no sabe leer, en vez de dar un falso verde.
+
+      Las sondas no tienen efectos: las RPC se llaman con todos los argumentos a
+      `null` y el usuario de la sonda es anónimo y sin perfil, así que
+      `record_decision()` muere en su propia comprobación de perfil antes de
+      insertar nada. El token de sesión se cachea en el temporal del sistema
+      (nunca en el repo) para no gastar altas del límite de 30/hora por IP.
+
+- [x] **Verificado que detecta de verdad**, no solo que sale verde. Control
+      negativo con copias de las migraciones en un directorio temporal, con una
+      columna, un valor de enum y una función inventados: los tres salieron
+      marcados y el proceso terminó con código 1.
+
+- [x] **`supabase/schema-fingerprint.sql`** — el cotejo exacto. Una línea por
+      objeto (tablas, columnas con tipo/nullable/default, constraints, índices,
+      enums, funciones con seguridad y md5 del cuerpo, triggers, políticas RLS
+      con sus expresiones, GRANTs de tablas y de funciones, y pertenencia a la
+      publicación de realtime) más un `digest` md5 de todo como primera fila. Se
+      ejecuta en los dos lados y se comparan primero los digest, y si difieren,
+      `diff`. Procedimiento en la cabecera del archivo.
+
+      Cubre justo lo que `drift-check.mjs` no puede ver: políticas, CHECKs,
+      índices, triggers, defaults, permisos y los objetos que sobren.
+
+### 3. Ejecutado contra el proyecto real
+
+- [x] `node supabase/drift-check.mjs` contra `grrzmzktrhksbttpbblg`,
+      2026-09-06: **sin deriva**.
+  - 5 tablas y sus 38 columnas, con el tipo que declaran las migraciones.
+  - 8 enums, con sus 29 valores.
+  - Las 6 funciones que PostgREST expone, con la firma esperada
+    (`array_has_duplicates`, `is_valid_prompts`, `is_match_member`,
+    `resolve_match_mode`, `record_decision`, `discovery_deck`). Las dos que
+    devuelven `trigger` (`touch_updated_at`, `messages_touch_match`) PostgREST no
+    las expone: se declaran no sondeables en vez de darse por buenas.
+  - `anon` sin sesión sigue recibiendo `42501` en las cinco tablas.
+  - `dev_reset_current_user()` y `seed_incoming_likes(p_email)` **están
+    instaladas** — esperado hoy, y lo que hay que retirar antes de que el
+    proyecto tenga usuarios reales.
+
+- [ ] **`schema-fingerprint.sql` sigue sin ejecutarse.** El lado del repo exige
+      levantar la base local con Docker y en esta máquina no hay ni Docker ni
+      `psql`; con media huella no se compara nada, así que no se ejecutó tampoco
+      el lado remoto. Su sintaxis sí está verificada contra la gramática real de
+      PostgreSQL (libpg_query, vía `pgsql-parser`), igual que la de
+      `dev-teardown.sql` y las cinco migraciones. Pendiente de una máquina con
+      Docker.
+
+### Deuda de documentación cerrada de paso
+
+- [x] `src/data/supabase/README.md` decía que ver los ocho perfiles del seed
+      confirmaba estar contra Supabase. No confirma nada: `supabase/seed.sql` es
+      el catálogo del mock traducido a filas y los dos backends enseñan los
+      mismos nombres. Sustituido por la señal que sí discrimina, la persistencia
+      tras cerrar y reabrir la app. Ya estaba anotado más arriba en este archivo,
+      pero el README seguía diciendo lo contrario.
+- [x] La cabecera de `supabase/README.md` decía "`supabase/seed.sql` todavía no
+      se ha ejecutado" mientras su propia sección "Estado", al final, decía que
+      sí. Corregido.
+
 ## Deuda anotada
 - `initialsFrom()` está duplicada en `src/data/mock/store.ts` y `src/data/supabase/mappers.ts`. Es lógica de dominio compartida, pero subirla a `src/data/` es territorio de `arquitecto`. Si divergen, el avatar de un mismo perfil cambia al conectar Supabase.
 - `MatchRepository.list()` resuelve el último mensaje de cada conversación con una ventana de los 200 mensajes más recientes (PostgREST no expone `distinct on`). El orden de la lista nunca se ve afectado — lo da `matches.last_message_at` —, solo la previsualización de un match muy antiguo.
