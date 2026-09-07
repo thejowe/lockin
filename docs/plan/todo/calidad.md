@@ -630,3 +630,45 @@ pasara en verde, el caso positivo habría dejado de probar Supabase.
 - **No ejecutado en esta máquina**: build Android, Maestro y emulador. Sigue sin
   Android SDK, Java, Maestro ni Docker. La validación es Actions, y por eso lo
   que se afirma arriba son números leídos de sus logs y artefactos, no de aquí.
+
+## Octava pasada: primera matriz completa en emulador (2026-09-07)
+
+[Run 34118890956](https://github.com/thejowe/lockin/actions/runs/34118890956),
+commit 6563af7 — el arreglo de `chat` más el control negativo. Los dos jobs
+compilan su APK y arrancan su emulador. Ninguno cierra su casilla, y por
+motivos distintos.
+
+### Variante `supabase`: el arreglo de `chat` no funcionó
+
+Mismo `tapOn "Enviar mensaje"`, mismo `Element not found`, misma captura. El
+cambio a `behavior="padding"` no basta. Reportado con la evidencia nueva en
+`docs/plan/todo/chat.md`: la jerarquía del instante del tap no tiene compositor,
+pero el volcado de `uiautomator` posterior sí, y ~630 px por encima del fondo —
+`padding` se aplica con la magnitud correcta pero solo después de que el teclado
+se cierre. El evento llega tarde; el `behavior` no es la variable que decide.
+
+### Variante `mock`: no concluye, y el runner lo dijo mal
+
+Maestro murió antes de ejecutar **ningún** comando:
+`DeviceServerDiedException ... Command failed (tcp:34809): closed`, 341 ms. Es
+una caída del driver gRPC en el dispositivo — infraestructura, sin relación con
+el mock ni con las credenciales.
+
+El control negativo falló, que es lo correcto, pero con el mensaje equivocado:
+`Se esperaba un único volcado de comandos de Maestro`. Cierto y bastante inútil.
+`firstFailure()` ahora distingue el caso: si no hay volcado, dice que Maestro no
+ejecutó ningún comando, cita la causa que Maestro escribió en `maestro.xml` y
+avisa de que un `DeviceServerDiedException` es fallo del emulador y toca
+relanzar. Confundir "el driver se cayó" con "el mock se rompió antes de tiempo"
+es exactamente lo que un control negativo no puede permitirse.
+
+### Dónde queda cada casilla
+
+- **Recorrido completo verde**: bloqueado por el bug de `chat`, todavía sin
+  arreglar. Dos intentos, dos veces el mismo paso 38.
+- **Control negativo**: bloqueado por lo mismo aunque el emulador no falle. Con
+  el compositor roto, el APK de mock se rompe también en el 38, antes del
+  reinicio, y el control lo rechaza por no probar lo que dice probar. Solo puede
+  dar veredicto cuando el recorrido positivo llegue al final.
+
+Las dos casillas se cierran en el mismo run, en cuanto `chat` cierre la suya.

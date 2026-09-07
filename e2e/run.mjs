@@ -84,6 +84,10 @@ function buildEnv(status) {
  * Primer comando fallido del recorrido, leído del volcado de Maestro.
  * `maestro.xml` solo trae un mensaje; commands.json trae el orden y el estado
  * de cada paso, que es lo que permite decir DÓNDE se rompió.
+ *
+ * Si Maestro no llegó a ejecutar ningún comando no hay volcado, y eso NO es un
+ * resultado del control negativo: la diferencia entre "el mock se rompió antes
+ * de tiempo" y "el driver de Maestro se cayó" hay que decirla, no adivinarla.
  */
 function firstFailure() {
   const dumps = [];
@@ -91,6 +95,20 @@ function firstFailure() {
     if (!entry.isDirectory()) continue;
     const file = join(artifacts, entry.name, 'commands.json');
     if (existsSync(file)) dumps.push(file);
+  }
+  if (dumps.length === 0) {
+    const report = join(artifacts, 'maestro.xml');
+    const cause = existsSync(report)
+      ? (/<failure>([^\n<]*)/.exec(readFileSync(report, 'utf8'))?.[1]?.trim() ??
+        'sin mensaje en maestro.xml')
+      : 'no se escribió maestro.xml';
+    assert.fail(
+      'Maestro no ejecutó ningún comando, así que el control negativo no concluye ' +
+        'nada sobre la persistencia. Causa según Maestro: ' +
+        cause +
+        '. Un DeviceServerDiedException aquí es un fallo del emulador, no del caso: ' +
+        'relanzar el job.'
+    );
   }
   assert.equal(dumps.length, 1, 'Se esperaba un único volcado de comandos de Maestro');
   const commands = JSON.parse(readFileSync(dumps[0], 'utf8'));

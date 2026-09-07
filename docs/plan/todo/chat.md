@@ -126,3 +126,39 @@ como un hueco de cobertura.
       pasan, pero eso no dice nada sobre este fallo por lo de arriba. Lo cierra
       el workflow `E2E Android`: el caso positivo debe pasar de los 38 comandos
       y completar los 48.
+
+### `6563af7` no lo arregla — segunda ronda de evidencia (2026-09-07)
+
+`behavior="padding"` en ambas plataformas **no** resuelve el fallo. La casilla de
+arriba sigue abierta.
+
+[Run 34118890956](https://github.com/thejowe/lockin/actions/runs/34118890956),
+variante `supabase`, commit 6563af7: falla en el mismo `tapOn "Enviar mensaje"`,
+con el mismo `Element not found` y una captura indistinguible de la anterior.
+
+Lo nuevo, y es lo útil, son dos lecturas que solo en apariencia se contradicen:
+
+- La jerarquía que Maestro captura **en el momento del tap** no contiene ningún
+  nodo del compositor: cero coincidencias de `Mensaje`, `Enviar mensaje` o
+  `Escribe a` en `step-038-...json`.
+- El volcado de `uiautomator` que el runner toma **después** del fallo, con el
+  teclado ya cerrado, sí los tiene: `EditText "Mensaje"` en `[42,1601][824,1771]`
+  y `Button "Enviar mensaje"` en `[845,1656][1038,1771]`.
+
+Esa segunda posición es la pista. Sin teclado, el compositor debería estar
+pegado al fondo (antes del arreglo estaba en `y≈2264-2380` sobre una pantalla de
+2400). Está ~630 px más arriba, que es justo la altura de un teclado. O sea:
+`padding` **sí se aplica y con la magnitud correcta, pero no mientras el teclado
+está delante** — llega tarde, después de que Maestro agotara sus 17 s.
+
+Eso apunta a que bajo edge-to-edge el evento de teclado no llega a
+`KeyboardAvoidingView` a tiempo (o no llega hasta que el teclado se cierra), y
+entonces da igual el `behavior`: el problema no es el algoritmo que elige, es
+cuándo recibe el evento. Es coherente con que `height` tampoco hiciera nada.
+
+Queda como estaba: la vía que Expo 57 documenta para esto es
+`react-native-keyboard-controller`, que lee los insets de la ventana en vez de
+depender de los eventos de teclado de RN. Su `KeyboardProvider` va en
+`src/app/_layout.tsx`, que es de `arquitecto` — probablemente haya que
+coordinarse con ese bloque. El E2E sigue siendo el guardián: el workflow
+`E2E Android` llega a ese paso en ~27 minutos.
