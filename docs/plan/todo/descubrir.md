@@ -42,3 +42,21 @@ resaltar la complementariedad *dentro* del match y se descartó:
 
 Si en algún momento se quiere que pese de verdad, el sitio es el orden del deck
 (que la traiga `getDeck`), no el match — y hay que pedírselo a `datos`.
+
+## Ranking mutuo (2026-09-07)
+
+- [x] Decisión de producto y orden compartido mock/SQL documentados en el JSDoc
+  de DiscoveryRepository.getDeck (trabajo transversal autorizado).
+- [x] El ✓ visual sigue siendo unilateral; el ranking cruza ambas direcciones.
+  El match sigue siendo exclusivamente un like recíproco.
+- [x] Se conserva el catálogo elegible completo, incluidos ceros: las tres
+  tarjetas visibles son solo la ventana de swipe-deck, no un top 3 del ranking.
+  useDeck consume la lista local sin reordenarla durante el gesto; las decisiones
+  persistidas quedan fuera de nuevas cargas. Supabase sirve 50 pendientes por
+  carga; el botón de recarga permite avanzar a la siguiente al agotarla. No
+  reciclamos passes ni aleatorizamos recargas. Sin nuevas decisiones, la misma
+  persona sigue arriba deliberadamente: eso garantiza estabilidad.
+- [ ] Verificación remota tras pegar 20260907000200 (véase datos.md).
+- [x] Coverage completo en serie: 382 tests, 34 suites, suelo superado.
+  Ocho casos nuevos del contrato prueban ranking, estabilidad, modo, consumo
+  y match recíproco sin encaje. SQL validado localmente antes de LIMIT.

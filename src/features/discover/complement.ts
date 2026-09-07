@@ -3,13 +3,9 @@
  *
  * Es lo que yo domino ∩ lo que la otra persona busca. Se calcula aquí y se
  * pinta, no se usa para decidir nada: **un match sigue siendo un like
- * recíproco**. Filtrar o rankear el deck por esto tocaría `discovery.getDeck` y
- * `record_decision()` en Supabase — otro campo, otro bloque, otra decisión.
- *
- * La dirección importa y es una sola: mide si *yo* encajo en lo que *esa
- * persona* pide. Lo contrario (si esa persona encaja en lo que yo pido) es la
- * otra mitad, y la resuelve el filtro del deck, que ya trabaja sobre
- * `Profile.specialties`.
+ * recíproco**. El ranking mutuo vive en DiscoveryRepository.getDeck: usa
+ * ambas direcciones. Esta señal visual sigue mostrando solo lo que esa
+ * persona busca y yo domino; el filtro de specialties no cambia.
  */
 
 import { seeksComplement } from '@/features/profile';

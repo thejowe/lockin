@@ -290,11 +290,28 @@ const supabaseBackend: ContractBackend = {
 
   async reset(): Promise<ContractFixture> {
     const currentUserId = await resetCurrentUser();
+    for (const [index, actor] of reciprocals.entries()) {
+      const { label, lookingFor } = RECIPROCALS[index];
+      const { error } = await actor.client
+        .from('profiles')
+        .upsert(toProfileInsert(actor.id, buildProfileInput({ name: label, lookingFor }), null));
+      if (error) throw error;
+    }
     const [parReciprocal, lockinReciprocal, bothReciprocal] = reciprocals;
 
     return {
       repositories,
       currentUserId,
+      async setRankingCandidates(inputs) {
+        for (const [index, input] of inputs.entries()) {
+          const actor = reciprocals[index];
+          const { error } = await actor.client
+            .from('profiles')
+            .upsert(toProfileInsert(actor.id, input, null));
+          if (error) throw error;
+        }
+        return reciprocals.map((actor) => actor.id);
+      },
 
       async prepareSwiper() {
         // El perfil propio primero: `record_decision()` exige que el actor

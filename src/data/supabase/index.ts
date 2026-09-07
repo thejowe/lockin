@@ -268,6 +268,8 @@ const discovery: DiscoveryRepository = {
     // `discovery_deck` ya excluye el perfil propio y todo lo swipeado, y aplica
     // el modo efectivo (el activo de la sesión o, si no hay, el del perfil)
     // cuando `p_mode` va nulo. Eso es `effectiveMode()` del mock, en SQL.
+    // También ordena por encaje mutuo e id ANTES de paginar (20260907000200).
+    // Conservar ese orden: ordenar aquí solo clasificaría la primera página.
     const { data, error } = await client.rpc('discovery_deck', {
       p_mode: filter.mode ?? null,
       p_specialties: filter.specialties?.length ? filter.specialties : null,

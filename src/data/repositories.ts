@@ -52,6 +52,22 @@ export interface ProfileRepository {
 export interface DiscoveryRepository {
   /**
    * Perfiles pendientes de decidir, ya filtrados por modo y sin los ya vistos.
+   * Decisión de producto: encaje mutuo = dos direcciones con el mismo peso:
+   * A = existe intersección entre lo que yo domino y lo que el otro busca;
+   * B = existe intersección entre lo que el otro domina y lo que yo busco.
+   * Orden descendente por Number(A) + Number(B): mutuo (2), unilateral (1),
+   * sin señal (0). No se premia acumular tags ni se exige cubrir toda la lista.
+   * Una búsqueda vacía significa apertura, no una coincidencia automática.
+   * Sin perfil propio, si cualquiera declara lockin, o si el modo efectivo
+   * es lockin, la puntuación es 0. El modo efectivo es el filtro explícito,
+   * después el activo de sesión y por último el declarado en el perfil.
+   * Empates: id ascendente por orden binario (UUID en Supabase), sin azar ni
+   * timestamps. Mismos datos y filtros producen el mismo orden.
+   * No se eliminan candidatos por puntuación: también salen los de 0. Cada
+   * like/pass persistido los excluye de futuras cargas y deja avanzar al resto.
+   * Supabase entrega hasta 50 pendientes por carga; al consumirlos, recargar
+   * obtiene los siguientes. El ranking ocurre antes del límite de página.
+   * Esto NO condiciona matches: siguen dependiendo solo del like recíproco.
    * Devuelve lista vacía cuando el deck se agota — no es un error.
    */
   getDeck(filter?: ProfileFilter): Promise<Profile[]>;

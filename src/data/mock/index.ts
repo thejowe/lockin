@@ -145,11 +145,30 @@ const discovery: DiscoveryRepository = {
   async getDeck(filter: ProfileFilter = {}) {
     const decided = [...getState().decisions.keys()];
 
-    return profiles.list({
+    const mode = filter.mode ?? effectiveMode();
+    const viewer = currentProfile();
+    const candidates = await profiles.list({
       ...filter,
-      mode: filter.mode ?? effectiveMode(),
+      mode,
       excludeIds: [...decided, ...(filter.excludeIds ?? [])],
     });
+    // Espejo del criterio de producto en DiscoveryRepository.getDeck.
+    const score = (other: Profile): number => {
+      if (
+        !viewer ||
+        mode === 'lockin' ||
+        viewer.lookingFor === 'lockin' ||
+        other.lookingFor === 'lockin'
+      )
+        return 0;
+      return (
+        Number(viewer.specialties.some((tag) => other.seekingSpecialties.includes(tag))) +
+        Number(other.specialties.some((tag) => viewer.seekingSpecialties.includes(tag)))
+      );
+    };
+    return candidates.sort(
+      (a, b) => score(b) - score(a) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+    );
   },
 
   async recordDecision(profileId: string, decision: Decision): Promise<DecisionResult> {

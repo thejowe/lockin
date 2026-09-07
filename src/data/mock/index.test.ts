@@ -8,9 +8,10 @@
  */
 
 import { describeRepositoryContract } from '../repositories.contract';
-import { buildProfileInput } from '../test-fixtures';
+import { buildProfile, buildProfileInput } from '../test-fixtures';
 import { createMockRepositories, CURRENT_USER_ID, resetState } from './index';
 import { SEED_RECIPROCAL_IDS } from './seed';
+import { getState } from './store';
 
 import type { ContractBackend } from '../repositories.contract';
 import type { Repositories } from '../repositories';
@@ -30,6 +31,21 @@ const mockBackend: ContractBackend = {
     return {
       repositories,
       currentUserId: CURRENT_USER_ID,
+      async setRankingCandidates(inputs) {
+        return inputs.map((input, index) => {
+          const id = ['ranking-c', 'ranking-b', 'ranking-a'][index];
+          getState().profiles.set(
+            id,
+            buildProfile({
+              ...input,
+              id,
+              avatar: { initials: 'RP', accent: 'brass' },
+              seekingSpecialties: input.seekingSpecialties ?? [],
+            })
+          );
+          return id;
+        });
+      },
       // En el mock los likes entrantes vienen sembrados en el estado inicial y
       // se puede swipear sin perfil propio, así que no hay nada que preparar.
       async prepareSwiper() {},
