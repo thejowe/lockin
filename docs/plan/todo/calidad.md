@@ -483,3 +483,49 @@ umbral nuevo cumpliéndose, `npx expo export --platform web` con 14 rutas.
 ejecutado en un emulador. Su propio README lo dice y hace bien: "no se declara un
 E2E verde por validar YAML, ni por pasar Jest". Hasta esa primera pasada, el
 workflow `e2e.yml` es código sin ejecutar.
+
+## Séptima pasada — primer CI real (2026-09-07 UTC)
+
+Worktree actualizado a `origin/claude/startup-cofounder-matching-app-tfeai1`
+(89a8fb2). Alcance exclusivo de calidad; sin tocar `supabase/`, `src/data/`
+ni `docs/plan/TODO.md`. Se conserva la integración y el umbral 88.74/80.03/89.5/90.17.
+
+- [x] Leer la primera ejecución y comprobar los artefactos disponibles.
+- [x] Diagnosticar el fallo de bundle con logs y código del resolver instalado.
+- [x] Corregir la ubicación de la copia de build y recoger evidencia antes de Maestro.
+- [ ] Confirmar recorrido completo verde en CI, con evidencia de UI y Postgres.
+- [ ] Comprobar estabilidad y resolver el coste de carga dentro del test de layouts.
+
+Primera ejecución: https://github.com/thejowe/lockin/actions/runs/34069732039.
+Supabase local pasó. Falló `:app:createBundleReleaseJsAndAssets`: Metro no resolvía
+`@/components/themed-text`. El resolver del CLI omite los alias para orígenes bajo
+`node_modules`, donde el runner colocaba la app. Corregido a un directorio temporal
+por checkout, fuera de ese segmento y del include de TypeScript. No se han
+relajado aserciones E2E ni cambiado el producto.
+
+No había `e2e-android` para descargar: la API devuelve `total_count: 0` y el log
+de upload-artifact dice `No files were found`. El runner solo creaba evidencias
+al entrar en test. El workflow ahora conserva log del build, estados de fases
+y disco incluso cuando no se llega a Maestro; conserva el fallo con pipefail.
+
+CI general del mismo commit: https://github.com/thejowe/lockin/actions/runs/34069732040,
+verde, 313 tests/29 suites, 25 del contrato remoto omitidos por opt-in.
+El test de layouts local con `--no-cache` pasó pero tardó 43,8 s en su primer caso.
+Una medición temporal separada confirmó 58,4 s dentro del `require` del layout
+y aproximadamente 0,1 s para el resto del caso. Se traslada la importación a la
+preparación de la suite: el mock de useFonts se configura por render, no por
+carga de módulo. Sin nuevos timeouts, mocks ni aserciones retiradas.
+Verificación adicional de flake: layouts con caché fría conserva 7/7 y el primer
+caso baja a 54 ms. En la suite completa fría reapareció el timeout conocido de
+ProfileForm (312/313). Se midió la inicialización diferida de los hosts nativos:
+4.649 ms en los getters de React Native; al hacerla en preparación de suite,
+el primer render baja a 270 ms y ProfileForm pasa 12/12. `test/native-hosts.js`
+carga esos módulos para suites TSX antes de sus casos; no renderiza, no añade
+dobles y no altera temporizadores. La suite completa con --ci --runInBand --no-cache pasa 313/313 en 29 suites (110,4 s), con la misma cobertura 88.74/80.03/89.5/90.17. El contrato remoto conserva sus 25 casos opt-in omitidos.
+Segundo run: https://github.com/thejowe/lockin/actions/runs/34070646301 (0f9be5b).
+Backend y APK release pasan (build 8m44s). El emulador arranca y ejecuta la app;
+Maestro falla esperando `Cofundador` en la primera pantalla. Artefacto 10000604372
+revisado: JUnit, logcat, build y fases; no hay crash JS/nativo de la app registrado.
+Faltan captura y árbol: `--debug-output` no configura el destino de capturas en
+Maestro 2.10; requiere `--test-output-dir`. Se añaden ambos flags y captura/árbol
+por ADB independiente. No se cambian selectores ni esperas sin ver esa evidencia.

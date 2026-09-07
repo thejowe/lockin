@@ -39,16 +39,22 @@ jobs:
           unzip -q /tmp/maestro.zip -d "$HOME/.maestro"
           echo "$HOME/.maestro/maestro/bin" >> "$GITHUB_PATH"
       - run: npm ci
+      - name: Preparar evidencias
+        run: mkdir -p e2e/artifacts
       - name: Supabase desechable con migraciones reales
+        id: backend
         run: node e2e/run.mjs prepare
       - name: Build release con JS y credenciales locales embebidos
-        run: node e2e/run.mjs build
+        id: build
+        shell: bash
+        run: node e2e/run.mjs build 2>&1 | tee e2e/artifacts/build.log
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
       - name: UI y persistencia real
+        id: journey
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 36
@@ -58,6 +64,14 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: node e2e/run.mjs test
+      - name: Estado de las fases (también si no se alcanza Maestro)
+        if: always()
+        env:
+          PHASES: ${{ toJSON(steps) }}
+        run: |
+          mkdir -p e2e/artifacts
+          printf '%s\n' "$PHASES" > e2e/artifacts/phases.json
+          df -h > e2e/artifacts/disk.txt
       - name: Evidencia (también si falla)
         if: always()
         uses: actions/upload-artifact@v4

@@ -18,6 +18,10 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { Text } from 'react-native';
 
+// Importar el grafo una vez, al preparar la suite: los mocks de Jest se elevan.
+// Cambiar useFonts afecta al render, no requiere recargar el módulo dentro de it.
+import RootLayout from '../../src/app/_layout';
+
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
@@ -70,14 +74,8 @@ beforeEach(() => {
 });
 
 describe('RootLayout', () => {
-  /** Se importa dentro de cada test para que el mock de fuentes ya esté puesto. */
-  function load() {
-    return require('../../src/app/_layout').default as () => React.ReactElement | null;
-  }
-
   it('esconde el splash nada más resolver las fuentes y declara las rutas', async () => {
     mockUseFonts.mockReturnValue([true, null]);
-    const RootLayout = load();
 
     await render(<RootLayout />);
 
@@ -89,7 +87,6 @@ describe('RootLayout', () => {
 
   it('no pinta nada mientras las fuentes ni han cargado ni han fallado', async () => {
     mockUseFonts.mockReturnValue([false, null]);
-    const RootLayout = load();
 
     await render(<RootLayout />);
 
@@ -99,7 +96,6 @@ describe('RootLayout', () => {
 
   it('si las fuentes fallan arranca igual: quedarse en el splash sería peor', async () => {
     mockUseFonts.mockReturnValue([false, new Error('no se ha podido cargar la fuente')]);
-    const RootLayout = load();
 
     await render(<RootLayout />);
 
@@ -112,7 +108,6 @@ describe('RootLayout', () => {
     async (scheme) => {
       mockUseColorScheme.mockReturnValue(scheme);
       mockUseFonts.mockReturnValue([true, null]);
-      const RootLayout = load();
 
       await render(<RootLayout />);
 

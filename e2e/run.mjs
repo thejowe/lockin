@@ -1,15 +1,23 @@
-// Linux/macOS runner. Everything generated stays under e2e/.runtime.
+// Linux/macOS runner. Backend state stays in e2e/.runtime; the app uses OS temp.
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
+import { tmpdir } from 'node:os';
 import { verifyPersistence } from './verify.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const runtime = join(root, 'e2e/.runtime');
-const app = join(runtime, 'node_modules/lockin-e2e-app');
+// Expo ignores tsconfig aliases for any source path containing /node_modules/.
+// Keep the disposable app outside that path AND outside the checkout's TS glob.
+const appParent = resolve(tmpdir());
+const app = join(
+  appParent,
+  'lockin-e2e-' + createHash('sha256').update(root).digest('hex').slice(0, 16)
+);
+assert(!app.split(/[\\/]/).includes('node_modules'), 'TEMP no puede estar dentro de node_modules');
 const artifacts = join(root, 'e2e/artifacts');
 const command = process.argv[2];
 assert(
@@ -155,6 +163,9 @@ if (command === 'test') {
       join(artifacts, 'maestro.xml'),
       '--debug-output',
       artifacts,
+      '--test-output-dir',
+      artifacts,
+      '--flatten-debug-output',
       '-e',
       'PROFILE_NAME=' + profileName,
       '-e',
@@ -172,9 +183,24 @@ if (command === 'test') {
       maxBuffer: 16 * 1024 * 1024,
     });
     writeFileSync(join(artifacts, 'logcat.txt'), logs.stdout ?? '');
+    // Independent evidence even if Maestro's own artifact writer fails.
+    const screen = spawnSync('adb', ['exec-out', 'screencap', '-p'], { timeout: 10000 });
+    if (screen.status === 0) writeFileSync(join(artifacts, 'screen.png'), screen.stdout);
+    spawnSync('adb', ['shell', 'uiautomator', 'dump', '/sdcard/lockin-window.xml'], {
+      timeout: 10000,
+    });
+    const hierarchy = spawnSync('adb', ['exec-out', 'cat', '/sdcard/lockin-window.xml'], {
+      timeout: 10000,
+    });
+    if (hierarchy.status === 0) writeFileSync(join(artifacts, 'window.xml'), hierarchy.stdout);
     run('adb', ['reverse', '--remove', 'tcp:54321']);
   }
 }
-if (command === 'stop' && existsSync(join(runtime, 'supabase/config.toml'))) {
-  supabase(['stop', '--no-backup']);
+if (command === 'stop') {
+  try {
+    if (existsSync(join(runtime, 'supabase/config.toml'))) supabase(['stop', '--no-backup']);
+  } finally {
+    assert.equal(dirname(resolve(app)), appParent, 'Solo retirar la copia temporal de esta app');
+    rmSync(app, { recursive: true, force: true });
+  }
 }
