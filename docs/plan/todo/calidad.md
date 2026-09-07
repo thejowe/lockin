@@ -515,3 +515,10 @@ Una medición temporal separada confirmó 58,4 s dentro del `require` del layout
 y aproximadamente 0,1 s para el resto del caso. Se traslada la importación a la
 preparación de la suite: el mock de useFonts se configura por render, no por
 carga de módulo. Sin nuevos timeouts, mocks ni aserciones retiradas.
+Verificación adicional de flake: layouts con caché fría conserva 7/7 y el primer
+caso baja a 54 ms. En la suite completa fría reapareció el timeout conocido de
+ProfileForm (312/313). Se midió la inicialización diferida de los hosts nativos:
+4.649 ms en los getters de React Native; al hacerla en preparación de suite,
+el primer render baja a 270 ms y ProfileForm pasa 12/12. `test/native-hosts.js`
+carga esos módulos para suites TSX antes de sus casos; no renderiza, no añade
+dobles y no altera temporizadores. La suite completa con --ci --runInBand --no-cache pasa 313/313 en 29 suites (110,4 s), con la misma cobertura 88.74/80.03/89.5/90.17. El contrato remoto conserva sus 25 casos opt-in omitidos.

@@ -13,7 +13,7 @@ module.exports = {
   // real; bajo Jest no existe. Su resolver oficial descarta esa extensión y deja
   // que Reanimated cargue su implementación JS.
   resolver: 'react-native-worklets/jest/resolver.js',
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js', '<rootDir>/test/native-hosts.js'],
   moduleNameMapper: {
     '\\.css$': '<rootDir>/test/style-stub.js',
     '^@/assets/(.*)$': '<rootDir>/assets/$1',

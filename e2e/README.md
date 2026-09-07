@@ -67,7 +67,7 @@ node e2e/run.mjs test
 node e2e/run.mjs stop
 ```
 
-Ejecutar `stop` también si falla build/test. Para repetir desde cero, después
+Ejecutar `stop` también si falla build/test: retira también la copia temporal de la app. Para repetir desde cero, después
 de detener el backend, retirar **solo** `e2e/.runtime` y `e2e/artifacts`.
 El runner rechaza reutilizar un directorio de preparación/build para evitar
 mezclar migraciones o APK antiguos. Por defecto compila x86_64; con emulador
@@ -86,13 +86,10 @@ evidencia incluso al fallar y detiene Supabase con `if: always()`.
 Tiene límite de 60 minutos y cancela ejecuciones anteriores de la rama.
 Jest/contrato remoto permanecen separados y el suelo de cobertura no cambia.
 
-La viabilidad está apoyada en el soporte documentado de KVM y builds locales,
-**no en una ejecución remota realizada en esta sesión**. Falta ejecutar este
-workflow al subir/integrar la rama y revisar el primer resultado. Esta máquina
-no tiene Android SDK, Java, Maestro ni Docker disponibles; no se ha podido
-compilar el APK ni verificar los selectores sobre un árbol Android real.
-Si el primer run revela un problema de UI o build, conservar sus artefactos y
-corregirlo; no convertir el fallo en skip ni retirar la prueba de persistencia.
+El soporte de KVM permite intentar este job, pero la primera ejecución falló
+antes del emulador (diagnóstico abajo). La corrección se valida en Actions:
+esta máquina no dispone de Android SDK, Java, Maestro ni Docker. Una fase de
+build verde aún no demuestra el recorrido de UI y persistencia.
 Conviene también ejecutar una vez un APK sin credenciales para comprobar que
 el caso falla después del reinicio (control negativo aún pendiente).
 
