@@ -194,7 +194,7 @@ on conflict (id) do nothing;
 -- como «abierto a cualquiera» y disimula perfectamente la diferencia. Para
 -- ponerlas al día sin borrar nada, en el SQL Editor:
 --
---     update public.profiles p set seeking_specialties = v.seeking
+--     update public.profiles p set seeking_specialties = v.seeking::public.specialty[]
 --     from (values
 --       ('11111111-1111-4111-8111-000000000001'::uuid, array['marketing','ventas']),
 --       ('11111111-1111-4111-8111-000000000002'::uuid, array['dev','ventas']),
