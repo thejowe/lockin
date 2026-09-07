@@ -23,7 +23,13 @@ const runtime = join(root, 'e2e/.runtime');
 // active.ts elige el mock en memoria y el recorrido debe romperse al reiniciar.
 // Si algún día pasara en verde, el caso positivo no estaría probando Supabase.
 const negative = process.env.E2E_NEGATIVE_CONTROL === '1';
-const variant = negative ? 'mock' : 'supabase';
+// Sonda de diagnóstico, temporal: mismo APK que el caso positivo (credenciales
+// reales incluidas), pero corre `keyboard-modal-probe.yaml` en vez del recorrido
+// completo, para responder si el Modal de match es lo que rompe el teclado.
+// Se retira junto con el .yaml en cuanto la pregunta esté cerrada.
+const probe = process.env.E2E_KEYBOARD_PROBE === '1';
+assert(!(negative && probe), 'La sonda de teclado y el control negativo se excluyen');
+const variant = negative ? 'mock' : probe ? 'probe' : 'supabase';
 // Expo ignores tsconfig aliases for any source path containing /node_modules/.
 // Keep the disposable app outside that path AND outside the checkout's TS glob.
 const appParent = resolve(tmpdir());
@@ -236,7 +242,7 @@ if (command === 'test') {
     'PROFILE_NAME=' + profileName,
     '-e',
     'MESSAGE=' + message,
-    join(root, 'e2e/full-journey.yaml'),
+    join(root, probe ? 'e2e/keyboard-modal-probe.yaml' : 'e2e/full-journey.yaml'),
   ];
   try {
     if (negative) {
@@ -273,6 +279,11 @@ if (command === 'test') {
           2
         )
       );
+    } else if (probe) {
+      // La sonda se afirma a sí misma dentro del .yaml: si el `assertVisible` de
+      // "Enviar mensaje" pasa con el teclado abierto, el Modal es la causa. No
+      // se comprueba persistencia — no es lo que se está preguntando.
+      run('maestro', maestro);
     } else {
       run('maestro', maestro);
       await verifyPersistence(status, profileName, message);

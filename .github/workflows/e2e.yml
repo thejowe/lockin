@@ -28,12 +28,20 @@ jobs:
         include:
           - variant: supabase
             negative: '0'
+            probe: '0'
           - variant: mock
             negative: '1'
+            probe: '0'
+          # Sonda temporal: ¿el Modal de match es lo que rompe el teclado? Mismo
+          # APK que `supabase`, otro .yaml. Se retira con el diagnóstico cerrado.
+          - variant: probe
+            negative: '0'
+            probe: '1'
     env:
       CI: '1'
       EXPO_NO_TELEMETRY: '1'
       E2E_NEGATIVE_CONTROL: ${{ matrix.negative }}
+      E2E_KEYBOARD_PROBE: ${{ matrix.probe }}
       E2E_ARTIFACTS: e2e/artifacts/${{ matrix.variant }}
     steps:
       - uses: actions/checkout@v4
