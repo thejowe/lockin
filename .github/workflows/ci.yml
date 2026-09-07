@@ -32,6 +32,10 @@ jobs:
           - { name: Tipos, run: npm run typecheck }
           # Con cobertura: es lo que hace efectivo el suelo de `coverageThreshold`.
           - { name: Tests, run: npm run test:coverage -- --ci }
+          # El runner del E2E es Node puro y no entra en Jest ni en la cobertura
+          # de `src/`. Aquí se comprueba lo que decide si un fallo del emulador
+          # se reintenta y uno del caso no: `node --test` sobre `e2e/triage.mjs`.
+          - { name: Runner E2E, run: npm run test:e2e }
     steps:
       - uses: actions/checkout@v4
 

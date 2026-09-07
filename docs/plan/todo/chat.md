@@ -246,6 +246,13 @@ automatización, no solo por el recorrido manual del 2026-09-06.
 en el paso del emulador, cada pasada devuelve menos de la mitad de la señal que
 debería. Eso es de `calidad`, no de este bloque.
 
+> **Hecho por `calidad` (novena pasada, 2026-09-07).** El paso "UI y persistencia
+> real" reintenta, pero **solo** ante firmas conocidas de caída del runner. Un
+> `Element not found: ... Enviar mensaje` no se reintenta nunca: se comprueba
+> antes que cualquier firma de infraestructura, precisamente para que este bug no
+> se pueda enmascarar. Detalle en `docs/plan/todo/calidad.md` y `e2e/README.md`.
+> Esta casilla sigue siendo vuestra: la cierra el emulador, no el reintento.
+
 **Limpieza pendiente**: `e2e/keyboard-probe.yaml` (antes
 `keyboard-modal-probe.yaml`), la variante `probe` de
 la matriz en `.github/workflows/e2e.yml` y la rama `probe` de `e2e/run.mjs` son

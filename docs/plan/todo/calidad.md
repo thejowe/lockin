@@ -672,3 +672,106 @@ es exactamente lo que un control negativo no puede permitirse.
   dar veredicto cuando el recorrido positivo llegue al final.
 
 Las dos casillas se cierran en el mismo run, en cuanto `chat` cierre la suya.
+
+## Novena pasada: reintento que distingue el runner del caso (2026-09-07)
+
+La flake del emulador tumbó **3 de los 7 trabajos** del 2026-09-07 —`device
+offline`, `StatusRuntimeException: UNAVAILABLE`, `DeviceServerDiedException`—
+sin relación con el código. Cada pasada devolvía menos de la mitad de la señal,
+y el bloque `chat` lo señaló al final de su TODO como trabajo de `calidad`.
+
+- [x] Reintentar el paso "UI y persistencia real" **solo** ante caídas del runner.
+- [x] Clasificación con lista cerrada y tests que la fijan (`npm run test:e2e`).
+- [x] Evidencia por intento, sin que un reintento pise la del anterior.
+- [ ] Confirmar primer recorrido completo verde en emulador y guardar su
+      evidencia. **Sigue bloqueado** por el compositor de `chat`; el arreglo de
+      `cfadf27` está sin verificar en emulador.
+- [ ] Confirmar que el control negativo falla **después** del reinicio.
+      **Bloqueado por lo mismo.**
+
+### La regla, que es lo único que importa aquí
+
+Un reintento mal puesto es peor que no tenerlo: repetiría el bug del compositor
+hasta verlo verde y convertiría el E2E en un adorno. Así que va en un solo
+sentido y con lista cerrada:
+
+> se reintenta **solo** si el fallo coincide con una firma conocida de caída de
+> infraestructura. Todo lo demás —incluido lo que no se sabe clasificar— tumba
+> el trabajo tal cual.
+
+Dos detalles la sostienen, y los dos tienen su caso en `e2e/triage.test.mjs`:
+
+- Las firmas de fallo **del caso** (`Element not found`, `Assertion is false`) se
+  comprueban **antes** que las de infraestructura. Si el driver se muere después
+  de que el recorrido ya haya fallado, el mensaje trae las dos cosas: manda la
+  aserción. Sin esto, el fallo de hoy —`Element not found: ... Enviar mensaje`—
+  se reintentaría en cuanto el emulador tosiera a destiempo.
+- El estado de `adb` solo decide cuando Maestro no dejó mensaje ninguno. Y *no
+  saber* en qué estado está el dispositivo no cuenta como caída: sin evidencia,
+  `desconocido`, y `desconocido` no se reintenta.
+
+### Dos niveles, porque hay dos formas de caerse
+
+| Nivel | Qué cubre | Dónde |
+|---|---|---|
+| `E2E_MAESTRO_ATTEMPTS` (2 por defecto) | El driver gRPC muere con el AVD vivo. Es el caso del run 34118890956: falló en 341 ms, así que repetir cuesta segundos | Bucle en `run.mjs test` |
+| Segundo paso del emulador | El AVD se cae entero o no llega a arrancar; desde dentro no hay nada que hacer | `triage` decide, `journey_retry` arranca otro AVD |
+
+`run.mjs test` escribe `verdict.json` en la raíz de la variante: historial de
+todos los intentos y `outcome` del último. `triage` lo lee y expone `retry` por
+`GITHUB_OUTPUT`; el paso de reintento va condicionado a eso **y** a que el
+primero fallara. Sin veredicto se reintenta, y eso no es una excepción a la
+regla: significa que el proceso no sobrevivió al emulador, nunca que el caso
+fallara — un fallo del caso siempre deja veredicto escrito, incluso si lo que
+revienta es la preparación previa a Maestro.
+
+Los dos pasos del emulador llevan `continue-on-error`. Quien decide el color del
+trabajo es `node e2e/run.mjs gate`, al final, con todos los intentos delante y
+después de subir la evidencia. Un veredicto `runner` tras agotar los reintentos
+falla el trabajo diciendo que no hay veredicto sobre el caso, que es distinto de
+decir que el caso está mal.
+
+### Lo demás que cambia
+
+- **Evidencia por intento**: `e2e/artifacts/<variante>/attempt-NN/` con su JUnit,
+  su volcado de Maestro, su logcat (el buffer se vacía al empezar cada intento) y
+  su `run.json`. `firstFailure()` pasa a leer un intento concreto, y su
+  aserción de "un único volcado" sigue teniendo sentido con reintentos.
+- **Identificador nuevo por intento**: si el primero llegó a escribir medio
+  perfil, el segundo no comparte nombre con él y el `.single()` de los oráculos
+  sigue siendo inequívoco.
+- `adb reverse --remove` deja de ir por `run()`: lanzaba desde un `finally` y
+  podía tapar el error real con uno suyo.
+- `timeout-minutes` de 60 a 90: caben dos emuladores.
+- `npm run test:e2e` (`node --test`) entra en la matriz de CI. `run.mjs` y
+  `triage.mjs` son módulos de Node del runner, no código de la app: no están en
+  `testMatch` de Jest ni en `collectCoverageFrom`, así que el suelo no se mueve
+  por esto.
+
+### El suelo de cobertura sube: 88.84 / 80.24 / 89.81 / 90.28
+
+`cfadf27` (el arreglo del compositor de `chat`) dejó la suite 0,02 puntos por
+debajo del suelo anterior en sentencias y líneas. El suelo no se baja, así que se
+cubre lo que faltaba, y con algo que importa: el hilo se desplaza al final cuando
+le crece el contenido (`onContentSizeChange` en `src/app/chat/[matchId].tsx` es
+su único disparador; sin él un mensaje nuevo aparece fuera de pantalla y parece
+no haberse enviado). **Comprobado que no es un test vacío**: sustituir el
+manejador por `() => {}` lo tumba. No se ha tocado código de `chat`.
+
+### Verificación de esta pasada
+
+- `npm run lint` — limpio.
+- `npm run typecheck` — limpio.
+- `npx prettier --check` sobre lo tocado — limpio. (`npm run format:check`
+  completo falla en 34 archivos **también sin estos cambios**: es el checkout
+  Windows con CRLF de esta máquina, no el repo; en CI se comprueba sobre LF.)
+- `npm run test:e2e` — **22 casos en 4 suites**, todos verdes.
+- `npm run test:coverage -- --ci --runInBand` — **314 tests en 29 suites**, 25
+  del contrato remoto omitidos por su opt-in, cobertura 88.84/80.24/89.81/90.28
+  cumpliendo el suelo nuevo.
+- `node --check e2e/run.mjs` y parseo de los dos YAML con la matriz y los pasos
+  esperados — correctos.
+- **No ejecutado aquí**: build Android, Maestro y emulador. Este host sigue sin
+  Android SDK, Java, Maestro ni Docker. Lo que el reintento hace de verdad lo
+  dirá el primer run que se cruce con la flake; hasta entonces, lo verificado es
+  la clasificación, que es donde estaba el riesgo.

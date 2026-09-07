@@ -14,6 +14,8 @@
  * Ojo: en RNTL 14 `render` y `fireEvent` son asíncronos.
  */
 
+import { ScrollView } from 'react-native';
+
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { CURRENT_USER_ID } from '@/data/mock';
@@ -118,6 +120,27 @@ describe('ChatScreen', () => {
       // Se vuelca en el campo, editable, y nada ha llegado al repositorio.
       expect(screen.getByLabelText('Mensaje').props.value).not.toBe('');
       await expect(repositories.messages.listByMatch(matchId)).resolves.toEqual([]);
+    });
+
+    it('el hilo se desplaza al final cuando le crece el contenido', async () => {
+      // Sin esto, un mensaje nuevo aparece fuera de la pantalla y parece que no
+      // se ha enviado. `onContentSizeChange` es el único disparador: no hay
+      // efecto que reaccione a `messages`.
+      const scrollToEnd = jest.spyOn(ScrollView.prototype, 'scrollToEnd');
+      const { matchId } = await seedMatch();
+      await repositories.messages.send({ matchId, body: 'Hola' });
+
+      await renderRoute(<ChatScreen />);
+      await waitFor(() => expect(screen.getByText('Hola')).toBeTruthy());
+      scrollToEnd.mockClear();
+
+      // `fireEvent` sube por el árbol hasta quien maneja el evento, así que
+      // basta con lanzarlo desde una burbuja del hilo: RNTL 14 ya no trae las
+      // consultas `UNSAFE_getByType` con las que se cogería el ScrollView.
+      await fireEvent(screen.getByText('Hola'), 'contentSizeChange', 320, 900);
+
+      expect(scrollToEnd).toHaveBeenCalledWith({ animated: true });
+      scrollToEnd.mockRestore();
     });
 
     it('con mensajes ya escritos los icebreakers desaparecen', async () => {

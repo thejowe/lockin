@@ -21,7 +21,8 @@ jobs:
     # probando la integración; por eso corre en cada push, no solo a mano.
     name: E2E Android (${{ matrix.variant }})
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    # Dos emuladores caben: build ~9 min y cada pasada de emulador ~15.
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
@@ -79,8 +80,36 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
+      # El emulador de Actions es inestable: `device offline` y
+      # `StatusRuntimeException: UNAVAILABLE` tumbaron 3 de los 7 trabajos del
+      # 2026-09-07 sin relación con el código. De ahí los dos pasos: el primero
+      # no decide nada (`continue-on-error`), `triage` lee el veredicto que
+      # `run.mjs` deja en el artefacto y SOLO si fue una caída del runner se
+      # arranca otro AVD. Un fallo real del caso no se reintenta nunca — se
+      # reintentaría el bug hasta verlo verde, que es el fallo que esto evita.
+      # Quien falla el trabajo es `gate`, al final y con todos los intentos.
       - name: UI y persistencia real
         id: journey
+        continue-on-error: true
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: node e2e/run.mjs test
+      - name: ¿Se cayó el runner o falló el caso?
+        id: triage
+        if: always()
+        run: node e2e/run.mjs triage
+      # Mismo AVD, arrancado de cero: cubre el emulador que muere entero, que es
+      # lo que el reintento interno de `run.mjs` no puede arreglar desde dentro.
+      - name: UI y persistencia real (segundo emulador, tras caída del runner)
+        id: journey_retry
+        if: steps.journey.outcome == 'failure' && steps.triage.outputs.retry == 'true'
+        continue-on-error: true
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 36
@@ -109,3 +138,11 @@ jobs:
       - name: Descartar backend local
         if: always()
         run: node e2e/run.mjs stop
+      # Ultimo paso a propósito: la evidencia ya está subida y el backend
+      # apagado cuando este decide el color del trabajo.
+      # `conclusion != 'skipped'`: si lo que falló fue el backend o el build, el
+      # trabajo ya está rojo por su cuenta y este paso solo añadiría un mensaje
+      # confuso sobre un veredicto que nadie llegó a escribir.
+      - name: Resultado del recorrido (${{ matrix.variant }})
+        if: always() && steps.journey.conclusion != 'skipped'
+        run: node e2e/run.mjs gate

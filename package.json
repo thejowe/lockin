@@ -54,7 +54,8 @@
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "test:e2e": "node --test \"e2e/*.test.mjs\""
   },
   "private": true
 }

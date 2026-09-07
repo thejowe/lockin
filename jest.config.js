@@ -37,10 +37,10 @@ module.exports = {
     '!src/**/index.ts',
     '!src/data/test-fixtures.ts',
   ],
-  // Suelo fijado a la cobertura real de la suite local (2026-09-06).
+  // Suelo fijado a la cobertura real de la suite local (2026-09-07).
   // Se sube cuando la cobertura suba; no se bajan los umbrales ni se excluyen
   // archivos para dejar pasar un cambio. El contrato remoto sigue siendo opt-in.
   coverageThreshold: {
-    global: { statements: 88.74, branches: 80.03, functions: 89.5, lines: 90.17 },
+    global: { statements: 88.84, branches: 80.24, functions: 89.81, lines: 90.28 },
   },
 };

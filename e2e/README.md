@@ -75,10 +75,47 @@ El runner rechaza reutilizar un directorio de preparación/build para evitar
 mezclar migraciones o APK antiguos. Por defecto compila x86_64; con emulador
 ARM64 en macOS usar `E2E_ANDROID_ARCH=arm64-v8a node e2e/run.mjs build`.
 
-Evidencia en `e2e/artifacts/<variante>`: JUnit, diagnóstico/capturas de Maestro,
-logcat, `screen.png`/`window.xml` tomados por `adb` y `postgres.json` solo si
-todas las verificaciones pasan. Ningún archivo con las claves del backend forma
-parte del artefacto que sube CI.
+Evidencia en `e2e/artifacts/<variante>/attempt-NN/`: JUnit, diagnóstico/capturas
+de Maestro, logcat, `screen.png`/`window.xml` tomados por `adb` y `postgres.json`
+solo si todas las verificaciones pasan. Cada intento tiene su carpeta y su
+`run.json`; el veredicto acumulado de la variante está en `verdict.json`, en la
+raíz. Ningún archivo con las claves del backend forma parte del artefacto que
+sube CI.
+
+## El reintento: qué se repite y qué no
+
+El emulador de Actions se cae solo. `device offline`,
+`StatusRuntimeException: UNAVAILABLE` y `DeviceServerDiedException` tumbaron 3 de
+los 7 trabajos del 2026-09-07 sin relación con el código: cada pasada devolvía
+menos de la mitad de la señal. Pero un reintento a ciegas es peor que no tenerlo,
+porque repetiría un bug real hasta verlo verde. La regla es de lista cerrada:
+
+> se reintenta **solo** si el fallo coincide con una firma conocida de caída de
+> infraestructura. Todo lo demás —incluido lo que no se sabe clasificar— tumba el
+> trabajo tal cual.
+
+Las firmas están en `e2e/triage.mjs`, con sus casos en `e2e/triage.test.mjs`
+(`npm run test:e2e`, que corre en CI). Dos detalles que sostienen la garantía:
+
+- Las firmas de fallo **del caso** (`Element not found`, `Assertion is false`) se
+  comprueban **antes** que las de infraestructura. Si el driver muere después de
+  que el recorrido ya haya fallado, el mensaje trae las dos cosas y manda la
+  aserción.
+- El estado de `adb` solo decide cuando Maestro no dejó ningún mensaje. Y no
+  saber en qué estado está el dispositivo no cuenta como caída.
+
+Hay dos niveles, porque hay dos formas de caerse:
+
+| Nivel | Qué cubre | Dónde |
+|---|---|---|
+| `E2E_MAESTRO_ATTEMPTS` (2 por defecto) | El driver gRPC muere con el AVD vivo — falla en menos de un segundo | Bucle dentro de `run.mjs test` |
+| Segundo paso del emulador en el workflow | El AVD entero se cae o no arranca | `triage` decide, `journey_retry` ejecuta |
+
+Los pasos del emulador llevan `continue-on-error`; quien decide el color del
+trabajo es `node e2e/run.mjs gate`, al final y con todos los intentos a la vista.
+Sin veredicto escrito (`verdict.json`) se reintenta: eso significa que el proceso
+no sobrevivió al emulador, nunca que el caso fallara — un fallo del caso siempre
+deja veredicto.
 
 ## Control negativo: el mismo caso con un APK sin credenciales
 
@@ -117,7 +154,8 @@ E2E_NEGATIVE_CONTROL=1 node e2e/run.mjs stop
 ofrece KVM para un AVD x86_64; no hace falta EAS, una cuenta Maestro Cloud ni
 secretos Supabase. Construye el release, ejecuta el mismo runner, conserva
 evidencia incluso al fallar y detiene Supabase con `if: always()`.
-Tiene límite de 60 minutos y cancela ejecuciones anteriores de la rama.
+Tiene límite de 90 minutos —caben dos emuladores— y cancela ejecuciones
+anteriores de la rama.
 Jest/contrato remoto permanecen separados y el suelo de cobertura no cambia.
 
 El soporte de KVM se ha confirmado ejecutando: el AVD API 36 arranca en ~77 s y
