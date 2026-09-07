@@ -9,7 +9,7 @@ module.exports = defineConfig([
   // `npm run format`, no ESLint.
   prettierConfig,
   {
-    ignores: ['dist/*', 'coverage/*', '.expo/*'],
+    ignores: ['dist/*', 'coverage/*', '.expo/*', 'e2e/.runtime/**', 'e2e/artifacts/**'],
   },
   {
     // Los tests corren en Node bajo Jest, no en el runtime de la app.

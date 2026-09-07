@@ -394,3 +394,64 @@ Lo que queda a 0 % ya no es de este bloque, así que va como aviso:
    solo se ejercitan contra el proyecto real, y ese contrato es opt-in.
 4. `src/hooks/use-color-scheme.ts` y `.web.ts` (0 %). Un re-export y un
    equivalente para web; alcance de `arquitecto`.
+
+## Sexta pasada: E2E Android (2026-09-06)
+
+Worktree `../lockin-codex-calidad`, actualizado con `git fetch` y
+`git reset --hard 4cce6e0` como se pidió. Se conserva el historial anterior.
+
+- [x] Evaluar herramienta: Maestro, sin instrumentar componentes/hooks ni repositorios.
+- [x] Escribir registro anónimo → perfil → deck → match → mensaje en
+      `e2e/full-journey.yaml`, con parada del proceso, relanzamiento y recuperación
+      del perfil y mensaje por la UI.
+- [x] Aviso contra falsos positivos del mock en el propio caso: mismo catálogo,
+      backend elegido por credenciales; el reinicio y las lecturas de Postgres
+      son obligatorios.
+- [x] Runner local aislado con migraciones y seed reales, fixture de likes
+      entrantes y verificación de las filas creadas por la UI.
+- [x] Evaluar emulador en GitHub Actions y preparar workflow **activo** en
+      push/PR/manual: Ubuntu 24.04 + KVM + API 36, APK release, Supabase local,
+      artefactos de Maestro/logcat y parada del backend incluso al fallar.
+- [x] Documentar comandos, requisitos, aislamiento, fuentes y limitaciones en
+      `e2e/README.md`.
+- [ ] Confirmar primer recorrido completo verde en emulador y guardar su evidencia.
+- [ ] Ejecutar control negativo con APK sin credenciales y confirmar que falla
+      al intentar recuperar el estado tras el reinicio.
+
+### Alcance y viabilidad
+
+No se toca `src/components/`, `src/hooks/`, `src/data/`, `supabase/` ni
+`docs/plan/TODO.md`. La fixture E2E copia los SQL del repo a una base
+desechable; solo simula los likes de la otra parte. El perfil propio, la decisión,
+el match y el mensaje se generan al interactuar con la app. La comprobación
+administrativa posterior es de solo lectura y nunca entra en el bundle.
+
+GitHub Actions sí admite este emulador mediante KVM. No se desactiva el workflow
+ni se necesitan secretos: Auth/Postgres/REST/Realtime corren localmente en Docker.
+No se ha ejecutado Actions desde esta sesión: falta subir/integrar la rama y
+revisar el primer resultado. El host de trabajo carece de Android SDK, Java,
+Maestro y Docker; `node e2e/run.mjs prepare` se ha intentado y termina en
+`spawnSync docker ENOENT`. No se presenta YAML válido como prueba E2E superada.
+
+La copia de build vive dentro de `e2e/.runtime/node_modules/lockin-e2e-app`
+para que la resolución habitual de TypeScript no incorpore sus fuentes al
+checkout. Prettier y ESLint ignoran únicamente runtime/artefactos generados;
+no se modifica la lista de archivos medida por cobertura.
+### Verificación de esta pasada
+
+- `npm run lint`: limpio.
+- `npm run typecheck`: limpio.
+- Sintaxis de ambos módulos Node y parseo de los dos YAML: correctos.
+- Prettier sobre archivos nuevos y configuración modificada: limpio.
+- `npm run test:coverage -- --ci --runInBand`: **307 tests en 28 suites**
+  pasan; 25 de contrato real omitidos por su opt-in. Cobertura final:
+  **87.52/78.87/87.73/88.76**; se conserva el suelo exactamente, sin exclusiones.
+- La primera ejecución tuvo un timeout de 5 s en el caso de ChatScreen con id
+  inexistente (306 pasaron). La repetición completa pasó en 41,6 s sin tocar
+  timeout, test ni código de producto. Se conserva el antecedente de lentitud
+  con caché fría documentado en pasadas anteriores.
+- Comprobado que el oráculo rechaza una URL remota antes de intentar conectar.
+- `git diff --check`: limpio.
+- **No ejecutados**: build Android, Maestro en emulador y workflow remoto,
+  por los requisitos del host anotados arriba. Las casillas correspondientes
+  continúan abiertas; no se modifica el estado global del MVP en TODO.md.
