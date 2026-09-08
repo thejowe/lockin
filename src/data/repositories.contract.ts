@@ -38,10 +38,13 @@
 import { buildProfileInput } from './test-fixtures';
 
 import type { Repositories } from './repositories';
+import type { ProfileInput } from './types';
 
 /** Un backend listo para que un test lo interrogue, con su reparto ya resuelto. */
 export interface ContractFixture {
   repositories: Repositories;
+  /** Prepara exactamente tres candidatos controlados; devuelve sus ids en orden de entrada. */
+  setRankingCandidates(inputs: ProfileInput[]): Promise<string[]>;
   /** El id del usuario de esta ejecución. `CURRENT_USER_ID` en el mock. */
   currentUserId: string;
   /**
@@ -170,6 +173,126 @@ export function describeRepositoryContract(backend: ContractBackend): void {
 
         expect(deck.length).toBeGreaterThan(0);
         expect(deck.every((profile) => profile.specialties.includes(specialty))).toBe(true);
+      });
+    });
+
+    describe('orden por encaje mutuo', () => {
+      const candidate = (
+        specialties: ProfileInput['specialties'],
+        seekingSpecialties: ProfileInput['seekingSpecialties'],
+        lookingFor: ProfileInput['lookingFor'] = 'ambos'
+      ) => buildProfileInput({ specialties, seekingSpecialties, lookingFor });
+
+      async function setup(inputs: ProfileInput[]) {
+        await repositories.profiles.saveCurrent(candidate(['dev'], ['diseno']));
+        const ids = await fixture.setRankingCandidates(inputs);
+        const catalog = await repositories.profiles.list();
+        const excludeIds = catalog
+          .filter((profile) => !ids.includes(profile.id))
+          .map((profile) => profile.id);
+        const filter = { mode: 'ambos' as const, excludeIds };
+        const read = async () =>
+          (await repositories.discovery.getDeck(filter)).map((profile) => profile.id);
+        return { ids, filter, read };
+      }
+
+      it('prioriza mutuo sobre unilateral y cero, sin premiar más tags', async () => {
+        const { ids, read } = await setup([
+          candidate(['ventas'], []),
+          candidate(['diseno', 'marketing', 'producto'], []),
+          candidate(['diseno'], ['dev']),
+        ]);
+        expect(await read()).toEqual([ids[2], ids[1], ids[0]]);
+        expect(await read()).toEqual([ids[2], ids[1], ids[0]]);
+      });
+
+      it('da el mismo peso a ambas direcciones y desempata por id', async () => {
+        const { ids, read } = await setup([
+          candidate(['ventas'], ['dev']),
+          candidate(['diseno'], []),
+          candidate(['legal'], ['marketing']),
+        ]);
+        expect(await read()).toEqual([...ids.slice(0, 2).sort(), ids[2]]);
+      });
+
+      it('no convierte búsquedas vacías en coincidencias', async () => {
+        const { ids, read } = await setup([
+          candidate(['ventas'], []),
+          candidate(['dev'], []),
+          candidate(['legal'], []),
+        ]);
+        await repositories.profiles.saveCurrent(candidate(['dev'], []));
+        expect(await read()).toEqual([...ids].sort());
+      });
+
+      it('neutraliza lockin aunque lleguen búsquedas incoherentes', async () => {
+        const { ids, filter } = await setup([
+          candidate(['diseno'], ['dev'], 'lockin'),
+          candidate(['diseno'], ['dev']),
+          candidate(['ventas'], []),
+        ]);
+        expect((await repositories.discovery.getDeck(filter)).map((p) => p.id)).toEqual([
+          ids[1],
+          ...[ids[0], ids[2]].sort(),
+        ]);
+        await repositories.session.setActiveMode('lockin');
+        const implicit = { excludeIds: filter.excludeIds };
+        expect((await repositories.discovery.getDeck(implicit)).map((p) => p.id)).toEqual(
+          [...ids].sort()
+        );
+        expect(
+          (await repositories.discovery.getDeck({ ...filter, mode: 'lockin' })).map((p) => p.id)
+        ).toEqual([...ids].sort());
+        await repositories.profiles.saveCurrent(candidate(['dev'], ['diseno'], 'lockin'));
+        expect((await repositories.discovery.getDeck(filter)).map((p) => p.id)).toEqual(
+          [...ids].sort()
+        );
+      });
+
+      it('recalcula al editar el perfil y mantiene el filtro sobre lo dominado', async () => {
+        const { ids, read, filter } = await setup([
+          candidate(['diseno'], ['dev']),
+          candidate(['ventas'], ['legal']),
+          candidate(['datos'], []),
+        ]);
+        expect((await read())[0]).toBe(ids[0]);
+        await repositories.profiles.saveCurrent(candidate(['legal'], ['ventas']));
+        expect((await read())[0]).toBe(ids[1]);
+        expect(
+          (await repositories.discovery.getDeck({ ...filter, specialties: ['datos'] })).map(
+            (p) => p.id
+          )
+        ).toEqual([ids[2]]);
+      });
+
+      it('consume todos los pendientes, incluidos cero, sin reciclar swipes', async () => {
+        const { ids, read } = await setup([
+          candidate(['diseno'], ['dev']),
+          candidate(['ventas'], ['dev']),
+          candidate(['legal'], []),
+        ]);
+        const initial = await read();
+        expect(initial).toHaveLength(3);
+        for (const [index, id] of initial.entries()) {
+          await repositories.discovery.recordDecision(id, index === 0 ? 'like' : 'pass');
+          expect(await read()).toEqual(initial.slice(index + 1));
+        }
+        expect(await repositories.discovery.listDecided()).toEqual(expect.arrayContaining(ids));
+      });
+
+      it('sin perfil propio entrega un orden estable por id', async () => {
+        const deck = await repositories.discovery.getDeck({ mode: 'ambos' });
+        const ids = deck.map((profile) => profile.id);
+        expect(ids.length).toBeGreaterThan(0);
+        expect(ids).toEqual([...ids].sort());
+      });
+
+      it('un like recíproco sigue dando match con cero encaje', async () => {
+        await fixture.prepareSwiper();
+        await repositories.profiles.saveCurrent(candidate(['dev'], [], 'lockin'));
+        expect(
+          (await repositories.discovery.recordDecision(fixture.reciprocalAId, 'like')).match
+        ).not.toBeNull();
       });
     });
 
@@ -326,12 +449,6 @@ export function describeRepositoryContract(backend: ContractBackend): void {
        * `specialties` ni lo vacía por su cuenta cuando `lookingFor` es
        * `'lockin'` — esa invariante la mantiene quien escribe el perfil, y así
        * queda escrito en `types.ts`.
-       *
-       * **Contra Supabase este test falla hoy**, y es a propósito: la columna
-       * `seeking_specialties` todavía no existe en `supabase/migrations/`, que
-       * es territorio del bloque `datos`. `src/data/supabase/mappers.ts`
-       * devuelve `[]` mientras tanto. Este caso es el que avisa de que el dato
-       * se pierde; cuando `datos` añada la columna y el mapeo, pasa solo.
        */
       it('guarda seekingSpecialties tal y como se envía', async () => {
         const saved = await repositories.profiles.saveCurrent(

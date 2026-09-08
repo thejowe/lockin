@@ -3,21 +3,12 @@
 Diseño del esquema que sostiene el contrato de repositorio de `arquitecto`
 (`src/data/repositories.ts` + `src/data/types.ts`).
 
-> **Estado: aplicado hasta la quinta migración.** Las cinco primeras están
-> ejecutadas en el proyecto `grrzmzktrhksbttpbblg` (2026-09-06, pegadas en el
-> SQL Editor), y el cliente de `src/data/supabase/` habla contra ellas.
-> Comprobado en vivo con la clave `anon`: `profiles` y `discovery_deck()`
-> existen y devuelven `42501 permission denied` sin sesión, que es justo lo que
-> exige la migración de RLS. `supabase/seed.sql` también está ejecutado (ver
-> "Estado", al final).
->
-> **`20260907000100_profiles_seeking_specialties.sql` está SIN APLICAR** a fecha
-> de 2026-09-07: se escribió desde una máquina sin acceso SQL al proyecto, y
-> pegarla en el SQL Editor es un paso manual del usuario. Hasta que se pegue,
-> **escribir un perfil contra este proyecto falla** con `Could not find the
-> 'seeking_specialties' column of 'profiles' in the schema cache` — la suite de
-> contrato da 27/27 fallidos y la app no puede crear ni editar perfil. Ver
-> "Estado".
+> **Estado (2026-09-07): aplicada hasta 20260907000200.** La consulta
+> autenticada de esta sesión devuelve los nueve perfiles y confirma los valores
+> de seeking_specialties de los ocho seed (evidencia en todo/datos.md).
+> **20260907000200_discovery_mutual_complement.sql aplicada por el usuario.**
+> Contrato remoto verificado después: **35/35 pasados**, 53.912 s.
+> No volver a aplicar ni editar migraciones anteriores.
 
 ## Migraciones
 
@@ -31,6 +22,7 @@ Se aplican en orden de nombre:
 | `20260905000400_rls_policies.sql` | Row Level Security de las cinco tablas |
 | `20260905000500_functions_and_realtime.sql` | `record_decision()`, `discovery_deck()`, trigger de `last_message_at`, realtime |
 | `20260907000100_profiles_seeking_specialties.sql` | `profiles.seeking_specialties` — qué busca el perfil en la otra persona |
+| `20260907000200_discovery_mutual_complement.sql` | Orden por encaje mutuo y desempate estable por id antes de paginar |
 
 Las aplicadas no se editan nunca: un cambio de esquema entra como archivo nuevo.
 Editar `20260905000200` para meterle una columna dejaría el repo diciendo una
@@ -402,28 +394,23 @@ Las cinco primeras migraciones y `seed.sql` están **aplicados** contra
 `grrzmzktrhksbttpbblg` (2026-09-06), pegados en el SQL Editor, más
 `dev_reset_current_user()` del final de `seed.sql`.
 
-`20260907000100_profiles_seeking_specialties.sql` (2026-09-07) **no lo está**, y
-por eso el repo y el despliegue difieren a propósito ahora mismo. Para cerrarlo,
-en el SQL Editor del dashboard:
+La columna y el backfill de 20260907000100 están verificados por lectura
+propia el 2026-09-07: nueve perfiles, ocho semillas con sus arrays esperados.
 
-1. Pega el archivo entero de la migración y ejecútalo. Añade
-   `profiles.seeking_specialties` con `default '{}'`, así que las filas que ya
-   existen no se rompen: quedan con el array vacío.
-2. Los ocho perfiles de `seed.sql` se quedan con ese `{}` aunque vuelvas a
-   ejecutar el seed — su `on conflict (id) do nothing` no toca lo que ya está.
-   Para ponerlos al día, el `update` que documenta `supabase/seed.sql` justo
-   debajo del insert de perfiles.
-3. Comprueba con `node supabase/drift-check.mjs`: hoy dice
-   `x falta la columna profiles.seeking_specialties` y sale con código 1;
-   después debe decir `public.profiles — 20 columnas con el tipo esperado` y
-   salir con 0.
-4. Y con `LOCKIN_SUPABASE_CONTRACT=1 npx jest src/data/supabase/contract.test.ts`
-   (27/27). Ojo: eso **también necesita `dev_reset_current_user()` instalada**, y
-   el 2026-09-07 no lo está — `drift-check.mjs` la da por ausente junto a
-   `seed_incoming_likes()`. Sin ella la suite gasta un alta anónima por test y
-   muere con `Request rate limit reached` (30/hora por IP). Se instala pegando
-   el final de `supabase/seed.sql`, y el límite gastado no se reinicia: hay que
-   esperar a la hora siguiente.
+**20260907000200_discovery_mutual_complement.sql** ejecutada por el usuario
+en el SQL Editor de grrzmzktrhksbttpbblg el 2026-09-07. Verificación posterior:
+**35/35 casos pasados**, una suite, 53.912 s. Comando desde el worktree:
+
+```powershell
+$env:LOCKIN_SUPABASE_CONTRACT = '1'
+npx jest src/data/supabase/contract.test.ts
+Remove-Item Env:LOCKIN_SUPABASE_CONTRACT
+```
+
+Ahora son 35 casos (27 anteriores + 8 de ranking). El arnés reutiliza sus
+cuatro usuarios de prueba y restablece los perfiles de apoyo entre casos;
+requiere dev_reset_current_user(), como antes. La validación SQL embebida local
+no sustituye esta pasada contra la API real y sus políticas.
 
 Que sigan coincidiendo con `supabase/migrations/` ya no es un acto de fe:
 `node supabase/drift-check.mjs` lo comprueba en un comando y con la clave `anon`
@@ -439,10 +426,8 @@ recorrido a mano en la app con `.env.local` puesto, confirmado como Supabase
 real porque el estado sobrevivió a cerrar y reabrir la app — el mock es
 memoria y no habría sobrevivido.
 
-Desde el 2026-09-07 la suite tiene 27 casos, no 25: `arquitecto` añadió dos por
-`seekingSpecialties`. El que comprueba que el campo se guarda **falla mientras
-`20260907000100` no esté aplicada**, y ese rojo es el aviso de que el dato se
-pierde, no un test defectuoso.
+El 2026-09-07 la suite pasó de 25 a 27 casos por seekingSpecialties y después
+a 35 por el ranking mutuo. Los 35 están verificados contra este proyecto.
 
 `seed_incoming_likes('<email>')`, en `seed.sql`, reproduce `SEED_RECIPROCAL_IDS`
 del mock para tu usuario, por si quieres que el deck te dé un match al primer

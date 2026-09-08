@@ -421,9 +421,18 @@ que la pérdida de datos no fuera muda. Esto lo cierra por el lado del repo.
   `endOfLine: "lf"` de `.prettierrc`; en CI (Linux) no pasa. Ya estaba anotado
   por `arquitecto`.
 
-### Lo que queda, y es del usuario
+### Despliegue anterior (cerrado por consulta propia el 2026-09-07)
 
-- [ ] **Pegar `20260907000100_profiles_seeking_specialties.sql` en el SQL Editor
+Evidencia de esta sesión: GET autenticado con sesión anónima a
+`/rest/v1/profiles?select=id,name,seeking_specialties&order=id` en
+`grrzmzktrhksbttpbblg` devolvió HTTP 200 y 9 filas. Los ocho UUID semilla
+terminados en 001–008 dieron, respectivamente: `[marketing, ventas]`,
+`[dev, ventas]`, `[]`, `[dev, producto]`, `[diseno, marketing]`, `[]`,
+`[dev, producto]`, `[]`. Coinciden con el UPDATE de `supabase/seed.sql`: la
+columna existe y el backfill está hecho. El noveno perfil tiene `[]`.
+El diagnóstico de fallo que sigue es histórico, anterior a esta verificación.
+
+- [x] **Pegar `20260907000100_profiles_seeking_specialties.sql` en el SQL Editor
       del dashboard.** Desde esta máquina no hay forma: solo está la clave
       `anon`, y `db push` exige `SUPABASE_ACCESS_TOKEN` o la contraseña de
       Postgres (mismo motivo por el que las cinco anteriores también se pegaron
@@ -447,7 +456,7 @@ que la pérdida de datos no fuera muda. Esto lo cierra por el lado del repo.
       correcto (un perfil guardado a medias no lo nota nadie; esto sí) y se
       arregla pegando la migración, pero conviene saberlo antes de abrir la app
       y pensar que se ha roto otra cosa.
-- [ ] **Actualizar los ocho perfiles ya sembrados.** El `on conflict (id) do
+- [x] **Actualizar los ocho perfiles ya sembrados.** El `on conflict (id) do
       nothing` del seed no toca filas existentes, así que volver a ejecutarlo NO
       les pone el campo: se quedan con el `{}` del `default`, que en `par`/`ambos`
       se lee como «abierto a cualquiera» y disimula la diferencia. El `update`
@@ -474,3 +483,37 @@ nada: hay que esperar a la hora siguiente.
 ## Deuda anotada
 - `initialsFrom()` está duplicada en `src/data/mock/store.ts` y `src/data/supabase/mappers.ts`. Es lógica de dominio compartida, pero subirla a `src/data/` es territorio de `arquitecto`. Si divergen, el avatar de un mismo perfil cambia al conectar Supabase.
 - `MatchRepository.list()` resuelve el último mensaje de cada conversación con una ventana de los 200 mensajes más recientes (PostgREST no expone `distinct on`). El orden de la lista nunca se ve afectado — lo da `matches.last_message_at` —, solo la previsualización de un match muy antiguo.
+
+## Orden por complementariedad mutua (2026-09-07)
+
+- [x] Criterio de producto en JSDoc de DiscoveryRepository.getDeck: dos
+  intersecciones booleanas con igual peso; 2 > 1 > 0, id ascendente; vacío no
+  puntúa y Lock-In es neutral. No afecta al like recíproco.
+- [x] Mock ordenado y migración nueva
+  20260907000200_discovery_mutual_complement.sql preparada; conserva firma,
+  permisos y RLS. Clasifica antes del límite de 50 sin eliminar puntuación cero.
+- [x] Casos compartidos añadidos en repositories.contract.ts; los actores remotos
+  son los tres usuarios de apoyo existentes, sin modificar semillas reales.
+- [x] Migración nueva ejecutada por el usuario en SQL Editor de grrzmzktrhksbttpbblg
+  (2026-09-07); comportamiento desplegado verificado con los ocho casos de ranking.
+- [x] LOCKIN_SUPABASE_CONTRACT=1 npx jest src/data/supabase/contract.test.ts:
+  **35/35 pasados**, una suite, 53.912 s (2026-09-07), contra el proyecto real.
+  Incluye orden mutuo, empates por id, vacíos, Lock-In, edición de perfil,
+  consumo completo y match recíproco con cero encaje.
+
+### Verificación local de esta entrega
+
+- PostgreSQL embebido (PGlite, base temporal con auth.uid de prueba): las siete
+  migraciones se aplicaron completas. Catálogo de 62 perfiles: el de encaje
+  mutuo con id mayor quedó primero incluso con LIMIT 1; recargas idénticas;
+  tras decidirlo, 50 pendientes y luego los 10 restantes. Lock-In quedó por id.
+  Esto valida SQL y paginación, no sustituye la suite contra Supabase real.
+- TypeScript: npm run typecheck, sin errores. Lint: npm run lint sin errores;
+  corregidos dos avisos de import duplicado en el arnés mock y comprobado con
+  ESLint sobre ese archivo. Prettier conforme en los siete archivos TS tocados.
+- npm run test:coverage -- --ci --runInBand: **382/382**, 34 suites;
+  35 casos remotos omitidos por opt-in. Suelo superado sin tocar jest.config.js:
+  **90.43 / 82.65 / 91.98 / 91.93 %** (sentencias/ramas/funciones/líneas).
+  La primera ejecución paralela tuvo un timeout de formulario y la primera
+  en serie otro de render inicial de swipe-deck; repetición completa en serie
+  verde (63 s), sin modificar tests, timeouts ni umbrales para ocultarlos.
