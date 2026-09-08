@@ -36,6 +36,34 @@ async function fillValidForm() {
   await fireEvent.changeText(screen.getByPlaceholderText('Tu respuesta'), '  Un CRM.  ');
 }
 
+/**
+ * Cada campo de texto y lo que el teclado debe hacer en él, buscado por
+ * `placeholder` porque el de un prompt comparte etiqueta accesible con su chip.
+ *
+ * No es cosmética: el teclado de Android escribe en el `value` que se guarda en
+ * Postgres. Un prompt que se capitaliza palabra por palabra llega a la ficha
+ * como "Una Herramienta para Construir en equipo" cuando se escribió en
+ * minúsculas. De ahí que ningún campo pueda quedarse sin declarar los dos
+ * props: el defecto de la plataforma no es el que quiere este formulario.
+ */
+const KEYBOARD_BEHAVIOUR: { placeholder: string; autoCapitalize: string }[] = [
+  // Un nombre propio se capitaliza por palabras, y el corrector no debe tocarlo.
+  { placeholder: 'Cómo te llamas', autoCapitalize: 'words' },
+  // Solo dígitos: no hay nada que capitalizar ni que corregir.
+  { placeholder: '28', autoCapitalize: 'none' },
+  // Topónimo: también nombre propio.
+  { placeholder: 'Barcelona', autoCapitalize: 'words' },
+  // Identificador IANA, sensible a mayúsculas y ajeno al diccionario.
+  { placeholder: 'Europe/Madrid', autoCapitalize: 'none' },
+  // Respuestas libres: prosa, no nombres propios. Solo la primera letra.
+  { placeholder: 'Tu respuesta', autoCapitalize: 'sentences' },
+  { placeholder: 'Opcional', autoCapitalize: 'sentences' },
+  // URLs: cualquier retoque las rompe.
+  { placeholder: 'https://github.com/tuusuario', autoCapitalize: 'none' },
+  { placeholder: 'https://tuportfolio.com', autoCapitalize: 'none' },
+  { placeholder: 'https://linkedin.com/in/tuusuario', autoCapitalize: 'none' },
+];
+
 const TEXT_FIELD_LABELS = [
   'Nombre',
   'Edad',
@@ -392,4 +420,30 @@ describe('ProfileForm', () => {
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     expect(onSubmit.mock.calls[0][0].availability.hoursPerWeek).toBe(60);
   });
+
+  it('no queda ningún campo de texto sin declarar los dos props', async () => {
+    await render(<ProfileForm submitLabel="Guardar" onSubmit={jest.fn()} />);
+
+    // Se buscan por tipo, no por placeholder: así un campo nuevo que naciera sin
+    // props (o sin placeholder) rompe este test en vez de colarse.
+    const fields = screen.container.queryAll((node) => node.type === 'TextInput');
+
+    expect(fields).toHaveLength(KEYBOARD_BEHAVIOUR.length);
+    for (const field of fields) {
+      expect(typeof field.props.autoCapitalize).toBe('string');
+      expect(field.props.autoCorrect).toBe(false);
+    }
+  });
+
+  it.each(KEYBOARD_BEHAVIOUR)(
+    'el campo "$placeholder" declara autoCapitalize="$autoCapitalize" y desactiva el corrector',
+    async ({ placeholder, autoCapitalize }) => {
+      await render(<ProfileForm submitLabel="Guardar" onSubmit={jest.fn()} />);
+
+      const field = screen.getByPlaceholderText(placeholder);
+
+      expect(field.props.autoCapitalize).toBe(autoCapitalize);
+      expect(field.props.autoCorrect).toBe(false);
+    }
+  );
 });
