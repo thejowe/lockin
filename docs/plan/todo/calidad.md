@@ -1,6 +1,6 @@
 # TODO — calidad
 
-> **Estado actual: duodécima pasada (2026-09-08).** El E2E Android sigue sin dar verde, pero ya se sabe **por qué**, y son dos causas distintas: la variante `supabase` completa el recorrido entero en el emulador y solo falla en el oráculo por una cadena capitalizada; la variante `mock` ni siquiera llega a arrancar el caso. Detalle en "Duodécima pasada", justo debajo. Lo de más abajo es el historial de las pasadas anteriores.
+> **Estado actual: duodécima pasada (2026-09-08).** **Primer recorrido E2E completo en verde**, con evidencia: [job 102245686110](https://github.com/thejowe/lockin/actions/runs/34281070607/job/102245686110) — `1/1 Flow Passed in 2m 36s` y las filas verificadas en Postgres. La causa que lo tenía atascado era una sola: el merge de `codex/mutual-complement` cambió el criterio de orden del deck y el fixture del E2E llevaba dos commits fijando algo que ya no ordenaba. El workflow sigue en rojo por el control negativo, que está parado en `src/data/mock/seed.ts` (otro bloque). Detalle en "Duodécima pasada", justo debajo. Lo de más abajo es el historial de las pasadas anteriores.
 
 > **Tercera pasada (histórico).** La primera dejó el repo con
 > lint, formato, tipos, CI y 102 tests. La segunda cubrió el bloque `chat` y el
@@ -861,6 +861,39 @@ Mientras siga así, el recorrido con el mock se para en el match y el control
 negativo no puede cumplir su contrato. Es de `src/`, así que desde aquí solo se
 reporta.
 
+### Primer recorrido completo VERDE (2026-09-08)
+
+[Run 34281070607, trabajo `supabase`
+(102245686110)](https://github.com/thejowe/lockin/actions/runs/34281070607/job/102245686110),
+commit 78c90b8. Paso **"Resultado del recorrido (supabase)": success**. El log:
+
+```
+=== Recorrido supabase, attempt-01 ===
+[Passed] Alta, perfil, deck, match, mensaje y persistencia (2m 36s)
+1/1 Flow Passed in 2m 36s
+Postgres: alta, perfil, lo que busca, modo, like, match y mensaje verificados.
+Veredicto de attempt-01: pass — recorrido completo y persistencia verificados
+Recorrido supabase verde en attempt-01.
+```
+
+Al primer intento, sin reintento de Maestro y con el segundo emulador `skipped`.
+Las dos líneas que importan son las dos últimas: la primera la escribe Maestro
+—el recorrido de UI, reinicio incluido— y la segunda la escribe `verify.mjs`
+leyendo Postgres con el cliente privilegiado, que nunca entra en el APK. Alta
+anónima real, perfil, `seeking_specialties`, modo, decisión, match y mensaje:
+comprobados como filas.
+
+Ese run llevaba también el arreglo del teclado de `perfil` (4ab248a), así que
+`verify.mjs:27` pasó. **Ojo con leer eso como prueba de que el auto-capitalizado
+está arreglado**: se demostró más arriba que aparece de forma intermitente, y un
+verde suelto no distingue "arreglado" de "esta vez no salió".
+
+Qué NO cierra este verde: el workflow **sigue en rojo**, porque el control
+negativo no concluye. El verde de arriba prueba por sí solo que la app escribió
+en Postgres —lo dice el oráculo, fila a fila—; lo que falta es la otra mitad,
+que el mismo caso con el APK sin credenciales se rompa en la persistencia. Eso
+está parado en `src/data/mock/seed.ts`, que es de otro bloque.
+
 ### Casillas
 
 - [x] Diagnosticar el rojo de la variante `supabase` con el log del run.
@@ -890,14 +923,19 @@ reporta.
 - [x] Encontrar por qué el like no cae sobre la tarjeta que el recorrido afirma.
       Cerrada: el `update` de `created_at` del fixture dejó de ordenar el deck en
       el merge de `codex/mutual-complement`. Arreglado en `e2e/incoming-likes.sql`.
-- [ ] **Recorrido completo verde en emulador** y [ ] **verde en CI**. Siguen
-      abiertas, y no se marcan sin un job verde enlazado: marcarlas antes es
-      justo el error que ya destapó una guardia en este repo. Qué falta en cada
-      una: la `supabase` necesita que el fixture arreglado ponga a Núria delante
-      —lo dice el próximo run, aquí no hay Postgres para comprobarlo— y que la
-      capitalización, que es intermitente, esté arreglada por `perfil`; la `mock`
-      está parada en el match y depende de `src/data/mock/seed.ts`, que es de
-      otro bloque.
+- [x] **Recorrido completo verde en emulador** y [x] **verde en CI**. Cerradas
+      las dos con el mismo enlace, porque el emulador es el de Actions:
+      [job 102245686110](https://github.com/thejowe/lockin/actions/runs/34281070607/job/102245686110),
+      paso "Resultado del recorrido (supabase)", `1/1 Flow Passed in 2m 36s` más
+      `Postgres: alta, perfil, lo que busca, modo, like, match y mensaje
+      verificados`. Es la primera vez que el recorrido entero pasa.
+- [ ] **Control negativo concluyente con el `.yaml` actual.** Esta queda abierta
+      y es la que mantiene el workflow en rojo. Hoy el `mock` se para en
+      `¡Match!` (comando 37 de 38) porque la primera tarjeta de su orden,
+      `seed-lucia`, no está en `SEED_RECIPROCAL_IDS`. Depende de
+      `src/data/mock/seed.ts`: reportado abajo, no tocado.
+      Antecedente que sí existe, con otro `.yaml`: run 34162107392 sobre 696408a,
+      donde el control negativo pasó.
 
 ### Lo que NO se ha hecho, y por qué
 

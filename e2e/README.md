@@ -404,3 +404,18 @@ Los dos runs de `supabase` corrieron sobre el mismo commit sin el arreglo de
 `perfil`, y solo uno falló en `verify.mjs:27`. Mismo APK, mismo emulador, mismo
 texto. Un verde suelto de esa variante no demuestra que el auto-capitalizado esté
 arreglado; lo que demuestra es que este es el único nivel donde llega a verse.
+
+### Primer recorrido completo en verde (2026-09-08)
+
+[Run 34281070607, trabajo `supabase`](https://github.com/thejowe/lockin/actions/runs/34281070607/job/102245686110),
+commit 78c90b8, paso "Resultado del recorrido (supabase)" en verde:
+
+```
+[Passed] Alta, perfil, deck, match, mensaje y persistencia (2m 36s)
+Postgres: alta, perfil, lo que busca, modo, like, match y mensaje verificados.
+Recorrido supabase verde en attempt-01.
+```
+
+Al primer intento y sin reintentos. El workflow completo sigue rojo: el control
+negativo se para en `¡Match!` porque la primera tarjeta del orden del mock no
+está en `SEED_RECIPROCAL_IDS` (`src/data/mock/seed.ts`).
