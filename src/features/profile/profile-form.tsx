@@ -255,6 +255,7 @@ export function ProfileForm({
             onChangeText={(value) => update('name', value)}
             placeholder="Cómo te llamas"
             autoCapitalize="words"
+            autoCorrect={false}
             autoComplete="name"
             accessibilityLabel="Nombre"
           />
@@ -265,6 +266,8 @@ export function ProfileForm({
             value={draft.age}
             onChangeText={(value) => update('age', value.replace(/[^0-9]/g, ''))}
             placeholder="28"
+            autoCapitalize="none"
+            autoCorrect={false}
             inputMode="numeric"
             maxLength={2}
             accessibilityLabel="Edad"
@@ -276,6 +279,8 @@ export function ProfileForm({
             value={draft.location}
             onChangeText={(value) => update('location', value)}
             placeholder="Barcelona"
+            autoCapitalize="words"
+            autoCorrect={false}
             accessibilityLabel="Ubicación"
           />
         </Field>
@@ -414,10 +419,15 @@ export function ProfileForm({
                 ))}
               </ChipRow>
 
+              {/* Prosa, no un nombre propio: el teclado solo levanta la primera
+                  letra y el corrector no entra. Con los defectos de Android la
+                  respuesta se guardaba capitalizada palabra por palabra. */}
               <TextField
                 value={prompt.answer}
                 onChangeText={(answer) => updatePrompt(index, { answer })}
                 placeholder={index === 0 ? 'Tu respuesta' : 'Opcional'}
+                autoCapitalize="sentences"
+                autoCorrect={false}
                 multiline
                 maxLength={PROMPT_MAX_LENGTH}
                 showCount

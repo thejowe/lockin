@@ -16,6 +16,12 @@
 - [x] 1-2 prompts de texto libre corto
 - [x] Validación básica (campos obligatorios mínimos)
 
+## Teclado de los campos de texto
+- [x] Cada `TextField` declara `autoCapitalize` y `autoCorrect` según lo que significa el campo
+- [x] La respuesta a un prompt no se title-casea (`sentences`, corrector apagado)
+- [x] Ubicación capitaliza por palabras (topónimo) y no la corrige el diccionario
+- [x] Test unitario que cae si alguien quita cualquiera de los dos props, y que cuenta los campos para que uno nuevo no se cuele
+
 ## Perfil propio
 - [x] Pantalla de ver/editar perfil en la tab Perfil
 - [x] Reutilizar el formulario de creación para la edición
@@ -31,6 +37,7 @@
 - `seekingSpecialties` (contrato de `arquitecto`): el formulario lo pregunta solo cuando `lookingFor` es `par` o `ambos` —`catalog.ts:seeksComplement`— y lo envía vacío en cualquier otro caso, aunque se hubieran marcado chips antes de cambiar de modo. La ficha lo pinta en latón, debajo de lo que domina (verde) y separado por una línea; vacío se lee como "Abierto a cualquier especialidad", que es lo que significa en el dominio. Los chips de este grupo llevan `accessibilityLabel` "Busco X" para no compartir nombre accesible con los de lo que domina.
 - Rutas: `src/app/(onboarding)/mode.tsx`, `src/app/(onboarding)/profile-form.tsx`, `src/app/(tabs)/profile.tsx` — ya no usan `ScreenPlaceholder`.
 - Catálogo mock: `src/data/mock/seed.ts`, 8 perfiles y 3 recíprocos (uno por modo, para que cualquier filtro de `descubrir` tenga match posible).
+- Teclado (2026-09-08): la respuesta al prompt llegaba a Postgres capitalizada palabra por palabra —'Una Herramienta para Construir en equipo' tecleado en minúsculas— porque era el único campo sin `autoCapitalize` ni `autoCorrect`. Ahora los nueve campos los declaran: `words` para nombre y ubicación (nombres propios), `sentences` para las respuestas libres, `none` para edad, zona horaria y enlaces; el corrector va apagado en todos, incluidos los nombres propios, porque el diccionario los reescribe. Lo cubren dos tests en `profile-form.test.tsx`: uno por campo contra la tabla `KEYBOARD_BEHAVIOUR`, y otro que cuenta los `TextInput` del árbol para que un campo nuevo sin props rompa la suite en vez de colarse.
 
 ## Recuerda
 Nadie contrata a nadie: no metas campos de "salario" o "equity que ofrezco" — eso es Modo Talento, Fase 4, fuera de este MVP.
