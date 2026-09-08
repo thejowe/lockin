@@ -599,11 +599,15 @@ Dos conclusiones, y la segunda es la que importa:
    las cuatro aserciones del deck— y sigue estando **antes** del `stopApp`.
 
 El artefacto lo explica sin ambigüedad. El volcado de la pantalla en ese paso
-(`step-036-assertCondition-Núria_Bosch.json`) trae el deck cargado, con la
-tarjeta de arriba a nombre de **Marc Oller**, no de Núria Bosch:
+(`step-036-assertCondition-Núria_Bosch.json`) trae el deck cargado y delante
+**no está Núria Bosch**. Cuál es la de delante se lee en los `bounds`, no en el
+orden del volcado: la de delante es la única tarjeta a tamaño completo, y las de
+detrás salen escaladas.
 
 ```
-MO | Marc Oller | 34 · Valencia | QUIERE: AMBOS | ✓ ENCAJAS | DOMINA | DISEÑO …
+Lucía Pardo  [295,530][974,609]   ← delante
+Marc Oller   [305,587][957,663]
+Diego Salas  [315,641][939,714]
 ```
 
 Es exactamente lo que la décima pasada dejó anotado como riesgo, palabra por
@@ -697,6 +701,166 @@ cuatro casos nuevos de `e2e/triage.test.mjs` fijan las cuatro ramas, y el parser
 se ha validado contra el volcado real del run (devuelve
 `{"title":"System UI isn't responding"}` y clasifica `runner`).
 
+### Lo que el run de la rama demuestra, y lo que destapa
+
+Rama `calidad/e2e-anr-y-deck-condicional`, commit 91e98a1.
+[Run 34276300168](https://github.com/thejowe/lockin/actions/runs/34276300168).
+CI verde entero (Lint, Formato, Tipos, Tests, **Runner E2E**, Export web).
+
+**Las tres piezas de esta pasada funcionan en un emulador de verdad**, y esto ya
+no es "pasa el YAML":
+
+1. **La clasificación del ANR.** El trabajo `mock` volvió a encontrarse el
+   diálogo del sistema, dos veces seguidas en el mismo AVD, y el veredicto lo
+   dijo con todas las letras en vez de culpar al caso:
+   `Veredicto de attempt-01: runner — un diálogo ANR del sistema tapaba la
+   pantalla ("System UI isn't responding"): la aserción no llegó a mirar la app`.
+   O sea que el ANR no era una casualidad de un run: es reproducible.
+2. **El reintento de emulador se disparó por ese motivo**, que es justo para lo
+   que existe: `Reintentar el emulador: true`, y el paso "segundo emulador" corrió
+   por primera vez con una causa legítima. En el AVD nuevo no hubo ANR.
+3. **El `runFlow` condicional hace lo que dice.** En el `commands.json` del
+   tercer intento el comando 35 es `runFlowCommand SKIPPED` con el mock, y el
+   recorrido siguió adelante: 38 comandos en vez de los 36 de antes, y llegó a
+   `tapOn: 'Like'` (COMPLETED). La sintaxis es correcta y el gate no toca al
+   resto del recorrido.
+4. **El mensaje de la guarda ya no miente.** Donde antes decía "El caso ya no
+   reinicia la app", ahora dice: *"El recorrido no llegó al reinicio: Maestro
+   ejecutó 38 comando(s) y falló en el 37. `full-journey.yaml` sí declara el
+   `stopApp`, así que esto no dice nada sobre la persistencia"*.
+
+**Y destapa el siguiente eslabón, que no es de este bloque.** Con el gate puesto,
+el control negativo ya no muere en el nombre de la tarjeta: muere en el comando
+37 de 38, `Assertion is false: "¡Match!" is visible`. Sigue siendo antes del
+`stopApp`, así que sigue sin concluir.
+
+La causa está en el artefacto y es concreta. Comparando los `bounds` de la
+tarjeta de delante antes y después del like:
+
+```
+antes del like (job 102222194124)   Lucía Pardo [295,530][974,609]  ← delante
+después del like (job 102230038048) Marc Oller  [295,530][974,609]  ← delante
+```
+
+El deck avanzó exactamente una tarjeta: el like se registró y cayó sobre **Lucía
+Pardo**. Y `src/data/mock/seed.ts` declara
+`SEED_RECIPROCAL_IDS = ['seed-nuria', 'seed-marc', 'seed-alba']` — `seed-lucia`
+no está. Con el mock, darle like a la tarjeta de delante **no genera match**, así
+que no hay chat, no hay mensaje y no se llega al reinicio.
+
+No es un fallo del E2E ni se arregla desde `e2e/`: es que el fixture que garantiza
+"quien está delante ya te ha dado like" existe para Postgres
+(`e2e/incoming-likes.sql`) y no tiene equivalente vigente en el mock. El orden del
+deck cambió con el merge de `codex/mutual-complement` y `SEED_RECIPROCAL_IDS` se
+quedó como estaba.
+
+**Encontrado y no tocado** (`descubrir` / `datos`, dueños de `src/data/mock/`):
+para que el control negativo pueda cumplir su contrato, la tarjeta que quede
+primera en el orden del mock tiene que estar en `SEED_RECIPROCAL_IDS`, igual que
+`incoming-likes.sql` lo garantiza en Postgres. Hoy la primera es `seed-lucia` y
+no lo está. Es una línea, pero es de `src/` y desde aquí no se toca.
+
+### La causa raíz: el fixture llevaba dos commits sin fijar nada
+
+Con el gate del deck puesto, el segundo run de la rama
+([34276300168](https://github.com/thejowe/lockin/actions/runs/34276300168), tras
+`gh run rerun --failed`) dio el dato que faltaba. Los dos trabajos avanzaron, y
+los dos se rompieron por **la misma causa**, que no es la que se creía.
+
+**`supabase` ([102238000817](https://github.com/thejowe/lockin/actions/runs/34276300168/job/102238000817)):**
+Maestro pasa entero otra vez —`1/1 Flow Passed in 3m 33s`, aserciones del deck
+incluidas— y el oráculo falla, pero ya no en la cadena del prompt: en
+`verify.mjs:44`.
+
+```
+El like no cayó sobre la primera tarjeta del deck (Núria Bosch)
++ '11111111-1111-4111-8111-000000000002'
+- '11111111-1111-4111-8111-000000000001'
+```
+
+El like cayó sobre **Marc Oller**. Y esto se puede calcular, no hace falta
+suponerlo. `20260907000200_discovery_mutual_complement` sustituyó
+`order by p.created_at desc` por:
+
+```sql
+order by
+  case ... else (me.specialties && p.seeking_specialties)::integer
+             + (p.specialties && me.seeking_specialties)::integer end desc,
+  p.id asc
+```
+
+`created_at` **ya no interviene**. El perfil del recorrido domina `dev` y
+`marketing` y busca `diseno`, así que con los datos de `supabase/seed.sql`:
+
+| Tarjeta | mis especialidades ∩ lo que busca | sus especialidades ∩ lo que busco | total |
+| --- | --- | --- | --- |
+| Núria (`…0001`) | `marketing` → 1 | `{dev,datos}` ∩ `{diseno}` = ∅ → 0 | **1** |
+| Marc (`…0002`) | `dev` → 1 | `diseno` → 1 | **2** |
+
+Marc gana por 2 a 1. Exactamente el id que devolvió el oráculo.
+
+Es decir: **el `update` de `created_at` de `e2e/incoming-likes.sql` dejó de fijar
+el orden del deck en el merge de `codex/mutual-complement`, y nadie se enteró**.
+La décima pasada escribió esa suposición y hasta puso una guarda para
+protegerla — `assert.match(fixture, /update public\.profiles\s+set created_at/)`
+— que siguió pasando en verde todo el tiempo, porque comprobaba que la línea
+existiera, no que sirviera para algo.
+
+Y explica también por qué `assertVisible: 'Núria Bosch'` pasa mientras el like
+cae en otra: el deck pinta tres tarjetas apiladas y Núria está entre ellas, solo
+que detrás. `assertVisible` no dice "delante", dice "en pantalla". Quien sí
+distingue es el oráculo, comparando el id sobre el que cayó la decisión — la
+aserción del `.yaml` es la débil y el `verify.mjs` es el que cazó el bug.
+
+**Arreglo, y es de este bloque** (`e2e/incoming-likes.sql`): se fija la tarjeta
+de delante por el criterio que de verdad ordena. A Núria se le da la puntuación
+máxima —le faltaba el segundo sumando, así que se le añade `diseno` a lo que
+domina— y como su id es el más bajo del seed gana además cualquier empate. Su
+fila "Busca" no se toca: el ✓ que afirma el recorrido sale de ahí.
+
+La guarda se reescribe para comprobar el criterio nuevo, y añade
+`assert.doesNotMatch(fixture, /set created_at/)` para que la línea muerta no
+pueda volver disfrazada de fijación. Verificado por mutación: reponer el
+mecanismo antiguo tumba el caso.
+
+### Y la cadena capitalizada resulta ser intermitente
+
+Dato que corrige lo escrito más arriba en esta misma pasada. Los dos runs de
+`supabase` corrieron sobre **el mismo commit** (91e98a1, sin el arreglo de
+`perfil`), y el primero murió en `verify.mjs:27` con
+`'Una Herramienta para Construir en equipo'` mientras el segundo **pasó de largo
+esa comparación** y llegó hasta la línea 44. Mismo APK, mismo emulador, mismo
+texto escrito: el auto-capitalizado aparece unas veces y otras no.
+
+No cambia la decisión —al contrario, la refuerza—: una corrupción silenciosa e
+**intermitente** de un dato del usuario es de las que no caza nada salvo un
+recorrido real, y desde luego no un test que renderiza sin IME. Sí cambia lo que
+se puede afirmar: este E2E detecta el bug, pero no en todas las pasadas, así que
+un verde suelto de la variante `supabase` no demuestra que esté arreglado.
+
+### Estado del control negativo, que sigue sin concluir
+
+`mock` ([102238001056](https://github.com/thejowe/lockin/actions/runs/34276300168/job/102238001056))
+reprodujo su fallo **exacto** —`Assertion is false: "¡Match!" is visible`, comando
+37 de 38—, así que es determinista, no una carrera. La causa es la misma de
+fondo, vista desde el otro lado: con el orden nuevo la tarjeta de delante en el
+mock es Lucía Pardo, y `src/data/mock/seed.ts` declara
+`SEED_RECIPROCAL_IDS = ['seed-nuria', 'seed-marc', 'seed-alba']` — `seed-lucia` no
+está, así que darle like no genera match y el recorrido no llega al `stopApp`.
+
+El arreglo del fixture de Postgres no toca eso: el mock no lo lee. Ver
+"Encontrado y no tocado".
+
+### Encontrado y no tocado (`descubrir` / `datos`)
+
+`src/data/mock/seed.ts`: el control negativo necesita que quien quede **delante**
+en el orden del mock esté en `SEED_RECIPROCAL_IDS`, que es lo que
+`e2e/incoming-likes.sql` garantiza en Postgres. Con el orden por
+complementariedad mutua la primera es `seed-lucia`, que no está en esa lista.
+Mientras siga así, el recorrido con el mock se para en el match y el control
+negativo no puede cumplir su contrato. Es de `src/`, así que desde aquí solo se
+reporta.
+
 ### Casillas
 
 - [x] Diagnosticar el rojo de la variante `supabase` con el log del run.
@@ -708,7 +872,7 @@ se ha validado contra el volcado real del run (devuelve
       `attempt-01/.../screen-hierarchy/step-005-assertCondition-Cofundador.json`)
       y, debajo, la que el rerun destapó — las cuatro aserciones del deck no se
       pueden cumplir con el mock (job 102222194124,
-      `step-036-assertCondition-Núria_Bosch.json`: arriba está Marc Oller).
+      `step-036-assertCondition-Núria_Bosch.json`: delante está Lucía Pardo).
 - [x] Comprobar con `gh run rerun` sobre el mismo commit si el `mock` tenía una
       regresión de arranque en frío. **No la tenía**: el fallo no se reproduce.
 - [x] Devolver al control negativo la capacidad de llegar al reinicio, sin
@@ -718,18 +882,28 @@ se ha validado contra el volcado real del run (devuelve
       Decidido que **no**, con los tres motivos de arriba, y fijado con dos casos
       de `full-journey.test.mjs` verificados por mutación.
 - [x] Corregir en el TODO el bloqueo de lectura de logs que ya no existe.
+- [x] Verificar en un emulador real la clasificación del ANR, el reintento que
+      dispara y el `runFlow` condicional. Cerrada con evidencia del run
+      34276300168: veredicto `runner` por el diálogo del sistema, segundo
+      emulador arrancado por ese motivo, y `runFlowCommand SKIPPED` en el
+      `commands.json` del control negativo.
+- [x] Encontrar por qué el like no cae sobre la tarjeta que el recorrido afirma.
+      Cerrada: el `update` de `created_at` del fixture dejó de ordenar el deck en
+      el merge de `codex/mutual-complement`. Arreglado en `e2e/incoming-likes.sql`.
 - [ ] **Recorrido completo verde en emulador** y [ ] **verde en CI**. Siguen
       abiertas, y no se marcan sin un job verde enlazado: marcarlas antes es
       justo el error que ya destapó una guardia en este repo. Qué falta en cada
-      una: la `supabase` depende del arreglo de `perfil`, que es de otro bloque;
-      la `mock` depende de que el `runFlow` condicional funcione en un emulador
-      de verdad —aquí no hay Maestro para probarlo— y de que, ya llegando al
-      `stopApp`, el oráculo de ausencia confirme que no escribió nada.
+      una: la `supabase` necesita que el fixture arreglado ponga a Núria delante
+      —lo dice el próximo run, aquí no hay Postgres para comprobarlo— y que la
+      capitalización, que es intermitente, esté arreglada por `perfil`; la `mock`
+      está parada en el match y depende de `src/data/mock/seed.ts`, que es de
+      otro bloque.
 
 ### Lo que NO se ha hecho, y por qué
 
 - No se ha tocado `src/features/profile/profile-form.tsx`: es de `perfil` y lo
-  está arreglando en paralelo.
+  está arreglando en paralelo. Tampoco `src/data/mock/seed.ts`, que es lo que
+  hoy para el control negativo: queda reportado arriba, no corregido.
 - No se ha ampliado ningún timeout, ni quitado el `stopApp` o el
   `launchApp clearState: false`, ni relajado ninguna aserción.
 - No se retira la variante `probe` pese a que el bug del teclado está cerrado y

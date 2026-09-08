@@ -162,10 +162,18 @@ describe('la respuesta de texto libre es, además, una sonda del teclado', () =>
 });
 
 describe('lo que sostiene esas aserciones', () => {
-  it('el fixture fija el orden del deck', () => {
-    // `discovery_deck` ordena por `created_at desc` y el seed las inserta todas
-    // a la vez: sin este `update`, la tarjeta de arriba la elige el planificador.
-    assert.match(fixture, /update public\.profiles\s+set created_at/);
+  it('el fixture fija quién está delante por el criterio que de verdad ordena', () => {
+    // Ojo con este caso: su versión anterior comprobaba el `update` de
+    // `created_at`, y siguió pasando durante toda la vida del bug —
+    // `20260907000200_discovery_mutual_complement` había dejado de ordenar por
+    // fecha y el fixture ya no fijaba nada. Aquí se comprueba el criterio nuevo.
+    assert.match(fixture, /update public\.profiles\s+set specialties/);
+    // A la tarjeta de delante se le da la puntuación máxima (2): busca lo que el
+    // recorrido domina y domina lo que el recorrido busca.
+    assert.match(fixture, /'diseno'/);
+    assert.match(fixture, /11111111-1111-4111-8111-000000000001/);
+    // Y `created_at` no puede volver a usarse como si ordenara: no lo hace.
+    assert.doesNotMatch(fixture, /set created_at/);
   });
 
   it('el oráculo de Postgres comprueba la columna y la tarjeta que se likeó', () => {

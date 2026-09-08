@@ -353,8 +353,10 @@ recorrido llega hasta el comando 35 de 36, donde muere en
 `Assertion is false: "Núria Bosch" is visible`. Sigue siendo **antes** del
 `stopApp`, así que el control negativo sigue sin concluir.
 
-La causa esta vez es estructural. El volcado de ese paso trae el deck cargado con
-**Marc Oller** arriba: las cuatro aserciones del deck nombran a la persona que el
+La causa esta vez es estructural. El volcado de ese paso trae el deck cargado y
+delante está **Lucía Pardo** —la de delante es la única tarjeta a tamaño
+completo, así que el orden se lee en los `bounds`, no en el del volcado—. Las
+cuatro aserciones del deck nombran a la persona que el
 `update` de `created_at` de `incoming-likes.sql` pone en cabeza, y ese fixture es
 de Postgres. Con el APK sin credenciales el orden lo pone `src/data/mock/seed.ts`
 y esas líneas no se pueden cumplir por construcción.
@@ -369,3 +371,36 @@ exactamente esas cuatro líneas, que solo haya un `runFlow` en el recorrido, que
 el `stopApp` quede fuera de él, y que el primer `assertTrue` rechace un
 `DECK_FIXTURE` ausente o mal escrito — para que dejar de pasarlo rompa el
 recorrido en vez de saltarse las aserciones en silencio.
+
+### La causa raíz de los dos: el fixture llevaba dos commits sin fijar nada
+
+Segundo run de la rama, tras `gh run rerun --failed`. `supabase` vuelve a pasar
+el recorrido entero (`1/1 Flow Passed in 3m 33s`) y el oráculo falla en
+`verify.mjs:44`: el like cayó sobre `…0002` (Marc Oller) en vez de sobre `…0001`
+(Núria Bosch).
+
+`20260907000200_discovery_mutual_complement` cambió el criterio de
+`discovery_deck`: ordena por complementariedad mutua y desempata por `id asc`;
+**`created_at` ya no interviene**. El perfil del recorrido domina `dev` y
+`marketing` y busca `diseno`, así que Núria puntúa 1 (busca marketing) y Marc
+puntúa 2 (busca dev, y domina diseño). Delante estaba Marc.
+
+Es decir, el `update` de `created_at` de `incoming-likes.sql` dejó de fijar nada
+en ese merge. La guarda que lo protegía comprobaba que la línea existiera, no que
+sirviera, así que siguió en verde todo el tiempo.
+
+Dos consecuencias para leer este directorio:
+
+- **`assertVisible` no dice "delante", dice "en pantalla".** El deck apila tres
+  tarjetas y Núria seguía visible detrás, por eso las aserciones del `.yaml`
+  pasaban con la tarjeta equivocada delante. Quien cazó el bug fue `verify.mjs`,
+  comparando el id sobre el que cayó la decisión.
+- **El fixture fija ahora por el criterio que de verdad ordena**: le da a Núria
+  la puntuación máxima y, con el id más bajo del seed, también los empates.
+
+### La capitalización del prompt es intermitente
+
+Los dos runs de `supabase` corrieron sobre el mismo commit sin el arreglo de
+`perfil`, y solo uno falló en `verify.mjs:27`. Mismo APK, mismo emulador, mismo
+texto. Un verde suelto de esa variante no demuestra que el auto-capitalizado esté
+arreglado; lo que demuestra es que este es el único nivel donde llega a verse.

@@ -3,16 +3,29 @@
 
 -- Orden del deck determinista.
 --
--- `discovery_deck` ordena por `created_at desc` y `supabase/seed.sql` inserta
--- los ocho perfiles en la misma transacción: los ocho `created_at` son iguales
--- y el desempate lo elige el planificador. El recorrido afirma qué tarjeta está
--- arriba —la fila "Busca" y el ✓ de complementariedad son datos de ESA
--- persona—, así que aquí se separan las fechas y el deck queda en el orden del
--- catálogo, con Núria Bosch primero: el mismo que da `src/data/mock/seed.ts` en
--- el control negativo, para que las dos variantes vean la misma tarjeta.
+-- El recorrido afirma quién está DELANTE —la fila "Busca" y el ✓ de
+-- complementariedad son datos de ESA persona—, así que la tarjeta de delante no
+-- puede depender de nada que no esté fijado aquí.
+--
+-- Hasta el 2026-09-07 se fijaba separando los `created_at`, porque
+-- `discovery_deck` ordenaba por `created_at desc`. La migración
+-- `20260907000200_discovery_mutual_complement` cambió ese criterio: ahora ordena
+-- por complementariedad mutua y desempata por `id asc`; `created_at` ya no
+-- interviene. Aquella línea dejó de fijar nada y el deck se reordenó sin que
+-- nadie lo notara, hasta que el oráculo lo cazó — run 34276300168: el like cayó
+-- sobre ...0002 (Marc Oller, puntuación 2) en vez de sobre ...0001.
+--
+-- Se fija por el criterio que de verdad decide. El perfil del recorrido domina
+-- dev y marketing y busca diseño, así que la puntuación de una tarjeta es
+--   (mis especialidades ∩ lo que ella busca) + (sus especialidades ∩ lo que yo busco)
+-- con máximo 2. A Núria le faltaba el segundo sumando: busca marketing (1) pero
+-- domina dev y datos, que no es lo que busco. Con `diseno` añadido llega a 2, el
+-- máximo posible, y su id es el más bajo del seed, así que gana también
+-- cualquier empate. Su fila "Busca" no se toca: el ✓ que afirma el recorrido
+-- sale de ahí.
 update public.profiles
-set created_at = created_at - (right(id::text, 2)::integer * interval '1 minute')
-where id::text like '11111111-1111-4111-8111-%';
+set specialties = array['dev', 'datos', 'diseno']::public.specialty[]
+where id = '11111111-1111-4111-8111-000000000001';
 
 create function public.e2e_incoming_likes() returns trigger
 language plpgsql security definer set search_path = public as $$

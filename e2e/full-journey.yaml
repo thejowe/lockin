@@ -92,8 +92,8 @@ name: Alta, perfil, deck, match, mensaje y persistencia
 #
 # Estas cuatro son las ÚNICAS líneas del recorrido que dependen de una fila que
 # solo existe en Postgres: el `update` de `created_at` de `incoming-likes.sql`.
-# Con el APK sin credenciales el deck lo ordena `src/data/mock/seed.ts` y arriba
-# hay otra persona (run 34172803719, intento 2: Marc Oller), así que ahí no hay
+# Con el APK sin credenciales el deck lo ordena `src/data/mock/seed.ts` y delante
+# hay otra persona (run 34172803719, intento 2: Lucía Pardo), así que ahí no hay
 # nada que afirmar — y el control negativo solo significa algo si llega al
 # `stopApp`. Se saltan SOLO en esa variante; el resto del recorrido, reinicio y
 # persistencia incluidos, es idéntico en las dos. Quien lo pone verde es la
