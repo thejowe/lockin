@@ -14,10 +14,7 @@ const AVOIDING_VIEW_HEIGHT = WINDOW_HEIGHT - CONTENT_TOP;
 
 describe('keyboardVerticalOffset', () => {
   it('devuelve la distancia real medida en el emulador: barra de estado + cabecera', () => {
-    expect(keyboardVerticalOffset(WINDOW_HEIGHT, AVOIDING_VIEW_HEIGHT)).toBeCloseTo(
-      CONTENT_TOP,
-      5
-    );
+    expect(keyboardVerticalOffset(WINDOW_HEIGHT, AVOIDING_VIEW_HEIGHT)).toBeCloseTo(CONTENT_TOP, 5);
   });
 
   it('deja el compositor justo encima del teclado con las medidas reales', () => {
@@ -25,10 +22,7 @@ describe('keyboardVerticalOffset', () => {
     // coordenadas relativas: padding = frame.height - (ventana - teclado - offset).
     const keyboardHeight = 336.3809509277344;
     const offset = keyboardVerticalOffset(WINDOW_HEIGHT, AVOIDING_VIEW_HEIGHT);
-    const padding = Math.max(
-      AVOIDING_VIEW_HEIGHT - (WINDOW_HEIGHT - keyboardHeight - offset),
-      0
-    );
+    const padding = Math.max(AVOIDING_VIEW_HEIGHT - (WINDOW_HEIGHT - keyboardHeight - offset), 0);
 
     // El relleno tiene que ser el teclado entero: ni corto (el compositor se
     // esconde) ni pasado (flota sobre un hueco vacío).

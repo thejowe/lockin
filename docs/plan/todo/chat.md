@@ -21,6 +21,13 @@ Verificado sobre el export web con el recorrido completo: deck → match → cha
 elegir icebreaker → enviar → volver a la lista con el último mensaje → reentrar
 en la conversación. Estado vacío y `matchId` inexistente, también.
 
+**Y verificado en emulador Android real (API 36) el 2026-09-07**: escribir con
+el teclado abierto, ver el compositor, pulsar "Enviar mensaje" y quedarse en la
+conversación con la burbuja. Cerró cuatro rondas de bug del teclado; la
+evidencia, con números, está al final de este archivo. Lo único que queda
+abierto del bloque es por qué el trabajo `supabase` del E2E acaba en rojo
+después del envío, que no se ha podido leer sin `gh` en esta máquina.
+
 ## Pendiente de otros bloques
 
 - **Recibir mensajes del otro lado**: la conversación ya pinta las dos columnas
@@ -46,7 +53,13 @@ en la conversación. Estado vacío y `matchId` inexistente, también.
 
 ## Bug abierto, reportado por `calidad` (2026-09-07)
 
-- [ ] **El compositor queda debajo del teclado en Android.** Con el teclado
+- [x] **El compositor queda debajo del teclado en Android.** Cerrado el
+      2026-09-07 tras cuatro rondas — la evidencia que lo cierra está al final
+      del archivo, en "El compositor está verificado en emulador". Lo que sigue
+      es el parte original de `calidad`, que se deja tal cual porque cada ronda
+      se apoya en él.
+
+      Con el teclado
       abierto, `MessageComposer` entero — el `TextInput` y el botón `Enviar
       mensaje` — desaparece de la pantalla y del árbol de accesibilidad. No se
       ve lo que se escribe y no hay forma de enviar: `returnKeyType` es
@@ -122,10 +135,12 @@ El guardián es `e2e/full-journey.yaml` en emulador real, que es quien lo
 encontró. Queda anotado en `test/app/matchId.test.tsx` para que nadie lo lea
 como un hueco de cobertura.
 
-- [ ] **Sin verificar en emulador todavía.** `npm test` (313), `tsc` y lint
-      pasan, pero eso no dice nada sobre este fallo por lo de arriba. Lo cierra
-      el workflow `E2E Android`: el caso positivo debe pasar de los 38 comandos
-      y completar los 48.
+- [x] **Verificado en emulador: la ronda 1 no arreglaba nada.** Lo respondió el
+      run [34118890956](https://github.com/thejowe/lockin/actions/runs/34118890956)
+      (commit `6563af7`), que volvió a morir en el mismo `tapOn "Enviar
+      mensaje"`. Detalle en la sección siguiente. Jest, `tsc` y lint estaban en
+      verde también entonces, y —como decía esta casilla— no probaban nada de
+      este fallo.
 
 ### `6563af7` no lo arregla — segunda ronda de evidencia (2026-09-07)
 
@@ -192,9 +207,13 @@ WindowInsets del IME en vez de esperar el resize.
 - `jest.setup.js` — mock oficial (`react-native-keyboard-controller/jest`), sin
   el cual importar el layout revienta con "doesn't seem to be linked".
 
-- [ ] **Sigue sin verificar en emulador.** `npm test` (313 en 29 suites), `tsc`
-      y lint pasan, y otra vez eso no dice nada sobre este fallo. Lo cierra el
-      caso positivo del workflow `E2E Android` pasando del comando 38.
+- [x] **Verificado en emulador: la ronda 2 tampoco arreglaba el fallo.** Lo
+      respondió el run
+      [34144931734](https://github.com/thejowe/lockin/actions/runs/34144931734)
+      (commit `cea5712`, que ya llevaba encima la ronda 3): `supabase` y `probe`
+      seguían muriendo en `Enviar mensaje`. Adoptar
+      `react-native-keyboard-controller` era condición necesaria —sin él ningún
+      `behavior` movía nada— pero no suficiente.
 
 ### Nota aparte: el control negativo de ese run no probó nada
 
@@ -257,6 +276,14 @@ debería. Eso es de `calidad`, no de este bloque.
 `keyboard-modal-probe.yaml`), la variante `probe` de
 la matriz en `.github/workflows/e2e.yml` y la rama `probe` de `e2e/run.mjs` son
 temporales. Se retiran en cuanto el compositor esté arreglado y verificado.
+
+> **Actualización 2026-09-07**: el compositor ya está verificado (ver el final
+> del archivo), así que la limpieza está desbloqueada — pero **todavía no toca**.
+> La sonda es hoy el único trabajo verde que responde a la pregunta del teclado,
+> y `supabase` sigue en rojo por una causa sin identificar. Retirarla ahora
+> quitaría la señal justo mientras hace falta. Se retira cuando `supabase` dé
+> verde. Además, dos de los tres archivos (`.github/workflows/e2e.yml` y
+> `e2e/run.mjs`) son de `calidad`, no de este bloque: la retirada es suya.
 
 ### Ronda 3: dos restas de más, ambas medibles (2026-09-07)
 
@@ -321,10 +348,13 @@ con el teclado abierto —sin reinicio ni segunda entrada desde Matches—. Mism
 APK que `supabase`, en paralelo: dos tiros independientes a la misma pregunta en
 una pasada, y el corto expone la mitad de superficie a la flake del emulador.
 
-- [ ] **Sin verificar en emulador.** `npm test` (313 en 29 suites), `tsc` y lint
-      pasan, y —otra vez— eso no dice nada de este fallo: Jest no reproduce el
-      teclado. Lo cierra el trabajo `probe` o `supabase` del workflow
-      `E2E Android` pasando del `assertVisible: 'Enviar mensaje'`.
+- [x] **Verificado en emulador: la ronda 3 acercó el compositor pero no lo
+      sacó de debajo del teclado.** Run
+      [34144931734](https://github.com/thejowe/lockin/actions/runs/34144931734):
+      subió el compositor ~700 px, y se quedó corto por ~250. Las dos correcciones
+      de esta ronda (`navigationBarTranslucent`/`statusBarTranslucent` y la
+      reserva de `insets.bottom` en `MessageComposer`) eran ciertas y siguen
+      puestas; lo que faltaba era la tercera, el offset de la cabecera.
 
 ### Ronda 3 en CI: los tres trabajos siguen en rojo (2026-09-07)
 
@@ -498,10 +528,12 @@ calculado, no el teclado.
 - [x] **Causa raíz identificada con números, no con capturas.** `frame.y = 0`
       porque `automaticOffset` no llega a aplicarse; el relleno sale 275 px
       corto, que es barra de estado + cabecera.
-- [ ] **Sin verificar en emulador.** `npm test` (319 en 30 suites), `tsc` y lint
-      pasan, y como siempre eso no dice nada de este fallo: Jest no reproduce el
-      teclado. Lo cierra el trabajo `supabase` o `probe` del workflow
-      `E2E Android` pasando del `assertVisible: 'Enviar mensaje'`.
+- [x] **Verificado en emulador: la ronda 4 sí arregla el compositor.** Run
+      [34160309273](https://github.com/thejowe/lockin/actions/runs/34160309273)
+      (commit `71c4eaa`): `supabase` y `probe` pasan por primera vez del
+      `assertVisible: 'Enviar mensaje'` y el tap aterriza en el botón real. El
+      run sigue en rojo, pero por el segundo bug que la sección siguiente
+      describe, no por la posición del compositor.
 
 ### La ronda 4 arregla el compositor. Y detrás había un segundo bug (2026-09-07)
 
@@ -556,8 +588,104 @@ emulador, que es lo que no se había conseguido en ninguna ronda anterior.
 - [x] **El compositor queda debajo del teclado en Android.** Cerrado: los dos
       trabajos pasan del `assertVisible: 'Enviar mensaje'` y el tap aterriza en
       el botón real, en las coordenadas que predecía el cálculo.
-- [ ] **Recorrido completo en verde.** Pendiente del run del arreglo de
-      `useConversation`.
+### El compositor está verificado en emulador (2026-09-07) — `696408a`
+
+[Run 34162107392](https://github.com/thejowe/lockin/actions/runs/34162107392),
+commit `696408a`, que es la cabeza publicada de la rama. **Dos de los tres
+trabajos en verde por primera vez desde que se abrió el bug**, y los dos que
+responden a la pregunta del compositor:
+
+| trabajo    | veredicto | qué prueba                                                     |
+| ---------- | --------- | -------------------------------------------------------------- |
+| `probe`    | verde     | compositor visible con el teclado abierto **y** burbuja enviada |
+| `mock`     | verde     | el recorrido completo pasa del `stopApp`, o sea del envío       |
+| `supabase` | rojo      | falla en `gate`; el comando exacto no se ha podido leer         |
+
+**Lo que cierra el bug del compositor, comando a comando.** La sonda
+`e2e/keyboard-probe.yaml` termina en cuatro líneas que son exactamente el
+recorrido que había que verificar:
+
+```yaml
+- tapOn: 'Mensaje' # abre el teclado
+- inputText: ${MESSAGE}
+- assertVisible: 'Enviar mensaje' # ¿el compositor está por encima?
+- tapOn: 'Enviar mensaje'
+- hideKeyboard
+- assertVisible: ${MESSAGE} # ¿el envío dejó la burbuja, sin desmontar?
+```
+
+El trabajo `probe` pasó entero. Ese `assertVisible: 'Enviar mensaje'` con el
+teclado delante es el bug de las rondas 1-4, y el `assertVisible: ${MESSAGE}`
+final es el segundo bug —enviar desmontaba el chat—, porque si `useConversation`
+volviera a vacío la pantalla estaría en "Cargando la conversación…" y no habría
+burbuja que ver. Las dos preguntas quedan respondidas por el mismo trabajo.
+
+**Y no es un solo tiro.** `mock` corre `full-journey.yaml`, no la sonda, y su
+`gate` afirma `failed > stopApp` (`e2e/run.mjs:379-388`): para dar verde, el
+control negativo tiene que haber fallado **después** del `stopApp` de la línea
+88 del `.yaml` de ese commit — que va detrás de `tapOn: 'Enviar mensaje'`,
+del `assertVisible` del compositor deshabilitado y del `assertVisible:
+${MESSAGE}`. O sea que el recorrido largo también atravesó el compositor y el
+envío, con otro APK y en otro emulador. Es la primera vez que `mock` da verde:
+en las cuatro rondas anteriores fallaba *antes* del `stopApp`, que era el mismo
+bug disfrazado.
+
+**Sin flake de por medio.** En los tres trabajos el paso 16 ("segundo emulador,
+tras caída del runner") salió `skipped` y el paso 15 (`triage`) no pidió
+reintento: un solo emulador por trabajo, ninguna caída de runner. `probe` tardó
+5 min 40 s en el emulador; `mock`, 6 min 21 s.
+
+- [x] **El compositor queda por encima del teclado y se puede enviar.**
+      Verificado en emulador API 36 real, por dos trabajos independientes del
+      mismo run.
+- [x] **Enviar ya no desmonta el chat.** La burbuja aparece tras el envío en el
+      mismo trabajo `probe`, con el teclado ya cerrado.
+- [ ] **Recorrido completo en verde.** Sigue abierta: `supabase` acaba en rojo
+      en el paso `gate`. Ver abajo por qué no se puede decir en qué comando.
+
+#### Lo que no se ha podido confirmar, y por qué
+
+**En qué falla `supabase`.** Su paso `gate` (`e2e/run.mjs:490-508`) da un
+mensaje distinto según el veredicto, y ese mensaje solo está en el log del
+trabajo. En esta máquina **ya no hay `gh` CLI** —se instaló el 2026-09-07 para
+la ronda 3, pero hoy no está ni en PATH ni en `Program Files`, `winget/Links`,
+`scoop` ni `chocolatey`— y sin token la API pública devuelve `403` en
+`/actions/jobs/101865871700/logs` y `401` en el zip del artefacto
+`e2e-android-supabase`. Las anotaciones del check-run, que sí son públicas,
+solo traen `Process completed with exit code 1`.
+
+Lo que sí se sabe sin el log, por la propia estructura del workflow:
+
+- No fue caída del emulador: `triage` no pidió reintento (paso 16 `skipped`), y
+  esa rama solo se toma ante firmas conocidas de runner muerto.
+- No fue el backend ni el build: los pasos 11 y 12 salieron en verde, y `gate`
+  ni siquiera corre si el emulador se saltó (`steps.journey.conclusion != 'skipped'`).
+- **No es el compositor.** `mock` corre el mismo `.yaml` con el mismo emulador y
+  pasó del `stopApp`; lo que quede de `supabase` está en ese tramo o en
+  `verifyPersistence` contra Postgres, ambos por detrás del envío.
+
+**Para cerrarla hace falta una de dos cosas**, ninguna disponible aquí: `gh` CLI
+reinstalado y autenticado en esta máquina, o que alguien abra
+[el trabajo `supabase`](https://github.com/thejowe/lockin/actions/runs/34162107392/job/101865871700)
+en el navegador y pegue el comando de Maestro que falló. La rama local va **7
+commits por delante** de lo publicado (de `7abbb0c` a `e277b4d`, todos de
+`perfil`/`datos`), así que un push nuevo daría un run fresco sobre otro código —
+respondería a otra pregunta, no a esta.
+
+**Verificación local en `e277b4d`** (para el registro, y sabiendo que no dice
+nada del teclado: Jest no lo reproduce): `npm test` da **374 pasando en 34
+suites** —más 27 saltados y una suite saltada, 401 en total—, `tsc` y `expo
+lint` en verde, y `test:coverage --ci` pasa los suelos. Los recuentos viejos que
+había aquí (313 en 29 suites, 319 en 30) eran de las rondas 2-4 y se han
+retirado de las casillas al cerrarlas.
+
+**Un rojo de CI que sí era mío, arreglado.** El trabajo `Formato` del
+[run 34162107481](https://github.com/thejowe/lockin/actions/runs/34162107481)
+fallaba por `src/features/chat/keyboard-offset.ts` y su test: dos llamadas
+partidas en varias líneas que Prettier junta en una de 100 columnas. Eran los
+**únicos** dos archivos del repo con diferencia real de formato (el resto de lo
+que marca `format:check` en esta máquina es ruido de CRLF en el working tree de
+Windows, no en el índice). Ya están formateados.
 
 ## Encontrado fuera de mi alcance (ronda 4)
 

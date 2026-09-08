@@ -35,10 +35,7 @@
  * @returns La distancia en dp entre el borde superior de la ventana y el de la
  *   vista. Nunca negativa.
  */
-export function keyboardVerticalOffset(
-  windowHeight: number,
-  avoidingViewHeight: number
-): number {
+export function keyboardVerticalOffset(windowHeight: number, avoidingViewHeight: number): number {
   // Antes del primer `onLayout` no hay altura que restar, y una ventana de alto
   // 0 solo pasa en mitad de una rotación: en ambos casos, ningún offset.
   if (windowHeight <= 0 || avoidingViewHeight <= 0) {
