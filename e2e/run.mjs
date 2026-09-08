@@ -15,11 +15,17 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash, randomUUID } from 'node:crypto';
 import { tmpdir } from 'node:os';
-import { classifyFailure, parseMaestroFailure, shouldRetry } from './triage.mjs';
+import { classifyFailure, parseAnrDialog, parseMaestroFailure, shouldRetry } from './triage.mjs';
 import { verifyAbsence, verifyPersistence } from './verify.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const runtime = join(root, 'e2e/.runtime');
+const journeyFile = join(root, 'e2e/full-journey.yaml');
+// Nombre con el que Android llama a la app en sus propios diálogos. Se lee de
+// `app.json` para que no se quede atrás si el bloque `arquitecto` lo cambia: de
+// él depende poder decir si el "X no responde" de un ANR habla de nosotros.
+const appLabel = JSON.parse(readFileSync(join(root, 'app.json'), 'utf8')).expo?.name;
+assert(appLabel, 'app.json no declara expo.name: sin él no se puede leer un ANR');
 // Control negativo: mismo caso, mismo backend levantado y mismo `adb reverse`.
 // Lo único que cambia es que el APK se compila SIN credenciales, así que
 // active.ts elige el mock en memoria y el recorrido debe romperse al reiniciar.
@@ -117,6 +123,36 @@ function commandDumps(dir) {
   return found;
 }
 
+/**
+ * Jerarquía de pantalla del ÚLTIMO paso volcado por Maestro, que es el que
+ * falló. Se lee durante la ejecución, no después: `collectEvidence` corre en el
+ * `finally` y para entonces el diagnóstico ya está tomado.
+ *
+ * Nunca lanza: es evidencia opcional. Si no está, se decide sin ella.
+ */
+function lastScreenHierarchy(dir) {
+  const roots = [dir];
+  if (existsSync(dir)) {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isDirectory()) roots.push(join(dir, entry.name));
+    }
+  }
+  for (const base of roots) {
+    const folder = join(base, 'screen-hierarchy');
+    if (!existsSync(folder)) continue;
+    const steps = readdirSync(folder)
+      .filter((name) => name.endsWith('.json'))
+      .sort();
+    if (steps.length === 0) continue;
+    try {
+      return JSON.parse(readFileSync(join(folder, steps[steps.length - 1]), 'utf8'));
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
 /** Cada intento escribe en su propia carpeta: ningún reintento pisa la evidencia. */
 function nextAttemptDir() {
   const previous = existsSync(artifacts)
@@ -160,8 +196,28 @@ function firstFailure(dir) {
   const stopApp = commands.findIndex((entry) =>
     Object.keys(entry.command).some((key) => /^stopApp/i.test(key))
   );
-  assert(stopApp > 0, 'El caso ya no reinicia la app: el control negativo perdería su sentido');
   const failed = commands.findIndex((entry) => entry.metadata?.status === 'FAILED');
+  // Maestro solo vuelca los comandos que llegó a EJECUTAR. Que el reinicio no
+  // aparezca tiene por tanto dos causas muy distintas, y confundirlas costó una
+  // pasada entera: o el `.yaml` lo ha perdido —regresión del caso, que es lo
+  // que este control existe para impedir— o el recorrido murió antes de llegar.
+  // Solo lo primero se puede afirmar leyendo el `.yaml`; lo segundo se dice
+  // como lo que es: el control negativo no concluye nada.
+  if (stopApp < 0) {
+    assert(
+      /^\s*-\s*stopApp\b/m.test(readFileSync(journeyFile, 'utf8')),
+      'El caso ya no reinicia la app: el control negativo perdería su sentido'
+    );
+    assert.fail(
+      'El recorrido no llegó al reinicio: Maestro ejecutó ' +
+        commands.length +
+        ' comando(s) y falló en el ' +
+        failed +
+        '. `full-journey.yaml` sí declara el `stopApp`, así que esto no dice nada ' +
+        'sobre la persistencia: el control negativo solo vale si lo que rompe es ella.'
+    );
+  }
+  assert(stopApp > 0, 'El caso ya no reinicia la app: el control negativo perdería su sentido');
   return { stopApp, failed, commands };
 }
 
@@ -172,6 +228,8 @@ function diagnose(dir) {
     failureText: existsSync(report) ? parseMaestroFailure(readFileSync(report, 'utf8')) : '',
     commandDumps: commandDumps(dir).length,
     deviceState: deviceState(),
+    anrDialog: parseAnrDialog(lastScreenHierarchy(dir)),
+    appLabel,
   });
 }
 
@@ -353,7 +411,14 @@ if (command === 'test') {
       'PROFILE_NAME=' + profileName,
       '-e',
       'MESSAGE=' + message,
-      join(root, probe ? 'e2e/keyboard-probe.yaml' : 'e2e/full-journey.yaml'),
+      // Qué fija el orden del deck en esta variante. Con `postgres` corren las
+      // aserciones que nombran a la persona que `incoming-likes.sql` pone
+      // arriba; con `memoria` no, porque esa fila no existe. El `.yaml` rechaza
+      // cualquier otro valor en su primer `assertTrue`, así que dejar de pasar
+      // esto rompe el recorrido en vez de saltarse las aserciones en silencio.
+      '-e',
+      'DECK_FIXTURE=' + (negative ? 'memoria' : 'postgres'),
+      probe ? join(root, 'e2e/keyboard-probe.yaml') : journeyFile,
     ];
     writeFileSync(join(dir, 'run.json'), JSON.stringify({ runId, variant }, null, 2));
     // El buffer es del dispositivo, no del intento: sin vaciarlo, el logcat del

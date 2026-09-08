@@ -1,6 +1,6 @@
 # TODO — calidad
 
-> **Estado actual: undécima pasada (2026-09-07).** CI verde otra vez: se cubrió el código de `seekingSpecialties` que llegó sin tests. Detalle en "Undécima pasada", justo debajo. Lo de más abajo es el historial de las pasadas anteriores.
+> **Estado actual: duodécima pasada (2026-09-08).** **Primer recorrido E2E completo en verde**, con evidencia: [job 102245686110](https://github.com/thejowe/lockin/actions/runs/34281070607/job/102245686110) — `1/1 Flow Passed in 2m 36s` y las filas verificadas en Postgres. La causa que lo tenía atascado era una sola: el merge de `codex/mutual-complement` cambió el criterio de orden del deck y el fixture del E2E llevaba dos commits fijando algo que ya no ordenaba. El workflow sigue en rojo por el control negativo, que está parado en `src/data/mock/seed.ts` (otro bloque). Detalle en "Duodécima pasada", justo debajo. Lo de más abajo es el historial de las pasadas anteriores.
 
 > **Tercera pasada (histórico).** La primera dejó el repo con
 > lint, formato, tipos, CI y 102 tests. La segunda cubrió el bloque `chat` y el
@@ -420,7 +420,10 @@ Worktree `../lockin-codex-calidad`, actualizado con `git fetch` y
       oráculo invertido y matriz en el workflow.
 - [ ] Confirmar primer recorrido completo verde en emulador y guardar su
       evidencia. El bug de `chat` ya está arreglado; lo que falta es cerrar la
-      variante `supabase`, ver novena y décima pasada.
+      variante `supabase`. Diagnóstico cerrado en la duodécima pasada: el
+      recorrido de Maestro **pasa entero** (1/1 en 2m 59s) y lo único rojo es la
+      comparación de `verify.mjs:27` contra una cadena que el teclado capitaliza.
+      El arreglo es del bloque `perfil`.
 - [x] Confirmar que el control negativo falla **después** del reinicio.
       Cerrado en 696408a, ver novena pasada: el APK con mock llega al reinicio,
       falla allí y no escribe nada.
@@ -457,6 +460,495 @@ no se modifica la lista de archivos medida por cobertura.
   inexistente (306 pasaron). La repetición completa pasó en 41,6 s sin tocar
   timeout, test ni código de producto. Se conserva el antecedente de lentitud
   con caché fría documentado en pasadas anteriores.
+
+## Duodécima pasada: los dos rojos del E2E, leídos (2026-09-08)
+
+[Run 34172803719](https://github.com/thejowe/lockin/actions/runs/34172803719)
+sobre d28baa6. Alcance de esta pasada: `e2e/` y `.github/workflows/`. No se toca
+`src/` ni `supabase/`.
+
+### Lo primero: el bloqueo que este TODO daba por vigente ya no existe
+
+La décima pasada anotó que el log del trabajo y el artefacto respondían
+`403 Must have admin rights to Repository` y que por eso el diagnóstico se
+quedaba a medias. **Eso ya no es cierto**: `gh` CLI está instalado y autenticado
+en esta máquina (`gh auth status` → cuenta `thejowe`, scopes `gist`, `read:org`,
+`repo`, `workflow`), y tanto `gh run view --job <id> --log-failed` como
+`gh run download` funcionan. El punto correspondiente de la décima pasada lleva
+ahora una nota de corrección; `e2e/README.md` también. Lo que sí sigue siendo
+cierto es que este host no tiene Android SDK, Java, Maestro ni Docker: desde aquí
+se **lee** el emulador, no se reproduce.
+
+### Los dos trabajos fallan por motivos distintos
+
+| Variante | Trabajo | Resultado |
+| --- | --- | --- |
+| `probe` | pasa | la sonda del teclado sigue verde |
+| `supabase` | [101896233448](https://github.com/thejowe/lockin/actions/runs/34172803719/job/101896233448) | Maestro **1/1 Flow Passed en 2m 59s**; rojo solo en el oráculo, `e2e/verify.mjs:27` |
+| `mock` | [101896233240](https://github.com/thejowe/lockin/actions/runs/34172803719/job/101896233240) | falla en `full-journey.yaml:17`, la primera espera, antes de tocar nada |
+| `mock` (rerun del mismo commit) | [102222194124](https://github.com/thejowe/lockin/actions/runs/34172803719/job/102222194124) | ese fallo **no se reproduce**; llega al deck y muere en la aserción del nombre, todavía antes del reinicio |
+
+### `supabase`: el recorrido entero pasa en el emulador
+
+Esto es más de lo que decía el TODO. El log del trabajo trae, literal:
+
+```
+[Passed] Alta, perfil, deck, match, mensaje y persistencia (2m 59s)
+1/1 Flow Passed in 2m 59s
+```
+
+Es decir: formulario, chips de `seekingSpecialties`, deck ordenado, ✓ de
+complementariedad, like, match, envío del mensaje, `stopApp`,
+`launchApp clearState: false` y la relectura del perfil y del mensaje desde
+Postgres — **todo verde en el emulador**. El compositor de `chat`, que bloqueó
+tres pasadas, está cerrado de verdad.
+
+Lo único rojo es la comparación del oráculo:
+
+```
++ 'Una Herramienta para Construir en equipo'   ← fila en Postgres
+- 'Una herramienta para construir en equipo'   ← lo que escribió la UI
+```
+
+Algo capitaliza palabra por palabra entre el `inputText` de Maestro y la fila
+guardada. Es de `src/features/profile/profile-form.tsx` y **no se toca desde
+aquí**: es del bloque `perfil`, que ya lo está arreglando en paralelo (en el
+árbol de trabajo se ve `autoCapitalize="sentences"` + `autoCorrect={false}` sin
+commitear en ese `TextField`).
+
+### La decisión que había que argumentar: el caso NO se hace inmune
+
+La alternativa era darle al recorrido una entrada determinista —escribir algo ya
+capitalizado, o comparar sin distinguir mayúsculas— para que el E2E dejara de ser
+sensible a esto. Se descarta, por tres razones:
+
+1. **Es un bug real, y del tipo peor.** El campo es prosa libre ("Lo que quiero
+   construir es…"). Que el teclado la reescriba no rompe nada visible: guarda un
+   dato del usuario distinto del que el usuario escribió, en silencio.
+2. **Ningún otro nivel del repo lo puede ver.** Jest + RNTL renderizan sin IME,
+   así que `autoCapitalize` no se manifiesta nunca ahí; los tests de contrato de
+   `src/data/supabase/` escriben en Postgres sin pasar por la pantalla. El único
+   sitio donde este bug existe es esta comparación, después de un teclado real.
+   Hacerla inmune no arregla nada: apaga el único detector que hay.
+3. **Relajarla es exactamente lo que las reglas del E2E prohíben.** Copiar a
+   `verify.mjs` la cadena capitalizada cierra el rojo sin cambiar el producto.
+
+Lo que sí había que arreglar es que la sensibilidad era **accidental**: venía de
+que la cadena elegida tenía interiores en minúscula, no de una decisión escrita.
+Ahora `e2e/full-journey.test.mjs` la fija con dos casos:
+
+- el `.yaml` escribe **byte a byte** lo que `verify.mjs` espera leer — mutación
+  comprobada: capitalizar solo la expectativa del oráculo tumba este caso;
+- la cadena conserva su forma de sonda: mayúscula inicial e interiores en
+  minúscula, con al menos cuatro palabras — mutación comprobada: capitalizarla en
+  los dos sitios a la vez tumba este otro.
+
+La mayúscula inicial es deliberada y marca el límite de lo que el E2E exige:
+`autoCapitalize="sentences"` en prosa es comportamiento deseado, no un bug. Con
+esta sonda pasa `sentences` y pasa `none`, y falla `words` o un corrector activo.
+El E2E no le impone a `perfil` cuál de los dos elegir; solo se niega a aceptar
+que le cambien las palabras de dentro.
+
+### `mock`, primer intento: no es una regresión del arranque, es un ANR del sistema
+
+El síntoma era `Assertion is false: "Cofundador" is visible` a los 72 s, en el
+primer `extendedWaitUntil` tras `launchApp clearState: true`. Parecía que la app
+no llegaba a pintar la pantalla de modo. No es eso. El artefacto
+`e2e-android-mock` lo desmiente en dos sitios:
+
+- `logcat.txt`:
+  `Displayed app.lockin.mobile/.MainActivity for user 0: +3s934ms`. La app
+  arrancó y pintó, cuatro segundos después del `launchApp`.
+- el volcado de jerarquía del paso que falla
+  (`step-005-assertCondition-Cofundador.json`) tiene **tres nodos con texto y
+  ninguno es de la app**:
+
+  ```
+  android:id/alertTitle  "System UI isn't responding"
+  android:id/aerr_close  "Close app"
+  android:id/aerr_wait   "Wait"
+  ```
+
+Un diálogo modal del sistema encima. Android entonces solo expone esa ventana, y
+el `assertVisible` estuvo preguntando por la pantalla de SystemUI, no por la app.
+Eso no es una respuesta sobre el caso, ni verde ni roja. El contexto encaja:
+Maestro arranca justo tras `Boot completed in 65487 ms`, con el sistema todavía
+instalando paquetes, y el logcat va lleno de `Slow dispatch` / `Slow operation`
+de `system_server`.
+
+### El rerun sobre el mismo commit: el ANR no se repite, y aparece la causa de verdad
+
+`gh run rerun 34172803719 --job 101896233240` sobre d28baa6, sin tocar nada
+([job 102222194124](https://github.com/thejowe/lockin/actions/runs/34172803719/job/102222194124)).
+Resultado: **el fallo no se reproduce**, y el recorrido llega mucho más lejos —
+2m 24s frente a 1m 12s:
+
+```
+[Failed] Alta, perfil, deck, match, mensaje y persistencia (2m 24s)
+         (Assertion is false: "Núria Bosch" is visible)
+```
+
+Dos conclusiones, y la segunda es la que importa:
+
+1. **No había regresión del arranque en frío.** El `"Cofundador"` del primer
+   intento era el ANR de SystemUI y nada más: en el rerun el mismo APK, el mismo
+   commit y el mismo AVD pasan de largo esa pantalla y 34 comandos más. Eso es lo
+   que el `gh run rerun` costaba responder, y lo responde.
+2. **El control negativo tiene un problema estructural, no ambiental.** Ahora
+   falla en el comando 35 de 36 — `assertVisible: 'Núria Bosch'`, la primera de
+   las cuatro aserciones del deck— y sigue estando **antes** del `stopApp`.
+
+El artefacto lo explica sin ambigüedad. El volcado de la pantalla en ese paso
+(`step-036-assertCondition-Núria_Bosch.json`) trae el deck cargado y delante
+**no está Núria Bosch**. Cuál es la de delante se lee en los `bounds`, no en el
+orden del volcado: la de delante es la única tarjeta a tamaño completo, y las de
+detrás salen escaladas.
+
+```
+Lucía Pardo  [295,530][974,609]   ← delante
+Marc Oller   [305,587][957,663]
+Diego Salas  [315,641][939,714]
+```
+
+Es exactamente lo que la décima pasada dejó anotado como riesgo, palabra por
+palabra: *"los pasos que añade esta pasada van antes del reinicio y todavía no
+han visto un emulador; si alguno fallara ahí, el propio control lo diría y lo
+rechazaría"*. Pasó eso. Esas cuatro aserciones nombran a la persona que el
+`update` de `created_at` de `incoming-likes.sql` pone arriba, y ese fixture es de
+Postgres: con el APK sin credenciales el deck lo ordena `src/data/mock/seed.ts` y
+arriba hay otra persona. No es que la aserción sea débil con el mock — es que no
+puede cumplirse allí por construcción.
+
+### El arreglo: condicionar esas cuatro líneas, y solo esas
+
+Se descartan las dos salidas fáciles. Relajar la aserción (comparar "algún
+nombre" en vez de uno concreto) le quitaría al deck lo único que lo hace
+comprobable, que es hablar de datos de una persona conocida. Y darle al control
+negativo un `.yaml` propio rompería su garantía central: que las dos variantes
+corren **el mismo caso**.
+
+Lo que se hace es marcarlas como lo que son — el único tramo del recorrido que
+depende de una fila que solo existe en Postgres — con la condición de Maestro:
+
+```yaml
+- runFlow:
+    when:
+      true: ${DECK_FIXTURE == 'postgres'}
+    commands:
+      - assertVisible: 'Núria Bosch'
+      - assertVisible: '(?i)busca'
+      - assertVisible: '(?i)✓ marketing'
+      - assertVisible: '(?i)✓ encajas'
+```
+
+`run.mjs` pasa `DECK_FIXTURE=postgres` en la variante con credenciales y
+`memoria` en el control negativo. Qué **no** cambia: la variante que decide el
+color del E2E las ejecuta todas, igual que antes; el `tapOn: 'Like'`, el
+`stopApp`, el `launchApp clearState: false` y toda la relectura de persistencia
+corren idénticos en las dos. Lo que se recupera es que el control negativo pueda
+llegar al reinicio, que es lo único que le da sentido.
+
+Tres guardas nuevas en `full-journey.test.mjs`, las tres verificadas por mutación
+(cada una se rompe al introducir el error que vigila):
+
+- el bloque condicional contiene **exactamente** esas cuatro líneas — colar
+  cualquier otro paso dentro, o meter ahí el `stopApp`, tumba el caso;
+- hay **un solo** `runFlow` en todo el recorrido, y el `stopApp` sigue al margen
+  izquierdo, fuera de él;
+- el primer `assertTrue` del recorrido exige que `DECK_FIXTURE` valga `postgres`
+  o `memoria`, así que dejar de pasar la variable rompe el recorrido en vez de
+  saltarse las cuatro aserciones en silencio.
+
+La sintaxis de `runFlow` + `when.true` con `commands:` en línea está contrastada
+contra la documentación de Maestro
+(https://docs.maestro.dev/maestro-flows/flow-control-and-logic/conditions.md).
+Aquí no hay Maestro para ejecutarla: lo dice el próximo run.
+
+### La guarda del control negativo acertó, pero por el motivo equivocado
+
+Al fallar antes del `stopApp`, el `commands.json` de Maestro traía 5 comandos y
+ninguno era el reinicio — **Maestro solo vuelca lo que llegó a ejecutar**.
+`run.mjs` leía ese `-1` y respondía *"El caso ya no reinicia la app: el control
+negativo perdería su sentido"*, que es falso: `full-journey.yaml:114` lo declara.
+El trabajo se puso rojo, que es lo correcto, pero con un diagnóstico que apuntaba
+a una regresión inexistente.
+
+Ahora se distinguen las dos causas: primero se comprueba en el `.yaml` que el
+`stopApp` sigue declarado (esa sí es la regresión que este control existe para
+impedir, y conserva su mensaje) y, si está, se dice lo que de verdad pasó — el
+recorrido no llegó al reinicio, así que el control negativo no concluye nada
+sobre la persistencia.
+
+### Cambio en `triage.mjs`: una excepción, y por evidencia
+
+`e2e/triage.mjs` clasificaba —correctamente, según su propia regla— este fallo
+como del caso: `Assertion is false` está en `CASE_SIGNATURES` y las firmas del
+caso ganan siempre. Esa regla existe para que un bug real no se reintente hasta
+verlo verde, y no se toca.
+
+Se añade una única excepción, decidida por **evidencia del volcado, no por texto
+del mensaje**: si el paso que falla trae un diálogo ANR de Android
+(`android:id/aerr_*`, buscado por id y no por texto para que no dependa del
+idioma del emulador) y el título **no** nombra a la app (`expo.name` de
+`app.json`), es caída del runner y se reintenta. Si el que no responde es la app
+bajo prueba, sigue siendo fallo del caso y no se reintenta nunca. Sin saber cómo
+se llama la app no se decide por el diálogo: se cae a las reglas de siempre.
+
+Justificación de que esto no relaja nada: la regla protege contra repetir una
+aserción fallida **sobre la app**. Aquí la aserción no llegó a mirar la app —
+había una ventana del sistema delante, y el sistema no expone otra cosa. Los
+cuatro casos nuevos de `e2e/triage.test.mjs` fijan las cuatro ramas, y el parser
+se ha validado contra el volcado real del run (devuelve
+`{"title":"System UI isn't responding"}` y clasifica `runner`).
+
+### Lo que el run de la rama demuestra, y lo que destapa
+
+Rama `calidad/e2e-anr-y-deck-condicional`, commit 91e98a1.
+[Run 34276300168](https://github.com/thejowe/lockin/actions/runs/34276300168).
+CI verde entero (Lint, Formato, Tipos, Tests, **Runner E2E**, Export web).
+
+**Las tres piezas de esta pasada funcionan en un emulador de verdad**, y esto ya
+no es "pasa el YAML":
+
+1. **La clasificación del ANR.** El trabajo `mock` volvió a encontrarse el
+   diálogo del sistema, dos veces seguidas en el mismo AVD, y el veredicto lo
+   dijo con todas las letras en vez de culpar al caso:
+   `Veredicto de attempt-01: runner — un diálogo ANR del sistema tapaba la
+   pantalla ("System UI isn't responding"): la aserción no llegó a mirar la app`.
+   O sea que el ANR no era una casualidad de un run: es reproducible.
+2. **El reintento de emulador se disparó por ese motivo**, que es justo para lo
+   que existe: `Reintentar el emulador: true`, y el paso "segundo emulador" corrió
+   por primera vez con una causa legítima. En el AVD nuevo no hubo ANR.
+3. **El `runFlow` condicional hace lo que dice.** En el `commands.json` del
+   tercer intento el comando 35 es `runFlowCommand SKIPPED` con el mock, y el
+   recorrido siguió adelante: 38 comandos en vez de los 36 de antes, y llegó a
+   `tapOn: 'Like'` (COMPLETED). La sintaxis es correcta y el gate no toca al
+   resto del recorrido.
+4. **El mensaje de la guarda ya no miente.** Donde antes decía "El caso ya no
+   reinicia la app", ahora dice: *"El recorrido no llegó al reinicio: Maestro
+   ejecutó 38 comando(s) y falló en el 37. `full-journey.yaml` sí declara el
+   `stopApp`, así que esto no dice nada sobre la persistencia"*.
+
+**Y destapa el siguiente eslabón, que no es de este bloque.** Con el gate puesto,
+el control negativo ya no muere en el nombre de la tarjeta: muere en el comando
+37 de 38, `Assertion is false: "¡Match!" is visible`. Sigue siendo antes del
+`stopApp`, así que sigue sin concluir.
+
+La causa está en el artefacto y es concreta. Comparando los `bounds` de la
+tarjeta de delante antes y después del like:
+
+```
+antes del like (job 102222194124)   Lucía Pardo [295,530][974,609]  ← delante
+después del like (job 102230038048) Marc Oller  [295,530][974,609]  ← delante
+```
+
+El deck avanzó exactamente una tarjeta: el like se registró y cayó sobre **Lucía
+Pardo**. Y `src/data/mock/seed.ts` declara
+`SEED_RECIPROCAL_IDS = ['seed-nuria', 'seed-marc', 'seed-alba']` — `seed-lucia`
+no está. Con el mock, darle like a la tarjeta de delante **no genera match**, así
+que no hay chat, no hay mensaje y no se llega al reinicio.
+
+No es un fallo del E2E ni se arregla desde `e2e/`: es que el fixture que garantiza
+"quien está delante ya te ha dado like" existe para Postgres
+(`e2e/incoming-likes.sql`) y no tiene equivalente vigente en el mock. El orden del
+deck cambió con el merge de `codex/mutual-complement` y `SEED_RECIPROCAL_IDS` se
+quedó como estaba.
+
+**Encontrado y no tocado** (`descubrir` / `datos`, dueños de `src/data/mock/`):
+para que el control negativo pueda cumplir su contrato, la tarjeta que quede
+primera en el orden del mock tiene que estar en `SEED_RECIPROCAL_IDS`, igual que
+`incoming-likes.sql` lo garantiza en Postgres. Hoy la primera es `seed-lucia` y
+no lo está. Es una línea, pero es de `src/` y desde aquí no se toca.
+
+### La causa raíz: el fixture llevaba dos commits sin fijar nada
+
+Con el gate del deck puesto, el segundo run de la rama
+([34276300168](https://github.com/thejowe/lockin/actions/runs/34276300168), tras
+`gh run rerun --failed`) dio el dato que faltaba. Los dos trabajos avanzaron, y
+los dos se rompieron por **la misma causa**, que no es la que se creía.
+
+**`supabase` ([102238000817](https://github.com/thejowe/lockin/actions/runs/34276300168/job/102238000817)):**
+Maestro pasa entero otra vez —`1/1 Flow Passed in 3m 33s`, aserciones del deck
+incluidas— y el oráculo falla, pero ya no en la cadena del prompt: en
+`verify.mjs:44`.
+
+```
+El like no cayó sobre la primera tarjeta del deck (Núria Bosch)
++ '11111111-1111-4111-8111-000000000002'
+- '11111111-1111-4111-8111-000000000001'
+```
+
+El like cayó sobre **Marc Oller**. Y esto se puede calcular, no hace falta
+suponerlo. `20260907000200_discovery_mutual_complement` sustituyó
+`order by p.created_at desc` por:
+
+```sql
+order by
+  case ... else (me.specialties && p.seeking_specialties)::integer
+             + (p.specialties && me.seeking_specialties)::integer end desc,
+  p.id asc
+```
+
+`created_at` **ya no interviene**. El perfil del recorrido domina `dev` y
+`marketing` y busca `diseno`, así que con los datos de `supabase/seed.sql`:
+
+| Tarjeta | mis especialidades ∩ lo que busca | sus especialidades ∩ lo que busco | total |
+| --- | --- | --- | --- |
+| Núria (`…0001`) | `marketing` → 1 | `{dev,datos}` ∩ `{diseno}` = ∅ → 0 | **1** |
+| Marc (`…0002`) | `dev` → 1 | `diseno` → 1 | **2** |
+
+Marc gana por 2 a 1. Exactamente el id que devolvió el oráculo.
+
+Es decir: **el `update` de `created_at` de `e2e/incoming-likes.sql` dejó de fijar
+el orden del deck en el merge de `codex/mutual-complement`, y nadie se enteró**.
+La décima pasada escribió esa suposición y hasta puso una guarda para
+protegerla — `assert.match(fixture, /update public\.profiles\s+set created_at/)`
+— que siguió pasando en verde todo el tiempo, porque comprobaba que la línea
+existiera, no que sirviera para algo.
+
+Y explica también por qué `assertVisible: 'Núria Bosch'` pasa mientras el like
+cae en otra: el deck pinta tres tarjetas apiladas y Núria está entre ellas, solo
+que detrás. `assertVisible` no dice "delante", dice "en pantalla". Quien sí
+distingue es el oráculo, comparando el id sobre el que cayó la decisión — la
+aserción del `.yaml` es la débil y el `verify.mjs` es el que cazó el bug.
+
+**Arreglo, y es de este bloque** (`e2e/incoming-likes.sql`): se fija la tarjeta
+de delante por el criterio que de verdad ordena. A Núria se le da la puntuación
+máxima —le faltaba el segundo sumando, así que se le añade `diseno` a lo que
+domina— y como su id es el más bajo del seed gana además cualquier empate. Su
+fila "Busca" no se toca: el ✓ que afirma el recorrido sale de ahí.
+
+La guarda se reescribe para comprobar el criterio nuevo, y añade
+`assert.doesNotMatch(fixture, /set created_at/)` para que la línea muerta no
+pueda volver disfrazada de fijación. Verificado por mutación: reponer el
+mecanismo antiguo tumba el caso.
+
+### Y la cadena capitalizada resulta ser intermitente
+
+Dato que corrige lo escrito más arriba en esta misma pasada. Los dos runs de
+`supabase` corrieron sobre **el mismo commit** (91e98a1, sin el arreglo de
+`perfil`), y el primero murió en `verify.mjs:27` con
+`'Una Herramienta para Construir en equipo'` mientras el segundo **pasó de largo
+esa comparación** y llegó hasta la línea 44. Mismo APK, mismo emulador, mismo
+texto escrito: el auto-capitalizado aparece unas veces y otras no.
+
+No cambia la decisión —al contrario, la refuerza—: una corrupción silenciosa e
+**intermitente** de un dato del usuario es de las que no caza nada salvo un
+recorrido real, y desde luego no un test que renderiza sin IME. Sí cambia lo que
+se puede afirmar: este E2E detecta el bug, pero no en todas las pasadas, así que
+un verde suelto de la variante `supabase` no demuestra que esté arreglado.
+
+### Estado del control negativo, que sigue sin concluir
+
+`mock` ([102238001056](https://github.com/thejowe/lockin/actions/runs/34276300168/job/102238001056))
+reprodujo su fallo **exacto** —`Assertion is false: "¡Match!" is visible`, comando
+37 de 38—, así que es determinista, no una carrera. La causa es la misma de
+fondo, vista desde el otro lado: con el orden nuevo la tarjeta de delante en el
+mock es Lucía Pardo, y `src/data/mock/seed.ts` declara
+`SEED_RECIPROCAL_IDS = ['seed-nuria', 'seed-marc', 'seed-alba']` — `seed-lucia` no
+está, así que darle like no genera match y el recorrido no llega al `stopApp`.
+
+El arreglo del fixture de Postgres no toca eso: el mock no lo lee. Ver
+"Encontrado y no tocado".
+
+### Encontrado y no tocado (`descubrir` / `datos`)
+
+`src/data/mock/seed.ts`: el control negativo necesita que quien quede **delante**
+en el orden del mock esté en `SEED_RECIPROCAL_IDS`, que es lo que
+`e2e/incoming-likes.sql` garantiza en Postgres. Con el orden por
+complementariedad mutua la primera es `seed-lucia`, que no está en esa lista.
+Mientras siga así, el recorrido con el mock se para en el match y el control
+negativo no puede cumplir su contrato. Es de `src/`, así que desde aquí solo se
+reporta.
+
+### Primer recorrido completo VERDE (2026-09-08)
+
+[Run 34281070607, trabajo `supabase`
+(102245686110)](https://github.com/thejowe/lockin/actions/runs/34281070607/job/102245686110),
+commit 78c90b8. Paso **"Resultado del recorrido (supabase)": success**. El log:
+
+```
+=== Recorrido supabase, attempt-01 ===
+[Passed] Alta, perfil, deck, match, mensaje y persistencia (2m 36s)
+1/1 Flow Passed in 2m 36s
+Postgres: alta, perfil, lo que busca, modo, like, match y mensaje verificados.
+Veredicto de attempt-01: pass — recorrido completo y persistencia verificados
+Recorrido supabase verde en attempt-01.
+```
+
+Al primer intento, sin reintento de Maestro y con el segundo emulador `skipped`.
+Las dos líneas que importan son las dos últimas: la primera la escribe Maestro
+—el recorrido de UI, reinicio incluido— y la segunda la escribe `verify.mjs`
+leyendo Postgres con el cliente privilegiado, que nunca entra en el APK. Alta
+anónima real, perfil, `seeking_specialties`, modo, decisión, match y mensaje:
+comprobados como filas.
+
+Ese run llevaba también el arreglo del teclado de `perfil` (4ab248a), así que
+`verify.mjs:27` pasó. **Ojo con leer eso como prueba de que el auto-capitalizado
+está arreglado**: se demostró más arriba que aparece de forma intermitente, y un
+verde suelto no distingue "arreglado" de "esta vez no salió".
+
+Qué NO cierra este verde: el workflow **sigue en rojo**, porque el control
+negativo no concluye. El verde de arriba prueba por sí solo que la app escribió
+en Postgres —lo dice el oráculo, fila a fila—; lo que falta es la otra mitad,
+que el mismo caso con el APK sin credenciales se rompa en la persistencia. Eso
+está parado en `src/data/mock/seed.ts`, que es de otro bloque.
+
+### Casillas
+
+- [x] Diagnosticar el rojo de la variante `supabase` con el log del run.
+      Cerrada con evidencia: job 101896233448, paso "Resultado del recorrido
+      (supabase)", `e2e/verify.mjs:27`.
+- [x] Diagnosticar el rojo de la variante `mock` con el artefacto del run.
+      Cerrada con evidencia, y son **dos** causas encadenadas: el ANR de SystemUI
+      del primer intento (artefacto `e2e-android-mock`,
+      `attempt-01/.../screen-hierarchy/step-005-assertCondition-Cofundador.json`)
+      y, debajo, la que el rerun destapó — las cuatro aserciones del deck no se
+      pueden cumplir con el mock (job 102222194124,
+      `step-036-assertCondition-Núria_Bosch.json`: delante está Lucía Pardo).
+- [x] Comprobar con `gh run rerun` sobre el mismo commit si el `mock` tenía una
+      regresión de arranque en frío. **No la tenía**: el fallo no se reproduce.
+- [x] Devolver al control negativo la capacidad de llegar al reinicio, sin
+      relajar nada de la variante que decide el color. Hecho con `runFlow` +
+      `when.true` sobre esas cuatro líneas y tres guardas de mutación.
+- [x] Decidir y argumentar si el caso debe volverse inmune al auto-capitalizado.
+      Decidido que **no**, con los tres motivos de arriba, y fijado con dos casos
+      de `full-journey.test.mjs` verificados por mutación.
+- [x] Corregir en el TODO el bloqueo de lectura de logs que ya no existe.
+- [x] Verificar en un emulador real la clasificación del ANR, el reintento que
+      dispara y el `runFlow` condicional. Cerrada con evidencia del run
+      34276300168: veredicto `runner` por el diálogo del sistema, segundo
+      emulador arrancado por ese motivo, y `runFlowCommand SKIPPED` en el
+      `commands.json` del control negativo.
+- [x] Encontrar por qué el like no cae sobre la tarjeta que el recorrido afirma.
+      Cerrada: el `update` de `created_at` del fixture dejó de ordenar el deck en
+      el merge de `codex/mutual-complement`. Arreglado en `e2e/incoming-likes.sql`.
+- [x] **Recorrido completo verde en emulador** y [x] **verde en CI**. Cerradas
+      las dos con el mismo enlace, porque el emulador es el de Actions:
+      [job 102245686110](https://github.com/thejowe/lockin/actions/runs/34281070607/job/102245686110),
+      paso "Resultado del recorrido (supabase)", `1/1 Flow Passed in 2m 36s` más
+      `Postgres: alta, perfil, lo que busca, modo, like, match y mensaje
+      verificados`. Es la primera vez que el recorrido entero pasa.
+- [ ] **Control negativo concluyente con el `.yaml` actual.** Esta queda abierta
+      y es la que mantiene el workflow en rojo. Hoy el `mock` se para en
+      `¡Match!` (comando 37 de 38) porque la primera tarjeta de su orden,
+      `seed-lucia`, no está en `SEED_RECIPROCAL_IDS`. Depende de
+      `src/data/mock/seed.ts`: reportado abajo, no tocado.
+      Antecedente que sí existe, con otro `.yaml`: run 34162107392 sobre 696408a,
+      donde el control negativo pasó.
+
+### Lo que NO se ha hecho, y por qué
+
+- No se ha tocado `src/features/profile/profile-form.tsx`: es de `perfil` y lo
+  está arreglando en paralelo. Tampoco `src/data/mock/seed.ts`, que es lo que
+  hoy para el control negativo: queda reportado arriba, no corregido.
+- No se ha ampliado ningún timeout, ni quitado el `stopApp` o el
+  `launchApp clearState: false`, ni relajado ninguna aserción.
+- No se retira la variante `probe` pese a que el bug del teclado está cerrado y
+  `run.mjs` la anuncia como temporal. Ahora mismo es la única de las tres que da
+  verde de punta a punta, y con dos variantes en rojo conviene conservar la
+  prueba barata de que el camino APK → emulador → Maestro funciona. Se retira
+  cuando `supabase` cierre.
 
 ## Undécima pasada: cubrir `seekingSpecialties` (2026-09-07)
 
@@ -1024,12 +1516,15 @@ seguir fallando donde debe. Solo toca la base desechable de `e2e/.runtime`.
   **[ ] recorrido completo verde en CI** (séptima). No se cierran, y el motivo
   ya no es `chat`: en ese mismo run la sonda del teclado pasa y el control
   negativo llega al reinicio. Lo que falla es la variante `supabase`, en el paso
-  "Resultado del recorrido". Dónde exactamente no se puede decir desde aquí: el
-  log del trabajo y el artefacto `e2e-android-supabase` responden
-  `403 Must have admin rights to Repository` sin credenciales del repo, y esta
-  máquina no tiene Android SDK, Java, Maestro ni Docker para reproducirlo. Se
-  cierra leyendo `maestro.xml`, `commands.json` y `postgres.json` del artefacto
-  de la próxima ejecución.
+  "Resultado del recorrido".
+  > **CORREGIDO el 2026-09-08.** Lo que decía este punto —que el log y el
+  > artefacto respondían `403 Must have admin rights to Repository` y que por eso
+  > no se podía nombrar la causa— **ya no es cierto**: `gh` CLI está instalado y
+  > autenticado en esta máquina (scopes `repo` + `workflow`), y tanto
+  > `gh run view --job <id> --log-failed` como `gh run download` funcionan. El
+  > diagnóstico dejó de estar bloqueado y está hecho: ver "Duodécima pasada".
+  > El resto del punto (que esta máquina no tiene Android SDK, Java, Maestro ni
+  > Docker) sí sigue siendo cierto: aquí no se reproduce nada, solo se lee.
 
 ### Encontrado y no tocado
 
