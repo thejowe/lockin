@@ -16,6 +16,12 @@
  *
  * Y si el mensaje trae a la vez una aserción fallida y ruido de infraestructura,
  * manda la aserción: CASE_SIGNATURES se comprueba antes que RUNNER_SIGNATURES.
+ *
+ * Única excepción, y por evidencia, no por texto: un diálogo ANR de Android de
+ * OTRO proceso encima de la pantalla en el paso que falla (`parseAnrDialog`).
+ * Ahí la aserción no evaluó la app —el sistema solo expone la ventana del
+ * diálogo—, así que su resultado no dice nada del caso. Si el que no responde
+ * es la app bajo prueba, se propaga como fallo del caso.
  */
 
 /** Firmas de fallo del CASO. Ganan siempre: son la prueba de que Maestro llegó
@@ -43,6 +49,36 @@ export const RUNNER_SIGNATURES = [
   { name: 'adb ve el dispositivo sin autorizar', pattern: /\bdevice unauthorized\b/i },
   { name: 'adb no encuentra el dispositivo', pattern: /device '[^']*' not found/i },
 ];
+
+/**
+ * Diálogo de "X no responde" (ANR) de Android, leído del volcado de jerarquía
+ * que Maestro escribe en el paso que falla.
+ *
+ * Se busca por `android:id/aerr_*` —los botones "Esperar"/"Cerrar app" que pone
+ * el propio sistema—, nunca por el texto: el id no depende del idioma con el
+ * que arranque el emulador. El título (`android:id/alertTitle`) solo se usa
+ * para decir de QUIÉN es el diálogo.
+ *
+ * @param {unknown} hierarchy Árbol `{attributes, children}` de Maestro, o null.
+ * @returns {{title: string}|null}
+ */
+export function parseAnrDialog(hierarchy) {
+  if (!hierarchy || typeof hierarchy !== 'object') return null;
+  let anr = false;
+  let title = '';
+  const visit = (node) => {
+    if (!node || typeof node !== 'object') return;
+    const attributes = node.attributes ?? {};
+    const id = typeof attributes['resource-id'] === 'string' ? attributes['resource-id'] : '';
+    if (id.startsWith('android:id/aerr_')) anr = true;
+    if (id === 'android:id/alertTitle' && typeof attributes.text === 'string') {
+      title = attributes.text.trim();
+    }
+    for (const child of Array.isArray(node.children) ? node.children : []) visit(child);
+  };
+  visit(hierarchy);
+  return anr ? { title } : null;
+}
 
 const ENTITIES = { lt: '<', gt: '>', amp: '&', quot: '"', apos: "'" };
 
@@ -78,10 +114,42 @@ function firstLine(text) {
  * @param {string} evidence.failureText  Mensaje de `maestro.xml`, vacío si no hay.
  * @param {number} evidence.commandDumps Volcados `commands.json` encontrados.
  * @param {string} evidence.deviceState  Salida de `adb get-state`.
+ * @param {{title: string}|null} [evidence.anrDialog] Diálogo ANR en el paso fallido.
+ * @param {string} [evidence.appLabel]   Nombre con el que el sistema llama a la app.
  * @returns {{kind: 'runner'|'caso'|'desconocido', why: string}}
  */
-export function classifyFailure({ failureText = '', commandDumps = 0, deviceState = '' } = {}) {
+export function classifyFailure({
+  failureText = '',
+  commandDumps = 0,
+  deviceState = '',
+  anrDialog = null,
+  appLabel = '',
+} = {}) {
   const text = typeof failureText === 'string' ? failureText : '';
+  // Va ANTES que CASE_SIGNATURES, y no relaja la regla de "manda la aserción".
+  // Esa regla existe para que una aserción fallida SOBRE LA APP no se repita
+  // hasta verla verde. Con un diálogo ANR de otro proceso encima, la aserción
+  // no llegó a mirar la app: Android devuelve solo la ventana del diálogo, así
+  // que `assertVisible` estaba preguntando por la pantalla del sistema. Eso no
+  // es una respuesta sobre el caso, ni verde ni roja.
+  //
+  // La distinción la da el título: si el que no responde es la app bajo prueba,
+  // eso SÍ es un fallo del producto y se propaga como tal. Sin `appLabel` no se
+  // puede saber de quién es el diálogo, así que se cae a las reglas de siempre.
+  if (anrDialog && appLabel) {
+    const own = new RegExp('\\b' + appLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
+    const title = anrDialog.title || 'sin título en el diálogo';
+    if (own.test(anrDialog.title ?? '')) {
+      return { kind: 'caso', why: 'la app bajo prueba dejó de responder — ' + title };
+    }
+    return {
+      kind: 'runner',
+      why:
+        'un diálogo ANR del sistema tapaba la pantalla ("' +
+        title +
+        '"): la aserción no llegó a mirar la app',
+    };
+  }
   const asserted = CASE_SIGNATURES.find((signature) => signature.pattern.test(text));
   if (asserted) return { kind: 'caso', why: firstLine(text) };
   const crashed = RUNNER_SIGNATURES.find((signature) => signature.pattern.test(text));

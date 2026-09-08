@@ -9,7 +9,7 @@
 appId: app.lockin.mobile
 name: Alta, perfil, deck, match, mensaje y persistencia
 ---
-- assertTrue: ${PROFILE_NAME && MESSAGE}
+- assertTrue: ${PROFILE_NAME && MESSAGE && (DECK_FIXTURE == 'postgres' || DECK_FIXTURE == 'memoria')}
 # Registro actual: Auth anónimo automático; no existe pantalla de login.
 - launchApp:
     clearState: true
@@ -89,10 +89,23 @@ name: Alta, perfil, deck, match, mensaje y persistencia
 # así que arriba está Núria Bosch, que es `par` y por tanto tiene fila "Busca";
 # el ✓ sale de cruzar lo que ella busca con lo que yo domino (marketing).
 # Las etiquetas van en versales (`Typography.label`): de ahí el `(?i)`.
-- assertVisible: 'Núria Bosch'
-- assertVisible: '(?i)busca'
-- assertVisible: '(?i)✓ marketing'
-- assertVisible: '(?i)✓ encajas'
+#
+# Estas cuatro son las ÚNICAS líneas del recorrido que dependen de una fila que
+# solo existe en Postgres: el `update` de `created_at` de `incoming-likes.sql`.
+# Con el APK sin credenciales el deck lo ordena `src/data/mock/seed.ts` y arriba
+# hay otra persona (run 34172803719, intento 2: Marc Oller), así que ahí no hay
+# nada que afirmar — y el control negativo solo significa algo si llega al
+# `stopApp`. Se saltan SOLO en esa variante; el resto del recorrido, reinicio y
+# persistencia incluidos, es idéntico en las dos. Quien lo pone verde es la
+# variante con credenciales, y ahí se ejecutan siempre.
+- runFlow:
+    when:
+      true: ${DECK_FIXTURE == 'postgres'}
+    commands:
+      - assertVisible: 'Núria Bosch'
+      - assertVisible: '(?i)busca'
+      - assertVisible: '(?i)✓ marketing'
+      - assertVisible: '(?i)✓ encajas'
 # Fixture: solo likes entrantes. El like propio y el match pasan por UI/RPC.
 - tapOn: 'Like'
 - extendedWaitUntil:

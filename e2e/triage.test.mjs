@@ -10,7 +10,7 @@
  */
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { classifyFailure, parseMaestroFailure, shouldRetry } from './triage.mjs';
+import { classifyFailure, parseAnrDialog, parseMaestroFailure, shouldRetry } from './triage.mjs';
 
 const ALIVE = 'device';
 
@@ -108,6 +108,101 @@ describe('classifyFailure: lo que NO se puede reintentar', () => {
 
   it('sin evidencia ninguna tampoco se reintenta el caso', () => {
     assert.equal(classifyFailure().kind, 'desconocido');
+  });
+});
+
+/** Diálogo ANR tal y como lo vuelca Maestro: solo lo que se mira de él. */
+function anrHierarchy(title) {
+  return {
+    children: [
+      {
+        attributes: { 'resource-id': 'android:id/parentPanel' },
+        children: [
+          { attributes: { 'resource-id': 'android:id/alertTitle', text: title }, children: [] },
+          {
+            attributes: { 'resource-id': 'android:id/aerr_close', text: 'Close app' },
+            children: [],
+          },
+          { attributes: { 'resource-id': 'android:id/aerr_wait', text: 'Wait' }, children: [] },
+        ],
+      },
+    ],
+  };
+}
+
+describe('parseAnrDialog', () => {
+  it('reconoce el diálogo por los ids del sistema, no por el idioma', () => {
+    // Mismo diálogo con el emulador en español: el texto cambia, `aerr_*` no.
+    const spanish = anrHierarchy('IU del sistema no responde');
+    assert.deepEqual(parseAnrDialog(spanish), { title: 'IU del sistema no responde' });
+  });
+
+  it('una pantalla normal de la app no es un ANR', () => {
+    const screen = {
+      children: [
+        { attributes: { 'resource-id': 'android:id/content', text: 'Cofundador' }, children: [] },
+      ],
+    };
+    assert.equal(parseAnrDialog(screen), null);
+    assert.equal(parseAnrDialog(null), null);
+    assert.equal(parseAnrDialog('no es un árbol'), null);
+  });
+});
+
+describe('classifyFailure: el ANR de otro proceso tapando la pantalla', () => {
+  // Run 34172803719, trabajo `mock`: el logcat dice
+  // `Displayed app.lockin.mobile/.MainActivity for user 0: +3s934ms`, o sea que
+  // la app SÍ pintó, y aun así el `extendedWaitUntil` de 60 s falló. En el
+  // volcado del paso fallido la pantalla es "System UI isn't responding": la
+  // aserción estuvo preguntando por la ventana del sistema, no por la app.
+  const failureText = 'Assertion is false: "Cofundador" is visible';
+
+  it('no lo cuenta como fallo del caso: la aserción no llegó a mirar la app', () => {
+    const verdict = classifyFailure({
+      failureText,
+      commandDumps: 1,
+      deviceState: ALIVE,
+      anrDialog: { title: "System UI isn't responding" },
+      appLabel: 'lockin',
+    });
+    assert.equal(verdict.kind, 'runner');
+    assert.match(verdict.why, /System UI/);
+    assert.equal(shouldRetry({ runs: [{ outcome: 'runner', why: verdict.why }] }).retry, true);
+  });
+
+  it('si la que no responde es la app, eso SÍ es fallo del caso', () => {
+    const verdict = classifyFailure({
+      failureText,
+      commandDumps: 1,
+      deviceState: ALIVE,
+      anrDialog: { title: "lockin isn't responding" },
+      appLabel: 'lockin',
+    });
+    assert.equal(verdict.kind, 'caso');
+    assert.equal(shouldRetry({ runs: [{ outcome: 'caso', why: verdict.why }] }).retry, false);
+  });
+
+  it('sin saber cómo se llama la app no se decide por el diálogo', () => {
+    // Preferir las reglas de siempre a adivinar de quién es el ANR: lo que se
+    // juega aquí es reintentar o no, y en la duda no se reintenta.
+    const verdict = classifyFailure({
+      failureText,
+      commandDumps: 1,
+      deviceState: ALIVE,
+      anrDialog: { title: "System UI isn't responding" },
+    });
+    assert.equal(verdict.kind, 'caso');
+  });
+
+  it('sin diálogo, una aserción falsa sigue siendo fallo del caso', () => {
+    const verdict = classifyFailure({
+      failureText,
+      commandDumps: 1,
+      deviceState: ALIVE,
+      anrDialog: null,
+      appLabel: 'lockin',
+    });
+    assert.equal(verdict.kind, 'caso');
   });
 });
 

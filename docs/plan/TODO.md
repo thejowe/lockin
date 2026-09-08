@@ -45,7 +45,7 @@ Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>
 
 ## Calidad
 - [x] ESLint/Prettier/TS estricto
-- [x] Tests base (Jest + RNTL) — 374 tests en 34 suites, con suelo de cobertura en `jest.config.js` (89.82/82.56/91.49/91.38 %: sentencias/ramas/funciones/líneas). Más 27 opt-in de contrato contra Supabase, fuera de `npm test` y de CI. Más 22 de E2E (`npm run test:e2e`).
+- [x] Tests base (Jest + RNTL) — 374 tests en 34 suites, con suelo de cobertura en `jest.config.js` (89.82/82.56/91.49/91.38 %: sentencias/ramas/funciones/líneas). Más 27 opt-in de contrato contra Supabase, fuera de `npm test` y de CI. Más 37 de E2E (`npm run test:e2e`), en 9 suites.
 - [x] CI en GitHub Actions — lint, formato, tipos, tests y export web
 - [x] Accesibilidad básica — labels, tamaño táctil y test de contraste. Los 4 pares que estaban por debajo de AA se cerraron el 2026-09-06: `KNOWN_GAPS` en `theme.test.ts` está vacío (ver `todo/arquitecto.md`)
 
