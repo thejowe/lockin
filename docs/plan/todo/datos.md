@@ -574,12 +574,15 @@ nada: hay que esperar a la hora siguiente.
   Gatillo acordado por esta implementación: **antes del primer APK/enlace
   fuera del equipo de pruebas o primera cuenta real importada**. Retirar
   herramientas no elimina cuentas/likes de seed; requiere inventario separado.
-- [ ] **Ejecutar el workflow en GitHub Actions y pegar el enlace al run**.
-  No se ha subido este worktree compartido ni se ha lanzado un workflow no
-  publicado. Pendiente probar Supabase real con reset sin seed frente a reset
-  con seed + teardown, y los controles SQL a través de psql. YAML válido y
-  PGlite pasando no equivalen a este run. Los artefactos previstos son
-  `schema-local` y `schema-remote`, con expected/local/remote y diffs.
+- [x] **Ejecutar el workflow en GitHub Actions y pegar el enlace al run**.
+  [Run 34415065493](https://github.com/thejowe/lockin/actions/runs/34415065493),
+  commit `a6e4c9b`, job local `success`, remoto `skipped` por secreto ausente.
+  Supabase/PostgreSQL 17.6: reset sin seed = reset con seed + teardown;
+  rol lector, segundo teardown y cuatro controles SQL vía psql verificados.
+  `schema-local` descargado y leído: `local.diff`, `reader.diff`,
+  `teardown-twice.diff`, `after-controls.diff` → `Sin diferencias.`;
+  las cuatro mutaciones tienen diffs no vacíos. Salida literal y rutas abajo.
+  No existe `schema-remote`: este cierre verifica exclusivamente el job local.
 - [ ] **Activar y ejecutar la comparación remota**. Crear rol lector y
   guardar únicamente `SUPABASE_SCHEMA_DB_URL` según README; ejecutar el
   workflow y adjuntar `remote.diff` y enlace al run. Sin ese secreto sigue
@@ -595,3 +598,162 @@ Prettier sobre el workflow y los cuatro `.mjs` nuevos →
 `All matched files use Prettier code style!`; `git diff --check` de los archivos
 editados sin errores. Repetición final comparador + PGlite: `tests 9`, `pass 9`,
 `fail 0`, `skipped 0` (4.84 s). Verificación previa al commit; no se ha hecho push.
+
+### Continuación: ejecución real en Actions (2026-09-09)
+
+Rama desechable `codex/datos-verificar-schema-drift`, publicada sin cambiar la
+rama del worktree compartido. Commit inicial `dcfda36`: su mensaje explica la
+pregunta de verificación y que no está destinado a fusionarse. Los commits de
+prueba usan un índice temporal y `git add` por ruta; no incluyen trabajo pendiente
+de otros bloques. No se ha publicado la rama principal.
+
+Hallazgos conservados, sin convertir intentos en verificación:
+
+- [Run 34413868903](https://github.com/thejowe/lockin/actions/runs/34413868903),
+  `dcfda36`: `failure`, **0 jobs**. `actionlint` identificó literalmente
+  `context "runner" is not allowed here` en las líneas 22, 23 y 75 del workflow.
+  YAML válido no validaba los contextos de Actions. Corrección `5253dcf`:
+  inicializar rutas con `RUNNER_TEMP` y `GITHUB_ENV` en pasos.
+- [Run 34414099509](https://github.com/thejowe/lockin/actions/runs/34414099509),
+  `5253dcf`: siete migraciones aplicadas, pero
+  `AssertionError [ERR_ASSERTION]: psql falló (exit=2); no hay verificación`.
+  `gh run download` para ambos runs anteriores devolvió literalmente
+  `no valid artifacts found to download`. Log del segundo conservado en
+  `supabase/evidence/34414099509/failed.log`.
+- [Run 34414441294](https://github.com/thejowe/lockin/actions/runs/34414441294),
+  `c78d1d2`: conexión corregida separando campos `PG*`; `gh run download`
+  terminó con exit 0 y sin salida. Artefacto `schema-local` descargado en
+  `supabase/evidence/34414441294/schema-local/`: `expected.txt` y
+  `postgres-version.txt`, **sin local.txt ni diffs todavía**. Salida literal:
+
+  ```text
+  psql: reset --local --no-seed capturado en expected.txt.
+  17.6
+  digest   22a5e5ccfffa27129df754ecd87c7480
+  AssertionError [ERR_ASSERTION]: psql falló (exit=3); no hay verificación
+  ```
+
+  Falló al capturar bajo el rol lector; no se afirma equivalencia con seed.
+  Log conservado en `supabase/evidence/34414441294/failed.log`.
+
+Secreto: nueva consulta autenticada
+`gh secret list --repo thejowe/lockin --json name` → `[]`, exit 0.
+En el segundo run la anotación literal fue:
+
+```text
+Falta SUPABASE_SCHEMA_DB_URL. No se ha comparado grrzmzktrhksbttpbblg; el verde local no verifica el remoto.
+```
+
+La casilla de cotejo remoto sigue abierta. El SQL exacto de creación del rol y
+los pasos de SQL Editor → Connect/Session pooler → GitHub Actions secret están
+en `supabase/README.md`, sección «Activar el remoto: un secreto». Solo el usuario
+puede crear ese secreto. Ninguna credencial inventada o guardada en el repo.
+La casilla de retirada y su gatillo no se modifican; no se ha ejecutado SQL
+administrativo ni teardown contra el proyecto remoto.
+
+El [run de diagnóstico 34414726526](https://github.com/thejowe/lockin/actions/runs/34414726526)
+(`8af2215`) produjo `schema-local`, descargado con `gh run download` (exit 0,
+sin salida). `supabase/evidence/34414726526/schema-local/local-psql-error.txt`
+contiene literalmente:
+
+```text
+ERROR:  permission denied to set role "lockin_schema_reader"
+```
+
+La consulta de catálogo aún no había empezado bajo el lector. Corrección
+`a6e4c9b`: `grant lockin_schema_reader to current_user with set true;` únicamente
+en la base desechable, para que el administrador de la prueba pueda asumir el
+rol. No se amplían los privilegios del lector ni se ejecuta ese GRANT en remoto.
+
+#### Resultado verificado y artefactos leídos
+
+[Run 34415065493](https://github.com/thejowe/lockin/actions/runs/34415065493),
+commit `a6e4c9b45cf85493d5fb55091e752b72aabd1e33` en la rama desechable. Respuesta literal de
+`gh run view 34415065493 --repo thejowe/lockin --json status,conclusion,jobs`
+proyectada a estado y jobs:
+
+```json
+{"conclusion":"success","jobs":[{"conclusion":"success","name":"Huella local y controles negativos","status":"completed"},{"conclusion":"skipped","name":"Comparar grrzmzktrhksbttpbblg (solo lectura)","status":"completed"}],"status":"completed"}
+```
+
+`gh run download 34415065493 --repo thejowe/lockin --dir
+supabase/evidence/34415065493` → exit 0, sin salida. API de artefactos:
+
+```json
+{"artifacts":[{"digest":"sha256:e8765d78d0a96aa595fd969d57e5533539a2cc1c491f8c27f336ac3cd3cf932b","name":"schema-local","size_in_bytes":35871}],"total_count":1}
+```
+
+Los **19 archivos** descargados viven en
+`supabase/evidence/34415065493/schema-local/`. `expected.txt`, `local.txt`,
+`reader.txt`, `teardown-twice.txt` y `after-controls.txt` tienen la huella
+`digest   22a5e5ccfffa27129df754ecd87c7480` (PostgreSQL `17.6`).
+`development.txt` conserva ambas funciones de seed antes de la retirada local.
+El log completo está en `supabase/evidence/34415065493/run.log`.
+Fragmentos literales del log (sin prefijos de job/fecha):
+
+```text
+Falta SUPABASE_SCHEMA_DB_URL. No se ha comparado grrzmzktrhksbttpbblg; el verde local no verifica el remoto.
+psql: reset --local --no-seed capturado en expected.txt.
+psql: rol lector produce la misma huella (reader.diff).
+Seeding data from supabase/seed.sql...
+psql: reset con seed + teardown = reset sin seed (local.diff).
+psql: segundo teardown sin diferencias (teardown-twice.diff).
+psql: control negativo column detectado; transacción revertida.
+psql: control negativo index detectado; transacción revertida.
+psql: control negativo policy detectado; transacción revertida.
+psql: control negativo function detectado; transacción revertida.
+Local: migraciones = reset con seed + teardown. Rol lector, idempotencia y cuatro controles negativos PASADOS. Esto no verifica el proyecto remoto.
+```
+
+Contenido literal de cada uno de `local.diff`, `reader.diff`,
+`teardown-twice.diff` y `after-controls.diff`:
+
+```text
+Sin diferencias.
+```
+
+`negative-column.diff`:
+
+```diff
+--- esperado: migrations/
++++ observado
++ column   profiles.schema_drift_probe text notnull=f default=-
+```
+
+`negative-index.diff`:
+
+```diff
+--- esperado: migrations/
++++ observado
++ index    profiles.schema_drift_probe CREATE INDEX schema_drift_probe ON public.profiles USING btree (name)
+```
+
+`negative-policy.diff`:
+
+```diff
+--- esperado: migrations/
++++ observado
+- policy   profiles.profiles: cualquier autenticado puede leer cmd=SELECT permissive=PERMISSIVE roles=authenticated using=true check=-
++ policy   profiles.profiles: cualquier autenticado puede leer cmd=SELECT permissive=PERMISSIVE roles=authenticated using=false check=-
+```
+
+`negative-function.diff`:
+
+```diff
+--- esperado: migrations/
++++ observado
+- func     public.is_valid_prompts(jsonb) args=prompts jsonb returns=boolean lang=sql security=invoker volatile=i config=search_path="" body_md5=48cc8b2cc8bbf2c8a79ab32eb99dfa8e
++ func     public.is_valid_prompts(jsonb) args=prompts jsonb returns=boolean lang=sql security=invoker volatile=i config=search_path="" body_md5=7330325ebbea3b41b64113c40e7a7d39
+```
+
+No se descargó `schema-remote` porque la API confirma que no existe: no hay
+`remote.txt` ni `remote.diff`. Las dos casillas de comparación remota permanecen
+abiertas hasta que el usuario cree `SUPABASE_SCHEMA_DB_URL` y haya un run remoto
+con artefactos. La casilla de retirada permanece intacta y sin ejecutar.
+
+Validación de las correcciones: actionlint exit 0; ESLint de schema-ci.mjs exit 0;
+Prettier del script/workflow conforme; comparador Node `tests 8`, `pass 8`,
+`fail 0`, `skipped 0`. Estas comprobaciones acompañan al run, no lo sustituyen.
+
+Relectura independiente de las huellas descargadas con compareFingerprints:
+`Artefactos descargados: 4 igualdades y 4 diffs negativos reproducidos, OK`.

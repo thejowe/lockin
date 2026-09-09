@@ -18,11 +18,12 @@ jobs:
     timeout-minutes: 20
     outputs:
       remote_enabled: ${{ steps.remote.outputs.enabled }}
-    env:
-      SCHEMA_RUNTIME: ${{ runner.temp }}/lockin-schema
-      SCHEMA_ARTIFACTS: ${{ runner.temp }}/schema-evidence
     steps:
       - uses: actions/checkout@v4
+      - name: Directorios de evidencia
+        run: |
+          echo "SCHEMA_RUNTIME=$RUNNER_TEMP/lockin-schema" >> "$GITHUB_ENV"
+          echo "SCHEMA_ARTIFACTS=$RUNNER_TEMP/schema-evidence" >> "$GITHUB_ENV"
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -71,10 +72,10 @@ jobs:
     if: needs.local.outputs.remote_enabled == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
-    env:
-      SCHEMA_ARTIFACTS: ${{ runner.temp }}/schema-evidence
     steps:
       - uses: actions/checkout@v4
+      - name: Directorio de evidencia
+        run: echo "SCHEMA_ARTIFACTS=$RUNNER_TEMP/schema-evidence" >> "$GITHUB_ENV"
       - uses: actions/setup-node@v4
         with:
           node-version: 22

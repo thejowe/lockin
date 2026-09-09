@@ -1,0 +1,3 @@
+--- esperado: migrations/
++++ observado
++ column   profiles.schema_drift_probe text notnull=f default=-

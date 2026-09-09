@@ -28,6 +28,17 @@ function summary(message) {
 
 function run(binary, args, options = {}) {
   const result = spawnSync(binary, args, { encoding: 'utf8', timeout: 600_000, ...options });
+  if (
+    binary === 'psql' &&
+    process.argv[2] === 'local' &&
+    ['127.0.0.1', 'localhost'].includes(options.env?.PGHOST) &&
+    result.status !== 0
+  ) {
+    // Solo SQL del backend desechable, con campos de conexión separados.
+    // El remoto conserva stderr privado para no filtrar partes del secreto.
+    console.error(result.stderr);
+    writeFileSync(join(artifacts, 'local-psql-error.txt'), result.stderr || 'psql sin stderr');
+  }
   assert(
     !result.error && result.status === 0,
     `${binary} falló (exit=${result.status}); no hay verificación`
@@ -40,8 +51,19 @@ function query(url, input) {
   const env = Object.fromEntries(
     Object.entries(process.env).filter(([key]) => !key.startsWith('PG'))
   );
+  const connection = new URL(url);
+  // PGDATABASE es un nombre de base por defecto, no el argumento dbname
+  // expandible de PQconnectdbParams. Entregar los campos libpq por separado.
+  const connectionEnv = {
+    PGHOST: connection.hostname,
+    PGPORT: connection.port || '5432',
+    PGUSER: decodeURIComponent(connection.username),
+    PGPASSWORD: decodeURIComponent(connection.password),
+    PGDATABASE: decodeURIComponent(connection.pathname.slice(1)),
+    PGSSLMODE: connection.searchParams.get('sslmode') || 'prefer',
+  };
   return run('psql', ['-X', '-q', '-A', '-t', '-v', 'ON_ERROR_STOP=1'], {
-    env: { ...env, PGDATABASE: url, PGCONNECT_TIMEOUT: '20', PGCLIENTENCODING: 'UTF8' },
+    env: { ...env, ...connectionEnv, PGCONNECT_TIMEOUT: '20', PGCLIENTENCODING: 'UTF8' },
     input,
     // No publicar stderr: errores de conexión pueden contener partes del secreto.
     maxBuffer: 8 * 1024 * 1024,
@@ -98,15 +120,19 @@ if (command === 'local') {
     'Solo base local desechable'
   );
   const expected = capture(url, 'expected.txt');
+  summary('psql: reset --local --no-seed capturado en expected.txt.');
   writeFileSync(join(artifacts, 'postgres-version.txt'), query(url, 'show server_version;'));
 
   // Mismo catálogo, rol sin acceso a datos: prueba de permisos mínimos del remoto.
   query(
     url,
-    'create role lockin_schema_reader nologin; grant usage on schema public to lockin_schema_reader;'
+    `create role lockin_schema_reader nologin;
+     grant usage on schema public to lockin_schema_reader;
+     grant lockin_schema_reader to current_user with set true;`
   );
   const reader = capture(url, 'reader.txt', 'set local role lockin_schema_reader;');
   compare(expected, reader, 'reader.diff');
+  summary('psql: rol lector produce la misma huella (reader.diff).');
 
   // Referencia ejecutable = migrations sin seed. Segunda reconstrucción completa:
   // seed + teardown deben dejar exactamente ese esquema de producción.
@@ -117,8 +143,10 @@ if (command === 'local') {
   query(url, readFileSync(join(root, 'supabase/dev-teardown.sql'), 'utf8'));
   const actual = capture(url, 'local.txt');
   compare(expected, actual, 'local.diff');
+  summary('psql: reset con seed + teardown = reset sin seed (local.diff).');
   query(url, readFileSync(join(root, 'supabase/dev-teardown.sql'), 'utf8'));
   compare(expected, capture(url, 'teardown-twice.txt'), 'teardown-twice.diff');
+  summary('psql: segundo teardown sin diferencias (teardown-twice.diff).');
 
   const mutations = {
     column: 'alter table public.profiles add column schema_drift_probe text;',
@@ -135,6 +163,7 @@ if (command === 'local') {
       `negative-${name}.diff`,
       true
     );
+    summary(`psql: control negativo ${name} detectado; transacción revertida.`);
   }
   compare(expected, capture(url, 'after-controls.txt'), 'after-controls.diff');
   summary(

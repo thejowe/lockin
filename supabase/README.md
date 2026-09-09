@@ -520,6 +520,37 @@ de proceso. El secreto se entrega solo a los pasos que lo necesitan.
 La configuración de ese rol es un prerrequisito administrativo; una vez
 guardado el secreto, basta lanzar el workflow: no requiere editar código.
 
+Pasos para el usuario (no ejecutados contra el proyecto por este bloque):
+
+1. Abrir [SQL Editor de grrzmzktrhksbttpbblg](https://supabase.com/dashboard/project/grrzmzktrhksbttpbblg/sql/new)
+   como administrador y ejecutar el SQL de creación anterior. Si el rol ya
+   existe, inspeccionar sus permisos antes de reutilizarlo; no elevarlo ni
+   concederle `pg_read_all_data`, `authenticated` o `service_role`.
+2. Generar una contraseña en el gestor de contraseñas y asignarla solo al rol
+   lector. Opción sin dejarla en el historial del editor: `\password
+   lockin_schema_reader` desde psql administrativo. Si se usa SQL Editor,
+   introducir allí `ALTER ROLE lockin_schema_reader PASSWORD '…';`, sustituyendo
+   los puntos suspensivos por la contraseña generada (y escapando cada comilla
+   simple como dos comillas simples). Esa plantilla **no contiene una contraseña**
+   y no debe ejecutarse con los puntos suspensivos. No copiar el SQL resuelto al repo.
+3. Dashboard → **Connect → Session pooler**: copiar el host real y el puerto
+   **5432** de este proyecto. Usar la base `postgres`, usuario
+   `lockin_schema_reader.grrzmzktrhksbttpbblg`, contraseña del lector codificada
+   para URI y `sslmode=require`. No usar la contraseña de `postgres` para Actions.
+4. En [Actions secrets del repositorio](https://github.com/thejowe/lockin/settings/secrets/actions),
+   **New repository secret** → nombre `SUPABASE_SCHEMA_DB_URL` → valor: esa URI
+   completa → **Add secret**. Solo el usuario realiza este paso; no enviar el valor al chat.
+5. Ejecutar `gh workflow run schema-drift.yml --repo thejowe/lockin --ref codex/datos-verificar-schema-drift`.
+   Si GitHub aún no permite dispatch porque el workflow no está en la rama
+   predeterminada, usar **Re-run all jobs** en el último run de esa rama.
+   Exigir que el job remoto se ejecute y descargar `schema-remote`: `remote.txt`
+   y `remote.diff` deben existir. Un job `skipped` mantiene abierta la casilla.
+
+No ejecutar `dev-teardown.sql` en el proyecto real para obtener un verde:
+su gatillo sigue siendo el primer APK/enlace fuera del equipo de pruebas
+o la primera cuenta real importada. Si la huella detecta funciones de desarrollo
+antes del gatillo, conservar el diff como evidencia de deriva.
+
 ### Auditoría de límites de drift-check.mjs
 
 La columna `profiles.seeking_specialties` sí se lee desde `ADD COLUMN`.

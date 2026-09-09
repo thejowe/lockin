@@ -1,0 +1,48 @@
+Huella local y controles negativos	Supabase desechable y cotejo local	﻿2026-09-09T22:49:51.2685041Z ##[group]Run node supabase/schema-ci.mjs local
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:49:51.2685438Z ^[[36;1mnode supabase/schema-ci.mjs local^[[0m
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:49:51.2721846Z shell: /usr/bin/bash -e {0}
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:49:51.2722105Z env:
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:49:51.2722357Z   SCHEMA_RUNTIME: /home/runner/work/_temp/lockin-schema
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:49:51.2722753Z   SCHEMA_ARTIFACTS: /home/runner/work/_temp/schema-evidence
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:49:51.2723106Z   SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:49:51.2723388Z ##[endgroup]
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:49:51.7574214Z Finished supabase init.
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:49:52.0896850Z A new version of Supabase CLI is available: v2.117.0 (currently installed v2.116.0)
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:49:52.0899103Z We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:00.5746421Z Resetting local database...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:00.8304832Z Recreating database...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:11.3038197Z Initialising schema...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:16.1800276Z Seeding globals from roles.sql...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:16.1830814Z Applying migration 20260905000100_enums_and_helpers.sql...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:16.2026036Z Applying migration 20260905000200_profiles_and_settings.sql...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:16.2179469Z Applying migration 20260905000300_decisions_matches_messages.sql...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:16.2332439Z Applying migration 20260905000400_rls_policies.sql...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:16.2455626Z Applying migration 20260905000500_functions_and_realtime.sql...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:16.2653710Z Applying migration 20260907000100_profiles_seeking_specialties.sql...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:16.2736704Z Applying migration 20260907000200_discovery_mutual_complement.sql...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:16.2858782Z Restarting containers...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:27.2195742Z Finished supabase db reset on branch main.
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:27.5312164Z A new version of Supabase CLI is available: v2.117.0 (currently installed v2.116.0)
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:27.5313555Z We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:28.5340684Z node:internal/modules/run_main:123
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:28.5341629Z     triggerUncaughtException(
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:28.5342029Z     ^
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:28.5342168Z 
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:28.5343002Z AssertionError [ERR_ASSERTION]: psql falló (exit=2); no hay verificación
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:28.5343629Z     at run (file:///home/runner/work/lockin/lockin/supabase/schema-ci.mjs:31:3)
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:28.5344222Z     at query (file:///home/runner/work/lockin/lockin/supabase/schema-ci.mjs:43:10)
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:28.5344797Z     at capture (file:///home/runner/work/lockin/lockin/supabase/schema-ci.mjs:53:18)
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:28.5345352Z     at file:///home/runner/work/lockin/lockin/supabase/schema-ci.mjs:100:20
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:28.5345848Z     at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:28.5346398Z     at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:28.5347055Z     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:28.5347948Z   generatedMessage: false,
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:28.5348206Z   code: 'ERR_ASSERTION',
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:28.5348435Z   actual: false,
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:28.5348646Z   expected: true,
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:28.5348854Z   operator: '==',
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:28.5349054Z   diff: 'simple'
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:28.5349250Z }
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:28.5349354Z 
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:28.5349443Z Node.js v22.23.2
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T22:51:28.5379501Z ##[error]Process completed with exit code 1.
