@@ -8,10 +8,10 @@
  * afirman sobre otra pantalla y fallan con mensajes que no nombran la causa.
  *
  * Pasó de verdad, no es teoría: run 34160309273, donde `send()` desmontaba el
- * compositor y los trabajos `supabase` y `probe` murieron con dos errores
- * distintos —"no encuentro Enviar mensaje", "no encuentro la burbuja"— porque
- * los dos estaban ya en Descubrir. Diagnóstico en `docs/plan/todo/chat.md`
- * (ronda 4). Se dejó anotado y sin tocar hasta que el recorrido `supabase`
+ * compositor y los trabajos `supabase` y `probe` (la sonda del teclado, ya
+ * retirada) murieron con dos errores distintos —"no encuentro Enviar mensaje",
+ * "no encuentro la burbuja"— porque los dos estaban ya en Descubrir.
+ * Diagnóstico en `docs/plan/todo/chat.md` (ronda 4). Se dejó anotado y sin tocar hasta que el recorrido `supabase`
  * cerrara en verde; cerró (run 34281070607) y se quita con red debajo.
  *
  * Esta guardia fija la ausencia. No prueba que el recorrido pase —eso solo lo
@@ -28,11 +28,13 @@ import { describe, it } from 'node:test';
 const here = dirname(fileURLToPath(import.meta.url));
 
 /**
- * Los dos casos que envían un mensaje. Si alguno desaparece —la sonda es
- * temporal y se retira cuando toque— este `readFileSync` revienta, que es lo
- * que se quiere: la lista se actualiza a mano, no se relaja sola.
+ * Los casos que envían un mensaje. Eran dos: la sonda `keyboard-probe.yaml` se
+ * retiró el 2026-09-09 con su pregunta cerrada, así que queda el recorrido
+ * completo — que es el que de verdad decide el color del workflow. Si alguno
+ * desapareciera, este `readFileSync` revienta, que es lo que se quiere: la
+ * lista se actualiza a mano, no se relaja sola.
  */
-const flows = ['full-journey.yaml', 'keyboard-probe.yaml'].map((file) => ({
+const flows = ['full-journey.yaml'].map((file) => ({
   file,
   source: readFileSync(join(here, file), 'utf8'),
 }));

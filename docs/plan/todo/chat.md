@@ -640,8 +640,20 @@ reintento: un solo emulador por trabajo, ninguna caída de runner. `probe` tard�
       mismo run.
 - [x] **Enviar ya no desmonta el chat.** La burbuja aparece tras el envío en el
       mismo trabajo `probe`, con el teclado ya cerrado.
-- [ ] **Recorrido completo en verde.** Sigue abierta: `supabase` acaba en rojo
-      en el paso `gate`. Ver abajo por qué no se puede decir en qué comando.
+- [x] **Recorrido completo en verde.** Cerrada el 2026-09-09 por `calidad`:
+      `supabase` ya no acaba en rojo. Pasa entero y dos veces, sobre dos commits
+      distintos y al primer intento en ambos —
+      [job 102245686110](https://github.com/thejowe/lockin/actions/runs/34281070607/job/102245686110)
+      sobre `78c90b8` y
+      [job 102253132113](https://github.com/thejowe/lockin/actions/runs/34283362375/job/102253132113)
+      sobre `e0f4ca7`, ya en la rama principal —, las dos con
+      `1/1 Flow Passed` y `Postgres: alta, perfil, lo que busca, modo, like,
+      match y mensaje verificados`. Lo que quedaba abierto aquí no era el
+      compositor sino el orden del deck: el `like` no caía sobre la tarjeta que
+      el recorrido afirmaba. Se arregló en `e2e/incoming-likes.sql` (`78c90b8`),
+      no en el chat. El apartado de abajo —"en qué falla `supabase`"— es de la
+      ronda 4 y se conserva solo como registro: ni el `gh` ausente ni el
+      diagnóstico a ciegas describen ya la situación.
 
 #### Lo que no se ha podido confirmar, y por qué
 

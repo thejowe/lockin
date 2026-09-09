@@ -19,6 +19,12 @@ jobs:
     #   mock     → debe fallar DESPUÉS del reinicio y no escribir nada.
     # Si el control negativo pasara en verde, el caso positivo no estaría
     # probando la integración; por eso corre en cada push, no solo a mano.
+    #
+    # Hubo una tercera, `probe`: una sonda de diagnóstico que corría
+    # `keyboard-probe.yaml` con el APK de `supabase` para preguntar, por el
+    # camino más corto, si el compositor quedaba por encima del teclado. Se
+    # retiró el 2026-09-09 con la pregunta cerrada; el porqué está en
+    # `e2e/README.md` y en `docs/plan/todo/calidad.md`.
     name: E2E Android (${{ matrix.variant }})
     runs-on: ubuntu-24.04
     # Dos emuladores caben: build ~9 min y cada pasada de emulador ~15.
@@ -29,21 +35,12 @@ jobs:
         include:
           - variant: supabase
             negative: '0'
-            probe: '0'
           - variant: mock
             negative: '1'
-            probe: '0'
-          # Sonda temporal: mismo APK que `supabase`, otro .yaml, camino corto
-          # hasta el compositor con el teclado abierto. Segundo tiro a la misma
-          # pregunta en la misma pasada. Se retira con el compositor verificado.
-          - variant: probe
-            negative: '0'
-            probe: '1'
     env:
       CI: '1'
       EXPO_NO_TELEMETRY: '1'
       E2E_NEGATIVE_CONTROL: ${{ matrix.negative }}
-      E2E_KEYBOARD_PROBE: ${{ matrix.probe }}
       E2E_ARTIFACTS: e2e/artifacts/${{ matrix.variant }}
     steps:
       - uses: actions/checkout@v4

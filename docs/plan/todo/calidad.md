@@ -461,6 +461,159 @@ no se modifica la lista de archivos medida por cobertura.
   timeout, test ni código de producto. Se conserva el antecedente de lentitud
   con caché fría documentado en pasadas anteriores.
 
+## Decimotercera pasada: el workflow entero en verde (2026-09-09)
+
+Alcance: `e2e/`, `.github/workflows/` y los TODO. **No se toca `src/` ni
+`supabase/`**, que era la condición de esta pasada.
+
+Al empezar quedaba una sola casilla abierta —el control negativo con el `.yaml`
+actual— y su causa no era mía: la tarjeta de delante del mock. Al cerrarla, el
+workflow queda en verde por primera vez desde que existe.
+
+### El arreglo estaba en el worktree, sin commitear, y eso obligó a un rodeo
+
+El worktree es compartido. Al llegar, `git status` mostraba el arreglo de
+`perfil` **staged pero sin commit**: `src/data/mock/seed.ts` y
+`supabase/seed.sql` dan a Lucía Pardo `seekingSpecialties = ['ventas','datos']`,
+más un `src/data/mock/seed.test.ts` nuevo que fija la invariante. Sin commit no
+hay run, y sin run no hay nada que verificar en Actions.
+
+Lo que se hizo, y por qué así: se construyó una rama desechable
+`calidad/verificar-control-negativo` con **plumbing puro** —`read-tree` sobre un
+`GIT_INDEX_FILE` temporal, `update-index --cacheinfo` con los blobs ya staged,
+`write-tree` y `commit-tree`—, de modo que el índice y el working tree
+compartidos no se tocan en ningún momento. Ni un `git add`. Se comprobó después
+que `git status` seguía exactamente igual. La rama es HEAD (`8c94e3e`) más esos
+cuatro archivos, nada más, y no está pensada para fusionarse: existe para
+responder una pregunta que en esta máquina no se puede responder — aquí no hay
+emulador, ni Android SDK, ni Docker.
+
+Por qué el arreglo tenía que funcionar, antes de gastar 18 minutos de runner. El
+perfil del recorrido domina `dev` y `marketing` y busca `diseno`, así que una
+tarjeta puntúa `(lo que domino ∩ lo que ella busca) + (lo que ella domina ∩ lo
+que busco)`. Antes, Lucía (diseño, buscando dev) y Marc (diseño, buscando dev)
+empataban a 2 y `seed-lucia` ganaba el desempate alfabético sin ser recíproca.
+Con el cambio Lucía baja a 1 y **Marc queda solo en el máximo** — y `seed-marc`
+sí está en `SEED_RECIPROCAL_IDS`. En Postgres no cambia nada: Núria (id
+`…0001`) ya puntuaba 2 por el `update` de `incoming-likes.sql` y gana cualquier
+empate por id, así que la variante `supabase` no se movía. Las dos predicciones
+se cumplieron.
+
+### El control negativo, concluyente
+
+[Run 34409724164](https://github.com/thejowe/lockin/actions/runs/34409724164),
+commit `d4f0810`. **Las tres variantes en verde, todas al primer intento y sin
+reintento de emulador** — es la primera vez que el workflow entero está verde.
+
+Lo que importa es el `mock`, y se lee del `commands.json` de su intento
+([job 102661076938](https://github.com/thejowe/lockin/actions/runs/34409724164/job/102661076938)),
+sin interpretar nada:
+
+| #   | comando                                    | estado     |
+| --- | ------------------------------------------ | ---------- |
+| 44  | `assertVisible: ${MESSAGE}`                | COMPLETED  |
+| 45  | `stopApp`                                  | COMPLETED  |
+| 46  | `launchApp clearState: false`              | COMPLETED  |
+| 47  | `extendedWaitUntil: visible 'Descubrir'`   | **FAILED** |
+
+Es decir: con el APK sin credenciales el recorrido llegó **entero** hasta el
+reinicio —match, chat, envío y burbuja incluidos— y se rompió justo al otro
+lado, porque el mock guarda el estado en módulo y al relanzar el proceso vuelve
+al alta. El `postgres.json` del artefacto lo dice en números:
+`failedCommand: 47`, `stopAppCommand: 45`. Y el oráculo cierra la otra mitad:
+`Postgres: el APK sin credenciales no ha escrito perfil ni mensaje`. Veredicto
+literal del runner: `pass — el mock falló después del reinicio y no escribió
+nada`.
+
+Eso es exactamente lo que el control negativo tiene que demostrar, y lo que no
+demostraba mientras se paraba en `¡Match!`: que lo que distingue a las dos
+variantes es **la persistencia**, no cualquier otra cosa que se rompa por el
+camino. Con las dos mitades a la vez —`supabase` deja las filas, `mock` no las
+deja y además falla donde debe— el caso positivo prueba integración de verdad.
+
+### La sonda `probe`, retirada
+
+`run.mjs` la anunciaba como temporal desde que nació y nombraba su condición:
+"se retira junto con el .yaml en cuanto eso esté verificado". La casilla de la
+duodécima pasada la ataba además a que `supabase` cerrase. Las dos condiciones
+se cumplen, así que se retira — y conviene decir por qué la respuesta no es
+"pues déjala, que es verde".
+
+Existía por dos razones, y las dos se han agotado:
+
+1. **La pregunta.** Con el teclado abierto, ¿sigue visible el compositor? Hoy la
+   responde `full-journey.yaml` y con más fuerza: su `tapOn: 'Enviar mensaje'`
+   ocurre con el teclado delante —y un tap no aterriza sobre un botón que no
+   está en el árbol de accesibilidad, que era justo el síntoma—, detrás afirma
+   el compositor deshabilitado y la burbuja **sin cerrar el teclado** (`8c94e3e`
+   quitó el `hideKeyboard`), y tras el reinicio vuelve a entrar al chat desde
+   Matches y afirma el compositor otra vez. La sonda paraba en la primera
+   burbuja y no reiniciaba: hoy afirma un subconjunto estricto.
+2. **El seguro contra la flake.** La mitad de comandos es la mitad de superficie
+   para el `device offline` que se llevó 3 de 7 trabajos el 2026-09-07. Ese
+   seguro lo da ahora `triage.mjs`: distingue la caída del runner del fallo del
+   caso y arranca un segundo emulador solo en el primer supuesto (`91e98a1`).
+   Cubre las dos variantes que deciden el color, no un atajo paralelo.
+
+Y la evidencia de que ya no hace falta: `supabase` verde **al primer intento en
+tres commits seguidos** — `78c90b8`
+([job 102245686110](https://github.com/thejowe/lockin/actions/runs/34281070607/job/102245686110)),
+`e0f4ca7`
+([job 102253132113](https://github.com/thejowe/lockin/actions/runs/34283362375/job/102253132113))
+y `d4f0810`
+([job 102661076506](https://github.com/thejowe/lockin/actions/runs/34409724164/job/102661076506)).
+Ninguno pidió segundo emulador.
+
+Lo que costaba conservarla: un trabajo entero de Actions en cada push —17 min 1 s
+en el run 34283362375— para repetir una pregunta cerrada. Se borran
+`e2e/keyboard-probe.yaml`, la rama `probe` de `e2e/run.mjs` y su entrada en la
+matriz del workflow. `e2e/hide-keyboard.test.mjs` pasa de dos flujos a uno; sus
+tres casos que caen afirmaban sobre el `.yaml` que ya no existe, así que no se
+pierde cobertura de nada que siga existiendo.
+
+Lo que **no** se ha hecho al retirarla: no se ha tocado `full-journey.yaml`. Si
+alguna vez hay que reabrir la pregunta del teclado, la sonda está entera en el
+historial, que es más barato que mantenerla viva por si acaso.
+
+**Y la retirada está verificada, no razonada a secas.**
+[Run 34411945877](https://github.com/thejowe/lockin/actions/runs/34411945877)
+sobre `ce7ccc6`, ya sin la sonda: dos trabajos en vez de tres, los dos en verde
+al primer intento —
+[`supabase` 102668149112](https://github.com/thejowe/lockin/actions/runs/34411945877/job/102668149112)
+con `1/1 Flow Passed in 3m` y las filas verificadas;
+[`mock` 102668149385](https://github.com/thejowe/lockin/actions/runs/34411945877/job/102668149385)
+con `pass — el mock falló después del reinicio y no escribió nada`. Es la
+segunda pasada consecutiva con el workflow entero en verde, así que el verde
+tampoco depende de la sonda que se acaba de quitar. El trabajo `Runner E2E` de
+[la CI de ese commit](https://github.com/thejowe/lockin/actions/runs/34411945864)
+da `43 tests, 43 pass, 0 fail` — el único rojo local (`relee la suya de Postgres
+después del reinicio`) es el CRLF de esta máquina, que ya fallaba antes y no
+existe en CI.
+
+### Corregida una casilla obsoleta de `chat`
+
+`docs/plan/todo/chat.md:643` seguía diciendo que el recorrido completo no estaba
+verde porque `supabase` acababa en rojo en el paso `gate`. Ya no es cierto desde
+el 2026-09-08 y se ha cerrado con los dos jobs que lo demuestran. El apartado
+que venía detrás —"en qué falla `supabase`", con el `gh` ausente y el
+diagnóstico a ciegas— se conserva como registro de la ronda 4, marcado como tal:
+describe una situación que dejó de existir.
+
+### Lo que sigue sin poder decirse desde aquí
+
+- **El auto-capitalizado del prompt de texto libre** sigue siendo intermitente y
+  un verde suelto no lo distingue de "esta vez no salió". Varios recorridos
+  `supabase` seguidos sin que aparezca son una señal, no una prueba. La decisión
+  de la duodécima pasada —no hacer el caso inmune— se mantiene.
+- **El verde vive todavía en la rama de verificación, no en la principal.**
+  `perfil` commiteó su arreglo mientras esta pasada corría (`3eb5059`), y
+  `git diff d4f0810 HEAD -- src/data/mock/seed.ts src/data/mock/seed.test.ts
+  supabase/seed.sql` sale **vacío**: lo que está publicado es byte a byte lo que
+  CI verificó. Aun así, lo que ha dado verde son los dos runs de
+  `calidad/verificar-control-negativo`; el `E2E Android` de la rama principal no
+  ha vuelto a correr desde entonces. Se confirma solo cuando pase allí, y hasta
+  entonces esto es una predicción muy bien fundada, no un hecho medido.
+
 ## Duodécima pasada: los dos rojos del E2E, leídos (2026-09-08)
 
 [Run 34172803719](https://github.com/thejowe/lockin/actions/runs/34172803719)
@@ -929,13 +1082,18 @@ está parado en `src/data/mock/seed.ts`, que es de otro bloque.
       paso "Resultado del recorrido (supabase)", `1/1 Flow Passed in 2m 36s` más
       `Postgres: alta, perfil, lo que busca, modo, like, match y mensaje
       verificados`. Es la primera vez que el recorrido entero pasa.
-- [ ] **Control negativo concluyente con el `.yaml` actual.** Esta queda abierta
-      y es la que mantiene el workflow en rojo. Hoy el `mock` se para en
-      `¡Match!` (comando 37 de 38) porque la primera tarjeta de su orden,
-      `seed-lucia`, no está en `SEED_RECIPROCAL_IDS`. Depende de
-      `src/data/mock/seed.ts`: reportado abajo, no tocado.
-      Antecedente que sí existe, con otro `.yaml`: run 34162107392 sobre 696408a,
-      donde el control negativo pasó.
+- [x] **Control negativo concluyente con el `.yaml` actual.** Cerrada el
+      2026-09-09 con
+      [job 102661076938](https://github.com/thejowe/lockin/actions/runs/34409724164/job/102661076938).
+      El `mock` ya no se para en `¡Match!`: llega al reinicio y rompe donde
+      tiene que romper. Del `commands.json` del intento, sin interpretar nada:
+      comando 44 `assertVisible ${MESSAGE}` COMPLETED, 45 `stopApp` COMPLETED,
+      46 `launchApp clearState: false` COMPLETED, **47 `Descubrir` FAILED**. Y
+      el oráculo: `Postgres: el APK sin credenciales no ha escrito perfil ni
+      mensaje`. Veredicto del runner, literal: `pass — el mock falló después del
+      reinicio y no escribió nada`. Con esto **el workflow entero queda en
+      verde**, las tres variantes al primer intento. Detalle en la decimotercera
+      pasada.
 
 ### Lo que NO se ha hecho, y por qué
 
@@ -949,6 +1107,10 @@ está parado en `src/data/mock/seed.ts`, que es de otro bloque.
   verde de punta a punta, y con dos variantes en rojo conviene conservar la
   prueba barata de que el camino APK → emulador → Maestro funciona. Se retira
   cuando `supabase` cierre.
+
+  > **HECHO el 2026-09-09.** `supabase` cerró y `mock` también, así que la
+  > condición se cumplió y la sonda se retiró en esa misma pasada. El
+  > razonamiento y la evidencia están en la decimotercera pasada.
 
 ## Undécima pasada: cubrir `seekingSpecialties` (2026-09-07)
 

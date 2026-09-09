@@ -31,13 +31,14 @@ assert(appLabel, 'app.json no declara expo.name: sin él no se puede leer un ANR
 // active.ts elige el mock en memoria y el recorrido debe romperse al reiniciar.
 // Si algún día pasara en verde, el caso positivo no estaría probando Supabase.
 const negative = process.env.E2E_NEGATIVE_CONTROL === '1';
-// Sonda de diagnóstico, temporal: mismo APK que el caso positivo (credenciales
-// reales incluidas), pero corre `keyboard-probe.yaml` en vez del recorrido
-// completo: el camino más corto hasta "¿el compositor está por encima del
-// teclado?". Se retira junto con el .yaml en cuanto eso esté verificado.
-const probe = process.env.E2E_KEYBOARD_PROBE === '1';
-assert(!(negative && probe), 'La sonda de teclado y el control negativo se excluyen');
-const variant = negative ? 'mock' : probe ? 'probe' : 'supabase';
+// Aquí vivió `E2E_KEYBOARD_PROBE`, una tercera variante (`probe`) que corría
+// `keyboard-probe.yaml` con el APK del caso positivo para preguntar por el
+// camino corto si el compositor quedaba por encima del teclado. Se retiró el
+// 2026-09-09: `full-journey.yaml` afirma ya eso mismo y más —pulsa "Enviar
+// mensaje" con el teclado delante, y detrás afirma el compositor deshabilitado
+// y la burbuja sin cerrarlo—, así que la sonda solo repetía una pregunta
+// cerrada a cambio de un emulador entero por push.
+const variant = negative ? 'mock' : 'supabase';
 // Expo ignores tsconfig aliases for any source path containing /node_modules/.
 // Keep the disposable app outside that path AND outside the checkout's TS glob.
 const appParent = resolve(tmpdir());
@@ -418,7 +419,7 @@ if (command === 'test') {
       // esto rompe el recorrido en vez de saltarse las aserciones en silencio.
       '-e',
       'DECK_FIXTURE=' + (negative ? 'memoria' : 'postgres'),
-      probe ? join(root, 'e2e/keyboard-probe.yaml') : journeyFile,
+      journeyFile,
     ];
     writeFileSync(join(dir, 'run.json'), JSON.stringify({ runId, variant }, null, 2));
     // El buffer es del dispositivo, no del intento: sin vaciarlo, el logcat del
@@ -468,13 +469,6 @@ if (command === 'test') {
           )
         );
         return { outcome: 'pass', why: 'el mock falló después del reinicio y no escribió nada' };
-      }
-      if (probe) {
-        // La sonda se afirma a sí misma dentro del .yaml: si el `assertVisible`
-        // de "Enviar mensaje" pasa con el teclado abierto, el compositor está por
-        // encima. No se comprueba persistencia — no es lo que se pregunta, y la
-        // sonda ya no reinicia la app.
-        return { outcome: 'pass', why: 'la sonda del teclado pasó' };
       }
       await verifyPersistence(status, profileName, message);
       writeFileSync(
