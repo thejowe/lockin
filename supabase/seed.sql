@@ -169,7 +169,9 @@ values
     '11111111-1111-4111-8111-000000000007', 'Lucía Pardo', 27, 'Lisboa', 'Europe/Lisbon',
     'LP', 'teal',
     array['diseno', 'contenido']::public.specialty[],
-    array['dev', 'producto']::public.specialty[],
+    -- Busca quien venda y quien mida, no quien construya: ver la nota de
+    -- `src/data/mock/seed.ts` sobre por qué no puede empatar con Marc.
+    array['ventas', 'datos']::public.specialty[],
     'par', 'algo-empezado',
     35, array['tarde', 'noche']::public.time_band[],
     'todo-o-nada', null, 'https://example.com/lucia', null,
@@ -202,7 +204,7 @@ on conflict (id) do nothing;
 --       ('11111111-1111-4111-8111-000000000004'::uuid, array['dev','producto']),
 --       ('11111111-1111-4111-8111-000000000005'::uuid, array['diseno','marketing']),
 --       ('11111111-1111-4111-8111-000000000006'::uuid, array[]::text[]),
---       ('11111111-1111-4111-8111-000000000007'::uuid, array['dev','producto']),
+--       ('11111111-1111-4111-8111-000000000007'::uuid, array['ventas','datos']),
 --       ('11111111-1111-4111-8111-000000000008'::uuid, array[]::text[])
 --     ) as v(id, seeking)
 --     where p.id = v.id

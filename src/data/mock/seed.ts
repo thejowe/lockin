@@ -19,6 +19,25 @@
  * `SEED_RECIPROCAL_IDS` son los perfiles que ya han dado like al usuario: darles
  * like genera match al instante. Es lo que hace demostrable el flujo de
  * `descubrir` sin backend.
+ *
+ * De ahí sale una regla que este catálogo tiene que cumplir y que no se ve
+ * leyendo un perfil suelto: **quien encabeza el deck por complementariedad
+ * tiene que estar en `SEED_RECIPROCAL_IDS`**. `getDeck` ordena por
+ * complementariedad mutua y desempata por `id`; el desempate es arbitrario
+ * —aquí los ids son `seed-<nombre>` y ordenan alfabéticamente, en Postgres son
+ * UUID por orden de siembra y ordenan distinto—, así que el catálogo no puede
+ * depender de él para decidir qué tarjeta va delante. Si dos perfiles empatan
+ * en lo alto y solo uno es recíproco, la demo enseña delante a quien no puede
+ * hacer match, y el recorrido E2E se cae. Lo fija `seed.test.ts`.
+ *
+ * Es lo que pasaba hasta el 2026-09-09: Lucía y Marc ocupaban la misma casilla
+ * —diseño buscando desarrollo—, empataban en 2 para el perfil del E2E, y Lucía
+ * ganaba el desempate sin ser recíproca. No se arregló añadiéndola a los
+ * recíprocos: eso habría dejado dos perfiles contando la misma historia en un
+ * catálogo de ocho que presume de cubrir el abanico, y el siguiente empate
+ * habría vuelto a salir por donde nadie mira. Se arregló donde estaba el
+ * defecto, dándole a Lucía lo que de verdad busca (`ventas`, `datos`, que
+ * además no los buscaba nadie).
  */
 
 import type { Profile } from '../types';
@@ -183,7 +202,11 @@ export const SEED_PROFILES: Profile[] = [
     timezone: 'Europe/Lisbon',
     avatar: { initials: 'LP', accent: 'teal' },
     specialties: ['diseno', 'contenido'],
-    seekingSpecialties: ['dev', 'producto'],
+    // Busca quien venda y quien mida, no quien construya: es lo que dice su
+    // propio prompt —la marca preciosa que no vendió nada— y lo que la separa
+    // de Marc, que es el otro perfil de diseño del catálogo. Ver la nota sobre
+    // la tarjeta de delante en la cabecera de este archivo.
+    seekingSpecialties: ['ventas', 'datos'],
     lookingFor: 'par',
     startingPoint: 'algo-empezado',
     availability: { hoursPerWeek: 35, bands: ['tarde', 'noche'] },
