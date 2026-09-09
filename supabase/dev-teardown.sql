@@ -19,9 +19,9 @@
 --
 -- ## Cuándo ejecutarlo
 --
--- Antes de que el proyecto tenga usuarios reales. Hoy `grrzmzktrhksbttpbblg` es
--- a la vez desarrollo, staging y el proyecto al que apunta la app, y tiene las
--- dos instaladas: `node supabase/drift-check.mjs` lo dice en cada ejecución.
+-- Gatillo: antes de entregar el primer APK/enlace a alguien fuera del equipo
+-- de pruebas, o de importar la primera cuenta real (lo que ocurra antes).
+-- No inferir su instalación actual de un resultado histórico del TODO.
 -- Mientras siga siendo así, retirarlas rompe
 -- `src/data/supabase/contract.test.ts`, que necesita `dev_reset_current_user()`
 -- para no gastar un alta anónima por test. La salida correcta de ese nudo es
@@ -37,5 +37,23 @@
 -- Borra las funciones, no los datos. Para los usuarios anónimos que deja la
 -- suite de contrato, ver `supabase/README.md` → "Mantenimiento".
 
+begin;
 drop function if exists public.dev_reset_current_user();
 drop function if exists public.seed_incoming_likes(text);
+
+-- No usar CASCADE: una dependencia inesperada debe bloquear la retirada.
+-- Detectar también sobrecargas instaladas a mano, sin borrarlas a ciegas.
+do $$
+begin
+  if exists (
+    select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.proname in ('dev_reset_current_user', 'seed_incoming_likes')
+  ) then
+    raise exception 'Quedan sobrecargas de funciones de desarrollo: revisar antes de liberar';
+  end if;
+end;
+$$;
+commit;
+
+select 'Funciones de desarrollo retiradas; no se han borrado datos.' as resultado;

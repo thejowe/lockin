@@ -5,8 +5,8 @@
 -- Para cotejar, objeto a objeto, la base construida desde `supabase/migrations/`
 -- con la que está desplegada. Es el complemento exacto de
 -- `supabase/drift-check.mjs`: aquel corre solo y sin credenciales especiales,
--- pero solo ve lo que asoma por PostgREST; este ve TODO —políticas, CHECKs,
--- índices, triggers, defaults, permisos, objetos de más— a cambio de necesitar
+-- pero solo ve lo que asoma por PostgREST; este ve políticas, CHECKs,
+-- índices, triggers, defaults, permisos y objetos de más, a cambio de necesitar
 -- acceso SQL a las dos bases.
 --
 -- ## Cómo se usa
@@ -15,9 +15,9 @@
 --    archivo contra ella:
 --
 --        supabase start
---        supabase db reset --local            # aplica migrations/ + seed.sql
+--        supabase db reset --local --no-seed  # referencia de producción
 --        psql "$(supabase status -o json | jq -r .DB_URL)" \
---          -At -f supabase/schema-fingerprint.sql > /tmp/fingerprint.local.txt
+--          -XqAt -v ON_ERROR_STOP=1 -f supabase/schema-fingerprint.sql > /tmp/fingerprint.local.txt
 --
 --    (Necesita Docker. Si no lo tienes, este lado no se puede generar: dilo en
 --    vez de comparar contra nada.)
@@ -27,30 +27,30 @@
 --    (`Download CSV` o copiar la columna) a `/tmp/fingerprint.remote.txt`.
 --
 --    Esto no necesita `service_role` ni la contraseña de Postgres: el editor
---    del dashboard ya corre como superusuario. Es a propósito el único paso
---    manual — la alternativa (`supabase db diff --linked`) exige un
---    `SUPABASE_ACCESS_TOKEN` que no está en el repo y no debe estarlo.
+--    del dashboard ya corre como superusuario. Alternativa automática:
+--    schema-drift.yml + SUPABASE_SCHEMA_DB_URL (rol lector; ver README).
+--    Para el comparador Node guardar texto sin cabecera CSV ni comillas CSV.
 --
 -- 3. **Cotejo.** Compara primero la línea `digest`. Si coincide, las dos bases
---    son idénticas y no hay nada más que mirar. Si no:
+--    coinciden en los objetos cubiertos por esta consulta. Si no:
 --
 --        diff /tmp/fingerprint.local.txt /tmp/fingerprint.remote.txt
 --
--- ## Diferencias legítimas
+-- ## Funciones de desarrollo
 --
--- Si el lado repo se generó con `db reset` (que aplica también `seed.sql`) y el
--- desplegado tiene las funciones de desarrollo instaladas, los dos lados
--- coinciden. Si el lado repo se generó SOLO con las migraciones, el desplegado
--- tendrá de más exactamente estas líneas, y no son deriva:
---
---     func    public.dev_reset_current_user() …
---     func    public.seed_incoming_likes(text) …
---     grant.. las de esas dos funciones
---
--- Cualquier otra diferencia sí lo es. El `md5` del cuerpo de una función cambia
+-- El workflow exige el esquema de producción: si el remoto conserva funciones
+-- de seed, sus líneas func/grantfn adicionales FALLAN; no se filtran del diff.
+-- En local, reset con seed + dev-teardown debe equivaler a migrations sin seed.
+-- El `md5` del cuerpo de una función cambia
 -- también con un simple reformateo: para ver qué cambió de verdad,
 -- `select pg_get_functiondef('public.nombre(args)'::regprocedure);` en los dos
 -- lados.
+
+-- CI: schema-ci.mjs ejecuta esta consulta en READ ONLY y con search_path fijo.
+-- Para uso manual, fijarlo también: las funciones pg_get_* y regprocedure
+-- califican nombres según search_path. No hay dependencia de la collation del
+-- servidor para ordenar las líneas o calcular el digest.
+set search_path = pg_catalog;
 
 with
   -- Objetos que pertenecen a una extensión: no los ponemos nosotros y no son
@@ -128,8 +128,10 @@ with
 
     union all
     select format(
-      'func     %s lang=%s security=%s volatile=%s config=%s body_md5=%s',
+      'func     %s args=%s returns=%s lang=%s security=%s volatile=%s config=%s body_md5=%s',
       p.ident,
+      pg_get_function_arguments(p.oid),
+      pg_get_function_result(p.oid),
       p.lanname,
       case when p.prosecdef then 'definer' else 'invoker' end,
       p.provolatile,
@@ -189,10 +191,10 @@ with
   )
 select line
 from (
-  select 0 as ord, 'digest   ' || md5(string_agg(line, E'\n' order by line)) as line
+  select 0 as ord, 'digest   ' || md5(string_agg(line, E'\n' order by line collate "C")) as line
   from lines
   union all
   select 1 as ord, line
   from lines
 ) fingerprint
-order by ord, line;
+order by ord, line collate "C";

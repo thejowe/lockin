@@ -1,0 +1,100 @@
+name: Schema drift
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: schema-drift-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  local:
+    name: Huella local y controles negativos
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    outputs:
+      remote_enabled: ${{ steps.remote.outputs.enabled }}
+    env:
+      SCHEMA_RUNTIME: ${{ runner.temp }}/lockin-schema
+      SCHEMA_ARTIFACTS: ${{ runner.temp }}/schema-evidence
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.116.0
+      - name: Disponibilidad de la comparación remota
+        id: remote
+        env:
+          REMOTE_DB_URL: ${{ secrets.SUPABASE_SCHEMA_DB_URL }}
+        run: |
+          if [ -n "$REMOTE_DB_URL" ]; then
+            echo 'enabled=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'enabled=false' >> "$GITHUB_OUTPUT"
+            echo '::warning title=Comparación remota OMITIDA::Falta SUPABASE_SCHEMA_DB_URL. No se ha comparado grrzmzktrhksbttpbblg; el verde local no verifica el remoto.'
+            echo '## ⚠️ Remoto OMITIDO: falta SUPABASE_SCHEMA_DB_URL' >> "$GITHUB_STEP_SUMMARY"
+            echo 'No hay evidencia de igualdad con grrzmzktrhksbttpbblg. Ver supabase/README.md.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Instalar cliente SQL
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Verificar comparador
+        run: node --test supabase/schema-compare.test.mjs
+      - name: Supabase desechable y cotejo local
+        run: node supabase/schema-ci.mjs local
+      - name: Evidencia SQL y diffs (también si falla)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schema-local
+          path: ${{ env.SCHEMA_ARTIFACTS }}
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Descartar solo este backend
+        if: always()
+        run: |
+          if [ -f "$SCHEMA_RUNTIME/supabase/config.toml" ]; then
+            supabase --workdir "$SCHEMA_RUNTIME" stop --no-backup
+          fi
+
+  remote:
+    name: Comparar grrzmzktrhksbttpbblg (solo lectura)
+    needs: local
+    if: needs.local.outputs.remote_enabled == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      SCHEMA_ARTIFACTS: ${{ runner.temp }}/schema-evidence
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          name: schema-local
+          path: ${{ env.SCHEMA_ARTIFACTS }}
+      - name: Instalar cliente SQL
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Huella remota y diff contra las migraciones
+        env:
+          SUPABASE_SCHEMA_DB_URL: ${{ secrets.SUPABASE_SCHEMA_DB_URL }}
+        run: node supabase/schema-ci.mjs remote
+      - name: Evidencia del cotejo remoto (también si falla)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schema-remote
+          path: ${{ env.SCHEMA_ARTIFACTS }}
+          if-no-files-found: warn
+          retention-days: 14

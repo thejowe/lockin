@@ -432,3 +432,146 @@ a 35 por el ranking mutuo. Los 35 están verificados contra este proyecto.
 `seed_incoming_likes('<email>')`, en `seed.sql`, reproduce `SEED_RECIPROCAL_IDS`
 del mock para tu usuario, por si quieres que el deck te dé un match al primer
 like.
+
+## Cotejo SQL en Actions (2026-09-09)
+
+`.github/workflows/schema-drift.yml` corre en `push` y `workflow_dispatch`.
+Es independiente de E2E: usa Supabase CLI **2.116.0**, `supabase init`, una
+carpeta temporal propia, las migraciones reales y `db reset --local`. El patrón
+disponible en este checkout está en `e2e.yml` / `e2e/run.mjs`; aquí no existe
+`e2e-android.yml`. Ninguno de esos archivos se modifica desde datos.
+
+La **huella esperada es ejecutable**, no un digest inventado ni una captura
+aprobada automáticamente: se obtiene aplicando todas las migraciones con
+`db reset --local --no-seed`. Se conserva como `expected.txt`. Una segunda
+reconstrucción con seed y `dev-teardown.sql` debe producir la misma huella.
+Esto verifica que seed + retirada no alteran el esquema de producción; no es
+un bloqueo de cambios intencionados en las migraciones ni una comparación
+contra una fotografía de un commit anterior. El remoto se compara contra
+esa misma referencia de migraciones, sin excluir ninguna función de desarrollo.
+
+Además, en la base desechable se alteran por separado una columna, un índice,
+una política RLS y el cuerpo de una función. Cada mutación está en una
+transacción que acaba en rollback: debe producir un diff; un control que no
+lo produzca falla el trabajo. Se verifica también el catálogo bajo un rol sin
+SELECT sobre tablas y la idempotencia de la retirada. Los artefactos
+`schema-local` y `schema-remote` conservan huellas completas, versión de
+Postgres y diffs durante 14 días, también si falla. El comparador rechaza
+salidas vacías, truncadas o cuyo digest no corresponde al contenido.
+
+Verificación parcial reproducible sin Docker: instalar `@electric-sql/pglite@0.3.14`
+en un directorio temporal, definir `PGLITE_MODULE` como la ruta absoluta a su
+`dist/index.js` y ejecutar `node --test supabase/schema-embedded.test.mjs`.
+Usa una fixture mínima de Auth, no Supabase real, y solo instala las funciones
+del seed, no sus cuentas. Resultado 2026-09-09: 7 migraciones, 174 líneas de
+objetos, rol lector, cuatro mutaciones, retirada dos veces y sobrecarga
+detectada; 1 test pasado. No utilizar ese digest embebido como baseline del
+proyecto Supabase: sus privilegios iniciales y Auth son distintos.
+
+El SQL fija `search_path=pg_catalog` y orden UTF-8 con `COLLATE "C"` en ambos
+lados. Una versión mayor distinta de Postgres puede cambiar el texto de
+`pg_get_*`: revisar esa diferencia, nunca normalizarla a ciegas. La huella
+cubre los objetos actuales de LockIn en `public`; no es un dump completo de
+Postgres: quedan fuera, por ejemplo, Auth/Storage, vistas, secuencias,
+privilegios de esquema/columna, default privileges, propiedad y opciones de
+grant, FORCE RLS y replica identity. Si se incorporan al contrato, ampliar
+el SQL y sus controles antes de afirmar cobertura de esos objetos.
+
+### Activar el remoto: un secreto
+
+Crear el **Repository Actions secret `SUPABASE_SCHEMA_DB_URL`** con la URI
+PostgreSQL real de `grrzmzktrhksbttpbblg`, incluyendo `sslmode=require` (o
+verificación TLS más estricta). No hacen falta `SUPABASE_ACCESS_TOKEN`, la
+clave `anon` ni `service_role`. Una URI inválida, un fallo de conexión o SQL,
+o cualquier diferencia hacen fallar el trabajo remoto; no se tratan como skip.
+Sin secreto, Actions emite una anotación **warning**, lo escribe en el resumen
+y el trabajo remoto queda **skipped**. Un verde local no significa igualdad
+con el remoto. Comprobación de disponibilidad de esta entrega:
+`gh secret list --repo thejowe/lockin --json name` → `[]` (2026-09-09).
+
+Usar un rol dedicado `lockin_schema_reader`, con **LOGIN y CONNECT a postgres**,
+sin superusuario, sin BYPASSRLS, sin pertenencia a roles de aplicación y sin
+permisos de escritura ni SELECT sobre tablas de usuarios. Solo necesita los
+catálogos legibles por defecto de PostgreSQL y USAGE sobre `public`.
+Un administrador puede prepararlo desde SQL Editor:
+
+```sql
+create role lockin_schema_reader login nosuperuser nocreatedb nocreaterole
+  noinherit noreplication nobypassrls;
+grant connect on database postgres to lockin_schema_reader;
+grant usage on schema public to lockin_schema_reader;
+alter role lockin_schema_reader set default_transaction_read_only = on;
+```
+
+Asignar una contraseña generada por el gestor de secretos fuera del repo
+(por ejemplo, `\password lockin_schema_reader` en una sesión administrativa
+de psql). En Dashboard → Connect copiar **Session pooler**, puerto 5432,
+que permite conexión IPv4 desde Actions; sustituir el usuario por
+`lockin_schema_reader.grrzmzktrhksbttpbblg` y usar su contraseña real
+codificada para URI. Guardar la URI completa en el secreto citado. También
+se admite conexión directa si el runner tiene IPv6. No se documenta una
+contraseña ficticia ni se guarda una cadena completa en el repo.
+
+Referencias oficiales: [conexión y pooler](https://supabase.com/docs/guides/database/connecting-to-postgres)
+y [roles Postgres](https://supabase.com/docs/guides/database/postgres/roles).
+La consulta remota corre dentro de `BEGIN READ ONLY`, con timeout, sin link,
+push, reset, seed ni teardown. El URI no se imprime ni se pasa en argumentos
+de proceso. El secreto se entrega solo a los pasos que lo necesitan.
+La configuración de ese rol es un prerrequisito administrativo; una vez
+guardado el secreto, basta lanzar el workflow: no requiere editar código.
+
+### Auditoría de límites de drift-check.mjs
+
+La columna `profiles.seeking_specialties` sí se lee desde `ADD COLUMN`.
+Pero el parser usa expresiones regulares, no reproduce el catálogo final:
+
+- No interpreta `CREATE/ALTER/DROP INDEX` ni políticas RLS. Denegación a
+  `anon` comprueba permisos efectivos de tabla, no que RLS esté activado ni
+  las expresiones de las políticas para `authenticated`.
+- Acumula cada `CREATE OR REPLACE FUNCTION`: `discovery_deck` aparece dos
+  veces por las migraciones 20260905000500 y 20260907000200. Sus sondas
+  solo mandan nombres de argumentos con valores NULL; no verifican cuerpo,
+  tipos de parámetros, retorno, defaults, SECURITY DEFINER o configuración.
+  Cambiar el ranking dejando la firma intacta es un falso negativo real.
+- Puede ignorar DROP/RENAME, ALTER COLUMN, ALTER TYPE ADD VALUE y la forma
+  legal `ADD nombre tipo` sin COLUMN. Tampoco modela correctamente todas las
+  sobrecargas, identificadores entre comillas ni el orden de todas las DDL.
+  La antigua afirmación de que toda sintaxis desconocida provoca error era
+  demasiado amplia: algunos patrones fallan, otros se saltan en silencio.
+- El sondeo RPC trata errores distintos de PGRST202/42501 como existencia;
+  no demuestra que la función funcione. Los triggers no son sondeables.
+
+No se reescribe ese parser en esta entrega. Su mensaje final declara estas
+limitaciones. La huella del catálogo incluye índices, políticas y cuerpos de
+función finales, además de añadir ahora argumentos/defaults y tipo de retorno.
+Por eso los dos resultados son complementarios y no equivalentes.
+
+### Retirada de funciones de desarrollo: decisión de salida
+
+**Gatillo concreto:** antes de distribuir el primer APK/enlace a alguien fuera
+del equipo de pruebas, o importar la primera cuenta real, lo que ocurra antes.
+El responsable del despliegue debe ejecutar `supabase/dev-teardown.sql` en el
+SQL Editor del proyecto real y adjuntar su respuesta al TODO. Si el proyecto
+ya tiene usuarios reales, esa retirada pasa a ser prerrequisito de la siguiente
+distribución. Esta entrega no ejecuta borrados en el remoto.
+
+Los dos DROP originales bastaban para retirar las firmas conocidas y sus
+GRANTs, pero faltaban atomicidad y comprobación de sobrecargas. Ahora van en
+una transacción, sin CASCADE, y una guardia exige que no quede ninguna función
+con esos nombres en `public`. Respuesta esperada, **aún no obtenida del remoto**:
+`Funciones de desarrollo retiradas; no se han borrado datos.`
+Una dependencia inesperada o una sobrecarga abortan la transacción y exigen
+revisión. Después debe pasar el cotejo remoto sin esas funciones.
+
+No basta para sanear el proyecto: el seed deja ocho cuentas con contraseña
+de desarrollo conocida, además de datos/likes de prueba. Inventariar los UUID
+de seed y los usuarios de contrato y retirar solo los identificados como
+prueba, con revisión de sus cascadas. No borrar por `is_anonymous` ni por edad:
+la app también crea usuarios reales anónimos. El teardown deliberadamente no
+borra datos. La suite de contrato debe pasar a una base desechable antes de
+este corte y nadie debe volver a ejecutar seed contra el proyecto real.
+
+El TODO tiene un resultado del 2026-09-06 con ambas funciones presentes y
+otro del 2026-09-07 con ambas ausentes. Son observaciones históricas distintas,
+no evidencia del estado actual. Solo SQL actual o un run remoto permite
+afirmar su retirada hoy; la ausencia del secreto no la demuestra.

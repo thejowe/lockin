@@ -288,7 +288,11 @@ Dos herramientas, complementarias a propósito:
     instaladas** — esperado hoy, y lo que hay que retirar antes de que el
     proyecto tenga usuarios reales.
 
-- [ ] **`schema-fingerprint.sql` sigue sin ejecutarse.** El lado del repo exige
+- [ ] **Cotejo completo de `schema-fingerprint.sql` local Supabase ↔ remoto pendiente.**
+      Actualización 2026-09-09: el SQL sí se ejecutó en PostgreSQL embebido;
+      ver evidencia y workflow al final. Esto no cierra el cotejo contra
+      `grrzmzktrhksbttpbblg`. El diagnóstico que sigue es histórico (2026-09-07).
+      El lado del repo exige
       levantar la base local con Docker y en esta máquina no hay ni Docker ni
       `psql`; con media huella no se compara nada, así que no se ejecutó tampoco
       el lado remoto. Su sintaxis sí está verificada contra la gramática real de
@@ -517,3 +521,77 @@ nada: hay que esperar a la hora siguiente.
   La primera ejecución paralela tuvo un timeout de formulario y la primera
   en serie otro de render inicial de swipe-deck; repetición completa en serie
   verde (63 s), sin modificar tests, timeouts ni umbrales para ocultarlos.
+
+## Cotejo de esquema en Actions (2026-09-09, bloque datos)
+
+- [x] **Workflow propio implementado**, `.github/workflows/schema-drift.yml`,
+  sin editar `ci.yml`, E2E ni código de producto. Evidencia de validación YAML:
+  `Workflow YAML: push, workflow_dispatch, 2 jobs OK`. El checkout contiene
+  `.github/workflows/e2e.yml`, no `e2e-android.yml`; se leyó el primero y
+  `e2e/run.mjs:prepare` como patrón. CLI fijado a 2.116.0, runtime separado.
+  Esto certifica implementación/estructura, **no una ejecución en Actions**.
+- [x] **Comparador que falla y muestra diferencias**, validado con
+  `node --test supabase/schema-compare.test.mjs`: `tests 8`, `pass 8`,
+  `fail 0`. Rechaza salidas vacías/truncadas/digest incoherente; detecta
+  columnas, índices, políticas, funciones, GRANTs y duplicados. No hay
+  digest de referencia inventado: se genera desde migraciones sin seed.
+- [x] **Huella SQL ejecutada parcialmente sin Docker**, con PGlite 0.3.14
+  instalado en `%TEMP%/lockin-schema-validation`, sin cambiar dependencias
+  del repo. Reproducción en `supabase/schema-embedded.test.mjs`; README
+  explica `PGLITE_MODULE`. Salida literal:
+
+  ```text
+  SQL ejecutado: 7 migraciones; digest   34f1c73e81848bf08a31a5395a0edb50; 174 objetos
+  Funciones de desarrollo retiradas; no se han borrado datos.
+  Funciones de desarrollo retiradas; no se han borrado datos.
+  Rol lector, 4 mutaciones, teardown dos veces y guardia de sobrecarga: OK
+  ```
+
+  Pasada conjunta del comparador y SQL embebido: `tests 9`, `pass 9`,
+  `fail 0`, `skipped 0` (3.57 s). **Fixture mínima de Auth**: no GoTrue,
+  no permisos iniciales de Supabase, no seed de cuentas ni comparación con
+  el remoto. Ese digest no se adopta como huella esperada de Supabase.
+- [x] **Ausencia del secreto verificada y omisión implementada**. Lectura
+  autenticada de GitHub (solo nombres):
+  `gh secret list --repo thejowe/lockin --json name` → `[]`, exit 0.
+  En `.env.local` sí están URL/anon; no hay ACCESS_TOKEN, DB_PASSWORD ni
+  SCHEMA_DB_URL. En PATH no hay docker ni psql. La primera consulta a GitHub
+  estaba bloqueada por la red del sandbox; repetida con acceso de lectura
+  autorizado devolvió la lista vacía anterior. No confundir ese primer error
+  con un token inválido ni con prueba de ausencia de secretos.
+  El workflow tiene warning + resumen explícito y job remoto skipped si
+  falta `SUPABASE_SCHEMA_DB_URL`; un secreto presente pero erróneo falla.
+- [x] **Auditoría del detector y decisión de retirada escritas**, en
+  `supabase/README.md` → "Cotejo SQL en Actions". Evidencia del punto ciego:
+  `discovery_deck` se define tanto en 20260905000500 como en 20260907000200;
+  `parseMigrations()` acumula ambas y la sonda solo manda argumentos NULL.
+  El cuerpo nuevo puede pasar sin verificarse. Índices y políticas no se
+  parsean; DROP/RENAME/ALTER TYPE y otras DDL también pueden omitirse.
+  No se reescribió el parser. La huella añade argumentos/defaults/retorno,
+  search_path fijo y orden C; las cuatro mutaciones SQL sí se detectaron.
+  El teardown ahora es atómico y rechaza sobrecargas/dependencias inesperadas;
+  la prueba embebida anterior acredita idempotencia y rechazo de sobrecarga.
+  Gatillo acordado por esta implementación: **antes del primer APK/enlace
+  fuera del equipo de pruebas o primera cuenta real importada**. Retirar
+  herramientas no elimina cuentas/likes de seed; requiere inventario separado.
+- [ ] **Ejecutar el workflow en GitHub Actions y pegar el enlace al run**.
+  No se ha subido este worktree compartido ni se ha lanzado un workflow no
+  publicado. Pendiente probar Supabase real con reset sin seed frente a reset
+  con seed + teardown, y los controles SQL a través de psql. YAML válido y
+  PGlite pasando no equivalen a este run. Los artefactos previstos son
+  `schema-local` y `schema-remote`, con expected/local/remote y diffs.
+- [ ] **Activar y ejecutar la comparación remota**. Crear rol lector y
+  guardar únicamente `SUPABASE_SCHEMA_DB_URL` según README; ejecutar el
+  workflow y adjuntar `remote.diff` y enlace al run. Sin ese secreto sigue
+  abierta la casilla original de cotejo local Supabase ↔ grrzmzktrhksbttpbblg.
+- [ ] **Retirada verificada en el proyecto real** cuando se alcance el
+  gatillo anterior: ejecutar dev-teardown.sql con autoridad de administrador
+  y pegar su respuesta SQL aquí. El 2026-09-06 constaban instaladas y el
+  2026-09-07 ausentes; ninguna observación histórica verifica su estado hoy.
+  En esta entrega no se ha ejecutado teardown ni se han borrado datos remotos.
+
+Verificación final local: ESLint sobre los cinco `.mjs` de esta entrega, exit 0;
+Prettier sobre el workflow y los cuatro `.mjs` nuevos →
+`All matched files use Prettier code style!`; `git diff --check` de los archivos
+editados sin errores. Repetición final comparador + PGlite: `tests 9`, `pass 9`,
+`fail 0`, `skipped 0` (4.84 s). Verificación previa al commit; no se ha hecho push.
