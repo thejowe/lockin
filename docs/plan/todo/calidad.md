@@ -1534,6 +1534,30 @@ real y es de este bloque, pero cambiarlo ahora mueve una pieza del único tramo
 del recorrido que acaba de ponerse verde bajo el mock. Se toca cuando la
 variante `supabase` cierre, no antes, y con la evidencia del run delante.
 
+> **HECHO el 2026-09-09, por `chat`.** `supabase` cerró en verde
+> ([run 34281070607](https://github.com/thejowe/lockin/actions/runs/34281070607),
+> commit `78c90b8`), que era la condición que ponía este punto. Los dos
+> `hideKeyboard` de después del envío están fuera de `e2e/full-journey.yaml` y
+> `e2e/keyboard-probe.yaml`: no se sustituyen por nada, porque el compositor ya
+> queda por encima del teclado y el hilo hace `scrollToEnd`, así que la burbuja
+> se afirma con el teclado delante — que comprueba más, no menos. Los tres
+> `hideKeyboard` del formulario de perfil se quedan: van pegados a un
+> `inputText`, o sea que ahí sí hay teclado que cerrar.
+>
+> Lo fija `e2e/hide-keyboard.test.mjs` (nuevo, 7 casos): con el comando puesto
+> caen 3 de 7, comprobado revirtiendo los `.yaml`. `npm run test:e2e` pasa a
+> **46 casos, 45 verdes** — el rojo sigue siendo el de CRLF de esta máquina
+> (`relee la suya de Postgres después del reinicio`), que ya fallaba antes.
+> `e2e/run.mjs` no se toca y no se entera: busca `stopApp` por nombre
+> (`firstFailure`, `:196`), no por índice.
+>
+> **Es un cruce de alcance**: `e2e/` es de este bloque. Lo pidió el dueño del
+> proyecto ahora que hay red debajo. Razonamiento completo y evidencia en
+> `docs/plan/todo/chat.md`, sección "El `hideKeyboard` de después de enviar,
+> quitado". Lo que falta por confirmar es lo único que un `.mjs` no puede decir:
+> que el recorrido siga verde en emulador. Lo dirá la próxima pasada de
+> `E2E Android` sobre esta rama.
+
 ### Verificación de esta pasada
 
 - `npm run test:coverage -- --ci` — **374 tests en 34 suites** (1 suite y 27

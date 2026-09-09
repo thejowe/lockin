@@ -95,5 +95,7 @@ name: Sonda - el compositor por encima del teclado
 - inputText: ${MESSAGE}
 - assertVisible: 'Enviar mensaje'
 - tapOn: 'Enviar mensaje'
-- hideKeyboard
+# Sin `hideKeyboard`: en Android es `pressBack()` y, con el teclado ya cerrado,
+# saca del chat en vez de no hacer nada. La nota larga está en
+# `full-journey.yaml`; con el teclado delante la burbuja se ve igual.
 - assertVisible: ${MESSAGE}

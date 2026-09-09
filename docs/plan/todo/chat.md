@@ -696,8 +696,80 @@ Windows, no en el índice). Ya están formateados.
   Perfil será un parpadeo. Lo suyo es que `useQuery` conserve el valor anterior
   mientras revalida (stale-while-revalidate), y entonces el apaño de
   `useConversation` sobra. Es de `arquitecto`.
-- `e2e/full-journey.yaml` y `e2e/keyboard-probe.yaml`: el `hideKeyboard` de
-  después de enviar hace `pressBack()` cuando no hay teclado, y eso navega hacia
-  atrás en vez de no hacer nada. Hoy queda tapado porque el teclado sí seguirá
-  abierto, pero es una trampa: cualquier cambio que cierre el teclado antes
-  convierte ese comando en un "volver atrás" silencioso. Es de `calidad`.
+- [x] `e2e/full-journey.yaml` y `e2e/keyboard-probe.yaml`: el `hideKeyboard` de
+      después de enviar hacía `pressBack()` cuando no hay teclado, y eso navega
+      hacia atrás en vez de no hacer nada. Quedaba tapado porque el teclado sí
+      seguía abierto, pero era una trampa: cualquier cambio que cerrase el
+      teclado antes convertía ese comando en un "volver atrás" silencioso.
+      **Arreglado el 2026-09-09** — ver la sección de abajo.
+
+## El `hideKeyboard` de después de enviar, quitado (2026-09-09)
+
+Era la última anotación abierta de este bloque, y la única que seguía viva
+después de cerrar el compositor. `calidad` la dejó apuntada en su
+"Encontrado y no tocado" y sin tocar a propósito: mover una pieza del tramo que
+acababa de ponerse verde bajo el mock no compensaba. Con el recorrido
+`supabase` entero en verde
+([run 34281070607](https://github.com/thejowe/lockin/actions/runs/34281070607),
+commit `78c90b8`) ya hay red debajo, así que se quita.
+
+**Qué era.** En Android, el `hideKeyboard` de Maestro es un `pressBack()`. Con
+teclado delante cierra el teclado; sin teclado, el `pressBack()` llega a la app
+y **sale de la pantalla**. No es un no-op. Puesto justo detrás de
+`tapOn: 'Enviar mensaje'`, dependía de que el envío dejara el teclado abierto.
+
+**No es teoría: ya pasó.** Run 34160309273 (ronda 4). `send()` remontaba el
+árbol, Android cerraba el teclado al perder el `TextInput`, y el `hideKeyboard`
+siguiente sacaba el recorrido del chat. Los dos trabajos murieron con errores
+distintos —`supabase` no encontraba `Enviar mensaje` deshabilitado, `probe` no
+encontraba la burbuja— porque ninguno de los dos estaba ya en la conversación.
+Ninguno de los dos mensajes nombraba la causa: eso es lo caro de la trampa, no
+que fallara.
+
+**El arreglo es quitarlo, no sustituirlo.** No hace falta cerrar el teclado para
+comprobar el envío:
+
+- el compositor está por encima del teclado desde la ronda 4, medido en
+  emulador (`assertVisible: 'Enviar mensaje'` con el teclado delante es
+  precisamente lo que pasó en el trabajo `probe` de `696408a`);
+- el hilo hace `scrollToEnd` al crecer
+  (`src/app/chat/[matchId].tsx:145`, `onContentSizeChange`), así que la burbuja
+  recién enviada queda justo encima del compositor.
+
+O sea que `assertVisible: ${MESSAGE}` con el teclado abierto comprueba **más**
+que con él cerrado: afirma que la conversación es usable tal y como el usuario
+la deja tras enviar. En `full-journey.yaml` lo que viene detrás es `stopApp`,
+al que el teclado le da igual.
+
+**Los `hideKeyboard` que quedan no son el mismo caso.** Los tres del formulario
+de perfil van pegados a un `inputText`, así que ahí el teclado está abierto con
+seguridad y el `pressBack()` hace lo que dice. Esa es la condición que los hace
+legítimos, y el test la comprueba una a una en vez de darla por buena.
+
+**El test que falla sin el arreglo**: `e2e/hide-keyboard.test.mjs`, nuevo, siete
+casos sobre los dos `.yaml`. Con el `hideKeyboard` puesto caen 3 de 7 (los dos
+"no lleva `hideKeyboard` detrás del envío" y el de la posición de los que
+quedan); comprobado revirtiendo los dos `.yaml` con `git stash` y volviendo a
+correrlo. Los otros cuatro casos son la contrapartida: fijan que el envío y la
+aserción de la burbuja sigan ahí, para que la guardia no se pueda satisfacer
+borrando también lo que había que comprobar.
+
+`npm run test:e2e`: **46 casos, 45 verdes**. El único rojo es
+`relee la suya de Postgres después del reinicio`, de `full-journey.test.mjs`,
+que compara contra la cadena `'- launchApp:\n    clearState: false'` y
+falla por el CRLF del working tree de Windows — ya fallaba antes de tocar nada y en CI pasa.
+`npx eslint e2e/hide-keyboard.test.mjs` limpio, y los tres archivos tocados
+sólo difieren de Prettier en los retornos de carro (comprobado comparando su
+salida con `tr -d '\r'`).
+
+**Cruce de alcance, dicho en voz alta.** `e2e/` es de `calidad`. Se toca aquí
+porque el bug lo encontró este bloque y porque el dueño del proyecto pidió
+cerrarlo ahora que hay red; el cambio es el mínimo (dos comandos fuera, un
+archivo de test nuevo) y no toca `run.mjs`, `verify.mjs` ni el workflow.
+`e2e/run.mjs` no se entera: busca `stopApp` por nombre, no por índice
+(`firstFailure`, `e2e/run.mjs:196`).
+
+**Lo que esto NO demuestra.** Que el recorrido siga pasando en emulador. Eso lo
+dice un run de `E2E Android` y nada más — la guardia fija la ausencia del
+comando, no el color del trabajo. La próxima pasada de CI sobre esta rama es
+quien lo confirma.
