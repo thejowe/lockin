@@ -232,5 +232,15 @@ export const SEED_PROFILES: Profile[] = [
  *
  * Hay uno de cada modo (`par`, `ambos`, `lockin`) a propósito: elija el modo que
  * elija el usuario en el onboarding, su deck contiene al menos un match posible.
+ *
+ * `seed-lucia` está aquí por el orden, no por el modo: el ranking mutuo de
+ * `getDeck` (ver su JSDoc) la deja primera del catálogo, y el E2E de mock
+ * necesita que quien quede delante pueda cerrar match — igual que
+ * `e2e/incoming-likes.sql` lo garantiza del lado de Postgres.
  */
-export const SEED_RECIPROCAL_IDS: string[] = ['seed-nuria', 'seed-marc', 'seed-alba'];
+export const SEED_RECIPROCAL_IDS: string[] = [
+  'seed-nuria',
+  'seed-marc',
+  'seed-alba',
+  'seed-lucia',
+];

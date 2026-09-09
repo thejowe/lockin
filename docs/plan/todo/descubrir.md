@@ -61,3 +61,20 @@ Si en algún momento se quiere que pese de verdad, el sitio es el orden del deck
 - [x] Coverage completo en serie: 382 tests, 34 suites, suelo superado.
   Ocho casos nuevos del contrato prueban ranking, estabilidad, modo, consumo
   y match recíproco sin encaje. SQL validado localmente antes de LIMIT.
+
+## Corrección: control negativo del E2E en rojo (2026-09-09)
+
+`calidad` reportó (duodécima pasada, "Encontrado y no tocado") que el ranking
+mutuo deja `seed-lucia` primera en el orden del mock y no estaba en
+`SEED_RECIPROCAL_IDS`, así que el control negativo del E2E (mock) no podía
+cerrar match y el recorrido se quedaba a medias.
+
+- [x] `SEED_RECIPROCAL_IDS` (`src/data/mock/seed.ts`) incluye ahora
+  `seed-lucia`, con comentario explicando que es por orden (ranking mutuo),
+  no por modo — paralelo a lo que `e2e/incoming-likes.sql` ya garantiza en
+  Postgres.
+- [x] `src/data/mock/index.test.ts`, `use-deck.test.tsx`,
+  `use-matches.test.tsx`, `use-conversation.test.tsx` referencian
+  `SEED_RECIPROCAL_IDS` por índice/desestructuración, no por id literal:
+  siguen en verde sin tocarlos (220 tests, 20 suites).
+- [x] `tsc --noEmit` y `expo lint` limpios.
