@@ -605,14 +605,16 @@ describe una situación que dejó de existir.
   un verde suelto no lo distingue de "esta vez no salió". Varios recorridos
   `supabase` seguidos sin que aparezca son una señal, no una prueba. La decisión
   de la duodécima pasada —no hacer el caso inmune— se mantiene.
-- **El verde vive todavía en la rama de verificación, no en la principal.**
-  `perfil` commiteó su arreglo mientras esta pasada corría (`3eb5059`), y
-  `git diff d4f0810 HEAD -- src/data/mock/seed.ts src/data/mock/seed.test.ts
-  supabase/seed.sql` sale **vacío**: lo que está publicado es byte a byte lo que
-  CI verificó. Aun así, lo que ha dado verde son los dos runs de
-  `calidad/verificar-control-negativo`; el `E2E Android` de la rama principal no
-  ha vuelto a correr desde entonces. Se confirma solo cuando pase allí, y hasta
-  entonces esto es una predicción muy bien fundada, no un hecho medido.
+- ~~El verde vive todavía en la rama de verificación, no en la principal.~~
+  **Ya no: medido en la rama principal.**
+  [Run 34413652963](https://github.com/thejowe/lockin/actions/runs/34413652963)
+  sobre `b863e5f` —el commit de esta pasada, encima del arreglo de `perfil`
+  (`3eb5059`)— deja `supabase` y `mock` en verde al primer intento, con el mismo
+  veredicto literal: `pass — el mock falló después del reinicio y no escribió
+  nada`. Es la tercera pasada consecutiva con el workflow entero en verde y la
+  primera en la rama que cuenta. `git diff d4f0810 HEAD -- src/data/mock/seed.ts
+  src/data/mock/seed.test.ts supabase/seed.sql` sale vacío, así que lo publicado
+  es byte a byte lo que se verificó en la rama desechable.
 
 ## Duodécima pasada: los dos rojos del E2E, leídos (2026-09-08)
 
