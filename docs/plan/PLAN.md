@@ -11,13 +11,28 @@
 
 `CONCEPTO.md`, este archivo, `TODO.md` y `todo/*.md` son markdown normal — los puede leer cualquier agente de código, no solo Claude Code. Lo único específico de Claude Code es `.claude/agents/*.md` (subagentes con enrutado automático) y `.claude/skills/pilar/` (el comando `/pilar`).
 
-Si repartes bloques entre Claude Code y Codex:
+### Criterio de reparto de tareas
+
+El reparto no se basa en cuál de las dos escribe mejor código — eso no lo sabemos y no hace falta saberlo. Se basa en la diferencia de herramienta, que sí es observable:
+
+- **Claude Code** tiene subagentes con rol fijo (`.claude/agents/*.md`) y la skill `/pilar`, que reconstruye el estado de todo el repo antes de decidir qué hacer. Encaja con tareas que cruzan más de un bloque, decisiones de producto con criterio subjetivo (qué hacer con un color de marca que no pasa contraste, por ejemplo), y cualquier cosa que necesite leerse el roadmap entero para no romper el contrato de otro bloque.
+- **Codex no tiene subagentes ni `/pilar`**: cada sesión es un agente plano que solo sabe lo que le pongas en el prompt. Encaja con tareas ya acotadas del todo — alcance de archivos cerrado y criterio de "terminado" objetivo y verificable: tests en verde, un archivo borrado, un cliente implementado contra una interfaz ya congelada. No necesita orquestación, sino una instrucción completa y sin ambigüedad.
+
+Por eso una tarea abierta en `todo/<bloque>.md` puede llevar etiqueta de herramienta:
+
+- **`[Codex]`** — acotada a un archivo o carpeta, criterio de terminado objetivo.
+- **`[Claude]`** — cruza bloques, o es una decisión con criterio subjetivo, o necesita releer el roadmap.
+- **Sin etiqueta** — bloqueada (faltan credenciales, o herramientas que no existen en el sandbox) o todavía sin decidir.
+
+Etiquetar es opcional: sirve cuando de verdad vas a repartir. `/pilar` lee estas etiquetas y, si hay tareas abiertas de las dos clases, genera una orden por herramienta en el mismo turno — formato de subagente para Claude Code, instrucción explícita autocontenida para Codex (ver `.claude/skills/pilar/SKILL.md`).
+
+### Reglas de siempre
 
 1. Mantén la misma división de bloques y el mismo "alcance de archivos" de cada uno (más abajo) — es lo que evita que dos herramientas se pisen.
-2. Codex no tiene `/pilar` ni subagentes automáticos: dale la instrucción a mano, por ejemplo:
-   > Lee `docs/plan/CONCEPTO.md`, `docs/plan/PLAN.md` y `.claude/agents/calidad.md`. Continúa `docs/plan/todo/calidad.md` desde donde está y marca las casillas según avances.
-3. Si vas a correr las dos herramientas **a la vez** en la misma máquina, dales cada una su propio `git worktree` (`git worktree add ../lockin-codex-calidad -b codex/calidad`) — dos herramientas no pueden tener la misma carpeta en dos ramas distintas a la vez, y así ninguna pisa archivos sin commitear de la otra. Si las usas una detrás de otra, basta con cambiar de rama en la misma carpeta.
-4. `TODO.md` y `todo/*.md` son el tablero de estado compartido: sea cual sea la herramienta que complete algo, debe marcarlo ahí — así se puede reconstruir el estado real venga el trabajo de donde venga.
+2. Codex no tiene `/pilar` ni subagentes automáticos: dale la instrucción a mano, completa y sin ambigüedad — nunca "actúa como el agente X, definido en `.claude/agents/X.md`", porque Codex no tiene ese concepto y no hay enrutado automático que lo resuelva por él.
+3. Si vas a correr las dos herramientas **a la vez** en la misma máquina, dales cada una su propio `git worktree` (`git worktree add ../lockin-codex-<tarea> -b codex/<tarea>`) — dos herramientas no pueden tener la misma carpeta en dos ramas distintas a la vez, y así ninguna pisa archivos sin commitear de la otra. Si las usas una detrás de otra, basta con cambiar de rama en la misma carpeta.
+4. `TODO.md` y `todo/*.md` son el tablero de estado compartido: sea cual sea la herramienta que complete algo, debe marcarlo ahí y quitar la etiqueta de herramienta de la casilla — así se puede reconstruir el estado real venga el trabajo de donde venga.
+5. Al terminar, borra el worktree y la rama. Un worktree olvidado acumula trabajo sin commitear que nadie mira, y en Windows `git worktree remove` puede fallar con `Filename too long` por su `node_modules` — entonces hay que borrar el directorio con el prefijo `\\?\` y luego `git worktree prune`.
 
 ## Mapa mental
 
