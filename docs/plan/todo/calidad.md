@@ -1,5 +1,22 @@
 # TODO — calidad
 
+## Triage de commands.json (2026-09-13)
+
+- [x] Triage E2E: device offline en commands.json clasificado como runner
+  `parseCommandFailures` recoge los mensajes de comandos `FAILED`; `diagnose()`
+  los une al informe JUnit para reconocer `device offline` aunque este solo
+  diga `Unknown error` y adb ya vuelva a responder. Se mantiene la prioridad
+  de `CASE_SIGNATURES` y la lista cerrada: las aserciones y los errores
+  desconocidos siguen siendo del caso. Los dos mensajes del control negativo
+  muestran ahora el número de paso empezando en 1.
+  Verificado: `node --test e2e/triage.test.mjs` **34/34** y `npm run lint` verde.
+  `npm run format:check` falla en **37 archivos fuera del alcance**, ninguno de
+  los tres `.mjs` modificados. En los tres archivos comprobados como muestra
+  (`e2e/full-journey.test.mjs`, `e2e/full-journey.yaml`, `eslint.config.js`),
+  normalizar CRLF a LF en memoria basta para pasar Prettier. No se modifican.
+  No se ejecutó el emulador ni se corrigieron los fallos conocidos por CRLF
+  de `npm run test:e2e`.
+
 > **Estado actual: decimocuarta pasada (2026-09-11).** **El workflow E2E Android está verde en la rama principal, dos veces seguidas y al primer intento**: [run 34413652963](https://github.com/thejowe/lockin/actions/runs/34413652963) sobre `b863e5f` y [run 34415842422](https://github.com/thejowe/lockin/actions/runs/34415842422) sobre `74897b4`. Con esa evidencia se cierran las tres casillas de "recorrido completo verde" que quedaban abiertas (sexta, séptima y novena pasada). No queda ninguna casilla abierta en este TODO. Detalle en "Decimocuarta pasada", justo debajo. Lo de más abajo es el historial de las pasadas anteriores.
 
 > **Tercera pasada (histórico).** La primera dejó el repo con

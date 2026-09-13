@@ -15,7 +15,13 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash, randomUUID } from 'node:crypto';
 import { tmpdir } from 'node:os';
-import { classifyFailure, parseAnrDialog, parseMaestroFailure, shouldRetry } from './triage.mjs';
+import {
+  classifyFailure,
+  parseAnrDialog,
+  parseCommandFailures,
+  parseMaestroFailure,
+  shouldRetry,
+} from './triage.mjs';
 import { verifyAbsence, verifyPersistence } from './verify.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -213,7 +219,7 @@ function firstFailure(dir) {
       'El recorrido no llegó al reinicio: Maestro ejecutó ' +
         commands.length +
         ' comando(s) y falló en el ' +
-        failed +
+        (failed + 1) +
         '. `full-journey.yaml` sí declara el `stopApp`, así que esto no dice nada ' +
         'sobre la persistencia: el control negativo solo vale si lo que rompe es ella.'
     );
@@ -225,9 +231,16 @@ function firstFailure(dir) {
 /** Lee la evidencia de un intento y decide si falló el caso o se cayó el runner. */
 function diagnose(dir) {
   const report = join(dir, 'maestro.xml');
+  const dumps = commandDumps(dir);
+  const failureText = [
+    ...dumps.map((file) => parseCommandFailures(JSON.parse(readFileSync(file, 'utf8')))),
+    existsSync(report) ? parseMaestroFailure(readFileSync(report, 'utf8')) : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
   return classifyFailure({
-    failureText: existsSync(report) ? parseMaestroFailure(readFileSync(report, 'utf8')) : '',
-    commandDumps: commandDumps(dir).length,
+    failureText,
+    commandDumps: dumps.length,
     deviceState: deviceState(),
     anrDialog: parseAnrDialog(lastScreenHierarchy(dir)),
     appLabel,
@@ -447,7 +460,7 @@ if (command === 'test') {
         assert(
           failed > stopApp,
           'El mock falló ANTES del reinicio (paso ' +
-            failed +
+            (failed + 1) +
             ' de ' +
             commands.length +
             '); el control solo vale si lo que rompe es la persistencia'
