@@ -19,16 +19,19 @@ jobs:
     outputs:
       remote_enabled: ${{ steps.remote.outputs.enabled }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Directorios de evidencia
         run: |
           echo "SCHEMA_RUNTIME=$RUNNER_TEMP/lockin-schema" >> "$GITHUB_ENV"
           echo "SCHEMA_ARTIFACTS=$RUNNER_TEMP/schema-evidence" >> "$GITHUB_ENV"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
-      - uses: supabase/setup-cli@v1
+          # Aquí no hay npm ci: desactivar el nuevo caché automático de npm.
+          package-manager-cache: false
+      - uses: supabase/setup-cli@v3
         with:
+          # v3 instala desde npm: conservar la versión del backend desechable.
           version: 2.116.0
       - name: Disponibilidad de la comparación remota
         id: remote
@@ -53,9 +56,11 @@ jobs:
         run: node supabase/schema-ci.mjs local
       - name: Evidencia SQL y diffs (también si falla)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: schema-local
+          # El ZIP conserva el nombre schema-local para el trabajo remoto.
+          archive: true
           path: ${{ env.SCHEMA_ARTIFACTS }}
           if-no-files-found: warn
           retention-days: 14
@@ -73,16 +78,20 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Directorio de evidencia
         run: echo "SCHEMA_ARTIFACTS=$RUNNER_TEMP/schema-evidence" >> "$GITHUB_ENV"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
-      - uses: actions/download-artifact@v4
+          package-manager-cache: false
+      - uses: actions/download-artifact@v8
         with:
+          # Por nombre se extrae directamente en path, sin subcarpeta añadida.
           name: schema-local
           path: ${{ env.SCHEMA_ARTIFACTS }}
+          # v8 falla si el contenido no coincide con su hash; mantener ese control.
+          digest-mismatch: error
       - name: Instalar cliente SQL
         run: |
           sudo apt-get update
@@ -93,7 +102,7 @@ jobs:
         run: node supabase/schema-ci.mjs remote
       - name: Evidencia del cotejo remoto (también si falla)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: schema-remote
           path: ${{ env.SCHEMA_ARTIFACTS }}

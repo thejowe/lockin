@@ -58,8 +58,13 @@ describe('parseCommandFailures', () => {
     assert.equal(parseCommandFailures(commands), 'primer fallo\nsegundo fallo');
   });
 
+  it('acepta null de un volcado ilegible y un objeto sin array como evidencia vacía', () => {
+    assert.equal(parseCommandFailures(null), '');
+    assert.equal(parseCommandFailures({}), '');
+  });
+
   it('devuelve cadena vacía si la entrada no es un array o no hay comandos', () => {
-    for (const commands of [undefined, null, {}, 'commands.json', []]) {
+    for (const commands of [undefined, 'commands.json', []]) {
       assert.equal(parseCommandFailures(commands), '');
     }
   });

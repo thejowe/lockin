@@ -228,12 +228,21 @@ function firstFailure(dir) {
   return { stopApp, failed, commands };
 }
 
+/** Lee evidencia JSON opcional: un volcado ausente o truncado no frena el diagnóstico. */
+function readCommandDump(file) {
+  try {
+    return JSON.parse(readFileSync(file, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
 /** Lee la evidencia de un intento y decide si falló el caso o se cayó el runner. */
 function diagnose(dir) {
   const report = join(dir, 'maestro.xml');
   const dumps = commandDumps(dir);
   const failureText = [
-    ...dumps.map((file) => parseCommandFailures(JSON.parse(readFileSync(file, 'utf8')))),
+    ...dumps.map((file) => parseCommandFailures(readCommandDump(file))),
     existsSync(report) ? parseMaestroFailure(readFileSync(report, 'utf8')) : '',
   ]
     .filter(Boolean)
