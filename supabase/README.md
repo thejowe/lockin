@@ -589,10 +589,16 @@ distribución. Esta entrega no ejecuta borrados en el remoto.
 Los dos DROP originales bastaban para retirar las firmas conocidas y sus
 GRANTs, pero faltaban atomicidad y comprobación de sobrecargas. Ahora van en
 una transacción, sin CASCADE, y una guardia exige que no quede ninguna función
-con esos nombres en `public`. Respuesta esperada, **aún no obtenida del remoto**:
+con esos nombres en `public`. Respuesta esperada:
 `Funciones de desarrollo retiradas; no se han borrado datos.`
 Una dependencia inesperada o una sobrecarga abortan la transacción y exigen
 revisión. Después debe pasar el cotejo remoto sin esas funciones.
+
+**Ejecutado en `grrzmzktrhksbttpbblg` el 2026-09-13.** La consulta posterior a
+`pg_proc` devolvió 0 filas y el [run 34760366206](https://github.com/thejowe/lockin/actions/runs/34760366206)
+dio `remote.diff` → `Sin diferencias.` con los dos jobs en verde. Evidencia en
+`supabase/evidence/34760366206/` y `docs/plan/todo/datos.md`. Desde entonces, un
+rojo del job remoto es deriva real.
 
 No basta para sanear el proyecto: el seed deja ocho cuentas con contraseña
 de desarrollo conocida, además de datos/likes de prueba. Inventariar los UUID

@@ -593,11 +593,37 @@ nada: hay que esperar a la hora siguiente.
   [34756968269](https://github.com/thejowe/lockin/actions/runs/34756968269) y
   [34757433478](https://github.com/thejowe/lockin/actions/runs/34757433478),
   `remote.diff` de los dos en `supabase/evidence/`. Ver "Cotejo remoto ejecutado".
-- [ ] **Retirada verificada en el proyecto real** cuando se alcance el
+- [x] **Retirada verificada en el proyecto real** cuando se alcance el
   gatillo anterior: ejecutar dev-teardown.sql con autoridad de administrador
-  y pegar su respuesta SQL aquí. El 2026-09-06 constaban instaladas y el
-  2026-09-07 ausentes; ninguna observación histórica verifica su estado hoy.
-  En esta entrega no se ha ejecutado teardown ni se han borrado datos remotos.
+  y pegar su respuesta SQL aquí. **Hecho el 2026-09-13**, gatillo alcanzado.
+  El usuario ejecutó `supabase/dev-teardown.sql` en el SQL Editor y, después,
+  la consulta de solo lectura sobre `pg_proc` de los dos nombres en cualquier
+  esquema. Respuesta SQL pegada por el usuario, literal:
+
+  ```text
+  Success. No rows returned
+  ```
+
+  Es la salida de la consulta de verificación (0 filas). La fila de
+  `select … as resultado` del teardown no llegó al chat, así que no se cita
+  como obtenida; lo que demuestra la retirada es el run siguiente, no esa fila.
+  [Run 34760366206](https://github.com/thejowe/lockin/actions/runs/34760366206),
+  `93a0020`, `workflow_dispatch`: los dos jobs `success`. Antes, el
+  [run 34757718092](https://github.com/thejowe/lockin/actions/runs/34757718092)
+  del mismo commit seguía dando las diez líneas `+` de las dos funciones.
+  Artefactos en `supabase/evidence/34760366206/`. `remote.diff` literal:
+
+  ```text
+  Sin diferencias.
+  ```
+
+  Log del job remoto: `Remoto grrzmzktrhksbttpbblg: huella SQL coincide con
+  las migraciones de este commit. Funciones de desarrollo no permitidas.`
+  Digest de `remote.txt` = `expected.txt` = `22a5e5ccfffa27129df754ecd87c7480`
+  (antes `0a7ec9c0…`, el de migraciones + seed), y `remote.txt` no contiene
+  `dev_reset_current_user` ni `seed_incoming_likes`. En el job local,
+  `local`/`reader`/`teardown-twice`/`after-controls.diff` → `Sin diferencias.`
+  y los cuatro controles negativos siguen dando diff.
 
 Verificación final local: ESLint sobre los cinco `.mjs` de esta entrega, exit 0;
 Prettier sobre el workflow y los cuatro `.mjs` nuevos →
@@ -827,15 +853,17 @@ el proyecto real está exactamente donde deben dejarlo migraciones más
 
 ### Lo que queda
 
-- **El trabajo remoto de `schema-drift.yml` va a salir rojo en cada push**
-  hasta que se retiren las dos funciones. Es el diseño acordado (no se filtran
-  del diff) y no una regresión: mientras `remote.diff` sea solo esas diez
-  líneas, no hay deriva real. Cualquier línea `-`, o una `+` que no sea de
-  `dev_reset_current_user`/`seed_incoming_likes`, sí lo es.
-- **Retirada** — sigue abierta con su gatillo. Riesgo que quedó visible en el
-  diff: `dev_reset_current_user()` es `SECURITY DEFINER` con EXECUTE para
-  `authenticated`, y el alta anónima está abierta, así que cualquiera puede
-  borrarse matches y con ellos mensajes y likes de la otra persona.
-  `seed_incoming_likes` tiene EXECUTE para `anon`/`PUBLIC` pero es invoker y lee
-  `auth.users`, que esos roles no leen por defecto en Supabase (no comprobado
-  contra el proyecto). Aceptable sin usuarios reales; no más allá del gatillo.
+Actualizado el 2026-09-13, tras la retirada (run 34760366206):
+
+- **El job remoto de `schema-drift.yml` ya debe salir verde.** Un rojo a
+  partir de aquí es deriva real, incluidas las dos funciones de desarrollo si
+  alguien vuelve a pegar `seed.sql` contra el proyecto.
+- **Cuentas y datos de seed siguen en la base.** La retirada quitó funciones,
+  no filas: las ocho cuentas de `seed.sql` (contraseña de desarrollo conocida),
+  sus perfiles y los likes sembrados, más los usuarios anónimos de pasadas de la
+  suite. Retirarlos es otro inventario: UUID concretos y revisión de cascadas,
+  nunca por `is_anonymous` ni por edad. Ver `supabase/README.md` → "Retirada".
+- **La suite de contrato remota ya no es ejecutable** contra este proyecto sin
+  `dev_reset_current_user()`: gasta un alta anónima por test y choca con el
+  límite de 30/hora. Hay que apuntarla a una base desechable
+  (`supabase start` + `db reset`), y no reinstalar la función en el remoto.
