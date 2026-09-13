@@ -13,3 +13,5 @@ export * from './types';
 export * from './repositories';
 export { DataProvider, useRepositories, useQuery } from './provider';
 export type { QueryState } from './provider';
+export * from './sessions';
+export * from './session-errors';

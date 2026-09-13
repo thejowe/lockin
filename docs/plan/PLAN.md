@@ -112,6 +112,14 @@ Entrega: ESLint/Prettier/TypeScript estricto, tests con Jest + React Native Test
 - Archivos: `.github/workflows/`, `**/*.test.ts(x)`, configuración de lint/format.
 - Depende de: que exista código de los demás bloques — trabaja de forma incremental, no espera a que todo el MVP esté terminado.
 
+### 7. `sesiones` — Sesiones Lock-In (Fase 2)
+
+Entrega: propuesta de sesión desde el chat, Pomodoro compartido de bloques 25+5, presencia "está aquí" y aviso local 5 minutos antes. Diseño en `docs/superpowers/specs/2026-09-13-sesiones-lockin-design.md`; plan en `docs/superpowers/plans/2026-09-13-sesiones-lockin.md`.
+
+- Archivos: `src/features/session/`, `src/app/session/`, y en coordinación con `arquitecto` y `datos` las piezas de sesiones de `src/data/**` y `supabase/migrations/`.
+- Cruces de una línea declarados en la spec: `src/app/chat/[matchId].tsx`, `src/app/(tabs)/_layout.tsx`, `src/app/_layout.tsx`; más el mock de `expo-notifications` en `jest.setup.js`.
+- Depende de: MVP cerrado (todos los bloques anteriores).
+
 ## Orden recomendado de trabajo
 
 1. `arquitecto` primero y solo — es la base de todo lo demás.
