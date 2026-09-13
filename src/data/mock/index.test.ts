@@ -9,7 +9,13 @@
 
 import { describeRepositoryContract } from '../repositories.contract';
 import { buildProfile, buildProfileInput } from '../test-fixtures';
-import { createMockRepositories, CURRENT_USER_ID, resetState } from './index';
+import {
+  advanceMockClock,
+  createMockRepositories,
+  createMockSessionRepository,
+  CURRENT_USER_ID,
+  resetState,
+} from './index';
 import { SEED_RECIPROCAL_IDS } from './seed';
 import { getState } from './store';
 
@@ -23,6 +29,7 @@ const NON_RECIPROCAL_ID = 'seed-diego';
 
 const mockBackend: ContractBackend = {
   name: 'mock',
+  canTimeTravel: true,
 
   async reset() {
     resetState();
@@ -55,6 +62,13 @@ const mockBackend: ContractBackend = {
       nonReciprocalId: NON_RECIPROCAL_ID,
       excludableId: 'seed-lucia',
       unknownProfileId: 'no-existe',
+      counterpartSessions: () => createMockSessionRepository(RECIPROCAL_NURIA),
+      // Alba es recíproca, pero los casos de sesiones solo dan like a Núria:
+      // no comparte match con el usuario del test.
+      outsiderSessions: () => createMockSessionRepository(RECIPROCAL_ALBA),
+      async elapse(ms) {
+        advanceMockClock(ms);
+      },
     };
   },
 };

@@ -17,6 +17,7 @@ import {
   resolveMatchMode,
   subscribeTo,
 } from './store';
+import { createMockSessionRepository } from './sessions';
 
 import type {
   DiscoveryRepository,
@@ -40,7 +41,8 @@ import type {
   Session,
 } from '../types';
 
-export { CURRENT_USER_ID, resetState } from './store';
+export { advanceMockClock, CURRENT_USER_ID, mockNowMs, resetState } from './store';
+export { createMockSessionRepository, sessionsTopic } from './sessions';
 
 const MATCHES_TOPIC = 'matches';
 const messagesTopic = (matchId: string) => `messages:${matchId}`;
@@ -250,5 +252,12 @@ const messages: MessageRepository = {
 };
 
 export function createMockRepositories(): Repositories {
-  return { session, profiles, discovery, matches, messages };
+  return {
+    session,
+    profiles,
+    discovery,
+    matches,
+    messages,
+    sessions: createMockSessionRepository(CURRENT_USER_ID),
+  };
 }
