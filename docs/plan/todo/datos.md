@@ -288,7 +288,10 @@ Dos herramientas, complementarias a propósito:
     instaladas** — esperado hoy, y lo que hay que retirar antes de que el
     proyecto tenga usuarios reales.
 
-- [ ] **Cotejo completo de `schema-fingerprint.sql` local Supabase ↔ remoto pendiente.**
+- [x] **Cotejo completo de `schema-fingerprint.sql` local Supabase ↔ remoto.**
+      **Cerrado el 2026-09-13** con el [run 34757433478](https://github.com/thejowe/lockin/actions/runs/34757433478)
+      (`9666b4e`): el remoto es las migraciones más exactamente las dos funciones
+      de desarrollo, nada más. Detalle en "Cotejo remoto ejecutado" al final.
       Actualización 2026-09-09: el SQL sí se ejecutó en PostgreSQL embebido;
       ver evidencia y workflow al final. Esto no cierra el cotejo contra
       `grrzmzktrhksbttpbblg`. El diagnóstico que sigue es histórico (2026-09-07).
@@ -583,10 +586,13 @@ nada: hay que esperar a la hora siguiente.
   `teardown-twice.diff`, `after-controls.diff` → `Sin diferencias.`;
   las cuatro mutaciones tienen diffs no vacíos. Salida literal y rutas abajo.
   No existe `schema-remote`: este cierre verifica exclusivamente el job local.
-- [ ] **Activar y ejecutar la comparación remota**. Crear rol lector y
+- [x] **Activar y ejecutar la comparación remota**. Crear rol lector y
   guardar únicamente `SUPABASE_SCHEMA_DB_URL` según README; ejecutar el
-  workflow y adjuntar `remote.diff` y enlace al run. Sin ese secreto sigue
-  abierta la casilla original de cotejo local Supabase ↔ grrzmzktrhksbttpbblg.
+  workflow y adjuntar `remote.diff` y enlace al run. **Hecho el 2026-09-13**:
+  rol `lockin_schema_reader` y secreto creados por el usuario; runs
+  [34756968269](https://github.com/thejowe/lockin/actions/runs/34756968269) y
+  [34757433478](https://github.com/thejowe/lockin/actions/runs/34757433478),
+  `remote.diff` de los dos en `supabase/evidence/`. Ver "Cotejo remoto ejecutado".
 - [ ] **Retirada verificada en el proyecto real** cuando se alcance el
   gatillo anterior: ejecutar dev-teardown.sql con autoridad de administrador
   y pegar su respuesta SQL aquí. El 2026-09-06 constaban instaladas y el
@@ -757,3 +763,79 @@ Prettier del script/workflow conforme; comparador Node `tests 8`, `pass 8`,
 
 Relectura independiente de las huellas descargadas con compareFingerprints:
 `Artefactos descargados: 4 igualdades y 4 diffs negativos reproducidos, OK`.
+
+## Cotejo remoto ejecutado (2026-09-13)
+
+El usuario creó `lockin_schema_reader` y el secreto `SUPABASE_SCHEMA_DB_URL`
+(Session pooler, `sslmode=require`); `gh secret list` lo lista desde
+2026-09-13T12:23:09Z. Ninguna credencial pasó por el chat ni está en el repo.
+
+### Primer run: diez cuerpos «distintos», todos por CRLF
+
+[Run 34756968269](https://github.com/thejowe/lockin/actions/runs/34756968269),
+`7f986af`, `workflow_dispatch`. Local `success`; remoto `failure` — se conectó
+y comparó, no es un skip. Tablas, columnas, constraints, índices, enums,
+triggers, políticas, grants de tabla y publicación: **iguales**. Lo distinto:
+el `body_md5` de las diez funciones, más las dos de desarrollo.
+
+Que cambiaran las diez a la vez, incluida `touch_updated_at`, olía a formato y
+no a lógica. Comprobado fuera de CI, extrayendo de `git show HEAD:` cada cuerpo
+entre sus delimitadores `$…$`: `md5(cuerpo LF)` = esperado en las diez, y
+`md5(cuerpo CRLF)` = remoto en las diez. Se pegaron en el SQL Editor desde este
+checkout de Windows (`core.autocrlf=true`, sin `.gitattributes`), y Postgres
+guarda `prosrc` byte a byte. Evidencia: `supabase/evidence/34756968269/schema-remote/`
+(`remote.diff`, `remote.txt`, `expected.txt`).
+
+Arreglo, `9666b4e`: la huella calcula `md5(replace(prosrc, E'\r\n', E'\n'))`, y
+`.gitattributes` fija `*.sql text eol=lf`. Descartado recrear las diez
+funciones en producción: escribir en el remoto por un salto de línea. Con
+PGlite, el mismo cuerpo en CRLF y en LF da la misma línea y un cuerpo distinto
+da otra; `node --test schema-compare.test.mjs schema-embedded.test.mjs` →
+`tests 9`, `pass 9`, `fail 0`.
+
+### Segundo run: el remoto es migraciones + funciones de desarrollo
+
+[Run 34757433478](https://github.com/thejowe/lockin/actions/runs/34757433478),
+`9666b4e`, push. Local `success`: `local.diff`, `reader.diff`,
+`teardown-twice.diff` y `after-controls.diff` → `Sin diferencias.`; el control
+negativo de función sigue dando diff (`body_md5=7330325e…`), así que la
+normalización no lo ha cegado. Remoto `failure` con
+`AssertionError [ERR_ASSERTION]: DERIVA: ver remote.diff`, y `remote.diff`
+literal:
+
+```diff
+--- esperado: migrations/
++++ observado
++ func     public.dev_reset_current_user() args= returns=void lang=plpgsql security=definer volatile=v config=search_path="" body_md5=89ce06b5f02a64f43388edbdbbcc0d91
++ func     public.seed_incoming_likes(text) args=p_email text returns=integer lang=plpgsql security=invoker volatile=v config=- body_md5=c13ae5ded7edad2ac1e28ecbdfcecb97
++ grantfn  public.dev_reset_current_user() authenticated EXECUTE
++ grantfn  public.dev_reset_current_user() postgres EXECUTE
++ grantfn  public.dev_reset_current_user() service_role EXECUTE
++ grantfn  public.seed_incoming_likes(text) PUBLIC EXECUTE
++ grantfn  public.seed_incoming_likes(text) anon EXECUTE
++ grantfn  public.seed_incoming_likes(text) authenticated EXECUTE
++ grantfn  public.seed_incoming_likes(text) postgres EXECUTE
++ grantfn  public.seed_incoming_likes(text) service_role EXECUTE
+```
+
+Solo líneas `+`, y solo de las dos funciones de seed. Quitadas esas líneas,
+`expected.txt` y `remote.txt` son idénticos (`diff` sin salida). Además el
+digest remoto `0a7ec9c04c40aa4d5fe9e87cf51c40bd` es el mismo que el de
+`development.txt` local (migraciones + seed antes del teardown) del primer run:
+el proyecto real está exactamente donde deben dejarlo migraciones más
+`seed.sql`. Artefactos completos en `supabase/evidence/34757433478/`.
+
+### Lo que queda
+
+- **El trabajo remoto de `schema-drift.yml` va a salir rojo en cada push**
+  hasta que se retiren las dos funciones. Es el diseño acordado (no se filtran
+  del diff) y no una regresión: mientras `remote.diff` sea solo esas diez
+  líneas, no hay deriva real. Cualquier línea `-`, o una `+` que no sea de
+  `dev_reset_current_user`/`seed_incoming_likes`, sí lo es.
+- **Retirada** — sigue abierta con su gatillo. Riesgo que quedó visible en el
+  diff: `dev_reset_current_user()` es `SECURITY DEFINER` con EXECUTE para
+  `authenticated`, y el alta anónima está abierta, así que cualquiera puede
+  borrarse matches y con ellos mensajes y likes de la otra persona.
+  `seed_incoming_likes` tiene EXECUTE para `anon`/`PUBLIC` pero es invoker y lee
+  `auth.users`, que esos roles no leen por defecto en Supabase (no comprobado
+  contra el proyecto). Aceptable sin usuarios reales; no más allá del gatillo.

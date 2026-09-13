@@ -1,0 +1,4 @@
+--- esperado: migrations/
++++ observado
+- policy   profiles.profiles: cualquier autenticado puede leer cmd=SELECT permissive=PERMISSIVE roles=authenticated using=true check=-
++ policy   profiles.profiles: cualquier autenticado puede leer cmd=SELECT permissive=PERMISSIVE roles=authenticated using=false check=-

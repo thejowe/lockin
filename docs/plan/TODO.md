@@ -33,6 +33,8 @@ Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>
 - [x] Configuración de Auth — `anonymous_users: true`; `POST /auth/v1/signup` devuelve `200` con `access_token`
 - [x] Contrato de `Repositories` ejecutable contra Supabase real — `src/data/supabase/contract.test.ts`, opt-in con `LOCKIN_SUPABASE_CONTRACT=1`
 - [x] **Instalar `dev_reset_current_user()`** y dejar constancia de un 25/25 en la suite de contrato — hecho el 2026-09-06, ver "Al retomar" abajo
+- [x] Cotejo de esquema contra el proyecto real en Actions (`schema-drift.yml` + `SUPABASE_SCHEMA_DB_URL`) — 2026-09-13, [run 34757433478](https://github.com/thejowe/lockin/actions/runs/34757433478): remoto = migraciones + las dos funciones de desarrollo, nada más. **El job remoto sale rojo en cada push hasta retirarlas; es lo esperado.** Ver `todo/datos.md` → "Cotejo remoto ejecutado"
+- [ ] Retirar `dev_reset_current_user()` y `seed_incoming_likes()` del proyecto real — bloqueada por su gatillo: primer APK/enlace fuera del equipo de pruebas o primera cuenta real
 - [x] Flujo real end-to-end **en la app** (registro → perfil → deck → match → mensaje) — recorrido a mano el 2026-09-06 contra **Supabase real**, no contra el mock. Ver "Al retomar" abajo para cómo se distinguió una cosa de la otra.
 
 ## Especialidades buscadas (post-MVP)
