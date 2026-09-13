@@ -2,8 +2,8 @@
 
 ## Acciones sobre Node 24 (2026-09-13)
 
-- [ ] Acciones de GitHub Actions actualizadas fuera de Node 20 — pendiente de
-  verificar los tres workflows en la rama desechable `ci/acciones-node24`.
+- [x] Acciones de GitHub Actions actualizadas fuera de Node 20 — verificado en
+  la rama desechable `ci/acciones-node24` sobre `a072cc1`, ya borrada.
   Versiones: checkout v7, setup-node v7, setup-java v6, upload-artifact v7,
   download-artifact v8, setup-android v4, setup-gradle v6 y setup-cli v3.
   android-emulator-runner sigue en v2 (v2.38.0). Revisadas las notas de cada
@@ -22,6 +22,14 @@
   ausencia de archivos para la clave del caché básico. Diagnosticado con
   `gh run view --log-failed` y los artefactos descargados antes de corregirlo;
   no fue una caída de emulador ni se relanzó a ciegas.
+  Verificación final sobre `a072cc1`, los tres workflows en verde:
+  CI run **34787322427** (6/6 jobs), E2E Android run **34787322395** (mock y
+  supabase) y Schema drift run **34787322436**, con el job remoto ejecutado y
+  no `skipped`. Ningún job tiene anotaciones, así que ya no aparecen los avisos
+  de Node 20 ni de acciones deprecadas. Sin caché de Gradle, el E2E tarda
+  19 min 44 s (mock) y 23 min 59 s (supabase). Los 8 runs verdes anteriores,
+  con caché, tardaron entre 16 y 23 min: coste comparable, en la parte alta del
+  rango.
 
 ## Triage de commands.json (2026-09-13)
 
