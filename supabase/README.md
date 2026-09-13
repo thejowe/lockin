@@ -23,6 +23,7 @@ Se aplican en orden de nombre:
 | `20260905000500_functions_and_realtime.sql` | `record_decision()`, `discovery_deck()`, trigger de `last_message_at`, realtime |
 | `20260907000100_profiles_seeking_specialties.sql` | `profiles.seeking_specialties` — qué busca el perfil en la otra persona |
 | `20260907000200_discovery_mutual_complement.sql` | Orden por encaje mutuo y desempate estable por id antes de paginar |
+| `20260913000100_lockin_sessions.sql` | Sesiones Lock-In: `lockin_sessions`, `session_attendance`, RLS de lectura, reglas de tiempo y RPCs `propose/respond/cancel/join/leave_session`, `server_now` |
 
 Las aplicadas no se editan nunca: un cambio de esquema entra como archivo nuevo.
 Editar `20260905000200` para meterle una columna dejaría el repo diciendo una

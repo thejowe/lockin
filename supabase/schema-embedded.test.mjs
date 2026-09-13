@@ -24,9 +24,10 @@ test(
       create function auth.uid() returns uuid language sql as $$ select null::uuid $$;
       create role anon; create role authenticated; create role service_role;
       create publication supabase_realtime;`);
-      for (const file of readdirSync(join(here, 'migrations'))
+      const migrations = readdirSync(join(here, 'migrations'))
         .filter((f) => f.endsWith('.sql'))
-        .sort()) {
+        .sort();
+      for (const file of migrations) {
         await db.exec(readFileSync(join(here, 'migrations', file), 'utf8'));
       }
       const fingerprint = async () => {
@@ -40,8 +41,30 @@ test(
       };
       const expected = await fingerprint();
       console.log(
-        `SQL ejecutado: 7 migraciones; ${expected.split('\n')[0]}; ${expected.trimEnd().split('\n').length - 1} objetos`
+        `SQL ejecutado: ${migrations.length} migraciones; ${expected.split('\n')[0]}; ${expected.trimEnd().split('\n').length - 1} objetos`
       );
+      assert.match(expected, /table\s+lockin_sessions rls=t/);
+      assert.match(expected, /table\s+session_attendance rls=t/);
+      // Las reglas de "sesión viva" en SQL, contra la misma tabla de verdad que
+      // `src/data/sessions.test.ts`. Es la única cobertura de estos bordes contra
+      // Postgres: la suite de contrato de Supabase no puede esperar 30 minutos.
+      const live = await db.query(`select
+        public.session_is_live('propuesta', now() + interval '1 minute', 1::smallint, now()) as propuesta_futura,
+        public.session_is_live('propuesta', now(), 1::smallint, now()) as propuesta_en_su_hora,
+        public.session_is_live('aceptada', now() - interval '29 minutes', 1::smallint, now()) as aceptada_en_curso,
+        public.session_is_live('aceptada', now() - interval '30 minutes', 1::smallint, now()) as aceptada_terminada,
+        public.session_is_live('aceptada', now() - interval '100 minutes', 4::smallint, now()) as cuatro_bloques_en_curso,
+        public.session_is_live('cancelada', now() + interval '1 hour', 1::smallint, now()) as cancelada,
+        public.session_is_live('rechazada', now() + interval '1 hour', 1::smallint, now()) as rechazada`);
+      assert.deepEqual(live.rows[0], {
+        propuesta_futura: true,
+        propuesta_en_su_hora: false,
+        aceptada_en_curso: true,
+        aceptada_terminada: false,
+        cuatro_bloques_en_curso: true,
+        cancelada: false,
+        rechazada: false,
+      });
       assert.match(expected, /column\s+profiles.seeking_specialties/);
       await db.exec(
         'create role lockin_schema_reader; grant usage on schema public to lockin_schema_reader; begin; set local role lockin_schema_reader;'

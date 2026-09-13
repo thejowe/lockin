@@ -4,7 +4,7 @@ Plan: `docs/superpowers/plans/2026-09-13-sesiones-lockin.md`. Una casilla por ta
 
 - [x] Tarea 1 — Dominio: tipos, reglas de tiempo, errores
 - [x] Tarea 2 — Contrato de `LockInSessionRepository` y mock
-- [ ] Tarea 3 — Migración SQL (tablas, RLS, RPCs) y comprobación en PGlite
+- [x] Tarea 3 — Migración SQL (tablas, RLS, RPCs) y comprobación en PGlite
 - [ ] Tarea 3b — Migración aplicada en `grrzmzktrhksbttpbblg` por el usuario; `schema-drift.yml` en verde
 - [ ] Tarea 4 — Repositorio de Supabase
 - [ ] Tarea 5 — Presencia (memoria y Realtime)
