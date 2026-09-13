@@ -1,0 +1,4 @@
+# El SQL se pega tal cual en el SQL Editor de Supabase, y Postgres guarda el
+# cuerpo de las funciones byte a byte: con CRLF la huella de esquema lo ve
+# distinto. Forzar LF en disco también en Windows con core.autocrlf=true.
+*.sql text eol=lf

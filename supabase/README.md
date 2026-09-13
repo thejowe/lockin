@@ -540,9 +540,9 @@ Pasos para el usuario (no ejecutados contra el proyecto por este bloque):
 4. En [Actions secrets del repositorio](https://github.com/thejowe/lockin/settings/secrets/actions),
    **New repository secret** → nombre `SUPABASE_SCHEMA_DB_URL` → valor: esa URI
    completa → **Add secret**. Solo el usuario realiza este paso; no enviar el valor al chat.
-5. Ejecutar `gh workflow run schema-drift.yml --repo thejowe/lockin --ref codex/datos-verificar-schema-drift`.
-   Si GitHub aún no permite dispatch porque el workflow no está en la rama
-   predeterminada, usar **Re-run all jobs** en el último run de esa rama.
+5. Ejecutar `gh workflow run schema-drift.yml --repo thejowe/lockin --ref claude/startup-cofounder-matching-app-tfeai1`
+   (la rama desechable `codex/datos-verificar-schema-drift` ya no existe), o
+   hacer push: el workflow también corre en cada push.
    Exigir que el job remoto se ejecute y descargar `schema-remote`: `remote.txt`
    y `remote.diff` deben existir. Un job `skipped` mantiene abierta la casilla.
 

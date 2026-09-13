@@ -45,6 +45,13 @@
 -- también con un simple reformateo: para ver qué cambió de verdad,
 -- `select pg_get_functiondef('public.nombre(args)'::regprocedure);` en los dos
 -- lados.
+--
+-- Los finales de línea sí se normalizan (CRLF → LF) antes del `md5`. El SQL
+-- Editor guarda el cuerpo tal como se pega, y pegar desde un checkout de
+-- Windows con `core.autocrlf=true` deja CRLF en `prosrc`. Así llegaron las
+-- diez funciones de grrzmzktrhksbttpbblg: run 34756968269 marcó los diez
+-- cuerpos distintos y cada uno era, byte a byte, el de las migraciones con
+-- CRLF. Eso no es deriva y no justifica reescribir funciones en producción.
 
 -- CI: schema-ci.mjs ejecuta esta consulta en READ ONLY y con search_path fijo.
 -- Para uso manual, fijarlo también: las funciones pg_get_* y regprocedure
@@ -136,7 +143,7 @@ with
       case when p.prosecdef then 'definer' else 'invoker' end,
       p.provolatile,
       coalesce(array_to_string(p.proconfig, ','), '-'),
-      md5(coalesce(p.prosrc, ''))
+      md5(replace(coalesce(p.prosrc, ''), E'\r\n', E'\n'))
     )
     from proc p
 
