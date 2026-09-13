@@ -58,9 +58,10 @@ jobs:
           cmdline-tools-version: '14742923'
       - uses: gradle/actions/setup-gradle@v6
         with:
-          # v6 usa caché propietario por defecto. Mantenemos el proveedor MIT;
-          # solo la rama predeterminada escribe caché, las demás solo leen.
-          cache-provider: basic
+          # Expo genera Gradle después y fuera del checkout: el caché básico
+          # falla sin archivos que hashear. Desactivarlo también evita cargar
+          # el proveedor propietario que v6 usa por defecto.
+          cache-disabled: true
       - uses: supabase/setup-cli@v3
         with:
           # v3 instala desde npm: fijar la versión evita autodetección o latest.

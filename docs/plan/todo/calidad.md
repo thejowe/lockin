@@ -8,14 +8,20 @@
   download-artifact v8, setup-android v4, setup-gradle v6 y setup-cli v3.
   android-emulator-runner sigue en v2 (v2.38.0). Revisadas las notas de cada
   salto mayor con `gh release list/view` y las últimas versiones con `gh api`.
-  Gradle usa `cache-provider: basic` (MIT), con escritura solo desde la rama
-  predeterminada; Android fija cmdline-tools 20.0; Supabase conserva la CLI
+  Gradle usa `cache-disabled: true`: Expo genera sus archivos después y fuera
+  del checkout, así que el proveedor básico no tiene archivos que hashear;
+  tampoco se carga el proveedor propietario predeterminado de v6.
+  Android fija cmdline-tools 20.0; Supabase conserva la CLI
   2.116.0, comprobada en npm. El ZIP `schema-local` se descarga por nombre en
   la misma ruta, con error si no coincide el hash. Schema drift desactiva el
   caché automático de npm. El Node 22 del proyecto y Java 17 no cambian.
   `diagnose()` lee cada volcado con `readCommandDump`: devuelve null ante error
   de lectura o JSON truncado y `parseCommandFailures` lo trata como evidencia
   vacía. Test explícito para null y objeto: **35/35**; `npm run lint` verde.
+  Primera verificación E2E: run **34787201307**, rojo en setup-gradle por la
+  ausencia de archivos para la clave del caché básico. Diagnosticado con
+  `gh run view --log-failed` y los artefactos descargados antes de corregirlo;
+  no fue una caída de emulador ni se relanzó a ciegas.
 
 ## Triage de commands.json (2026-09-13)
 
