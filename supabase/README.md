@@ -360,12 +360,15 @@ delete from auth.users where is_anonymous = true;
 El borrado va en cascada a `profiles`, `user_settings`, `decisions`, `matches`
 y `messages`. Los ocho de `seed.sql` **no** son anónimos y quedan intactos.
 
-> Este `delete` sin más filtro solo es seguro mientras la única fuente de
-> cuentas anónimas sea la suite de contrato. En cuanto la app tenga usuarios
-> reales entrando por `signInAnonymously()` —que es la vía principal— borraría
-> también sus cuentas. Acota entonces por antigüedad, p. ej.
-> `and created_at < now() - interval '1 day'`, o mejor: no ejecutes esto contra
-> un proyecto con usuarios reales.
+> **Obsoleto para `grrzmzktrhksbttpbblg` desde el 2026-09-13.** Este `delete`
+> sin filtro solo era seguro mientras la única fuente de cuentas anónimas fuera
+> la suite de contrato; la app crea usuarios reales anónimos por
+> `signInAnonymously()`, así que borraría también los suyos, y acotar por
+> antigüedad no los distingue. Para ese proyecto, usa
+> `supabase/cleanup/inventario.sql` (solo lectura, clasifica cada cuenta y
+> cuenta el colateral) y después `supabase/cleanup/borrado.sql` (UUID
+> confirmados, acuse del colateral y guardias). Ver `docs/plan/todo/datos.md` →
+> "Limpieza de cuentas de seed y pruebas".
 
 **2. Admin API con `service_role`** (Project Settings → API). La clave da acceso
 total saltándose RLS: úsala solo desde una terminal, nunca en el cliente ni en

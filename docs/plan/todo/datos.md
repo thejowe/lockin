@@ -867,3 +867,88 @@ Actualizado el 2026-09-13, tras la retirada (run 34760366206):
   `dev_reset_current_user()`: gasta un alta anónima por test y choca con el
   límite de 30/hora. Hay que apuntarla a una base desechable
   (`supabase start` + `db reset`), y no reinstalar la función en el remoto.
+
+## Limpieza de cuentas de seed y pruebas en `grrzmzktrhksbttpbblg`
+
+- [x] Inventario de solo lectura de qué filas son de seed, de pruebas o posibles
+      usuarios reales, y SQL de borrado para ejecutar como administrador —
+      **preparados y probados en PostgreSQL embebido (2026-09-13)**; ver abajo
+- [ ] Inventario ejecutado en el SQL Editor de `grrzmzktrhksbttpbblg` y su
+      resultado revisado y confirmado por el usuario — **pendiente del usuario**
+- [ ] `borrado.sql` ejecutado con los UUID y el acuse confirmados, y su fila de
+      resultado adjunta aquí — **no antes de la casilla anterior**
+
+### Por qué no lo ha ejecutado `datos`
+
+Ninguna credencial al alcance de este bloque lee esas filas: la clave `anon`
+pasa por RLS (sin `auth.users`, y de `decisions`/`matches`/`messages` solo lo
+propio), y `lockin_schema_reader` tiene `usage` sobre `public` pero ningún
+`select` sobre tablas. Abrir sesión para mirar tampoco es de solo lectura: un
+`signInAnonymously()` crea una cuenta más, y entrar como una de seed escribe
+sesión y `last_sign_in_at`. El inventario lo corre quien tenga el SQL Editor.
+
+### Qué hay
+
+- `supabase/cleanup/inventario.sql` — un único `select`, sin escrituras.
+  Una fila por cuenta de `auth.users` con categoría, perfil, swipes, matches,
+  mensajes y, en las cuentas que se quedan, el **colateral**: decisiones,
+  matches y mensajes suyos que caerían en cascada al borrar seed y pruebas (un
+  match con Núria se lleva los mensajes que escribió la otra persona). La
+  última fila suma ese colateral. Categorías:
+  - `seed` — UUID fijo **y** email `@seed.lockin.app` (si solo una:
+    `revisar: seed incoherente`).
+  - `prueba: contrato con perfil` — anónimo con perfil «Recíproca Par/Lockin/
+    Ambos» o «Perfil Prueba» (nombres de `contract.test.ts` y
+    `test-fixtures.ts`): pasada que murió antes del teardown.
+  - `prueba: contrato sin perfil (ráfaga)` — anónimo sin perfil con al menos
+    otros 3 anónimos a menos de 5 minutos: cada pasada da cuatro altas seguidas.
+  - `prueba: cuenta de dispositivo sin perfil` — `device-…@lockin.app`.
+  - `revisar: posible usuario real` — el resto, incluido el recorrido a mano
+    del 2026-09-06 y los anónimos sueltos sin perfil, que no se distinguen de
+    un onboarding abandonado. Nunca se clasifica por `is_anonymous` ni por edad.
+- `supabase/cleanup/borrado.sql` — una transacción. Los ocho UUID de seed van
+  fijos; los de prueba se pegan a mano (EDITAR 1/2) y el colateral total del
+  inventario se copia al acuse (EDITAR 2/2, que viene a `-1` para no pasar sin
+  mirarlo). Aborta sin borrar nada si un id no existe, si un UUID de seed no
+  tiene su email, si un id de prueba tiene perfil con otro nombre (no se borra
+  un perfil real desde aquí aunque se pegue), si el colateral real no coincide
+  con el acuse, si no borra exactamente tantas filas como ids, o si queda algún
+  perfil de ellos o alguna cuenta `@seed.lockin.app`. Borra solo en
+  `auth.users`; el resto cae por las FK de `migrations/`.
+- `supabase/cleanup.test.mjs` — ambos contra PGlite 0.3.14 con las siete
+  migraciones y la parte de cuentas y perfiles de `seed.sql` real, más: un
+  anónimo «Joel» con like cruzado, match y mensaje con Núria y un pass a Marc;
+  un anónimo suelto sin perfil; dos ráfagas de cuatro (una tras el teardown,
+  otra muerta con perfiles); y una cuenta de dispositivo. Salida:
+  `19 cuentas → 8 «seed», 1 dispositivo, 4 ráfaga, 4 con perfil, 2 «revisar»;
+  TOTAL colateral 3/1/1`, el inventario no cambia ninguna fila, el acuse a `-1`
+  aborta con `Colateral sobre cuentas que se quedan: 3 decisiones, 1 matches,
+  1 mensajes`, pegar a Joel aborta con `No son reconocibles como prueba, revisar
+  a mano: aaaaaaaa-… (Joel)`, un id inexistente aborta, los rechazos no borran
+  nada, y el borrado bueno deja `cuentas_restantes 2, seed_restantes 0,
+  perfiles_restantes 1` con Joel y el suelto; repetirlo aborta. `tests 1`,
+  `pass 1`, `fail 0`.
+  Verificado por mutación: umbral de ráfaga a `>= 9` → `fail 1`; guardia de
+  colateral anulada → `fail 1, Missing expected rejection`. Evidencia en
+  `supabase/evidence/limpieza-2026-09-13/pglite.txt`. Como
+  `schema-embedded.test.mjs`, se salta sin `PGLITE_MODULE` y no está en CI.
+  Lo que no prueba: GoTrue ni sus tablas hijas de `auth` (sesiones,
+  identidades), cuyas cascadas son de Supabase y no de este repo.
+
+### Para el usuario
+
+1. SQL Editor → pegar `supabase/cleanup/inventario.sql` → ejecutar →
+   descargar CSV. Guardarlo (o pasarlo) para
+   `supabase/evidence/limpieza-2026-09-13/inventario-remoto.csv`: los UUID
+   anónimos no son secretos, pero si hay emails reales, quitarlos antes.
+2. Confirmar fila a fila qué `prueba:` y qué `revisar:` son de verdad pruebas.
+   Si se borra alguna `revisar`, su colateral deja de contar y el acuse cambia:
+   la propia guardia dice el número real al abortar.
+3. Rellenar los dos EDITAR de `borrado.sql`, ejecutarlo y adjuntar su fila de
+   resultado aquí.
+
+El README (`supabase/README.md` → "Mantenimiento") recomendaba
+`delete from auth.users where is_anonymous = true`; queda marcado como
+obsoleto para este proyecto y remite aquí. El mismo consejo sigue en el mensaje
+de error de `assertCatalogFitsInOneDeckPage()` en `contract.test.ts`, que ya
+solo debe correr contra una base desechable, donde es correcto.

@@ -1,0 +1,18 @@
+# PGlite 0.3.14, v24.18.0, cba42da + archivos sin commitear de supabase/cleanup/
+# PGLITE_MODULE=... node --test supabase/cleanup.test.mjs
+Inventario: 19 cuentas → 8 «seed», 1 «prueba: cuenta de dispositivo sin perfil», 4 «prueba: contrato sin perfil (ráfaga)», 4 «prueba: contrato con perfil», 2 «revisar: posible usuario real»; TOTAL colateral 3/1/1
+Borrado: 19 → {"cuentas_restantes":2,"seed_restantes":0,"perfiles_restantes":1,"decisiones_restantes":0,"matches_restantes":0,"mensajes_restantes":0}; quedan Joel y el anónimo suelto
+Guardias: acuse sin rellenar, perfil no reconocible, id inexistente y repetición: OK
+✔ Limpieza: inventario clasifica y borrado respeta sus guardias (1302.0579ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1424.1006
+
+# Mutaciones (archivos restaurados después; ver datos.md)
+inventario.sql anon_cercanos >= 3 -> >= 9: fail 1, actual 'revisar: posible usuario real', expected 'prueba: contrato sin perfil (ráfaga)'
+borrado.sql guardia de colateral anulada (if false and ...): fail 1, Missing expected rejection.
