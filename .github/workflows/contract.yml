@@ -1,0 +1,101 @@
+name: Contrato Supabase
+# La suite opt-in de `src/data/supabase/contract.test.ts` contra una Supabase
+# local desechable (Docker del runner), nunca contra `grrzmzktrhksbttpbblg`.
+# Allí se retiró `dev_reset_current_user()` el 2026-09-13 y sin ella la suite
+# gasta un alta anónima por caso y choca con el límite de 30 por hora. Aquí la
+# base sale de las migraciones del repo más `supabase/seed.sql`, que sí trae la
+# función, y se tira al terminar.
+#
+# Solo a mano: escribe usuarios y tarda más que CI, y ya hay E2E en cada push.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+concurrency:
+  group: contract-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    name: Contrato de Repositories (Supabase local)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CI: '1'
+      RUNTIME: ${{ github.workspace }}/contract-runtime
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - uses: supabase/setup-cli@v3
+        with:
+          # Misma versión que `e2e.yml`.
+          version: 2.116.0
+      - run: npm ci
+
+      - name: Supabase desechable con migraciones y seed del repo
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNTIME"
+          supabase --workdir "$RUNTIME" init
+          config="$RUNTIME/supabase/config.toml"
+          grep -q 'enable_anonymous_sign_ins = false' "$config" \
+            || { echo 'Cambió el formato de config de Supabase'; exit 1; }
+          sed -i \
+            -e 's/^project_id = .*/project_id = "lockin-contract"/' \
+            -e 's/enable_anonymous_sign_ins = false/enable_anonymous_sign_ins = true/' \
+            "$config"
+          cp -r supabase/migrations "$RUNTIME/supabase/migrations"
+          # Solo el seed del repo: el de E2E añade triggers que aquí sobran.
+          cp supabase/seed.sql "$RUNTIME/supabase/seed.sql"
+          # Auth, Postgres, REST y Realtime reales; el resto no hace falta.
+          supabase --workdir "$RUNTIME" start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor
+          supabase --workdir "$RUNTIME" db reset --local
+
+      - name: Credenciales locales (y solo locales)
+        run: |
+          set -euo pipefail
+          # La suite lee `.env.local` antes que el entorno: si existiera,
+          # podría acabar hablando con el proyecto real.
+          test ! -e .env.local || { echo '.env.local no debe existir aquí'; exit 1; }
+          status=$(supabase --workdir "$RUNTIME" status -o json)
+          url=$(jq -r .API_URL <<<"$status")
+          key=$(jq -r .ANON_KEY <<<"$status")
+          [ "$url" = 'http://127.0.0.1:54321' ] || { echo "API_URL inesperada: $url"; exit 1; }
+          [ -n "$key" ] && [ "$key" != null ] || { echo 'Falta ANON_KEY local'; exit 1; }
+          echo "::add-mask::$key"
+          {
+            echo "EXPO_PUBLIC_SUPABASE_URL=$url"
+            echo "EXPO_PUBLIC_SUPABASE_ANON_KEY=$key"
+          } >> "$GITHUB_ENV"
+
+      - name: Suite de contrato
+        env:
+          LOCKIN_SUPABASE_CONTRACT: '1'
+        run: |
+          set -euo pipefail
+          npx jest src/data/supabase/contract.test.ts --ci --json --outputFile=contract-result.json
+          # Sin credenciales la suite entera se salta y Jest sale en verde: exigir
+          # que haya corrido algo y que no quede nada saltado.
+          jq -e '.numPassedTests > 0 and .numPendingTests == 0 and .numFailedTests == 0' contract-result.json \
+            || { echo 'La suite no corrió entera'; jq '{numPassedTests, numPendingTests, numFailedTests}' contract-result.json; exit 1; }
+          jq '{numPassedTests, numPendingTests, numFailedTests}' contract-result.json
+
+      - name: Resultado (también si falla)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: contract-result
+          path: contract-result.json
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Descartar backend local
+        if: always()
+        run: |
+          if [ -f "$RUNTIME/supabase/config.toml" ]; then
+            supabase --workdir "$RUNTIME" stop --no-backup
+          fi

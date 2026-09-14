@@ -12,13 +12,14 @@
  *
  *     LOCKIN_SUPABASE_CONTRACT=1 npx jest src/data/supabase/contract.test.ts
  *
- * Sin esa variable la suite se salta entera. No entra en `npm test` ni en CI, y
- * la razón no es comodidad:
+ * Sin esa variable la suite se salta entera. No entra en `npm test` ni en el CI
+ * de cada push, y la razón no es comodidad:
  *
- * - **Escribe en un proyecto real.** No hay base local — el CLI de Supabase no
- *   se puede enlazar desde aquí, ver `docs/plan/todo/datos.md` —, así que esto
- *   habla con el proyecto de `.env.local`. Un CI que lo ejecutara en cada push
- *   estaría escribiendo en el entorno compartido.
+ * - **Escribe en la base a la que apunte.** En local habla con el proyecto de
+ *   `.env.local`, que hoy es el real. La forma segura de ejecutarla es el
+ *   workflow manual `.github/workflows/contract.yml`, que levanta una Supabase
+ *   local desechable en el runner (migraciones + `supabase/seed.sql`) y exige
+ *   que no haya `.env.local`.
  * - **Necesita `supabase/seed.sql` ejecutado.** No por el catálogo, sino por
  *   `dev_reset_current_user()`. Las políticas RLS no dan DELETE sobre
  *   `decisions`, `matches` ni `messages` a NADIE — con razón: un swipe no se
