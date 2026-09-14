@@ -86,7 +86,7 @@ import { toProfileInsert } from './mappers';
 import type { ContractBackend, ContractFixture } from '../repositories.contract';
 import type { Database } from './database.types';
 import type { ModePreference } from '../types';
-import type { Repositories } from '../repositories';
+import type { LockInSessionRepository, Repositories } from '../repositories';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Devuelve el `fetch` real antes de que `createClient` capture el stub de
@@ -285,6 +285,21 @@ async function resetCurrentUser(): Promise<string> {
   return data.user!.id;
 }
 
+/**
+ * Sesiones actuando como un usuario de apoyo, con su cliente y su sesión.
+ *
+ * Con `require` y no con `import` por lo mismo que `./index`: `sessions.ts`
+ * importa `client.ts`, que lee las credenciales al cargarse, y a esta altura del
+ * archivo todavía no están en `process.env`.
+ */
+function sessionRepositoryFor(actor: Reciprocal): LockInSessionRepository {
+  const { createSupabaseSessionRepository } = require('./sessions') as typeof import('./sessions');
+  return createSupabaseSessionRepository({
+    getClient: () => actor.client,
+    getUserId: async () => actor.id,
+  });
+}
+
 const supabaseBackend: ContractBackend = {
   name: 'supabase',
   canTimeTravel: false,
@@ -335,13 +350,8 @@ const supabaseBackend: ContractBackend = {
       nonReciprocalId: DIEGO_ID,
       excludableId: LUCIA_ID,
       unknownProfileId: UNKNOWN_ID,
-      // PROVISIONAL: los implementa la Tarea 4 del plan de sesiones.
-      counterpartSessions() {
-        throw new Error('Pendiente de la Tarea 4 del plan de sesiones');
-      },
-      outsiderSessions() {
-        throw new Error('Pendiente de la Tarea 4 del plan de sesiones');
-      },
+      counterpartSessions: () => sessionRepositoryFor(parReciprocal),
+      outsiderSessions: () => sessionRepositoryFor(lockinReciprocal),
       elapse: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
     };
   },
@@ -372,6 +382,8 @@ const supabaseBackend: ContractBackend = {
     await appClient.auth.signOut();
 
     for (const reciprocal of reciprocals) {
+      // Los repositorios de sesiones de la otra persona abren canales de realtime.
+      await reciprocal.client.removeAllChannels();
       await reciprocal.client.auth.signOut();
     }
     reciprocals = [];

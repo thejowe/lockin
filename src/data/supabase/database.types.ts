@@ -21,6 +21,8 @@ import type {
   Mode,
   ModePreference,
   ProfilePrompt,
+  SessionBlocks,
+  SessionStatus,
   Specialty,
   StartingPoint,
   TimeBand,
@@ -100,6 +102,26 @@ export type MessageRow = {
 
 export type MessageInsert = Pick<MessageRow, 'match_id' | 'sender_id' | 'body'>;
 
+/** Fila de `public.lockin_sessions`. */
+export type SessionRow = {
+  id: string;
+  match_id: string;
+  proposed_by: string;
+  starts_at: string;
+  blocks: SessionBlocks;
+  status: SessionStatus;
+  created_at: string;
+  responded_at: string | null;
+};
+
+/** Fila de `public.session_attendance`. */
+export type SessionAttendanceRow = {
+  session_id: string;
+  profile_id: string;
+  joined_at: string;
+  left_at: string | null;
+};
+
 /**
  * Forma del esquema que consume `createClient<Database>`.
  *
@@ -178,6 +200,19 @@ export type Database = {
           },
         ];
       };
+      // Sin escritura directa: todo pasa por los RPCs de la migración 20260913000100.
+      lockin_sessions: {
+        Row: SessionRow;
+        Insert: Record<string, never>;
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      session_attendance: {
+        Row: SessionAttendanceRow;
+        Insert: Record<string, never>;
+        Update: Record<string, never>;
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
@@ -198,6 +233,19 @@ export type Database = {
         Args: { p_target_id: string; p_decision: Decision };
         Returns: MatchRow | null;
       };
+      propose_session: {
+        Args: { p_match_id: string; p_starts_at: string; p_blocks: SessionBlocks };
+        Returns: SessionRow;
+      };
+      respond_session: {
+        Args: { p_session_id: string; p_answer: 'aceptada' | 'rechazada' };
+        Returns: SessionRow;
+      };
+      cancel_session: { Args: { p_session_id: string }; Returns: SessionRow };
+      join_session: { Args: { p_session_id: string }; Returns: SessionAttendanceRow };
+      leave_session: { Args: { p_session_id: string }; Returns: SessionAttendanceRow };
+      /** `server_now()` → `timestamptz` serializado. */
+      server_now: { Args: Record<string, never>; Returns: string };
     };
     Enums: {
       mode: Mode;
@@ -208,6 +256,7 @@ export type Database = {
       time_band: TimeBand;
       avatar_accent: Avatar['accent'];
       decision: Decision;
+      session_status: SessionStatus;
     };
     CompositeTypes: Record<never, never>;
   };

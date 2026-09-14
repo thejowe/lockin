@@ -69,6 +69,8 @@ describe('SessionScreen', () => {
     await renderRoute(<SessionScreen />);
 
     await waitFor(() => expect(screen.getByText('Esta sesión no está disponible')).toBeTruthy());
+    await fireEvent.press(screen.getByRole('button', { name: 'Volver al chat' }));
+    expect(router.back).toHaveBeenCalled();
   });
 
   it('una sesión sin aceptar no deja entrar', async () => {
@@ -81,6 +83,8 @@ describe('SessionScreen', () => {
       expect(screen.getByText('Esta sesión todavía no está aceptada')).toBeTruthy()
     );
     expect(join).not.toHaveBeenCalled();
+    await fireEvent.press(screen.getByRole('button', { name: 'Volver al chat' }));
+    expect(router.back).toHaveBeenCalled();
   });
 
   it('antes de que abra la ventana explica cuándo se puede entrar', async () => {
@@ -91,6 +95,8 @@ describe('SessionScreen', () => {
 
     await waitFor(() => expect(screen.getByText('Todavía no puedes entrar')).toBeTruthy());
     expect(join).not.toHaveBeenCalled();
+    await fireEvent.press(screen.getByRole('button', { name: 'Volver al chat' }));
+    expect(router.back).toHaveBeenCalled();
   });
 
   it('dentro de la ventana entra, cuenta atrás y ve si la otra persona está', async () => {
@@ -155,6 +161,11 @@ describe('SessionScreen', () => {
     expect(screen.getByText('Saldrás antes de acabar; contará como abandono.')).toBeTruthy();
     expect(leave).not.toHaveBeenCalled();
 
+    await fireEvent.press(screen.getByRole('button', { name: 'Seguir' }));
+    expect(screen.queryByText('Saldrás antes de acabar; contará como abandono.')).toBeNull();
+    expect(leave).not.toHaveBeenCalled();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Salir' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Salir de la sesión' }));
 
     await waitFor(() => expect(leave).toHaveBeenCalledWith(session.id));
