@@ -83,6 +83,7 @@ describe('RootLayout', () => {
     expect(screen.getByText('ruta:index')).toBeTruthy();
     expect(screen.getByText('ruta:(tabs)')).toBeTruthy();
     expect(screen.getByText('ruta:chat/[matchId]')).toBeTruthy();
+    expect(screen.getByText('ruta:session/[sessionId]')).toBeTruthy();
   });
 
   it('no pinta nada mientras las fuentes ni han cargado ni han fallado', async () => {

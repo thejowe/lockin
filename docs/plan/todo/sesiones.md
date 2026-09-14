@@ -16,7 +16,7 @@ Plan: `docs/superpowers/plans/2026-09-13-sesiones-lockin.md`. Una casilla por ta
   real. `tsc --noEmit`, `npm test` y `npm run lint` en verde.
 - [x] Tarea 5 — Presencia (memoria y Realtime)
 - [x] Tarea 6 — Lógica pura de reloj, tramos y textos
-- [ ] Tarea 7 — Pantalla de sesión
+- [x] Tarea 7 — Pantalla de sesión
 - [ ] Tarea 8 — Tarjeta del chat y hoja de propuesta
 - [ ] Tarea 9 — Recordatorios locales
 - [ ] Tarea 10 — E2E Android de entrar y salir
