@@ -53,7 +53,7 @@ Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>
 
 ## Calidad
 - [x] ESLint/Prettier/TS estricto
-- [x] Tests base (Jest + RNTL) — 374 tests en 34 suites, con suelo de cobertura en `jest.config.js` (89.82/82.56/91.49/91.38 %: sentencias/ramas/funciones/líneas). Más 27 opt-in de contrato contra Supabase, fuera de `npm test` y de CI. Más 37 de E2E (`npm run test:e2e`), en 9 suites.
+- [x] Tests base (Jest + RNTL) — 509 tests en 50 suites (contado el 2026-09-14 sobre `9861cc0`), con suelo de cobertura en `jest.config.js` (89.82/82.56/91.49/91.38 %: sentencias/ramas/funciones/líneas). Más 52 opt-in de contrato contra Supabase (la suite 51, que `npm test` salta): fuera del CI de cada push, se ejecutan a mano contra una Supabase local desechable con `.github/workflows/contract.yml` (49 pasan y 3 se saltan a propósito por reloj simulado). Más 54 de E2E (`npm run test:e2e`), en 13 suites.
 - [x] CI en GitHub Actions — lint, formato, tipos, tests y export web
 - [x] E2E Android en CI — `.github/workflows/e2e.yml` corre `full-journey.yaml` en un emulador en cada push, en dos variantes: el APK con credenciales (pasa entero y el oráculo lee las filas en Postgres) y el control negativo sin ellas (falla **después** del `stopApp` y no escribe nada). Las dos en verde desde el 2026-09-09, [run 34409724164](https://github.com/thejowe/lockin/actions/runs/34409724164).
 - [x] Accesibilidad básica — labels, tamaño táctil y test de contraste. Los 4 pares que estaban por debajo de AA se cerraron el 2026-09-06: `KNOWN_GAPS` en `theme.test.ts` está vacío (ver `todo/arquitecto.md`)
