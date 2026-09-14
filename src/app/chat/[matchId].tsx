@@ -32,7 +32,6 @@ import {
   ConversationIntro,
   DayDivider,
   IcebreakerSuggestions,
-  LockInCta,
   MessageBubble,
   MessageComposer,
   formatDayHeading,
@@ -41,6 +40,7 @@ import {
   suggestIcebreakers,
   useConversation,
 } from '@/features/chat';
+import { SessionCard } from '@/features/session';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function ChatScreen() {
@@ -135,7 +135,7 @@ export default function ChatScreen() {
         ) : (
           <View style={styles.content}>
             <View style={styles.lockIn}>
-              <LockInCta counterpartName={match.counterpart.name} />
+              <SessionCard match={match} me={me} />
             </View>
 
             <ScrollView

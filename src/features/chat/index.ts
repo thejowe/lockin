@@ -7,7 +7,6 @@
 
 export { ConversationIntro } from './conversation-intro';
 export { IcebreakerSuggestions } from './icebreaker-suggestions';
-export { LockInCta } from './lock-in-cta';
 export { MatchRow, NO_MESSAGES_HINT } from './match-row';
 export { MatchesEmpty } from './matches-empty';
 export { DayDivider, MessageBubble } from './message-bubble';
