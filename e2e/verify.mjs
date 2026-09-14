@@ -80,3 +80,30 @@ export async function verifyAbsence(status, profileName, message) {
   assert.equal(await count('messages', 'body', message), 0, 'El mock no debe crear el mensaje');
   console.log('Postgres: el APK sin credenciales no ha escrito perfil ni mensaje.');
 }
+
+/**
+ * Oráculo de `session.yaml`: la app registró la entrada y la salida confirmada
+ * en Postgres. `left_at` no nulo es lo único que distingue "salió pulsando
+ * Salir" de "cerró la pantalla", que la spec define como NULL.
+ */
+export async function verifySessionAttendance(status, profileName) {
+  assert.equal(status.API_URL, 'http://127.0.0.1:54321');
+  const client = createClient(status.API_URL, status.SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data: profile, error: profileError } = await client
+    .from('profiles')
+    .select('id')
+    .eq('name', profileName)
+    .single();
+  assert.ifError(profileError);
+  const { data: rows, error } = await client
+    .from('session_attendance')
+    .select('*')
+    .eq('profile_id', profile.id);
+  assert.ifError(error);
+  assert.equal(rows.length, 1, 'La app debe registrar una sola asistencia a la sesión');
+  assert(rows[0].joined_at, 'Entrar debe guardar joined_at');
+  assert(rows[0].left_at, 'Salir confirmando debe guardar left_at');
+  console.log('Postgres: entrada y salida de la sesión Lock-In verificadas.');
+}

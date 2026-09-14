@@ -22,11 +22,14 @@ import {
   parseMaestroFailure,
   shouldRetry,
 } from './triage.mjs';
-import { verifyAbsence, verifyPersistence } from './verify.mjs';
+import { verifyAbsence, verifyPersistence, verifySessionAttendance } from './verify.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const runtime = join(root, 'e2e/.runtime');
 const journeyFile = join(root, 'e2e/full-journey.yaml');
+// Segundo caso, solo con credenciales: entra y sale de la sesión que deja
+// `e2e/session-now.sql` en el match del recorrido. Ver la cabecera de ese `.yaml`.
+const sessionFile = join(root, 'e2e/session.yaml');
 // Nombre con el que Android llama a la app en sus propios diálogos. Se lee de
 // `app.json` para que no se quede atrás si el bloque `arquitecto` lo cambia: de
 // él depende poder decir si el "X no responde" de un ANR habla de nosotros.
@@ -319,7 +322,9 @@ if (command === 'prepare') {
     join(runtime, 'supabase/seed.sql'),
     readFileSync(join(root, 'supabase/seed.sql'), 'utf8') +
       '\n' +
-      readFileSync(join(root, 'e2e/incoming-likes.sql'), 'utf8')
+      readFileSync(join(root, 'e2e/incoming-likes.sql'), 'utf8') +
+      '\n' +
+      readFileSync(join(root, 'e2e/session-now.sql'), 'utf8')
   );
   // Auth, Postgres, REST and Realtime remain real. Omit unrelated services.
   supabase(['start', '-x', 'studio,imgproxy,edge-runtime,logflare,vector,supavisor']);
@@ -493,11 +498,42 @@ if (command === 'test') {
         return { outcome: 'pass', why: 'el mock falló después del reinicio y no escribió nada' };
       }
       await verifyPersistence(status, profileName, message);
+
+      // Su propia carpeta de evidencia dentro del intento: `diagnose` lee los
+      // volcados de Maestro de la carpeta que se le pasa.
+      const sessionDir = join(dir, 'session');
+      mkdirSync(sessionDir, { recursive: true });
+      const sessionRun = spawnSync(
+        'maestro',
+        [
+          'test',
+          '--format',
+          'junit',
+          '--output',
+          join(sessionDir, 'maestro.xml'),
+          '--debug-output',
+          sessionDir,
+          '--test-output-dir',
+          sessionDir,
+          '--flatten-debug-output',
+          '-e',
+          'MESSAGE=' + message,
+          sessionFile,
+        ],
+        { cwd: root, stdio: 'inherit' }
+      );
+      if (sessionRun.error) throw sessionRun.error;
+      if (sessionRun.status !== 0) {
+        const diagnosis = diagnose(sessionDir);
+        return { outcome: diagnosis.kind, why: 'session.yaml: ' + diagnosis.why };
+      }
+      await verifySessionAttendance(status, profileName);
+
       writeFileSync(
         join(dir, 'postgres.json'),
-        JSON.stringify({ runId, variant, persistence: 'verified' }, null, 2)
+        JSON.stringify({ runId, variant, persistence: 'verified', session: 'verified' }, null, 2)
       );
-      return { outcome: 'pass', why: 'recorrido completo y persistencia verificados' };
+      return { outcome: 'pass', why: 'recorrido, persistencia y sesión Lock-In verificados' };
     } catch (error) {
       // Un oráculo que falla es un fallo del caso, no del runner: no se reintenta.
       const setup = Boolean(error?.syscall) || error?.code === 'ENOENT';

@@ -32,7 +32,16 @@ Plan: `docs/superpowers/plans/2026-09-13-sesiones-lockin.md`. Una casilla por ta
   `npm test -- --coverage`, `npm run lint` y `npm run format:check` en verde
   (se añadió `reminder-permission.test.ts` para cubrir el fallback si falla la
   lectura del descarte guardado, y así no bajar el umbral de cobertura).
-- [ ] Tarea 10 — E2E Android de entrar y salir
+- [x] Tarea 10 — E2E Android de entrar y salir — `e2e/session-now.sql` (trigger
+  `e2e_session_now`, inserta una sesión aceptada a 3 minutos al ver el mensaje
+  E2E), `e2e/session.yaml` (entra, confirma "Salir" → "Salir de la sesión"),
+  `verifySessionAttendance` en `e2e/verify.mjs`. `e2e/run.mjs` engancha el caso
+  tras `full-journey.yaml` y su oráculo, añade `session-now.sql` al seed y
+  escribe su propia carpeta de evidencia (`session/`). Guardia
+  `session.test.mjs` (4 casos) en verde; `tsc --noEmit` y `npm run lint` en
+  verde. **CI real pendiente de la Tarea 3b**: el job `E2E Android (supabase)`
+  no puede salir verde hasta que la migración de sesiones esté aplicada en
+  `grrzmzktrhksbttpbblg` — no forzado ni comprobado en Actions en este commit.
 - [ ] Tarea 11 — Verificación final
 
 ## Verificación manual (no automatizable)

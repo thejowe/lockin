@@ -1,0 +1,31 @@
+# Entrar y salir de una sesión Lock-In. Lo lanza run.mjs DESPUÉS de
+# full-journey.yaml y de su oráculo, sin borrar el estado: usa el match y el
+# mensaje de ese recorrido, y la sesión aceptada que deja `session-now.sql`.
+# Solo en la variante con credenciales. `e2e/session.test.mjs` fija las
+# etiquetas contra el código.
+appId: app.lockin.mobile
+name: Entrar y salir de una sesión Lock-In
+---
+- assertTrue: ${MESSAGE}
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible: 'Descubrir'
+    timeout: 60000
+- tapOn: 'Matches'
+- extendedWaitUntil:
+    visible: 'Conversación con .*${MESSAGE}'
+    timeout: 30000
+- tapOn: 'Conversación con .*${MESSAGE}'
+- extendedWaitUntil:
+    visible: 'Entrar a la sesión'
+    timeout: 60000
+- tapOn: 'Entrar a la sesión'
+- extendedWaitUntil:
+    visible: 'Empieza en|Trabajo · bloque 1 de 1'
+    timeout: 30000
+- tapOn: 'Salir'
+- tapOn: 'Salir de la sesión'
+- extendedWaitUntil:
+    visible: 'Mensaje'
+    timeout: 30000
