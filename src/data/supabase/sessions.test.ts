@@ -96,7 +96,12 @@ describe('toLockInSession / toSessionAttendance', () => {
         joined_at: '2026-09-14T18:00:00+00:00',
         left_at: null,
       })
-    ).toEqual({ sessionId: 's', profileId: 'p', joinedAt: '2026-09-14T18:00:00.000Z', leftAt: null });
+    ).toEqual({
+      sessionId: 's',
+      profileId: 'p',
+      joinedAt: '2026-09-14T18:00:00.000Z',
+      leftAt: null,
+    });
   });
 });
 
@@ -167,7 +172,12 @@ describe('createSupabaseSessionRepository', () => {
       select: { data: row(), error: null },
       rpc: {
         join_session: {
-          data: { session_id: 'session-1', profile_id: 'user-a', joined_at: row().created_at, left_at: null },
+          data: {
+            session_id: 'session-1',
+            profile_id: 'user-a',
+            joined_at: row().created_at,
+            left_at: null,
+          },
           error: null,
         },
       },

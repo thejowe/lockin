@@ -261,9 +261,4 @@ export const SEED_PROFILES: Profile[] = [
  * necesita que quien quede delante pueda cerrar match — igual que
  * `e2e/incoming-likes.sql` lo garantiza del lado de Postgres.
  */
-export const SEED_RECIPROCAL_IDS: string[] = [
-  'seed-nuria',
-  'seed-marc',
-  'seed-alba',
-  'seed-lucia',
-];
+export const SEED_RECIPROCAL_IDS: string[] = ['seed-nuria', 'seed-marc', 'seed-alba', 'seed-lucia'];

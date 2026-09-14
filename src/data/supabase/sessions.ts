@@ -165,7 +165,9 @@ export function createSupabaseSessionRepository(
 
     async join(sessionId) {
       await deps.getUserId();
-      const { data, error } = await deps.getClient().rpc('join_session', { p_session_id: sessionId });
+      const { data, error } = await deps
+        .getClient()
+        .rpc('join_session', { p_session_id: sessionId });
       if (error) throw toSessionError(error);
       await notifyForSession(sessionId);
       return toSessionAttendance(data as SessionAttendanceRow);
@@ -210,13 +212,20 @@ export function createSupabaseSessionRepository(
           .channel(`lockin:sessions:${matchId}`)
           .on(
             'postgres_changes',
-            { event: '*', schema: 'public', table: 'lockin_sessions', filter: `match_id=eq.${matchId}` },
+            {
+              event: '*',
+              schema: 'public',
+              table: 'lockin_sessions',
+              filter: `match_id=eq.${matchId}`,
+            },
             () => notify(matchId)
           )
           // La asistencia no lleva `match_id`: RLS ya limita el stream a sesiones
           // de tus matches, así que como mucho avisa de más, nunca de menos.
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'session_attendance' }, () =>
-            notify(matchId)
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'session_attendance' },
+            () => notify(matchId)
           )
           .subscribe();
         channels.set(matchId, channel);

@@ -496,5 +496,12 @@ const messages: MessageRepository = {
 
 /** La fábrica que consume `src/data/active.ts`. Misma forma que la del mock. */
 export function createSupabaseRepositories(): Repositories {
-  return { session, profiles, discovery, matches, messages, sessions: createSupabaseSessionRepository() };
+  return {
+    session,
+    profiles,
+    discovery,
+    matches,
+    messages,
+    sessions: createSupabaseSessionRepository(),
+  };
 }

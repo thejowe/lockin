@@ -1,7 +1,7 @@
 /**
  * "Sesión Lock-In" en el chat — el diferenciador del producto (ver `CONCEPTO.md`).
  *
- * Sustituye al hueco `LockInCta` del MVP en el mismo sitio. Un solo componente
+ * Sustituye al hueco de llamada a Lock-In que dejó el MVP en el mismo sitio. Un solo componente
  * con cinco estados (`cardView`): agendar, esperando respuesta, propuesta
  * recibida, acordada y entrar.
  */
