@@ -1,5 +1,34 @@
 # TODO — calidad
 
+## E2E Android rojo en setup-android: Google retiró `tools` (2026-09-14)
+
+- [x] Los dos jobs de `e2e.yml` caían antes de compilar, en
+  `android-actions/setup-android@v4`:
+  `Warning: Failed to find package 'tools'` y
+  `sdkmanager failed with exit code 1`. Runs rojos: 34893680768 (6c6a8f8,
+  intentos 1 y 2), 34895140288 (f7e9e37) y 34895721643 (994df44).
+  **Causa, confirmada y no supuesta:** entre el último verde (34891490592,
+  914ebf7) y el primer rojo no cambió nada propio. Misma SHA de la acción
+  (`40fd30fb`), misma imagen del runner (`ubuntu-24.04` 20260907.300.1), mismo
+  cmdline-tools 20.0 y mismas entradas. La acción instala por defecto
+  `packages: 'tools platform-tools'` (`action.yml`), y `src/main.ts` llama a
+  `sdkmanager <pkg>` por cada paquete. `repository2-3.xml` y `-4.xml` de
+  `dl.google.com` ya no publican `path="tools"` (el SDK Tools 26, obsoleto);
+  sí siguen `platform-tools` y `emulator`. El cambio vino del repositorio de
+  Google.
+  **Arreglo** (`26be92e`): `packages: 'platform-tools'` en el paso. Antes se
+  comprobó que nada necesita `tools`: `e2e/run.mjs` solo llama a `adb`, y
+  `android-emulator-runner` (a421e43) instala por su cuenta build-tools,
+  platform-tools, platform, emulator e imagen del sistema.
+  **Verificación:** el run de la rama compartida (34897134446) lo canceló
+  `cancel-in-progress` por un push de otro bloque (`ef50681`). Relanzarlo
+  habría cancelado el run ajeno, así que se subió `26be92e` sin cambios a la
+  rama desechable `ci/e2e-setup-android-tools`, ya borrada. Run **34897503004**
+  (https://github.com/thejowe/lockin/actions/runs/34897503004): mock y
+  supabase en `success`, setup-android en verde, el recorrido pasó al primer
+  emulador (reintento `skipped`) y `gate` en `success`. Duración: 19 min 55 s
+  (mock) y 21 min 33 s (supabase).
+
 ## Acciones sobre Node 24 (2026-09-13)
 
 - [x] Acciones de GitHub Actions actualizadas fuera de Node 20 — verificado en
