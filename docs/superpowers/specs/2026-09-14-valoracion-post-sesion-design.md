@@ -173,7 +173,7 @@ Presentacional.
 - Refresca con `sessions.subscribe(matchId)` y con un tic de `SESSION_TICK_MS`.
 - Descarte local: clave `lockin:rating-dismissed:{sessionId}` = `'1'`. Una
   sesión descartada se devuelve como `null`.
-- Devuelve `{ session, busy, notice, answered, answer(wouldRepeat), dismiss(), refresh }`.
+- Devuelve `{ session, loading, busy, notice, answered, answer(wouldRepeat), dismiss(), refresh }`.
 - `answer`: llama a `rate`. Éxito → `answered = true` y `refresh`. Error de
   dominio (`SessionConflictError`, `SessionWindowError`,
   `SessionForbiddenError`) → `refresh` en silencio. Cualquier otro → `notice =
