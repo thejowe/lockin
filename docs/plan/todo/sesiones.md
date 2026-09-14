@@ -58,8 +58,8 @@ Plan: `docs/superpowers/plans/2026-09-13-sesiones-lockin.md`. Una casilla por ta
   para el npm que trae Node 22 en Actions (npm 10 pedía `@emnapi/core` y
   `@emnapi/runtime@1.11.3` que el lock no traía), aunque npm 11 local no lo
   detectaba.
-- [ ] Tarea 11 — Verificación final — abierta; faltan el E2E del Step 2 y el
-  Step 4.
+- [ ] Tarea 11 — Verificación final — abierta; solo falta el Step 4 (dos
+  móviles, lo confirma el usuario).
   - [x] Step 1, todo el repo en verde en local (2026-09-14, sobre f7e9e37):
     `npm run lint` limpio; `npm test -- --coverage` con 509 tests en 50
     suites (1 suite y 52 tests skipped, los de contrato opt-in) y Jest salió
@@ -76,21 +76,31 @@ Plan: `docs/superpowers/plans/2026-09-13-sesiones-lockin.md`. Una casilla por ta
     CI, que parte de un checkout limpio. Antes, en f7e9e37, se pasó prettier a
     `seed.ts`, `supabase/index.ts`, `sessions.ts` y `sessions.test.ts`, que
     tenían el job `Formato` en rojo desde 82e4088.
-  - [ ] Step 2, CI completo del último commit (f7e9e37). `CI` en `success`
-    (Tipos, Lint, Formato, Tests, Runner E2E y Export web):
-    https://github.com/thejowe/lockin/actions/runs/34895140293. `Schema
-    drift` en `success`, con el job remoto ejecutado y `Sin diferencias.`
-    (ver Tarea 3b). **`E2E Android` en rojo, pero por el runner y no por el
-    caso**: los dos jobs caen en `android-actions/setup-android@v4` con
+  - [x] Step 2, CI completo del último commit: **cerrado en 45f24f2**
+    (2026-09-14), con los tres workflows en verde sobre el mismo commit:
+    `CI` (Tipos, Lint, Formato, Tests, Runner E2E y Export web)
+    https://github.com/thejowe/lockin/actions/runs/34899687002; `Schema
+    drift` con el job remoto ejecutado y `remote.diff` → `Sin diferencias.`
+    https://github.com/thejowe/lockin/actions/runs/34899686848; y `E2E
+    Android` (`supabase` y `mock`)
+    https://github.com/thejowe/lockin/actions/runs/34899686933, con las
+    líneas de oráculo `Postgres: alta, perfil, lo que busca, modo, like, match
+    y mensaje verificados.`, `Postgres: entrada y salida de la sesión Lock-In
+    verificadas.` y, en el control negativo, `Postgres: el APK sin
+    credenciales no ha escrito perfil ni mensaje.`. El arreglo del E2E lo hizo
+    `calidad` en 26be92e (instalar solo `platform-tools`; detalle en
+    `todo/calidad.md`). Historial del rojo previo, en f7e9e37: `CI` y `Schema
+    drift` ya estaban en verde (runs 34895140293 y 34895140336), pero **`E2E
+    Android` salía en rojo por el runner y no por el caso**: los dos jobs caían
+    en `android-actions/setup-android@v4` con
     `Warning: Failed to find package 'tools'` y `Error: The process
     '/usr/local/lib/android/sdk/cmdline-tools/20.0/bin/sdkmanager' failed
-    with exit code 1`, antes de compilar nada. Pasa igual en el run
+    with exit code 1`, antes de compilar nada. Pasó igual en el run
     https://github.com/thejowe/lockin/actions/runs/34895140288 (f7e9e37) y en
-    los dos intentos del 34893680768 (6c6a8f8). `e2e.yml` no ha cambiado
-    desde el run verde 34891490592 (914ebf7, 30 minutos antes), así que el
-    cambio viene de fuera: el sdkmanager de `cmdline-tools` 20.0, fijado en
-    `e2e.yml`, ya no encuentra el paquete `tools` que instala la acción. No
-    se toca `e2e.yml` desde este bloque porque es terreno de `calidad`.
+    los dos intentos del 34893680768 (6c6a8f8). La causa venía de fuera y no
+    del repo: Google retiró el paquete obsoleto `tools` de su repositorio del
+    SDK, y la acción lo instala por defecto. Como `e2e.yml` es terreno de
+    `calidad`, el arreglo se le encargó a ese bloque.
   - [x] Step 3, contrato opt-in: en verde contra Supabase local en Actions,
     nunca contra el proyecto real (ver la casilla en "Verificación manual").
   - [ ] Step 4, dos móviles: sin confirmar por el usuario todavía.
