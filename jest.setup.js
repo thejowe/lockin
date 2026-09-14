@@ -47,3 +47,17 @@ jest.mock(
   'react-native-safe-area-context',
   () => require('react-native-safe-area-context/jest/mock').default
 );
+
+// `expo-notifications` es nativo. `SessionReminderSync` se monta en el layout de
+// tabs, así que cualquier test que lo renderice lo importa. Este doble cubre
+// solo lo que usa `src/features/session/notifications-port.ts`; los tests que
+// necesiten otro comportamiento sustituyen las funciones con `mockResolvedValue`.
+jest.mock('expo-notifications', () => ({
+  AndroidImportance: { HIGH: 4 },
+  SchedulableTriggerInputTypes: { DATE: 'date' },
+  setNotificationChannelAsync: jest.fn(() => Promise.resolve(null)),
+  getPermissionsAsync: jest.fn(() => Promise.resolve({ granted: true, canAskAgain: true })),
+  requestPermissionsAsync: jest.fn(() => Promise.resolve({ granted: true, canAskAgain: true })),
+  scheduleNotificationAsync: jest.fn(() => Promise.resolve('notification-id')),
+  cancelScheduledNotificationAsync: jest.fn(() => Promise.resolve()),
+}));

@@ -4,6 +4,7 @@
  * Ojo: en RNTL 14 `render` y `fireEvent` son asíncronos.
  */
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
 import { DataProvider, SessionConflictError } from '@/data';
@@ -11,6 +12,7 @@ import { createMockRepositories, createMockSessionRepository, resetState } from 
 import { SEED_RECIPROCAL_IDS } from '@/data/mock/seed';
 import { buildProfileInput } from '@/data/test-fixtures';
 
+import { setReminderPermissionDenied } from './reminder-permission';
 import { SessionCard } from './session-card';
 
 import type { MatchWithProfile, Profile, Repositories } from '@/data';
@@ -28,6 +30,8 @@ let me: Profile;
 beforeEach(async () => {
   jest.restoreAllMocks();
   mockRouter.push.mockClear();
+  await AsyncStorage.clear();
+  setReminderPermissionDenied(false);
   resetState();
   repositories = createMockRepositories();
   me = await repositories.profiles.saveCurrent(buildProfileInput());
@@ -132,5 +136,18 @@ describe('SessionCard', () => {
       pathname: '/session/[sessionId]',
       params: { sessionId: session.id },
     });
+  });
+
+  it('con los avisos denegados lo avisa una vez y se puede descartar', async () => {
+    setReminderPermissionDenied(true);
+
+    await renderCard();
+
+    await waitFor(() =>
+      expect(screen.getByText('Activa los avisos para no perderte la sesión.')).toBeTruthy()
+    );
+    await fireEvent.press(screen.getByLabelText('Entendido'));
+    expect(screen.queryByText('Activa los avisos para no perderte la sesión.')).toBeNull();
+    await expect(AsyncStorage.getItem('lockin:reminder-hint-dismissed')).resolves.toBe('1');
   });
 });

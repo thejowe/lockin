@@ -20,7 +20,18 @@ Plan: `docs/superpowers/plans/2026-09-13-sesiones-lockin.md`. Una casilla por ta
 - [x] Tarea 6 — Lógica pura de reloj, tramos y textos
 - [x] Tarea 7 — Pantalla de sesión
 - [x] Tarea 8 — Tarjeta del chat y hoja de propuesta
-- [ ] Tarea 9 — Recordatorios locales
+- [x] Tarea 9 — Recordatorios locales — `expo-notifications` instalado (`npx expo
+  install`), canal `lockin-sessions` y trigger de fecha confirmados contra los
+  docs de SDK 57 (Android 12+ solo pide el permiso de manifiesto
+  `SCHEDULE_EXACT_ALARM`, ya en `app.json`; no hay permiso en tiempo de
+  ejecución adicional en Android 14). `reminders.ts` (reconciliación pura),
+  `notifications-port.ts` (puerto real), `reminder-permission.ts` (aviso
+  compartido con `SessionCard`) y `session-reminder-sync.tsx` (montado en
+  `(tabs)/_layout.tsx`, reconcilia al abrir la app y en cada cambio de matches
+  o sesiones). Mock de `expo-notifications` en `jest.setup.js`. `tsc --noEmit`,
+  `npm test -- --coverage`, `npm run lint` y `npm run format:check` en verde
+  (se añadió `reminder-permission.test.ts` para cubrir el fallback si falla la
+  lectura del descarte guardado, y así no bajar el umbral de cobertura).
 - [ ] Tarea 10 — E2E Android de entrar y salir
 - [ ] Tarea 11 — Verificación final
 

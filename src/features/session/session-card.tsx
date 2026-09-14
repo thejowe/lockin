@@ -18,6 +18,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { cardView } from './card-state';
 import { blocksLabel, formatSessionWhen, formatStartsIn } from './format';
 import { ProposeSessionSheet } from './propose-session-sheet';
+import { useReminderHint } from './reminder-permission';
 import { useActiveSession } from './use-active-session';
 
 import type { LockInSession, MatchWithProfile, Profile, SessionBlocks } from '@/data';
@@ -30,6 +31,7 @@ export function SessionCard({ match, me }: { match: MatchWithProfile; me: Profil
   const [sheetOpen, setSheetOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const reminderHint = useReminderHint();
 
   const firstName = match.counterpart.name.split(' ')[0];
   const view = cardView(session, me?.id ?? null, nowMs);
@@ -144,6 +146,22 @@ export function SessionCard({ match, me }: { match: MatchWithProfile; me: Profil
         </>
       )}
 
+      {reminderHint.visible && (
+        <View style={styles.row}>
+          <ThemedText type="small" themeColor="textSecondary" style={styles.hintText}>
+            Activa los avisos para no perderte la sesión.
+          </ThemedText>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Entendido"
+            onPress={reminderHint.dismiss}>
+            <ThemedText type="smallBold" themeColor="teal">
+              Entendido
+            </ThemedText>
+          </Pressable>
+        </View>
+      )}
+
       {notice && (
         <ThemedText type="small" themeColor="danger">
           {notice}
@@ -210,6 +228,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   row: { flexDirection: 'row', gap: Spacing.two },
+  hintText: { flexShrink: 1 },
   button: {
     alignItems: 'center',
     paddingVertical: Spacing.two,

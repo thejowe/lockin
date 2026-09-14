@@ -15,6 +15,7 @@ export {
 export { formatCountdown, phaseAt, type Phase, type PhaseKind } from './phase';
 export { ProposeSessionSheet } from './propose-session-sheet';
 export { SessionCard } from './session-card';
+export { SessionReminderSync } from './session-reminder-sync';
 export { dayOptions, preselectSlot, slotsForDay } from './slots';
 export { useActiveSession } from './use-active-session';
 export { useAttendance } from './use-attendance';
