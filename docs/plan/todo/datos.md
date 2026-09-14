@@ -288,7 +288,14 @@ Dos herramientas, complementarias a propósito:
     instaladas** — esperado hoy, y lo que hay que retirar antes de que el
     proyecto tenga usuarios reales.
 
-- [ ] **`schema-fingerprint.sql` sigue sin ejecutarse.** El lado del repo exige
+- [x] **Cotejo completo de `schema-fingerprint.sql` local Supabase ↔ remoto.**
+      **Cerrado el 2026-09-13** con el [run 34757433478](https://github.com/thejowe/lockin/actions/runs/34757433478)
+      (`9666b4e`): el remoto es las migraciones más exactamente las dos funciones
+      de desarrollo, nada más. Detalle en "Cotejo remoto ejecutado" al final.
+      Actualización 2026-09-09: el SQL sí se ejecutó en PostgreSQL embebido;
+      ver evidencia y workflow al final. Esto no cierra el cotejo contra
+      `grrzmzktrhksbttpbblg`. El diagnóstico que sigue es histórico (2026-09-07).
+      El lado del repo exige
       levantar la base local con Docker y en esta máquina no hay ni Docker ni
       `psql`; con media huella no se compara nada, así que no se ejecutó tampoco
       el lado remoto. Su sintaxis sí está verificada contra la gramática real de
@@ -517,3 +524,431 @@ nada: hay que esperar a la hora siguiente.
   La primera ejecución paralela tuvo un timeout de formulario y la primera
   en serie otro de render inicial de swipe-deck; repetición completa en serie
   verde (63 s), sin modificar tests, timeouts ni umbrales para ocultarlos.
+
+## Cotejo de esquema en Actions (2026-09-09, bloque datos)
+
+- [x] **Workflow propio implementado**, `.github/workflows/schema-drift.yml`,
+  sin editar `ci.yml`, E2E ni código de producto. Evidencia de validación YAML:
+  `Workflow YAML: push, workflow_dispatch, 2 jobs OK`. El checkout contiene
+  `.github/workflows/e2e.yml`, no `e2e-android.yml`; se leyó el primero y
+  `e2e/run.mjs:prepare` como patrón. CLI fijado a 2.116.0, runtime separado.
+  Esto certifica implementación/estructura, **no una ejecución en Actions**.
+- [x] **Comparador que falla y muestra diferencias**, validado con
+  `node --test supabase/schema-compare.test.mjs`: `tests 8`, `pass 8`,
+  `fail 0`. Rechaza salidas vacías/truncadas/digest incoherente; detecta
+  columnas, índices, políticas, funciones, GRANTs y duplicados. No hay
+  digest de referencia inventado: se genera desde migraciones sin seed.
+- [x] **Huella SQL ejecutada parcialmente sin Docker**, con PGlite 0.3.14
+  instalado en `%TEMP%/lockin-schema-validation`, sin cambiar dependencias
+  del repo. Reproducción en `supabase/schema-embedded.test.mjs`; README
+  explica `PGLITE_MODULE`. Salida literal:
+
+  ```text
+  SQL ejecutado: 7 migraciones; digest   34f1c73e81848bf08a31a5395a0edb50; 174 objetos
+  Funciones de desarrollo retiradas; no se han borrado datos.
+  Funciones de desarrollo retiradas; no se han borrado datos.
+  Rol lector, 4 mutaciones, teardown dos veces y guardia de sobrecarga: OK
+  ```
+
+  Pasada conjunta del comparador y SQL embebido: `tests 9`, `pass 9`,
+  `fail 0`, `skipped 0` (3.57 s). **Fixture mínima de Auth**: no GoTrue,
+  no permisos iniciales de Supabase, no seed de cuentas ni comparación con
+  el remoto. Ese digest no se adopta como huella esperada de Supabase.
+- [x] **Ausencia del secreto verificada y omisión implementada**. Lectura
+  autenticada de GitHub (solo nombres):
+  `gh secret list --repo thejowe/lockin --json name` → `[]`, exit 0.
+  En `.env.local` sí están URL/anon; no hay ACCESS_TOKEN, DB_PASSWORD ni
+  SCHEMA_DB_URL. En PATH no hay docker ni psql. La primera consulta a GitHub
+  estaba bloqueada por la red del sandbox; repetida con acceso de lectura
+  autorizado devolvió la lista vacía anterior. No confundir ese primer error
+  con un token inválido ni con prueba de ausencia de secretos.
+  El workflow tiene warning + resumen explícito y job remoto skipped si
+  falta `SUPABASE_SCHEMA_DB_URL`; un secreto presente pero erróneo falla.
+- [x] **Auditoría del detector y decisión de retirada escritas**, en
+  `supabase/README.md` → "Cotejo SQL en Actions". Evidencia del punto ciego:
+  `discovery_deck` se define tanto en 20260905000500 como en 20260907000200;
+  `parseMigrations()` acumula ambas y la sonda solo manda argumentos NULL.
+  El cuerpo nuevo puede pasar sin verificarse. Índices y políticas no se
+  parsean; DROP/RENAME/ALTER TYPE y otras DDL también pueden omitirse.
+  No se reescribió el parser. La huella añade argumentos/defaults/retorno,
+  search_path fijo y orden C; las cuatro mutaciones SQL sí se detectaron.
+  El teardown ahora es atómico y rechaza sobrecargas/dependencias inesperadas;
+  la prueba embebida anterior acredita idempotencia y rechazo de sobrecarga.
+  Gatillo acordado por esta implementación: **antes del primer APK/enlace
+  fuera del equipo de pruebas o primera cuenta real importada**. Retirar
+  herramientas no elimina cuentas/likes de seed; requiere inventario separado.
+- [x] **Ejecutar el workflow en GitHub Actions y pegar el enlace al run**.
+  [Run 34415065493](https://github.com/thejowe/lockin/actions/runs/34415065493),
+  commit `a6e4c9b`, job local `success`, remoto `skipped` por secreto ausente.
+  Supabase/PostgreSQL 17.6: reset sin seed = reset con seed + teardown;
+  rol lector, segundo teardown y cuatro controles SQL vía psql verificados.
+  `schema-local` descargado y leído: `local.diff`, `reader.diff`,
+  `teardown-twice.diff`, `after-controls.diff` → `Sin diferencias.`;
+  las cuatro mutaciones tienen diffs no vacíos. Salida literal y rutas abajo.
+  No existe `schema-remote`: este cierre verifica exclusivamente el job local.
+- [x] **Activar y ejecutar la comparación remota**. Crear rol lector y
+  guardar únicamente `SUPABASE_SCHEMA_DB_URL` según README; ejecutar el
+  workflow y adjuntar `remote.diff` y enlace al run. **Hecho el 2026-09-13**:
+  rol `lockin_schema_reader` y secreto creados por el usuario; runs
+  [34756968269](https://github.com/thejowe/lockin/actions/runs/34756968269) y
+  [34757433478](https://github.com/thejowe/lockin/actions/runs/34757433478),
+  `remote.diff` de los dos en `supabase/evidence/`. Ver "Cotejo remoto ejecutado".
+- [x] **Retirada verificada en el proyecto real** cuando se alcance el
+  gatillo anterior: ejecutar dev-teardown.sql con autoridad de administrador
+  y pegar su respuesta SQL aquí. **Hecho el 2026-09-13**, gatillo alcanzado.
+  El usuario ejecutó `supabase/dev-teardown.sql` en el SQL Editor y, después,
+  la consulta de solo lectura sobre `pg_proc` de los dos nombres en cualquier
+  esquema. Respuesta SQL pegada por el usuario, literal:
+
+  ```text
+  Success. No rows returned
+  ```
+
+  Es la salida de la consulta de verificación (0 filas). La fila de
+  `select … as resultado` del teardown no llegó al chat, así que no se cita
+  como obtenida; lo que demuestra la retirada es el run siguiente, no esa fila.
+  [Run 34760366206](https://github.com/thejowe/lockin/actions/runs/34760366206),
+  `93a0020`, `workflow_dispatch`: los dos jobs `success`. Antes, el
+  [run 34757718092](https://github.com/thejowe/lockin/actions/runs/34757718092)
+  del mismo commit seguía dando las diez líneas `+` de las dos funciones.
+  Artefactos en `supabase/evidence/34760366206/`. `remote.diff` literal:
+
+  ```text
+  Sin diferencias.
+  ```
+
+  Log del job remoto: `Remoto grrzmzktrhksbttpbblg: huella SQL coincide con
+  las migraciones de este commit. Funciones de desarrollo no permitidas.`
+  Digest de `remote.txt` = `expected.txt` = `22a5e5ccfffa27129df754ecd87c7480`
+  (antes `0a7ec9c0…`, el de migraciones + seed), y `remote.txt` no contiene
+  `dev_reset_current_user` ni `seed_incoming_likes`. En el job local,
+  `local`/`reader`/`teardown-twice`/`after-controls.diff` → `Sin diferencias.`
+  y los cuatro controles negativos siguen dando diff.
+
+Verificación final local: ESLint sobre los cinco `.mjs` de esta entrega, exit 0;
+Prettier sobre el workflow y los cuatro `.mjs` nuevos →
+`All matched files use Prettier code style!`; `git diff --check` de los archivos
+editados sin errores. Repetición final comparador + PGlite: `tests 9`, `pass 9`,
+`fail 0`, `skipped 0` (4.84 s). Verificación previa al commit; no se ha hecho push.
+
+### Continuación: ejecución real en Actions (2026-09-09)
+
+Rama desechable `codex/datos-verificar-schema-drift`, publicada sin cambiar la
+rama del worktree compartido. Commit inicial `dcfda36`: su mensaje explica la
+pregunta de verificación y que no está destinado a fusionarse. Los commits de
+prueba usan un índice temporal y `git add` por ruta; no incluyen trabajo pendiente
+de otros bloques. No se ha publicado la rama principal.
+
+Hallazgos conservados, sin convertir intentos en verificación:
+
+- [Run 34413868903](https://github.com/thejowe/lockin/actions/runs/34413868903),
+  `dcfda36`: `failure`, **0 jobs**. `actionlint` identificó literalmente
+  `context "runner" is not allowed here` en las líneas 22, 23 y 75 del workflow.
+  YAML válido no validaba los contextos de Actions. Corrección `5253dcf`:
+  inicializar rutas con `RUNNER_TEMP` y `GITHUB_ENV` en pasos.
+- [Run 34414099509](https://github.com/thejowe/lockin/actions/runs/34414099509),
+  `5253dcf`: siete migraciones aplicadas, pero
+  `AssertionError [ERR_ASSERTION]: psql falló (exit=2); no hay verificación`.
+  `gh run download` para ambos runs anteriores devolvió literalmente
+  `no valid artifacts found to download`. Log del segundo conservado en
+  `supabase/evidence/34414099509/failed.log`.
+- [Run 34414441294](https://github.com/thejowe/lockin/actions/runs/34414441294),
+  `c78d1d2`: conexión corregida separando campos `PG*`; `gh run download`
+  terminó con exit 0 y sin salida. Artefacto `schema-local` descargado en
+  `supabase/evidence/34414441294/schema-local/`: `expected.txt` y
+  `postgres-version.txt`, **sin local.txt ni diffs todavía**. Salida literal:
+
+  ```text
+  psql: reset --local --no-seed capturado en expected.txt.
+  17.6
+  digest   22a5e5ccfffa27129df754ecd87c7480
+  AssertionError [ERR_ASSERTION]: psql falló (exit=3); no hay verificación
+  ```
+
+  Falló al capturar bajo el rol lector; no se afirma equivalencia con seed.
+  Log conservado en `supabase/evidence/34414441294/failed.log`.
+
+Secreto: nueva consulta autenticada
+`gh secret list --repo thejowe/lockin --json name` → `[]`, exit 0.
+En el segundo run la anotación literal fue:
+
+```text
+Falta SUPABASE_SCHEMA_DB_URL. No se ha comparado grrzmzktrhksbttpbblg; el verde local no verifica el remoto.
+```
+
+La casilla de cotejo remoto sigue abierta. El SQL exacto de creación del rol y
+los pasos de SQL Editor → Connect/Session pooler → GitHub Actions secret están
+en `supabase/README.md`, sección «Activar el remoto: un secreto». Solo el usuario
+puede crear ese secreto. Ninguna credencial inventada o guardada en el repo.
+La casilla de retirada y su gatillo no se modifican; no se ha ejecutado SQL
+administrativo ni teardown contra el proyecto remoto.
+
+El [run de diagnóstico 34414726526](https://github.com/thejowe/lockin/actions/runs/34414726526)
+(`8af2215`) produjo `schema-local`, descargado con `gh run download` (exit 0,
+sin salida). `supabase/evidence/34414726526/schema-local/local-psql-error.txt`
+contiene literalmente:
+
+```text
+ERROR:  permission denied to set role "lockin_schema_reader"
+```
+
+La consulta de catálogo aún no había empezado bajo el lector. Corrección
+`a6e4c9b`: `grant lockin_schema_reader to current_user with set true;` únicamente
+en la base desechable, para que el administrador de la prueba pueda asumir el
+rol. No se amplían los privilegios del lector ni se ejecuta ese GRANT en remoto.
+
+#### Resultado verificado y artefactos leídos
+
+[Run 34415065493](https://github.com/thejowe/lockin/actions/runs/34415065493),
+commit `a6e4c9b45cf85493d5fb55091e752b72aabd1e33` en la rama desechable. Respuesta literal de
+`gh run view 34415065493 --repo thejowe/lockin --json status,conclusion,jobs`
+proyectada a estado y jobs:
+
+```json
+{"conclusion":"success","jobs":[{"conclusion":"success","name":"Huella local y controles negativos","status":"completed"},{"conclusion":"skipped","name":"Comparar grrzmzktrhksbttpbblg (solo lectura)","status":"completed"}],"status":"completed"}
+```
+
+`gh run download 34415065493 --repo thejowe/lockin --dir
+supabase/evidence/34415065493` → exit 0, sin salida. API de artefactos:
+
+```json
+{"artifacts":[{"digest":"sha256:e8765d78d0a96aa595fd969d57e5533539a2cc1c491f8c27f336ac3cd3cf932b","name":"schema-local","size_in_bytes":35871}],"total_count":1}
+```
+
+Los **19 archivos** descargados viven en
+`supabase/evidence/34415065493/schema-local/`. `expected.txt`, `local.txt`,
+`reader.txt`, `teardown-twice.txt` y `after-controls.txt` tienen la huella
+`digest   22a5e5ccfffa27129df754ecd87c7480` (PostgreSQL `17.6`).
+`development.txt` conserva ambas funciones de seed antes de la retirada local.
+El log completo está en `supabase/evidence/34415065493/run.log`.
+Fragmentos literales del log (sin prefijos de job/fecha):
+
+```text
+Falta SUPABASE_SCHEMA_DB_URL. No se ha comparado grrzmzktrhksbttpbblg; el verde local no verifica el remoto.
+psql: reset --local --no-seed capturado en expected.txt.
+psql: rol lector produce la misma huella (reader.diff).
+Seeding data from supabase/seed.sql...
+psql: reset con seed + teardown = reset sin seed (local.diff).
+psql: segundo teardown sin diferencias (teardown-twice.diff).
+psql: control negativo column detectado; transacción revertida.
+psql: control negativo index detectado; transacción revertida.
+psql: control negativo policy detectado; transacción revertida.
+psql: control negativo function detectado; transacción revertida.
+Local: migraciones = reset con seed + teardown. Rol lector, idempotencia y cuatro controles negativos PASADOS. Esto no verifica el proyecto remoto.
+```
+
+Contenido literal de cada uno de `local.diff`, `reader.diff`,
+`teardown-twice.diff` y `after-controls.diff`:
+
+```text
+Sin diferencias.
+```
+
+`negative-column.diff`:
+
+```diff
+--- esperado: migrations/
++++ observado
++ column   profiles.schema_drift_probe text notnull=f default=-
+```
+
+`negative-index.diff`:
+
+```diff
+--- esperado: migrations/
++++ observado
++ index    profiles.schema_drift_probe CREATE INDEX schema_drift_probe ON public.profiles USING btree (name)
+```
+
+`negative-policy.diff`:
+
+```diff
+--- esperado: migrations/
++++ observado
+- policy   profiles.profiles: cualquier autenticado puede leer cmd=SELECT permissive=PERMISSIVE roles=authenticated using=true check=-
++ policy   profiles.profiles: cualquier autenticado puede leer cmd=SELECT permissive=PERMISSIVE roles=authenticated using=false check=-
+```
+
+`negative-function.diff`:
+
+```diff
+--- esperado: migrations/
++++ observado
+- func     public.is_valid_prompts(jsonb) args=prompts jsonb returns=boolean lang=sql security=invoker volatile=i config=search_path="" body_md5=48cc8b2cc8bbf2c8a79ab32eb99dfa8e
++ func     public.is_valid_prompts(jsonb) args=prompts jsonb returns=boolean lang=sql security=invoker volatile=i config=search_path="" body_md5=7330325ebbea3b41b64113c40e7a7d39
+```
+
+No se descargó `schema-remote` porque la API confirma que no existe: no hay
+`remote.txt` ni `remote.diff`. Las dos casillas de comparación remota permanecen
+abiertas hasta que el usuario cree `SUPABASE_SCHEMA_DB_URL` y haya un run remoto
+con artefactos. La casilla de retirada permanece intacta y sin ejecutar.
+
+Validación de las correcciones: actionlint exit 0; ESLint de schema-ci.mjs exit 0;
+Prettier del script/workflow conforme; comparador Node `tests 8`, `pass 8`,
+`fail 0`, `skipped 0`. Estas comprobaciones acompañan al run, no lo sustituyen.
+
+Relectura independiente de las huellas descargadas con compareFingerprints:
+`Artefactos descargados: 4 igualdades y 4 diffs negativos reproducidos, OK`.
+
+## Cotejo remoto ejecutado (2026-09-13)
+
+El usuario creó `lockin_schema_reader` y el secreto `SUPABASE_SCHEMA_DB_URL`
+(Session pooler, `sslmode=require`); `gh secret list` lo lista desde
+2026-09-13T12:23:09Z. Ninguna credencial pasó por el chat ni está en el repo.
+
+### Primer run: diez cuerpos «distintos», todos por CRLF
+
+[Run 34756968269](https://github.com/thejowe/lockin/actions/runs/34756968269),
+`7f986af`, `workflow_dispatch`. Local `success`; remoto `failure` — se conectó
+y comparó, no es un skip. Tablas, columnas, constraints, índices, enums,
+triggers, políticas, grants de tabla y publicación: **iguales**. Lo distinto:
+el `body_md5` de las diez funciones, más las dos de desarrollo.
+
+Que cambiaran las diez a la vez, incluida `touch_updated_at`, olía a formato y
+no a lógica. Comprobado fuera de CI, extrayendo de `git show HEAD:` cada cuerpo
+entre sus delimitadores `$…$`: `md5(cuerpo LF)` = esperado en las diez, y
+`md5(cuerpo CRLF)` = remoto en las diez. Se pegaron en el SQL Editor desde este
+checkout de Windows (`core.autocrlf=true`, sin `.gitattributes`), y Postgres
+guarda `prosrc` byte a byte. Evidencia: `supabase/evidence/34756968269/schema-remote/`
+(`remote.diff`, `remote.txt`, `expected.txt`).
+
+Arreglo, `9666b4e`: la huella calcula `md5(replace(prosrc, E'\r\n', E'\n'))`, y
+`.gitattributes` fija `*.sql text eol=lf`. Descartado recrear las diez
+funciones en producción: escribir en el remoto por un salto de línea. Con
+PGlite, el mismo cuerpo en CRLF y en LF da la misma línea y un cuerpo distinto
+da otra; `node --test schema-compare.test.mjs schema-embedded.test.mjs` →
+`tests 9`, `pass 9`, `fail 0`.
+
+### Segundo run: el remoto es migraciones + funciones de desarrollo
+
+[Run 34757433478](https://github.com/thejowe/lockin/actions/runs/34757433478),
+`9666b4e`, push. Local `success`: `local.diff`, `reader.diff`,
+`teardown-twice.diff` y `after-controls.diff` → `Sin diferencias.`; el control
+negativo de función sigue dando diff (`body_md5=7330325e…`), así que la
+normalización no lo ha cegado. Remoto `failure` con
+`AssertionError [ERR_ASSERTION]: DERIVA: ver remote.diff`, y `remote.diff`
+literal:
+
+```diff
+--- esperado: migrations/
++++ observado
++ func     public.dev_reset_current_user() args= returns=void lang=plpgsql security=definer volatile=v config=search_path="" body_md5=89ce06b5f02a64f43388edbdbbcc0d91
++ func     public.seed_incoming_likes(text) args=p_email text returns=integer lang=plpgsql security=invoker volatile=v config=- body_md5=c13ae5ded7edad2ac1e28ecbdfcecb97
++ grantfn  public.dev_reset_current_user() authenticated EXECUTE
++ grantfn  public.dev_reset_current_user() postgres EXECUTE
++ grantfn  public.dev_reset_current_user() service_role EXECUTE
++ grantfn  public.seed_incoming_likes(text) PUBLIC EXECUTE
++ grantfn  public.seed_incoming_likes(text) anon EXECUTE
++ grantfn  public.seed_incoming_likes(text) authenticated EXECUTE
++ grantfn  public.seed_incoming_likes(text) postgres EXECUTE
++ grantfn  public.seed_incoming_likes(text) service_role EXECUTE
+```
+
+Solo líneas `+`, y solo de las dos funciones de seed. Quitadas esas líneas,
+`expected.txt` y `remote.txt` son idénticos (`diff` sin salida). Además el
+digest remoto `0a7ec9c04c40aa4d5fe9e87cf51c40bd` es el mismo que el de
+`development.txt` local (migraciones + seed antes del teardown) del primer run:
+el proyecto real está exactamente donde deben dejarlo migraciones más
+`seed.sql`. Artefactos completos en `supabase/evidence/34757433478/`.
+
+### Lo que queda
+
+Actualizado el 2026-09-13, tras la retirada (run 34760366206):
+
+- **El job remoto de `schema-drift.yml` ya debe salir verde.** Un rojo a
+  partir de aquí es deriva real, incluidas las dos funciones de desarrollo si
+  alguien vuelve a pegar `seed.sql` contra el proyecto.
+- **Cuentas y datos de seed siguen en la base.** La retirada quitó funciones,
+  no filas: las ocho cuentas de `seed.sql` (contraseña de desarrollo conocida),
+  sus perfiles y los likes sembrados, más los usuarios anónimos de pasadas de la
+  suite. Retirarlos es otro inventario: UUID concretos y revisión de cascadas,
+  nunca por `is_anonymous` ni por edad. Ver `supabase/README.md` → "Retirada".
+- **La suite de contrato remota ya no es ejecutable** contra este proyecto sin
+  `dev_reset_current_user()`: gasta un alta anónima por test y choca con el
+  límite de 30/hora. Hay que apuntarla a una base desechable
+  (`supabase start` + `db reset`), y no reinstalar la función en el remoto.
+
+## Limpieza de cuentas de seed y pruebas en `grrzmzktrhksbttpbblg`
+
+- [x] Inventario de solo lectura de qué filas son de seed, de pruebas o posibles
+      usuarios reales, y SQL de borrado para ejecutar como administrador —
+      **preparados y probados en PostgreSQL embebido (2026-09-13)**; ver abajo
+- [ ] Inventario ejecutado en el SQL Editor de `grrzmzktrhksbttpbblg` y su
+      resultado revisado y confirmado por el usuario — **pendiente del usuario**
+- [ ] `borrado.sql` ejecutado con los UUID y el acuse confirmados, y su fila de
+      resultado adjunta aquí — **no antes de la casilla anterior**
+
+### Por qué no lo ha ejecutado `datos`
+
+Ninguna credencial al alcance de este bloque lee esas filas: la clave `anon`
+pasa por RLS (sin `auth.users`, y de `decisions`/`matches`/`messages` solo lo
+propio), y `lockin_schema_reader` tiene `usage` sobre `public` pero ningún
+`select` sobre tablas. Abrir sesión para mirar tampoco es de solo lectura: un
+`signInAnonymously()` crea una cuenta más, y entrar como una de seed escribe
+sesión y `last_sign_in_at`. El inventario lo corre quien tenga el SQL Editor.
+
+### Qué hay
+
+- `supabase/cleanup/inventario.sql` — un único `select`, sin escrituras.
+  Una fila por cuenta de `auth.users` con categoría, perfil, swipes, matches,
+  mensajes y, en las cuentas que se quedan, el **colateral**: decisiones,
+  matches y mensajes suyos que caerían en cascada al borrar seed y pruebas (un
+  match con Núria se lleva los mensajes que escribió la otra persona). La
+  última fila suma ese colateral. Categorías:
+  - `seed` — UUID fijo **y** email `@seed.lockin.app` (si solo una:
+    `revisar: seed incoherente`).
+  - `prueba: contrato con perfil` — anónimo con perfil «Recíproca Par/Lockin/
+    Ambos» o «Perfil Prueba» (nombres de `contract.test.ts` y
+    `test-fixtures.ts`): pasada que murió antes del teardown.
+  - `prueba: contrato sin perfil (ráfaga)` — anónimo sin perfil con al menos
+    otros 3 anónimos a menos de 5 minutos: cada pasada da cuatro altas seguidas.
+  - `prueba: cuenta de dispositivo sin perfil` — `device-…@lockin.app`.
+  - `revisar: posible usuario real` — el resto, incluido el recorrido a mano
+    del 2026-09-06 y los anónimos sueltos sin perfil, que no se distinguen de
+    un onboarding abandonado. Nunca se clasifica por `is_anonymous` ni por edad.
+- `supabase/cleanup/borrado.sql` — una transacción. Los ocho UUID de seed van
+  fijos; los de prueba se pegan a mano (EDITAR 1/2) y el colateral total del
+  inventario se copia al acuse (EDITAR 2/2, que viene a `-1` para no pasar sin
+  mirarlo). Aborta sin borrar nada si un id no existe, si un UUID de seed no
+  tiene su email, si un id de prueba tiene perfil con otro nombre (no se borra
+  un perfil real desde aquí aunque se pegue), si el colateral real no coincide
+  con el acuse, si no borra exactamente tantas filas como ids, o si queda algún
+  perfil de ellos o alguna cuenta `@seed.lockin.app`. Borra solo en
+  `auth.users`; el resto cae por las FK de `migrations/`.
+- `supabase/cleanup.test.mjs` — ambos contra PGlite 0.3.14 con las siete
+  migraciones y la parte de cuentas y perfiles de `seed.sql` real, más: un
+  anónimo «Joel» con like cruzado, match y mensaje con Núria y un pass a Marc;
+  un anónimo suelto sin perfil; dos ráfagas de cuatro (una tras el teardown,
+  otra muerta con perfiles); y una cuenta de dispositivo. Salida:
+  `19 cuentas → 8 «seed», 1 dispositivo, 4 ráfaga, 4 con perfil, 2 «revisar»;
+  TOTAL colateral 3/1/1`, el inventario no cambia ninguna fila, el acuse a `-1`
+  aborta con `Colateral sobre cuentas que se quedan: 3 decisiones, 1 matches,
+  1 mensajes`, pegar a Joel aborta con `No son reconocibles como prueba, revisar
+  a mano: aaaaaaaa-… (Joel)`, un id inexistente aborta, los rechazos no borran
+  nada, y el borrado bueno deja `cuentas_restantes 2, seed_restantes 0,
+  perfiles_restantes 1` con Joel y el suelto; repetirlo aborta. `tests 1`,
+  `pass 1`, `fail 0`.
+  Verificado por mutación: umbral de ráfaga a `>= 9` → `fail 1`; guardia de
+  colateral anulada → `fail 1, Missing expected rejection`. Evidencia en
+  `supabase/evidence/limpieza-2026-09-13/pglite.txt`. Como
+  `schema-embedded.test.mjs`, se salta sin `PGLITE_MODULE` y no está en CI.
+  Lo que no prueba: GoTrue ni sus tablas hijas de `auth` (sesiones,
+  identidades), cuyas cascadas son de Supabase y no de este repo.
+
+### Para el usuario
+
+1. SQL Editor → pegar `supabase/cleanup/inventario.sql` → ejecutar →
+   descargar CSV. Guardarlo (o pasarlo) para
+   `supabase/evidence/limpieza-2026-09-13/inventario-remoto.csv`: los UUID
+   anónimos no son secretos, pero si hay emails reales, quitarlos antes.
+2. Confirmar fila a fila qué `prueba:` y qué `revisar:` son de verdad pruebas.
+   Si se borra alguna `revisar`, su colateral deja de contar y el acuse cambia:
+   la propia guardia dice el número real al abortar.
+3. Rellenar los dos EDITAR de `borrado.sql`, ejecutarlo y adjuntar su fila de
+   resultado aquí.
+
+El README (`supabase/README.md` → "Mantenimiento") recomendaba
+`delete from auth.users where is_anonymous = true`; queda marcado como
+obsoleto para este proyecto y remite aquí. El mismo consejo sigue en el mensaje
+de error de `assertCatalogFitsInOneDeckPage()` en `contract.test.ts`, que ya
+solo debe correr contra una base desechable, donde es correcto.

@@ -19,6 +19,12 @@ jobs:
     #   mock     → debe fallar DESPUÉS del reinicio y no escribir nada.
     # Si el control negativo pasara en verde, el caso positivo no estaría
     # probando la integración; por eso corre en cada push, no solo a mano.
+    #
+    # Hubo una tercera, `probe`: una sonda de diagnóstico que corría
+    # `keyboard-probe.yaml` con el APK de `supabase` para preguntar, por el
+    # camino más corto, si el compositor quedaba por encima del teclado. Se
+    # retiró el 2026-09-09 con la pregunta cerrada; el porqué está en
+    # `e2e/README.md` y en `docs/plan/todo/calidad.md`.
     name: E2E Android (${{ matrix.variant }})
     runs-on: ubuntu-24.04
     # Dos emuladores caben: build ~9 min y cada pasada de emulador ~15.
@@ -29,36 +35,36 @@ jobs:
         include:
           - variant: supabase
             negative: '0'
-            probe: '0'
           - variant: mock
             negative: '1'
-            probe: '0'
-          # Sonda temporal: mismo APK que `supabase`, otro .yaml, camino corto
-          # hasta el compositor con el teclado abierto. Segundo tiro a la misma
-          # pregunta en la misma pasada. Se retira con el compositor verificado.
-          - variant: probe
-            negative: '0'
-            probe: '1'
     env:
       CI: '1'
       EXPO_NO_TELEMETRY: '1'
       E2E_NEGATIVE_CONTROL: ${{ matrix.negative }}
-      E2E_KEYBOARD_PROBE: ${{ matrix.probe }}
       E2E_ARTIFACTS: e2e/artifacts/${{ matrix.variant }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
-      - uses: gradle/actions/setup-gradle@v4
-      - uses: supabase/setup-cli@v1
+      - uses: android-actions/setup-android@v4
         with:
+          # Herramientas 20.0, nuevo valor de v4; el emulador sigue en API 36.
+          cmdline-tools-version: '14742923'
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          # Expo genera Gradle después y fuera del checkout: el caché básico
+          # falla sin archivos que hashear. Desactivarlo también evita cargar
+          # el proveedor propietario que v6 usa por defecto.
+          cache-disabled: true
+      - uses: supabase/setup-cli@v3
+        with:
+          # v3 instala desde npm: fijar la versión evita autodetección o latest.
           version: 2.116.0
       - name: Install Maestro
         run: |
@@ -129,7 +135,7 @@ jobs:
           df -h > "$E2E_ARTIFACTS/disk.txt"
       - name: Evidencia (también si falla)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-android-${{ matrix.variant }}
           path: e2e/artifacts/

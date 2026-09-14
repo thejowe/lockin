@@ -287,6 +287,7 @@ async function resetCurrentUser(): Promise<string> {
 
 const supabaseBackend: ContractBackend = {
   name: 'supabase',
+  canTimeTravel: false,
 
   async reset(): Promise<ContractFixture> {
     const currentUserId = await resetCurrentUser();
@@ -334,6 +335,14 @@ const supabaseBackend: ContractBackend = {
       nonReciprocalId: DIEGO_ID,
       excludableId: LUCIA_ID,
       unknownProfileId: UNKNOWN_ID,
+      // PROVISIONAL: los implementa la Tarea 4 del plan de sesiones.
+      counterpartSessions() {
+        throw new Error('Pendiente de la Tarea 4 del plan de sesiones');
+      },
+      outsiderSessions() {
+        throw new Error('Pendiente de la Tarea 4 del plan de sesiones');
+      },
+      elapse: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
     };
   },
 

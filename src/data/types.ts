@@ -204,3 +204,46 @@ export interface Session {
   /** Modo activo elegido en el onboarding. */
   activeMode: ModePreference | null;
 }
+
+/** Bloques de una sesión Lock-In: cada uno son 25 min de trabajo + 5 de descanso. */
+export type SessionBlocks = 1 | 2 | 4;
+
+/**
+ * Estado guardado de una sesión. "Caducada", "en curso" y "terminada" no están
+ * aquí a propósito: se derivan de la hora (ver `src/data/sessions.ts`).
+ */
+export type SessionStatus = 'propuesta' | 'aceptada' | 'rechazada' | 'cancelada';
+
+/** Sesión Lock-In entre las dos personas de un match. */
+export interface LockInSession {
+  id: string;
+  matchId: string;
+  /** Id del perfil que propone. */
+  proposedBy: string;
+  /** ISO. Inicio del primer bloque. */
+  startsAt: string;
+  blocks: SessionBlocks;
+  status: SessionStatus;
+  createdAt: string;
+  /** ISO del paso a aceptada/rechazada/cancelada; `null` mientras es propuesta. */
+  respondedAt: string | null;
+}
+
+/** Asistencia de una persona a una sesión. */
+export interface SessionAttendance {
+  sessionId: string;
+  profileId: string;
+  joinedAt: string;
+  /**
+   * `null` = no salió de forma explícita: se quedó hasta el final o cerró la
+   * app. Solo cuenta como abandono un `leftAt` anterior al final de la sesión.
+   */
+  leftAt: string | null;
+}
+
+/** Datos para proponer una sesión. El repositorio pone id, autor y estado. */
+export interface SessionProposalInput {
+  matchId: string;
+  startsAt: string;
+  blocks: SessionBlocks;
+}

@@ -1,0 +1,442 @@
+Huella local y controles negativos	Set up job	﻿2026-09-09T23:02:12.3763889Z Current runner version: '2.337.0'
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.3790960Z ##[group]Runner Image Provisioner
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.3791963Z Hosted Compute Agent
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.3792649Z Version: 20260828.587
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.3793341Z Commit: abac92662cab4cc7352de4f9f9d2e2419aad9c29
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.3794168Z Build Date: 2026-08-28T16:44:25Z
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.3794875Z Worker ID: {bcb0d696-ce27-4390-99e8-8aecea427dca}
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.3795613Z Azure Region: westus
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.3796683Z ##[endgroup]
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.3798438Z ##[group]Operating System
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.3799063Z Ubuntu
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.3799672Z 24.04.5
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.3800214Z LTS
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.3801170Z ##[endgroup]
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.3801772Z ##[group]Runner Image
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.3802395Z Image: ubuntu-24.04
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.3803021Z Version: 20260907.300.1
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.3804115Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260907.300/images/ubuntu/Ubuntu2404-Readme.md
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.3805931Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260907.300
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.3807238Z ##[endgroup]
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.3808506Z ##[group]GITHUB_TOKEN Permissions
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.3810683Z Contents: read
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.3811416Z Metadata: read
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.3811973Z ##[endgroup]
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.3814257Z Secret source: Actions
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.3815313Z Cache mode: write
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.3816060Z Prepare workflow directory
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.4171850Z Prepare all required actions
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.4223319Z Getting action download info
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.7973278Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+Huella local y controles negativos	Set up job	2026-09-09T23:02:12.9394839Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+Huella local y controles negativos	Set up job	2026-09-09T23:02:13.0640773Z Download action repository 'supabase/setup-cli@v1' (SHA:ab058987d8d6c725971f6cf9d0b5c98467e30bd1)
+Huella local y controles negativos	Set up job	2026-09-09T23:02:13.4464250Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+Huella local y controles negativos	Set up job	2026-09-09T23:02:13.6664398Z Complete job name: Huella local y controles negativos
+Huella local y controles negativos	Run actions/checkout@v4	﻿2026-09-09T23:02:13.7467840Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.7477200Z ##[group]Run actions/checkout@v4
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.7477977Z with:
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.7478431Z   repository: thejowe/lockin
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.7482264Z   token: ***
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.7482694Z   ssh-strict: true
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.7483127Z   ssh-user: git
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.7483574Z   persist-credentials: true
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.7484056Z   clean: true
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.7484496Z   sparse-checkout-cone-mode: true
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.7485008Z   fetch-depth: 1
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.7485447Z   fetch-tags: false
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.7485881Z   show-progress: true
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.7486542Z   lfs: false
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.7486954Z   submodules: false
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.7487439Z   set-safe-directory: true
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.7487947Z   allow-unsafe-pr-checkout: false
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.7488751Z ##[endgroup]
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8547316Z Syncing repository: thejowe/lockin
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8550157Z ##[group]Getting Git version info
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8551309Z Working directory is '/home/runner/work/lockin/lockin'
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8552897Z [command]/usr/bin/git version
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8630113Z git version 2.55.0
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8659528Z ##[endgroup]
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8674950Z Temporarily overriding HOME='/home/runner/work/_temp/dfb24c58-d350-4757-a32f-8754122da957' before making global git config changes
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8677896Z Adding repository directory to the temporary git global config as a safe directory
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8681473Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/lockin/lockin
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8747576Z Deleting the contents of '/home/runner/work/lockin/lockin'
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8750744Z ##[group]Initializing the repository
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8757620Z [command]/usr/bin/git init /home/runner/work/lockin/lockin
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8878206Z hint: Using 'master' as the name for the initial branch. This default branch name
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8880119Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8882052Z hint: to use in all of your new repositories, which will suppress this warning,
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8883387Z hint: call:
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8884345Z hint:
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8885579Z hint: 	git config --global init.defaultBranch <name>
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8887513Z hint:
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8888783Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8890712Z hint: 'development'. The just-created branch can be renamed via this command:
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8892199Z hint:
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8893033Z hint: 	git branch -m <name>
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8894072Z hint:
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8895475Z hint: Disable this message with "git config set advice.defaultBranchName false"
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8897609Z Initialized empty Git repository in /home/runner/work/lockin/lockin/.git/
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8899343Z [command]/usr/bin/git remote add origin https://github.com/thejowe/lockin
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8954051Z ##[endgroup]
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8955538Z ##[group]Disabling automatic garbage collection
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8958399Z [command]/usr/bin/git config --local gc.auto 0
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8993215Z ##[endgroup]
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.8994853Z ##[group]Setting up auth
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.9010086Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.9046428Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.9427808Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.9468413Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.9694993Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.9732825Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:13.9961910Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:14.0003105Z ##[endgroup]
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:14.0003959Z ##[group]Fetching the repository
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:14.0015458Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +a6e4c9b45cf85493d5fb55091e752b72aabd1e33:refs/remotes/origin/codex/datos-verificar-schema-drift
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:14.6135160Z From https://github.com/thejowe/lockin
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:14.6137843Z  * [new ref]         a6e4c9b45cf85493d5fb55091e752b72aabd1e33 -> origin/codex/datos-verificar-schema-drift
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:14.6142787Z ##[endgroup]
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:14.6144910Z ##[group]Determining the checkout info
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:14.6147389Z ##[endgroup]
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:14.6152503Z [command]/usr/bin/git sparse-checkout disable
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:14.6209120Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:14.6245722Z ##[group]Checking out the ref
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:14.6247544Z [command]/usr/bin/git checkout --progress --force -B codex/datos-verificar-schema-drift refs/remotes/origin/codex/datos-verificar-schema-drift
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:14.6474265Z Switched to a new branch 'codex/datos-verificar-schema-drift'
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:14.6480721Z branch 'codex/datos-verificar-schema-drift' set up to track 'origin/codex/datos-verificar-schema-drift'.
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:14.6488005Z ##[endgroup]
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:14.6535432Z [command]/usr/bin/git log -1 --format=%H
+Huella local y controles negativos	Run actions/checkout@v4	2026-09-09T23:02:14.6564650Z a6e4c9b45cf85493d5fb55091e752b72aabd1e33
+Huella local y controles negativos	Directorios de evidencia	﻿2026-09-09T23:02:14.6886737Z ##[group]Run echo "SCHEMA_RUNTIME=$RUNNER_TEMP/lockin-schema" >> "$GITHUB_ENV"
+Huella local y controles negativos	Directorios de evidencia	2026-09-09T23:02:14.6888350Z ^[[36;1mecho "SCHEMA_RUNTIME=$RUNNER_TEMP/lockin-schema" >> "$GITHUB_ENV"^[[0m
+Huella local y controles negativos	Directorios de evidencia	2026-09-09T23:02:14.6889628Z ^[[36;1mecho "SCHEMA_ARTIFACTS=$RUNNER_TEMP/schema-evidence" >> "$GITHUB_ENV"^[[0m
+Huella local y controles negativos	Directorios de evidencia	2026-09-09T23:02:14.6938745Z shell: /usr/bin/bash -e {0}
+Huella local y controles negativos	Directorios de evidencia	2026-09-09T23:02:14.6939369Z ##[endgroup]
+Huella local y controles negativos	Run actions/setup-node@v4	﻿2026-09-09T23:02:14.7159724Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Huella local y controles negativos	Run actions/setup-node@v4	2026-09-09T23:02:14.7162484Z ##[group]Run actions/setup-node@v4
+Huella local y controles negativos	Run actions/setup-node@v4	2026-09-09T23:02:14.7163052Z with:
+Huella local y controles negativos	Run actions/setup-node@v4	2026-09-09T23:02:14.7163488Z   node-version: 22
+Huella local y controles negativos	Run actions/setup-node@v4	2026-09-09T23:02:14.7163968Z   always-auth: false
+Huella local y controles negativos	Run actions/setup-node@v4	2026-09-09T23:02:14.7164446Z   check-latest: false
+Huella local y controles negativos	Run actions/setup-node@v4	2026-09-09T23:02:14.7168642Z   token: ***
+Huella local y controles negativos	Run actions/setup-node@v4	2026-09-09T23:02:14.7169109Z env:
+Huella local y controles negativos	Run actions/setup-node@v4	2026-09-09T23:02:14.7169638Z   SCHEMA_RUNTIME: /home/runner/work/_temp/lockin-schema
+Huella local y controles negativos	Run actions/setup-node@v4	2026-09-09T23:02:14.7170430Z   SCHEMA_ARTIFACTS: /home/runner/work/_temp/schema-evidence
+Huella local y controles negativos	Run actions/setup-node@v4	2026-09-09T23:02:14.7171126Z ##[endgroup]
+Huella local y controles negativos	Run actions/setup-node@v4	2026-09-09T23:02:14.8670281Z Found in cache @ /opt/hostedtoolcache/node/22.23.2/x64
+Huella local y controles negativos	Run actions/setup-node@v4	2026-09-09T23:02:14.8675779Z (node:2157) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+Huella local y controles negativos	Run actions/setup-node@v4	2026-09-09T23:02:14.8679461Z (Use `node --trace-deprecation ...` to show where the warning was created)
+Huella local y controles negativos	Run actions/setup-node@v4	2026-09-09T23:02:14.8682007Z ##[group]Environment details
+Huella local y controles negativos	Run actions/setup-node@v4	2026-09-09T23:02:15.2861974Z node: v22.23.2
+Huella local y controles negativos	Run actions/setup-node@v4	2026-09-09T23:02:15.2863349Z npm: 10.9.8
+Huella local y controles negativos	Run actions/setup-node@v4	2026-09-09T23:02:15.2864426Z yarn: 1.22.22
+Huella local y controles negativos	Run actions/setup-node@v4	2026-09-09T23:02:15.2867017Z ##[endgroup]
+Huella local y controles negativos	Run supabase/setup-cli@v1	﻿2026-09-09T23:02:15.3061952Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Huella local y controles negativos	Run supabase/setup-cli@v1	2026-09-09T23:02:15.3067860Z ##[group]Run supabase/setup-cli@v1
+Huella local y controles negativos	Run supabase/setup-cli@v1	2026-09-09T23:02:15.3069078Z with:
+Huella local y controles negativos	Run supabase/setup-cli@v1	2026-09-09T23:02:15.3069988Z   version: 2.116.0
+Huella local y controles negativos	Run supabase/setup-cli@v1	2026-09-09T23:02:15.3070961Z env:
+Huella local y controles negativos	Run supabase/setup-cli@v1	2026-09-09T23:02:15.3072072Z   SCHEMA_RUNTIME: /home/runner/work/_temp/lockin-schema
+Huella local y controles negativos	Run supabase/setup-cli@v1	2026-09-09T23:02:15.3073848Z   SCHEMA_ARTIFACTS: /home/runner/work/_temp/schema-evidence
+Huella local y controles negativos	Run supabase/setup-cli@v1	2026-09-09T23:02:15.3075399Z ##[endgroup]
+Huella local y controles negativos	Run supabase/setup-cli@v1	2026-09-09T23:02:15.9407896Z [command]/usr/bin/tar xz --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/b69c6c50-d955-4940-a3a3-485e5c386f08 -f /home/runner/work/_temp/48d92740-810a-44bd-8aba-12b0501fd021
+Huella local y controles negativos	Disponibilidad de la comparación remota	﻿2026-09-09T23:02:17.4974724Z ##[group]Run if [ -n "$REMOTE_DB_URL" ]; then
+Huella local y controles negativos	Disponibilidad de la comparación remota	2026-09-09T23:02:17.4975236Z ^[[36;1mif [ -n "$REMOTE_DB_URL" ]; then^[[0m
+Huella local y controles negativos	Disponibilidad de la comparación remota	2026-09-09T23:02:17.4975624Z ^[[36;1m  echo 'enabled=true' >> "$GITHUB_OUTPUT"^[[0m
+Huella local y controles negativos	Disponibilidad de la comparación remota	2026-09-09T23:02:17.4975969Z ^[[36;1melse^[[0m
+Huella local y controles negativos	Disponibilidad de la comparación remota	2026-09-09T23:02:17.4976654Z ^[[36;1m  echo 'enabled=false' >> "$GITHUB_OUTPUT"^[[0m
+Huella local y controles negativos	Disponibilidad de la comparación remota	2026-09-09T23:02:17.4977535Z ^[[36;1m  echo '::warning title=Comparación remota OMITIDA::Falta SUPABASE_SCHEMA_DB_URL. No se ha comparado grrzmzktrhksbttpbblg; el verde local no verifica el remoto.'^[[0m
+Huella local y controles negativos	Disponibilidad de la comparación remota	2026-09-09T23:02:17.4978484Z ^[[36;1m  echo '## ⚠️ Remoto OMITIDO: falta SUPABASE_SCHEMA_DB_URL' >> "$GITHUB_STEP_SUMMARY"^[[0m
+Huella local y controles negativos	Disponibilidad de la comparación remota	2026-09-09T23:02:17.4979245Z ^[[36;1m  echo 'No hay evidencia de igualdad con grrzmzktrhksbttpbblg. Ver supabase/README.md.' >> "$GITHUB_STEP_SUMMARY"^[[0m
+Huella local y controles negativos	Disponibilidad de la comparación remota	2026-09-09T23:02:17.4979828Z ^[[36;1mfi^[[0m
+Huella local y controles negativos	Disponibilidad de la comparación remota	2026-09-09T23:02:17.5025200Z shell: /usr/bin/bash -e {0}
+Huella local y controles negativos	Disponibilidad de la comparación remota	2026-09-09T23:02:17.5025749Z env:
+Huella local y controles negativos	Disponibilidad de la comparación remota	2026-09-09T23:02:17.5026062Z   SCHEMA_RUNTIME: /home/runner/work/_temp/lockin-schema
+Huella local y controles negativos	Disponibilidad de la comparación remota	2026-09-09T23:02:17.5026875Z   SCHEMA_ARTIFACTS: /home/runner/work/_temp/schema-evidence
+Huella local y controles negativos	Disponibilidad de la comparación remota	2026-09-09T23:02:17.5027308Z   SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
+Huella local y controles negativos	Disponibilidad de la comparación remota	2026-09-09T23:02:17.5027676Z   REMOTE_DB_URL: 
+Huella local y controles negativos	Disponibilidad de la comparación remota	2026-09-09T23:02:17.5027920Z ##[endgroup]
+Huella local y controles negativos	Disponibilidad de la comparación remota	2026-09-09T23:02:17.5111603Z ##[warning]Falta SUPABASE_SCHEMA_DB_URL. No se ha comparado grrzmzktrhksbttpbblg; el verde local no verifica el remoto.
+Huella local y controles negativos	Instalar cliente SQL	﻿2026-09-09T23:02:17.5187283Z ##[group]Run sudo apt-get update
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:17.5187715Z ^[[36;1msudo apt-get update^[[0m
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:17.5188080Z ^[[36;1msudo apt-get install --yes postgresql-client^[[0m
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:17.5228331Z shell: /usr/bin/bash -e {0}
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:17.5228650Z env:
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:17.5228959Z   SCHEMA_RUNTIME: /home/runner/work/_temp/lockin-schema
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:17.5229418Z   SCHEMA_ARTIFACTS: /home/runner/work/_temp/schema-evidence
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:17.5229855Z   SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:17.5230185Z ##[endgroup]
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:17.6545180Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:17.6970202Z Hit:2 http://azure.archive.ubuntu.com/ubuntu noble InRelease
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:17.6977833Z Get:6 https://packages.microsoft.com/ubuntu/24.04/prod noble InRelease [3600 B]
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:17.7015929Z Get:3 http://azure.archive.ubuntu.com/ubuntu noble-updates InRelease [126 kB]
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:17.7074161Z Get:4 http://azure.archive.ubuntu.com/ubuntu noble-backports InRelease [126 kB]
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:17.7138106Z Get:5 http://azure.archive.ubuntu.com/ubuntu noble-security InRelease [126 kB]
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:17.8155565Z Get:7 https://dl.google.com/linux/chrome-stable/deb stable InRelease [2548 B]
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:17.8678549Z Get:8 https://packages.microsoft.com/ubuntu/24.04/prod noble/main amd64 Packages [459 kB]
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:17.8836641Z Get:9 https://packages.microsoft.com/ubuntu/24.04/prod noble/main arm64 Packages [410 kB]
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:17.9336541Z Get:10 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages [1260 kB]
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:17.9421288Z Get:11 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 Components [181 kB]
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:17.9430191Z Get:12 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages [1690 kB]
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:17.9564703Z Get:13 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 Components [388 kB]
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:17.9587856Z Get:14 http://azure.archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages [1536 kB]
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:17.9791043Z Get:15 http://azure.archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 Components [940 B]
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:18.0011329Z Get:16 http://azure.archive.ubuntu.com/ubuntu noble-backports/main amd64 Components [5760 B]
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:18.0037735Z Get:17 http://azure.archive.ubuntu.com/ubuntu noble-backports/universe amd64 Components [12.6 kB]
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:18.0653532Z Get:18 http://azure.archive.ubuntu.com/ubuntu noble-security/main amd64 Packages [1005 kB]
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:18.0716871Z Get:19 http://azure.archive.ubuntu.com/ubuntu noble-security/main Translation-en [213 kB]
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:18.1166716Z Get:20 http://azure.archive.ubuntu.com/ubuntu noble-security/main amd64 Components [46.5 kB]
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:18.1168988Z Get:21 http://azure.archive.ubuntu.com/ubuntu noble-security/universe amd64 Packages [1206 kB]
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:18.1233765Z Get:22 http://azure.archive.ubuntu.com/ubuntu noble-security/universe amd64 Components [76.3 kB]
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:18.1247567Z Get:23 http://azure.archive.ubuntu.com/ubuntu noble-security/restricted amd64 Packages [1441 kB]
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:18.1326314Z Get:24 http://azure.archive.ubuntu.com/ubuntu noble-security/restricted Translation-en [334 kB]
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:18.1723001Z Get:25 https://dl.google.com/linux/chrome-stable/deb stable/main amd64 Packages [1412 B]
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:25.2134237Z Fetched 10.6 MB in 1s (8226 kB/s)
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:26.0854275Z Reading package lists...
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:26.1177581Z Reading package lists...
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:26.3360986Z Building dependency tree...
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:26.3372553Z Reading state information...
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:26.5379097Z The following NEW packages will be installed:
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:26.5379743Z   postgresql-client
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:26.5557754Z 0 upgraded, 1 newly installed, 0 to remove and 3 not upgraded.
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:26.5558702Z Need to get 11.6 kB of archives.
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:26.5559173Z After this operation, 17.4 kB of additional disk space will be used.
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:26.5560057Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:26.6306957Z Get:2 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 postgresql-client all 16+257build1.1 [11.6 kB]
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:26.9200065Z Fetched 11.6 kB in 0s (136 kB/s)
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:26.9692212Z Selecting previously unselected package postgresql-client.
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:27.0224869Z (Reading database ... 
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:27.0225302Z (Reading database ... 5%
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:27.0225623Z (Reading database ... 10%
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:27.0225928Z (Reading database ... 15%
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:27.0226543Z (Reading database ... 20%
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:27.0227023Z (Reading database ... 25%
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:27.0227473Z (Reading database ... 30%
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:27.0227828Z (Reading database ... 35%
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:27.0228123Z (Reading database ... 40%
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:27.0228414Z (Reading database ... 45%
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:27.0228837Z (Reading database ... 50%
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:27.0740071Z (Reading database ... 55%
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:27.4203952Z (Reading database ... 60%
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:27.6883119Z (Reading database ... 65%
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:29.2184938Z (Reading database ... 70%
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:29.4901010Z (Reading database ... 75%
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:29.9448117Z (Reading database ... 80%
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:30.4671691Z (Reading database ... 85%
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:31.0642468Z (Reading database ... 90%
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:31.6691180Z (Reading database ... 95%
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:31.6692149Z (Reading database ... 100%
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:31.6693047Z (Reading database ... 201818 files and directories currently installed.)
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:31.6737253Z Preparing to unpack .../postgresql-client_16+257build1.1_all.deb ...
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:31.6807049Z Unpacking postgresql-client (16+257build1.1) ...
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:31.7230856Z Setting up postgresql-client (16+257build1.1) ...
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:32.7705549Z 
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:32.7706498Z Running kernel seems to be up-to-date.
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:32.7706996Z 
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:32.7707268Z No services need to be restarted.
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:32.7707552Z 
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:32.7707776Z No containers need to be restarted.
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:32.7708065Z 
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:32.7708363Z No user sessions are running outdated binaries.
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:32.7708716Z 
+Huella local y controles negativos	Instalar cliente SQL	2026-09-09T23:02:32.7709186Z No VM guests are running outdated hypervisor (qemu) binaries on this host.
+Huella local y controles negativos	Verificar comparador	﻿2026-09-09T23:02:33.7630589Z ##[group]Run node --test supabase/schema-compare.test.mjs
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.7631105Z ^[[36;1mnode --test supabase/schema-compare.test.mjs^[[0m
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.7668583Z shell: /usr/bin/bash -e {0}
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.7690988Z env:
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.7691311Z   SCHEMA_RUNTIME: /home/runner/work/_temp/lockin-schema
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.7691760Z   SCHEMA_ARTIFACTS: /home/runner/work/_temp/schema-evidence
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.7692163Z   SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.7692477Z ##[endgroup]
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8213193Z TAP version 13
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8732836Z # Subtest: igualdad, incluso con transporte CRLF
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8743331Z ok 1 - igualdad, incluso con transporte CRLF
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8744174Z   ---
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8744948Z   duration_ms: 2.744515
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8745653Z   type: 'test'
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8746404Z   ...
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8747689Z # Subtest: rechaza salida vacía, truncada, digest falso y orden no canónico
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8755913Z ok 2 - rechaza salida vacía, truncada, digest falso y orden no canónico
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8757542Z   ---
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8758116Z   duration_ms: 2.532191
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8758726Z   type: 'test'
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8759258Z   ...
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8760025Z # Subtest: diff legible detecta cambio de column
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8761559Z ok 3 - diff legible detecta cambio de column
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8762805Z   ---
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8763133Z   duration_ms: 0.390617
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8763516Z   type: 'test'
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8763847Z   ...
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8765233Z # Subtest: diff legible detecta cambio de index
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8767423Z ok 4 - diff legible detecta cambio de index
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8768356Z   ---
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8768684Z   duration_ms: 0.268239
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8769100Z   type: 'test'
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8769423Z   ...
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8794240Z # Subtest: diff legible detecta cambio de policy
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8815719Z ok 5 - diff legible detecta cambio de policy
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8816556Z   ---
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8817023Z   duration_ms: 0.290721
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8817509Z   type: 'test'
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8817932Z   ...
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8818519Z # Subtest: diff legible detecta cambio de func
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8819259Z ok 6 - diff legible detecta cambio de func
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8819828Z   ---
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8820240Z   duration_ms: 0.250756
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8820733Z   type: 'test'
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8821151Z   ...
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8821767Z # Subtest: diff legible detecta cambio de grantfn
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8822643Z ok 7 - diff legible detecta cambio de grantfn
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8823292Z   ---
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8823777Z   duration_ms: 0.273228
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8824282Z   type: 'test'
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8824734Z   ...
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8825557Z # Subtest: objetos sobrantes y duplicados no desaparecen al comparar
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8827013Z ok 8 - objetos sobrantes y duplicados no desaparecen al comparar
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8827788Z   ---
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8828273Z   duration_ms: 0.264973
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8828785Z   type: 'test'
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8829232Z   ...
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8908014Z 1..8
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8908485Z # tests 8
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8908936Z # suites 0
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8909382Z # pass 8
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8909825Z # fail 0
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8910305Z # cancelled 0
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8910782Z # skipped 0
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8911236Z # todo 0
+Huella local y controles negativos	Verificar comparador	2026-09-09T23:02:33.8911761Z # duration_ms 83.755602
+Huella local y controles negativos	Supabase desechable y cotejo local	﻿2026-09-09T23:02:33.9009469Z ##[group]Run node supabase/schema-ci.mjs local
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:02:33.9009867Z ^[[36;1mnode supabase/schema-ci.mjs local^[[0m
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:02:33.9046804Z shell: /usr/bin/bash -e {0}
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:02:33.9047073Z env:
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:02:33.9047326Z   SCHEMA_RUNTIME: /home/runner/work/_temp/lockin-schema
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:02:33.9047739Z   SCHEMA_ARTIFACTS: /home/runner/work/_temp/schema-evidence
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:02:33.9048114Z   SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:02:33.9048439Z ##[endgroup]
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:02:34.5156332Z Finished supabase init.
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:02:35.0810249Z A new version of Supabase CLI is available: v2.117.0 (currently installed v2.116.0)
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:02:35.0811928Z We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:03:46.2561032Z Resetting local database...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:03:46.5234569Z Recreating database...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:03:57.0286591Z Initialising schema...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:02.0773641Z Seeding globals from roles.sql...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:02.0804229Z Applying migration 20260905000100_enums_and_helpers.sql...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:02.1010288Z Applying migration 20260905000200_profiles_and_settings.sql...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:02.1162975Z Applying migration 20260905000300_decisions_matches_messages.sql...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:02.1313797Z Applying migration 20260905000400_rls_policies.sql...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:02.1442558Z Applying migration 20260905000500_functions_and_realtime.sql...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:02.1658262Z Applying migration 20260907000100_profiles_seeking_specialties.sql...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:02.1733144Z Applying migration 20260907000200_discovery_mutual_complement.sql...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:02.1846758Z Restarting containers...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:13.1378343Z Finished supabase db reset on branch main.
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:13.6321983Z A new version of Supabase CLI is available: v2.117.0 (currently installed v2.116.0)
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:13.6323806Z We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:14.8368294Z psql: reset --local --no-seed capturado en expected.txt.
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:14.9723727Z psql: rol lector produce la misma huella (reader.diff).
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:15.5607624Z Resetting local database...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:15.8250935Z Recreating database...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:26.3375840Z Initialising schema...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:31.3280143Z Seeding globals from roles.sql...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:31.3311960Z Applying migration 20260905000100_enums_and_helpers.sql...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:31.3519192Z Applying migration 20260905000200_profiles_and_settings.sql...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:31.3673444Z Applying migration 20260905000300_decisions_matches_messages.sql...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:31.3823691Z Applying migration 20260905000400_rls_policies.sql...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:31.3948333Z Applying migration 20260905000500_functions_and_realtime.sql...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:31.4154414Z Applying migration 20260907000100_profiles_seeking_specialties.sql...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:31.4233538Z Applying migration 20260907000200_discovery_mutual_complement.sql...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:31.4409214Z Seeding data from supabase/seed.sql...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:31.4943990Z Restarting containers...
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:42.4424051Z Finished supabase db reset on branch main.
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:42.9397925Z A new version of Supabase CLI is available: v2.117.0 (currently installed v2.116.0)
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:42.9399534Z We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:43.1261501Z psql: reset con seed + teardown = reset sin seed (local.diff).
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:43.2262583Z psql: segundo teardown sin diferencias (teardown-twice.diff).
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:43.2835990Z --- esperado: migrations/
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:43.2837145Z +++ observado
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:43.2837965Z + column   profiles.schema_drift_probe text notnull=f default=-
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:43.2838579Z 
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:43.2841207Z psql: control negativo column detectado; transacción revertida.
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:43.3411932Z --- esperado: migrations/
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:43.3412431Z +++ observado
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:43.3413033Z + index    profiles.schema_drift_probe CREATE INDEX schema_drift_probe ON public.profiles USING btree (name)
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:43.3413474Z 
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:43.3413997Z psql: control negativo index detectado; transacción revertida.
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:43.3981127Z --- esperado: migrations/
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:43.3981514Z +++ observado
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:43.3982620Z - policy   profiles.profiles: cualquier autenticado puede leer cmd=SELECT permissive=PERMISSIVE roles=authenticated using=true check=-
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:43.3984302Z + policy   profiles.profiles: cualquier autenticado puede leer cmd=SELECT permissive=PERMISSIVE roles=authenticated using=false check=-
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:43.3984854Z 
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:43.3985386Z psql: control negativo policy detectado; transacción revertida.
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:43.4540822Z --- esperado: migrations/
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:43.4541487Z +++ observado
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:43.4549363Z - func     public.is_valid_prompts(jsonb) args=prompts jsonb returns=boolean lang=sql security=invoker volatile=i config=search_path="" body_md5=48cc8b2cc8bbf2c8a79ab32eb99dfa8e
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:43.4550893Z + func     public.is_valid_prompts(jsonb) args=prompts jsonb returns=boolean lang=sql security=invoker volatile=i config=search_path="" body_md5=7330325ebbea3b41b64113c40e7a7d39
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:43.4551644Z 
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:43.4552398Z psql: control negativo function detectado; transacción revertida.
+Huella local y controles negativos	Supabase desechable y cotejo local	2026-09-09T23:04:43.5091354Z Local: migraciones = reset con seed + teardown. Rol lector, idempotencia y cuatro controles negativos PASADOS. Esto no verifica el proyecto remoto.
+Huella local y controles negativos	Evidencia SQL y diffs (también si falla)	﻿2026-09-09T23:04:43.5208885Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Huella local y controles negativos	Evidencia SQL y diffs (también si falla)	2026-09-09T23:04:43.5210202Z ##[group]Run actions/upload-artifact@v4
+Huella local y controles negativos	Evidencia SQL y diffs (también si falla)	2026-09-09T23:04:43.5210471Z with:
+Huella local y controles negativos	Evidencia SQL y diffs (también si falla)	2026-09-09T23:04:43.5210660Z   name: schema-local
+Huella local y controles negativos	Evidencia SQL y diffs (también si falla)	2026-09-09T23:04:43.5210915Z   path: /home/runner/work/_temp/schema-evidence
+Huella local y controles negativos	Evidencia SQL y diffs (también si falla)	2026-09-09T23:04:43.5211220Z   if-no-files-found: warn
+Huella local y controles negativos	Evidencia SQL y diffs (también si falla)	2026-09-09T23:04:43.5211447Z   retention-days: 14
+Huella local y controles negativos	Evidencia SQL y diffs (también si falla)	2026-09-09T23:04:43.5211661Z   compression-level: 6
+Huella local y controles negativos	Evidencia SQL y diffs (también si falla)	2026-09-09T23:04:43.5211869Z   overwrite: false
+Huella local y controles negativos	Evidencia SQL y diffs (también si falla)	2026-09-09T23:04:43.5212094Z   include-hidden-files: false
+Huella local y controles negativos	Evidencia SQL y diffs (también si falla)	2026-09-09T23:04:43.5212323Z env:
+Huella local y controles negativos	Evidencia SQL y diffs (también si falla)	2026-09-09T23:04:43.5212556Z   SCHEMA_RUNTIME: /home/runner/work/_temp/lockin-schema
+Huella local y controles negativos	Evidencia SQL y diffs (también si falla)	2026-09-09T23:04:43.5212934Z   SCHEMA_ARTIFACTS: /home/runner/work/_temp/schema-evidence
+Huella local y controles negativos	Evidencia SQL y diffs (también si falla)	2026-09-09T23:04:43.5213314Z   SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
+Huella local y controles negativos	Evidencia SQL y diffs (también si falla)	2026-09-09T23:04:43.5213585Z ##[endgroup]
+Huella local y controles negativos	Evidencia SQL y diffs (también si falla)	2026-09-09T23:04:43.6904498Z (node:12044) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+Huella local y controles negativos	Evidencia SQL y diffs (también si falla)	2026-09-09T23:04:43.6905558Z (Use `node --trace-deprecation ...` to show where the warning was created)
+Huella local y controles negativos	Evidencia SQL y diffs (también si falla)	2026-09-09T23:04:43.7008145Z With the provided path, there will be 19 files uploaded
+Huella local y controles negativos	Evidencia SQL y diffs (también si falla)	2026-09-09T23:04:43.7015851Z Artifact name is valid!
+Huella local y controles negativos	Evidencia SQL y diffs (también si falla)	2026-09-09T23:04:43.7016840Z Root directory input is valid!
+Huella local y controles negativos	Evidencia SQL y diffs (también si falla)	2026-09-09T23:04:44.0840552Z Beginning upload of artifact content to blob storage
+Huella local y controles negativos	Evidencia SQL y diffs (también si falla)	2026-09-09T23:04:44.1288491Z (node:12044) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+Huella local y controles negativos	Evidencia SQL y diffs (también si falla)	2026-09-09T23:04:44.4689308Z Uploaded bytes 35871
+Huella local y controles negativos	Evidencia SQL y diffs (también si falla)	2026-09-09T23:04:44.5485893Z Finished uploading artifact content to blob storage!
+Huella local y controles negativos	Evidencia SQL y diffs (también si falla)	2026-09-09T23:04:44.5487198Z SHA256 digest of uploaded artifact zip is e8765d78d0a96aa595fd969d57e5533539a2cc1c491f8c27f336ac3cd3cf932b
+Huella local y controles negativos	Evidencia SQL y diffs (también si falla)	2026-09-09T23:04:44.5488624Z Finalizing artifact upload
+Huella local y controles negativos	Evidencia SQL y diffs (también si falla)	2026-09-09T23:04:44.8040742Z Artifact schema-local.zip successfully finalized. Artifact ID 10128801637
+Huella local y controles negativos	Evidencia SQL y diffs (también si falla)	2026-09-09T23:04:44.8041936Z Artifact schema-local has been successfully uploaded! Final size is 35871 bytes. Artifact ID is 10128801637
+Huella local y controles negativos	Evidencia SQL y diffs (también si falla)	2026-09-09T23:04:44.8048031Z Artifact download URL: https://github.com/thejowe/lockin/actions/runs/34415065493/artifacts/10128801637
+Huella local y controles negativos	Descartar solo este backend	﻿2026-09-09T23:04:44.8172712Z ##[group]Run if [ -f "$SCHEMA_RUNTIME/supabase/config.toml" ]; then
+Huella local y controles negativos	Descartar solo este backend	2026-09-09T23:04:44.8173210Z ^[[36;1mif [ -f "$SCHEMA_RUNTIME/supabase/config.toml" ]; then^[[0m
+Huella local y controles negativos	Descartar solo este backend	2026-09-09T23:04:44.8173649Z ^[[36;1m  supabase --workdir "$SCHEMA_RUNTIME" stop --no-backup^[[0m
+Huella local y controles negativos	Descartar solo este backend	2026-09-09T23:04:44.8173984Z ^[[36;1mfi^[[0m
+Huella local y controles negativos	Descartar solo este backend	2026-09-09T23:04:44.8210850Z shell: /usr/bin/bash -e {0}
+Huella local y controles negativos	Descartar solo este backend	2026-09-09T23:04:44.8211114Z env:
+Huella local y controles negativos	Descartar solo este backend	2026-09-09T23:04:44.8211370Z   SCHEMA_RUNTIME: /home/runner/work/_temp/lockin-schema
+Huella local y controles negativos	Descartar solo este backend	2026-09-09T23:04:44.8211790Z   SCHEMA_ARTIFACTS: /home/runner/work/_temp/schema-evidence
+Huella local y controles negativos	Descartar solo este backend	2026-09-09T23:04:44.8212163Z   SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
+Huella local y controles negativos	Descartar solo este backend	2026-09-09T23:04:44.8212448Z ##[endgroup]
+Huella local y controles negativos	Descartar solo este backend	2026-09-09T23:04:45.3094014Z Stopping containers...
+Huella local y controles negativos	Descartar solo este backend	2026-09-09T23:04:54.2024613Z Stopped supabase local development setup.
+Huella local y controles negativos	Descartar solo este backend	2026-09-09T23:04:54.7118882Z A new version of Supabase CLI is available: v2.117.0 (currently installed v2.116.0)
+Huella local y controles negativos	Descartar solo este backend	2026-09-09T23:04:54.7121005Z We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli
+Huella local y controles negativos	Post Run actions/setup-node@v4	﻿2026-09-09T23:04:54.7360389Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Huella local y controles negativos	Post Run actions/setup-node@v4	2026-09-09T23:04:54.7362123Z Post job cleanup.
+Huella local y controles negativos	Post Run actions/setup-node@v4	2026-09-09T23:04:54.8625298Z (node:12614) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+Huella local y controles negativos	Post Run actions/setup-node@v4	2026-09-09T23:04:54.8626635Z (Use `node --trace-deprecation ...` to show where the warning was created)
+Huella local y controles negativos	Post Run actions/checkout@v4	﻿2026-09-09T23:04:54.8821139Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Huella local y controles negativos	Post Run actions/checkout@v4	2026-09-09T23:04:54.8822432Z Post job cleanup.
+Huella local y controles negativos	Post Run actions/checkout@v4	2026-09-09T23:04:54.9740080Z [command]/usr/bin/git version
+Huella local y controles negativos	Post Run actions/checkout@v4	2026-09-09T23:04:54.9784907Z git version 2.55.0
+Huella local y controles negativos	Post Run actions/checkout@v4	2026-09-09T23:04:54.9827173Z Temporarily overriding HOME='/home/runner/work/_temp/bee40122-23eb-4c0b-86c0-fa2683f9d14b' before making global git config changes
+Huella local y controles negativos	Post Run actions/checkout@v4	2026-09-09T23:04:54.9829179Z Adding repository directory to the temporary git global config as a safe directory
+Huella local y controles negativos	Post Run actions/checkout@v4	2026-09-09T23:04:54.9833500Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/lockin/lockin
+Huella local y controles negativos	Post Run actions/checkout@v4	2026-09-09T23:04:54.9877460Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Huella local y controles negativos	Post Run actions/checkout@v4	2026-09-09T23:04:54.9916059Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Huella local y controles negativos	Post Run actions/checkout@v4	2026-09-09T23:04:55.0179098Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Huella local y controles negativos	Post Run actions/checkout@v4	2026-09-09T23:04:55.0210945Z http.https://github.com/.extraheader
+Huella local y controles negativos	Post Run actions/checkout@v4	2026-09-09T23:04:55.0222970Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+Huella local y controles negativos	Post Run actions/checkout@v4	2026-09-09T23:04:55.0261837Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Huella local y controles negativos	Post Run actions/checkout@v4	2026-09-09T23:04:55.0547016Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Huella local y controles negativos	Post Run actions/checkout@v4	2026-09-09T23:04:55.0595562Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Huella local y controles negativos	Complete job	﻿2026-09-09T23:04:55.1048652Z Evaluate and set job outputs
+Huella local y controles negativos	Complete job	2026-09-09T23:04:55.1057657Z Set output 'remote_enabled'
+Huella local y controles negativos	Complete job	2026-09-09T23:04:55.1060180Z Cleaning up orphan processes
+Huella local y controles negativos	Complete job	2026-09-09T23:04:55.1517753Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4, actions/upload-artifact@v4, supabase/setup-cli@v1. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

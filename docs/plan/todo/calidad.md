@@ -1,6 +1,54 @@
 # TODO — calidad
 
-> **Estado actual: duodécima pasada (2026-09-08).** **Primer recorrido E2E completo en verde**, con evidencia: [job 102245686110](https://github.com/thejowe/lockin/actions/runs/34281070607/job/102245686110) — `1/1 Flow Passed in 2m 36s` y las filas verificadas en Postgres. La causa que lo tenía atascado era una sola: el merge de `codex/mutual-complement` cambió el criterio de orden del deck y el fixture del E2E llevaba dos commits fijando algo que ya no ordenaba. El workflow sigue en rojo por el control negativo, que está parado en `src/data/mock/seed.ts` (otro bloque). Detalle en "Duodécima pasada", justo debajo. Lo de más abajo es el historial de las pasadas anteriores.
+## Acciones sobre Node 24 (2026-09-13)
+
+- [x] Acciones de GitHub Actions actualizadas fuera de Node 20 — verificado en
+  la rama desechable `ci/acciones-node24` sobre `a072cc1`, ya borrada.
+  Versiones: checkout v7, setup-node v7, setup-java v6, upload-artifact v7,
+  download-artifact v8, setup-android v4, setup-gradle v6 y setup-cli v3.
+  android-emulator-runner sigue en v2 (v2.38.0). Revisadas las notas de cada
+  salto mayor con `gh release list/view` y las últimas versiones con `gh api`.
+  Gradle usa `cache-disabled: true`: Expo genera sus archivos después y fuera
+  del checkout, así que el proveedor básico no tiene archivos que hashear;
+  tampoco se carga el proveedor propietario predeterminado de v6.
+  Android fija cmdline-tools 20.0; Supabase conserva la CLI
+  2.116.0, comprobada en npm. El ZIP `schema-local` se descarga por nombre en
+  la misma ruta, con error si no coincide el hash. Schema drift desactiva el
+  caché automático de npm. El Node 22 del proyecto y Java 17 no cambian.
+  `diagnose()` lee cada volcado con `readCommandDump`: devuelve null ante error
+  de lectura o JSON truncado y `parseCommandFailures` lo trata como evidencia
+  vacía. Test explícito para null y objeto: **35/35**; `npm run lint` verde.
+  Primera verificación E2E: run **34787201307**, rojo en setup-gradle por la
+  ausencia de archivos para la clave del caché básico. Diagnosticado con
+  `gh run view --log-failed` y los artefactos descargados antes de corregirlo;
+  no fue una caída de emulador ni se relanzó a ciegas.
+  Verificación final sobre `a072cc1`, los tres workflows en verde:
+  CI run **34787322427** (6/6 jobs), E2E Android run **34787322395** (mock y
+  supabase) y Schema drift run **34787322436**, con el job remoto ejecutado y
+  no `skipped`. Ningún job tiene anotaciones, así que ya no aparecen los avisos
+  de Node 20 ni de acciones deprecadas. Sin caché de Gradle, el E2E tarda
+  19 min 44 s (mock) y 23 min 59 s (supabase). Los 8 runs verdes anteriores,
+  con caché, tardaron entre 16 y 23 min: coste comparable, en la parte alta del
+  rango.
+
+## Triage de commands.json (2026-09-13)
+
+- [x] Triage E2E: device offline en commands.json clasificado como runner
+  `parseCommandFailures` recoge los mensajes de comandos `FAILED`; `diagnose()`
+  los une al informe JUnit para reconocer `device offline` aunque este solo
+  diga `Unknown error` y adb ya vuelva a responder. Se mantiene la prioridad
+  de `CASE_SIGNATURES` y la lista cerrada: las aserciones y los errores
+  desconocidos siguen siendo del caso. Los dos mensajes del control negativo
+  muestran ahora el número de paso empezando en 1.
+  Verificado: `node --test e2e/triage.test.mjs` **34/34** y `npm run lint` verde.
+  `npm run format:check` falla en **37 archivos fuera del alcance**, ninguno de
+  los tres `.mjs` modificados. En los tres archivos comprobados como muestra
+  (`e2e/full-journey.test.mjs`, `e2e/full-journey.yaml`, `eslint.config.js`),
+  normalizar CRLF a LF en memoria basta para pasar Prettier. No se modifican.
+  No se ejecutó el emulador ni se corrigieron los fallos conocidos por CRLF
+  de `npm run test:e2e`.
+
+> **Estado actual: decimocuarta pasada (2026-09-11).** **El workflow E2E Android está verde en la rama principal, dos veces seguidas y al primer intento**: [run 34413652963](https://github.com/thejowe/lockin/actions/runs/34413652963) sobre `b863e5f` y [run 34415842422](https://github.com/thejowe/lockin/actions/runs/34415842422) sobre `74897b4`. Con esa evidencia se cierran las tres casillas de "recorrido completo verde" que quedaban abiertas (sexta, séptima y novena pasada). No queda ninguna casilla abierta en este TODO. Detalle en "Decimocuarta pasada", justo debajo. Lo de más abajo es el historial de las pasadas anteriores.
 
 > **Tercera pasada (histórico).** La primera dejó el repo con
 > lint, formato, tipos, CI y 102 tests. La segunda cubrió el bloque `chat` y el
@@ -418,12 +466,14 @@ Worktree `../lockin-codex-calidad`, actualizado con `git fetch` y
       (build, KVM, emulador y Maestro conduciendo la app: ver séptima pasada).
 - [x] Montar el control negativo con APK sin credenciales: variante del runner,
       oráculo invertido y matriz en el workflow.
-- [ ] Confirmar primer recorrido completo verde en emulador y guardar su
-      evidencia. El bug de `chat` ya está arreglado; lo que falta es cerrar la
-      variante `supabase`. Diagnóstico cerrado en la duodécima pasada: el
-      recorrido de Maestro **pasa entero** (1/1 en 2m 59s) y lo único rojo es la
-      comparación de `verify.mjs:27` contra una cadena que el teclado capitaliza.
-      El arreglo es del bloque `perfil`.
+- [x] Confirmar primer recorrido completo verde en emulador y guardar su
+      evidencia. **Cerrada el 2026-09-11** con el
+      [run 34413652963](https://github.com/thejowe/lockin/actions/runs/34413652963) (`b863e5f`, rama principal):
+      `supabase` da `1/1 Flow Passed in 2m 56s`, los 63 comandos del recorrido
+      en `COMPLETED` y `verify.mjs:27` —la comparación que capitalizaba el
+      teclado— en verde. Confirmada por el
+      [run 34415842422](https://github.com/thejowe/lockin/actions/runs/34415842422) (`74897b4`). Evidencia en la
+      decimocuarta pasada.
 - [x] Confirmar que el control negativo falla **después** del reinicio.
       Cerrado en 696408a, ver novena pasada: el APK con mock llega al reinicio,
       falla allí y no escribe nada.
@@ -460,6 +510,345 @@ no se modifica la lista de archivos medida por cobertura.
   inexistente (306 pasaron). La repetición completa pasó en 41,6 s sin tocar
   timeout, test ni código de producto. Se conserva el antecedente de lentitud
   con caché fría documentado en pasadas anteriores.
+
+## Decimocuarta pasada: las tres casillas del recorrido verde, leídas y cerradas (2026-09-11)
+
+Alcance: **solo `docs/plan/todo/calidad.md`**. Esta pasada no arregla nada ni
+toca código: lee la evidencia de runs ya ejecutados y decide si respalda las tres
+casillas de "recorrido completo verde" que seguían abiertas. Aquí no hay
+emulador, ni Android SDK, ni Docker, así que todo lo de abajo sale de
+`gh run view` y `gh run download`, no de una ejecución local.
+
+### Primero, una corrección sobre qué runs son
+
+El encargo hablaba de dos runs verdes "sobre la rama principal", 34409724164 y
+34415842422. Solo el segundo lo es:
+
+| run | commit | rama | conclusión |
+| --- | --- | --- | --- |
+| [34409724164](https://github.com/thejowe/lockin/actions/runs/34409724164) | `d4f0810` | `calidad/verificar-control-negativo` | success (3 variantes: supabase, probe, mock) |
+| [34413652963](https://github.com/thejowe/lockin/actions/runs/34413652963) | `b863e5f` | **`claude/startup-cofounder-matching-app-tfeai1`** | success |
+| [34415842422](https://github.com/thejowe/lockin/actions/runs/34415842422) | `74897b4` | **`claude/startup-cofounder-matching-app-tfeai1`** | success |
+
+34409724164 es el run de la rama desechable de la decimotercera pasada —el que
+cerró el control negativo—, y por eso todavía trae la variante `probe`, retirada
+después. Los dos verdes **en la rama principal** son 34413652963 y 34415842422, y
+son esos los que cierran las casillas. La diferencia importa: una casilla que
+dice "recorrido completo verde en CI" no la cierra un run de una rama que ya no
+existe.
+
+Entre los dos hay un tercer run,
+[34415283401](https://github.com/thejowe/lockin/actions/runs/34415283401) sobre
+`1159e97`, en `cancelled`. No es un rojo escondido: `.github/workflows/e2e.yml:10`
+declara `concurrency: e2e-${{ github.ref }}` con `cancel-in-progress: true`, y el
+push de `74897b4` llegó siete minutos después del de `1159e97`. Los dos trabajos
+murieron a la vez, sin veredicto.
+
+### La evidencia, sin interpretar
+
+Descargados los artefactos de los dos runs de la rama principal. Los dos traen
+**solo `attempt-01`** en las dos variantes: ni un reintento de emulador, que es
+lo que el log dice con `Reintentar el emulador: false — el recorrido pasó`.
+
+| | 34413652963 (`b863e5f`) | 34415842422 (`74897b4`) |
+| --- | --- | --- |
+| `supabase` — Maestro | `tests=1 failures=0`, 175,73 s | `tests=1 failures=0`, 184,92 s |
+| `supabase` — comandos | 63/63 `COMPLETED` | 63/63 `COMPLETED` |
+| `supabase` — Postgres | `alta, perfil, lo que busca, modo, like, match y mensaje verificados` | ídem |
+| `mock` — Maestro | `failures=1`: `Assertion is false: "Descubrir" is visible` | ídem |
+| `mock` — comandos | 46 `COMPLETED`, 1 `SKIPPED`, 1 `FAILED` (#47) | ídem |
+| `mock` — `postgres.json` | `failedCommand: 47`, `stopAppCommand: 45`, `persistence: ausente, como se esperaba` | ídem |
+| veredictos | `pass` / `pass`, un intento cada uno | `pass` / `pass`, un intento cada uno |
+
+Los 63 comandos de `supabase` incluyen los doce de después del `stopApp`: el
+relanzado, Perfil con `Lo que busca` → `Diseño`, Matches y la burbuja del mensaje
+otra vez. El recorrido no acaba al enviar, acaba **después** de que el proceso se
+reinicie y la app vuelva a leer de Postgres.
+
+Lo más concluyente no es ninguna de esas cifras, sino los dos `window.xml`
+finales, que son la misma pantalla en el mismo punto del recorrido y dicen lo
+contrario el uno del otro:
+
+- `supabase` de 34415842422: `Núria Bosch`, `Escribe a Núria`,
+  `Mensaje E2E 458ff1da-e4ba-49c3-9797-653ce58853ca`. Ese sufijo es el `runId`
+  de `run.json` y de `postgres.json` de ese mismo intento, así que la burbuja que
+  se ve tras el reinicio es la que escribió **esta** ejecución, no un residuo.
+- `mock` del mismo run: `PASO 1 DE 2`, `¿Qué buscas?`, `Cofundador` /
+  `Compañero de Lock-In` / `Ambos`. El APK sin credenciales vuelve al alta,
+  porque su estado vivía en memoria del proceso.
+
+Esa pareja es exactamente lo que las tres casillas pedían demostrar: que lo que
+separa a las dos variantes es la persistencia real y no otra cosa que se rompa
+por el camino.
+
+### Qué cierra cada casilla, y con qué run
+
+- **Sexta pasada (`calidad.md:421`), "primer recorrido completo verde en
+  emulador"** →
+  **[run 34413652963](https://github.com/thejowe/lockin/actions/runs/34413652963)**
+  (`b863e5f`). Es la primera vez que el recorrido entero pasa en la rama
+  principal. Su texto nombraba el único rojo que quedaba —`verify.mjs:27`, la
+  comparación contra la respuesta del prompt que el teclado capitalizaba—; en
+  este run esa aserción está entre las que pasan.
+- **Séptima pasada (`calidad.md:1505`), "recorrido completo verde en CI, con
+  evidencia de UI y Postgres"** →
+  **[run 34415842422](https://github.com/thejowe/lockin/actions/runs/34415842422)**
+  (`74897b4`). Pide las dos evidencias por separado y las dos están: UI en el
+  `window.xml` posterior al reinicio, Postgres en la línea de `verify.mjs`. Se le
+  asigna el run más reciente a propósito: es el HEAD actual de la rama, así que
+  lo verde es lo publicado, no un commit anterior.
+- **Novena pasada (`calidad.md:1695`), "primer recorrido completo verde en
+  emulador"** → los **dos** runs. Su texto decía que lo único rojo era la
+  variante `supabase` en "Resultado del recorrido"; ese paso da `pass` en
+  34413652963 y otra vez en 34415842422. Una casilla que llevaba cuatro pasadas
+  abierta no se cierra con una sola muestra, y aquí hay dos consecutivas al
+  primer intento.
+
+### Lo que esta evidencia **no** dice
+
+- **El auto-capitalizado del prompt de texto libre sigue sin estar descartado.**
+  La decisión de la duodécima pasada —no hacer el caso inmune— se mantiene. Lo
+  que hay ahora son seis trabajos `supabase` verdes seguidos (`78c90b8`,
+  `e0f4ca7`, `ce7ccc6`, `d4f0810`, `b863e5f`, `74897b4`), y eso es una señal
+  fuerte, no una prueba: si el teclado vuelve a capitalizar, `verify.mjs:27`
+  volverá a ponerse rojo, y entonces será flake de producto, no de runner.
+- **Las tres casillas piden un recorrido verde, no un workflow a prueba de
+  flakes.** `triage.mjs` sigue siendo lo que distingue la caída del emulador del
+  fallo del caso; que estos dos runs no lo hayan necesitado no lo vuelve
+  innecesario.
+- **`e2e-android-supabase` no guarda capturas paso a paso**: Maestro solo las
+  escribe al fallar, y por eso el único `.png` con jerarquía asociada del par es
+  el del `mock` en el comando 47. La evidencia visual del recorrido verde es el
+  `window.xml` final más los 63 comandos con su estado, no un carrete de
+  imágenes.
+
+### Por qué el oráculo de Postgres cuenta como evidencia
+
+`Postgres: alta, perfil, lo que busca, modo, like, match y mensaje verificados`
+es una sola línea, y conviene dejar dicho lo que hay detrás para que no se lea
+como un sello. `e2e/verify.mjs` la imprime **al final**, después de más de veinte
+aserciones con el cliente de service-role —que nunca entra en el APK— sobre
+cinco tablas más la sesión de `auth`: `profiles` (edad, ubicación,
+`looking_for`, `specialties`, `seeking_specialties`, `starting_point`,
+`ambition`, `availability_bands` y la respuesta del prompt), `user_settings`,
+`messages`, `matches`, `decisions`, y `auth.admin.getUserById` con
+`is_anonymous === true`.
+Cualquiera que falle tira `assert` y la línea no se imprime. Que aparezca es, por
+construcción, que pasaron todas.
+
+Dos de esas aserciones son las que impiden un falso positivo silencioso: la que
+fija que el like cayó sobre `11111111-1111-4111-8111-000000000001` (Núria, la
+tarjeta que el fixture pone delante) y la que exige `match.last_message_at`, o
+sea que el trigger corrió. Sin la primera, "Busca" y el ✓ del deck podrían ser de
+una tarjeta y el like de otra.
+
+### El primer verde histórico, y por qué no cierra estas casillas
+
+La duodécima pasada dejó registrado el primer recorrido completo verde:
+[job 102245686110](https://github.com/thejowe/lockin/actions/runs/34281070607/job/102245686110),
+commit `78c90b8`, del 2026-09-08. Se ha vuelto a comprobar en esta pasada y
+sigue en pie: `tests=1 failures=0`, `SUCCESS`, `persistence: verified`,
+veredicto `pass — recorrido completo y persistencia verificados`.
+
+No se usa para cerrar ninguna de las tres casillas, y la razón no es la fecha:
+el **run** de ese job estaba en `failure` —el `mock` fallaba— y vivía en la rama
+`calidad/e2e-anr-y-deck-condicional`. Cerrar con él dejaría las casillas
+apoyadas en media matriz y en una rama de trabajo. Queda citado donde estaba,
+como el primer verde del recorrido, que es lo que es.
+
+### Encontrado y no tocado: `codex/android-prompt` está obsoleta, no en regresión
+
+Al listar los runs recientes del workflow aparece uno rojo y hay que dejar dicho
+que **no es una regresión de la rama principal**:
+[run 34415611322](https://github.com/thejowe/lockin/actions/runs/34415611322)
+sobre `6d44307` ("Conservar la voz del prompt y adaptar E2E al ranking mutuo").
+Su trabajo `mock` falla en `Assertion is false: "¡Match!" is visible` y la guarda
+del control negativo lo rechaza con el veredicto correcto: `caso — El caso ya no
+reinicia la app: el control negativo perdería su sentido`. Eso es el síntoma de
+antes de `3eb5059`, y `git merge-base --is-ancestor 3eb5059 6d44307` dice que no
+lo lleva: la rama sale de `d28baa6` y le faltan los cinco commits siguientes de
+la principal. Que el run tenga tres trabajos en vez de dos —todavía arrastra la
+variante `probe`— lo confirma.
+
+El aviso, para quien la tenga abierta: `git diff HEAD 6d44307` son **5667 líneas
+borradas** en `e2e/`, `supabase/` y `.github/workflows/` — la decimotercera
+pasada entera, el `triage.mjs` con firmas, `schema-drift.yml` y el trabajo de
+`datos`. Esa rama hay que **rebasarla** sobre la principal, no fusionarla. Desde
+aquí no se toca: el cambio de ranking y la voz del prompt son de otros bloques.
+
+### Verificación de esta pasada
+
+- `gh run view 34413652963 / 34415842422 --json ...` — rama, commit, conclusión y
+  jobs de cada uno, transcritos arriba sin redondear.
+- `gh run download` de los dos runs y lectura directa de `verdict.json`,
+  `postgres.json`, `run.json`, `maestro.xml`, `commands.json` y `window.xml` de
+  las cuatro variantes.
+- `gh run view --job <id> --log` de los cuatro trabajos, para las líneas de
+  `verify.mjs` y del veredicto.
+- `gh run list --workflow "E2E Android"` para barrer los runs recientes, y
+  `gh run view` + `gh run download -n e2e-android-mock` sobre 34415611322 y
+  34281070607 para los dos que no son de la rama principal.
+- `git merge-base --is-ancestor` y `git diff --stat` para situar `6d44307`
+  respecto al HEAD de la rama.
+- **No ejecutado aquí**: nada de Jest, Maestro, Gradle ni emulador. Esta pasada
+  no toca código, así que no hay suite que pueda romper; el único archivo
+  modificado es este TODO, y `.prettierignore` excluye `*.md` y `docs`, así que
+  tampoco hay formato que correr.
+
+## Decimotercera pasada: el workflow entero en verde (2026-09-09)
+
+Alcance: `e2e/`, `.github/workflows/` y los TODO. **No se toca `src/` ni
+`supabase/`**, que era la condición de esta pasada.
+
+Al empezar quedaba una sola casilla abierta —el control negativo con el `.yaml`
+actual— y su causa no era mía: la tarjeta de delante del mock. Al cerrarla, el
+workflow queda en verde por primera vez desde que existe.
+
+### El arreglo estaba en el worktree, sin commitear, y eso obligó a un rodeo
+
+El worktree es compartido. Al llegar, `git status` mostraba el arreglo de
+`perfil` **staged pero sin commit**: `src/data/mock/seed.ts` y
+`supabase/seed.sql` dan a Lucía Pardo `seekingSpecialties = ['ventas','datos']`,
+más un `src/data/mock/seed.test.ts` nuevo que fija la invariante. Sin commit no
+hay run, y sin run no hay nada que verificar en Actions.
+
+Lo que se hizo, y por qué así: se construyó una rama desechable
+`calidad/verificar-control-negativo` con **plumbing puro** —`read-tree` sobre un
+`GIT_INDEX_FILE` temporal, `update-index --cacheinfo` con los blobs ya staged,
+`write-tree` y `commit-tree`—, de modo que el índice y el working tree
+compartidos no se tocan en ningún momento. Ni un `git add`. Se comprobó después
+que `git status` seguía exactamente igual. La rama es HEAD (`8c94e3e`) más esos
+cuatro archivos, nada más, y no está pensada para fusionarse: existe para
+responder una pregunta que en esta máquina no se puede responder — aquí no hay
+emulador, ni Android SDK, ni Docker.
+
+Por qué el arreglo tenía que funcionar, antes de gastar 18 minutos de runner. El
+perfil del recorrido domina `dev` y `marketing` y busca `diseno`, así que una
+tarjeta puntúa `(lo que domino ∩ lo que ella busca) + (lo que ella domina ∩ lo
+que busco)`. Antes, Lucía (diseño, buscando dev) y Marc (diseño, buscando dev)
+empataban a 2 y `seed-lucia` ganaba el desempate alfabético sin ser recíproca.
+Con el cambio Lucía baja a 1 y **Marc queda solo en el máximo** — y `seed-marc`
+sí está en `SEED_RECIPROCAL_IDS`. En Postgres no cambia nada: Núria (id
+`…0001`) ya puntuaba 2 por el `update` de `incoming-likes.sql` y gana cualquier
+empate por id, así que la variante `supabase` no se movía. Las dos predicciones
+se cumplieron.
+
+### El control negativo, concluyente
+
+[Run 34409724164](https://github.com/thejowe/lockin/actions/runs/34409724164),
+commit `d4f0810`. **Las tres variantes en verde, todas al primer intento y sin
+reintento de emulador** — es la primera vez que el workflow entero está verde.
+
+Lo que importa es el `mock`, y se lee del `commands.json` de su intento
+([job 102661076938](https://github.com/thejowe/lockin/actions/runs/34409724164/job/102661076938)),
+sin interpretar nada:
+
+| #   | comando                                    | estado     |
+| --- | ------------------------------------------ | ---------- |
+| 44  | `assertVisible: ${MESSAGE}`                | COMPLETED  |
+| 45  | `stopApp`                                  | COMPLETED  |
+| 46  | `launchApp clearState: false`              | COMPLETED  |
+| 47  | `extendedWaitUntil: visible 'Descubrir'`   | **FAILED** |
+
+Es decir: con el APK sin credenciales el recorrido llegó **entero** hasta el
+reinicio —match, chat, envío y burbuja incluidos— y se rompió justo al otro
+lado, porque el mock guarda el estado en módulo y al relanzar el proceso vuelve
+al alta. El `postgres.json` del artefacto lo dice en números:
+`failedCommand: 47`, `stopAppCommand: 45`. Y el oráculo cierra la otra mitad:
+`Postgres: el APK sin credenciales no ha escrito perfil ni mensaje`. Veredicto
+literal del runner: `pass — el mock falló después del reinicio y no escribió
+nada`.
+
+Eso es exactamente lo que el control negativo tiene que demostrar, y lo que no
+demostraba mientras se paraba en `¡Match!`: que lo que distingue a las dos
+variantes es **la persistencia**, no cualquier otra cosa que se rompa por el
+camino. Con las dos mitades a la vez —`supabase` deja las filas, `mock` no las
+deja y además falla donde debe— el caso positivo prueba integración de verdad.
+
+### La sonda `probe`, retirada
+
+`run.mjs` la anunciaba como temporal desde que nació y nombraba su condición:
+"se retira junto con el .yaml en cuanto eso esté verificado". La casilla de la
+duodécima pasada la ataba además a que `supabase` cerrase. Las dos condiciones
+se cumplen, así que se retira — y conviene decir por qué la respuesta no es
+"pues déjala, que es verde".
+
+Existía por dos razones, y las dos se han agotado:
+
+1. **La pregunta.** Con el teclado abierto, ¿sigue visible el compositor? Hoy la
+   responde `full-journey.yaml` y con más fuerza: su `tapOn: 'Enviar mensaje'`
+   ocurre con el teclado delante —y un tap no aterriza sobre un botón que no
+   está en el árbol de accesibilidad, que era justo el síntoma—, detrás afirma
+   el compositor deshabilitado y la burbuja **sin cerrar el teclado** (`8c94e3e`
+   quitó el `hideKeyboard`), y tras el reinicio vuelve a entrar al chat desde
+   Matches y afirma el compositor otra vez. La sonda paraba en la primera
+   burbuja y no reiniciaba: hoy afirma un subconjunto estricto.
+2. **El seguro contra la flake.** La mitad de comandos es la mitad de superficie
+   para el `device offline` que se llevó 3 de 7 trabajos el 2026-09-07. Ese
+   seguro lo da ahora `triage.mjs`: distingue la caída del runner del fallo del
+   caso y arranca un segundo emulador solo en el primer supuesto (`91e98a1`).
+   Cubre las dos variantes que deciden el color, no un atajo paralelo.
+
+Y la evidencia de que ya no hace falta: `supabase` verde **al primer intento en
+tres commits seguidos** — `78c90b8`
+([job 102245686110](https://github.com/thejowe/lockin/actions/runs/34281070607/job/102245686110)),
+`e0f4ca7`
+([job 102253132113](https://github.com/thejowe/lockin/actions/runs/34283362375/job/102253132113))
+y `d4f0810`
+([job 102661076506](https://github.com/thejowe/lockin/actions/runs/34409724164/job/102661076506)).
+Ninguno pidió segundo emulador.
+
+Lo que costaba conservarla: un trabajo entero de Actions en cada push —17 min 1 s
+en el run 34283362375— para repetir una pregunta cerrada. Se borran
+`e2e/keyboard-probe.yaml`, la rama `probe` de `e2e/run.mjs` y su entrada en la
+matriz del workflow. `e2e/hide-keyboard.test.mjs` pasa de dos flujos a uno; sus
+tres casos que caen afirmaban sobre el `.yaml` que ya no existe, así que no se
+pierde cobertura de nada que siga existiendo.
+
+Lo que **no** se ha hecho al retirarla: no se ha tocado `full-journey.yaml`. Si
+alguna vez hay que reabrir la pregunta del teclado, la sonda está entera en el
+historial, que es más barato que mantenerla viva por si acaso.
+
+**Y la retirada está verificada, no razonada a secas.**
+[Run 34411945877](https://github.com/thejowe/lockin/actions/runs/34411945877)
+sobre `ce7ccc6`, ya sin la sonda: dos trabajos en vez de tres, los dos en verde
+al primer intento —
+[`supabase` 102668149112](https://github.com/thejowe/lockin/actions/runs/34411945877/job/102668149112)
+con `1/1 Flow Passed in 3m` y las filas verificadas;
+[`mock` 102668149385](https://github.com/thejowe/lockin/actions/runs/34411945877/job/102668149385)
+con `pass — el mock falló después del reinicio y no escribió nada`. Es la
+segunda pasada consecutiva con el workflow entero en verde, así que el verde
+tampoco depende de la sonda que se acaba de quitar. El trabajo `Runner E2E` de
+[la CI de ese commit](https://github.com/thejowe/lockin/actions/runs/34411945864)
+da `43 tests, 43 pass, 0 fail` — el único rojo local (`relee la suya de Postgres
+después del reinicio`) es el CRLF de esta máquina, que ya fallaba antes y no
+existe en CI.
+
+### Corregida una casilla obsoleta de `chat`
+
+`docs/plan/todo/chat.md:643` seguía diciendo que el recorrido completo no estaba
+verde porque `supabase` acababa en rojo en el paso `gate`. Ya no es cierto desde
+el 2026-09-08 y se ha cerrado con los dos jobs que lo demuestran. El apartado
+que venía detrás —"en qué falla `supabase`", con el `gh` ausente y el
+diagnóstico a ciegas— se conserva como registro de la ronda 4, marcado como tal:
+describe una situación que dejó de existir.
+
+### Lo que sigue sin poder decirse desde aquí
+
+- **El auto-capitalizado del prompt de texto libre** sigue siendo intermitente y
+  un verde suelto no lo distingue de "esta vez no salió". Varios recorridos
+  `supabase` seguidos sin que aparezca son una señal, no una prueba. La decisión
+  de la duodécima pasada —no hacer el caso inmune— se mantiene.
+- ~~El verde vive todavía en la rama de verificación, no en la principal.~~
+  **Ya no: medido en la rama principal.**
+  [Run 34413652963](https://github.com/thejowe/lockin/actions/runs/34413652963)
+  sobre `b863e5f` —el commit de esta pasada, encima del arreglo de `perfil`
+  (`3eb5059`)— deja `supabase` y `mock` en verde al primer intento, con el mismo
+  veredicto literal: `pass — el mock falló después del reinicio y no escribió
+  nada`. Es la tercera pasada consecutiva con el workflow entero en verde y la
+  primera en la rama que cuenta. `git diff d4f0810 HEAD -- src/data/mock/seed.ts
+  src/data/mock/seed.test.ts supabase/seed.sql` sale vacío, así que lo publicado
+  es byte a byte lo que se verificó en la rama desechable.
 
 ## Duodécima pasada: los dos rojos del E2E, leídos (2026-09-08)
 
@@ -929,13 +1318,18 @@ está parado en `src/data/mock/seed.ts`, que es de otro bloque.
       paso "Resultado del recorrido (supabase)", `1/1 Flow Passed in 2m 36s` más
       `Postgres: alta, perfil, lo que busca, modo, like, match y mensaje
       verificados`. Es la primera vez que el recorrido entero pasa.
-- [ ] **Control negativo concluyente con el `.yaml` actual.** Esta queda abierta
-      y es la que mantiene el workflow en rojo. Hoy el `mock` se para en
-      `¡Match!` (comando 37 de 38) porque la primera tarjeta de su orden,
-      `seed-lucia`, no está en `SEED_RECIPROCAL_IDS`. Depende de
-      `src/data/mock/seed.ts`: reportado abajo, no tocado.
-      Antecedente que sí existe, con otro `.yaml`: run 34162107392 sobre 696408a,
-      donde el control negativo pasó.
+- [x] **Control negativo concluyente con el `.yaml` actual.** Cerrada el
+      2026-09-09 con
+      [job 102661076938](https://github.com/thejowe/lockin/actions/runs/34409724164/job/102661076938).
+      El `mock` ya no se para en `¡Match!`: llega al reinicio y rompe donde
+      tiene que romper. Del `commands.json` del intento, sin interpretar nada:
+      comando 44 `assertVisible ${MESSAGE}` COMPLETED, 45 `stopApp` COMPLETED,
+      46 `launchApp clearState: false` COMPLETED, **47 `Descubrir` FAILED**. Y
+      el oráculo: `Postgres: el APK sin credenciales no ha escrito perfil ni
+      mensaje`. Veredicto del runner, literal: `pass — el mock falló después del
+      reinicio y no escribió nada`. Con esto **el workflow entero queda en
+      verde**, las tres variantes al primer intento. Detalle en la decimotercera
+      pasada.
 
 ### Lo que NO se ha hecho, y por qué
 
@@ -949,6 +1343,10 @@ está parado en `src/data/mock/seed.ts`, que es de otro bloque.
   verde de punta a punta, y con dos variantes en rojo conviene conservar la
   prueba barata de que el camino APK → emulador → Maestro funciona. Se retira
   cuando `supabase` cierre.
+
+  > **HECHO el 2026-09-09.** `supabase` cerró y `mock` también, así que la
+  > condición se cumplió y la sonda se retiró en esa misma pasada. El
+  > razonamiento y la evidencia están en la decimotercera pasada.
 
 ## Undécima pasada: cubrir `seekingSpecialties` (2026-09-07)
 
@@ -1159,9 +1557,14 @@ ni `docs/plan/TODO.md`. Se conserva la integración y el umbral 88.74/80.03/89.5
 - [x] Leer la primera ejecución y comprobar los artefactos disponibles.
 - [x] Diagnosticar el fallo de bundle con logs y código del resolver instalado.
 - [x] Corregir la ubicación de la copia de build y recoger evidencia antes de Maestro.
-- [ ] Confirmar recorrido completo verde en CI, con evidencia de UI y Postgres.
-      Sigue abierta: en 696408a el trabajo `supabase` falla y el log y el
-      artefacto piden permisos de administración del repositorio.
+- [x] Confirmar recorrido completo verde en CI, con evidencia de UI y Postgres.
+      **Cerrada el 2026-09-11 con el [run 34415842422](https://github.com/thejowe/lockin/actions/runs/34415842422)
+      (`74897b4`, rama principal).** La UI, en el `window.xml` posterior al
+      reinicio: el chat de Núria Bosch con `Mensaje E2E 458ff1da…`, que es el
+      `runId` de ese intento. Postgres, en el log del trabajo: `Postgres: alta,
+      perfil, lo que busca, modo, like, match y mensaje verificados.`. Lo que
+      decía esta casilla sobre los permisos de administración dejó de ser
+      cierto el 2026-09-08 (ver duodécima pasada).
 - [x] Comprobar estabilidad y resolver el coste de carga dentro del test de layouts.
 
 Primera ejecución: https://github.com/thejowe/lockin/actions/runs/34069732039.
@@ -1344,10 +1747,12 @@ y el bloque `chat` lo señaló al final de su TODO como trabajo de `calidad`.
 - [x] Reintentar el paso "UI y persistencia real" **solo** ante caídas del runner.
 - [x] Clasificación con lista cerrada y tests que la fijan (`npm run test:e2e`).
 - [x] Evidencia por intento, sin que un reintento pise la del anterior.
-- [ ] Confirmar primer recorrido completo verde en emulador y guardar su
-      evidencia. **Ya no lo bloquea `chat`**: en el mismo run la sonda del
-      teclado pasa y el control negativo llega entero hasta el reinicio. Lo que
-      sigue en rojo es la variante `supabase`, en "Resultado del recorrido".
+- [x] Confirmar primer recorrido completo verde en emulador y guardar su
+      evidencia. **Cerrada el 2026-09-11**: la variante `supabase` que seguía
+      en rojo pasa en el [run 34413652963](https://github.com/thejowe/lockin/actions/runs/34413652963)
+      (`b863e5f`) y otra vez en el [run 34415842422](https://github.com/thejowe/lockin/actions/runs/34415842422)
+      (`74897b4`), las dos veces al primer intento y con la evidencia guardada
+      en el artefacto `e2e-android-supabase`.
 - [x] Confirmar que el control negativo falla **después** del reinicio.
       Confirmado en [run 34162107392](https://github.com/thejowe/lockin/actions/runs/34162107392)
       (696408a): el trabajo `mock` pasa, y solo pasa si el primer comando
@@ -1525,6 +1930,11 @@ seguir fallando donde debe. Solo toca la base desechable de `e2e/.runtime`.
   > diagnóstico dejó de estar bloqueado y está hecho: ver "Duodécima pasada".
   > El resto del punto (que esta máquina no tiene Android SDK, Java, Maestro ni
   > Docker) sí sigue siendo cierto: aquí no se reproduce nada, solo se lee.
+  >
+  > **CERRADAS el 2026-09-11.** Las dos casillas de este punto están marcadas
+  > arriba: [run 34413652963](https://github.com/thejowe/lockin/actions/runs/34413652963) (`b863e5f`) y
+  > [run 34415842422](https://github.com/thejowe/lockin/actions/runs/34415842422) (`74897b4`), los dos sobre la rama
+  > principal y los dos con `supabase` y `mock` en verde al primer intento.
 
 ### Encontrado y no tocado
 
@@ -1533,6 +1943,30 @@ cuando no hay teclado, y eso navega hacia atrás en vez de no hacer nada. Es
 real y es de este bloque, pero cambiarlo ahora mueve una pieza del único tramo
 del recorrido que acaba de ponerse verde bajo el mock. Se toca cuando la
 variante `supabase` cierre, no antes, y con la evidencia del run delante.
+
+> **HECHO el 2026-09-09, por `chat`.** `supabase` cerró en verde
+> ([run 34281070607](https://github.com/thejowe/lockin/actions/runs/34281070607),
+> commit `78c90b8`), que era la condición que ponía este punto. Los dos
+> `hideKeyboard` de después del envío están fuera de `e2e/full-journey.yaml` y
+> `e2e/keyboard-probe.yaml`: no se sustituyen por nada, porque el compositor ya
+> queda por encima del teclado y el hilo hace `scrollToEnd`, así que la burbuja
+> se afirma con el teclado delante — que comprueba más, no menos. Los tres
+> `hideKeyboard` del formulario de perfil se quedan: van pegados a un
+> `inputText`, o sea que ahí sí hay teclado que cerrar.
+>
+> Lo fija `e2e/hide-keyboard.test.mjs` (nuevo, 7 casos): con el comando puesto
+> caen 3 de 7, comprobado revirtiendo los `.yaml`. `npm run test:e2e` pasa a
+> **46 casos, 45 verdes** — el rojo sigue siendo el de CRLF de esta máquina
+> (`relee la suya de Postgres después del reinicio`), que ya fallaba antes.
+> `e2e/run.mjs` no se toca y no se entera: busca `stopApp` por nombre
+> (`firstFailure`, `:196`), no por índice.
+>
+> **Es un cruce de alcance**: `e2e/` es de este bloque. Lo pidió el dueño del
+> proyecto ahora que hay red debajo. Razonamiento completo y evidencia en
+> `docs/plan/todo/chat.md`, sección "El `hideKeyboard` de después de enviar,
+> quitado". Lo que falta por confirmar es lo único que un `.mjs` no puede decir:
+> que el recorrido siga verde en emulador. Lo dirá la próxima pasada de
+> `E2E Android` sobre esta rama.
 
 ### Verificación de esta pasada
 

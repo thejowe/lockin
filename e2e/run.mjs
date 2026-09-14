@@ -15,7 +15,13 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash, randomUUID } from 'node:crypto';
 import { tmpdir } from 'node:os';
-import { classifyFailure, parseAnrDialog, parseMaestroFailure, shouldRetry } from './triage.mjs';
+import {
+  classifyFailure,
+  parseAnrDialog,
+  parseCommandFailures,
+  parseMaestroFailure,
+  shouldRetry,
+} from './triage.mjs';
 import { verifyAbsence, verifyPersistence } from './verify.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -31,13 +37,14 @@ assert(appLabel, 'app.json no declara expo.name: sin él no se puede leer un ANR
 // active.ts elige el mock en memoria y el recorrido debe romperse al reiniciar.
 // Si algún día pasara en verde, el caso positivo no estaría probando Supabase.
 const negative = process.env.E2E_NEGATIVE_CONTROL === '1';
-// Sonda de diagnóstico, temporal: mismo APK que el caso positivo (credenciales
-// reales incluidas), pero corre `keyboard-probe.yaml` en vez del recorrido
-// completo: el camino más corto hasta "¿el compositor está por encima del
-// teclado?". Se retira junto con el .yaml en cuanto eso esté verificado.
-const probe = process.env.E2E_KEYBOARD_PROBE === '1';
-assert(!(negative && probe), 'La sonda de teclado y el control negativo se excluyen');
-const variant = negative ? 'mock' : probe ? 'probe' : 'supabase';
+// Aquí vivió `E2E_KEYBOARD_PROBE`, una tercera variante (`probe`) que corría
+// `keyboard-probe.yaml` con el APK del caso positivo para preguntar por el
+// camino corto si el compositor quedaba por encima del teclado. Se retiró el
+// 2026-09-09: `full-journey.yaml` afirma ya eso mismo y más —pulsa "Enviar
+// mensaje" con el teclado delante, y detrás afirma el compositor deshabilitado
+// y la burbuja sin cerrarlo—, así que la sonda solo repetía una pregunta
+// cerrada a cambio de un emulador entero por push.
+const variant = negative ? 'mock' : 'supabase';
 // Expo ignores tsconfig aliases for any source path containing /node_modules/.
 // Keep the disposable app outside that path AND outside the checkout's TS glob.
 const appParent = resolve(tmpdir());
@@ -212,7 +219,7 @@ function firstFailure(dir) {
       'El recorrido no llegó al reinicio: Maestro ejecutó ' +
         commands.length +
         ' comando(s) y falló en el ' +
-        failed +
+        (failed + 1) +
         '. `full-journey.yaml` sí declara el `stopApp`, así que esto no dice nada ' +
         'sobre la persistencia: el control negativo solo vale si lo que rompe es ella.'
     );
@@ -221,12 +228,28 @@ function firstFailure(dir) {
   return { stopApp, failed, commands };
 }
 
+/** Lee evidencia JSON opcional: un volcado ausente o truncado no frena el diagnóstico. */
+function readCommandDump(file) {
+  try {
+    return JSON.parse(readFileSync(file, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
 /** Lee la evidencia de un intento y decide si falló el caso o se cayó el runner. */
 function diagnose(dir) {
   const report = join(dir, 'maestro.xml');
+  const dumps = commandDumps(dir);
+  const failureText = [
+    ...dumps.map((file) => parseCommandFailures(readCommandDump(file))),
+    existsSync(report) ? parseMaestroFailure(readFileSync(report, 'utf8')) : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
   return classifyFailure({
-    failureText: existsSync(report) ? parseMaestroFailure(readFileSync(report, 'utf8')) : '',
-    commandDumps: commandDumps(dir).length,
+    failureText,
+    commandDumps: dumps.length,
     deviceState: deviceState(),
     anrDialog: parseAnrDialog(lastScreenHierarchy(dir)),
     appLabel,
@@ -418,7 +441,7 @@ if (command === 'test') {
       // esto rompe el recorrido en vez de saltarse las aserciones en silencio.
       '-e',
       'DECK_FIXTURE=' + (negative ? 'memoria' : 'postgres'),
-      probe ? join(root, 'e2e/keyboard-probe.yaml') : journeyFile,
+      journeyFile,
     ];
     writeFileSync(join(dir, 'run.json'), JSON.stringify({ runId, variant }, null, 2));
     // El buffer es del dispositivo, no del intento: sin vaciarlo, el logcat del
@@ -446,7 +469,7 @@ if (command === 'test') {
         assert(
           failed > stopApp,
           'El mock falló ANTES del reinicio (paso ' +
-            failed +
+            (failed + 1) +
             ' de ' +
             commands.length +
             '); el control solo vale si lo que rompe es la persistencia'
@@ -468,13 +491,6 @@ if (command === 'test') {
           )
         );
         return { outcome: 'pass', why: 'el mock falló después del reinicio y no escribió nada' };
-      }
-      if (probe) {
-        // La sonda se afirma a sí misma dentro del .yaml: si el `assertVisible`
-        // de "Enviar mensaje" pasa con el teclado abierto, el compositor está por
-        // encima. No se comprueba persistencia — no es lo que se pregunta, y la
-        // sonda ya no reinicia la app.
-        return { outcome: 'pass', why: 'la sonda del teclado pasó' };
       }
       await verifyPersistence(status, profileName, message);
       writeFileSync(

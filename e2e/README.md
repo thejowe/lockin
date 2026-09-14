@@ -1,15 +1,15 @@
 # E2E Android — Maestro + Supabase local
 
 Caso: `full-journey.yaml`. Runner: `node e2e/run.mjs <fase>`.
-Estado: en la última ejecución con emulador
-([run 34162107392](https://github.com/thejowe/lockin/actions/runs/34162107392),
-commit 696408a) el **control negativo pasó** —el APK con mock llegó al reinicio,
-falló allí y no dejó nada en Postgres— y la sonda del teclado también, así que el
-compositor de `chat` ya no bloquea. La variante `supabase` sigue en rojo en
-"Resultado del recorrido": **el recorrido completo contra Postgres todavía no
-está verde**. Los pasos de `seekingSpecialties` son posteriores a esa ejecución y
-no han visto un emulador. No se declara un E2E verde por validar YAML, ni por
-pasar Jest.
+
+Estado (2026-09-09): **el workflow entero está verde por primera vez**, con las
+dos mitades cerradas en la misma pasada —
+[run 34409724164](https://github.com/thejowe/lockin/actions/runs/34409724164):
+`supabase` pasa el recorrido completo y el oráculo lee las filas en Postgres;
+`mock` falla **después** del `stopApp` (comando 47, `stopApp` en el 45) y no
+escribe nada. Las dos al primer intento, sin reintento de emulador. Un verde no
+se declara por validar YAML ni por pasar Jest: lo dice un emulador o no lo dice
+nadie.
 
 ## Qué demuestra
 
@@ -157,7 +157,8 @@ En esa variante el runner invierte el criterio y exige tres cosas:
 
 Las dos variantes corren como una matriz en el mismo workflow, con
 `fail-fast: false` y artefactos separados (`e2e-android-supabase` y
-`e2e-android-mock`). El control negativo corre en cada push, no solo a mano: si
+`e2e-android-mock`). Hubo una tercera, `probe`, retirada el 2026-09-09: ver
+"La sonda del teclado, retirada". El control negativo corre en cada push, no solo a mano: si
 algún día pasara en verde, el caso positivo habría dejado de probar Supabase y
 hay que enterarse ese día.
 
@@ -168,6 +169,52 @@ E2E_NEGATIVE_CONTROL=1 node e2e/run.mjs build
 E2E_NEGATIVE_CONTROL=1 node e2e/run.mjs test
 E2E_NEGATIVE_CONTROL=1 node e2e/run.mjs stop
 ```
+
+## La sonda del teclado, retirada (2026-09-09)
+
+Entre el 2026-09-07 y hoy hubo una tercera variante, `probe`: el APK del caso
+positivo corriendo `keyboard-probe.yaml`, un recorrido corto que llegaba al
+compositor y preguntaba una sola cosa —con el teclado abierto, ¿sigue visible
+"Enviar mensaje"?—. Nació porque esa pregunta llevaba cuatro rondas sin
+respuesta y porque el emulador se caía a menudo: la mitad de comandos es la
+mitad de superficie para la flake, y corría en paralelo, así que daba un segundo
+tiro independiente en la misma pasada.
+
+Se retira porque las dos razones se han agotado, no porque estorbe:
+
+1. **La pregunta la responde ahora `full-journey.yaml`, y con más fuerza.** Su
+   `tapOn: 'Enviar mensaje'` ocurre con el teclado delante, y un tap no aterriza
+   sobre un botón que no está en el árbol; detrás afirma el compositor
+   deshabilitado y la burbuja **sin cerrar el teclado** (el `hideKeyboard` se
+   quitó en `8c94e3e`), y más adelante vuelve a entrar al chat desde Matches
+   tras el reinicio y afirma el compositor otra vez. La sonda paraba en la
+   primera burbuja y no reiniciaba.
+2. **El seguro contra la flake lo da ahora el triaje, y para las dos variantes.**
+   `triage.mjs` distingue la caída del runner del fallo del caso y arranca un
+   segundo emulador solo en el primer supuesto (`91e98a1`). Eso protege el
+   recorrido que decide el color, no un atajo paralelo.
+
+La evidencia de que ya no hacía falta: `supabase` verde al primer intento en
+tres commits seguidos —`78c90b8`
+([job 102245686110](https://github.com/thejowe/lockin/actions/runs/34281070607/job/102245686110)),
+`e0f4ca7`
+([job 102253132113](https://github.com/thejowe/lockin/actions/runs/34283362375/job/102253132113))
+y `d4f0810`
+([job 102661076506](https://github.com/thejowe/lockin/actions/runs/34409724164/job/102661076506))—,
+ninguno con reintento de emulador. Lo que costaba mantenerla era un trabajo
+entero (~17 min de runner) en cada push para repetir una pregunta cerrada.
+
+Lo que se ha borrado: `e2e/keyboard-probe.yaml`, la rama `probe` de
+`e2e/run.mjs` y su entrada en la matriz de `.github/workflows/e2e.yml`.
+`e2e/hide-keyboard.test.mjs` pasa de dos casos a uno en su lista de flujos —de
+46 a 43 casos en `npm run test:e2e`—, y no pierde cobertura: los tres que caen
+afirmaban sobre el `.yaml` que ya no existe.
+
+Comprobado en emulador, no solo razonado:
+[run 34411945877](https://github.com/thejowe/lockin/actions/runs/34411945877)
+corre ya sin la sonda y deja los dos trabajos en verde al primer intento, con el
+control negativo fallando después del `stopApp` como debe. Es la segunda pasada
+seguida con el workflow entero en verde.
 
 ## GitHub Actions: viable y activo
 

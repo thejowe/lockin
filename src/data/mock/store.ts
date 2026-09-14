@@ -7,7 +7,16 @@
 
 import { SEED_PROFILES, SEED_RECIPROCAL_IDS } from './seed';
 
-import type { Decision, Match, Message, ModePreference, Profile, Session } from '../types';
+import type {
+  Decision,
+  LockInSession,
+  Match,
+  Message,
+  ModePreference,
+  Profile,
+  Session,
+  SessionAttendance,
+} from '../types';
 
 /** Id del perfil propio dentro del mock. Estable para que los matches lo referencien. */
 export const CURRENT_USER_ID = 'me';
@@ -22,6 +31,8 @@ export interface MockState {
   incomingLikes: Set<string>;
   matches: Match[];
   messages: Message[];
+  lockInSessions: LockInSession[];
+  attendance: SessionAttendance[];
 }
 
 function initialState(): MockState {
@@ -32,6 +43,8 @@ function initialState(): MockState {
     incomingLikes: new Set(SEED_RECIPROCAL_IDS),
     matches: [],
     messages: [],
+    lockInSessions: [],
+    attendance: [],
   };
 }
 
@@ -41,9 +54,26 @@ export function getState(): MockState {
   return state;
 }
 
+/**
+ * Reloj de las sesiones del mock. Solo lo usan las sesiones; el resto del mock
+ * sigue con `nowIso()`. Existe para que la suite de contrato pueda hacer caducar
+ * una propuesta o terminar una sesión sin esperar media hora.
+ */
+let clockOffsetMs = 0;
+
+export function mockNowMs(): number {
+  return Date.now() + clockOffsetMs;
+}
+
+/** Adelanta el reloj de las sesiones. Solo para tests. */
+export function advanceMockClock(ms: number): void {
+  clockOffsetMs += ms;
+}
+
 /** Vuelve al estado semilla. Pensado para tests — no lo llames desde una pantalla. */
 export function resetState(): void {
   state = initialState();
+  clockOffsetMs = 0;
   notifyAll();
 }
 

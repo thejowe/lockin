@@ -118,7 +118,18 @@ name: Alta, perfil, deck, match, mensaje y persistencia
 - tapOn: 'Mensaje'
 - inputText: ${MESSAGE}
 - tapOn: 'Enviar mensaje'
-- hideKeyboard
+# Aquí NO va un `hideKeyboard`, y no es un olvido. En Android ese comando es un
+# `pressBack()`: con el teclado ya cerrado no se queda quieto, sale del chat. Se
+# sostuvo mientras el teclado siguiera abierto tras el envío, pero eso es una
+# trampa — el segundo bug de la ronda 4 lo cerraba (enviar desmontaba el
+# compositor) y las dos aserciones de abajo pasaron a mirar Descubrir, con dos
+# mensajes de error que no nombraban la causa. Ver `docs/plan/todo/chat.md`.
+#
+# Y no hace falta: el compositor queda por encima del teclado (rondas 1-4) y el
+# hilo hace `scrollToEnd` al crecer (`src/app/chat/[matchId].tsx`), así que la
+# burbuja recién enviada aparece justo encima de él. Afirmarlas con el teclado
+# delante comprueba más, no menos. `hide-keyboard.test.mjs` fija esta ausencia.
+#
 # Esperar al editor vacío evita confundir borrador y burbuja enviada.
 - assertVisible:
     text: 'Enviar mensaje'

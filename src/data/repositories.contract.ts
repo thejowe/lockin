@@ -35,9 +35,15 @@
  * ha dado like" —, así que la pide el fixture y no cada test.
  */
 
+import {
+  SessionConflictError,
+  SessionExpiredError,
+  SessionForbiddenError,
+  SessionWindowError,
+} from './session-errors';
 import { buildProfileInput } from './test-fixtures';
 
-import type { Repositories } from './repositories';
+import type { LockInSessionRepository, Repositories } from './repositories';
 import type { ProfileInput } from './types';
 
 /** Un backend listo para que un test lo interrogue, con su reparto ya resuelto. */
@@ -64,12 +70,30 @@ export interface ContractFixture {
   excludableId: string;
   /** Un id con forma válida para este backend, pero que no existe. */
   unknownProfileId: string;
+  /**
+   * Sesiones actuando como `reciprocalAId`: la otra persona del match que crean
+   * los casos de sesiones. Aceptar una propuesta solo lo puede hacer quien no la hizo.
+   */
+  counterpartSessions(): LockInSessionRepository;
+  /** Sesiones actuando como `reciprocalBId`, que no está en ese match. */
+  outsiderSessions(): LockInSessionRepository;
+  /**
+   * Deja pasar `ms` milisegundos. En el mock mueve el reloj simulado; en un backend
+   * real espera de verdad, así que fuera de `canTimeTravel` solo se usa con segundos.
+   */
+  elapse(ms: number): Promise<void>;
 }
 
 /** Lo que implementa cada backend para poder ser interrogado por el contrato. */
 export interface ContractBackend {
   /** Nombre para el `describe`, p. ej. `'mock'` o `'supabase'`. */
   name: string;
+  /**
+   * `true` si `elapse` puede saltar minutos sin esperarlos. Los casos que hacen
+   * caducar una propuesta o terminar una sesión solo corren así; contra Supabase
+   * esa lógica la cubre `session_is_live()` en `supabase/schema-embedded.test.mjs`.
+   */
+  canTimeTravel: boolean;
   /** Estado limpio para el test que viene. Se llama en cada `beforeEach`. */
   reset(): Promise<ContractFixture>;
   /** Cierre de lo que quede abierto (sesiones, canales de realtime). */
@@ -507,6 +531,235 @@ export function describeRepositoryContract(backend: ContractBackend): void {
 
         await repositories.profiles.saveCurrent(buildProfileInput());
         expect(await repositories.session.isOnboarded()).toBe(true);
+      });
+    });
+
+    describe('sessions', () => {
+      const MINUTE = 60_000;
+      /** Casos que saltan minutos: solo en backends con reloj simulado. */
+      const itWithTimeTravel = backend.canTimeTravel ? it : it.skip;
+
+      let matchId: string;
+      let mine: LockInSessionRepository;
+      let theirs: LockInSessionRepository;
+
+      beforeEach(async () => {
+        await fixture.prepareSwiper();
+        const { match } = await repositories.discovery.recordDecision(
+          fixture.reciprocalAId,
+          'like'
+        );
+        matchId = match!.id;
+        mine = repositories.sessions;
+        theirs = fixture.counterpartSessions();
+      });
+
+      /** Hora relativa al reloj del servidor, no al del proceso de tests. */
+      async function startsIn(ms: number): Promise<string> {
+        return new Date(Date.parse(await mine.serverNow()) + ms).toISOString();
+      }
+      /** Justo por encima del margen mínimo: la ventana de entrada abre a los 2 s. */
+      const soon = () => startsIn(5 * MINUTE + 2_000);
+      const later = () => startsIn(60 * MINUTE);
+
+      /** Reintenta hasta que pase o se acabe el plazo: realtime llega con retraso. */
+      async function eventually(check: () => void, timeoutMs = 10_000): Promise<void> {
+        const deadline = Date.now() + timeoutMs;
+        for (;;) {
+          try {
+            check();
+            return;
+          } catch (error) {
+            if (Date.now() > deadline) throw error;
+            await new Promise((resolve) => setTimeout(resolve, 100));
+          }
+        }
+      }
+
+      it('sin sesión, getActive devuelve null', async () => {
+        expect(await mine.getActive(matchId)).toBeNull();
+      });
+
+      it('proponer crea una propuesta que ven las dos personas', async () => {
+        const startsAt = await later();
+
+        const session = await mine.propose({ matchId, startsAt, blocks: 2 });
+
+        expect(session).toMatchObject({
+          matchId,
+          proposedBy: fixture.currentUserId,
+          blocks: 2,
+          status: 'propuesta',
+          respondedAt: null,
+        });
+        expect(Date.parse(session.startsAt)).toBe(Date.parse(startsAt));
+        expect((await theirs.getActive(matchId))?.id).toBe(session.id);
+      });
+
+      it('rechaza una hora con menos de 5 minutos de margen o a más de 30 días', async () => {
+        await expect(
+          mine.propose({ matchId, startsAt: await startsIn(4 * MINUTE), blocks: 1 })
+        ).rejects.toBeInstanceOf(SessionWindowError);
+        await expect(
+          mine.propose({ matchId, startsAt: await startsIn(31 * 24 * 60 * MINUTE), blocks: 1 })
+        ).rejects.toBeInstanceOf(SessionWindowError);
+      });
+
+      it('solo puede haber una sesión viva por match, la proponga quien la proponga', async () => {
+        await mine.propose({ matchId, startsAt: await later(), blocks: 1 });
+
+        await expect(
+          mine.propose({ matchId, startsAt: await later(), blocks: 1 })
+        ).rejects.toBeInstanceOf(SessionConflictError);
+        await expect(
+          theirs.propose({ matchId, startsAt: await later(), blocks: 1 })
+        ).rejects.toBeInstanceOf(SessionConflictError);
+      });
+
+      it('quien propone no puede responder a su propia propuesta', async () => {
+        const session = await mine.propose({ matchId, startsAt: await later(), blocks: 1 });
+
+        await expect(mine.respond(session.id, 'aceptada')).rejects.toBeInstanceOf(
+          SessionForbiddenError
+        );
+      });
+
+      it('la otra persona acepta, y responder dos veces choca', async () => {
+        const session = await mine.propose({ matchId, startsAt: await later(), blocks: 1 });
+
+        const accepted = await theirs.respond(session.id, 'aceptada');
+
+        expect(accepted.status).toBe('aceptada');
+        expect(accepted.respondedAt).not.toBeNull();
+        expect((await mine.getActive(matchId))?.status).toBe('aceptada');
+        await expect(theirs.respond(session.id, 'rechazada')).rejects.toBeInstanceOf(
+          SessionConflictError
+        );
+      });
+
+      it('rechazar libera el match para otra propuesta', async () => {
+        const session = await mine.propose({ matchId, startsAt: await later(), blocks: 1 });
+
+        await theirs.respond(session.id, 'rechazada');
+
+        expect(await mine.getActive(matchId)).toBeNull();
+        await expect(
+          mine.propose({ matchId, startsAt: await later(), blocks: 1 })
+        ).resolves.toMatchObject({ status: 'propuesta' });
+      });
+
+      it('cualquiera de los dos cancela antes de empezar', async () => {
+        const session = await mine.propose({ matchId, startsAt: await later(), blocks: 1 });
+
+        const cancelled = await theirs.cancel(session.id);
+
+        expect(cancelled.status).toBe('cancelada');
+        expect(await mine.getActive(matchId)).toBeNull();
+        await expect(mine.cancel(session.id)).rejects.toBeInstanceOf(SessionConflictError);
+      });
+
+      it('alguien de fuera del match no ve ni toca sus sesiones', async () => {
+        const outsider = fixture.outsiderSessions();
+        const session = await mine.propose({ matchId, startsAt: await later(), blocks: 1 });
+
+        expect(await outsider.getById(session.id)).toBeNull();
+        expect(await outsider.getActive(matchId)).toBeNull();
+        expect(await outsider.listAttendance(session.id)).toEqual([]);
+        await expect(outsider.respond(session.id, 'aceptada')).rejects.toBeInstanceOf(
+          SessionForbiddenError
+        );
+        await expect(
+          outsider.propose({ matchId, startsAt: await later(), blocks: 1 })
+        ).rejects.toBeInstanceOf(SessionForbiddenError);
+      });
+
+      it('no se entra a una propuesta sin aceptar', async () => {
+        const session = await mine.propose({ matchId, startsAt: await soon(), blocks: 1 });
+        await fixture.elapse(3_000);
+
+        await expect(mine.join(session.id)).rejects.toBeInstanceOf(SessionWindowError);
+      });
+
+      it('no se entra antes de que abra la ventana', async () => {
+        const session = await mine.propose({ matchId, startsAt: await later(), blocks: 1 });
+        await theirs.respond(session.id, 'aceptada');
+
+        await expect(mine.join(session.id)).rejects.toBeInstanceOf(SessionWindowError);
+      });
+
+      it('entrar es idempotente y volver tras salir borra la salida', async () => {
+        const session = await mine.propose({ matchId, startsAt: await soon(), blocks: 1 });
+        await theirs.respond(session.id, 'aceptada');
+        await fixture.elapse(3_000);
+
+        const first = await mine.join(session.id);
+        const again = await mine.join(session.id);
+        const left = await mine.leave(session.id);
+        const back = await mine.join(session.id);
+
+        expect(first).toMatchObject({ profileId: fixture.currentUserId, leftAt: null });
+        expect(Date.parse(again.joinedAt)).toBe(Date.parse(first.joinedAt));
+        expect(left.leftAt).not.toBeNull();
+        expect(back.leftAt).toBeNull();
+        expect(await mine.listAttendance(session.id)).toHaveLength(1);
+        expect(await theirs.listAttendance(session.id)).toHaveLength(1);
+      });
+
+      it('salir sin haber entrado es un error de ventana', async () => {
+        const session = await mine.propose({ matchId, startsAt: await soon(), blocks: 1 });
+        await theirs.respond(session.id, 'aceptada');
+        await fixture.elapse(3_000);
+
+        await expect(mine.leave(session.id)).rejects.toBeInstanceOf(SessionWindowError);
+      });
+
+      it('avisa a las dos personas de un cambio en la sesión', async () => {
+        const mineListener = jest.fn();
+        const theirsListener = jest.fn();
+        const unsubscribeMine = mine.subscribe(matchId, mineListener);
+        const unsubscribeTheirs = theirs.subscribe(matchId, theirsListener);
+
+        await mine.propose({ matchId, startsAt: await later(), blocks: 1 });
+
+        await eventually(() => {
+          expect(mineListener).toHaveBeenCalled();
+          expect(theirsListener).toHaveBeenCalled();
+        });
+        unsubscribeMine();
+        unsubscribeTheirs();
+      });
+
+      itWithTimeTravel('una propuesta caducada ya no está viva ni se puede aceptar', async () => {
+        const session = await mine.propose({ matchId, startsAt: await soon(), blocks: 1 });
+        await fixture.elapse(6 * MINUTE);
+
+        expect(await mine.getActive(matchId)).toBeNull();
+        await expect(theirs.respond(session.id, 'aceptada')).rejects.toBeInstanceOf(
+          SessionExpiredError
+        );
+        await expect(
+          mine.propose({ matchId, startsAt: await later(), blocks: 1 })
+        ).resolves.toMatchObject({ status: 'propuesta' });
+      });
+
+      itWithTimeTravel('una sesión aceptada termina sola y deja proponer otra', async () => {
+        const session = await mine.propose({ matchId, startsAt: await soon(), blocks: 1 });
+        await theirs.respond(session.id, 'aceptada');
+        await fixture.elapse(36 * MINUTE);
+
+        expect(await mine.getActive(matchId)).toBeNull();
+        await expect(mine.join(session.id)).rejects.toBeInstanceOf(SessionWindowError);
+        await expect(
+          mine.propose({ matchId, startsAt: await later(), blocks: 1 })
+        ).resolves.toMatchObject({ status: 'propuesta' });
+      });
+
+      itWithTimeTravel('una sesión empezada no se cancela: se sale', async () => {
+        const session = await mine.propose({ matchId, startsAt: await soon(), blocks: 1 });
+        await theirs.respond(session.id, 'aceptada');
+        await fixture.elapse(6 * MINUTE);
+
+        await expect(mine.cancel(session.id)).rejects.toBeInstanceOf(SessionExpiredError);
       });
     });
   });

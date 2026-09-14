@@ -47,9 +47,12 @@
  * Todo lo que no asoma por PostgREST: cuerpos de las políticas RLS, CHECKs,
  * índices, triggers, `default`s, y las columnas, tablas o valores de enum que
  * existan en el despliegue **de más** respecto a las migraciones. Para eso está
- * `supabase/schema-fingerprint.sql`, que es exacto pero necesita el editor SQL
- * del dashboard. Los dos son complementarios: este corre en un comando y
- * detecta lo que falta; el otro necesita dos pegadas manuales y lo detecta todo.
+ * `supabase/schema-fingerprint.sql`, ejecutado en CI con acceso SQL. Tampoco
+ * sondea cuerpos, tipos de argumentos/retorno o defaults de funciones. Un
+ * CREATE OR REPLACE que cambia el ranking conserva la firma y puede pasar.
+ * El parser no es un intérprete SQL: DROP/RENAME, ALTER COLUMN/TYPE y ADD sin
+ * COLUMN pueden quedar ignorados; tampoco interpreta índices ni políticas.
+ * Ver supabase/README.md → auditoría de límites. Un verde aquí es parcial.
  *
  * ## Uso
  *
@@ -589,7 +592,8 @@ if (findings.length === 0) {
   console.log('Sin deriva detectable desde el cliente.');
   console.log(
     'Alcance: esto no ve políticas, CHECKs, índices, triggers ni objetos de más.\n' +
-      'Para el cotejo exacto, supabase/schema-fingerprint.sql.'
+      'Tampoco valida cuerpos/retornos/defaults de funciones ni toda evolución DDL.\n' +
+      'Para el cotejo por catálogo, supabase/schema-fingerprint.sql y schema-drift.yml.'
   );
   process.exit(0);
 }

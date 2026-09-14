@@ -1,0 +1,28 @@
+--- esperado: migrations/
++++ observado
+- func     public.array_has_duplicates(anyarray) args=arr anyarray returns=boolean lang=sql security=invoker volatile=i config=search_path="" body_md5=e7a330ee59119180b3db4f5133ba5b6b
+- func     public.discovery_deck(public.mode_preference,public.specialty[],integer) args=p_mode public.mode_preference DEFAULT NULL::public.mode_preference, p_specialties public.specialty[] DEFAULT NULL::public.specialty[], p_limit integer DEFAULT 50 returns=SETOF public.profiles lang=sql security=invoker volatile=s config=search_path="" body_md5=d10f843c9c7f316756be2e1350410b02
+- func     public.is_match_member(uuid) args=p_match_id uuid returns=boolean lang=sql security=invoker volatile=s config=search_path="" body_md5=e32633d1f3c57c17e10249b357acadaa
+- func     public.is_valid_prompts(jsonb) args=prompts jsonb returns=boolean lang=sql security=invoker volatile=i config=search_path="" body_md5=48cc8b2cc8bbf2c8a79ab32eb99dfa8e
+- func     public.messages_touch_match() args= returns=trigger lang=plpgsql security=definer volatile=v config=search_path="" body_md5=20dce7f22e053984c3fe55a5f91118fa
+- func     public.record_decision(uuid,public.decision) args=p_target_id uuid, p_decision public.decision returns=public.matches lang=plpgsql security=definer volatile=v config=search_path="" body_md5=dcaaec83a294587921de92ff146a979c
+- func     public.resolve_match_mode(public.mode_preference,public.mode_preference) args=a public.mode_preference, b public.mode_preference returns=public.mode lang=sql security=invoker volatile=i config=search_path="" body_md5=cf831e9a92cf035bf82f93cb1548a245
+- func     public.touch_updated_at() args= returns=trigger lang=plpgsql security=invoker volatile=v config=search_path="" body_md5=1c4318bee4240d4113d86fad7eb15623
++ func     public.array_has_duplicates(anyarray) args=arr anyarray returns=boolean lang=sql security=invoker volatile=i config=search_path="" body_md5=a87ac12fc5d46691cfaaca9337d23d0c
++ func     public.dev_reset_current_user() args= returns=void lang=plpgsql security=definer volatile=v config=search_path="" body_md5=d22b8891223c19e08dbf16a1a383ddd6
++ func     public.discovery_deck(public.mode_preference,public.specialty[],integer) args=p_mode public.mode_preference DEFAULT NULL::public.mode_preference, p_specialties public.specialty[] DEFAULT NULL::public.specialty[], p_limit integer DEFAULT 50 returns=SETOF public.profiles lang=sql security=invoker volatile=s config=search_path="" body_md5=d4fb56747d25c0fbc6933b9ab0d09284
++ func     public.is_match_member(uuid) args=p_match_id uuid returns=boolean lang=sql security=invoker volatile=s config=search_path="" body_md5=496b35b05abd6d7732c78b9306c9dadd
++ func     public.is_valid_prompts(jsonb) args=prompts jsonb returns=boolean lang=sql security=invoker volatile=i config=search_path="" body_md5=01b8a406c19e7c39946fb7654480cd89
++ func     public.messages_touch_match() args= returns=trigger lang=plpgsql security=definer volatile=v config=search_path="" body_md5=2b3c561f5ae5fc92f3acd8291192519e
++ func     public.record_decision(uuid,public.decision) args=p_target_id uuid, p_decision public.decision returns=public.matches lang=plpgsql security=definer volatile=v config=search_path="" body_md5=789eef90d05b89c90b2e470254b7d470
++ func     public.resolve_match_mode(public.mode_preference,public.mode_preference) args=a public.mode_preference, b public.mode_preference returns=public.mode lang=sql security=invoker volatile=i config=search_path="" body_md5=3a0081e2bef19b7f2ecc561e17f19bb7
++ func     public.seed_incoming_likes(text) args=p_email text returns=integer lang=plpgsql security=invoker volatile=v config=- body_md5=bed7d5527d547cb749f72c7c77f76edb
++ func     public.touch_updated_at() args= returns=trigger lang=plpgsql security=invoker volatile=v config=search_path="" body_md5=608ef48381668ad5cc300914a52c93f5
++ grantfn  public.dev_reset_current_user() authenticated EXECUTE
++ grantfn  public.dev_reset_current_user() postgres EXECUTE
++ grantfn  public.dev_reset_current_user() service_role EXECUTE
++ grantfn  public.seed_incoming_likes(text) PUBLIC EXECUTE
++ grantfn  public.seed_incoming_likes(text) anon EXECUTE
++ grantfn  public.seed_incoming_likes(text) authenticated EXECUTE
++ grantfn  public.seed_incoming_likes(text) postgres EXECUTE
++ grantfn  public.seed_incoming_likes(text) service_role EXECUTE

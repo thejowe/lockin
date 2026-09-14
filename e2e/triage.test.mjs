@@ -10,7 +10,13 @@
  */
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { classifyFailure, parseAnrDialog, parseMaestroFailure, shouldRetry } from './triage.mjs';
+import {
+  classifyFailure,
+  parseAnrDialog,
+  parseCommandFailures,
+  parseMaestroFailure,
+  shouldRetry,
+} from './triage.mjs';
 
 const ALIVE = 'device';
 
@@ -36,6 +42,81 @@ describe('parseMaestroFailure', () => {
     assert.equal(parseMaestroFailure(undefined), '');
     assert.equal(parseMaestroFailure('<testsuites><testsuite/></testsuites>'), '');
   });
+});
+
+describe('parseCommandFailures', () => {
+  it('une solo los mensajes de comandos FAILED y omite entradas sin mensaje', () => {
+    const commands = [
+      { metadata: { status: 'FAILED', error: { message: 'primer fallo' } } },
+      { metadata: { status: 'COMPLETED', error: { message: 'ignorado' } } },
+      { metadata: { status: 'FAILED' } },
+      { metadata: { status: 'FAILED', error: { message: 42 } } },
+      null,
+      {},
+      { metadata: { status: 'FAILED', error: { message: 'segundo fallo' } } },
+    ];
+    assert.equal(parseCommandFailures(commands), 'primer fallo\nsegundo fallo');
+  });
+
+  it('acepta null de un volcado ilegible y un objeto sin array como evidencia vacía', () => {
+    assert.equal(parseCommandFailures(null), '');
+    assert.equal(parseCommandFailures({}), '');
+  });
+
+  it('devuelve cadena vacía si la entrada no es un array o no hay comandos', () => {
+    for (const commands of [undefined, 'commands.json', []]) {
+      assert.equal(parseCommandFailures(commands), '');
+    }
+  });
+});
+
+describe('classifyFailure: commands.json completa el Unknown error de JUnit', () => {
+  const offline = 'Command failed (host:transport:emulator-5554): device offline';
+  const assertion = 'Assertion is false: "Cofundador" is visible';
+  const xml = '<testcase><failure>Unknown error</failure></testcase>';
+  const cases = [
+    {
+      name: 'launchApp falla por device offline aunque adb ya responda → runner',
+      commands: [
+        {
+          command: { launchAppCommand: {} },
+          metadata: { status: 'FAILED', error: { message: offline } },
+        },
+      ],
+      kind: 'runner',
+    },
+    {
+      name: 'una aserción fallida en el comando sigue siendo del caso',
+      commands: [{ metadata: { status: 'FAILED', error: { message: assertion } } }],
+      kind: 'caso',
+    },
+    {
+      name: 'sin comandos fallidos Unknown error sigue siendo del caso',
+      commands: [{ metadata: { status: 'COMPLETED', error: { message: offline } } }],
+      kind: 'caso',
+    },
+    {
+      name: 'la aserción del comando gana también a una caída del runner',
+      commands: [
+        { metadata: { status: 'FAILED', error: { message: offline } } },
+        { metadata: { status: 'FAILED', error: { message: assertion } } },
+      ],
+      kind: 'caso',
+    },
+  ];
+  for (const { name, commands, kind } of cases) {
+    it(name, () => {
+      const failureText = [parseCommandFailures(commands), parseMaestroFailure(xml)]
+        .filter(Boolean)
+        .join('\n');
+      const verdict = classifyFailure({ failureText, commandDumps: 1, deviceState: ALIVE });
+      assert.equal(verdict.kind, kind);
+      assert.equal(
+        shouldRetry({ runs: [{ outcome: verdict.kind, why: verdict.why }] }).retry,
+        kind === 'runner'
+      );
+    });
+  }
 });
 
 describe('classifyFailure: lo que SÍ es caída del runner', () => {

@@ -33,6 +33,8 @@ Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>
 - [x] Configuración de Auth — `anonymous_users: true`; `POST /auth/v1/signup` devuelve `200` con `access_token`
 - [x] Contrato de `Repositories` ejecutable contra Supabase real — `src/data/supabase/contract.test.ts`, opt-in con `LOCKIN_SUPABASE_CONTRACT=1`
 - [x] **Instalar `dev_reset_current_user()`** y dejar constancia de un 25/25 en la suite de contrato — hecho el 2026-09-06, ver "Al retomar" abajo
+- [x] Cotejo de esquema contra el proyecto real en Actions (`schema-drift.yml` + `SUPABASE_SCHEMA_DB_URL`) — 2026-09-13, [run 34757433478](https://github.com/thejowe/lockin/actions/runs/34757433478): remoto = migraciones + las dos funciones de desarrollo, nada más. Ver `todo/datos.md` → "Cotejo remoto ejecutado"
+- [x] Retirar `dev_reset_current_user()` y `seed_incoming_likes()` del proyecto real — 2026-09-13, `dev-teardown.sql` ejecutado al alcanzarse el gatillo; [run 34760366206](https://github.com/thejowe/lockin/actions/runs/34760366206) con `remote.diff` → `Sin diferencias.` y verde también en el push siguiente ([run 34760751093](https://github.com/thejowe/lockin/actions/runs/34760751093)). **Desde aquí, un rojo del job remoto es deriva real.** Las cuentas y likes de seed siguen en la base: inventario aparte
 - [x] Flujo real end-to-end **en la app** (registro → perfil → deck → match → mensaje) — recorrido a mano el 2026-09-06 contra **Supabase real**, no contra el mock. Ver "Al retomar" abajo para cómo se distinguió una cosa de la otra.
 
 ## Especialidades buscadas (post-MVP)
@@ -47,6 +49,7 @@ Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>
 - [x] ESLint/Prettier/TS estricto
 - [x] Tests base (Jest + RNTL) — 374 tests en 34 suites, con suelo de cobertura en `jest.config.js` (89.82/82.56/91.49/91.38 %: sentencias/ramas/funciones/líneas). Más 27 opt-in de contrato contra Supabase, fuera de `npm test` y de CI. Más 37 de E2E (`npm run test:e2e`), en 9 suites.
 - [x] CI en GitHub Actions — lint, formato, tipos, tests y export web
+- [x] E2E Android en CI — `.github/workflows/e2e.yml` corre `full-journey.yaml` en un emulador en cada push, en dos variantes: el APK con credenciales (pasa entero y el oráculo lee las filas en Postgres) y el control negativo sin ellas (falla **después** del `stopApp` y no escribe nada). Las dos en verde desde el 2026-09-09, [run 34409724164](https://github.com/thejowe/lockin/actions/runs/34409724164).
 - [x] Accesibilidad básica — labels, tamaño táctil y test de contraste. Los 4 pares que estaban por debajo de AA se cerraron el 2026-09-06: `KNOWN_GAPS` en `theme.test.ts` está vacío (ver `todo/arquitecto.md`)
 
 ---
@@ -110,6 +113,16 @@ Lo que **no** cubre este recorrido, por si alguien lo da por más de lo que es:
 fue una pasada manual en un dispositivo, no una prueba automatizada. No hay
 E2E en CI, así que una regresión en el pegamento pantalla ↔ repositorio seguiría
 sin tener quien la detecte.
+
+> **CORREGIDO el 2026-09-09.** La última frase ya no es cierta: hay E2E en CI y
+> está en verde. `.github/workflows/e2e.yml` corre el recorrido completo en un
+> emulador Android en cada push, en dos variantes sobre el mismo backend — la
+> del APK con credenciales, que debe pasar entero y dejar las filas en Postgres,
+> y el control negativo sin credenciales, que debe fallar **después** del
+> reinicio y no escribir nada. Las dos cerraron a la vez por primera vez en el
+> [run 34409724164](https://github.com/thejowe/lockin/actions/runs/34409724164).
+> Ese pegamento pantalla ↔ repositorio ya tiene quien lo detecte. Detalle en
+> `todo/calidad.md`, decimotercera pasada.
 
 ### Trampa de GoTrue, por si reaparece
 

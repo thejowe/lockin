@@ -103,6 +103,22 @@ export function parseMaestroFailure(xml) {
   return parts.join('\n').trim();
 }
 
+/**
+ * Mensajes de los comandos fallidos del volcado de Maestro. El informe JUnit
+ * puede decir solo "Unknown error", mientras aquí queda la causa real.
+ *
+ * @param {unknown} commands Array ya parseado de `commands.json`.
+ * @returns {string} Mensajes unidos por saltos de línea, o vacío si no los hay.
+ */
+export function parseCommandFailures(commands) {
+  if (!Array.isArray(commands)) return '';
+  return commands
+    .filter((entry) => entry?.metadata?.status === 'FAILED')
+    .map((entry) => entry.metadata.error?.message)
+    .filter((message) => typeof message === 'string')
+    .join('\n');
+}
+
 function firstLine(text) {
   return text.trim().split('\n')[0].slice(0, 300);
 }
@@ -111,7 +127,7 @@ function firstLine(text) {
  * Clasifica un fallo del recorrido.
  *
  * @param {object} evidence
- * @param {string} evidence.failureText  Mensaje de `maestro.xml`, vacío si no hay.
+ * @param {string} evidence.failureText  Mensajes de comandos y `maestro.xml`, vacío si no hay.
  * @param {number} evidence.commandDumps Volcados `commands.json` encontrados.
  * @param {string} evidence.deviceState  Salida de `adb get-state`.
  * @param {{title: string}|null} [evidence.anrDialog] Diálogo ANR en el paso fallido.

@@ -1,0 +1,283 @@
+digest   0a7ec9c04c40aa4d5fe9e87cf51c40bd
+column   decisions.actor_id uuid notnull=t default=-
+column   decisions.created_at timestamp with time zone notnull=t default=now()
+column   decisions.decision public.decision notnull=t default=-
+column   decisions.target_id uuid notnull=t default=-
+column   matches.created_at timestamp with time zone notnull=t default=now()
+column   matches.id uuid notnull=t default=gen_random_uuid()
+column   matches.last_message_at timestamp with time zone notnull=f default=-
+column   matches.mode public.mode notnull=t default=-
+column   matches.profile_a uuid notnull=t default=-
+column   matches.profile_b uuid notnull=t default=-
+column   messages.body text notnull=t default=-
+column   messages.id uuid notnull=t default=gen_random_uuid()
+column   messages.match_id uuid notnull=t default=-
+column   messages.sender_id uuid notnull=t default=-
+column   messages.sent_at timestamp with time zone notnull=t default=now()
+column   profiles.age integer notnull=t default=-
+column   profiles.ambition public.ambition notnull=t default=-
+column   profiles.availability_bands public.time_band[] notnull=t default=-
+column   profiles.availability_hours_per_week integer notnull=t default=-
+column   profiles.avatar_accent public.avatar_accent notnull=t default='brass'::public.avatar_accent
+column   profiles.avatar_initials text notnull=t default=-
+column   profiles.created_at timestamp with time zone notnull=t default=now()
+column   profiles.id uuid notnull=t default=-
+column   profiles.link_github text notnull=f default=-
+column   profiles.link_linkedin text notnull=f default=-
+column   profiles.link_portfolio text notnull=f default=-
+column   profiles.location text notnull=t default=-
+column   profiles.looking_for public.mode_preference notnull=t default=-
+column   profiles.name text notnull=t default=-
+column   profiles.prompts jsonb notnull=t default='[]'::jsonb
+column   profiles.seeking_specialties public.specialty[] notnull=t default=ARRAY[]::public.specialty[]
+column   profiles.specialties public.specialty[] notnull=t default=-
+column   profiles.starting_point public.starting_point notnull=t default=-
+column   profiles.timezone text notnull=t default=-
+column   profiles.updated_at timestamp with time zone notnull=t default=now()
+column   user_settings.active_mode public.mode_preference notnull=f default=-
+column   user_settings.created_at timestamp with time zone notnull=t default=now()
+column   user_settings.updated_at timestamp with time zone notnull=t default=now()
+column   user_settings.user_id uuid notnull=t default=-
+constr   decisions.decisions_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES public.profiles(id) ON DELETE CASCADE
+constr   decisions.decisions_no_self_swipe CHECK ((actor_id <> target_id))
+constr   decisions.decisions_pkey PRIMARY KEY (actor_id, target_id)
+constr   decisions.decisions_target_id_fkey FOREIGN KEY (target_id) REFERENCES public.profiles(id) ON DELETE CASCADE
+constr   matches.matches_pair_is_ordered CHECK ((profile_a < profile_b))
+constr   matches.matches_pair_unique UNIQUE (profile_a, profile_b)
+constr   matches.matches_pkey PRIMARY KEY (id)
+constr   matches.matches_profile_a_fkey FOREIGN KEY (profile_a) REFERENCES public.profiles(id) ON DELETE CASCADE
+constr   matches.matches_profile_b_fkey FOREIGN KEY (profile_b) REFERENCES public.profiles(id) ON DELETE CASCADE
+constr   messages.messages_body_check CHECK (((btrim(body) <> ''::text) AND (char_length(body) <= 4000)))
+constr   messages.messages_match_id_fkey FOREIGN KEY (match_id) REFERENCES public.matches(id) ON DELETE CASCADE
+constr   messages.messages_pkey PRIMARY KEY (id)
+constr   messages.messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.profiles(id) ON DELETE CASCADE
+constr   profiles.profiles_age_check CHECK (((age >= 16) AND (age <= 120)))
+constr   profiles.profiles_availability_bands_check CHECK ((((cardinality(availability_bands) >= 1) AND (cardinality(availability_bands) <= 4)) AND (NOT public.array_has_duplicates(availability_bands))))
+constr   profiles.profiles_availability_hours_per_week_check CHECK (((availability_hours_per_week >= 1) AND (availability_hours_per_week <= 168)))
+constr   profiles.profiles_avatar_initials_check CHECK ((((char_length(avatar_initials) >= 1) AND (char_length(avatar_initials) <= 2)) AND (avatar_initials = upper(avatar_initials))))
+constr   profiles.profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
+constr   profiles.profiles_link_github_check CHECK (((link_github IS NULL) OR (link_github ~* '^https?://'::text)))
+constr   profiles.profiles_link_linkedin_check CHECK (((link_linkedin IS NULL) OR (link_linkedin ~* '^https?://'::text)))
+constr   profiles.profiles_link_portfolio_check CHECK (((link_portfolio IS NULL) OR (link_portfolio ~* '^https?://'::text)))
+constr   profiles.profiles_location_check CHECK (((btrim(location) <> ''::text) AND (char_length(location) <= 120)))
+constr   profiles.profiles_name_check CHECK (((btrim(name) <> ''::text) AND (char_length(name) <= 80)))
+constr   profiles.profiles_pkey PRIMARY KEY (id)
+constr   profiles.profiles_prompts_check CHECK ((public.is_valid_prompts(prompts) AND (jsonb_array_length(prompts) <= 2)))
+constr   profiles.profiles_seeking_specialties_check CHECK (((cardinality(seeking_specialties) <= 10) AND (NOT public.array_has_duplicates(seeking_specialties))))
+constr   profiles.profiles_specialties_check CHECK ((((cardinality(specialties) >= 1) AND (cardinality(specialties) <= 10)) AND (NOT public.array_has_duplicates(specialties))))
+constr   profiles.profiles_timezone_check CHECK (((btrim(timezone) <> ''::text) AND (char_length(timezone) <= 64)))
+constr   user_settings.user_settings_pkey PRIMARY KEY (user_id)
+constr   user_settings.user_settings_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+enum     ambition = lifestyle,equilibrado,todo-o-nada
+enum     avatar_accent = brass,teal
+enum     decision = like,pass
+enum     mode = par,lockin
+enum     mode_preference = par,lockin,ambos
+enum     specialty = diseno,dev,marketing,ventas,datos,legal,producto,finanzas,operaciones,contenido
+enum     starting_point = solo-ganas,idea-sin-empezar,algo-empezado
+enum     time_band = madrugada,manana,tarde,noche
+func     public.array_has_duplicates(anyarray) args=arr anyarray returns=boolean lang=sql security=invoker volatile=i config=search_path="" body_md5=e7a330ee59119180b3db4f5133ba5b6b
+func     public.dev_reset_current_user() args= returns=void lang=plpgsql security=definer volatile=v config=search_path="" body_md5=89ce06b5f02a64f43388edbdbbcc0d91
+func     public.discovery_deck(public.mode_preference,public.specialty[],integer) args=p_mode public.mode_preference DEFAULT NULL::public.mode_preference, p_specialties public.specialty[] DEFAULT NULL::public.specialty[], p_limit integer DEFAULT 50 returns=SETOF public.profiles lang=sql security=invoker volatile=s config=search_path="" body_md5=d10f843c9c7f316756be2e1350410b02
+func     public.is_match_member(uuid) args=p_match_id uuid returns=boolean lang=sql security=invoker volatile=s config=search_path="" body_md5=e32633d1f3c57c17e10249b357acadaa
+func     public.is_valid_prompts(jsonb) args=prompts jsonb returns=boolean lang=sql security=invoker volatile=i config=search_path="" body_md5=48cc8b2cc8bbf2c8a79ab32eb99dfa8e
+func     public.messages_touch_match() args= returns=trigger lang=plpgsql security=definer volatile=v config=search_path="" body_md5=20dce7f22e053984c3fe55a5f91118fa
+func     public.record_decision(uuid,public.decision) args=p_target_id uuid, p_decision public.decision returns=public.matches lang=plpgsql security=definer volatile=v config=search_path="" body_md5=dcaaec83a294587921de92ff146a979c
+func     public.resolve_match_mode(public.mode_preference,public.mode_preference) args=a public.mode_preference, b public.mode_preference returns=public.mode lang=sql security=invoker volatile=i config=search_path="" body_md5=cf831e9a92cf035bf82f93cb1548a245
+func     public.seed_incoming_likes(text) args=p_email text returns=integer lang=plpgsql security=invoker volatile=v config=- body_md5=c13ae5ded7edad2ac1e28ecbdfcecb97
+func     public.touch_updated_at() args= returns=trigger lang=plpgsql security=invoker volatile=v config=search_path="" body_md5=1c4318bee4240d4113d86fad7eb15623
+grant    decisions authenticated DELETE
+grant    decisions authenticated INSERT
+grant    decisions authenticated MAINTAIN
+grant    decisions authenticated REFERENCES
+grant    decisions authenticated SELECT
+grant    decisions authenticated TRIGGER
+grant    decisions authenticated TRUNCATE
+grant    decisions authenticated UPDATE
+grant    decisions postgres DELETE
+grant    decisions postgres INSERT
+grant    decisions postgres MAINTAIN
+grant    decisions postgres REFERENCES
+grant    decisions postgres SELECT
+grant    decisions postgres TRIGGER
+grant    decisions postgres TRUNCATE
+grant    decisions postgres UPDATE
+grant    decisions service_role DELETE
+grant    decisions service_role INSERT
+grant    decisions service_role MAINTAIN
+grant    decisions service_role REFERENCES
+grant    decisions service_role SELECT
+grant    decisions service_role TRIGGER
+grant    decisions service_role TRUNCATE
+grant    decisions service_role UPDATE
+grant    matches authenticated DELETE
+grant    matches authenticated INSERT
+grant    matches authenticated MAINTAIN
+grant    matches authenticated REFERENCES
+grant    matches authenticated SELECT
+grant    matches authenticated TRIGGER
+grant    matches authenticated TRUNCATE
+grant    matches authenticated UPDATE
+grant    matches postgres DELETE
+grant    matches postgres INSERT
+grant    matches postgres MAINTAIN
+grant    matches postgres REFERENCES
+grant    matches postgres SELECT
+grant    matches postgres TRIGGER
+grant    matches postgres TRUNCATE
+grant    matches postgres UPDATE
+grant    matches service_role DELETE
+grant    matches service_role INSERT
+grant    matches service_role MAINTAIN
+grant    matches service_role REFERENCES
+grant    matches service_role SELECT
+grant    matches service_role TRIGGER
+grant    matches service_role TRUNCATE
+grant    matches service_role UPDATE
+grant    messages authenticated DELETE
+grant    messages authenticated INSERT
+grant    messages authenticated MAINTAIN
+grant    messages authenticated REFERENCES
+grant    messages authenticated SELECT
+grant    messages authenticated TRIGGER
+grant    messages authenticated TRUNCATE
+grant    messages authenticated UPDATE
+grant    messages postgres DELETE
+grant    messages postgres INSERT
+grant    messages postgres MAINTAIN
+grant    messages postgres REFERENCES
+grant    messages postgres SELECT
+grant    messages postgres TRIGGER
+grant    messages postgres TRUNCATE
+grant    messages postgres UPDATE
+grant    messages service_role DELETE
+grant    messages service_role INSERT
+grant    messages service_role MAINTAIN
+grant    messages service_role REFERENCES
+grant    messages service_role SELECT
+grant    messages service_role TRIGGER
+grant    messages service_role TRUNCATE
+grant    messages service_role UPDATE
+grant    profiles authenticated DELETE
+grant    profiles authenticated INSERT
+grant    profiles authenticated MAINTAIN
+grant    profiles authenticated REFERENCES
+grant    profiles authenticated SELECT
+grant    profiles authenticated TRIGGER
+grant    profiles authenticated TRUNCATE
+grant    profiles authenticated UPDATE
+grant    profiles postgres DELETE
+grant    profiles postgres INSERT
+grant    profiles postgres MAINTAIN
+grant    profiles postgres REFERENCES
+grant    profiles postgres SELECT
+grant    profiles postgres TRIGGER
+grant    profiles postgres TRUNCATE
+grant    profiles postgres UPDATE
+grant    profiles service_role DELETE
+grant    profiles service_role INSERT
+grant    profiles service_role MAINTAIN
+grant    profiles service_role REFERENCES
+grant    profiles service_role SELECT
+grant    profiles service_role TRIGGER
+grant    profiles service_role TRUNCATE
+grant    profiles service_role UPDATE
+grant    user_settings authenticated DELETE
+grant    user_settings authenticated INSERT
+grant    user_settings authenticated MAINTAIN
+grant    user_settings authenticated REFERENCES
+grant    user_settings authenticated SELECT
+grant    user_settings authenticated TRIGGER
+grant    user_settings authenticated TRUNCATE
+grant    user_settings authenticated UPDATE
+grant    user_settings postgres DELETE
+grant    user_settings postgres INSERT
+grant    user_settings postgres MAINTAIN
+grant    user_settings postgres REFERENCES
+grant    user_settings postgres SELECT
+grant    user_settings postgres TRIGGER
+grant    user_settings postgres TRUNCATE
+grant    user_settings postgres UPDATE
+grant    user_settings service_role DELETE
+grant    user_settings service_role INSERT
+grant    user_settings service_role MAINTAIN
+grant    user_settings service_role REFERENCES
+grant    user_settings service_role SELECT
+grant    user_settings service_role TRIGGER
+grant    user_settings service_role TRUNCATE
+grant    user_settings service_role UPDATE
+grantfn  public.array_has_duplicates(anyarray) PUBLIC EXECUTE
+grantfn  public.array_has_duplicates(anyarray) anon EXECUTE
+grantfn  public.array_has_duplicates(anyarray) authenticated EXECUTE
+grantfn  public.array_has_duplicates(anyarray) postgres EXECUTE
+grantfn  public.array_has_duplicates(anyarray) service_role EXECUTE
+grantfn  public.dev_reset_current_user() authenticated EXECUTE
+grantfn  public.dev_reset_current_user() postgres EXECUTE
+grantfn  public.dev_reset_current_user() service_role EXECUTE
+grantfn  public.discovery_deck(public.mode_preference,public.specialty[],integer) authenticated EXECUTE
+grantfn  public.discovery_deck(public.mode_preference,public.specialty[],integer) postgres EXECUTE
+grantfn  public.discovery_deck(public.mode_preference,public.specialty[],integer) service_role EXECUTE
+grantfn  public.is_match_member(uuid) authenticated EXECUTE
+grantfn  public.is_match_member(uuid) postgres EXECUTE
+grantfn  public.is_match_member(uuid) service_role EXECUTE
+grantfn  public.is_valid_prompts(jsonb) PUBLIC EXECUTE
+grantfn  public.is_valid_prompts(jsonb) anon EXECUTE
+grantfn  public.is_valid_prompts(jsonb) authenticated EXECUTE
+grantfn  public.is_valid_prompts(jsonb) postgres EXECUTE
+grantfn  public.is_valid_prompts(jsonb) service_role EXECUTE
+grantfn  public.messages_touch_match() PUBLIC EXECUTE
+grantfn  public.messages_touch_match() anon EXECUTE
+grantfn  public.messages_touch_match() authenticated EXECUTE
+grantfn  public.messages_touch_match() postgres EXECUTE
+grantfn  public.messages_touch_match() service_role EXECUTE
+grantfn  public.record_decision(uuid,public.decision) authenticated EXECUTE
+grantfn  public.record_decision(uuid,public.decision) postgres EXECUTE
+grantfn  public.record_decision(uuid,public.decision) service_role EXECUTE
+grantfn  public.resolve_match_mode(public.mode_preference,public.mode_preference) PUBLIC EXECUTE
+grantfn  public.resolve_match_mode(public.mode_preference,public.mode_preference) anon EXECUTE
+grantfn  public.resolve_match_mode(public.mode_preference,public.mode_preference) authenticated EXECUTE
+grantfn  public.resolve_match_mode(public.mode_preference,public.mode_preference) postgres EXECUTE
+grantfn  public.resolve_match_mode(public.mode_preference,public.mode_preference) service_role EXECUTE
+grantfn  public.seed_incoming_likes(text) PUBLIC EXECUTE
+grantfn  public.seed_incoming_likes(text) anon EXECUTE
+grantfn  public.seed_incoming_likes(text) authenticated EXECUTE
+grantfn  public.seed_incoming_likes(text) postgres EXECUTE
+grantfn  public.seed_incoming_likes(text) service_role EXECUTE
+grantfn  public.touch_updated_at() PUBLIC EXECUTE
+grantfn  public.touch_updated_at() anon EXECUTE
+grantfn  public.touch_updated_at() authenticated EXECUTE
+grantfn  public.touch_updated_at() postgres EXECUTE
+grantfn  public.touch_updated_at() service_role EXECUTE
+index    decisions.decisions_pkey CREATE UNIQUE INDEX decisions_pkey ON public.decisions USING btree (actor_id, target_id)
+index    decisions.decisions_reciprocity_idx CREATE INDEX decisions_reciprocity_idx ON public.decisions USING btree (target_id, actor_id) WHERE (decision = 'like'::public.decision)
+index    matches.matches_pair_unique CREATE UNIQUE INDEX matches_pair_unique ON public.matches USING btree (profile_a, profile_b)
+index    matches.matches_pkey CREATE UNIQUE INDEX matches_pkey ON public.matches USING btree (id)
+index    matches.matches_profile_a_idx CREATE INDEX matches_profile_a_idx ON public.matches USING btree (profile_a, COALESCE(last_message_at, created_at) DESC)
+index    matches.matches_profile_b_idx CREATE INDEX matches_profile_b_idx ON public.matches USING btree (profile_b, COALESCE(last_message_at, created_at) DESC)
+index    messages.messages_match_sent_at_idx CREATE INDEX messages_match_sent_at_idx ON public.messages USING btree (match_id, sent_at, id)
+index    messages.messages_pkey CREATE UNIQUE INDEX messages_pkey ON public.messages USING btree (id)
+index    profiles.profiles_created_at_idx CREATE INDEX profiles_created_at_idx ON public.profiles USING btree (created_at DESC)
+index    profiles.profiles_looking_for_idx CREATE INDEX profiles_looking_for_idx ON public.profiles USING btree (looking_for)
+index    profiles.profiles_pkey CREATE UNIQUE INDEX profiles_pkey ON public.profiles USING btree (id)
+index    profiles.profiles_specialties_idx CREATE INDEX profiles_specialties_idx ON public.profiles USING gin (specialties)
+index    user_settings.user_settings_pkey CREATE UNIQUE INDEX user_settings_pkey ON public.user_settings USING btree (user_id)
+policy   decisions.decisions: solo lees las tuyas cmd=SELECT permissive=PERMISSIVE roles=authenticated using=(actor_id = ( SELECT auth.uid() AS uid)) check=-
+policy   decisions.decisions: solo swipeas en tu nombre cmd=INSERT permissive=PERMISSIVE roles=authenticated using=- check=(actor_id = ( SELECT auth.uid() AS uid))
+policy   matches.matches: solo los tuyos cmd=SELECT permissive=PERMISSIVE roles=authenticated using=((( SELECT auth.uid() AS uid) = profile_a) OR (( SELECT auth.uid() AS uid) = profile_b)) check=-
+policy   messages.messages: escribes en tu nombre en tus matches cmd=INSERT permissive=PERMISSIVE roles=authenticated using=- check=((sender_id = ( SELECT auth.uid() AS uid)) AND public.is_match_member(match_id))
+policy   messages.messages: lees los de tus matches cmd=SELECT permissive=PERMISSIVE roles=authenticated using=public.is_match_member(match_id) check=-
+policy   profiles.profiles: cualquier autenticado puede leer cmd=SELECT permissive=PERMISSIVE roles=authenticated using=true check=-
+policy   profiles.profiles: solo borras el tuyo cmd=DELETE permissive=PERMISSIVE roles=authenticated using=(id = ( SELECT auth.uid() AS uid)) check=-
+policy   profiles.profiles: solo creas el tuyo cmd=INSERT permissive=PERMISSIVE roles=authenticated using=- check=(id = ( SELECT auth.uid() AS uid))
+policy   profiles.profiles: solo editas el tuyo cmd=UPDATE permissive=PERMISSIVE roles=authenticated using=(id = ( SELECT auth.uid() AS uid)) check=(id = ( SELECT auth.uid() AS uid))
+policy   user_settings.user_settings: solo los tuyos cmd=ALL permissive=PERMISSIVE roles=authenticated using=(user_id = ( SELECT auth.uid() AS uid)) check=(user_id = ( SELECT auth.uid() AS uid))
+publish  supabase_realtime matches
+publish  supabase_realtime messages
+table    decisions rls=t
+table    matches rls=t
+table    messages rls=t
+table    profiles rls=t
+table    user_settings rls=t
+trigger  messages.messages_touch_match_after_insert CREATE TRIGGER messages_touch_match_after_insert AFTER INSERT ON public.messages FOR EACH ROW EXECUTE FUNCTION public.messages_touch_match()
+trigger  profiles.profiles_touch_updated_at CREATE TRIGGER profiles_touch_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.touch_updated_at()
+trigger  user_settings.user_settings_touch_updated_at CREATE TRIGGER user_settings_touch_updated_at BEFORE UPDATE ON public.user_settings FOR EACH ROW EXECUTE FUNCTION public.touch_updated_at()

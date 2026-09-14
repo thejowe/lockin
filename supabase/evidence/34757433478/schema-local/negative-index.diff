@@ -1,0 +1,3 @@
+--- esperado: migrations/
++++ observado
++ index    profiles.schema_drift_probe CREATE INDEX schema_drift_probe ON public.profiles USING btree (name)

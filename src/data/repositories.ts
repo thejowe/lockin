@@ -13,6 +13,7 @@
 import type {
   Decision,
   DecisionResult,
+  LockInSession,
   MatchWithProfile,
   Message,
   MessageInput,
@@ -21,6 +22,8 @@ import type {
   ProfileFilter,
   ProfileInput,
   Session,
+  SessionAttendance,
+  SessionProposalInput,
 } from './types';
 
 /** Cancela una suscripción. */
@@ -99,6 +102,35 @@ export interface MessageRepository {
 }
 
 /**
+ * Sesiones Lock-In de los matches del usuario.
+ *
+ * Reglas, iguales en los dos backends (ver `src/data/sessions.ts`): una sola
+ * sesión viva por match; `startsAt` entre ahora + 5 min y ahora + 30 días; solo
+ * la otra persona responde a una propuesta; cualquiera cancela antes de empezar;
+ * `join` solo en la ventana de entrada, e idempotente.
+ *
+ * Errores: `SessionConflictError`, `SessionExpiredError`, `SessionWindowError`,
+ * `SessionForbiddenError` (ver `src/data/session-errors.ts`).
+ */
+export interface LockInSessionRepository {
+  /** La sesión viva del match, o `null`. También `null` si el match no es tuyo. */
+  getActive(matchId: string): Promise<LockInSession | null>;
+  /** `null` si no existe o no es de un match tuyo. */
+  getById(sessionId: string): Promise<LockInSession | null>;
+  propose(input: SessionProposalInput): Promise<LockInSession>;
+  respond(sessionId: string, answer: 'aceptada' | 'rechazada'): Promise<LockInSession>;
+  cancel(sessionId: string): Promise<LockInSession>;
+  /** Idempotente: si ya había asistencia conserva `joinedAt` y pone `leftAt = null`. */
+  join(sessionId: string): Promise<SessionAttendance>;
+  leave(sessionId: string): Promise<SessionAttendance>;
+  listAttendance(sessionId: string): Promise<SessionAttendance[]>;
+  /** Hora del servidor en ISO, para corregir el reloj del dispositivo. */
+  serverNow(): Promise<string>;
+  /** Se notifica en cualquier cambio de sesiones o asistencia de ese match. */
+  subscribe(matchId: string, listener: () => void): Unsubscribe;
+}
+
+/**
  * Punto único de acceso a datos. Cualquier implementación (mock, Supabase)
  * debe devolver un objeto con esta forma exacta.
  */
@@ -108,6 +140,7 @@ export interface Repositories {
   discovery: DiscoveryRepository;
   matches: MatchRepository;
   messages: MessageRepository;
+  sessions: LockInSessionRepository;
 }
 
 /** Fábrica de una implementación completa. Lo que exporta cada backend. */

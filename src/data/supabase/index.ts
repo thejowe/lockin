@@ -32,6 +32,7 @@ import {
 import type { MatchRow, MessageRow, ProfileRow } from './database.types';
 import type {
   DiscoveryRepository,
+  LockInSessionRepository,
   MatchRepository,
   MessageRepository,
   ProfileRepository,
@@ -493,7 +494,19 @@ const messages: MessageRepository = {
   },
 };
 
+/**
+ * PROVISIONAL — lo sustituye la Tarea 4 de
+ * `docs/superpowers/plans/2026-09-13-sesiones-lockin.md` por
+ * `createSupabaseSessionRepository()`. Existe solo para que `Repositories`
+ * compile mientras tanto; ninguna pantalla usa sesiones todavía.
+ */
+const pendingSessions = new Proxy({} as LockInSessionRepository, {
+  get() {
+    throw new Error('Sesiones en Supabase: pendiente de la Tarea 4 del plan de sesiones');
+  },
+});
+
 /** La fábrica que consume `src/data/active.ts`. Misma forma que la del mock. */
 export function createSupabaseRepositories(): Repositories {
-  return { session, profiles, discovery, matches, messages };
+  return { session, profiles, discovery, matches, messages, sessions: pendingSessions };
 }

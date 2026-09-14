@@ -1,0 +1,12 @@
+--- esperado: migrations/
++++ observado
++ func     public.dev_reset_current_user() args= returns=void lang=plpgsql security=definer volatile=v config=search_path="" body_md5=89ce06b5f02a64f43388edbdbbcc0d91
++ func     public.seed_incoming_likes(text) args=p_email text returns=integer lang=plpgsql security=invoker volatile=v config=- body_md5=c13ae5ded7edad2ac1e28ecbdfcecb97
++ grantfn  public.dev_reset_current_user() authenticated EXECUTE
++ grantfn  public.dev_reset_current_user() postgres EXECUTE
++ grantfn  public.dev_reset_current_user() service_role EXECUTE
++ grantfn  public.seed_incoming_likes(text) PUBLIC EXECUTE
++ grantfn  public.seed_incoming_likes(text) anon EXECUTE
++ grantfn  public.seed_incoming_likes(text) authenticated EXECUTE
++ grantfn  public.seed_incoming_likes(text) postgres EXECUTE
++ grantfn  public.seed_incoming_likes(text) service_role EXECUTE
