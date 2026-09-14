@@ -79,8 +79,17 @@ jobs:
           set -euo pipefail
           npx jest src/data/supabase/contract.test.ts --ci --json --outputFile=contract-result.json
           # Sin credenciales la suite entera se salta y Jest sale en verde: exigir
-          # que haya corrido algo y que no quede nada saltado.
-          jq -e '.numPassedTests > 0 and .numPendingTests == 0 and .numFailedTests == 0' contract-result.json \
+          # que haya corrido algo. Los únicos saltos admitidos son los casos
+          # `itWithTimeTravel` de `repositories.contract.ts`, que necesitan reloj
+          # simulado (`canTimeTravel: false` aquí; los cubren el mock y PGlite).
+          # Un caso nuevo de ese tipo obliga a añadirlo a esta lista a propósito.
+          jq -e '
+            ([.testResults[].assertionResults[] | select(.status == "pending") | .title]
+              - ["una propuesta caducada ya no está viva ni se puede aceptar",
+                 "una sesión aceptada termina sola y deja proponer otra",
+                 "una sesión empezada no se cancela: se sale"]) as $unexpected
+            | .numPassedTests > 0 and .numFailedTests == 0 and ($unexpected | length) == 0
+          ' contract-result.json \
             || { echo 'La suite no corrió entera'; jq '{numPassedTests, numPendingTests, numFailedTests}' contract-result.json; exit 1; }
           jq '{numPassedTests, numPendingTests, numFailedTests}' contract-result.json
 
