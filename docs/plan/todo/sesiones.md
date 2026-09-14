@@ -39,9 +39,18 @@ Plan: `docs/superpowers/plans/2026-09-13-sesiones-lockin.md`. Una casilla por ta
   tras `full-journey.yaml` y su oráculo, añade `session-now.sql` al seed y
   escribe su propia carpeta de evidencia (`session/`). Guardia
   `session.test.mjs` (4 casos) en verde; `tsc --noEmit` y `npm run lint` en
-  verde. **CI real pendiente de la Tarea 3b**: el job `E2E Android (supabase)`
-  no puede salir verde hasta que la migración de sesiones esté aplicada en
-  `grrzmzktrhksbttpbblg` — no forzado ni comprobado en Actions en este commit.
+  verde. `E2E Android (supabase)` y `E2E Android (mock)` en verde en Actions:
+  https://github.com/thejowe/lockin/actions/runs/34891490592 — con las dos
+  líneas de oráculo (`Postgres: alta, perfil, ... verificados.` y `Postgres:
+  entrada y salida de la sesión Lock-In verificadas.`) en el log del job
+  `supabase`. El E2E usa Postgres local desechable (`supabase db reset --local`
+  con las migraciones del repo), así que no depende de la Tarea 3b —esa
+  bloquea `schema-drift.yml` contra el proyecto real `grrzmzktrhksbttpbblg`,
+  no este workflow. De paso, se regeneró `package-lock.json`
+  (`fix(deps)`, commit 914ebf7): la Tarea 9 lo había dejado sin sincronizar
+  para el npm que trae Node 22 en Actions (npm 10 pedía `@emnapi/core` y
+  `@emnapi/runtime@1.11.3` que el lock no traía), aunque npm 11 local no lo
+  detectaba.
 - [ ] Tarea 11 — Verificación final
 
 ## Verificación manual (no automatizable)
