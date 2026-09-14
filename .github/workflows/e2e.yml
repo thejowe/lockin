@@ -56,6 +56,11 @@ jobs:
         with:
           # Herramientas 20.0, nuevo valor de v4; el emulador sigue en API 36.
           cmdline-tools-version: '14742923'
+          # El valor por defecto es `tools platform-tools`, pero Google retiró
+          # `tools` (SDK Tools 26, obsoleto) de repository2 el 2026-09-14 y
+          # sdkmanager sale con código 1. Nada del trabajo lo usa: `run.mjs`
+          # solo llama a `adb` y el emulator-runner instala lo suyo.
+          packages: 'platform-tools'
       - uses: gradle/actions/setup-gradle@v6
         with:
           # Expo genera Gradle después y fuera del checkout: el caché básico
