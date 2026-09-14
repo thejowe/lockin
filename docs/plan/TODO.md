@@ -45,6 +45,12 @@ Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>
 - [x] Campo en el formulario de perfil y en la ficha — **hecho por `perfil` el 2026-09-07** (`3eea69e`): el bloque "Lo que debe dominar quien busco" aparece y desaparece con `seeksComplement(lookingFor)`, sus chips se anuncian como «Busco X» para no chocar con los de «Lo que domino», y `toInput` vacía el campo si al final se elige lock-in. `ProfileDetails` separa «Lo que domina» de «Lo que busca» y lee el vacío como «abierto a cualquier especialidad»
 - [x] Uso en el deck — **hecho por `descubrir` el 2026-09-07**: la tarjeta separa «domina» de «busca» con los acentos de `ProfileDetails`, y resalta en latón sólido con "✓" lo que esa persona busca y tú ya dominas (más un `✓ Encajas` en la cabecera y una línea en el modal de match). **La lógica de matching no cambia: un match sigue siendo un like recíproco** — la complementariedad es señal para quien decide, no una puerta, y condicionarla rompería `repositories.contract.ts` y `record_decision()`. `ProfileFilter.specialties` sigue filtrando por lo que la otra persona **domina**; un filtro sobre lo buscado sería otro campo distinto, y rankear el deck por complementariedad tocaría `discovery.getDeck` — se lo pediría `descubrir` a `datos`. Ver `todo/descubrir.md`
 
+## Fase 2 — Sesiones Lock-In
+- [ ] Sesión agendada + Pomodoro compartido + presencia + aviso local — plan `docs/superpowers/plans/2026-09-13-sesiones-lockin.md`, detalle y evidencia en `todo/sesiones.md`. Tareas 1-10 y 3b cerradas; en la Tarea 11 faltan el E2E Android del último commit en verde (ahora cae en `setup-android` por el runner) y la verificación con dos móviles. El contrato opt-in queda abierto a propósito, a la espera de que se decida entre Docker local y una base de pruebas separada
+- [ ] Valoración de 1 toque post-sesión (spec propia, lee `session_attendance`)
+- [ ] Rachas (spec propia)
+- [ ] Vídeo real en la sesión (spec propia)
+
 ## Calidad
 - [x] ESLint/Prettier/TS estricto
 - [x] Tests base (Jest + RNTL) — 374 tests en 34 suites, con suelo de cobertura en `jest.config.js` (89.82/82.56/91.49/91.38 %: sentencias/ramas/funciones/líneas). Más 27 opt-in de contrato contra Supabase, fuera de `npm test` y de CI. Más 37 de E2E (`npm run test:e2e`), en 9 suites.

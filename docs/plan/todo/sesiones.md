@@ -5,7 +5,14 @@ Plan: `docs/superpowers/plans/2026-09-13-sesiones-lockin.md`. Una casilla por ta
 - [x] Tarea 1 — Dominio: tipos, reglas de tiempo, errores
 - [x] Tarea 2 — Contrato de `LockInSessionRepository` y mock
 - [x] Tarea 3 — Migración SQL (tablas, RLS, RPCs) y comprobación en PGlite
-- [ ] Tarea 3b — Migración aplicada en `grrzmzktrhksbttpbblg` por el usuario; `schema-drift.yml` en verde
+- [x] Tarea 3b — Migración aplicada en `grrzmzktrhksbttpbblg` por el usuario; `schema-drift.yml` en verde —
+  comprobado 2026-09-14 en el push de f7e9e37:
+  https://github.com/thejowe/lockin/actions/runs/34895140336, con el job
+  remoto `Comparar grrzmzktrhksbttpbblg (solo lectura)` ejecutado (no
+  `skipped`) y `remote.diff` → `Sin diferencias.`. En el push anterior
+  (6c6a8f8, run 34893680909) el diff aún tenía 119 líneas, 0 con `+`: solo
+  faltaban `lockin_sessions`, `session_attendance` y sus políticas, índices y
+  grants, o sea, la migración de sesiones sin aplicar y nada más.
 - [x] Tarea 4 — Repositorio de Supabase — `SessionRow`/`SessionAttendanceRow` y
   los RPCs `propose_session`/`respond_session`/`cancel_session`/`join_session`/
   `leave_session`/`server_now` en `database.types.ts`; `createSupabaseSessionRepository()`
@@ -51,10 +58,56 @@ Plan: `docs/superpowers/plans/2026-09-13-sesiones-lockin.md`. Una casilla por ta
   para el npm que trae Node 22 en Actions (npm 10 pedía `@emnapi/core` y
   `@emnapi/runtime@1.11.3` que el lock no traía), aunque npm 11 local no lo
   detectaba.
-- [ ] Tarea 11 — Verificación final
+- [ ] Tarea 11 — Verificación final — abierta; faltan el E2E del Step 2 y los
+  Steps 3 y 4.
+  - [x] Step 1, todo el repo en verde en local (2026-09-14, sobre f7e9e37):
+    `npm run lint` limpio; `npm test -- --coverage` con 509 tests en 50
+    suites (1 suite y 52 tests skipped, los de contrato opt-in) y Jest salió
+    con 0, así que se cumple el suelo 89.82/82.56/91.49/91.38 de
+    `jest.config.js`. `prettier --check --end-of-line auto .` solo marca
+    `supabase/drift-check.mjs`, y es un falso positivo de Windows: la copia
+    local mezcla CRLF y LF, y el blob commiteado pasa `prettier --check`. El
+    grep de `LockInCta|pendingSessions|Pendiente de la Tarea 4` sale vacío
+    (el único resultado era un comentario de `session-card.tsx`, reescrito
+    en f7e9e37). `tsc --noEmit` falla aquí con `'/session/[sessionId]'` no
+    asignable a las rutas tipadas, pero es por `.expo/types/router.d.ts`:
+    lo genera Expo, está en gitignore y está desactualizado (no conoce la ruta
+    de sesión). Sin ese archivo `tsc` sale con 0, igual que el job `Tipos` de
+    CI, que parte de un checkout limpio. Antes, en f7e9e37, se pasó prettier a
+    `seed.ts`, `supabase/index.ts`, `sessions.ts` y `sessions.test.ts`, que
+    tenían el job `Formato` en rojo desde 82e4088.
+  - [ ] Step 2, CI completo del último commit (f7e9e37). `CI` en `success`
+    (Tipos, Lint, Formato, Tests, Runner E2E y Export web):
+    https://github.com/thejowe/lockin/actions/runs/34895140293. `Schema
+    drift` en `success`, con el job remoto ejecutado y `Sin diferencias.`
+    (ver Tarea 3b). **`E2E Android` en rojo, pero por el runner y no por el
+    caso**: los dos jobs caen en `android-actions/setup-android@v4` con
+    `Warning: Failed to find package 'tools'` y `Error: The process
+    '/usr/local/lib/android/sdk/cmdline-tools/20.0/bin/sdkmanager' failed
+    with exit code 1`, antes de compilar nada. Pasa igual en el run
+    https://github.com/thejowe/lockin/actions/runs/34895140288 (f7e9e37) y en
+    los dos intentos del 34893680768 (6c6a8f8). `e2e.yml` no ha cambiado
+    desde el run verde 34891490592 (914ebf7, 30 minutos antes), así que el
+    cambio viene de fuera: el sdkmanager de `cmdline-tools` 20.0, fijado en
+    `e2e.yml`, ya no encuentra el paquete `tools` que instala la acción. No
+    se toca `e2e.yml` desde este bloque porque es terreno de `calidad`.
+  - [ ] Step 3, contrato opt-in: **no se ejecuta, a propósito** (ver la
+    casilla en "Verificación manual").
+  - [ ] Step 4, dos móviles: sin confirmar por el usuario todavía.
 
 ## Verificación manual (no automatizable)
 
 - [ ] Dos móviles reales: el punto "está aquí" aparece y desaparece al entrar y salir la otra persona
 - [ ] Aviso real 5 minutos antes en Android con la app cerrada
-- [ ] Contrato opt-in contra Supabase (`LOCKIN_SUPABASE_CONTRACT=1`) con los casos de sesiones en verde
+- [ ] Contrato opt-in contra Supabase (`LOCKIN_SUPABASE_CONTRACT=1`) con los casos de sesiones en verde —
+  **abierta a propósito, no se ejecuta contra `grrzmzktrhksbttpbblg`**. La
+  suite limpiaba entre casos con `dev_reset_current_user()`, que se retiró del
+  proyecto real el 2026-09-13. Sin ella cae al respaldo de un alta anónima por
+  caso, y con los casos de sesiones pasa del límite de 30 altas por hora e IP:
+  forzar un verde ensuciaría la base real y chocaría con el límite. Las reglas
+  sí están cubiertas contra Postgres real por el E2E (entrar y salir, oráculo
+  en `e2e/verify.mjs`) y por `session_is_live()` en PGlite. Dos salidas, a
+  decidir por el usuario: (a) una base local con Docker (`supabase start` más
+  las migraciones del repo), donde reinstalar la función de limpieza no toca
+  producción; o (b) un proyecto Supabase de pruebas separado, con una función
+  de limpieza que solo exista allí.
