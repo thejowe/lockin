@@ -58,8 +58,8 @@ Plan: `docs/superpowers/plans/2026-09-13-sesiones-lockin.md`. Una casilla por ta
   para el npm que trae Node 22 en Actions (npm 10 pedía `@emnapi/core` y
   `@emnapi/runtime@1.11.3` que el lock no traía), aunque npm 11 local no lo
   detectaba.
-- [ ] Tarea 11 — Verificación final — abierta; faltan el E2E del Step 2 y los
-  Steps 3 y 4.
+- [ ] Tarea 11 — Verificación final — abierta; faltan el E2E del Step 2 y el
+  Step 4.
   - [x] Step 1, todo el repo en verde en local (2026-09-14, sobre f7e9e37):
     `npm run lint` limpio; `npm test -- --coverage` con 509 tests en 50
     suites (1 suite y 52 tests skipped, los de contrato opt-in) y Jest salió
@@ -91,23 +91,32 @@ Plan: `docs/superpowers/plans/2026-09-13-sesiones-lockin.md`. Una casilla por ta
     cambio viene de fuera: el sdkmanager de `cmdline-tools` 20.0, fijado en
     `e2e.yml`, ya no encuentra el paquete `tools` que instala la acción. No
     se toca `e2e.yml` desde este bloque porque es terreno de `calidad`.
-  - [ ] Step 3, contrato opt-in: **no se ejecuta, a propósito** (ver la
-    casilla en "Verificación manual").
+  - [x] Step 3, contrato opt-in: en verde contra Supabase local en Actions,
+    nunca contra el proyecto real (ver la casilla en "Verificación manual").
   - [ ] Step 4, dos móviles: sin confirmar por el usuario todavía.
 
 ## Verificación manual (no automatizable)
 
 - [ ] Dos móviles reales: el punto "está aquí" aparece y desaparece al entrar y salir la otra persona
 - [ ] Aviso real 5 minutos antes en Android con la app cerrada
-- [ ] Contrato opt-in contra Supabase (`LOCKIN_SUPABASE_CONTRACT=1`) con los casos de sesiones en verde —
-  **abierta a propósito, no se ejecuta contra `grrzmzktrhksbttpbblg`**. La
-  suite limpiaba entre casos con `dev_reset_current_user()`, que se retiró del
-  proyecto real el 2026-09-13. Sin ella cae al respaldo de un alta anónima por
-  caso, y con los casos de sesiones pasa del límite de 30 altas por hora e IP:
-  forzar un verde ensuciaría la base real y chocaría con el límite. Las reglas
-  sí están cubiertas contra Postgres real por el E2E (entrar y salir, oráculo
-  en `e2e/verify.mjs`) y por `session_is_live()` en PGlite. Dos salidas, a
-  decidir por el usuario: (a) una base local con Docker (`supabase start` más
-  las migraciones del repo), donde reinstalar la función de limpieza no toca
-  producción; o (b) un proyecto Supabase de pruebas separado, con una función
-  de limpieza que solo exista allí.
+- [x] Contrato opt-in contra Supabase (`LOCKIN_SUPABASE_CONTRACT=1`) con los casos de sesiones en verde —
+  **contra Supabase local desechable, no contra `grrzmzktrhksbttpbblg`**
+  (2026-09-14, decisión del usuario: salida Docker local). No se ejecuta
+  contra el proyecto real porque allí se retiró `dev_reset_current_user()` el
+  2026-09-13, y sin ella la suite gasta un alta anónima por caso y choca con
+  el límite de 30 por hora. En esta máquina no hay Docker (WSL sin kernel ni
+  distribuciones), así que corre en el Docker del runner: workflow manual
+  `.github/workflows/contract.yml` (ef50681, guardia ajustada en 49b5a46).
+  Levanta Supabase con las migraciones del repo más `supabase/seed.sql`, que
+  trae la función de limpieza. Exige `API_URL` `http://127.0.0.1:54321` y que
+  no exista `.env.local`, porque la suite lo lee antes que el entorno. Y falla
+  si la suite se salta. Verde en
+  https://github.com/thejowe/lockin/actions/runs/34897871055: **49 pasan, 0
+  fallan, 3 saltados**. Los tres saltados son los `itWithTimeTravel`
+  (propuesta caducada, sesión que termina sola, sesión empezada que no se
+  cancela), porque el backend declara `canTimeTravel: false`; esas reglas las
+  cubren el mock y `session_is_live()` en PGlite. Los 14 casos de sesiones sin
+  reloj simulado pasan, incluidos RLS con alguien de fuera del match, entrar y
+  salir, y el aviso por Realtime a las dos personas. La primera pasada
+  (run 34897347871) dio el mismo 49/0/3 pero salió en rojo: la guardia exigía
+  cero saltos.
