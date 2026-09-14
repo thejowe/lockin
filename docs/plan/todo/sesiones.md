@@ -14,7 +14,7 @@ Plan: `docs/superpowers/plans/2026-09-13-sesiones-lockin.md`. Una casilla por ta
   `sessions.test.ts`. Sustituido el `pendingSessions` provisional en `index.ts`
   y las dos funciones provisionales de `contract.test.ts` por la implementación
   real. `tsc --noEmit`, `npm test` y `npm run lint` en verde.
-- [ ] Tarea 5 — Presencia (memoria y Realtime)
+- [x] Tarea 5 — Presencia (memoria y Realtime)
 - [x] Tarea 6 — Lógica pura de reloj, tramos y textos
 - [ ] Tarea 7 — Pantalla de sesión
 - [ ] Tarea 8 — Tarjeta del chat y hoja de propuesta

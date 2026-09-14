@@ -8,10 +8,12 @@
  * constante `repositories`.
  */
 
-export { repositories } from './active';
+export { presence, repositories } from './active';
 export * from './types';
 export * from './repositories';
 export { DataProvider, useRepositories, useQuery } from './provider';
 export type { QueryState } from './provider';
 export * from './sessions';
 export * from './session-errors';
+export { createMemoryPresenceAdapter } from './presence';
+export type { PresenceAdapter, PresenceHandlers } from './presence';

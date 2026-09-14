@@ -13,12 +13,20 @@
  */
 
 import { createMockRepositories } from './mock';
+import { createMemoryPresenceAdapter } from './presence';
 import { createSupabaseRepositories } from './supabase';
 import { hasSupabaseCredentials } from './supabase/client';
+import { createSupabasePresenceAdapter } from './supabase/presence';
 
+import type { PresenceAdapter } from './presence';
 import type { Repositories } from './repositories';
 
 /** La implementación activa: Supabase si hay credenciales, mock si no. */
 export const repositories: Repositories = hasSupabaseCredentials
   ? createSupabaseRepositories()
   : createMockRepositories();
+
+/** Presencia en sesiones, con la misma regla. Sin credenciales, en memoria. */
+export const presence: PresenceAdapter = hasSupabaseCredentials
+  ? createSupabasePresenceAdapter()
+  : createMemoryPresenceAdapter();
