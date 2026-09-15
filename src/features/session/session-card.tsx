@@ -2,8 +2,13 @@
  * "Sesión Lock-In" en el chat — el diferenciador del producto (ver `CONCEPTO.md`).
  *
  * Sustituye al hueco de llamada a Lock-In que dejó el MVP en el mismo sitio. Un solo componente
- * con cinco estados (`cardView`): agendar, esperando respuesta, propuesta
- * recibida, acordada y entrar.
+ * con seis estados (`cardView`): agendar, esperando respuesta, propuesta
+ * recibida, acordada, entrar y valorar.
+ *
+ * `valorar` es solo la repesca: la vía principal para valorar es la pantalla de
+ * sesión al terminar, y esto existe para quien cerró la app antes del final —lo
+ * que hace quien se queda sin batería o sale antes—. Por eso la sesión viva gana
+ * siempre (`cardView`) y la valoración espera o caduca.
  */
 
 import { useRouter } from 'expo-router';
@@ -18,8 +23,11 @@ import { useTheme } from '@/hooks/use-theme';
 import { cardView } from './card-state';
 import { blocksLabel, formatSessionWhen, formatStartsIn } from './format';
 import { ProposeSessionSheet } from './propose-session-sheet';
+import { RATING_CLOSED } from './rating';
+import { RatingChips } from './rating-chips';
 import { useReminderHint } from './reminder-permission';
 import { useActiveSession } from './use-active-session';
+import { useRating } from './use-rating';
 
 import type { LockInSession, MatchWithProfile, Profile, SessionBlocks } from '@/data';
 
@@ -27,14 +35,14 @@ export function SessionCard({ match, me }: { match: MatchWithProfile; me: Profil
   const theme = useTheme();
   const router = useRouter();
   const repositories = useRepositories();
-  const { session, nowMs, refresh } = useActiveSession(match.id);
+  const { session, ratable, nowMs, refresh } = useActiveSession(match.id);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const reminderHint = useReminderHint();
 
   const firstName = match.counterpart.name.split(' ')[0];
-  const view = cardView(session, me?.id ?? null, nowMs);
+  const view = cardView(session, ratable, me?.id ?? null, nowMs);
 
   const run = async (action: () => Promise<unknown>): Promise<boolean> => {
     setBusy(true);
@@ -146,6 +154,8 @@ export function SessionCard({ match, me }: { match: MatchWithProfile; me: Profil
         </>
       )}
 
+      {view.kind === 'valorar' && <RatingPrompt sessionId={view.session.id} name={firstName} />}
+
       {reminderHint.visible && (
         <View style={styles.row}>
           <ThemedText type="small" themeColor="textSecondary" style={styles.hintText}>
@@ -180,6 +190,49 @@ export function SessionCard({ match, me }: { match: MatchWithProfile; me: Profil
         />
       )}
     </View>
+  );
+}
+
+/**
+ * La repesca de la valoración. Va en un componente aparte para que `useRating`
+ * solo se monte cuando toca: así la tarjeta no consulta la valoración de una
+ * sesión que no hay que valorar.
+ *
+ * Tras el toque se queda en "Gracias — solo lo ves tú", y en el refresco
+ * siguiente `getRatable` ya devuelve `null` y la tarjeta vuelve a `agendar`
+ * sola. Reusa `useRating`: no hay una segunda llamada a `rate` en el proyecto.
+ */
+function RatingPrompt({ sessionId, name }: { sessionId: string; name: string }) {
+  const { rating, submit, error, pending } = useRating(sessionId);
+
+  if (rating) {
+    return (
+      <ThemedText type="body" themeColor="textSecondary">
+        Gracias — solo lo ves tú
+      </ThemedText>
+    );
+  }
+
+  // Igual que en la pantalla de sesión: si el servidor ya no lo va a aceptar,
+  // los chips desaparecen en vez de quedarse invitando a insistir.
+  if (error === RATING_CLOSED) {
+    return (
+      <ThemedText type="body" themeColor="textSecondary">
+        {RATING_CLOSED}
+      </ThemedText>
+    );
+  }
+
+  return (
+    <>
+      <ThemedText type="bodyStrong">{`¿Qué tal fue la sesión con ${name}?`}</ThemedText>
+      <RatingChips onSelect={submit} disabled={pending} />
+      {error && (
+        <ThemedText type="small" themeColor="danger">
+          {error}
+        </ThemedText>
+      )}
+    </>
   );
 }
 

@@ -1,19 +1,20 @@
 /**
- * La tarjeta de sesión del chat en sus cinco estados, contra el mock real.
+ * La tarjeta de sesión del chat en sus seis estados, contra el mock real.
  *
  * Ojo: en RNTL 14 `render` y `fireEvent` son asíncronos.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
-import { DataProvider, SessionConflictError } from '@/data';
+import { DataProvider, SessionConflictError, SessionWindowError } from '@/data';
 import { createMockRepositories, createMockSessionRepository, resetState } from '@/data/mock';
 import { SEED_RECIPROCAL_IDS } from '@/data/mock/seed';
 import { buildProfileInput } from '@/data/test-fixtures';
 
 import { setReminderPermissionDenied } from './reminder-permission';
 import { SessionCard } from './session-card';
+import { SESSION_TICK_MS } from './use-active-session';
 
 import type { MatchWithProfile, Profile, Repositories } from '@/data';
 
@@ -51,6 +52,28 @@ const renderCard = () =>
   );
 
 const inAnHour = () => new Date(Date.now() + 60 * MINUTE).toISOString();
+
+/**
+ * Una sesión de un bloque ya terminada, con las dos personas dentro: la que
+ * `getRatable` devuelve. Con reloj falso, que es lo único que mueve a la vez al
+ * mock y a la tarjeta; entrar se registra desde los dos lados antes del final
+ * porque es lo que mira la regla 4.
+ */
+async function endedSession() {
+  jest.useFakeTimers();
+  const base = Date.now();
+  jest.setSystemTime(base);
+  const startsAt = new Date(base + 5 * MINUTE + 1_000).toISOString();
+  const session = await repositories.sessions.propose({ matchId: match.id, startsAt, blocks: 1 });
+  const counterpart = createMockSessionRepository(NURIA);
+  await counterpart.respond(session.id, 'aceptada');
+  jest.setSystemTime(base + 6 * MINUTE);
+  await repositories.sessions.join(session.id);
+  await counterpart.join(session.id);
+  // `endsAt` es `startsAt + 30 min`: aquí ya terminó y la ventana de 24 h está abierta.
+  jest.setSystemTime(base + 40 * MINUTE);
+  return session;
+}
 
 describe('SessionCard', () => {
   it('sin sesión ofrece agendar y abre la hoja', async () => {
@@ -136,6 +159,69 @@ describe('SessionCard', () => {
       pathname: '/session/[sessionId]',
       params: { sessionId: session.id },
     });
+  });
+
+  it('una sesión terminada con los dos dentro se valora desde la tarjeta', async () => {
+    const session = await endedSession();
+
+    await renderCard();
+
+    await fireEvent.press(await screen.findByRole('radio', { name: 'Genial' }));
+
+    await waitFor(() => expect(screen.getByText('Gracias — solo lo ves tú')).toBeTruthy());
+    await expect(repositories.sessions.getMyRating(session.id)).resolves.toBe('genial');
+
+    // El tic relee también `getRatable`, así que la tarjeta vuelve a agendar sola.
+    await act(async () => {
+      jest.advanceTimersByTime(SESSION_TICK_MS);
+    });
+    await waitFor(() => expect(screen.getByLabelText('Agendar sesión Lock-In')).toBeTruthy());
+  });
+
+  it('una propuesta viva gana a la valoración pendiente', async () => {
+    await endedSession();
+    await createMockSessionRepository(NURIA).propose({
+      matchId: match.id,
+      startsAt: inAnHour(),
+      blocks: 1,
+    });
+
+    await renderCard();
+
+    await waitFor(() => expect(screen.getByText('Núria propone una sesión')).toBeTruthy());
+    expect(screen.queryByText('¿Qué tal fue la sesión con Núria?')).toBeNull();
+    expect(screen.queryByRole('radio', { name: 'Genial' })).toBeNull();
+  });
+
+  it('si no se ha podido guardar la valoración, se reintenta con otro toque', async () => {
+    await endedSession();
+    const rate = jest
+      .spyOn(repositories.sessions, 'rate')
+      .mockRejectedValueOnce(new Error('sin red'));
+
+    await renderCard();
+    await fireEvent.press(await screen.findByRole('radio', { name: 'Bien' }));
+
+    await waitFor(() => expect(screen.getByText('No se ha podido guardar')).toBeTruthy());
+
+    rate.mockRestore();
+    await fireEvent.press(screen.getByRole('radio', { name: 'Bien' }));
+
+    await waitFor(() => expect(screen.getByText('Gracias — solo lo ves tú')).toBeTruthy());
+  });
+
+  it('si el servidor ya no la acepta, la tarjeta deja de ofrecer los chips', async () => {
+    await endedSession();
+    jest
+      .spyOn(repositories.sessions, 'rate')
+      .mockRejectedValue(new SessionWindowError('pasaron 24 horas'));
+
+    await renderCard();
+    await fireEvent.press(await screen.findByRole('radio', { name: 'Floja' }));
+
+    await waitFor(() => expect(screen.getByText('Ya no se puede valorar')).toBeTruthy());
+    expect(screen.queryByRole('radio', { name: 'Floja' })).toBeNull();
+    expect(screen.queryByText('¿Qué tal fue la sesión con Núria?')).toBeNull();
   });
 
   it('con los avisos denegados lo avisa una vez y se puede descartar', async () => {

@@ -157,7 +157,35 @@ bloques **nunca se lancen a la vez**. Ver `docs/plan/PLAN.md` → bloque 8.
       `npm run format:check` limpios, y `npm test -- --coverage` con 554 pasando
       (537 antes), 63 saltados (contrato opt-in) y sin aviso de umbral —
       92.30/84.66/92.14/94.03 sobre el suelo 89.82/82.56/91.49/91.38.
-- [ ] Tarea 6 — La tarjeta del chat
+- [x] Tarea 6 — La tarjeta del chat — `CardView` gana `valorar` y `cardView`
+      pasa a `(live, ratable, myProfileId, nowMs)`, con la lógica de la sesión
+      viva movida tal cual a un `liveView` privado para que **la viva gana
+      siempre** se lea en una línea (`if (view.kind !== 'agendar') return view`).
+      `useActiveSession` añade el `useQuery` de `session:ratable:${matchId}` y
+      devuelve `ratable`; los dos `refresh` de `useQuery` se juntan en uno solo
+      con `useCallback`, que es lo que hace imposible olvidar el segundo desde el
+      `subscribe` y desde el tic de 30 s. La tarjeta pinta `valorar` con
+      `RatingPrompt`, un subcomponente que monta `useRating` **solo cuando toca**:
+      llamarlo desde `SessionCard` obligaría a pasarle un `sessionId` vacío en
+      todos los demás estados y lanzaría dos consultas por chat abierto.
+      **Tres cosas que el plan no fijaba:** (a) el hook no tenía test propio, así
+      que se crea `use-active-session.test.tsx` (no está en la lista de Files del
+      plan) con el tic y el aviso del repositorio comprobando **las dos**
+      consultas; verificado por mutación —quitando `refreshRatable()` del
+      `refresh` combinado se ponen en rojo 3 casos, dos de ese archivo y el de la
+      tarjeta volviendo a `agendar` tras valorar—. (b) El Step 3 solo describe
+      pregunta → "Gracias", pero `useRating` puede devolver error: la tarjeta
+      enseña los dos mensajes, y con `RATING_CLOSED` retira los chips igual que
+      la pantalla (decisión (c) de la Tarea 5), porque un chip que el servidor no
+      va a aceptar invita a insistir. (c) `index.ts` no hace falta tocarlo:
+      `cardView`/`CardView` ya salían del barril y `SESSION_TICK_MS` sigue siendo
+      interno del bloque.
+      Verificado 2026-09-15: `npx jest src/features/session test/app` 142/142
+      (23 suites) —el `Verify` del plan no incluye `test/app`, donde vive el test
+      de la pantalla de sesión, así que se corrieron los dos—, `npx tsc --noEmit`,
+      `npm run lint` y `npm run format:check` limpios, y `npm test -- --coverage`
+      con 563 pasando (554 antes), 63 saltados (contrato opt-in) y sin aviso de
+      umbral — 92.47/84.95/92.35/94.20 sobre el suelo 89.82/82.56/91.49/91.38.
 - [ ] Tarea 7 — E2E Android y cierre
 
 ## Deuda detectada, fuera del alcance de este bloque
