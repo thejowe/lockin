@@ -120,18 +120,22 @@ y compara la huella, que dice qué objetos existen, no qué hacen.
   ([run 34992782362](https://github.com/thejowe/lockin/actions/runs/34992782362))
   con el job local en verde y solo el remoto en rojo, que es el esperado
   mientras la migración de `valoracion` no esté aplicada en el proyecto real.
-- [ ] **`supabase/cleanup.test.mjs` sigue sin correr en ningún sitio.** Está en
-  la misma situación que estaba el embebido —se salta sin `PGLITE_MODULE`— y
-  con PGlite ya en el árbol arreglarlo es el mismo cambio de dos líneas. No se
-  ha tocado aquí a propósito: es archivo de `datos`, el encargo nombraba solo
-  `schema-embedded.test.mjs`, y lo que cubre son los SQL de limpieza de cuentas
-  (`supabase/cleanup/`), una operación puntual, no el comportamiento del
-  esquema. Al hacerlo, añadirlo a `test:schema`.
-- [ ] **`supabase/README.md` (línea 467) se ha quedado corto**, no falso: sigue
-  describiendo la instalación a mano con `PGLITE_MODULE`, que funciona y se
-  mantiene, pero ya no es el único camino ni el normal. Es archivo de `datos`;
-  la nota para quien lo actualice es que el camino corto es `npm ci` y
-  `npm run test:schema`.
+- [x] ~~**`supabase/cleanup.test.mjs` sigue sin correr en ningún sitio.**~~
+  **Hecho por `datos` el 2026-09-15** (`25bf903`), que era de quien eran esos
+  archivos. Antes de moverlo comprobó que correrlo en cada push es seguro pese
+  a que toca SQL destructivo: base en memoria nueva por pasada, sin red ni
+  `.env`, y el `delete from auth.users` muere con el proceso. Entró en
+  `test:schema`, que pasa a 10 tests y 0 saltos. Detalle en `todo/datos.md`.
+- [x] ~~**`supabase/README.md` (línea 467) se ha quedado corto.**~~ Hecho en el
+  mismo commit: abre con `npm ci` + `npm run test:schema` y mantiene el camino
+  manual con `PGLITE_MODULE`, que sigue siendo válido.
+- [x] **Agujero que destapó ese cambio, y que sí era de aquí** (`6e860ce`): con
+  `test:schema` corriendo dos archivos, la guarda del job solo exigía la línea
+  final del embebido, así que borrar o renombrar `cleanup.test.mjs` habría
+  dejado el job verde sin ejecutarlo — el mismo fallo que la guarda existe para
+  evitar. Ahora exige una línea por archivo. Verificado ejecutando el paso tal
+  cual (las dos pasan) y quitando del log la del limpiador (la guarda corta).
+  `CI` verde sobre `6e860ce` con los siete jobs.
 
 ## La lista blanca de `contract.yml` se había quedado corta (2026-09-15)
 
