@@ -106,9 +106,9 @@ y compara la huella, que dice qué objetos existen, no qué hacen.
 
 ### Lo que queda
 
-- [ ] **Verlo verde en Actions.** Aquí está comprobado paso a paso, pero el job
-  `schema` no ha corrido todavía en un runner: falta el run de `CI` sobre este
-  commit.
+- [x] **Verlo verde en Actions.** Duplicado de la casilla siguiente, que ya
+  lo cierra: `CI` sobre `890dc16`,
+  [run 34992782667](https://github.com/thejowe/lockin/actions/runs/34992782667).
 - [x] **Verde en Actions**, que es lo que faltaba para dar el job por bueno:
   `CI` sobre `890dc16`,
   [run 34992782667](https://github.com/thejowe/lockin/actions/runs/34992782667),

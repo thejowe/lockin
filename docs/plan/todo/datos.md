@@ -1021,9 +1021,12 @@ Las dos casillas que `calidad` dejó abiertas en `docs/plan/todo/calidad.md` →
 
 ### Lo que queda
 
-- [ ] **Verlo verde en Actions**: aquí está comprobado paso a paso, pero el job
-  `SQL embebido` todavía no ha corrido con los tres archivos en un runner.
-- [ ] **Para `calidad`, en su archivo**: la guarda de `grep` del paso solo exige
+- [x] **Verlo verde en Actions**: `CI` sobre `5af44db`,
+  [run 34996605601](https://github.com/thejowe/lockin/actions/runs/34996605601),
+  con los siete jobs en verde; en el log de `SQL embebido` salen las dos líneas
+  de guarda (`Guardias: … : OK` y `Rol lector, … : OK`) y `# pass 10`, `# fail 0`.
+- [x] **Resuelto en `6e860ce`**: la guarda del paso ahora exige una línea por
+  archivo, también la de `cleanup.test.mjs`. **Para `calidad`, en su archivo**: la guarda de `grep` del paso solo exige
   la última línea del **embebido**. Si alguien quitara `cleanup.test.mjs` de la
   lista o lo renombrara, el job seguiría verde sin ejecutarlo — exactamente el
   agujero que la guarda venía a tapar. La línea que serviría ya la imprime el
