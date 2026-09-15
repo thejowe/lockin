@@ -138,6 +138,33 @@ Entrega: cada match ve cuántas sesiones compartidas (las dos personas dentro) l
 - **Nunca se lanza a la vez que `sesiones` ni que `valoracion`** (mismo dueño de archivos), ni que una sesión de `chat` que toque la lista de Matches.
 - Depende de: `sesiones` y `valoracion` entregados — la migración reutiliza `session_both_attended`, que nace en `20260915000100_session_ratings.sql` (ya aplicada en el proyecto real desde `0430117`). Aplicar la de rachas en `grrzmzktrhksbttpbblg` es del usuario.
 
+### 10. `video` — Vídeo real en la sesión Lock-In (Fase 2)
+
+Entrega: llamada de vídeo 1:1 real (WebRTC nativo, sin proveedor de pago)
+dentro de la ventana de la sesión Lock-In, con señalización por Supabase
+Realtime Broadcast (sin tabla nueva ni credenciales adicionales). Diseño en
+`docs/superpowers/specs/2026-09-16-video-real-sesion-design.md`; plan en
+`docs/superpowers/plans/2026-09-16-video-real-sesion.md`; checklist en
+`docs/plan/todo/video.md`.
+
+- Archivos propios: `src/data/video-signal.ts` (nuevo),
+  `src/data/supabase/video-signal.ts` (nuevo), `src/data/active.ts` (añade
+  `videoSignal`), `src/features/session/use-video-call.ts` (nuevo),
+  `src/features/session/video-call-view.tsx` (nuevo),
+  `src/features/session/index.ts`, `jest.setup.js` (mock del módulo nativo),
+  `app.json` (plugin + permisos), `package.json`.
+- Cruce de una línea declarado: `src/app/session/[sessionId].tsx` (integra
+  el hueco de vídeo sin tocar la lógica de fases/asistencia/valoración que ya
+  hay — coordinación con `sesiones`, dueño original de ese archivo).
+- **No funciona en Expo Go ni en export web** — necesita build de dev client
+  (EAS, ya configurado en el repo). La verificación real entre dos
+  dispositivos la cierra el usuario, no un agente.
+- **Sin bloqueo de credenciales**: Supabase Realtime ya está configurado y
+  STUN público no necesita cuenta — a diferencia de `datos`, este bloque no
+  espera nada del usuario para avanzar el código.
+- Depende de: `sesiones` entregado (usa su pantalla y su noción de ventana de
+  sesión).
+
 ## Orden recomendado de trabajo
 
 1. `arquitecto` primero y solo — es la base de todo lo demás.
