@@ -121,3 +121,20 @@ describe('mecánica del mock', () => {
     expect(await repositories.discovery.listDecided()).toHaveLength(0);
   });
 });
+
+/**
+ * Andamio temporal de las rachas de pareja.
+ *
+ * El contrato ya declara `listStreaks` (Tarea 1 de
+ * `docs/superpowers/plans/2026-09-15-rachas.md`), pero el mock la cumple en la
+ * Tarea 2. Este caso fija que mientras tanto falla a la vista en vez de fingir
+ * un resultado; **bórralo al implementarla**, que es cuando los casos de
+ * contrato pasan a cubrirla de verdad.
+ */
+describe('rachas sin implementar en el mock', () => {
+  it('listStreaks todavía no está implementado', async () => {
+    const sessions = createMockSessionRepository(CURRENT_USER_ID);
+
+    await expect(sessions.listStreaks()).rejects.toThrow('todavía no está implementado');
+  });
+});

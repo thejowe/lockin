@@ -335,6 +335,16 @@ describe('createSupabaseSessionRepository', () => {
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
+  // Andamio temporal: las rachas de pareja se implementan contra el RPC en la
+  // Tarea 4 de `docs/superpowers/plans/2026-09-15-rachas.md`. Hasta entonces se
+  // fija que falla a la vista en vez de fingir un resultado.
+  // **Borra este caso al implementarla.**
+  it('listStreaks todavía no está implementado contra Supabase', async () => {
+    const { repository } = fakeClient();
+
+    await expect(repository.listStreaks()).rejects.toThrow('todavía no está implementado');
+  });
+
   it('abre un canal por match y lo cierra con el último suscriptor', async () => {
     const { client, repository } = fakeClient();
 

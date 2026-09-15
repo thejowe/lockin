@@ -14,6 +14,7 @@ import type {
   Decision,
   DecisionResult,
   LockInSession,
+  MatchStreak,
   MatchWithProfile,
   Message,
   MessageInput,
@@ -111,7 +112,9 @@ export interface MessageRepository {
  * la otra persona responde a una propuesta; cualquiera cancela antes de empezar;
  * `join` solo en la ventana de entrada, e idempotente; solo se valora una sesión
  * terminada a la que entraron los dos, dentro de las 24 h siguientes, y la
- * valoración es privada de quien la escribe.
+ * valoración es privada de quien la escribe; la racha de un match cuenta
+ * sesiones aceptadas con las dos personas dentro, seguidas si entre una y
+ * otra hay menos de 7 días, y no lee valoraciones.
  *
  * Errores: `SessionConflictError`, `SessionExpiredError`, `SessionWindowError`,
  * `SessionForbiddenError` (ver `src/data/session-errors.ts`).
@@ -138,6 +141,11 @@ export interface LockInSessionRepository {
   getMyRating(sessionId: string): Promise<SessionRating | null>;
   /** Escribe tu valoración. Repetir el mismo valor es idempotente. */
   rate(sessionId: string, rating: SessionRating): Promise<SessionRatingEntry>;
+  /**
+   * Rachas vivas de tus matches: una entrada por match con al menos una sesión
+   * compartida en la cadena viva. Un match que no aparece no tiene racha.
+   */
+  listStreaks(): Promise<MatchStreak[]>;
   /** Hora del servidor en ISO, para corregir el reloj del dispositivo. */
   serverNow(): Promise<string>;
   /** Se notifica en cualquier cambio de sesiones o asistencia de ese match. */

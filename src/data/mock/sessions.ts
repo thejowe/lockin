@@ -230,6 +230,15 @@ export function createMockSessionRepository(actorId: string): LockInSessionRepos
       return { ...row };
     },
 
+    // Rachas de pareja: el contrato ya las declara (ver
+    // `docs/superpowers/plans/2026-09-15-rachas.md`), pero la implementación en
+    // memoria es la Tarea 2. Hasta entonces se lanza en vez de fingir un
+    // resultado: una lista vacía de mentira aquí se leería como "nadie tiene
+    // racha" y pasaría inadvertido.
+    async listStreaks() {
+      throw new Error('listStreaks: todavía no está implementado');
+    },
+
     async serverNow() {
       return iso(mockNowMs());
     },

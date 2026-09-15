@@ -267,3 +267,19 @@ export interface SessionRatingEntry {
   rating: SessionRating;
   ratedAt: string;
 }
+
+/**
+ * Racha de una pareja: sesiones compartidas seguidas de la cadena viva.
+ *
+ * Es del match, no de una persona, y sale solo de sesiones y asistencia —nunca
+ * de `session_ratings`—. No la conviertas en racha personal ni la enseñes en
+ * perfil o deck sin releer `docs/superpowers/specs/2026-09-15-rachas-design.md`:
+ * fuera del match sería reputación.
+ */
+export interface MatchStreak {
+  matchId: string;
+  /** Sesiones compartidas seguidas. Siempre ≥ 1: una racha rota no se devuelve. */
+  count: number;
+  /** ISO. Fin de la última sesión que cuenta + 7 días. */
+  aliveUntil: string;
+}

@@ -22,11 +22,29 @@ Orden: 1 → 2; 3 puede ir en paralelo con 1-2 **en su propio worktree** (no
 comparten archivos); 4 necesita 1 y 3; 5 necesita 2; 6 necesita 5; 7 necesita
 todas.
 
-- [ ] [Codex] Tarea 1 — Dominio, regla pura y contrato — `MatchStreak`,
-      `src/data/streaks.ts` (`STREAK_GAP_DAYS`, `pairStreak`) con sus bordes en
-      test, `listStreaks` en `LockInSessionRepository`, y andamio en mock y
-      Supabase. Terminado = `tsc`, lint y `npm test -- --coverage` sin aviso de
-      umbral.
+- [x] Tarea 1 — Dominio, regla pura y contrato — `MatchStreak` al final de
+      `types.ts`; `src/data/streaks.ts` (`STREAK_GAP_DAYS = 7`, `pairStreak`)
+      reexportado desde `@/data`; `listStreaks()` en `LockInSessionRepository`
+      (después de `rate`, con la regla nueva añadida al JSDoc de la interfaz);
+      y andamio `listStreaks: throw new Error('listStreaks: todavía no está
+      implementado')` en el mock y en Supabase, cada uno con su caso que lo
+      fija en `mock/index.test.ts` y `supabase/sessions.test.ts` —se borran en
+      las Tareas 2 y 4—. 9 casos nuevos en `streaks.test.ts` (vacía, una sesión,
+      cadena de 3 con huecos de 6 días, hueco de 7 días exactos que rompe,
+      7 días − 1 ms que no rompe, cadena de 3 cortada por una de 1, los dos
+      bordes de `aliveUntil`, y el mismo resultado con las sesiones
+      desordenadas).
+      TDD: `npx jest src/data/streaks.test.ts` en rojo primero (`Cannot find
+      module './streaks'`), en verde tras escribir `streaks.ts` (9/9).
+      Verificado 2026-09-15: `npx tsc --noEmit` limpio; `npx jest
+      src/data/streaks.test.ts src/data/mock src/data/supabase/sessions.test.ts`
+      115/115; `npm run lint` limpio; `npm run format:check` marca 97 archivos
+      por CRLF de Windows — el mismo conjunto (todo el repo) antes y después del
+      cambio, y los dos archivos nuevos no aparecen en el listado; no es
+      regresión de esta tarea (ver nota de memoria sobre CRLF en Windows); y
+      `npm test -- --coverage` con 574 pasando, 63 saltados (contrato opt-in) y
+      sin aviso de umbral — 92.53/85.04/92.40/94.24 sobre el suelo
+      89.82/82.56/91.49/91.38.
 - [ ] [Codex] Tarea 2 — Mock y casos de contrato — `listStreaks` en memoria sin
       leer `ratings`, los nueve casos de `describe('rachas')` (3 con `it`, 6 con
       `itWithTimeTravel`) y retirada del andamio del mock. Terminado = los casos

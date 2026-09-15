@@ -244,6 +244,14 @@ export function createSupabaseSessionRepository(
       return toSessionRatingEntry(data as SessionRatingRow);
     },
 
+    // Rachas de pareja: el contrato ya las declara, pero el RPC
+    // (`match_streaks`) es la Tarea 3 y este repositorio la Tarea 4 de
+    // `docs/superpowers/plans/2026-09-15-rachas.md`. Hasta entonces se lanza en
+    // vez de fingir un resultado.
+    async listStreaks() {
+      throw new Error('listStreaks: todavía no está implementado');
+    },
+
     async serverNow() {
       await deps.getUserId();
       const { data, error } = await deps.getClient().rpc('server_now');
