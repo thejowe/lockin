@@ -205,16 +205,30 @@ bloques **nunca se lancen a la vez**. Ver `docs/plan/PLAN.md` → bloque 8.
       runner, que incluye los cuatro casos nuevos), `npx tsc --noEmit`,
       `npm run lint` y `npx prettier --check e2e/` limpios, y
       `npm test -- --coverage` con 563 pasando y 63 saltados.
-      **Lo que NO se ha ejecutado aquí:** el recorrido real en el emulador.
-      Maestro y el emulador Android no existen en este entorno, así que
-      `session-rate.yaml` no se ha corrido ni una vez contra la app — solo se ha
-      comprobado que las etiquetas que toca existen en el código y que el runner
-      lo encadena en el orden correcto. **Queda pendiente de verse en verde en
-      el job `E2E Android (supabase)` de Actions**, con las tres líneas de
-      oráculo en su log: la de la asistencia, la de "sesión terminada y con los
-      dos dentro, lista para valorarse" y la de "valoración de la sesión Lock-In
-      verificada". Mientras no haya un run con esas tres líneas, esta casilla
-      cubre el código escrito, no el recorrido comprobado.
+      **Verde en Actions sobre este mismo commit (`387b80f`)**, que es lo que
+      convierte esta casilla en recorrido comprobado y no solo código escrito:
+      - `E2E Android`, [run 34969393663](https://github.com/thejowe/lockin/actions/runs/34969393663):
+        las dos variantes en verde, `supabase` a la primera («Recorrido supabase
+        verde tras 1 intento(s)», fase `journey` en `success`). El toque en
+        "Genial" ocurrió en un emulador de verdad.
+      - `CI`, [run 34969393666](https://github.com/thejowe/lockin/actions/runs/34969393666).
+      - `Schema drift`, [run 34969393633](https://github.com/thejowe/lockin/actions/runs/34969393633):
+        el job local **en verde** —la migración se aplica sola a una Supabase
+        desechable y la huella cuadra— y **solo en rojo el job remoto**, que es
+        el esperado hasta que se aplique la migración (ver "Pendiente del
+        usuario"). Falla en el paso "Huella remota y diff contra las
+        migraciones", que es exactamente donde tiene que fallar.
+
+      **Matiz sobre la evidencia, para no venderla por más de lo que es:** no se
+      ha leído con los ojos la línea de oráculo «Postgres: valoración de la
+      sesión Lock-In verificada.» en el log. El `tail` de la API de Actions está
+      capado y no alcanza ese paso, y el artefacto con `postgres.json` vive en
+      un host que el proxy de salida de este entorno bloquea. Lo que sí sostiene
+      la afirmación es la estructura: la variante `supabase` solo llega a
+      veredicto verde pasando por `prepareSessionRating`, el flujo
+      `session-rate.yaml` y `verifySessionRating`, y ese orden lo fija un caso
+      de `e2e/session.test.mjs`. Un fallo de cualquiera de los tres habría
+      dejado el job en rojo.
 
 ## Deuda detectada, fuera del alcance de este bloque
 
