@@ -335,11 +335,15 @@ Puntos donde es fácil equivocarse, todos ya decididos en la spec:
 - Sin políticas de insert, update ni delete. `revoke all … from anon`.
 - `rate_session` empieza por `public.lock_member_session(p_session_id)`, que ya
   lanza LI004 si la sesión no existe o el match no es tuyo.
-- Orden de validación dentro de `rate_session`: estado `aceptada` y ventana
-  abierta (LI003) → asistencia de los dos (LI004) → insert. Si el estado no es
-  `aceptada`, la spec pide LI004; `session_rating_window_is_open` ya devuelve
-  falso para esos estados, así que compruébalo explícitamente antes para no
-  devolver LI003 donde toca LI004.
+- **Orden de validación dentro de `rate_session`, y el contrato ya lo fija**
+  (Tarea 2, caso "una cancelada o una rechazada nunca son valorables"): estado
+  `aceptada` **primero y por separado** (LI004) → ventana abierta (LI003) →
+  asistencia de los dos (LI004) → insert. `session_rating_window_is_open` ya
+  devuelve falso para una cancelada o rechazada, así que si te apoyas solo en
+  ella saldrá LI003 donde la spec pide LI004 y el caso de contrato te lo
+  tumbará. Una sesión que no llegó a celebrarse no es "fuera de plazo".
+- `order by starts_at desc limit 1` en `ratable_session` no es cosmético: lo fija
+  el caso "con dos sin valorar se ofrece la más reciente".
 - Idempotencia: `insert … on conflict (session_id, profile_id) do nothing
   returning *`; si `not found`, lee la fila existente y compara — igual →
   devuélvela; distinta → `raise … errcode = 'LI001'`.
