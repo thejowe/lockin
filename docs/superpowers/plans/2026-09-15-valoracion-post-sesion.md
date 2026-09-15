@@ -105,7 +105,7 @@ el contrato cubrirá el SQL: no lo va a hacer.
 **Interfaces:**
 - Produces: `SessionRating`, `SessionRatingEntry`, `RATING_WINDOW_HOURS`,
   `isInRatingWindow(session: SessionTiming, nowMs: number): boolean`,
-  `attendedSession(rows: SessionAttendance[], profileId: string, session: SessionTiming): boolean`,
+  `attendedSession(rows: readonly SessionAttendance[], profileId: string, session: SessionTiming): boolean`,
   y los tres métodos de `LockInSessionRepository`. Todo exportado desde `@/data`.
 - Consumes: `SessionTiming`, `sessionEndsAtMs` (ya existen en
   `src/data/sessions.ts`).
@@ -175,10 +175,12 @@ el bloque de JSDoc de la interfaz, añade una línea a las reglas: "solo se valo
 una sesión terminada a la que entraron los dos, dentro de las 24 h siguientes, y
 la valoración es privada de quien la escribe".
 
-- [ ] **Step 4: Exportar desde `@/data`**
+- [ ] **Step 4: Exportar desde `@/data`** — *comprobado al ejecutar: no hay nada
+      que hacer.*
 
-En `src/data/index.ts`, añade lo nuevo a los `export` que ya salen de `./types`
-y `./sessions`. Sigue el orden alfabético que tenga el archivo.
+`src/data/index.ts` reexporta `./types` y `./sessions` con `export *`, así que lo
+nuevo ya sale de `@/data` sin tocar nada. El que **sí** enumera nombres uno a uno
+es `src/features/session/index.ts`, y eso es cosa de la Tarea 5.
 
 - [ ] **Step 5: Tests de las reglas puras**
 
@@ -208,6 +210,14 @@ En `src/data/sessions.test.ts`, junto a los de `isInJoinWindow`:
 - Consumes: todo lo de la Tarea 1.
 - Produces: `createMockSessionRepository` cumpliendo los tres métodos; los casos
   de contrato que después tendrá que pasar también Supabase.
+
+> **Andamio que tienes que retirar.** La Tarea 1 dejó los tres métodos del mock
+> lanzando "todavía no está implementado", y un caso en
+> `src/data/mock/index.test.ts` que lo fija —está ahí porque sin él la cobertura
+> de funciones cae por debajo del suelo de `jest.config.js`, no porque pruebe
+> nada de producto. Al escribir la implementación real, **borra ese caso junto
+> con los stubs**: si lo dejas, quedará en rojo. Los casos de contrato que
+> añades en el Step 3 devuelven de sobra la cobertura que daba.
 
 - [ ] **Step 1: Estado del mock**
 
@@ -382,6 +392,11 @@ si pide red, sáltalo y déjalo para CI.
 **Interfaces:**
 - Consumes: los RPCs de la Tarea 3 y el contrato de la Tarea 1.
 - Produces: `SessionRatingRow`, `toSessionRatingEntry`, y los tres métodos.
+
+> **Andamio que tienes que retirar.** Igual que en la Tarea 2: la Tarea 1 dejó
+> los tres métodos de `src/data/supabase/sessions.ts` lanzando "todavía no está
+> implementado", con un caso en `src/data/supabase/sessions.test.ts` que lo fija
+> solo para sostener el suelo de cobertura. **Bórralo con los stubs.**
 
 - [ ] **Step 1: Tipos de la base**
 
