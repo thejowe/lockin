@@ -1,4 +1,4 @@
-/** Cuál de los tres finales pide la pantalla cuando la sesión acaba. */
+/** Cuál de los finales pide la pantalla cuando la sesión acaba. */
 
 import { endingView, RATING_OPTIONS, ratingLabel } from './rating';
 
@@ -28,10 +28,17 @@ describe('endingView', () => {
     expect(endingView(BOTH, 'me', 'nuria', session, null)).toEqual({ kind: 'preguntar' });
   });
 
-  it('si falta cualquiera de los dos no pregunta nada', () => {
+  it('si entraste tú y ella no, lo dice', () => {
     expect(endingView([row('me')], 'me', 'nuria', session, null)).toEqual({ kind: 'no-vino' });
-    expect(endingView([row('nuria')], 'me', 'nuria', session, null)).toEqual({ kind: 'no-vino' });
-    expect(endingView([], 'me', 'nuria', session, null)).toEqual({ kind: 'no-vino' });
+  });
+
+  it('si el que no entró fuiste tú, se despide sin nombrar a nadie', () => {
+    // Decir "Núria no entró" a quien faltó él la acusaría de lo contrario de lo
+    // que pasó, y es justo el tono que la valoración no debe tener.
+    expect(endingView([row('nuria')], 'me', 'nuria', session, null)).toEqual({
+      kind: 'completada',
+    });
+    expect(endingView([], 'me', 'nuria', session, null)).toEqual({ kind: 'completada' });
   });
 
   it('ya valorada, agradece con cualquier asistencia', () => {
@@ -54,9 +61,9 @@ describe('endingView', () => {
     ).toEqual({ kind: 'no-vino' });
   });
 
-  it('mientras no se sepa quién es quién, no pregunta', () => {
-    expect(endingView(BOTH, null, 'nuria', session, null)).toEqual({ kind: 'no-vino' });
-    expect(endingView(BOTH, 'me', null, session, null)).toEqual({ kind: 'no-vino' });
+  it('mientras no se sepa quién es quién, no pregunta ni acusa', () => {
+    expect(endingView(BOTH, null, 'nuria', session, null)).toEqual({ kind: 'completada' });
+    expect(endingView(BOTH, 'me', null, session, null)).toEqual({ kind: 'completada' });
   });
 });
 

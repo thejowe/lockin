@@ -6,10 +6,11 @@
  * registra solo al abrir la pantalla dentro de la ventana; salir antes de acabar
  * pide confirmación porque cuenta como abandono.
  *
- * El final tiene tres caras (`endingView`): pregunta cuando entraron los dos y
- * no has valorado, agradece cuando ya valoraste, y **no pregunta nada** cuando
- * la otra persona no entró. Un toque en un chip no navega: la pantalla se queda
- * en el agradecimiento, porque cerrarse sola dejaría la duda de si se registró.
+ * El final lo decide `endingView`: pregunta cuando entraron los dos y no has
+ * valorado, agradece cuando ya valoraste, dice que la otra persona no entró
+ * cuando tú sí, y **no pregunta nada** si el que faltó fuiste tú. Un toque en
+ * un chip no navega: la pantalla se queda en el agradecimiento, porque
+ * cerrarse sola dejaría la duda de si se registró.
  */
 
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
