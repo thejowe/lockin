@@ -3,6 +3,7 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "dependencies": {
+    "@config-plugins/react-native-webrtc": "^15.0.2",
     "@expo-google-fonts/fraunces": "^0.4.1",
     "@expo-google-fonts/ibm-plex-mono": "^0.4.1",
     "@expo-google-fonts/ibm-plex-sans": "^0.4.1",
@@ -29,6 +30,7 @@
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
     "react-native-web": "~0.21.0",
+    "react-native-webrtc": "^124.0.8",
     "react-native-worklets": "0.10.1"
   },
   "devDependencies": {

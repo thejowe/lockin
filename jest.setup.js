@@ -61,3 +61,140 @@ jest.mock('expo-notifications', () => ({
   scheduleNotificationAsync: jest.fn(() => Promise.resolve('notification-id')),
   cancelScheduledNotificationAsync: jest.fn(() => Promise.resolve()),
 }));
+
+// `react-native-webrtc` es un módulo nativo (cámara, micrófono, RTCPeerConnection
+// real): no existe bajo Jest. El doble simula lo justo para que `use-video-call`
+// recorra su máquina de estados sin red real: cuando las dos descripciones
+// (local y remota) quedan puestas se da la conexión por hecha —no hay forma de
+// simular ICE de verdad en Node— y `setRemoteDescription` dispara `ontrack` con
+// un stream remoto falso, como haría el navegador al llegar vídeo.
+jest.mock('react-native-webrtc', () => {
+  class MockMediaStreamTrack {
+    constructor(kind) {
+      this.kind = kind;
+      this.enabled = true;
+      this.stopped = false;
+    }
+
+    stop() {
+      this.stopped = true;
+      this.enabled = false;
+    }
+  }
+
+  let nextStreamId = 0;
+
+  class MockMediaStream {
+    constructor(tracks = []) {
+      this.id = `mock-stream-${nextStreamId++}`;
+      this._tracks = tracks;
+    }
+
+    getTracks() {
+      return this._tracks;
+    }
+
+    getAudioTracks() {
+      return this._tracks.filter((track) => track.kind === 'audio');
+    }
+
+    getVideoTracks() {
+      return this._tracks.filter((track) => track.kind === 'video');
+    }
+
+    toURL() {
+      return `mock-stream:${this.id}`;
+    }
+  }
+
+  class MockRTCPeerConnection {
+    constructor(config) {
+      this.config = config;
+      this.localDescription = null;
+      this.remoteDescription = null;
+      this.connectionState = 'new';
+      this.iceConnectionState = 'new';
+      this.onicecandidate = null;
+      this.ontrack = null;
+      this.onconnectionstatechange = null;
+      this.oniceconnectionstatechange = null;
+      this.senders = [];
+      this.closed = false;
+
+      this.createOffer = jest.fn(async () => ({ type: 'offer', sdp: 'mock-offer-sdp' }));
+      this.createAnswer = jest.fn(async () => ({ type: 'answer', sdp: 'mock-answer-sdp' }));
+
+      this.setLocalDescription = jest.fn(async (description) => {
+        this.localDescription = description;
+        // Simula la recogida de candidatos ICE que dispararía el nativo real.
+        if (this.onicecandidate) {
+          this.onicecandidate({
+            candidate: { candidate: 'mock-candidate', sdpMid: '0', sdpMLineIndex: 0 },
+          });
+        }
+        this._maybeConnect();
+      });
+
+      this.setRemoteDescription = jest.fn(async (description) => {
+        this.remoteDescription = description;
+        // El stream remoto "llega" en cuanto hay descripción remota — no hay
+        // negociación real de tracks en este doble.
+        if (this.ontrack) {
+          const remoteStream = new MockMediaStream([
+            new MockMediaStreamTrack('audio'),
+            new MockMediaStreamTrack('video'),
+          ]);
+          this.ontrack({ streams: [remoteStream] });
+        }
+        this._maybeConnect();
+      });
+
+      this.addIceCandidate = jest.fn(async () => {});
+
+      this.close = jest.fn(() => {
+        this.closed = true;
+        this.connectionState = 'closed';
+        this.iceConnectionState = 'closed';
+      });
+    }
+
+    addTrack(track, stream) {
+      const sender = { track, stream };
+      this.senders.push(sender);
+      return sender;
+    }
+
+    _maybeConnect() {
+      if (this.closed || !this.localDescription || !this.remoteDescription) return;
+      this.connectionState = 'connected';
+      this.iceConnectionState = 'connected';
+      if (this.onconnectionstatechange) this.onconnectionstatechange();
+      if (this.oniceconnectionstatechange) this.oniceconnectionstatechange();
+    }
+  }
+
+  const mediaDevices = {
+    getUserMedia: jest.fn(async () =>
+      new MockMediaStream([new MockMediaStreamTrack('audio'), new MockMediaStreamTrack('video')])
+    ),
+  };
+
+  // No pinta nada real: bajo Jest no hay cámara ni decodificador de vídeo. Se
+  // deja como `View` sin más para que los tests puedan localizarlo por
+  // `testID`/`accessibilityLabel` sin depender del nativo.
+  function RTCView(props) {
+    const React = require('react');
+    const { View } = require('react-native');
+    return React.createElement(View, {
+      testID: props.testID,
+      accessibilityLabel: props.streamURL,
+    });
+  }
+
+  return {
+    RTCPeerConnection: MockRTCPeerConnection,
+    RTCView,
+    MediaStream: MockMediaStream,
+    mediaDevices,
+  };
+});
