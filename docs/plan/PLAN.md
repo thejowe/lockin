@@ -128,6 +128,16 @@ Entrega: al terminar una sesión a la que entraron las dos personas, cada una la
 - **Nunca se lanza a la vez que `sesiones`**: comparten dueño de archivos, así que la regla de oro se cumple por turnos y no por separación. Si las dos tienen trabajo abierto, van una detrás de otra.
 - Depende de: `sesiones` entregado. La casilla abierta de `sesiones` (verificación con dos móviles) **no la bloquea**: no tocan lo mismo.
 
+### 9. `rachas` — Rachas de pareja (Fase 2)
+
+Entrega: cada match ve cuántas sesiones compartidas (las dos personas dentro) lleva seguidas, con menos de 7 días entre una y la siguiente, en la tarjeta "Sesión Lock-In" del chat y como etiqueta en su fila de Matches. Es **de la pareja**, se calcula al leer (no se guarda), no depende de zona horaria y **no lee `session_ratings`**, para no delatar la valoración privada. Diseño en `docs/superpowers/specs/2026-09-15-rachas-design.md`; plan en `docs/superpowers/plans/2026-09-15-rachas.md`; checklist con reparto `[Claude]`/`[Codex]` en `docs/plan/todo/rachas.md`.
+
+- Archivos propios: los de `sesiones` — `src/data/streaks.ts` (nuevo), `src/data/types.ts`, `src/data/repositories.ts`, `src/data/repositories.contract.ts`, `src/data/mock/sessions.ts`, `src/data/supabase/{sessions,database.types}.ts`, `supabase/migrations/20260915000200_match_streaks.sql` (nuevo), `supabase/schema-embedded.test.mjs`, `src/features/session/` (`streak.ts` y `use-match-streaks.ts` nuevos; `use-active-session.ts`, `session-card.tsx`, `index.ts`) y `e2e/` (`session-streak.yaml` nuevo; `verify.mjs`, `run.mjs`, `session.test.mjs`). `src/app/session/[sessionId].tsx` **no se toca**.
+- **Pisa a `chat`** (cruces declarados): `src/app/(tabs)/matches.tsx` + `test/app/matches.test.tsx`, y `src/features/chat/match-row.tsx` + su test. `MatchRow` recibe la racha como número y no importa de `@/features/session`.
+- **Pisa a `calidad`** (una línea): `useFocusEffect` en `expoRouterMock()` de `test/routes.tsx`.
+- **Nunca se lanza a la vez que `sesiones` ni que `valoracion`** (mismo dueño de archivos), ni que una sesión de `chat` que toque la lista de Matches.
+- Depende de: `sesiones` y `valoracion` entregados — la migración reutiliza `session_both_attended`, que nace en `20260915000100_session_ratings.sql` (ya aplicada en el proyecto real desde `0430117`). Aplicar la de rachas en `grrzmzktrhksbttpbblg` es del usuario.
+
 ## Orden recomendado de trabajo
 
 1. `arquitecto` primero y solo — es la base de todo lo demás.
