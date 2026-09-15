@@ -159,12 +159,26 @@ todas.
       superaban `printWidth`); `npm test -- --coverage` con 602 pasando, 72
       saltados (contrato opt-in) y sin aviso de umbral —
       92.77/85.41/92.29/94.53 sobre el suelo 89.82/82.56/91.49/91.38.
-- [ ] [Claude] Tarea 6 — La lista de Matches — `useMatchStreaks`, `useFocusEffect`
+- [x] Tarea 6 — La lista de Matches — `useMatchStreaks`, `useFocusEffect`
       en `test/routes.tsx`, prop `streak` en `MatchRow` y composición en
-      `matches.tsx`. `[Claude]` porque **cruza dos bloques** (`chat` y
-      `calidad`) y hay que comprobar la firma de `useFocusEffect` en la
-      documentación de Expo 57 antes de usarla. Terminado = `npx jest src/features
-      test/app` en verde y cobertura sin aviso.
+      `matches.tsx` (`a376d0e`). Firma de `useFocusEffect` comprobada en
+      `node_modules/expo-router/build/useFocusEffect.d.ts` de 57.0.21
+      (`(effect: EffectCallback, do_not_pass_a_second_prop?: never): void`).
+      Desviación del plan: el hook salta el primer foco, que coincide con el
+      montaje donde `useQuery` ya lee; sin eso cada apertura pedía
+      `listStreaks` dos veces. `MatchRow` copia `· Racha N` y `Racha de N
+      sesiones seguidas` y su test fija que coinciden con `streakTag`/
+      `streakLine`; `src/features/chat/` sigue sin importar de sesiones.
+      TDD: `use-match-streaks.test.tsx` en rojo (`Cannot find module`), en
+      verde 5/5; `match-row.test.tsx` 2 en rojo y 14/14 en verde;
+      `matches.test.tsx` en rojo (`Unable to find an element with text: ·
+      Racha 2`) y 5/5 en verde.
+      Verificado 2026-09-15: `npx jest src/features test/app` 45 suites,
+      389/389; `npx tsc --noEmit` limpio; `npm run lint` limpio; `npx
+      prettier` sobre los 8 archivos tocados sin diferencias reales (`diff
+      --strip-trailing-cr`); `npm test -- --coverage` con 611 pasando, 72
+      saltados y sin aviso de umbral — 92.81/85.71/92.38/94.54 sobre el suelo
+      89.82/82.56/91.49/91.38.
 - [ ] [Claude] Tarea 7 — E2E Android y cierre — `prepareSessionStreak`,
       `e2e/session-streak.yaml`, guardia en `session.test.mjs`, y tablero con
       evidencia. `[Claude]` porque la señal solo existe en Actions (aquí no hay
