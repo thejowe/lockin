@@ -761,6 +761,148 @@ export function describeRepositoryContract(backend: ContractBackend): void {
 
         await expect(mine.cancel(session.id)).rejects.toBeInstanceOf(SessionExpiredError);
       });
+
+      /**
+       * Las nueve reglas de
+       * `docs/superpowers/specs/2026-09-15-valoracion-post-sesion-design.md`.
+       *
+       * Casi todas necesitan una sesión ya terminada, y `propose` exige 5
+       * minutos de margen: contra un backend sin reloj simulado harían esperar
+       * media hora de reloj, así que van con `itWithTimeTravel` y allí se
+       * saltan. Lo que cubre ese hueco es el SQL en
+       * `supabase/schema-embedded.test.mjs`, que sí puede escribir una sesión
+       * con fecha pasada.
+       */
+      describe('valoración', () => {
+        /**
+         * Una sesión aceptada y ya terminada, con quien diga `joiners` dentro.
+         * Con los dos es la única situación valorable (reglas 3 y 4). Salta
+         * minutos, así que solo sirve dentro de `itWithTimeTravel`.
+         */
+        async function endedSession(
+          joiners: readonly LockInSessionRepository[] = [mine, theirs]
+        ): Promise<string> {
+          const session = await mine.propose({ matchId, startsAt: await soon(), blocks: 1 });
+          await theirs.respond(session.id, 'aceptada');
+          await fixture.elapse(3_000);
+          for (const who of joiners) {
+            await who.join(session.id);
+          }
+          await fixture.elapse(36 * MINUTE);
+          return session.id;
+        }
+
+        it('una sesión viva todavía no se valora', async () => {
+          const session = await mine.propose({ matchId, startsAt: await soon(), blocks: 1 });
+          await theirs.respond(session.id, 'aceptada');
+          await fixture.elapse(3_000);
+          await mine.join(session.id);
+          await theirs.join(session.id);
+
+          expect(await mine.getRatable(matchId)).toBeNull();
+          await expect(mine.rate(session.id, 'bien')).rejects.toBeInstanceOf(SessionWindowError);
+        });
+
+        it('alguien de fuera del match ni valora ni lee valoraciones', async () => {
+          const outsider = fixture.outsiderSessions();
+          const session = await mine.propose({ matchId, startsAt: await later(), blocks: 1 });
+
+          expect(await outsider.getRatable(matchId)).toBeNull();
+          expect(await outsider.getMyRating(session.id)).toBeNull();
+          await expect(outsider.rate(session.id, 'bien')).rejects.toBeInstanceOf(
+            SessionForbiddenError
+          );
+        });
+
+        itWithTimeTravel('terminada con los dos dentro: se valora y deja de pedirse', async () => {
+          const sessionId = await endedSession();
+
+          expect((await mine.getRatable(matchId))?.id).toBe(sessionId);
+          await expect(mine.rate(sessionId, 'genial')).resolves.toMatchObject({
+            sessionId,
+            profileId: fixture.currentUserId,
+            rating: 'genial',
+          });
+          expect(await mine.getMyRating(sessionId)).toBe('genial');
+          expect(await mine.getRatable(matchId)).toBeNull();
+        });
+
+        itWithTimeTravel('con dos sin valorar se ofrece la más reciente', async () => {
+          // La otra caduca sin valorar: la tarjeta del chat pinta un estado, no
+          // una bandeja (spec § 3).
+          await endedSession();
+          const reciente = await endedSession();
+
+          expect((await mine.getRatable(matchId))?.id).toBe(reciente);
+        });
+
+        itWithTimeTravel('una cancelada o una rechazada nunca son valorables', async () => {
+          const rejected = await mine.propose({ matchId, startsAt: await soon(), blocks: 1 });
+          await theirs.respond(rejected.id, 'rechazada');
+          const cancelled = await mine.propose({ matchId, startsAt: await soon(), blocks: 1 });
+          await theirs.cancel(cancelled.id);
+          await fixture.elapse(36 * MINUTE);
+
+          expect(await mine.getRatable(matchId)).toBeNull();
+          await expect(mine.rate(rejected.id, 'bien')).rejects.toBeInstanceOf(
+            SessionForbiddenError
+          );
+          await expect(mine.rate(cancelled.id, 'bien')).rejects.toBeInstanceOf(
+            SessionForbiddenError
+          );
+        });
+
+        itWithTimeTravel('sin tu asistencia no la valoras', async () => {
+          const sessionId = await endedSession([theirs]);
+
+          expect(await mine.getRatable(matchId)).toBeNull();
+          await expect(mine.rate(sessionId, 'bien')).rejects.toBeInstanceOf(SessionForbiddenError);
+        });
+
+        itWithTimeTravel('si la otra persona no entró, tampoco', async () => {
+          const sessionId = await endedSession([mine]);
+
+          expect(await mine.getRatable(matchId)).toBeNull();
+          await expect(mine.rate(sessionId, 'bien')).rejects.toBeInstanceOf(SessionForbiddenError);
+        });
+
+        itWithTimeTravel('repetir el mismo valor es idempotente', async () => {
+          const sessionId = await endedSession();
+          const first = await mine.rate(sessionId, 'floja');
+
+          const again = await mine.rate(sessionId, 'floja');
+
+          expect(again).toEqual(first);
+          expect(await mine.getMyRating(sessionId)).toBe('floja');
+        });
+
+        itWithTimeTravel('mandar otro valor choca y no reescribe el primero', async () => {
+          const sessionId = await endedSession();
+          await mine.rate(sessionId, 'bien');
+
+          await expect(mine.rate(sessionId, 'genial')).rejects.toBeInstanceOf(SessionConflictError);
+          expect(await mine.getMyRating(sessionId)).toBe('bien');
+        });
+
+        itWithTimeTravel('pasadas 24 horas la sesión se queda sin valorar', async () => {
+          const sessionId = await endedSession();
+
+          await fixture.elapse(24 * 60 * MINUTE);
+
+          expect(await mine.getRatable(matchId)).toBeNull();
+          await expect(mine.rate(sessionId, 'bien')).rejects.toBeInstanceOf(SessionWindowError);
+        });
+
+        itWithTimeTravel('la otra persona del match no ve tu valoración', async () => {
+          const sessionId = await endedSession();
+
+          await mine.rate(sessionId, 'floja');
+
+          expect(await theirs.getMyRating(sessionId)).toBeNull();
+          // Y a ella se le sigue pidiendo la suya: son dos valoraciones aparte.
+          expect((await theirs.getRatable(matchId))?.id).toBe(sessionId);
+        });
+      });
     });
   });
 }

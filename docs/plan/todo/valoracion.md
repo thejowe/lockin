@@ -29,7 +29,30 @@ bloques **nunca se lancen a la vez**. Ver `docs/plan/PLAN.md` → bloque 8.
       src/data/sessions.test.ts` 21/21, `npm run lint` limpio, y de más
       `npx jest --coverage` con 522 pasando, 52 saltados (contrato opt-in) y
       sin aviso de umbral.
-- [ ] Tarea 2 — Mock y casos de contrato
+- [x] Tarea 2 — Mock y casos de contrato — `ratings` en `MockState` y en
+      `resetState()`; `getRatable`/`getMyRating`/`rate` en memoria, con el helper
+      local `bothAttended` y **sin llamar a `changed()`** al valorar: la
+      valoración es privada, y avisar publicaría por el canal del match que
+      alguien acaba de valorar. Retirado el andamio de la Tarea 1 —los tres
+      stubs del mock y su caso en `src/data/mock/index.test.ts`—, que es lo que
+      los casos nuevos pasan a cubrir de verdad. 11 casos en
+      `repositories.contract.ts` (`describe('valoración')`): 9 con
+      `itWithTimeTravel`, que contra Supabase se saltarán porque `propose` exige
+      5 min de margen, y 2 con `it` normal (sesión viva y tercero sin acceso).
+      **Desvío del plan, a propósito:** el Step 2 dejaba que una sesión
+      cancelada o rechazada saliera por `SessionWindowError` (`isInRatingWindow`
+      ya es falso para esos estados), pero la tabla de errores de la spec y el
+      Step 1 de la Tarea 3 piden LI004 ahí, así que `rate` mira el estado
+      **antes** que la ventana y el contrato fija `SessionForbiddenError` — si
+      no, el mock y Supabase discreparían en la Tarea 4. Caso de más, no listado
+      en el plan: con dos sesiones terminadas sin valorar se ofrece la más
+      reciente (spec § 3), que es lo que fijará el `order by starts_at desc
+      limit 1` del RPC.
+      Verificado 2026-09-15: `npx jest src/data/mock src/data/sessions.test.ts`
+      102/102, `npx tsc --noEmit` limpio, `npm run lint` y `npm run format:check`
+      limpios, y `npm test -- --coverage` con 530 pasando, 63 saltados (contrato
+      opt-in) y sin aviso de umbral — 92.17/84.15/92.00/93.84 sobre el suelo
+      89.82/82.56/91.49/91.38.
 - [ ] Tarea 3 — Migración SQL y cobertura en PGlite
 - [ ] Tarea 4 — Repositorio de Supabase
 - [ ] Tarea 5 — La pantalla de sesión

@@ -16,6 +16,7 @@ import type {
   Profile,
   Session,
   SessionAttendance,
+  SessionRatingEntry,
 } from '../types';
 
 /** Id del perfil propio dentro del mock. Estable para que los matches lo referencien. */
@@ -33,6 +34,8 @@ export interface MockState {
   messages: Message[];
   lockInSessions: LockInSession[];
   attendance: SessionAttendance[];
+  /** Valoraciones post-sesión. Cada una la lee solo quien la escribió. */
+  ratings: SessionRatingEntry[];
 }
 
 function initialState(): MockState {
@@ -45,6 +48,7 @@ function initialState(): MockState {
     messages: [],
     lockInSessions: [],
     attendance: [],
+    ratings: [],
   };
 }
 
