@@ -53,7 +53,42 @@ bloques **nunca se lancen a la vez**. Ver `docs/plan/PLAN.md` → bloque 8.
       limpios, y `npm test -- --coverage` con 530 pasando, 63 saltados (contrato
       opt-in) y sin aviso de umbral — 92.17/84.15/92.00/93.84 sobre el suelo
       89.82/82.56/91.49/91.38.
-- [ ] Tarea 3 — Migración SQL y cobertura en PGlite
+- [x] Tarea 3 — Migración SQL y cobertura en PGlite —
+      `supabase/migrations/20260915000100_session_ratings.sql`: enum
+      `session_rating`, tabla `session_ratings` (PK `(session_id, profile_id)`,
+      sin update ni delete), `session_rating_window_is_open`,
+      `session_both_attended`, `rate_session` y `ratable_session`, con
+      `revoke`/`grant` al final. Las dos decisiones que no se copian de
+      `20260913000100`: la política de select es
+      `profile_id = (select auth.uid())` —no `is_session_member`— y la tabla
+      **no** entra en `supabase_realtime`; las dos quedan fijadas en la huella
+      de esquema por sendas aserciones del test embebido, no solo por el
+      comentario. Orden de validación de `rate_session`: estado `aceptada`
+      (LI004) → ventana (LI003) → asistencia de los dos (LI004) → insert
+      idempotente (`on conflict do nothing` + comparación, LI001 si difiere).
+      **Corrección al plan:** el Step 1 dice que
+      `session_rating_window_is_open` "ya devuelve falso para una cancelada o
+      rechazada" y que apoyarse solo en ella daría LI003; no es así — su firma
+      (la que fija el propio plan y la spec) no recibe el estado, así que sin
+      la comprobación aparte y primera una sesión cancelada dentro de su
+      ventana **se valoraría sin error ninguno**. Comprobado borrando esa
+      guarda: el test embebido pasa de `LI004` a `sin error`.
+      **Cobertura de más, a propósito:** el Step 2 solo pedía las cuatro
+      fronteras de la ventana, los cuatro casos de asistencia y `rls=t`, pero
+      los casos de contrato del RPC se saltan contra Supabase (necesitan una
+      sesión terminada), así que el SQL de `rate_session`/`ratable_session` se
+      quedaría sin cobertura en ningún sitio: el test embebido los ejecuta
+      ahora de verdad —idempotencia, LI001, LI004 por asistencia, LI004 por
+      cancelada, LI003 pasadas 24 h, y `order by starts_at desc limit 1` con
+      dos valorables—, con `auth.uid()` sustituida dentro de la transacción y
+      un savepoint por sonda. Todo en una transacción que acaba en `rollback`.
+      Verificado 2026-09-15 con PGlite 0.3.14 instalado fuera del repo:
+      `PGLITE_MODULE=… node --test supabase/schema-embedded.test.mjs` → 1/1
+      («9 migraciones; digest 8cb04a016337d90f08607538bad9b748; 280 objetos»),
+      y con `schema-compare.test.mjs` + `cleanup.test.mjs` → 10/10.
+      `npm run lint` y `npm run format:check` limpios. `drift-check.mjs` lee la
+      migración nueva sin tocarlo (8 tablas, 10 enums, 23 funciones); su sondeo
+      remoto necesita credenciales y no se ejecuta aquí.
 - [ ] Tarea 4 — Repositorio de Supabase
 - [ ] Tarea 5 — La pantalla de sesión
 - [ ] Tarea 6 — La tarjeta del chat
