@@ -338,10 +338,17 @@ Puntos donde es fácil equivocarse, todos ya decididos en la spec:
 - **Orden de validación dentro de `rate_session`, y el contrato ya lo fija**
   (Tarea 2, caso "una cancelada o una rechazada nunca son valorables"): estado
   `aceptada` **primero y por separado** (LI004) → ventana abierta (LI003) →
-  asistencia de los dos (LI004) → insert. `session_rating_window_is_open` ya
-  devuelve falso para una cancelada o rechazada, así que si te apoyas solo en
-  ella saldrá LI003 donde la spec pide LI004 y el caso de contrato te lo
-  tumbará. Una sesión que no llegó a celebrarse no es "fuera de plazo".
+  asistencia de los dos (LI004) → insert. Una sesión que no llegó a celebrarse
+  no es "fuera de plazo".
+  **Ojo, que una versión anterior de este plan decía aquí una falsedad cara:**
+  que `session_rating_window_is_open` ya devuelve falso para una cancelada o
+  rechazada y que el riesgo era devolver LI003 donde toca LI004. No es así —
+  esa función recibe `(starts_at, blocks, now)` y **no ve el estado**. Sin la
+  guarda de estado, una sesión cancelada dentro de su ventana de 24 h se valora
+  **sin error ninguno**, que es un agujero, no un código equivocado. Comprobado
+  al implementar la Tarea 3 borrando la guarda: el caso pasa de `LI004` a `sin
+  error`. Por eso el espejo con `isInRatingWindow` no es exacto: la de
+  TypeScript sí lleva el estado dentro, y la de SQL lo delega en quien la llama.
 - `order by starts_at desc limit 1` en `ratable_session` no es cosmético: lo fija
   el caso "con dos sin valorar se ofrece la más reciente".
 - Idempotencia: `insert … on conflict (session_id, profile_id) do nothing

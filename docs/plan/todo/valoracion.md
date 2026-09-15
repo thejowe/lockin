@@ -94,6 +94,23 @@ bloques **nunca se lancen a la vez**. Ver `docs/plan/PLAN.md` → bloque 8.
 - [ ] Tarea 6 — La tarjeta del chat
 - [ ] Tarea 7 — E2E Android y cierre
 
+## Deuda detectada, fuera del alcance de este bloque
+
+- [ ] **`supabase/schema-embedded.test.mjs` no lo corre ningún workflow.**
+      Comprobado el 2026-09-15: no aparece en `ci.yml`, `contract.yml`,
+      `e2e.yml` ni `schema-drift.yml`, y PGlite no está en `package.json` — hay
+      que instalarlo fuera del árbol a mano (`supabase/README.md` → línea 469).
+      Es una condición heredada de la pieza `sesiones`, no algo que introduzca
+      la valoración, pero ahora pesa más: como los casos de contrato del RPC se
+      saltan contra cualquier backend real (necesitan una sesión terminada, y
+      `propose_session` no deja crearla), **ese test es la única cobertura
+      ejecutable del comportamiento de `rate_session` y `ratable_session`**, y
+      depende de que alguien se acuerde de correrlo. Lo que sí cubre CI es la
+      *forma* del esquema: `schema-ci.mjs local` aplica las migraciones a una
+      Supabase desechable y compara la huella.
+      Arreglarlo es de `calidad`, no de aquí: toca `package.json` y
+      `.github/workflows/`, que son su alcance de archivos.
+
 ## Pendiente del usuario
 
 - [ ] Migración `20260915000100_session_ratings.sql` aplicada en
