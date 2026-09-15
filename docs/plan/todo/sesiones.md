@@ -58,8 +58,8 @@ Plan: `docs/superpowers/plans/2026-09-13-sesiones-lockin.md`. Una casilla por ta
   para el npm que trae Node 22 en Actions (npm 10 pedía `@emnapi/core` y
   `@emnapi/runtime@1.11.3` que el lock no traía), aunque npm 11 local no lo
   detectaba.
-- [ ] Tarea 11 — Verificación final — abierta; solo falta el Step 4 (dos
-  móviles, lo confirma el usuario).
+- [x] Tarea 11 — Verificación final — cerrada el 2026-09-15 con el Step 4
+  confirmado por el usuario en dos dispositivos reales.
   - [x] Step 1, todo el repo en verde en local (2026-09-14, sobre f7e9e37):
     `npm run lint` limpio; `npm test -- --coverage` con 509 tests en 50
     suites (1 suite y 52 tests skipped, los de contrato opt-in) y Jest salió
@@ -103,12 +103,33 @@ Plan: `docs/superpowers/plans/2026-09-13-sesiones-lockin.md`. Una casilla por ta
     `calidad`, el arreglo se le encargó a ese bloque.
   - [x] Step 3, contrato opt-in: en verde contra Supabase local en Actions,
     nunca contra el proyecto real (ver la casilla en "Verificación manual").
-  - [ ] Step 4, dos móviles: sin confirmar por el usuario todavía.
+  - [x] Step 4, dos móviles: **confirmado por el usuario el 2026-09-15** sobre
+    un APK de EAS instalado en dos dispositivos reales contra Supabase real.
+    Recorrió el flujo cruzado completo —alta desde el segundo móvil, su tarjeta
+    apareciendo en el deck del primero, match, agendado y chat— y después las
+    dos comprobaciones de "Verificación manual" de abajo. Ver el aviso sobre la
+    naturaleza de esta evidencia allí.
 
 ## Verificación manual (no automatizable)
 
-- [ ] Dos móviles reales: el punto "está aquí" aparece y desaparece al entrar y salir la otra persona
-- [ ] Aviso real 5 minutos antes en Android con la app cerrada
+- [x] Dos móviles reales: el punto "está aquí" aparece y desaparece al entrar y salir la otra persona
+- [x] Aviso real 5 minutos antes en Android con la app cerrada
+
+> **Qué clase de evidencia es esta.** Las dos casillas de arriba las cierra la
+> palabra del usuario el 2026-09-15 («todo bien»), no una captura, un log ni un
+> run de Actions. Se le pasaron los pasos exactos —para la presencia, que el
+> indicador pase a «está aquí» al entrar la otra persona en la pantalla de la
+> sesión **y** vuelva a «ausente» al salir (`useCounterpartPresence` tiene tres
+> estados, y un indicador que se queda pegado en «aquí» es un fallo que este
+> recorrido debía destapar); para el aviso, agendar a 20-35 minutos vista,
+> aceptar desde el otro móvil, volver a la app para que `syncReminders`
+> programe, cerrar la app del todo y esperar— pero **no hay constancia paso a
+> paso de cada resultado**. Quien vuelva a tocar presencia o recordatorios y
+> necesite una red de seguridad de verdad, que no dé estas dos por una prueba
+> automatizada: no existe E2E de presencia entre dos clientes ni de una
+> notificación local disparándose con la app cerrada, y `TODO.md` ya deja
+> escrito, a cuenta de otro episodio, que marcar una casilla no es haberla
+> verificado.
 - [x] Contrato opt-in contra Supabase (`LOCKIN_SUPABASE_CONTRACT=1`) con los casos de sesiones en verde —
   **contra Supabase local desechable, no contra `grrzmzktrhksbttpbblg`**
   (2026-09-14, decisión del usuario: salida Docker local). No se ejecuta
