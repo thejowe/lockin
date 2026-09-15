@@ -66,3 +66,42 @@ jobs:
       # El export de web es la comprobación más barata de que el bundle entero
       # se construye: resuelve todos los imports y renderiza las rutas estáticas.
       - run: npx expo export --platform web --output-dir dist
+
+  # Lo que hacen las funciones SQL, no la forma del esquema. `schema-drift.yml`
+  # aplica las migraciones a una Supabase desechable y compara la huella: eso
+  # dice qué objetos existen, no cómo se comportan. Y el comportamiento de
+  # `rate_session`, `ratable_session`, `session_rating_window_is_open`,
+  # `session_both_attended` y `session_is_live` no lo ejecuta ningún otro sitio:
+  # la suite de contrato se salta esos casos contra cualquier backend real
+  # porque necesitan una sesión ya terminada y `propose_session` exige 5 minutos
+  # de margen. En Postgres embebido sí, porque ahí se insertan filas con fecha
+  # pasada.
+  #
+  # Va aquí y no en `schema-drift.yml` por dos razones: cuesta ~4 s sobre un
+  # `npm ci` que ya está cacheado, y el trabajo remoto de schema-drift está en
+  # rojo mientras el usuario no aplique la última migración —un rojo nuevo allí
+  # no se distinguiría del esperado—.
+  schema:
+    name: SQL embebido
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Migraciones y RPC en PostgreSQL embebido
+        run: |
+          set -euo pipefail
+          npm run test:schema | tee "$RUNNER_TEMP/schema-embedded.log"
+          # `node --test` sale en verde tanto si un archivo de la lista no
+          # existe como si todos sus tests se saltan. Esta línea la imprime el
+          # test justo antes de cerrar, así que solo aparece si el cuerpo entero
+          # llegó al final: es el control de que aquí se ha ejecutado SQL.
+          grep -q 'Rol lector, 4 mutaciones, teardown dos veces y guardia de sobrecarga: OK' \
+            "$RUNNER_TEMP/schema-embedded.log" \
+            || { echo 'El SQL embebido no llegó a ejecutarse entero'; exit 1; }

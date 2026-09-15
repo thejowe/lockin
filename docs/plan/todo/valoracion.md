@@ -232,7 +232,7 @@ bloques **nunca se lancen a la vez**. Ver `docs/plan/PLAN.md` → bloque 8.
 
 ## Deuda detectada, fuera del alcance de este bloque
 
-- [ ] **`supabase/schema-embedded.test.mjs` no lo corre ningún workflow.**
+- [x] **`supabase/schema-embedded.test.mjs` no lo corre ningún workflow.**
       Comprobado el 2026-09-15: no aparece en `ci.yml`, `contract.yml`,
       `e2e.yml` ni `schema-drift.yml`, y PGlite no está en `package.json` — hay
       que instalarlo fuera del árbol a mano (`supabase/README.md` → línea 469).
@@ -246,6 +246,10 @@ bloques **nunca se lancen a la vez**. Ver `docs/plan/PLAN.md` → bloque 8.
       Supabase desechable y compara la huella.
       Arreglarlo es de `calidad`, no de aquí: toca `package.json` y
       `.github/workflows/`, que son su alcance de archivos.
+      **Cerrada por `calidad` el 2026-09-15:** PGlite 0.3.14 pasa a
+      devDependency, `npm run test:schema` lo ejecuta y el job "SQL embebido"
+      de `ci.yml` lo corre en cada push y cada PR. Detalle, motivos y controles
+      negativos en `docs/plan/todo/calidad.md` → "El SQL embebido entra en CI".
 
 ## Pendiente del usuario
 
