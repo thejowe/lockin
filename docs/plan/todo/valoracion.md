@@ -253,9 +253,10 @@ bloques **nunca se lancen a la vez**. Ver `docs/plan/PLAN.md` → bloque 8.
 
 ## Pendiente del usuario
 
-- [ ] Migración `20260915000100_session_ratings.sql` aplicada en
-      `grrzmzktrhksbttpbblg` por el SQL Editor del dashboard. Hasta entonces el
-      job remoto de `schema-drift.yml` sale en rojo, y **ese rojo es esperado,
-      no deriva** — es la misma situación que tuvo la Tarea 3b de `sesiones`.
-      Nada más depende de esto: el mock y la Supabase local de `contract.yml`
-      avanzan igual.
+- [x] Migración `20260915000100_session_ratings.sql` aplicada en
+      `grrzmzktrhksbttpbblg` por el SQL Editor del dashboard. Comprobado el
+      2026-09-15: `Schema drift` sobre `c4c7be8`,
+      [run 34999911991](https://github.com/thejowe/lockin/actions/runs/34999911991),
+      con los dos jobs en verde y `schema-remote/remote.diff` = «Sin
+      diferencias.» — la huella remota coincide con la esperada, objetos de
+      `session_ratings` incluidos.
