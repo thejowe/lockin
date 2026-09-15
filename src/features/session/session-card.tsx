@@ -26,6 +26,7 @@ import { ProposeSessionSheet } from './propose-session-sheet';
 import { RATING_CLOSED } from './rating';
 import { RatingChips } from './rating-chips';
 import { useReminderHint } from './reminder-permission';
+import { streakDeadline, streakLine, visibleStreak } from './streak';
 import { useActiveSession } from './use-active-session';
 import { useRating } from './use-rating';
 
@@ -35,7 +36,7 @@ export function SessionCard({ match, me }: { match: MatchWithProfile; me: Profil
   const theme = useTheme();
   const router = useRouter();
   const repositories = useRepositories();
-  const { session, ratable, nowMs, refresh } = useActiveSession(match.id);
+  const { session, ratable, streak, nowMs, refresh } = useActiveSession(match.id);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -43,6 +44,7 @@ export function SessionCard({ match, me }: { match: MatchWithProfile; me: Profil
 
   const firstName = match.counterpart.name.split(' ')[0];
   const view = cardView(session, ratable, me?.id ?? null, nowMs);
+  const shown = visibleStreak(streak, nowMs);
 
   const run = async (action: () => Promise<unknown>): Promise<boolean> => {
     setBusy(true);
@@ -78,6 +80,17 @@ export function SessionCard({ match, me }: { match: MatchWithProfile; me: Profil
       <ThemedText type="label" themeColor="teal">
         Sesión Lock-In
       </ThemedText>
+
+      {shown !== null && view.kind !== 'valorar' && (
+        <>
+          <ThemedText type="bodyStrong">{streakLine(shown)}</ThemedText>
+          {view.kind === 'agendar' && streak && (
+            <ThemedText type="small" themeColor="textSecondary">
+              {streakDeadline(streak, nowMs)}
+            </ThemedText>
+          )}
+        </>
+      )}
 
       {view.kind === 'agendar' && (
         <CardButton

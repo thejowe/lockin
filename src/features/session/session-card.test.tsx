@@ -23,6 +23,8 @@ jest.mock('expo-router', () => ({ useRouter: () => mockRouter }));
 
 const NURIA = SEED_RECIPROCAL_IDS[0];
 const MINUTE = 60_000;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
 
 let repositories: Repositories;
 let match: MatchWithProfile;
@@ -74,6 +76,141 @@ async function endedSession() {
   jest.setSystemTime(base + 40 * MINUTE);
   return session;
 }
+
+/**
+ * Propone, acepta y hace entrar a las dos personas en la sesión que empieza en
+ * `startsAt`. Base de `pastStreakOfTwo` y reusable para una tercera sesión.
+ */
+async function proposeAcceptJoin(startsAt: string) {
+  const session = await repositories.sessions.propose({ matchId: match.id, startsAt, blocks: 1 });
+  const counterpart = createMockSessionRepository(NURIA);
+  await counterpart.respond(session.id, 'aceptada');
+  jest.setSystemTime(Date.parse(startsAt) + MINUTE);
+  await repositories.sessions.join(session.id);
+  await counterpart.join(session.id);
+  return session;
+}
+
+/**
+ * Racha de 2 ya viva: dos sesiones pasadas con las dos personas dentro y un
+ * hueco de 2 días entre ellas (menos de los 7 que la romperían), con el reloj
+ * detenido después del final de la segunda — ya fuera de su ventana de
+ * valoración (24 h) para no arrastrar una repesca al estado bajo prueba, pero
+ * dentro de `aliveUntil` (+7 días).
+ */
+async function pastStreakOfTwo() {
+  jest.useFakeTimers();
+  jest.setSystemTime(Date.now());
+  await proposeAcceptJoin(new Date(Date.now() + 5 * MINUTE + 1_000).toISOString());
+  jest.setSystemTime(Date.now() + 2 * DAY);
+  const second = await proposeAcceptJoin(new Date(Date.now() + 5 * MINUTE + 1_000).toISOString());
+  const secondEndsAt = Date.parse(second.startsAt) + 30 * MINUTE;
+  jest.setSystemTime(secondEndsAt + 25 * HOUR);
+}
+
+describe('SessionCard — racha', () => {
+  it('en agendar se pintan las dos líneas de la racha', async () => {
+    await pastStreakOfTwo();
+
+    await renderCard();
+
+    await waitFor(() => expect(screen.getByText('Racha de 2 sesiones seguidas')).toBeTruthy());
+    expect(screen.getByText(/Sin sesión, se rompe/)).toBeTruthy();
+  });
+
+  it('en esperando solo se pinta la primera línea', async () => {
+    await pastStreakOfTwo();
+    await repositories.sessions.propose({ matchId: match.id, startsAt: inAnHour(), blocks: 1 });
+
+    await renderCard();
+
+    await waitFor(() => expect(screen.getByText('Esperando a Núria')).toBeTruthy());
+    expect(screen.getByText('Racha de 2 sesiones seguidas')).toBeTruthy();
+    expect(screen.queryByText(/Sin sesión, se rompe/)).toBeNull();
+  });
+
+  it('en recibida solo se pinta la primera línea', async () => {
+    await pastStreakOfTwo();
+    await createMockSessionRepository(NURIA).propose({
+      matchId: match.id,
+      startsAt: inAnHour(),
+      blocks: 1,
+    });
+
+    await renderCard();
+
+    await waitFor(() => expect(screen.getByText('Núria propone una sesión')).toBeTruthy());
+    expect(screen.getByText('Racha de 2 sesiones seguidas')).toBeTruthy();
+    expect(screen.queryByText(/Sin sesión, se rompe/)).toBeNull();
+  });
+
+  it('en aceptada solo se pinta la primera línea', async () => {
+    await pastStreakOfTwo();
+    const session = await repositories.sessions.propose({
+      matchId: match.id,
+      startsAt: inAnHour(),
+      blocks: 1,
+    });
+    await createMockSessionRepository(NURIA).respond(session.id, 'aceptada');
+
+    await renderCard();
+
+    await waitFor(() => expect(screen.getByText('Sesión acordada')).toBeTruthy());
+    expect(screen.getByText('Racha de 2 sesiones seguidas')).toBeTruthy();
+    expect(screen.queryByText(/Sin sesión, se rompe/)).toBeNull();
+  });
+
+  it('en entrar solo se pinta la primera línea', async () => {
+    await pastStreakOfTwo();
+    const base = Date.now();
+    const startsAt = new Date(base + 5 * MINUTE + 1_000).toISOString();
+    const session = await repositories.sessions.propose({ matchId: match.id, startsAt, blocks: 1 });
+    await createMockSessionRepository(NURIA).respond(session.id, 'aceptada');
+    jest.setSystemTime(base + 2_000);
+
+    await renderCard();
+
+    await waitFor(() => expect(screen.getByText('Es la hora')).toBeTruthy());
+    expect(screen.getByText('Racha de 2 sesiones seguidas')).toBeTruthy();
+    expect(screen.queryByText(/Sin sesión, se rompe/)).toBeNull();
+  });
+
+  it('en valorar no se pinta ninguna línea de racha', async () => {
+    await pastStreakOfTwo();
+    const third = await proposeAcceptJoin(new Date(Date.now() + 5 * MINUTE + 1_000).toISOString());
+    const thirdEndsAt = Date.parse(third.startsAt) + 30 * MINUTE;
+    jest.setSystemTime(thirdEndsAt + MINUTE);
+
+    await renderCard();
+
+    await waitFor(() => expect(screen.getByText('¿Qué tal fue la sesión con Núria?')).toBeTruthy());
+    expect(screen.queryByText(/Racha de/)).toBeNull();
+  });
+
+  it('con racha 1 no se pinta nada', async () => {
+    jest.useFakeTimers();
+    const base = Date.now();
+    jest.setSystemTime(base);
+    const session = await proposeAcceptJoin(new Date(base + 5 * MINUTE + 1_000).toISOString());
+    const endsAt = Date.parse(session.startsAt) + 30 * MINUTE;
+    jest.setSystemTime(endsAt + 25 * HOUR);
+
+    await renderCard();
+
+    await waitFor(() => expect(screen.getByLabelText('Agendar sesión Lock-In')).toBeTruthy());
+    expect(screen.queryByText(/Racha de/)).toBeNull();
+  });
+
+  it('si listStreaks rechaza, no se pinta ninguna racha', async () => {
+    await pastStreakOfTwo();
+    jest.spyOn(repositories.sessions, 'listStreaks').mockRejectedValue(new Error('sin red'));
+
+    await renderCard();
+
+    await waitFor(() => expect(screen.getByLabelText('Agendar sesión Lock-In')).toBeTruthy());
+    expect(screen.queryByText(/Racha de/)).toBeNull();
+  });
+});
 
 describe('SessionCard', () => {
   it('sin sesión ofrece agendar y abre la hoja', async () => {

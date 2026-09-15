@@ -26,6 +26,7 @@ export { RatingChips } from './rating-chips';
 export { SessionCard } from './session-card';
 export { SessionReminderSync } from './session-reminder-sync';
 export { dayOptions, preselectSlot, slotsForDay } from './slots';
+export { STREAK_MIN_VISIBLE, streakDeadline, streakLine, streakTag, visibleStreak } from './streak';
 export { useActiveSession } from './use-active-session';
 export { useAttendance } from './use-attendance';
 export { useCounterpartPresence, type CounterpartPresence } from './use-counterpart-presence';

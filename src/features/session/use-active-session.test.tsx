@@ -36,16 +36,19 @@ afterEach(() => {
 });
 
 describe('useActiveSession', () => {
-  it('el tic de 30 s relee la sesión viva y la valorable', async () => {
+  it('el tic de 30 s relee la sesión viva, la valorable y la racha', async () => {
     const getActive = jest.spyOn(repositories.sessions, 'getActive');
     const getRatable = jest.spyOn(repositories.sessions, 'getRatable');
+    const listStreaks = jest.spyOn(repositories.sessions, 'listStreaks');
 
     const { result } = await renderHook(() => useActiveSession('m1'), { wrapper });
     await act(async () => {});
     expect(result.current.session).toBeNull();
     expect(result.current.ratable).toBeNull();
+    expect(result.current.streak).toBeNull();
     expect(getActive).toHaveBeenCalledTimes(1);
     expect(getRatable).toHaveBeenCalledTimes(1);
+    expect(listStreaks).toHaveBeenCalledTimes(1);
 
     await act(async () => {
       jest.advanceTimersByTime(SESSION_TICK_MS);
@@ -53,12 +56,14 @@ describe('useActiveSession', () => {
 
     expect(getActive).toHaveBeenCalledTimes(2);
     expect(getRatable).toHaveBeenCalledTimes(2);
+    expect(listStreaks).toHaveBeenCalledTimes(2);
   });
 
-  it('un aviso del repositorio relee también las dos', async () => {
+  it('un aviso del repositorio relee también las tres', async () => {
     const subscribe = jest.spyOn(repositories.sessions, 'subscribe');
     const getActive = jest.spyOn(repositories.sessions, 'getActive');
     const getRatable = jest.spyOn(repositories.sessions, 'getRatable');
+    const listStreaks = jest.spyOn(repositories.sessions, 'listStreaks');
 
     await renderHook(() => useActiveSession('m1'), { wrapper });
     await act(async () => {});
@@ -68,5 +73,16 @@ describe('useActiveSession', () => {
 
     expect(getActive).toHaveBeenCalledTimes(2);
     expect(getRatable).toHaveBeenCalledTimes(2);
+    expect(listStreaks).toHaveBeenCalledTimes(2);
+  });
+
+  it('si listStreaks rechaza, la racha es null y no rompe las otras', async () => {
+    jest.spyOn(repositories.sessions, 'listStreaks').mockRejectedValue(new Error('sin red'));
+
+    const { result } = await renderHook(() => useActiveSession('m1'), { wrapper });
+    await act(async () => {});
+
+    expect(result.current.streak).toBeNull();
+    expect(result.current.session).toBeNull();
   });
 });
