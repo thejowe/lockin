@@ -11,7 +11,16 @@ en `src/app/session/[sessionId].tsx` (dueño original: `sesiones`).
 Orden: 1 → 2 → 3 → 4 → 5 → 6 → 7 (ver "Orden" del plan para el detalle de
 qué puede solaparse).
 
-- [ ] Tarea 1 — Dependencia, plugin de `react-native-webrtc` y mock de test
+- [x] Tarea 1 — Dependencia, plugin de `react-native-webrtc` y mock de test
+      (`9829e15`). `react-native-webrtc` + `@config-plugins/react-native-webrtc`
+      en `dependencies`; plugin y permisos Android en `app.json`; mock de
+      `RTCPeerConnection`/`RTCView`/`mediaDevices.getUserMedia` en
+      `jest.setup.js`. Evidencia: `npx tsc --noEmit` limpio; `npm test` en
+      verde (56 suites, 611 tests, nada importa el paquete real todavía);
+      `npm run lint` limpio (exit 0); `node -e "require('./app.json')"` no
+      falla. Pendiente del usuario: `eas build --profile development` para
+      confirmar que el plugin nativo compila de verdad (no ejecutable desde
+      este entorno).
 - [ ] Tarea 2 — Señalización en memoria (`src/data/video-signal.ts`)
 - [ ] Tarea 3 — Señalización sobre Supabase Realtime Broadcast
 - [ ] Tarea 4 — Hook `use-video-call.ts` (WebRTC, offer/answer, ICE)
