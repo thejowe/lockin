@@ -105,9 +105,31 @@ todas.
       `node supabase/schema-ci.mjs local` no se puede correr aquí (sin
       Supabase CLI, Docker ni `psql`): su señal es el job `local` de
       `schema-drift.yml` en Actions.
-- [ ] [Codex] Tarea 4 — Repositorio de Supabase — `MatchStreakRow`,
-      `toMatchStreak`, `listStreaks` contra el RPC y retirada del andamio.
-      Terminado = `npx jest src/data/supabase`, `tsc`, lint y cobertura.
+- [x] Tarea 4 — Repositorio de Supabase — `MatchStreakRow` (como `type`, igual
+      que el resto de filas del archivo, no `interface`: el comentario de
+      `Database` explica por qué) junto a `SessionRatingRow`, y
+      `match_streaks: { Args: Record<string, never>; Returns: MatchStreakRow[]
+      }` en `Functions` junto a `ratable_session`. `toMatchStreak` en
+      `sessions.ts` junto a `toSessionRatingEntry`; `listStreaks()` con el
+      patrón de `getRatable` (`getUserId` → `rpc('match_streaks')` sin
+      argumentos → `toSessionError` → map), sin `notifyForSession` ni
+      `remember()`. Retirado el andamio de la Tarea 1: el stub que lanzaba y su
+      caso `listStreaks todavía no está implementado contra Supabase` en
+      `sessions.test.ts`. 3 casos nuevos (mapea las filas sin llamar nunca a
+      `from('session_ratings')`, `[]` cuando el RPC no devuelve filas, un error
+      del RPC se propaga) más el mapeo puro de `toMatchStreak` (`+00:00` →
+      `.000Z`) junto a los otros `to*`.
+      TDD: `npx jest src/data/supabase/sessions.test.ts` en rojo primero (3
+      casos fallando contra el stub: `Rejected to value: [Error: listStreaks:
+      todavía no está implementado]`), en verde tras implementar (27/27).
+      Verificado 2026-09-15: `npx jest src/data/supabase` 53/53 (72 saltados,
+      contrato opt-in); `npx tsc --noEmit` limpio; `npx eslint
+      src/data/supabase/database.types.ts src/data/supabase/sessions.ts
+      src/data/supabase/sessions.test.ts` limpio; `npx prettier --check` sobre
+      los tres archivos tocados, verde tras un `--write` (solo reformateo, sin
+      cambio de contenido: confirmado con `git diff`); y `npm test --
+      coverage` con 602 pasando, 72 saltados y sin aviso de umbral —
+      92.77/85.41/92.29/94.53 sobre el suelo 89.82/82.56/91.49/91.38.
 - [ ] [Codex] Tarea 5 — La tarjeta del chat — `streak.ts`, `streak` en
       `useActiveSession` (dentro del `refresh` combinado) y las líneas de
       `SessionCard` por estado. Todo dentro de `src/features/session/`; los

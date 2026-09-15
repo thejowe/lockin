@@ -134,6 +134,13 @@ export type SessionRatingRow = {
   rated_at: string;
 };
 
+/** Fila de `match_streaks()`: no es tabla, la calcula el RPC de la Tarea 3. */
+export type MatchStreakRow = {
+  match_id: string;
+  streak_count: number;
+  alive_until: string;
+};
+
 /**
  * Forma del esquema que consume `createClient<Database>`.
  *
@@ -270,6 +277,8 @@ export type Database = {
       };
       /** `ratable_session(p_match_id)` → cero o una fila de `lockin_sessions`. */
       ratable_session: { Args: { p_match_id: string }; Returns: SessionRow[] };
+      /** `match_streaks()` → una fila por match del actor con racha viva. */
+      match_streaks: { Args: Record<string, never>; Returns: MatchStreakRow[] };
       /** `server_now()` → `timestamptz` serializado. */
       server_now: { Args: Record<string, never>; Returns: string };
     };

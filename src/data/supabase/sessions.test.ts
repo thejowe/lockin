@@ -15,6 +15,7 @@ import {
 import {
   createSupabaseSessionRepository,
   toLockInSession,
+  toMatchStreak,
   toSessionAttendance,
   toSessionError,
   toSessionRatingEntry,
@@ -73,7 +74,7 @@ function row(overrides: Partial<SessionRow> = {}): SessionRow {
   };
 }
 
-describe('toLockInSession / toSessionAttendance / toSessionRatingEntry', () => {
+describe('toLockInSession / toSessionAttendance / toSessionRatingEntry / toMatchStreak', () => {
   it('traduce columnas y normaliza las fechas a ISO con Z', () => {
     const session = toLockInSession(row({ starts_at: '2026-09-14T18:00:00+00:00' }));
 
@@ -119,6 +120,16 @@ describe('toLockInSession / toSessionAttendance / toSessionRatingEntry', () => {
       rating: 'genial',
       ratedAt: '2026-09-15T12:00:00.000Z',
     });
+  });
+
+  it('traduce la racha y normaliza alive_until', () => {
+    expect(
+      toMatchStreak({
+        match_id: 'match-1',
+        streak_count: 4,
+        alive_until: '2026-09-22T18:00:00+00:00',
+      })
+    ).toEqual({ matchId: 'match-1', count: 4, aliveUntil: '2026-09-22T18:00:00.000Z' });
   });
 });
 
@@ -335,14 +346,39 @@ describe('createSupabaseSessionRepository', () => {
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
-  // Andamio temporal: las rachas de pareja se implementan contra el RPC en la
-  // Tarea 4 de `docs/superpowers/plans/2026-09-15-rachas.md`. Hasta entonces se
-  // fija que falla a la vista en vez de fingir un resultado.
-  // **Borra este caso al implementarla.**
-  it('listStreaks todavía no está implementado contra Supabase', async () => {
-    const { repository } = fakeClient();
+  it('listStreaks mapea las filas del RPC sin filtrar ni tocar session_ratings', async () => {
+    const { client, repository } = fakeClient({
+      rpc: {
+        match_streaks: {
+          data: [
+            { match_id: 'match-1', streak_count: 3, alive_until: '2026-09-22T18:00:00+00:00' },
+          ],
+          error: null,
+        },
+      },
+    });
 
-    await expect(repository.listStreaks()).rejects.toThrow('todavía no está implementado');
+    const streaks = await repository.listStreaks();
+
+    expect(client.rpc).toHaveBeenCalledWith('match_streaks');
+    expect(client.from).not.toHaveBeenCalledWith('session_ratings');
+    expect(streaks).toEqual([
+      { matchId: 'match-1', count: 3, aliveUntil: '2026-09-22T18:00:00.000Z' },
+    ]);
+  });
+
+  it('listStreaks da un array vacío cuando ningún match tiene racha viva', async () => {
+    const { repository } = fakeClient({ rpc: { match_streaks: { data: [], error: null } } });
+
+    await expect(repository.listStreaks()).resolves.toEqual([]);
+  });
+
+  it('un error del RPC de rachas se propaga', async () => {
+    const { repository } = fakeClient({
+      rpc: { match_streaks: { data: null, error: { message: 'boom' } } },
+    });
+
+    await expect(repository.listStreaks()).rejects.toEqual({ message: 'boom' });
   });
 
   it('abre un canal por match y lo cierra con el último suscriptor', async () => {

@@ -18,9 +18,14 @@ import { ensureUserId } from './auth';
 import { getSupabaseClient } from './client';
 
 import type { LockInSupabaseClient } from './client';
-import type { SessionAttendanceRow, SessionRatingRow, SessionRow } from './database.types';
+import type {
+  MatchStreakRow,
+  SessionAttendanceRow,
+  SessionRatingRow,
+  SessionRow,
+} from './database.types';
 import type { LockInSessionRepository, Unsubscribe } from '../repositories';
-import type { LockInSession, SessionAttendance, SessionRatingEntry } from '../types';
+import type { LockInSession, MatchStreak, SessionAttendance, SessionRatingEntry } from '../types';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 /** PostgREST serializa `timestamptz` como `…+00:00`; el dominio usa ISO con `Z`. */
@@ -55,6 +60,10 @@ export function toSessionRatingEntry(row: SessionRatingRow): SessionRatingEntry 
     rating: row.rating,
     ratedAt: toIso(row.rated_at),
   };
+}
+
+export function toMatchStreak(row: MatchStreakRow): MatchStreak {
+  return { matchId: row.match_id, count: row.streak_count, aliveUntil: toIso(row.alive_until) };
 }
 
 const DOMAIN_ERRORS: Record<string, new (message: string) => Error> = {
@@ -244,12 +253,13 @@ export function createSupabaseSessionRepository(
       return toSessionRatingEntry(data as SessionRatingRow);
     },
 
-    // Rachas de pareja: el contrato ya las declara, pero el RPC
-    // (`match_streaks`) es la Tarea 3 y este repositorio la Tarea 4 de
-    // `docs/superpowers/plans/2026-09-15-rachas.md`. Hasta entonces se lanza en
-    // vez de fingir un resultado.
     async listStreaks() {
-      throw new Error('listStreaks: todavía no está implementado');
+      await deps.getUserId();
+      // Sin `select` a `session_ratings`, ni aquí ni en el RPC: la racha nunca
+      // puede filtrar la valoración privada de nadie.
+      const { data, error } = await deps.getClient().rpc('match_streaks');
+      if (error) throw toSessionError(error);
+      return (data as MatchStreakRow[]).map(toMatchStreak);
     },
 
     async serverNow() {
