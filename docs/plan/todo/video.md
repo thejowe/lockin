@@ -21,7 +21,18 @@ qué puede solaparse).
       falla. Pendiente del usuario: `eas build --profile development` para
       confirmar que el plugin nativo compila de verdad (no ejecutable desde
       este entorno).
-- [ ] Tarea 2 — Señalización en memoria (`src/data/video-signal.ts`)
+- [x] Tarea 2 — Señalización en memoria (`src/data/video-signal.ts`)
+      (`d0fae92`). `VideoSignalChannel` con el mismo truco que
+      `createMemoryPresenceAdapter` (`Map<sessionId, Map<symbol, {profileId,
+      handlers}>>`), `send` descarta al emisor comparando `from`. Reexportado
+      desde `src/data/index.ts` — **desviación de alcance**: ese archivo no
+      estaba en la lista de `.claude/agents/video.md`, pero el plan de esta
+      tarea lo pide y `use-video-call` necesita `VideoSignalChannel` vía
+      `@/data`, igual que `use-counterpart-presence` con `PresenceAdapter`.
+      Evidencia: `npx jest src/data/video-signal.test.ts` en verde (5 tests:
+      mensajes cruzados, sin eco propio, salir deja de recibir, sesiones
+      distintas no se cruzan, enviar a sala vacía no revienta); `npx tsc
+      --noEmit` limpio; `npm run lint` limpio (exit 0).
 - [ ] Tarea 3 — Señalización sobre Supabase Realtime Broadcast
 - [ ] Tarea 4 — Hook `use-video-call.ts` (WebRTC, offer/answer, ICE)
 - [ ] Tarea 5 — Pantalla `video-call-view.tsx` e integración en la sesión
