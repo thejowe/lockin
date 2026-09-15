@@ -201,6 +201,147 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       }
     );
     await db.exec('rollback;');
+    // Las rachas en SQL. Igual que la valoración, es la única cobertura de las
+    // cadenas contra Postgres: contra Supabase real solo cabe una sesión viva
+    // por match, así que una racha de 2 no se puede escribir sin esperar. Todo
+    // en una transacción que acaba en rollback, con `auth.uid()` sustituida.
+    //
+    // Minutos hacia atrás desde `now()`; un día son 1440 y 7 días, 10080. Un
+    // bloque dura 30 minutos, cuatro bloques 120. Cada match de Ana prueba una
+    // regla, y en todos la última sesión que cuenta terminó hace menos de 7 días
+    // salvo en el de Dani.
+    const person = (suffix) => `00000000-0000-4000-8000-00000000${suffix}`;
+    const [carla, dani, eva, fran] = ['ccc1', 'ccc2', 'ccc3', 'ccc4'].map(person);
+    const pair = (n) => `00000000-0000-4000-8000-00000000e00${n}`;
+    const shared = (n) => `00000000-0000-4000-8000-0000000f00${n}`;
+    await db.exec(`begin;
+      insert into auth.users (id, email) values
+        ('${ana}', 'ana@lockin.test'), ('${bea}', 'bea@lockin.test'),
+        ('${carla}', 'carla@lockin.test'), ('${dani}', 'dani@lockin.test'),
+        ('${eva}', 'eva@lockin.test'), ('${fran}', 'fran@lockin.test');
+      insert into public.profiles (
+        id, name, age, location, timezone, avatar_initials, specialties,
+        looking_for, starting_point, availability_hours_per_week,
+        availability_bands, ambition
+      )
+      select p.id::uuid, p.name, 30, 'Madrid', 'Europe/Madrid', left(p.name, 1),
+             array['dev']::public.specialty[], 'lockin', 'solo-ganas', 10,
+             array['tarde']::public.time_band[], 'equilibrado'
+      from (values
+        ('${ana}', 'Ana'), ('${bea}', 'Bea'), ('${carla}', 'Carla'),
+        ('${dani}', 'Dani'), ('${eva}', 'Eva'), ('${fran}', 'Fran')
+      ) as p(id, name);
+      insert into public.matches (id, profile_a, profile_b, mode) values
+        ('${pair(1)}', '${ana}', '${bea}', 'lockin'),
+        ('${pair(2)}', '${ana}', '${carla}', 'lockin'),
+        ('${pair(3)}', '${ana}', '${dani}', 'lockin'),
+        ('${pair(4)}', '${ana}', '${eva}', 'lockin'),
+        ('${pair(5)}', '${ana}', '${fran}', 'lockin'),
+        ('${pair(6)}', '${bea}', '${carla}', 'lockin');
+      insert into public.lockin_sessions (id, match_id, proposed_by, starts_at, blocks, status, responded_at)
+      select s.id::uuid, s.match_id::uuid, m.profile_a, now() - s.mins * interval '1 minute',
+             s.blocks::smallint, s.estado::public.session_status,
+             now() - (s.mins + 60) * interval '1 minute'
+      from (values
+        -- Bea: tres seguidas. La primera es de 4 bloques y la segunda empieza
+        -- 6 días y 23 horas después de su final —7 días y 1 hora después de su
+        -- inicio—: el hueco se mide desde el final. La tercera, 6 días después.
+        ('${shared(11)}', '${pair(1)}', 20000, 4, 'aceptada'),
+        ('${shared(12)}', '${pair(1)}', 9860, 1, 'aceptada'),
+        ('${shared(13)}', '${pair(1)}', 1190, 1, 'aceptada'),
+        -- Carla: dos seguidas y luego 7 días exactos de hueco. Queda la última
+        -- cadena, de 1, no la más larga.
+        ('${shared(21)}', '${pair(2)}', 19970, 1, 'aceptada'),
+        ('${shared(22)}', '${pair(2)}', 11300, 1, 'aceptada'),
+        ('${shared(23)}', '${pair(2)}', 1190, 1, 'aceptada'),
+        -- Dani: dos seguidas, la última terminada hace 8 días.
+        ('${shared(31)}', '${pair(3)}', 20190, 1, 'aceptada'),
+        ('${shared(32)}', '${pair(3)}', 11550, 1, 'aceptada'),
+        -- Eva: un plantón en medio de dos seguidas.
+        ('${shared(41)}', '${pair(4)}', 10000, 1, 'aceptada'),
+        ('${shared(42)}', '${pair(4)}', 7000, 1, 'aceptada'),
+        ('${shared(43)}', '${pair(4)}', 1330, 1, 'aceptada'),
+        -- Fran: una cancelada, con las dos asistencias, en medio de dos seguidas.
+        ('${shared(51)}', '${pair(5)}', 10000, 1, 'aceptada'),
+        ('${shared(52)}', '${pair(5)}', 5000, 1, 'cancelada'),
+        ('${shared(53)}', '${pair(5)}', 1330, 1, 'aceptada'),
+        -- Bea y Carla, sin Ana.
+        ('${shared(61)}', '${pair(6)}', 1000, 1, 'aceptada')
+      ) as s(id, match_id, mins, blocks, estado)
+      join public.matches m on m.id = s.match_id::uuid;
+      -- Las dos personas entran un minuto después del inicio, salvo en el plantón.
+      insert into public.session_attendance (session_id, profile_id, joined_at)
+      select s.id, p.profile_id, s.starts_at + interval '1 minute'
+      from public.lockin_sessions s
+      join public.matches m on m.id = s.match_id
+      cross join lateral (values (m.profile_a), (m.profile_b)) as p(profile_id)
+      where s.match_id::text like '%e00_'
+        and not (s.id = '${shared(42)}' and p.profile_id = '${ana}');`);
+    const asActor = (id) =>
+      db.exec(
+        `create or replace function auth.uid() returns uuid language sql as $$ select '${id}'::uuid $$;`
+      );
+    const streaks = async () =>
+      (
+        await db.query(`select match_id, streak_count,
+            extract(epoch from alive_until - now())::integer / 60 as minutos_de_vida
+          from public.match_streaks()
+          order by match_id`)
+      ).rows;
+    await asActor(ana);
+    const deAna = await streaks();
+    assert.deepEqual(deAna, [
+      { match_id: pair(1), streak_count: 3, minutos_de_vida: 10080 - 1160 },
+      { match_id: pair(2), streak_count: 1, minutos_de_vida: 10080 - 1160 },
+      { match_id: pair(4), streak_count: 2, minutos_de_vida: 10080 - 1300 },
+      { match_id: pair(5), streak_count: 2, minutos_de_vida: 10080 - 1300 },
+    ]);
+    // Las dos personas ven lo mismo, y la de Bea con Carla existe: si Ana no la
+    // ve es por el filtro del actor, no por falta de datos.
+    await asActor(bea);
+    assert.deepEqual(await streaks(), [
+      { match_id: pair(1), streak_count: 3, minutos_de_vida: 10080 - 1160 },
+      { match_id: pair(6), streak_count: 1, minutos_de_vida: 10080 - 970 },
+    ]);
+    // Valorar no mueve la racha: ni con `floja` de un lado y `genial` del otro,
+    // ni en la sesión que cierra la cadena.
+    await db.exec(`insert into public.session_ratings (session_id, profile_id, rating)
+      select s.id, p.profile_id, case when p.profile_id = m.profile_a then 'floja' else 'genial' end::public.session_rating
+      from public.lockin_sessions s
+      join public.matches m on m.id = s.match_id
+      cross join lateral (values (m.profile_a), (m.profile_b)) as p(profile_id)
+      where s.match_id::text like '%e00_';`);
+    await asActor(ana);
+    assert.deepEqual(await streaks(), deAna);
+    // Y no puede depender de la valoración porque no la lee: ni la función ni
+    // el helper de asistencia que usa nombran la tabla. Es la decisión de
+    // privacidad de la spec de valoración; no se relaja para que pase un test.
+    const definitions = await db.query(`select
+        pg_get_functiondef('public.match_streaks()'::regprocedure) as rachas,
+        pg_get_functiondef('public.session_both_attended(uuid)'::regprocedure) as asistencia,
+        p.prosecdef as security_definer,
+        p.proconfig as config,
+        has_function_privilege('anon', p.oid, 'execute') as anon_ejecuta,
+        has_function_privilege('authenticated', p.oid, 'execute') as authenticated_ejecuta
+      from pg_proc p where p.oid = 'public.match_streaks()'::regprocedure`);
+    const streakFn = definitions.rows[0];
+    assert.doesNotMatch(streakFn.rachas, /session_ratings/);
+    assert.doesNotMatch(streakFn.asistencia, /session_ratings/);
+    assert.deepEqual(
+      {
+        security_definer: streakFn.security_definer,
+        config: streakFn.config,
+        anon_ejecuta: streakFn.anon_ejecuta,
+        authenticated_ejecuta: streakFn.authenticated_ejecuta,
+      },
+      {
+        security_definer: true,
+        config: ['search_path=""'],
+        anon_ejecuta: false,
+        authenticated_ejecuta: true,
+      }
+    );
+    await db.exec('rollback;');
     assert.match(expected, /column\s+profiles.seeking_specialties/);
     await db.exec(
       'create role lockin_schema_reader; grant usage on schema public to lockin_schema_reader; begin; set local role lockin_schema_reader;'

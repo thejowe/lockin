@@ -69,13 +69,42 @@ todas.
       (`diff --strip-trailing-cr` sin diferencias reales), salvo un `printWidth`
       real en un `itWithTimeTravel` de `repositories.contract.ts` que se
       corrigió partiendo la llamada en varias líneas.
-- [ ] [Claude] Tarea 3 — Migración SQL y cobertura en PGlite —
-      `20260915000200_match_streaks.sql` (`match_streaks()` `SECURITY DEFINER`)
-      y sus cadenas en `schema-embedded.test.mjs`. `[Claude]` porque es la pieza
-      donde se decide la privacidad: una función `SECURITY DEFINER` que filtra
-      por `auth.uid()` y que no debe leer `session_ratings`, releyendo la spec
-      de valoración. Terminado = `npm run test:schema` en verde, con la aserción
-      de que la definición no menciona `session_ratings`.
+- [x] Tarea 3 — Migración SQL y cobertura en PGlite —
+      `20260915000200_match_streaks.sql`: solo `match_streaks()` (`language
+      sql`, `stable`, `security definer`, `search_path = ''`, nombres
+      cualificados), filtro del actor por `auth.uid()` en
+      `profile_a`/`profile_b`, `aceptada` + `session_both_attended`, y
+      `revoke … from public, anon` / `grant … to authenticated` como las dos
+      anteriores. Única desviación del punto de partida del plan: la suma
+      acumulada ordena por `starts_at`, igual que el `lag`, en vez de por
+      `ends_at`. En `schema-embedded.test.mjs`, tras el bloque de
+      `ratable_session` y en su propio `begin … rollback`: seis matches (tres
+      seguidas con la primera de 4 bloques y 6 d 23 h desde su final —el hueco
+      se mide desde el final— → 3; dos seguidas y luego 7 días exactos → 1, la
+      última cadena y no la más larga; última terminada hace 8 días → sin fila;
+      plantón en medio → 2; cancelada con las dos asistencias en medio → 2;
+      Bea–Carla → invisible para Ana y visible para Bea), `alive_until` al
+      minuto, Bea ve lo mismo que Ana, insertar `floja`/`genial` en
+      `session_ratings` deja el resultado idéntico, `pg_get_functiondef` de
+      `match_streaks()` y de `session_both_attended(uuid)` no nombran
+      `session_ratings`, y `prosecdef`, `proconfig`, sin `execute` para `anon`
+      y con él para `authenticated`.
+      TDD: `npm run test:schema` en rojo primero (`function
+      public.match_streaks() does not exist`, 42883, con todas las inserciones
+      ya hechas) y en verde tras la migración: 10/10, «SQL ejecutado: 10
+      migraciones; 283 objetos». Mutaciones, cada una en rojo y restaurada
+      (`cmp` idéntico): `<=` en el hueco (Carla da 3), sin filtro del actor
+      (aparece Bea–Carla), `chain asc` (primera cadena), y un `not exists` sobre
+      `session_ratings` en `shared` (resultado cambia tras valorar).
+      Verificado 2026-09-15: `npm run lint` limpio; `npx prettier` sobre
+      `schema-embedded.test.mjs` solo difiere en finales de línea (`diff
+      --strip-trailing-cr` sin diferencias; nota de memoria sobre CRLF); la
+      migración en LF (0 `\r`). El parser de `drift-check.mjs`, ejecutado
+      offline sobre las migraciones, lista `match_streaks` (`args: []`,
+      `returns: table`, así que se sondea por RPC): 24 funciones.
+      `node supabase/schema-ci.mjs local` no se puede correr aquí (sin
+      Supabase CLI, Docker ni `psql`): su señal es el job `local` de
+      `schema-drift.yml` en Actions.
 - [ ] [Codex] Tarea 4 — Repositorio de Supabase — `MatchStreakRow`,
       `toMatchStreak`, `listStreaks` contra el RPC y retirada del andamio.
       Terminado = `npx jest src/data/supabase`, `tsc`, lint y cobertura.
