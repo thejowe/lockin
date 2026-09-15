@@ -122,6 +122,32 @@ y compara la huella, que dice qué objetos existen, no qué hacen.
   la nota para quien lo actualice es que el camino corto es `npm ci` y
   `npm run test:schema`.
 
+## La lista blanca de `contract.yml` se había quedado corta (2026-09-15)
+
+- [x] Encontrado al revisar los workflows para lo de arriba, y arreglado aquí
+  porque `.github/workflows/` es alcance de este bloque. El paso "Suite de
+  contrato" exige con `jq` que no haya saltos inesperados, con una lista de tres
+  títulos: son los `itWithTimeTravel` de `repositories.contract.ts`, que contra
+  Supabase local se saltan siempre (`canTimeTravel: false` → `it.skip`). La
+  pieza `valoracion` añadió **nueve** casos de ese tipo el 2026-09-15 y la lista
+  no se movió, así que la siguiente ejecución a mano de `Contrato Supabase`
+  habría caído en `La suite no corrió entera` sin que nada estuviera roto —el
+  peor tipo de rojo, el que enseña a ignorar el workflow—. No se ha notado antes
+  porque ese workflow es solo `workflow_dispatch`.
+  **Arreglo:** los nueve títulos añadidos a la lista, que es justo lo que pide
+  el comentario del propio paso ("Un caso nuevo de ese tipo obliga a añadirlo a
+  esta lista a propósito"), con la razón al lado: necesitan una sesión ya
+  terminada y su SQL lo ejecuta ahora el job `SQL embebido` de `ci.yml`.
+  **Verificación sin Docker**, que es lo que hay aquí: se extrajo el programa
+  `jq` del YAML ya parseado y se corrió contra un `contract-result.json`
+  sintético con las 12 pendientes reales (sacadas del propio
+  `repositories.contract.ts`) más un caso pasado. Con la lista de tres →
+  `false`, exit 1 (el rojo que habría salido). Con la lista de doce → `true`,
+  exit 0. Y sigue cortando lo que tiene que cortar: una pendiente no declarada
+  → `false`, exit 1; `numPassedTests = 0` → `false`, exit 1.
+  Queda **sin comprobar en un runner**: el workflow necesita Docker y Supabase
+  CLI, y se lanza a mano.
+
 ## E2E Android rojo en setup-android: Google retiró `tools` (2026-09-14)
 
 - [x] Los dos jobs de `e2e.yml` caían antes de compilar, en
