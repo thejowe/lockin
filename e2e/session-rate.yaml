@@ -1,0 +1,30 @@
+# Valorar de un toque la sesión que acaba de terminar. Lo lanza run.mjs DESPUÉS
+# de session.yaml y de su oráculo, sin borrar el estado: usa el mismo match y la
+# misma sesión, que `prepareSessionRating` deja ya terminada y con las dos
+# asistencias. Solo en la variante con credenciales. `e2e/session.test.mjs` fija
+# las etiquetas contra el código.
+#
+# Relanza la app a propósito: el envejecido de la sesión ocurre en Postgres
+# mientras la app está abierta, y esperar al tic de 30 s de `useActiveSession`
+# sería atarse a un temporizador. Volver a arrancar releé sin esperas.
+appId: app.lockin.mobile
+name: Valorar la sesión Lock-In desde el chat
+---
+- assertTrue: ${MESSAGE}
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible: 'Descubrir'
+    timeout: 60000
+- tapOn: 'Matches'
+- extendedWaitUntil:
+    visible: 'Conversación con .*${MESSAGE}'
+    timeout: 30000
+- tapOn: 'Conversación con .*${MESSAGE}'
+- extendedWaitUntil:
+    visible: '¿Qué tal fue la sesión con .*'
+    timeout: 60000
+- tapOn: 'Genial'
+- extendedWaitUntil:
+    visible: 'Gracias — solo lo ves tú'
+    timeout: 30000

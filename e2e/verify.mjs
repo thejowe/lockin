@@ -107,3 +107,109 @@ export async function verifySessionAttendance(status, profileName) {
   assert(rows[0].left_at, 'Salir confirmando debe guardar left_at');
   console.log('Postgres: entrada y salida de la sesión Lock-In verificadas.');
 }
+
+/**
+ * Prepara la repesca de la valoración envejeciendo la sesión que el recorrido
+ * acaba de vivir, y añadiendo la asistencia de la otra persona.
+ *
+ * **Por qué no hay fixture de seed para esto.** `session-now.sql` deja una
+ * sesión viva media hora; el recorrido entra y sale de ella, pero salir no la
+ * termina. Un segundo fixture que creara otra ya terminada dejaría dos sesiones
+ * en el mismo match, y la viva gana a la valorable (`cardView`), así que la
+ * tarjeta nunca llegaría a preguntar y el caso fallaría sin que nada estuviera
+ * roto. Por eso se reaprovecha la misma sesión.
+ *
+ * **Y por qué se mueve también `joined_at`.** Asistir es haber entrado antes de
+ * que la sesión acabara. Si solo se moviera `starts_at` al pasado, la entrada
+ * real —que ocurrió hace segundos— quedaría posterior al nuevo final y la
+ * sesión dejaría de ser valorable justo por la regla que queremos probar.
+ */
+export async function prepareSessionRating(status, profileName) {
+  assert.equal(status.API_URL, 'http://127.0.0.1:54321');
+  const client = createClient(status.API_URL, status.SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  const { data: profile, error: profileError } = await client
+    .from('profiles')
+    .select('id')
+    .eq('name', profileName)
+    .single();
+  assert.ifError(profileError);
+
+  const { data: mine, error: mineError } = await client
+    .from('session_attendance')
+    .select('session_id')
+    .eq('profile_id', profile.id)
+    .single();
+  assert.ifError(mineError);
+
+  const { data: session, error: sessionError } = await client
+    .from('lockin_sessions')
+    .select('id, match_id, blocks')
+    .eq('id', mine.session_id)
+    .single();
+  assert.ifError(sessionError);
+
+  // Diez minutos más allá de su propio final: terminada, y con la ventana de
+  // 24 h abierta de sobra.
+  const startsAt = new Date(Date.now() - (session.blocks * 30 + 10) * 60_000);
+  const joinedAt = new Date(startsAt.getTime() + 60_000);
+  const leftAt = new Date(startsAt.getTime() + 2 * 60_000);
+
+  const { error: ageError } = await client
+    .from('lockin_sessions')
+    .update({ starts_at: startsAt.toISOString() })
+    .eq('id', session.id);
+  assert.ifError(ageError);
+
+  const { error: rowError } = await client
+    .from('session_attendance')
+    .update({ joined_at: joinedAt.toISOString(), left_at: leftAt.toISOString() })
+    .eq('session_id', session.id)
+    .eq('profile_id', profile.id);
+  assert.ifError(rowError);
+
+  const { data: match, error: matchError } = await client
+    .from('matches')
+    .select('profile_a, profile_b')
+    .eq('id', session.match_id)
+    .single();
+  assert.ifError(matchError);
+  const counterpartId = match.profile_a === profile.id ? match.profile_b : match.profile_a;
+
+  const { error: counterpartError } = await client.from('session_attendance').upsert({
+    session_id: session.id,
+    profile_id: counterpartId,
+    joined_at: joinedAt.toISOString(),
+    left_at: null,
+  });
+  assert.ifError(counterpartError);
+
+  console.log('Postgres: sesión terminada y con los dos dentro, lista para valorarse.');
+}
+
+/**
+ * Oráculo de `session-rate.yaml`: el toque en "Genial" llegó a Postgres.
+ *
+ * Solo debe haber una fila y solo la de quien valoró: la valoración es privada,
+ * y la de la otra persona no existe porque nadie la escribió.
+ */
+export async function verifySessionRating(status, profileName) {
+  assert.equal(status.API_URL, 'http://127.0.0.1:54321');
+  const client = createClient(status.API_URL, status.SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data: profile, error: profileError } = await client
+    .from('profiles')
+    .select('id')
+    .eq('name', profileName)
+    .single();
+  assert.ifError(profileError);
+  const { data: rows, error } = await client.from('session_ratings').select('*');
+  assert.ifError(error);
+  assert.equal(rows.length, 1, 'El toque debe escribir una sola valoración');
+  assert.equal(rows[0].profile_id, profile.id, 'La valoración es de quien la tocó');
+  assert.equal(rows[0].rating, 'genial', 'El toque fue en "Genial"');
+  console.log('Postgres: valoración de la sesión Lock-In verificada.');
+}

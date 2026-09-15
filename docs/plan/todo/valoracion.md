@@ -186,7 +186,35 @@ bloques **nunca se lancen a la vez**. Ver `docs/plan/PLAN.md` → bloque 8.
       `npm run lint` y `npm run format:check` limpios, y `npm test -- --coverage`
       con 563 pasando (554 antes), 63 saltados (contrato opt-in) y sin aviso de
       umbral — 92.47/84.95/92.35/94.20 sobre el suelo 89.82/82.56/91.49/91.38.
-- [ ] Tarea 7 — E2E Android y cierre
+- [x] Tarea 7 — E2E Android y cierre — `e2e/session-rate.yaml` (relanza la app,
+      abre el chat, toca `Genial` y espera "Gracias — solo lo ves tú"),
+      `prepareSessionRating` y `verifySessionRating` en `e2e/verify.mjs`, y el
+      encadenado en `e2e/run.mjs` justo tras `verifySessionAttendance`, con su
+      propia carpeta de evidencia (`rating/`) y `rating: 'verified'` en
+      `postgres.json`. Cuatro casos nuevos en `e2e/session.test.mjs`.
+      **Sin fixture de seed, a propósito:** `session-now.sql` deja una sesión
+      viva media hora y salir no la termina, así que un segundo trigger dejaría
+      dos sesiones en el match y la viva tapa a la valorable (`cardView`) — la
+      tarjeta nunca llegaría a preguntar y el caso fallaría sin que nada
+      estuviera roto. Se reaprovecha la sesión que el recorrido acaba de vivir,
+      envejeciéndola entre flujos. **Y se mueve también `joined_at`**, no solo
+      `starts_at`: asistir es haber entrado antes del final, así que dejar la
+      entrada real (de hace segundos) por detrás del nuevo final rompería justo
+      la regla que el caso prueba. Hay un test que lo fija.
+      Verificado aquí el 2026-09-15: `npm run test:e2e` 58/58 (la guardia del
+      runner, que incluye los cuatro casos nuevos), `npx tsc --noEmit`,
+      `npm run lint` y `npx prettier --check e2e/` limpios, y
+      `npm test -- --coverage` con 563 pasando y 63 saltados.
+      **Lo que NO se ha ejecutado aquí:** el recorrido real en el emulador.
+      Maestro y el emulador Android no existen en este entorno, así que
+      `session-rate.yaml` no se ha corrido ni una vez contra la app — solo se ha
+      comprobado que las etiquetas que toca existen en el código y que el runner
+      lo encadena en el orden correcto. **Queda pendiente de verse en verde en
+      el job `E2E Android (supabase)` de Actions**, con las tres líneas de
+      oráculo en su log: la de la asistencia, la de "sesión terminada y con los
+      dos dentro, lista para valorarse" y la de "valoración de la sesión Lock-In
+      verificada". Mientras no haya un run con esas tres líneas, esta casilla
+      cubre el código escrito, no el recorrido comprobado.
 
 ## Deuda detectada, fuera del alcance de este bloque
 
