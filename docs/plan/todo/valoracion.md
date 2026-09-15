@@ -89,7 +89,36 @@ bloques **nunca se lancen a la vez**. Ver `docs/plan/PLAN.md` → bloque 8.
       `npm run lint` y `npm run format:check` limpios. `drift-check.mjs` lee la
       migración nueva sin tocarlo (8 tablas, 10 enums, 23 funciones); su sondeo
       remoto necesita credenciales y no se ejecuta aquí.
-- [ ] Tarea 4 — Repositorio de Supabase
+- [x] Tarea 4 — Repositorio de Supabase — `SessionRatingRow` y
+      `toSessionRatingEntry` (con `toIso` sobre `rated_at`), y los tres métodos
+      contra los RPCs de la Tarea 3: `getRatable` → `ratable_session` (`setof`,
+      cero o una fila, pasada por `remember()` para que `matchOfSession` quede
+      al día), `getMyRating` → **select directo** a `session_ratings` y `rate` →
+      `rate_session`. Retirado el andamio de la Tarea 1: los tres stubs y su
+      caso en `src/data/supabase/sessions.test.ts`. Las dos decisiones que el
+      patrón del archivo invita a desandar quedan fijadas por un test, no solo
+      por el comentario: `getMyRating` **no filtra por `profile_id`** —lo hace
+      la política `profile_id = auth.uid()`, y el caso comprueba que la cadena
+      de la consulta no lo menciona, para que una política relajada salga en el
+      caso de privacidad del contrato en vez de quedar tapada por un `where`
+      nuestro— y `rate` **no llama a `notifyForSession`**, con `join` en el
+      mismo caso como contraste (el listener sigue en 0 tras valorar y pasa a 1
+      tras entrar).
+      **Hueco del plan, no desvío:** el Step 1 pide «`SessionRatingRow` y las
+      dos funciones nuevas», pero `getMyRating` hace `from('session_ratings')`
+      con el cliente tipado, así que hace falta además la entrada de la tabla en
+      `Database['public']['Tables']` (sin ella no compila) y el enum
+      `session_rating` en `Enums`, que es donde ya están los otros ocho. Con la
+      tabla declarada, `.select('rating').maybeSingle()` tipa como
+      `{ rating: SessionRating } | null` y no necesita el `as` que sí llevan las
+      lecturas con `select('*')` del mismo archivo.
+      Verificado 2026-09-15: `npx jest src/data/supabase` 49/49 (63 saltados,
+      contrato opt-in — no se ejecuta contra Supabase real: no hay credenciales
+      y los casos de valoración se saltarían igual por necesitar una sesión
+      terminada), `npx tsc --noEmit`, `npm run lint` y `npm run format:check`
+      limpios, y `npm test -- --coverage` con 537 pasando y sin aviso de umbral
+      — 92.13/84.11/92.01/93.88 sobre el suelo 89.82/82.56/91.49/91.38, que era
+      justo lo que sostenía el andamio borrado.
 - [ ] Tarea 5 — La pantalla de sesión
 - [ ] Tarea 6 — La tarjeta del chat
 - [ ] Tarea 7 — E2E Android y cierre

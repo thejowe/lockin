@@ -22,6 +22,7 @@ import type {
   ModePreference,
   ProfilePrompt,
   SessionBlocks,
+  SessionRating,
   SessionStatus,
   Specialty,
   StartingPoint,
@@ -123,6 +124,17 @@ export type SessionAttendanceRow = {
 };
 
 /**
+ * Fila de `public.session_ratings`. Solo se leen las propias: la política RLS
+ * de la tabla es `profile_id = auth.uid()`, no `is_session_member`.
+ */
+export type SessionRatingRow = {
+  session_id: string;
+  profile_id: string;
+  rating: SessionRating;
+  rated_at: string;
+};
+
+/**
  * Forma del esquema que consume `createClient<Database>`.
  *
  * Solo declara lo que la app usa. `Views` va vacío a propósito: no hay vistas.
@@ -213,6 +225,14 @@ export type Database = {
         Update: Record<string, never>;
         Relationships: [];
       };
+      // La escribe `rate_session` y nadie más; el select sí es directo
+      // (`getMyRating`), y lo acota la RLS. Inmutable: ni update ni delete.
+      session_ratings: {
+        Row: SessionRatingRow;
+        Insert: Record<string, never>;
+        Update: Record<string, never>;
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
@@ -244,6 +264,12 @@ export type Database = {
       cancel_session: { Args: { p_session_id: string }; Returns: SessionRow };
       join_session: { Args: { p_session_id: string }; Returns: SessionAttendanceRow };
       leave_session: { Args: { p_session_id: string }; Returns: SessionAttendanceRow };
+      rate_session: {
+        Args: { p_session_id: string; p_rating: SessionRating };
+        Returns: SessionRatingRow;
+      };
+      /** `ratable_session(p_match_id)` → cero o una fila de `lockin_sessions`. */
+      ratable_session: { Args: { p_match_id: string }; Returns: SessionRow[] };
       /** `server_now()` → `timestamptz` serializado. */
       server_now: { Args: Record<string, never>; Returns: string };
     };
@@ -257,6 +283,7 @@ export type Database = {
       avatar_accent: Avatar['accent'];
       decision: Decision;
       session_status: SessionStatus;
+      session_rating: SessionRating;
     };
     CompositeTypes: Record<never, never>;
   };

@@ -17,6 +17,7 @@ import {
   toLockInSession,
   toSessionAttendance,
   toSessionError,
+  toSessionRatingEntry,
 } from './sessions';
 
 import type { LockInSupabaseClient } from './client';
@@ -72,7 +73,7 @@ function row(overrides: Partial<SessionRow> = {}): SessionRow {
   };
 }
 
-describe('toLockInSession / toSessionAttendance', () => {
+describe('toLockInSession / toSessionAttendance / toSessionRatingEntry', () => {
   it('traduce columnas y normaliza las fechas a ISO con Z', () => {
     const session = toLockInSession(row({ starts_at: '2026-09-14T18:00:00+00:00' }));
 
@@ -101,6 +102,22 @@ describe('toLockInSession / toSessionAttendance', () => {
       profileId: 'p',
       joinedAt: '2026-09-14T18:00:00.000Z',
       leftAt: null,
+    });
+  });
+
+  it('traduce la valoración y normaliza rated_at', () => {
+    expect(
+      toSessionRatingEntry({
+        session_id: 'session-1',
+        profile_id: 'user-a',
+        rating: 'genial',
+        rated_at: '2026-09-15T12:00:00+00:00',
+      })
+    ).toEqual({
+      sessionId: 'session-1',
+      profileId: 'user-a',
+      rating: 'genial',
+      ratedAt: '2026-09-15T12:00:00.000Z',
     });
   });
 });
@@ -198,23 +215,125 @@ describe('createSupabaseSessionRepository', () => {
     await expect(repository.serverNow()).resolves.toBe('2026-09-13T12:00:00.123Z');
   });
 
-  // Andamio temporal: la valoración se implementa contra los RPCs en la Tarea 4
-  // de `docs/superpowers/plans/2026-09-15-valoracion-post-sesion.md`. Hasta
-  // entonces se fija que falla a la vista en vez de fingir un resultado.
-  // **Borra este caso al implementarla.**
-  it.each(['getRatable', 'getMyRating', 'rate'] as const)(
-    '%s todavía no está implementado contra Supabase',
-    async (method) => {
-      const { repository } = fakeClient();
-      const calls = {
-        getRatable: () => repository.getRatable('match-1'),
-        getMyRating: () => repository.getMyRating('session-1'),
-        rate: () => repository.rate('session-1', 'bien'),
-      };
+  it('getRatable devuelve la única fila del RPC', async () => {
+    const ratable = row({ id: 'ratable', status: 'aceptada' });
+    const { client, repository } = fakeClient({
+      rpc: { ratable_session: { data: [ratable], error: null } },
+    });
 
-      await expect(calls[method]()).rejects.toThrow('todavía no está implementado');
-    }
-  );
+    const session = await repository.getRatable('match-1');
+
+    expect(client.rpc).toHaveBeenCalledWith('ratable_session', { p_match_id: 'match-1' });
+    expect(session?.id).toBe('ratable');
+  });
+
+  it('getRatable da null cuando el RPC no devuelve ninguna fila', async () => {
+    const { repository } = fakeClient({ rpc: { ratable_session: { data: [], error: null } } });
+
+    await expect(repository.getRatable('match-1')).resolves.toBeNull();
+  });
+
+  it('getMyRating lee la tabla por session_id y deja el resto a la RLS', async () => {
+    const { client, chain, repository } = fakeClient({
+      select: { data: { rating: 'genial' }, error: null },
+    });
+
+    await expect(repository.getMyRating('session-1')).resolves.toBe('genial');
+
+    expect(client.from).toHaveBeenCalledWith('session_ratings');
+    expect(chain).toContain('eq(["session_id","session-1"])');
+    // Sin filtro por `profile_id` a propósito: lo pone la política
+    // `profile_id = auth.uid()`. Si se relajara, este select devolvería la
+    // valoración de la otra persona y el caso de privacidad de la suite de
+    // contrato lo cazaría — un `where` del cliente lo taparía.
+    expect(chain.join(' ')).not.toContain('profile_id');
+  });
+
+  it('getMyRating da null cuando no hay fila propia', async () => {
+    const { repository } = fakeClient();
+
+    await expect(repository.getMyRating('session-1')).resolves.toBeNull();
+  });
+
+  it('rate llama al RPC con sus argumentos y mapea la fila', async () => {
+    const { client, repository } = fakeClient({
+      rpc: {
+        rate_session: {
+          data: {
+            session_id: 'session-1',
+            profile_id: 'user-a',
+            rating: 'genial',
+            rated_at: '2026-09-15T12:00:00+00:00',
+          },
+          error: null,
+        },
+      },
+    });
+
+    const entry = await repository.rate('session-1', 'genial');
+
+    expect(client.rpc).toHaveBeenCalledWith('rate_session', {
+      p_session_id: 'session-1',
+      p_rating: 'genial',
+    });
+    expect(entry).toEqual({
+      sessionId: 'session-1',
+      profileId: 'user-a',
+      rating: 'genial',
+      ratedAt: '2026-09-15T12:00:00.000Z',
+    });
+  });
+
+  it.each([
+    ['LI001', SessionConflictError],
+    ['LI003', SessionWindowError],
+    ['LI004', SessionForbiddenError],
+  ])('rate traduce %s a su error de dominio', async (code, ErrorClass) => {
+    const { repository } = fakeClient({
+      rpc: { rate_session: { data: null, error: { code, message: 'detalle' } } },
+    });
+
+    await expect(repository.rate('session-1', 'bien')).rejects.toBeInstanceOf(ErrorClass);
+  });
+
+  it('rate no avisa a los suscriptores del match, al contrario que join', async () => {
+    const { repository } = fakeClient({
+      select: { data: row(), error: null },
+      rpc: {
+        rate_session: {
+          data: {
+            session_id: 'session-1',
+            profile_id: 'user-a',
+            rating: 'genial',
+            rated_at: '2026-09-15T12:00:00+00:00',
+          },
+          error: null,
+        },
+        join_session: {
+          data: {
+            session_id: 'session-1',
+            profile_id: 'user-a',
+            joined_at: row().created_at,
+            left_at: null,
+          },
+          error: null,
+        },
+      },
+    });
+    const listener = jest.fn();
+    repository.subscribe('match-1', listener);
+
+    await repository.rate('session-1', 'genial');
+
+    // La valoración es privada: avisar publicaría por el canal del match que
+    // alguien acaba de valorar.
+    expect(listener).not.toHaveBeenCalled();
+
+    // El contraste con `join`, que sí avisa, es lo que prueba que el silencio
+    // de arriba es la decisión de privacidad y no un doble que no notifica.
+    await repository.join('session-1');
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
 
   it('abre un canal por match y lo cierra con el último suscriptor', async () => {
     const { client, repository } = fakeClient();

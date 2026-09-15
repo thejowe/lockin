@@ -18,9 +18,9 @@ import { ensureUserId } from './auth';
 import { getSupabaseClient } from './client';
 
 import type { LockInSupabaseClient } from './client';
-import type { SessionAttendanceRow, SessionRow } from './database.types';
+import type { SessionAttendanceRow, SessionRatingRow, SessionRow } from './database.types';
 import type { LockInSessionRepository, Unsubscribe } from '../repositories';
-import type { LockInSession, SessionAttendance } from '../types';
+import type { LockInSession, SessionAttendance, SessionRatingEntry } from '../types';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 /** PostgREST serializa `timestamptz` como `…+00:00`; el dominio usa ISO con `Z`. */
@@ -45,6 +45,15 @@ export function toSessionAttendance(row: SessionAttendanceRow): SessionAttendanc
     profileId: row.profile_id,
     joinedAt: toIso(row.joined_at),
     leftAt: row.left_at === null ? null : toIso(row.left_at),
+  };
+}
+
+export function toSessionRatingEntry(row: SessionRatingRow): SessionRatingEntry {
+  return {
+    sessionId: row.session_id,
+    profileId: row.profile_id,
+    rating: row.rating,
+    ratedAt: toIso(row.rated_at),
   };
 }
 
@@ -194,20 +203,45 @@ export function createSupabaseSessionRepository(
       return (data as SessionAttendanceRow[]).map(toSessionAttendance);
     },
 
-    // Valoración post-sesión: el contrato ya la declara, pero los RPCs
-    // (`ratable_session`, `rate_session`) son la Tarea 3 y este repositorio la
-    // Tarea 4 de `docs/superpowers/plans/2026-09-15-valoracion-post-sesion.md`.
-    // Hasta entonces se lanza en vez de fingir un resultado.
-    async getRatable() {
-      throw new Error('getRatable todavía no está implementado contra Supabase (Tarea 4)');
+    async getRatable(matchId) {
+      await deps.getUserId();
+      const { data, error } = await deps
+        .getClient()
+        .rpc('ratable_session', { p_match_id: matchId });
+      if (error) throw toSessionError(error);
+      // `setof`: cero o una fila, porque el RPC ya hace `limit 1`.
+      const rows = data as SessionRow[];
+      return rows.length > 0 ? remember(toLockInSession(rows[0])) : null;
     },
 
-    async getMyRating() {
-      throw new Error('getMyRating todavía no está implementado contra Supabase (Tarea 4)');
+    async getMyRating(sessionId) {
+      await deps.getUserId();
+      // Select directo y no RPC, a propósito: la política de `session_ratings`
+      // (`profile_id = auth.uid()`) es la que deja fuera las ajenas, y no hay
+      // ningún filtro nuestro que la tape. Si algún día se relajara, el caso de
+      // privacidad de la suite de contrato empezaría a leer la de la otra
+      // persona en vez de seguir en verde por un `where` del cliente.
+      const { data, error } = await deps
+        .getClient()
+        .from('session_ratings')
+        .select('rating')
+        .eq('session_id', sessionId)
+        .maybeSingle();
+      if (error) throw error;
+      return data?.rating ?? null;
     },
 
-    async rate() {
-      throw new Error('rate todavía no está implementado contra Supabase (Tarea 4)');
+    async rate(sessionId, rating) {
+      await deps.getUserId();
+      const { data, error } = await deps
+        .getClient()
+        .rpc('rate_session', { p_session_id: sessionId, p_rating: rating });
+      if (error) throw toSessionError(error);
+      // Sin `notifyForSession` a propósito, al revés que `join`/`leave`: la
+      // valoración es privada de quien la escribe, así que no hay a quién
+      // avisar, y hacerlo publicaría por el canal del match que alguien acaba
+      // de valorar.
+      return toSessionRatingEntry(data as SessionRatingRow);
     },
 
     async serverNow() {
