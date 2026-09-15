@@ -119,7 +119,44 @@ bloques **nunca se lancen a la vez**. Ver `docs/plan/PLAN.md` → bloque 8.
       limpios, y `npm test -- --coverage` con 537 pasando y sin aviso de umbral
       — 92.13/84.11/92.01/93.88 sobre el suelo 89.82/82.56/91.49/91.38, que era
       justo lo que sostenía el andamio borrado.
-- [ ] Tarea 5 — La pantalla de sesión
+- [x] Tarea 5 — La pantalla de sesión — `rating.ts` (`RATING_OPTIONS`,
+      `ratingLabel`, `endingView`), `rating-chips.tsx` (tres `Pressable` con
+      `accessibilityRole="radio"`, 44 de alto y `Spacing.two` de separación) y
+      `use-rating.ts` (dos `useQuery` —`getMyRating` y `listAttendance`— más la
+      escritura). `useAttendance` **no se toca**: sigue siendo el efecto de
+      entrar y salir, y las filas que mira `endingView` se leen aparte. La rama
+      `ended` de `src/app/session/[sessionId].tsx` pasa a los tres finales de la
+      spec § 2, con la línea "Gracias — solo lo ves tú" y sin navegar al tocar.
+      Cuatro cosas que el plan no fijaba y se decidieron leyendo el código:
+      **(a)** el test de la pantalla vive en `test/app/sessionId.test.tsx`, no en
+      `src/app/` (`jest.config.js` lo explica: un test ahí arrastraría RNTL al
+      bundle de expo-router), así que el `Verify` del plan —`npx jest
+      src/features/session src/app`— no lo ejecuta; se corrió también `test/app`.
+      **(b)** `endingView` no recibe `nowMs`: lo que mira es quién entró antes de
+      `endsAt`, que sale de la propia sesión, y cruzar las 24 h con la pantalla
+      abierta lo resuelve el error de `rate` (spec § 3), no una comprobación
+      previa. **(c)** ante `SessionWindowError`/`SessionForbiddenError` los chips
+      **desaparecen** y queda "Ya no se puede valorar": el Step 3 decía
+      "deshabilita los chips", pero la spec § 2 manda pasar al tercer caso —un
+      mensaje y el botón de volver—, y un chip deshabilitado invita a insistir.
+      Para distinguir ese error del reintentable, los dos textos viven en
+      `rating.ts` como `RATING_CLOSED`/`RATING_FAILED` y se exportan del barril:
+      dos nombres más de los que lista el Step 5. **(d)** `useRating` devuelve
+      `attendance: SessionAttendance[] | null` —`null` mientras se lee— y la
+      pantalla espera también a `me`: con `[]` por defecto se vería "Núria no
+      entró" un instante antes de preguntar.
+      **Hueco conocido, no tapado:** `endingView` tiene tres casos para cuatro
+      combinaciones de asistencia, así que si la otra persona sí entró y **tú
+      no**, la pantalla dice "{nombre} no entró", que es inexacto. Solo se llega
+      abriendo una sesión terminada a la que nunca entraste, y arreglarlo pedía
+      un cuarto caso que ni la spec ni el plan tienen.
+      Caso de más, no listado en el Step 6: un `SessionConflictError` no enseña
+      nada (spec § 3, "toque en dos chips seguidos").
+      Verificado 2026-09-15: `npx jest src/features/session src/app test/app`
+      133/133 (22 suites), `npx tsc --noEmit`, `npm run lint` y
+      `npm run format:check` limpios, y `npm test -- --coverage` con 554 pasando
+      (537 antes), 63 saltados (contrato opt-in) y sin aviso de umbral —
+      92.30/84.66/92.14/94.03 sobre el suelo 89.82/82.56/91.49/91.38.
 - [ ] Tarea 6 — La tarjeta del chat
 - [ ] Tarea 7 — E2E Android y cierre
 

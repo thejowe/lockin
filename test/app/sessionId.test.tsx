@@ -10,7 +10,7 @@
 
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
-import { presence } from '@/data';
+import { presence, SessionConflictError, SessionWindowError } from '@/data';
 import { createMockSessionRepository } from '@/data/mock';
 import { SEED_RECIPROCAL_IDS } from '@/data/mock/seed';
 import { buildProfileInput } from '@/data/test-fixtures';
@@ -48,6 +48,20 @@ async function seedSession({
   if (accept) await createMockSessionRepository(COUNTERPART_ID).respond(session.id, 'aceptada');
   setSearchParams({ sessionId: session.id });
   return { session, startsAtMs };
+}
+
+/**
+ * Una sesión de un bloque ya terminada, con quien se diga dentro. Entrar se
+ * registra desde los dos lados antes del final y luego se mueve el reloj: es la
+ * única forma de tener las filas de `session_attendance` que mira el final.
+ */
+async function endedSession({ meJoins = true, counterpartJoins = true } = {}) {
+  const { session, startsAtMs } = await seedSession({ blocks: 1 });
+  jest.setSystemTime(startsAtMs - MINUTE);
+  if (meJoins) await repositories.sessions.join(session.id);
+  if (counterpartJoins) await createMockSessionRepository(COUNTERPART_ID).join(session.id);
+  jest.setSystemTime(startsAtMs + 31 * MINUTE);
+  return session;
 }
 
 beforeEach(() => {
@@ -146,6 +160,91 @@ describe('SessionScreen', () => {
     await waitFor(() => expect(screen.getByText('Sesión completada')).toBeTruthy());
     await fireEvent.press(screen.getByRole('button', { name: 'Volver al chat' }));
     expect(router.back).toHaveBeenCalled();
+  });
+
+  it('con los dos dentro pregunta, y el toque se queda en el agradecimiento sin navegar', async () => {
+    const session = await endedSession();
+
+    await renderRoute(<SessionScreen />);
+
+    await waitFor(() => expect(screen.getByText('¿Qué tal ha ido?')).toBeTruthy());
+    await fireEvent.press(screen.getByRole('radio', { name: 'Genial' }));
+
+    await waitFor(() => expect(screen.getByText('Gracias — solo lo ves tú')).toBeTruthy());
+    expect(screen.queryByRole('radio', { name: 'Genial' })).toBeNull();
+    expect(router.back).not.toHaveBeenCalled();
+    await expect(repositories.sessions.getMyRating(session.id)).resolves.toBe('genial');
+  });
+
+  it('una sesión ya valorada agradece al abrirla, sin volver a preguntar', async () => {
+    const session = await endedSession();
+    await repositories.sessions.rate(session.id, 'floja');
+
+    await renderRoute(<SessionScreen />);
+
+    await waitFor(() => expect(screen.getByText('Gracias — solo lo ves tú')).toBeTruthy());
+    expect(screen.queryByText('¿Qué tal ha ido?')).toBeNull();
+  });
+
+  it('si la otra persona no entró, lo dice y no pregunta nada', async () => {
+    await endedSession({ counterpartJoins: false });
+
+    await renderRoute(<SessionScreen />);
+
+    await waitFor(() => expect(screen.getByText('Núria no entró')).toBeTruthy());
+    expect(screen.queryByText('¿Qué tal ha ido?')).toBeNull();
+    expect(screen.queryByRole('radio', { name: 'Floja' })).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: 'Volver al chat' }));
+    expect(router.back).toHaveBeenCalled();
+  });
+
+  it('si no se ha podido guardar, se reintenta con otro toque', async () => {
+    await endedSession();
+    const rate = jest
+      .spyOn(repositories.sessions, 'rate')
+      .mockRejectedValueOnce(new Error('sin red'));
+
+    await renderRoute(<SessionScreen />);
+    await waitFor(() => expect(screen.getByText('¿Qué tal ha ido?')).toBeTruthy());
+    await fireEvent.press(screen.getByRole('radio', { name: 'Bien' }));
+
+    await waitFor(() => expect(screen.getByText('No se ha podido guardar')).toBeTruthy());
+    expect(screen.getByRole('radio', { name: 'Bien' })).toBeTruthy();
+
+    rate.mockRestore();
+    await fireEvent.press(screen.getByRole('radio', { name: 'Bien' }));
+
+    await waitFor(() => expect(screen.getByText('Gracias — solo lo ves tú')).toBeTruthy());
+  });
+
+  it('si el servidor ya no lo acepta, no invita a reintentar', async () => {
+    await endedSession();
+    jest
+      .spyOn(repositories.sessions, 'rate')
+      .mockRejectedValue(new SessionWindowError('pasaron 24 horas'));
+
+    await renderRoute(<SessionScreen />);
+    await waitFor(() => expect(screen.getByText('¿Qué tal ha ido?')).toBeTruthy());
+    await fireEvent.press(screen.getByRole('radio', { name: 'Floja' }));
+
+    await waitFor(() => expect(screen.getByText('Ya no se puede valorar')).toBeTruthy());
+    expect(screen.queryByRole('radio', { name: 'Floja' })).toBeNull();
+    expect(screen.queryByText('¿Qué tal ha ido?')).toBeNull();
+  });
+
+  it('un conflicto no se enseña: significa que la valoración ya está escrita', async () => {
+    await endedSession();
+    jest
+      .spyOn(repositories.sessions, 'rate')
+      .mockRejectedValue(new SessionConflictError('ya valoraste esta sesión'));
+
+    await renderRoute(<SessionScreen />);
+    await waitFor(() => expect(screen.getByText('¿Qué tal ha ido?')).toBeTruthy());
+    await fireEvent.press(screen.getByRole('radio', { name: 'Bien' }));
+
+    await waitFor(() => expect(screen.getByRole('radio', { name: 'Bien' })).toBeTruthy());
+    expect(screen.queryByText('No se ha podido guardar')).toBeNull();
+    expect(screen.queryByText('Ya no se puede valorar')).toBeNull();
   });
 
   it('salir pide confirmación, registra la salida y vuelve', async () => {
