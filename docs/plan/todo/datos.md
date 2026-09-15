@@ -930,8 +930,9 @@ sesión y `last_sign_in_at`. El inventario lo corre quien tenga el SQL Editor.
   `pass 1`, `fail 0`.
   Verificado por mutación: umbral de ráfaga a `>= 9` → `fail 1`; guardia de
   colateral anulada → `fail 1, Missing expected rejection`. Evidencia en
-  `supabase/evidence/limpieza-2026-09-13/pglite.txt`. Como
-  `schema-embedded.test.mjs`, se salta sin `PGLITE_MODULE` y no está en CI.
+  `supabase/evidence/limpieza-2026-09-13/pglite.txt`. Desde el 2026-09-15 ya no
+  se salta ni se queda fuera de CI: entra en `npm run test:schema` y lo corre el
+  job «SQL embebido» (ver "`cleanup.test.mjs` entra en `test:schema`" al final).
   Lo que no prueba: GoTrue ni sus tablas hijas de `auth` (sesiones,
   identidades), cuyas cascadas son de Supabase y no de este repo.
 
@@ -952,3 +953,80 @@ El README (`supabase/README.md` → "Mantenimiento") recomendaba
 obsoleto para este proyecto y remite aquí. El mismo consejo sigue en el mensaje
 de error de `assertCatalogFitsInOneDeckPage()` en `contract.test.ts`, que ya
 solo debe correr contra una base desechable, donde es correcto.
+
+## `cleanup.test.mjs` entra en `test:schema` (2026-09-15)
+
+Las dos casillas que `calidad` dejó abiertas en `docs/plan/todo/calidad.md` →
+"El SQL embebido entra en CI", por ser archivos de este bloque.
+
+- [x] **Comprobado primero que tiene sentido correrlo en cada push**, que era la
+  duda razonable: lo que prueba es un borrado. Sí lo tiene, por cuatro cosas
+  medidas y no supuestas. (a) **No alcanza a ningún proyecto**: sus únicos
+  `import` son `node:*` y el dinámico de PGlite — ni `@supabase/supabase-js` ni
+  `fetch` ni `.env`—, y cada pasada crea una base **en memoria** nueva; el
+  `delete from auth.users` de `borrado.sql` cae sobre esa base y muere con el
+  proceso. (b) **No depende de nada que en CI no exista**: lee del propio repo
+  `migrations/*.sql`, `seed.sql` y `cleanup/*.sql`, y monta a mano la fixture de
+  `auth`. (c) **No es lento**: 2,4 s el archivo suelto y 2,7 s el script entero
+  —`node --test` corre los tres archivos en paralelo—, o sea ~0,2 s sobre los
+  2,5 s que ya costaba. (d) **No caduca**: ni `inventario.sql` ni `borrado.sql`
+  usan `now()`; la única ventana temporal es entre cuentas (±5 min sobre
+  `created_at`, la ráfaga), así que el veredicto no depende del reloj del runner
+  ni de cuánto envejezcan las fechas del fixture.
+- [x] **Mismo cambio que hizo `calidad` en `schema-embedded.test.mjs`**: fuera el
+  `skip`, y el módulo se resuelve con `PGLITE_MODULE` si está —se sigue
+  admitiendo y tiene prioridad, para no invalidar el README— y si no con
+  `@electric-sql/pglite` del árbol, que llega con `npm ci` desde el 2026-09-15.
+  **Ninguna aserción tocada**: 19 sitios de aserción antes y 19 después (18
+  líneas con `assert.` + un `assert(` en `fillDeletion`); `git diff -w` son 17
+  inserciones y 8 borrados, todas en la cabecera, la constante del módulo y la
+  firma del test. El resto del diff es reindentado de Prettier al pasar el test
+  de tres argumentos a dos.
+- [x] **`npm run test:schema`** pasa a ser `node --test
+  supabase/schema-compare.test.mjs supabase/schema-embedded.test.mjs
+  supabase/cleanup.test.mjs` (único cambio en `package.json`; sigue siendo lista
+  explícita y no glob, por lo que anotó `calidad`).
+- [x] **`supabase/README.md` (línea 467) al día**: el camino normal pasa a ser
+  `npm ci` + `npm run test:schema`, con los tres archivos y la mención de que es
+  lo mismo que corre el job de `ci.yml`. El camino a mano **no se borra** —sigue
+  descrito, con la nota de que `PGLITE_MODULE` tiene prioridad sobre el paquete
+  del árbol—, y se añade un párrafo de qué cubre `cleanup.test.mjs` y por qué
+  puede correr en CI.
+
+### Verificación (2026-09-15, en este entorno)
+
+- `npm run test:schema` → `# tests 10`, `# pass 10`, `# fail 0`, **`# skipped 0`**,
+  2,7 s. Con las tres líneas de log del limpiador: `Inventario: 19 cuentas → …
+  TOTAL colateral 3/1/1`, `Borrado: 19 → {"cuentas_restantes":2,…}` y
+  `Guardias: acuse sin rellenar, perfil no reconocible, id inexistente y
+  repetición: OK`. Mismo veredicto que tenía con `PGLITE_MODULE` a mano, ahora
+  con nueve migraciones (se escribió con siete).
+- **Puede fallar** —tres controles negativos, restaurados después
+  (`git status` limpio para `supabase/cleanup/`)—:
+  1. `inventario.sql`, umbral de ráfaga `>= 3` → `>= 9`: `# fail 1`,
+     `expected: 'prueba: contrato sin perfil (ráfaga)'` /
+     `actual: 'revisar: posible usuario real'`.
+  2. `borrado.sql`, guardia del acuse de colateral puesta a `if false then`:
+     `# fail 1`, `error: 'Missing expected rejection.'`, `operator: 'rejects'`.
+  3. Sin PGlite (`node_modules/@electric-sql` apartado): `# fail 1`,
+     `code: 'ERR_MODULE_NOT_FOUND'`, exit 1 — **no** `# skipped 1`, que es lo
+     que habría dado el `skip` de antes.
+- **El paso del job, tal cual**: extraído del YAML ya parseado
+  (`jobs.schema.steps[-1].run`) y ejecutado con `RUNNER_TEMP` puesto → exit 0,
+  con la línea de la guarda en el log. No se tocó `ci.yml`.
+- Sin romper nada de paso: `npm run lint`, `npm run format:check` y
+  `npm run typecheck` limpios; `npm test -- --ci` con **563 pasando**, 63
+  saltados (contrato opt-in) y 53 suites — los mismos números que dejó
+  `calidad`.
+
+### Lo que queda
+
+- [ ] **Verlo verde en Actions**: aquí está comprobado paso a paso, pero el job
+  `SQL embebido` todavía no ha corrido con los tres archivos en un runner.
+- [ ] **Para `calidad`, en su archivo**: la guarda de `grep` del paso solo exige
+  la última línea del **embebido**. Si alguien quitara `cleanup.test.mjs` de la
+  lista o lo renombrara, el job seguiría verde sin ejecutarlo — exactamente el
+  agujero que la guarda venía a tapar. La línea que serviría ya la imprime el
+  test justo antes de cerrar: `Guardias: acuse sin rellenar, perfil no
+  reconocible, id inexistente y repetición: OK`. No se ha tocado porque
+  `.github/workflows/` es alcance de `calidad`.

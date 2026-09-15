@@ -5,6 +5,12 @@
  * `serverNow()`: los dos móviles calculan lo mismo sin mandarse nada. Entrar se
  * registra solo al abrir la pantalla dentro de la ventana; salir antes de acabar
  * pide confirmación porque cuenta como abandono.
+ *
+ * El final lo decide `endingView`: pregunta cuando entraron los dos y no has
+ * valorado, agradece cuando ya valoraste, dice que la otra persona no entró
+ * cuando tú sí, y **no pregunta nada** si el que faltó fuiste tú. Un toque en
+ * un chip no navega: la pantalla se queda en el agradecimiento, porque
+ * cerrarse sola dejaría la duda de si se registró.
  */
 
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -16,11 +22,15 @@ import { MaxContentWidth, Radii, Spacing } from '@/constants/theme';
 import { isInJoinWindow } from '@/data';
 import { ProfileAvatar } from '@/features/chat';
 import {
+  endingView,
   formatCountdown,
   phaseAt,
+  RatingChips,
+  RATING_CLOSED,
   useAttendance,
   useCounterpartPresence,
   useNow,
+  useRating,
   useSessionRoom,
   type CounterpartPresence,
   type Phase,
@@ -55,6 +65,7 @@ export default function SessionScreen() {
   const ended = phase?.kind === 'terminada';
 
   const attendance = useAttendance(sessionId, canJoin, ended);
+  const myRating = useRating(sessionId);
   const counterpartPresence = useCounterpartPresence(
     canJoin ? sessionId : null,
     me?.id ?? null,
@@ -107,6 +118,15 @@ export default function SessionScreen() {
     );
   }
 
+  const firstName = match.counterpart.name.split(' ')[0];
+  // Sin las filas de asistencia o sin saber quién soy todavía no hay final que
+  // pintar: darlo por vacío enseñaría "no entró" un instante antes de preguntar.
+  const ending =
+    ended && myRating.attendance && me
+      ? endingView(myRating.attendance, me.id, match.counterpart.id, session, myRating.rating)
+      : null;
+  const endingKind = myRating.error === RATING_CLOSED ? 'cerrada' : (ending?.kind ?? null);
+
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
       {screenOptions}
@@ -126,6 +146,43 @@ export default function SessionScreen() {
         {phase && ended ? (
           <View style={styles.clock}>
             <ThemedText type="title">Sesión completada</ThemedText>
+
+            {endingKind === 'preguntar' && (
+              <>
+                <ThemedText type="body" themeColor="textSecondary">
+                  ¿Qué tal ha ido?
+                </ThemedText>
+                <RatingChips
+                  onSelect={myRating.submit}
+                  selected={myRating.rating}
+                  disabled={myRating.pending}
+                />
+                {myRating.error && (
+                  <ThemedText type="small" themeColor="danger">
+                    {myRating.error}
+                  </ThemedText>
+                )}
+              </>
+            )}
+
+            {endingKind === 'gracias' && (
+              <ThemedText type="body" themeColor="textSecondary">
+                Gracias — solo lo ves tú
+              </ThemedText>
+            )}
+
+            {endingKind === 'no-vino' && (
+              <ThemedText type="body" themeColor="textSecondary" style={styles.centeredText}>
+                {`${firstName} no entró`}
+              </ThemedText>
+            )}
+
+            {endingKind === 'cerrada' && (
+              <ThemedText type="body" themeColor="textSecondary">
+                {RATING_CLOSED}
+              </ThemedText>
+            )}
+
             <ActionButton label="Volver al chat" onPress={() => router.back()} />
           </View>
         ) : phase ? (

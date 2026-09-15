@@ -24,6 +24,8 @@ import type {
   Session,
   SessionAttendance,
   SessionProposalInput,
+  SessionRating,
+  SessionRatingEntry,
 } from './types';
 
 /** Cancela una suscripción. */
@@ -107,7 +109,9 @@ export interface MessageRepository {
  * Reglas, iguales en los dos backends (ver `src/data/sessions.ts`): una sola
  * sesión viva por match; `startsAt` entre ahora + 5 min y ahora + 30 días; solo
  * la otra persona responde a una propuesta; cualquiera cancela antes de empezar;
- * `join` solo en la ventana de entrada, e idempotente.
+ * `join` solo en la ventana de entrada, e idempotente; solo se valora una sesión
+ * terminada a la que entraron los dos, dentro de las 24 h siguientes, y la
+ * valoración es privada de quien la escribe.
  *
  * Errores: `SessionConflictError`, `SessionExpiredError`, `SessionWindowError`,
  * `SessionForbiddenError` (ver `src/data/session-errors.ts`).
@@ -124,6 +128,16 @@ export interface LockInSessionRepository {
   join(sessionId: string): Promise<SessionAttendance>;
   leave(sessionId: string): Promise<SessionAttendance>;
   listAttendance(sessionId: string): Promise<SessionAttendance[]>;
+  /**
+   * La sesión terminada de ese match que toca valorar, o `null`. Es la más
+   * reciente que está aceptada, terminada hace menos de 24 h, con las dos
+   * personas dentro y todavía sin valorar por ti.
+   */
+  getRatable(matchId: string): Promise<LockInSession | null>;
+  /** Tu valoración de esa sesión, o `null` si no la has valorado. */
+  getMyRating(sessionId: string): Promise<SessionRating | null>;
+  /** Escribe tu valoración. Repetir el mismo valor es idempotente. */
+  rate(sessionId: string, rating: SessionRating): Promise<SessionRatingEntry>;
   /** Hora del servidor en ISO, para corregir el reloj del dispositivo. */
   serverNow(): Promise<string>;
   /** Se notifica en cualquier cambio de sesiones o asistencia de ese match. */

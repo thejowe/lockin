@@ -83,11 +83,24 @@ jobs:
           # `itWithTimeTravel` de `repositories.contract.ts`, que necesitan reloj
           # simulado (`canTimeTravel: false` aquí; los cubren el mock y PGlite).
           # Un caso nuevo de ese tipo obliga a añadirlo a esta lista a propósito.
+          # Los nueve de valoración se añadieron el 2026-09-15: necesitan una
+          # sesión ya terminada y `propose_session` exige 5 minutos de margen,
+          # así que aquí no se pueden fabricar. Su SQL lo ejecuta el job
+          # "SQL embebido" de `ci.yml` (`npm run test:schema`).
           jq -e '
             ([.testResults[].assertionResults[] | select(.status == "pending") | .title]
               - ["una propuesta caducada ya no está viva ni se puede aceptar",
                  "una sesión aceptada termina sola y deja proponer otra",
-                 "una sesión empezada no se cancela: se sale"]) as $unexpected
+                 "una sesión empezada no se cancela: se sale",
+                 "terminada con los dos dentro: se valora y deja de pedirse",
+                 "con dos sin valorar se ofrece la más reciente",
+                 "una cancelada o una rechazada nunca son valorables",
+                 "sin tu asistencia no la valoras",
+                 "si la otra persona no entró, tampoco",
+                 "repetir el mismo valor es idempotente",
+                 "mandar otro valor choca y no reescribe el primero",
+                 "pasadas 24 horas la sesión se queda sin valorar",
+                 "la otra persona del match no ve tu valoración"]) as $unexpected
             | .numPassedTests > 0 and .numFailedTests == 0 and ($unexpected | length) == 0
           ' contract-result.json \
             || { echo 'La suite no corrió entera'; jq '{numPassedTests, numPendingTests, numFailedTests}' contract-result.json; exit 1; }

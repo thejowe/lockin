@@ -13,11 +13,18 @@ import {
   SessionForbiddenError,
   SessionWindowError,
 } from '../session-errors';
-import { isInJoinWindow, isSessionBlocks, isSessionLive, isValidStartsAt } from '../sessions';
+import {
+  attendedSession,
+  isInJoinWindow,
+  isInRatingWindow,
+  isSessionBlocks,
+  isSessionLive,
+  isValidStartsAt,
+} from '../sessions';
 import { createId, getState, mockNowMs, notify, subscribeTo } from './store';
 
 import type { LockInSessionRepository } from '../repositories';
-import type { LockInSession, SessionAttendance } from '../types';
+import type { LockInSession, SessionAttendance, SessionRatingEntry } from '../types';
 
 export const sessionsTopic = (matchId: string) => `sessions:${matchId}`;
 
@@ -25,6 +32,16 @@ const iso = (ms: number) => new Date(ms).toISOString();
 
 function membersOf(matchId: string): readonly string[] {
   return getState().matches.find((match) => match.id === matchId)?.profileIds ?? [];
+}
+
+/**
+ * Entraron las dos personas del match antes de que la sesión acabara. Es la
+ * regla 4 de la spec: sin las dos no hubo sesión, así que no se pregunta nada.
+ * Un match tiene siempre exactamente dos miembros.
+ */
+function bothAttended(session: LockInSession): boolean {
+  const rows = getState().attendance.filter((row) => row.sessionId === session.id);
+  return membersOf(session.matchId).every((profileId) => attendedSession(rows, profileId, session));
 }
 
 export function createMockSessionRepository(actorId: string): LockInSessionRepository {
@@ -150,6 +167,67 @@ export function createMockSessionRepository(actorId: string): LockInSessionRepos
       return getState()
         .attendance.filter((row) => row.sessionId === sessionId)
         .map((row) => ({ ...row }));
+    },
+
+    async getRatable(matchId) {
+      if (!isMember(matchId)) return null;
+      const now = mockNowMs();
+      const state = getState();
+      const candidates = state.lockInSessions
+        .filter((session) => session.matchId === matchId && isInRatingWindow(session, now))
+        .filter((session) => bothAttended(session))
+        .filter(
+          (session) =>
+            !state.ratings.some(
+              (entry) => entry.sessionId === session.id && entry.profileId === actorId
+            )
+        )
+        .sort((a, b) => Date.parse(b.startsAt) - Date.parse(a.startsAt));
+      return candidates[0] ? { ...candidates[0] } : null;
+    },
+
+    async getMyRating(sessionId) {
+      if (!visible(sessionId)) return null;
+      const entry = getState().ratings.find(
+        (row) => row.sessionId === sessionId && row.profileId === actorId
+      );
+      return entry ? entry.rating : null;
+    },
+
+    async rate(sessionId, rating) {
+      const session = mustSee(sessionId);
+      // El estado se mira aparte de la ventana: una sesión cancelada o rechazada
+      // no es "fuera de plazo", es una sesión que nunca se pudo valorar (LI004).
+      if (session.status !== 'aceptada') {
+        throw new SessionForbiddenError('La sesión no llegó a celebrarse');
+      }
+      const now = mockNowMs();
+      if (!isInRatingWindow(session, now)) {
+        throw new SessionWindowError('La sesión no ha terminado, o ya pasaron 24 horas');
+      }
+      if (!bothAttended(session)) {
+        throw new SessionForbiddenError('Solo se valora una sesión a la que entrasteis los dos');
+      }
+      const ratings = getState().ratings;
+      const existing = ratings.find(
+        (row) => row.sessionId === sessionId && row.profileId === actorId
+      );
+      if (existing) {
+        // Repetir el mismo toque es idempotente; cambiarlo, no: queda escrita.
+        if (existing.rating !== rating) throw new SessionConflictError('Ya valoraste esta sesión');
+        return { ...existing };
+      }
+      const row: SessionRatingEntry = {
+        sessionId,
+        profileId: actorId,
+        rating,
+        ratedAt: iso(now),
+      };
+      ratings.push(row);
+      // Sin `changed()` a propósito: la valoración es privada de quien la
+      // escribe, y avisar a los suscriptores publicaría por el canal del match
+      // que alguien acaba de valorar.
+      return { ...row };
     },
 
     async serverNow() {

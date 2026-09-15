@@ -120,6 +120,14 @@ Entrega: propuesta de sesión desde el chat, Pomodoro compartido de bloques 25+5
 - Cruces de una línea declarados en la spec: `src/app/chat/[matchId].tsx`, `src/app/(tabs)/_layout.tsx`, `src/app/_layout.tsx`; más el mock de `expo-notifications` en `jest.setup.js`.
 - Depende de: MVP cerrado (todos los bloques anteriores).
 
+### 8. `valoracion` — Valoración de 1 toque post-sesión (Fase 2)
+
+Entrega: al terminar una sesión a la que entraron las dos personas, cada una la valora de un toque (`floja` · `bien` · `genial`) en las 24 h siguientes. La valoración es **privada de quien la escribe**. Diseño en `docs/superpowers/specs/2026-09-15-valoracion-post-sesion-design.md`; plan en `docs/superpowers/plans/2026-09-15-valoracion-post-sesion.md`.
+
+- Archivos: **los mismos que `sesiones`** — no estrena alcance propio. Todo cae en `src/features/session/`, `src/app/session/`, las piezas de sesiones de `src/data/**`, `supabase/migrations/` y los archivos de esquema y E2E que ya tocó la pieza anterior. Sin cruces nuevos con otros bloques.
+- **Nunca se lanza a la vez que `sesiones`**: comparten dueño de archivos, así que la regla de oro se cumple por turnos y no por separación. Si las dos tienen trabajo abierto, van una detrás de otra.
+- Depende de: `sesiones` entregado. La casilla abierta de `sesiones` (verificación con dos móviles) **no la bloquea**: no tocan lo mismo.
+
 ## Orden recomendado de trabajo
 
 1. `arquitecto` primero y solo — es la base de todo lo demás.

@@ -247,3 +247,23 @@ export interface SessionProposalInput {
   startsAt: string;
   blocks: SessionBlocks;
 }
+
+/** Valoración de un toque de una sesión terminada. Privada de quien la escribe. */
+export type SessionRating = 'floja' | 'bien' | 'genial';
+
+/**
+ * Valoración que una persona dio a una sesión.
+ *
+ * La lee solo quien la escribió: la otra parte del match no la ve ni por
+ * repositorio ni por RLS. No la conviertas en nota pública ni en media sin
+ * releer la spec — el principio innegociable de `CONCEPTO.md` es que los dos
+ * lados de un match son pares, y una nota visible los vuelve evaluador y
+ * evaluado.
+ */
+export interface SessionRatingEntry {
+  sessionId: string;
+  /** Quien valora. Siempre el usuario actual: no se leen las de nadie más. */
+  profileId: string;
+  rating: SessionRating;
+  ratedAt: string;
+}

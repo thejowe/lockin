@@ -1,5 +1,168 @@
 # TODO — calidad
 
+## El SQL embebido entra en CI: PGlite como devDependency (2026-09-15)
+
+Deuda que dejó anotada `valoracion` en `docs/plan/todo/valoracion.md` →
+"Deuda detectada, fuera del alcance de este bloque":
+`supabase/schema-embedded.test.mjs` no lo corría ningún workflow, y es la única
+cobertura ejecutable del **comportamiento** de los RPC —`rate_session`,
+`ratable_session`, `session_rating_window_is_open`, `session_both_attended` y
+`session_is_live`—. Los casos de contrato que los prueban se saltan contra
+cualquier backend real (necesitan una sesión ya terminada y `propose_session`
+exige 5 minutos de margen), y lo que cubre `schema-drift.yml` es la *forma* del
+esquema: `schema-ci.mjs local` aplica las migraciones a una Supabase desechable
+y compara la huella, que dice qué objetos existen, no qué hacen.
+
+- [x] **Por qué PGlite estaba fuera del árbol: no había razón técnica.** Se
+  buscó el motivo antes de meterlo como dependencia. `supabase/README.md`
+  (línea 467) lo presenta como "verificación parcial reproducible sin Docker" y
+  explica la instalación en un directorio temporal, sin desaconsejar nada;
+  `docs/plan/todo/datos.md` lo anota como "instalado en
+  `%TEMP%/lockin-schema-validation`, **sin cambiar dependencias del repo**"; y
+  la cabecera del propio test decía "instalado fuera del repo; **sin cambios en
+  package.json/package-lock.json**". Las tres dicen lo mismo: `package.json` es
+  alcance de `calidad` y `datos`/`sesiones` no podían tocarlo (regla de oro de
+  `PLAN.md`). Es una frontera de reparto de archivos, no una propiedad del
+  paquete. Comprobado además que el paquete no trae contraindicaciones: **cero
+  dependencias transitivas**, **ningún script de instalación** (`npm view
+  @electric-sql/pglite@0.3.14 scripts --json` → sin `preinstall`, `install`,
+  `postinstall` ni `prepare`) y 20 MB desempaquetados sobre los 745 MB que ya
+  ocupa `node_modules`, un 2,7 % más en cada `npm ci`. Así que dependencia de
+  desarrollo y script npm, que es lo natural.
+- [x] **`@electric-sql/pglite` 0.3.14 en `devDependencies`**, con versión exacta
+  (como `@types/jest`) y no un rango: esa versión es la que fijan el README y
+  los TODO de `datos`, y una menor nueva cambiaría el Postgres embebido bajo los
+  pies de la huella. El lock queda con su integridad
+  (`sha512-3DB258dhqdsArOI1fIt7cb9RpUOgcDg5hXWVgVHAeqVQ/qxtFy605QKs4gx6mFq3jWsSPqDN8TgSEsqC3OfV9Q==`,
+  la misma que publica el registro), que es lo que `npm ci` verifica y lo que la
+  instalación a mano no daba. `npm ci --dry-run` sin error: lock y
+  `package.json` en sincronía.
+- [x] **`npm run test:schema`** = `node --test supabase/schema-compare.test.mjs
+  supabase/schema-embedded.test.mjs`. Con lista explícita y no con el glob
+  `supabase/*.test.mjs` por dos motivos: el glob arrastraría
+  `supabase/cleanup.test.mjs`, que sigue saltándose sin `PGLITE_MODULE` (ver
+  "Lo que queda"), y `node --test` sale en **verde** cuando un patrón no casa
+  con nada. Entra también el comparador porque el test embebido importa
+  `compareFingerprints` de él; `schema-drift.yml` lo seguirá corriendo por su
+  cuenta, son 0,2 s.
+- [x] **`skip` retirado de `supabase/schema-embedded.test.mjs`** (único cambio
+  en ese archivo, junto con la cabecera; **no se tocó ni una aserción** —
+  `git diff -w` son 20 líneas, el resto del diff es reindentado de Prettier al
+  pasar el test de tres argumentos a dos). El módulo se resuelve ahora así:
+  `PGLITE_MODULE` si está —sigue admitido, para no invalidar el README de
+  `datos`— y si no, `@electric-sql/pglite` del árbol. Sin `skip` porque con el
+  paquete en `npm ci` que falte ya no es "no lo tengo instalado" sino un
+  entorno a medias, y un salto silencioso dejaría el job verde sin ejecutar una
+  línea de SQL.
+- [x] **Job `schema` ("SQL embebido") en `ci.yml`**, no en `schema-drift.yml`.
+  Las dos razones, escritas también en el propio YAML: (a) cuesta **2,5 s**
+  sobre un `npm ci` que CI ya paga y cachea, así que no hay nada que aligerar
+  llevándolo a otro ritmo; `schema-drift.yml`, en cambio, no corre `npm ci`
+  —desactiva hasta el caché de npm a propósito— y habría que instalarle 745 MB
+  de árbol o volver a una instalación suelta sin lock. (b) El trabajo `remote`
+  de `schema-drift.yml` está **en rojo** mientras el usuario no aplique
+  `20260915000100_session_ratings.sql`, y ese rojo es el esperado: meter ahí la
+  única cobertura de los RPC sería esconder un rojo nuevo detrás de uno viejo.
+  De paso, `ci.yml` corre también en `pull_request` y `schema-drift.yml` solo en
+  `push`.
+- [x] **Guarda contra el job que pasa sin ejecutar nada.** Medido, no supuesto:
+  `node --test supabase/schema-compare.test.mjs supabase/nope.test.mjs` sale con
+  **exit 0** e ignora en silencio el archivo que no existe (con la lista entera
+  inexistente sí falla, pero basta con que uno exista para que se lo trague).
+  Así que el paso no se fía del código de salida: pasa la salida por `tee` y
+  exige la última línea que imprime el test —`Rol lector, 4 mutaciones, teardown
+  dos veces y guardia de sobrecarga: OK`—, que solo se escribe si el cuerpo
+  llegó al final. Es independiente del reporter y del nombre del archivo.
+
+### Verificación (2026-09-15, en este entorno)
+
+- `npm run test:schema` → `# tests 9`, `# pass 9`, `# fail 0`, `# skipped 0`,
+  2,5 s. Log del embebido: `SQL ejecutado: 9 migraciones; digest
+  8cb04a016337d90f08607538bad9b748; 280 objetos` — el mismo digest que anotó
+  `valoracion` en su Tarea 3.
+- **El paso del workflow, literal**: extraído del YAML ya parseado
+  (`yaml.safe_load(...)['jobs']['schema']['steps'][-1]['run']`) y ejecutado tal
+  cual con `RUNNER_TEMP` puesto → exit 0, con la línea de la guarda en el log.
+  Los cuatro workflows parsean (`ci.yml` → `quality`, `build`, `schema`).
+- **Controles negativos, los tres en rojo:**
+  1. Archivo renombrado en la lista (`schema-embedded-RENOMBRADO.test.mjs`):
+     `node --test` da `# pass 8`, `# skipped 0` y exit 0 — y la guarda corta con
+     `El SQL embebido no llegó a ejecutarse entero`, exit 1. Sin guarda, ese
+     caso habría sido un verde vacío.
+  2. Sin PGlite (`node_modules/@electric-sql` apartado): `not ok 9 …
+     code: 'ERR_MODULE_NOT_FOUND'`, `# fail 1`, exit 1. Con el `skip` de antes
+     habría sido `# skipped 1` y exit 0.
+  3. **Regla de SQL rota a propósito**: en
+     `supabase/migrations/20260915000100_session_ratings.sql`, la guarda de
+     estado de `rate_session` (`if v_session.status <> 'aceptada' then`) puesta
+     a `if false then` → `# fail 1` con `expected: cancelada: 'LI004'` /
+     `actual: cancelada: 'sin error'`. Migración restaurada a continuación
+     (`git status` limpio para `supabase/migrations/`) y verde otra vez.
+- De paso, y sin romper nada: `npm run lint`, `npm run format:check`,
+  `npm run typecheck` limpios; `npm test -- --ci` con **563 pasando**, 63
+  saltados (contrato opt-in) y 53 suites; `npm run test:e2e` 58/58; y
+  `npx expo export --platform web` en verde, que es lo que comprueba que la
+  dependencia nueva no entra en el bundle ni molesta a Metro.
+
+### Lo que queda
+
+- [ ] **Verlo verde en Actions.** Aquí está comprobado paso a paso, pero el job
+  `schema` no ha corrido todavía en un runner: falta el run de `CI` sobre este
+  commit.
+- [x] **Verde en Actions**, que es lo que faltaba para dar el job por bueno:
+  `CI` sobre `890dc16`,
+  [run 34992782667](https://github.com/thejowe/lockin/actions/runs/34992782667),
+  con los siete jobs en verde — `SQL embebido` incluido, o sea que la guarda del
+  `grep` no se disparó y el SQL se ejecutó entero en el runner, no solo aquí.
+  En el mismo commit, `E2E Android`
+  ([run 34992782434](https://github.com/thejowe/lockin/actions/runs/34992782434))
+  con sus dos variantes en verde, y `Schema drift`
+  ([run 34992782362](https://github.com/thejowe/lockin/actions/runs/34992782362))
+  con el job local en verde y solo el remoto en rojo, que es el esperado
+  mientras la migración de `valoracion` no esté aplicada en el proyecto real.
+- [x] ~~**`supabase/cleanup.test.mjs` sigue sin correr en ningún sitio.**~~
+  **Hecho por `datos` el 2026-09-15** (`25bf903`), que era de quien eran esos
+  archivos. Antes de moverlo comprobó que correrlo en cada push es seguro pese
+  a que toca SQL destructivo: base en memoria nueva por pasada, sin red ni
+  `.env`, y el `delete from auth.users` muere con el proceso. Entró en
+  `test:schema`, que pasa a 10 tests y 0 saltos. Detalle en `todo/datos.md`.
+- [x] ~~**`supabase/README.md` (línea 467) se ha quedado corto.**~~ Hecho en el
+  mismo commit: abre con `npm ci` + `npm run test:schema` y mantiene el camino
+  manual con `PGLITE_MODULE`, que sigue siendo válido.
+- [x] **Agujero que destapó ese cambio, y que sí era de aquí** (`6e860ce`): con
+  `test:schema` corriendo dos archivos, la guarda del job solo exigía la línea
+  final del embebido, así que borrar o renombrar `cleanup.test.mjs` habría
+  dejado el job verde sin ejecutarlo — el mismo fallo que la guarda existe para
+  evitar. Ahora exige una línea por archivo. Verificado ejecutando el paso tal
+  cual (las dos pasan) y quitando del log la del limpiador (la guarda corta).
+  `CI` verde sobre `6e860ce` con los siete jobs.
+
+## La lista blanca de `contract.yml` se había quedado corta (2026-09-15)
+
+- [x] Encontrado al revisar los workflows para lo de arriba, y arreglado aquí
+  porque `.github/workflows/` es alcance de este bloque. El paso "Suite de
+  contrato" exige con `jq` que no haya saltos inesperados, con una lista de tres
+  títulos: son los `itWithTimeTravel` de `repositories.contract.ts`, que contra
+  Supabase local se saltan siempre (`canTimeTravel: false` → `it.skip`). La
+  pieza `valoracion` añadió **nueve** casos de ese tipo el 2026-09-15 y la lista
+  no se movió, así que la siguiente ejecución a mano de `Contrato Supabase`
+  habría caído en `La suite no corrió entera` sin que nada estuviera roto —el
+  peor tipo de rojo, el que enseña a ignorar el workflow—. No se ha notado antes
+  porque ese workflow es solo `workflow_dispatch`.
+  **Arreglo:** los nueve títulos añadidos a la lista, que es justo lo que pide
+  el comentario del propio paso ("Un caso nuevo de ese tipo obliga a añadirlo a
+  esta lista a propósito"), con la razón al lado: necesitan una sesión ya
+  terminada y su SQL lo ejecuta ahora el job `SQL embebido` de `ci.yml`.
+  **Verificación sin Docker**, que es lo que hay aquí: se extrajo el programa
+  `jq` del YAML ya parseado y se corrió contra un `contract-result.json`
+  sintético con las 12 pendientes reales (sacadas del propio
+  `repositories.contract.ts`) más un caso pasado. Con la lista de tres →
+  `false`, exit 1 (el rojo que habría salido). Con la lista de doce → `true`,
+  exit 0. Y sigue cortando lo que tiene que cortar: una pendiente no declarada
+  → `false`, exit 1; `numPassedTests = 0` → `false`, exit 1.
+  Queda **sin comprobar en un runner**: el workflow necesita Docker y Supabase
+  CLI, y se lanza a mano.
+
 ## E2E Android rojo en setup-android: Google retiró `tools` (2026-09-14)
 
 - [x] Los dos jobs de `e2e.yml` caían antes de compilar, en

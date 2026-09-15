@@ -1,7 +1,12 @@
 // Inventario y borrado de cuentas de seed/pruebas contra PostgreSQL embebido.
 // NO sustituye ejecutarlos en Supabase: auth.users es un fixture con las
 // columnas que usan seed.sql y los dos scripts, sin GoTrue ni sus tablas hijas.
-// PGLITE_MODULE = ruta absoluta al dist/index.js de @electric-sql/pglite 0.3.14.
+// Se corre con `npm run test:schema` —job «SQL embebido» de ci.yml—: PGlite 0.3.14
+// es devDependency desde 2026-09-15, así que después de `npm ci` no hace falta
+// nada más. PGLITE_MODULE (ruta absoluta al dist/index.js de una copia instalada
+// fuera del repo, supabase/README.md) se sigue admitiendo y tiene prioridad.
+// Lo destructivo que prueba (borrado.sql) solo toca la base efímera en memoria
+// que crea cada pasada: sin red y sin credenciales, no alcanza a ningún proyecto.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
@@ -10,6 +15,14 @@ import { dirname, join } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const read = (...parts) => readFileSync(join(here, ...parts), 'utf8');
+
+// Ya no lleva `skip`: con el paquete fuera del árbol, saltarse el test era lo
+// razonable; ahora que viene con `npm ci`, que falte significa entorno a medio
+// instalar, y un salto silencioso dejaría el job verde sin ejecutar una línea de
+// SQL — que es peor que no tener job.
+const pgliteModule = process.env.PGLITE_MODULE
+  ? pathToFileURL(process.env.PGLITE_MODULE).href
+  : '@electric-sql/pglite';
 
 const NURIA = '11111111-1111-4111-8111-000000000001';
 const MARC = '11111111-1111-4111-8111-000000000002';
@@ -99,120 +112,116 @@ function fillDeletion({ ids, decisiones, matches, mensajes }) {
     .replace(/-1(\s+-- ACUSE_MENSAJES)/, `${mensajes}$1`);
 }
 
-test(
-  'Limpieza: inventario clasifica y borrado respeta sus guardias',
-  { skip: !process.env.PGLITE_MODULE && 'Requiere PGLITE_MODULE; no verifica Supabase real' },
-  async () => {
-    const { PGlite } = await import(pathToFileURL(process.env.PGLITE_MODULE).href);
-    const db = await freshDatabase(PGlite);
-    try {
-      const before = JSON.stringify(
-        (await db.query('select count(*)::int as n from public.decisions')).rows
-      );
-      const rows = (await db.exec(read('cleanup', 'inventario.sql'))).at(-1).rows;
-      assert.equal(
-        JSON.stringify((await db.query('select count(*)::int as n from public.decisions')).rows),
-        before,
-        'el inventario no debe escribir'
-      );
-      const byId = Object.fromEntries(rows.filter((r) => r.id).map((r) => [r.id, r]));
-      const categoryOf = (id) => byId[id].categoria;
+test('Limpieza: inventario clasifica y borrado respeta sus guardias', async () => {
+  const { PGlite } = await import(pgliteModule);
+  const db = await freshDatabase(PGlite);
+  try {
+    const before = JSON.stringify(
+      (await db.query('select count(*)::int as n from public.decisions')).rows
+    );
+    const rows = (await db.exec(read('cleanup', 'inventario.sql'))).at(-1).rows;
+    assert.equal(
+      JSON.stringify((await db.query('select count(*)::int as n from public.decisions')).rows),
+      before,
+      'el inventario no debe escribir'
+    );
+    const byId = Object.fromEntries(rows.filter((r) => r.id).map((r) => [r.id, r]));
+    const categoryOf = (id) => byId[id].categoria;
 
-      for (let i = 1; i <= 8; i++) {
-        assert.equal(categoryOf(`11111111-1111-4111-8111-00000000000${i}`), 'seed');
-      }
-      BURST_A.forEach((id) => assert.equal(categoryOf(id), 'prueba: contrato sin perfil (ráfaga)'));
-      BURST_B.forEach((id) => assert.equal(categoryOf(id), 'prueba: contrato con perfil'));
-      assert.equal(categoryOf(DEVICE), 'prueba: cuenta de dispositivo sin perfil');
-      assert.equal(categoryOf(REAL), 'revisar: posible usuario real');
-      assert.equal(categoryOf(LONE), 'revisar: posible usuario real');
-
-      assert.deepEqual(
-        [
-          byId[REAL].colateral_decisiones,
-          byId[REAL].colateral_matches,
-          byId[REAL].colateral_mensajes,
-        ].map(Number),
-        [3, 1, 1]
-      );
-      assert.equal(byId[NURIA].colateral_decisiones, null);
-      const total = rows.at(-1);
-      assert.match(total.categoria, /^TOTAL colateral/);
-      assert.deepEqual(
-        [total.colateral_decisiones, total.colateral_matches, total.colateral_mensajes].map(Number),
-        [3, 1, 1]
-      );
-      console.log(
-        `Inventario: ${rows.length - 1} cuentas → ` +
-          Object.entries(
-            rows
-              .slice(0, -1)
-              .reduce((acc, r) => ({ ...acc, [r.categoria]: (acc[r.categoria] ?? 0) + 1 }), {})
-          )
-            .map(([k, v]) => `${v} «${k}»`)
-            .join(', ') +
-          `; TOTAL colateral 3/1/1`
-      );
-
-      const tests = [...BURST_A, ...BURST_B, DEVICE];
-      const accountCount = async () =>
-        Number((await db.query('select count(*) as n from auth.users')).rows[0].n);
-      const accounts = await accountCount();
-
-      // Sin tocar el acuse (-1) no pasa.
-      await assert.rejects(
-        db.exec(fillDeletion({ ids: tests, decisiones: -1, matches: -1, mensajes: -1 })),
-        /Colateral sobre cuentas que se quedan: 3 decisiones, 1 matches, 1 mensajes/
-      );
-      await db.exec('rollback;');
-      // Un perfil con nombre propio no se borra desde aquí.
-      await assert.rejects(
-        db.exec(fillDeletion({ ids: [...tests, REAL], decisiones: 0, matches: 0, mensajes: 0 })),
-        /No son reconocibles como prueba, revisar a mano: aaaaaaaa-0000-4000-8000-000000000001 \(Joel\)/
-      );
-      await db.exec('rollback;');
-      // Un id que ya no existe aborta.
-      await assert.rejects(
-        db.exec(
-          fillDeletion({
-            ids: ['eeeeeeee-0000-4000-8000-000000000000'],
-            decisiones: 3,
-            matches: 1,
-            mensajes: 1,
-          })
-        ),
-        /No existen en auth.users/
-      );
-      await db.exec('rollback;');
-      assert.equal(await accountCount(), accounts, 'los rechazos no borran nada');
-
-      const result = (
-        await db.exec(fillDeletion({ ids: tests, decisiones: 3, matches: 1, mensajes: 1 }))
-      ).at(-1).rows[0];
-      assert.deepEqual(Object.fromEntries(Object.entries(result).map(([k, v]) => [k, Number(v)])), {
-        cuentas_restantes: 2,
-        seed_restantes: 0,
-        perfiles_restantes: 1,
-        decisiones_restantes: 0,
-        matches_restantes: 0,
-        mensajes_restantes: 0,
-      });
-      const left = (await db.query('select id from auth.users order by id')).rows.map((r) => r.id);
-      assert.deepEqual(left, [REAL, LONE]);
-      console.log(
-        `Borrado: ${accounts} → ${JSON.stringify(result)}; quedan Joel y el anónimo suelto`
-      );
-
-      await assert.rejects(
-        db.exec(fillDeletion({ ids: tests, decisiones: 0, matches: 0, mensajes: 0 })),
-        /No existen en auth.users/
-      );
-      await db.exec('rollback;');
-      console.log(
-        'Guardias: acuse sin rellenar, perfil no reconocible, id inexistente y repetición: OK'
-      );
-    } finally {
-      await db.close();
+    for (let i = 1; i <= 8; i++) {
+      assert.equal(categoryOf(`11111111-1111-4111-8111-00000000000${i}`), 'seed');
     }
+    BURST_A.forEach((id) => assert.equal(categoryOf(id), 'prueba: contrato sin perfil (ráfaga)'));
+    BURST_B.forEach((id) => assert.equal(categoryOf(id), 'prueba: contrato con perfil'));
+    assert.equal(categoryOf(DEVICE), 'prueba: cuenta de dispositivo sin perfil');
+    assert.equal(categoryOf(REAL), 'revisar: posible usuario real');
+    assert.equal(categoryOf(LONE), 'revisar: posible usuario real');
+
+    assert.deepEqual(
+      [
+        byId[REAL].colateral_decisiones,
+        byId[REAL].colateral_matches,
+        byId[REAL].colateral_mensajes,
+      ].map(Number),
+      [3, 1, 1]
+    );
+    assert.equal(byId[NURIA].colateral_decisiones, null);
+    const total = rows.at(-1);
+    assert.match(total.categoria, /^TOTAL colateral/);
+    assert.deepEqual(
+      [total.colateral_decisiones, total.colateral_matches, total.colateral_mensajes].map(Number),
+      [3, 1, 1]
+    );
+    console.log(
+      `Inventario: ${rows.length - 1} cuentas → ` +
+        Object.entries(
+          rows
+            .slice(0, -1)
+            .reduce((acc, r) => ({ ...acc, [r.categoria]: (acc[r.categoria] ?? 0) + 1 }), {})
+        )
+          .map(([k, v]) => `${v} «${k}»`)
+          .join(', ') +
+        `; TOTAL colateral 3/1/1`
+    );
+
+    const tests = [...BURST_A, ...BURST_B, DEVICE];
+    const accountCount = async () =>
+      Number((await db.query('select count(*) as n from auth.users')).rows[0].n);
+    const accounts = await accountCount();
+
+    // Sin tocar el acuse (-1) no pasa.
+    await assert.rejects(
+      db.exec(fillDeletion({ ids: tests, decisiones: -1, matches: -1, mensajes: -1 })),
+      /Colateral sobre cuentas que se quedan: 3 decisiones, 1 matches, 1 mensajes/
+    );
+    await db.exec('rollback;');
+    // Un perfil con nombre propio no se borra desde aquí.
+    await assert.rejects(
+      db.exec(fillDeletion({ ids: [...tests, REAL], decisiones: 0, matches: 0, mensajes: 0 })),
+      /No son reconocibles como prueba, revisar a mano: aaaaaaaa-0000-4000-8000-000000000001 \(Joel\)/
+    );
+    await db.exec('rollback;');
+    // Un id que ya no existe aborta.
+    await assert.rejects(
+      db.exec(
+        fillDeletion({
+          ids: ['eeeeeeee-0000-4000-8000-000000000000'],
+          decisiones: 3,
+          matches: 1,
+          mensajes: 1,
+        })
+      ),
+      /No existen en auth.users/
+    );
+    await db.exec('rollback;');
+    assert.equal(await accountCount(), accounts, 'los rechazos no borran nada');
+
+    const result = (
+      await db.exec(fillDeletion({ ids: tests, decisiones: 3, matches: 1, mensajes: 1 }))
+    ).at(-1).rows[0];
+    assert.deepEqual(Object.fromEntries(Object.entries(result).map(([k, v]) => [k, Number(v)])), {
+      cuentas_restantes: 2,
+      seed_restantes: 0,
+      perfiles_restantes: 1,
+      decisiones_restantes: 0,
+      matches_restantes: 0,
+      mensajes_restantes: 0,
+    });
+    const left = (await db.query('select id from auth.users order by id')).rows.map((r) => r.id);
+    assert.deepEqual(left, [REAL, LONE]);
+    console.log(
+      `Borrado: ${accounts} → ${JSON.stringify(result)}; quedan Joel y el anónimo suelto`
+    );
+
+    await assert.rejects(
+      db.exec(fillDeletion({ ids: tests, decisiones: 0, matches: 0, mensajes: 0 })),
+      /No existen en auth.users/
+    );
+    await db.exec('rollback;');
+    console.log(
+      'Guardias: acuse sin rellenar, perfil no reconocible, id inexistente y repetición: OK'
+    );
+  } finally {
+    await db.close();
   }
-);
+});

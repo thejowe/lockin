@@ -24,6 +24,7 @@ Se aplican en orden de nombre:
 | `20260907000100_profiles_seeking_specialties.sql` | `profiles.seeking_specialties` — qué busca el perfil en la otra persona |
 | `20260907000200_discovery_mutual_complement.sql` | Orden por encaje mutuo y desempate estable por id antes de paginar |
 | `20260913000100_lockin_sessions.sql` | Sesiones Lock-In: `lockin_sessions`, `session_attendance`, RLS de lectura, reglas de tiempo y RPCs `propose/respond/cancel/join/leave_session`, `server_now` |
+| `20260915000100_session_ratings.sql` | Valoración post-sesión: `session_ratings`, RLS **privada** (`profile_id = auth.uid()`, no `is_session_member`), `session_rating_window_is_open`, `session_both_attended` y RPCs `rate_session`/`ratable_session`. Sin realtime a propósito |
 
 Las aplicadas no se editan nunca: un cambio de esquema entra como archivo nuevo.
 Editar `20260905000200` para meterle una columna dejaría el repo diciendo una
@@ -463,14 +464,39 @@ SELECT sobre tablas y la idempotencia de la retirada. Los artefactos
 Postgres y diffs durante 14 días, también si falla. El comparador rechaza
 salidas vacías, truncadas o cuyo digest no corresponde al contenido.
 
-Verificación parcial reproducible sin Docker: instalar `@electric-sql/pglite@0.3.14`
-en un directorio temporal, definir `PGLITE_MODULE` como la ruta absoluta a su
-`dist/index.js` y ejecutar `node --test supabase/schema-embedded.test.mjs`.
-Usa una fixture mínima de Auth, no Supabase real, y solo instala las funciones
-del seed, no sus cuentas. Resultado 2026-09-09: 7 migraciones, 174 líneas de
-objetos, rol lector, cuatro mutaciones, retirada dos veces y sobrecarga
-detectada; 1 test pasado. No utilizar ese digest embebido como baseline del
+Verificación parcial reproducible sin Docker: **`npm ci` y `npm run test:schema`**,
+sin instalar nada a mano. Desde el 2026-09-15 `@electric-sql/pglite@0.3.14` es
+devDependency del repo (versión exacta, con su integridad en el lock), y el
+script corre `schema-compare.test.mjs`, `schema-embedded.test.mjs` y
+`cleanup.test.mjs` — lo mismo que el job «SQL embebido» de
+`.github/workflows/ci.yml` en cada push. Ninguno se salta: si falta el paquete,
+fallan en vez de pasar en verde sin ejecutar SQL.
+
+El camino a mano sigue valiendo, para probar otra copia de PGlite sin tocar el
+árbol: instalar `@electric-sql/pglite@0.3.14` en un directorio temporal, definir
+`PGLITE_MODULE` como la ruta absoluta a su `dist/index.js` (tiene prioridad sobre
+el paquete del árbol) y ejecutar `node --test supabase/schema-embedded.test.mjs`
+(o `supabase/cleanup.test.mjs`).
+
+`schema-embedded.test.mjs` usa una fixture mínima de Auth, no Supabase real, y
+solo instala las funciones
+del seed, no sus cuentas. También es el único sitio donde se pueden probar las
+reglas de una sesión ya terminada —`propose_session` exige 5 minutos de margen,
+así que la suite de contrato no puede fabricar una—: ahí se escriben filas con
+fecha pasada y se interrogan `session_rating_window_is_open`,
+`session_both_attended`, `rate_session` y `ratable_session`. Resultado
+2026-09-15: 9 migraciones, 280 líneas de objetos, rol lector, cuatro
+mutaciones, retirada dos veces y sobrecarga detectada; 1 test pasado. No utilizar ese digest embebido como baseline del
 proyecto Supabase: sus privilegios iniciales y Auth son distintos.
+
+`cleanup.test.mjs` monta sobre esa misma base efímera las cuentas y perfiles de
+`seed.sql` más cuentas anónimas fabricadas, y comprueba los dos scripts de
+"Mantenimiento" de arriba: que `cleanup/inventario.sql` clasifica cada cuenta y
+no escribe nada, y que `cleanup/borrado.sql` aborta si el acuse del colateral no
+cuadra, si se cuela un perfil no reconocible o si un id no existe. Lo
+destructivo ocurre solo en la base en memoria de la pasada —sin red y sin
+credenciales—, por eso puede correr en cada push. Resultado 2026-09-15:
+`npm run test:schema` → 10 tests, 10 pasados, 0 saltados, 2,7 s.
 
 El SQL fija `search_path=pg_catalog` y orden UTF-8 con `COLLATE "C"` en ambos
 lados. Una versión mayor distinta de Postgres puede cambiar el texto de

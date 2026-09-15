@@ -22,7 +22,13 @@ import {
   parseMaestroFailure,
   shouldRetry,
 } from './triage.mjs';
-import { verifyAbsence, verifyPersistence, verifySessionAttendance } from './verify.mjs';
+import {
+  prepareSessionRating,
+  verifyAbsence,
+  verifyPersistence,
+  verifySessionAttendance,
+  verifySessionRating,
+} from './verify.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const runtime = join(root, 'e2e/.runtime');
@@ -30,6 +36,9 @@ const journeyFile = join(root, 'e2e/full-journey.yaml');
 // Segundo caso, solo con credenciales: entra y sale de la sesión que deja
 // `e2e/session-now.sql` en el match del recorrido. Ver la cabecera de ese `.yaml`.
 const sessionFile = join(root, 'e2e/session.yaml');
+// Tercer caso, encadenado al anterior: valora de un toque esa misma sesión, ya
+// terminada por `prepareSessionRating`. Ver la cabecera de ese `.yaml`.
+const ratingFile = join(root, 'e2e/session-rate.yaml');
 // Nombre con el que Android llama a la app en sus propios diálogos. Se lee de
 // `app.json` para que no se quede atrás si el bloque `arquitecto` lo cambia: de
 // él depende poder decir si el "X no responde" de un ANR habla de nosotros.
@@ -529,9 +538,46 @@ if (command === 'test') {
       }
       await verifySessionAttendance(status, profileName);
 
+      // La sesión que se acaba de vivir se envejece hasta dejarla terminada y
+      // con los dos dentro: es la única forma de llegar a la repesca sin dejar
+      // dos sesiones en el match, donde la viva taparía a la valorable.
+      await prepareSessionRating(status, profileName);
+
+      const ratingDir = join(dir, 'rating');
+      mkdirSync(ratingDir, { recursive: true });
+      const ratingRun = spawnSync(
+        'maestro',
+        [
+          'test',
+          '--format',
+          'junit',
+          '--output',
+          join(ratingDir, 'maestro.xml'),
+          '--debug-output',
+          ratingDir,
+          '--test-output-dir',
+          ratingDir,
+          '--flatten-debug-output',
+          '-e',
+          'MESSAGE=' + message,
+          ratingFile,
+        ],
+        { cwd: root, stdio: 'inherit' }
+      );
+      if (ratingRun.error) throw ratingRun.error;
+      if (ratingRun.status !== 0) {
+        const diagnosis = diagnose(ratingDir);
+        return { outcome: diagnosis.kind, why: 'session-rate.yaml: ' + diagnosis.why };
+      }
+      await verifySessionRating(status, profileName);
+
       writeFileSync(
         join(dir, 'postgres.json'),
-        JSON.stringify({ runId, variant, persistence: 'verified', session: 'verified' }, null, 2)
+        JSON.stringify(
+          { runId, variant, persistence: 'verified', session: 'verified', rating: 'verified' },
+          null,
+          2
+        )
       );
       return { outcome: 'pass', why: 'recorrido, persistencia y sesión Lock-In verificados' };
     } catch (error) {
