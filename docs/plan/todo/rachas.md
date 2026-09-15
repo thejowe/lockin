@@ -45,10 +45,30 @@ todas.
       `npm test -- --coverage` con 574 pasando, 63 saltados (contrato opt-in) y
       sin aviso de umbral — 92.53/85.04/92.40/94.24 sobre el suelo
       89.82/82.56/91.49/91.38.
-- [ ] [Codex] Tarea 2 — Mock y casos de contrato — `listStreaks` en memoria sin
-      leer `ratings`, los nueve casos de `describe('rachas')` (3 con `it`, 6 con
-      `itWithTimeTravel`) y retirada del andamio del mock. Terminado = los casos
-      pasan contra el mock y la cobertura no baja.
+- [x] Tarea 2 — Mock y casos de contrato — `listStreaks` en memoria filtra
+      `state.matches` por `isMember`, y por cada match filtra
+      `state.lockInSessions` a `aceptada` + `bothAttended` (nunca toca
+      `state.ratings`) y pasa esas sesiones a `pairStreak`. `describe('rachas')`
+      en `repositories.contract.ts`, dentro de `describe('sessions')` y después
+      de `describe('valoración')`, con el helper local `sharedSession` (como
+      `endedSession` pero sin esperar al final). 9 casos: 3 con `it` normal (los
+      dos dentro suman 1 e igual para las dos personas; solo uno dentro no hay
+      racha; alguien de fuera no la ve) y 6 con `itWithTimeTravel` (dos seguidas
+      suman 2; un hueco de 7 días o más no las une; pasados 7 días del final ya
+      no hay racha; un plantón en medio no rompe; una cancelada en medio no
+      rompe; valorar no cambia la racha de ninguno de los dos). Retirado el
+      andamio de la Tarea 1: el stub de `listStreaks` del mock y su caso en
+      `src/data/mock/index.test.ts`.
+      Verificado 2026-09-15: `npx jest src/data/mock src/data/streaks.test.ts`
+      99/99, `npx tsc --noEmit` limpio, `npm run lint` limpio, y `npm test --
+      coverage` con 582 pasando, 72 saltados (contrato opt-in) y sin aviso de
+      umbral — 92.70/85.11/92.21/94.48 sobre el suelo 89.82/82.56/91.49/91.38.
+      `npm run format:check` sigue marcando CRLF en todo el repo por el entorno
+      Windows (nota de memoria); en su lugar, `npx prettier --check` sobre los
+      tres archivos tocados solo difiere del formateado en los finales de línea
+      (`diff --strip-trailing-cr` sin diferencias reales), salvo un `printWidth`
+      real en un `itWithTimeTravel` de `repositories.contract.ts` que se
+      corrigió partiendo la llamada en varias líneas.
 - [ ] [Claude] Tarea 3 — Migración SQL y cobertura en PGlite —
       `20260915000200_match_streaks.sql` (`match_streaks()` `SECURITY DEFINER`)
       y sus cadenas en `schema-embedded.test.mjs`. `[Claude]` porque es la pieza

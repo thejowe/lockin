@@ -903,6 +903,135 @@ export function describeRepositoryContract(backend: ContractBackend): void {
           expect((await theirs.getRatable(matchId))?.id).toBe(sessionId);
         });
       });
+
+      /**
+       * La racha de pareja de `docs/superpowers/specs/2026-09-15-rachas-design.md`.
+       *
+       * Es del match, nunca de una persona, y sale solo de sesiones y
+       * asistencia: ningún caso de aquí lee ni escribe `session_ratings`. Los
+       * tres primeros funcionan contra Supabase real; el resto necesita saltar
+       * días de reloj y solo corre con `itWithTimeTravel`.
+       */
+      describe('rachas', () => {
+        const DAY = 24 * 60 * MINUTE;
+
+        /**
+         * Una sesión aceptada con las dos personas dentro, la única situación
+         * que cuenta para la racha. A diferencia de `endedSession`, no espera a
+         * que termine: hay casos que necesitan controlar ese tiempo aparte.
+         */
+        async function sharedSession(): Promise<string> {
+          const session = await mine.propose({ matchId, startsAt: await soon(), blocks: 1 });
+          await theirs.respond(session.id, 'aceptada');
+          await fixture.elapse(3_000);
+          await mine.join(session.id);
+          await theirs.join(session.id);
+          return session.id;
+        }
+
+        it('los dos dentro suman 1, igual para las dos personas', async () => {
+          await sharedSession();
+
+          const mineStreaks = await mine.listStreaks();
+          const theirsStreaks = await theirs.listStreaks();
+          const mineEntry = mineStreaks.find((streak) => streak.matchId === matchId);
+          const theirsEntry = theirsStreaks.find((streak) => streak.matchId === matchId);
+
+          expect(mineEntry).toMatchObject({ matchId, count: 1 });
+          expect(theirsEntry).toEqual(mineEntry);
+        });
+
+        it('con solo una persona dentro no hay racha', async () => {
+          const session = await mine.propose({ matchId, startsAt: await soon(), blocks: 1 });
+          await theirs.respond(session.id, 'aceptada');
+          await fixture.elapse(3_000);
+          await mine.join(session.id);
+
+          const streaks = await mine.listStreaks();
+
+          expect(streaks.find((streak) => streak.matchId === matchId)).toBeUndefined();
+        });
+
+        it('alguien de fuera del match no ve esa racha', async () => {
+          await sharedSession();
+
+          const outsider = fixture.outsiderSessions();
+          const streaks = await outsider.listStreaks();
+
+          expect(streaks.find((streak) => streak.matchId === matchId)).toBeUndefined();
+        });
+
+        itWithTimeTravel('dos sesiones compartidas seguidas suman 2', async () => {
+          await sharedSession();
+          await fixture.elapse(36 * MINUTE);
+
+          await sharedSession();
+
+          const streaks = await mine.listStreaks();
+          expect(streaks.find((streak) => streak.matchId === matchId)).toMatchObject({ count: 2 });
+        });
+
+        itWithTimeTravel('un hueco de 7 días o más entre dos compartidas no las une', async () => {
+          await sharedSession();
+          await fixture.elapse(36 * MINUTE + 7 * DAY);
+
+          await sharedSession();
+
+          const streaks = await mine.listStreaks();
+          expect(streaks.find((streak) => streak.matchId === matchId)).toMatchObject({ count: 1 });
+        });
+
+        itWithTimeTravel('pasados 7 días del final de la última ya no hay racha', async () => {
+          await sharedSession();
+          await fixture.elapse(36 * MINUTE + 7 * DAY);
+
+          const streaks = await mine.listStreaks();
+
+          expect(streaks.find((streak) => streak.matchId === matchId)).toBeUndefined();
+        });
+
+        itWithTimeTravel('un plantón entre dos compartidas no rompe la racha', async () => {
+          await sharedSession();
+          await fixture.elapse(36 * MINUTE);
+          const noShow = await mine.propose({ matchId, startsAt: await soon(), blocks: 1 });
+          await theirs.respond(noShow.id, 'aceptada');
+          await fixture.elapse(3_000);
+          await mine.join(noShow.id);
+          await fixture.elapse(36 * MINUTE);
+
+          await sharedSession();
+
+          const streaks = await mine.listStreaks();
+          expect(streaks.find((streak) => streak.matchId === matchId)).toMatchObject({ count: 2 });
+        });
+
+        itWithTimeTravel('una cancelada entre dos compartidas no rompe la racha', async () => {
+          await sharedSession();
+          await fixture.elapse(36 * MINUTE);
+          const cancelled = await mine.propose({ matchId, startsAt: await soon(), blocks: 1 });
+          await theirs.cancel(cancelled.id);
+
+          await sharedSession();
+
+          const streaks = await mine.listStreaks();
+          expect(streaks.find((streak) => streak.matchId === matchId)).toMatchObject({ count: 2 });
+        });
+
+        itWithTimeTravel(
+          'valorar una sesión no cambia la racha de ninguno de los dos',
+          async () => {
+            const sessionId = await sharedSession();
+            await fixture.elapse(36 * MINUTE);
+            const beforeMine = await mine.listStreaks();
+            const beforeTheirs = await theirs.listStreaks();
+
+            await mine.rate(sessionId, 'floja');
+
+            expect(await mine.listStreaks()).toEqual(beforeMine);
+            expect(await theirs.listStreaks()).toEqual(beforeTheirs);
+          }
+        );
+      });
     });
   });
 }

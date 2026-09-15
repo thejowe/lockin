@@ -21,6 +21,7 @@ import {
   isSessionLive,
   isValidStartsAt,
 } from '../sessions';
+import { pairStreak } from '../streaks';
 import { createId, getState, mockNowMs, notify, subscribeTo } from './store';
 
 import type { LockInSessionRepository } from '../repositories';
@@ -230,13 +231,21 @@ export function createMockSessionRepository(actorId: string): LockInSessionRepos
       return { ...row };
     },
 
-    // Rachas de pareja: el contrato ya las declara (ver
-    // `docs/superpowers/plans/2026-09-15-rachas.md`), pero la implementación en
-    // memoria es la Tarea 2. Hasta entonces se lanza en vez de fingir un
-    // resultado: una lista vacía de mentira aquí se leería como "nadie tiene
-    // racha" y pasaría inadvertido.
     async listStreaks() {
-      throw new Error('listStreaks: todavía no está implementado');
+      const now = mockNowMs();
+      const state = getState();
+      return state.matches
+        .filter((match) => isMember(match.id))
+        .flatMap((match) => {
+          const shared = state.lockInSessions.filter(
+            (session) =>
+              session.matchId === match.id && session.status === 'aceptada' && bothAttended(session)
+          );
+          const streak = pairStreak(shared, now);
+          return streak
+            ? [{ matchId: match.id, count: streak.count, aliveUntil: iso(streak.aliveUntilMs) }]
+            : [];
+        });
     },
 
     async serverNow() {
