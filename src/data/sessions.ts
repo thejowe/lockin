@@ -6,7 +6,7 @@
  * reglas en `session_is_live()` y en los RPCs: si cambia una, cambian las dos.
  */
 
-import type { LockInSession, SessionBlocks } from './types';
+import type { LockInSession, SessionAttendance, SessionBlocks } from './types';
 
 export const WORK_MINUTES = 25;
 export const BREAK_MINUTES = 5;
@@ -14,6 +14,7 @@ export const BLOCK_MINUTES = WORK_MINUTES + BREAK_MINUTES;
 export const MIN_LEAD_MINUTES = 5;
 export const MAX_LEAD_DAYS = 30;
 export const JOIN_WINDOW_MINUTES = 5;
+export const RATING_WINDOW_HOURS = 24;
 export const SESSION_BLOCK_OPTIONS: readonly SessionBlocks[] = [1, 2, 4];
 
 const MINUTE = 60_000;
@@ -41,6 +42,23 @@ export function isInJoinWindow(session: SessionTiming, nowMs: number): boolean {
     nowMs >= Date.parse(session.startsAt) - JOIN_WINDOW_MINUTES * MINUTE &&
     nowMs < sessionEndsAtMs(session.startsAt, session.blocks)
   );
+}
+
+/** Se valora desde que la sesión termina hasta 24 h después, y solo si se aceptó. */
+export function isInRatingWindow(session: SessionTiming, nowMs: number): boolean {
+  if (session.status !== 'aceptada') return false;
+  const endsAt = sessionEndsAtMs(session.startsAt, session.blocks);
+  return nowMs >= endsAt && nowMs < endsAt + RATING_WINDOW_HOURS * 60 * MINUTE;
+}
+
+/** Asistió = entró antes de que la sesión acabara. Salirse antes no lo deshace. */
+export function attendedSession(
+  rows: readonly SessionAttendance[],
+  profileId: string,
+  session: SessionTiming
+): boolean {
+  const endsAt = sessionEndsAtMs(session.startsAt, session.blocks);
+  return rows.some((row) => row.profileId === profileId && Date.parse(row.joinedAt) < endsAt);
 }
 
 export function isValidStartsAt(startsAtMs: number, nowMs: number): boolean {

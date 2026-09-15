@@ -194,6 +194,22 @@ export function createSupabaseSessionRepository(
       return (data as SessionAttendanceRow[]).map(toSessionAttendance);
     },
 
+    // Valoración post-sesión: el contrato ya la declara, pero los RPCs
+    // (`ratable_session`, `rate_session`) son la Tarea 3 y este repositorio la
+    // Tarea 4 de `docs/superpowers/plans/2026-09-15-valoracion-post-sesion.md`.
+    // Hasta entonces se lanza en vez de fingir un resultado.
+    async getRatable() {
+      throw new Error('getRatable todavía no está implementado contra Supabase (Tarea 4)');
+    },
+
+    async getMyRating() {
+      throw new Error('getMyRating todavía no está implementado contra Supabase (Tarea 4)');
+    },
+
+    async rate() {
+      throw new Error('rate todavía no está implementado contra Supabase (Tarea 4)');
+    },
+
     async serverNow() {
       await deps.getUserId();
       const { data, error } = await deps.getClient().rpc('server_now');

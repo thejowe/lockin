@@ -11,13 +11,18 @@ import {
   SessionWindowError,
 } from './session-errors';
 import {
+  attendedSession,
   BLOCK_MINUTES,
   isInJoinWindow,
+  isInRatingWindow,
   isSessionBlocks,
   isSessionLive,
   isValidStartsAt,
+  RATING_WINDOW_HOURS,
   sessionEndsAtMs,
 } from './sessions';
+
+import type { SessionAttendance } from './types';
 
 const MINUTE = 60_000;
 const START = Date.parse('2026-09-14T18:00:00.000Z');
@@ -61,6 +66,53 @@ describe('isInJoinWindow', () => {
 
   it('sin aceptar no hay ventana', () => {
     expect(isInJoinWindow({ ...accepted, status: 'propuesta' }, START)).toBe(false);
+  });
+});
+
+describe('isInRatingWindow', () => {
+  const accepted = { status: 'aceptada' as const, startsAt, blocks: 1 as const };
+  const ENDS_AT = START + 30 * MINUTE;
+  const WINDOW = RATING_WINDOW_HOURS * 60 * MINUTE;
+
+  it('abre justo al terminar y cierra 24 h después', () => {
+    expect(isInRatingWindow(accepted, ENDS_AT - 1)).toBe(false);
+    expect(isInRatingWindow(accepted, ENDS_AT)).toBe(true);
+    expect(isInRatingWindow(accepted, ENDS_AT + 12 * 60 * MINUTE)).toBe(true);
+    expect(isInRatingWindow(accepted, ENDS_AT + WINDOW - 1)).toBe(true);
+    expect(isInRatingWindow(accepted, ENDS_AT + WINDOW)).toBe(false);
+  });
+
+  it.each(['propuesta', 'cancelada', 'rechazada'] as const)(
+    'una %s no se valora nunca',
+    (status) => {
+      expect(isInRatingWindow({ ...accepted, status }, ENDS_AT)).toBe(false);
+    }
+  );
+});
+
+describe('attendedSession', () => {
+  const accepted = { status: 'aceptada' as const, startsAt, blocks: 1 as const };
+  const ENDS_AT = START + 30 * MINUTE;
+  const row = (joinedAtMs: number, leftAt: string | null = null): SessionAttendance => ({
+    sessionId: 'session-1',
+    profileId: 'p1',
+    joinedAt: new Date(joinedAtMs).toISOString(),
+    leftAt,
+  });
+
+  it('asistió quien entró antes del final, exclusivo', () => {
+    expect(attendedSession([row(ENDS_AT - 1)], 'p1', accepted)).toBe(true);
+    expect(attendedSession([row(ENDS_AT)], 'p1', accepted)).toBe(false);
+  });
+
+  it('sin fila propia no hay asistencia', () => {
+    expect(attendedSession([], 'p1', accepted)).toBe(false);
+    expect(attendedSession([{ ...row(START), profileId: 'p2' }], 'p1', accepted)).toBe(false);
+  });
+
+  it('irse antes del final no borra haber asistido', () => {
+    const left = row(START, new Date(START + 5 * MINUTE).toISOString());
+    expect(attendedSession([left], 'p1', accepted)).toBe(true);
   });
 });
 

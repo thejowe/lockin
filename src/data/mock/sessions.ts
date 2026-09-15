@@ -152,6 +152,23 @@ export function createMockSessionRepository(actorId: string): LockInSessionRepos
         .map((row) => ({ ...row }));
     },
 
+    // Valoración post-sesión: el contrato ya la declara (ver
+    // `docs/superpowers/plans/2026-09-15-valoracion-post-sesion.md`), pero la
+    // implementación en memoria es la Tarea 2. Hasta entonces se lanza en vez de
+    // fingir un resultado: un `null` de mentira aquí se leería como "no hay nada
+    // que valorar" y pasaría inadvertido.
+    async getRatable() {
+      throw new Error('getRatable todavía no está implementado en el mock (Tarea 2)');
+    },
+
+    async getMyRating() {
+      throw new Error('getMyRating todavía no está implementado en el mock (Tarea 2)');
+    },
+
+    async rate() {
+      throw new Error('rate todavía no está implementado en el mock (Tarea 2)');
+    },
+
     async serverNow() {
       return iso(mockNowMs());
     },

@@ -198,6 +198,24 @@ describe('createSupabaseSessionRepository', () => {
     await expect(repository.serverNow()).resolves.toBe('2026-09-13T12:00:00.123Z');
   });
 
+  // Andamio temporal: la valoración se implementa contra los RPCs en la Tarea 4
+  // de `docs/superpowers/plans/2026-09-15-valoracion-post-sesion.md`. Hasta
+  // entonces se fija que falla a la vista en vez de fingir un resultado.
+  // **Borra este caso al implementarla.**
+  it.each(['getRatable', 'getMyRating', 'rate'] as const)(
+    '%s todavía no está implementado contra Supabase',
+    async (method) => {
+      const { repository } = fakeClient();
+      const calls = {
+        getRatable: () => repository.getRatable('match-1'),
+        getMyRating: () => repository.getMyRating('session-1'),
+        rate: () => repository.rate('session-1', 'bien'),
+      };
+
+      await expect(calls[method]()).rejects.toThrow('todavía no está implementado');
+    }
+  );
+
   it('abre un canal por match y lo cierra con el último suscriptor', async () => {
     const { client, repository } = fakeClient();
 

@@ -121,3 +121,24 @@ describe('mecánica del mock', () => {
     expect(await repositories.discovery.listDecided()).toHaveLength(0);
   });
 });
+
+/**
+ * Andamio temporal de la valoración post-sesión.
+ *
+ * El contrato ya declara `getRatable`/`getMyRating`/`rate` (Tarea 1 de
+ * `docs/superpowers/plans/2026-09-15-valoracion-post-sesion.md`), pero el mock
+ * los cumple en la Tarea 2. Este bloque fija que mientras tanto fallan a la
+ * vista en vez de fingir un resultado; **bórralo al implementarlos**, que es
+ * cuando los casos de contrato pasan a cubrirlos de verdad.
+ */
+describe('valoración sin implementar en el mock', () => {
+  const sessions = createMockSessionRepository(CURRENT_USER_ID);
+
+  it.each([
+    ['getRatable', () => sessions.getRatable('match-1')],
+    ['getMyRating', () => sessions.getMyRating('session-1')],
+    ['rate', () => sessions.rate('session-1', 'bien')],
+  ])('%s todavía no está implementado', async (_name, call) => {
+    await expect(call()).rejects.toThrow('todavía no está implementado');
+  });
+});
