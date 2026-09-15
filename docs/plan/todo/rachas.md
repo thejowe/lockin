@@ -195,8 +195,12 @@ todas.
 
 ## Pendiente del usuario
 
-- [ ] Migración `20260915000200_match_streaks.sql` aplicada en
-      `grrzmzktrhksbttpbblg` por el SQL Editor del dashboard. Usa
+- [x] Migración `20260915000200_match_streaks.sql` aplicada en
+      `grrzmzktrhksbttpbblg` por el SQL Editor del dashboard — **hecho por el
+      usuario el 2026-09-15**. Comprobado en Actions sobre `8ecb480`:
+      `Schema drift` con los dos jobs en verde, local y remoto
+      ([run 35010817724](https://github.com/thejowe/lockin/actions/runs/35010817724)),
+      así que desde aquí cualquier rojo del job remoto es deriva real. Usa
       `session_both_attended`, de `20260915000100_session_ratings.sql`, que ya
       está aplicada (`0430117`). Desde que se fusione la migración hasta que se
       aplique, el job remoto de `schema-drift.yml` sale en rojo y ese rojo es
