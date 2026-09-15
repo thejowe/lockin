@@ -88,7 +88,7 @@ el contrato cubrirá el SQL: no lo va a hacer.
 | `src/features/session/use-active-session.ts` (mod) | También pide `getRatable` |
 | `src/features/session/session-card.tsx` (mod) | Pinta `valorar` |
 | `src/features/session/index.ts` (mod) | Superficie pública |
-| `e2e/session-ended.sql`, `e2e/session.yaml`, `e2e/verify.mjs`, `e2e/run.mjs` (mod/nuevo) | E2E del toque |
+| `e2e/session-rate.yaml` (nuevo), `e2e/verify.mjs`, `e2e/run.mjs` (mod) | E2E del toque |
 | `docs/plan/PLAN.md`, `docs/plan/TODO.md`, `docs/plan/todo/valoracion.md` | Tablero |
 
 ---
@@ -470,13 +470,19 @@ hora entra como parámetro, igual que en `card-state.ts`.
 - [ ] **Step 3: El hook**
 
 `use-rating.ts`: `useRating(sessionId)` devuelve
-`{ rating, ratable, submit, error, pending }`. Lee con `useQuery` igual que
-`use-active-session.ts`, escribe con `repositories.sessions.rate`, y traduce el
-error a uno de dos mensajes: `SessionWindowError`/`SessionForbiddenError` →
-`'Ya no se puede valorar'` (definitivo, deshabilita los chips); cualquier otro
-→ `'No se ha podido guardar'` (reintentar con otro toque).
-`SessionConflictError` se traga en silencio y se recarga, porque significa que
-ya hay una valoración escrita.
+`{ rating, attendance, submit, error, pending }`. Lee con `useQuery` igual que
+`use-active-session.ts` — dos consultas, `getMyRating(sessionId)` y
+`listAttendance(sessionId)` —, escribe con `repositories.sessions.rate`, y
+traduce el error a uno de dos mensajes:
+`SessionWindowError`/`SessionForbiddenError` → `'Ya no se puede valorar'`
+(definitivo, deshabilita los chips); cualquier otro → `'No se ha podido
+guardar'` (reintentar con otro toque). `SessionConflictError` se traga en
+silencio y se recarga, porque significa que ya hay una valoración escrita.
+
+**No toques `useAttendance`.** Ese hook existe para el efecto de entrar y salir
+(`{ joined, leave }`), y las filas de asistencia que necesita `endingView` son
+otra cosa: un dato que se lee. Colgarlas de ahí mezclaría las dos
+responsabilidades y le metería una consulta a una pantalla que hoy no la hace.
 
 - [ ] **Step 4: La pantalla**
 
@@ -485,9 +491,9 @@ En `src/app/session/[sessionId].tsx`, la rama `ended` deja de ser un `ThemedText
 chip **no navega**: se queda en "Gracias — solo lo ves tú" con el botón de
 volver.
 
-Necesita las filas de asistencia, que ya carga `useAttendance`; si el hook no
-las expone, amplíalo — está dentro del bloque — en vez de pedirlas por otro
-lado.
+La pantalla ya tiene de `useSessionRoom` la sesión, `me` y `match.counterpart`;
+de `useRating` saca `rating` y `attendance`, y con eso llama a `endingView` para
+saber cuál de los tres finales pintar. `useAttendance` se queda como está.
 
 - [ ] **Step 5: Superficie pública**
 
@@ -529,8 +535,13 @@ uno que fije la precedencia.
 - [ ] **Step 2: `useActiveSession`**
 
 Pide también `getRatable(matchId)` en la misma carga, con su propio `useQuery` y
-clave `session:ratable:${matchId}`, refrescado por el mismo tic de 30 s y por el
-mismo `subscribe`. Devuelve `ratable` junto a `session`.
+clave `session:ratable:${matchId}`. Devuelve `ratable` junto a `session`.
+
+`useQuery` da un `refresh` **por consulta** (`src/data/provider.tsx:65`), así que
+el `subscribe` y el tic de 30 s tienen que llamar a los dos. Olvidar el segundo
+es el fallo silencioso de esta tarea: la tarjeta se quedaría en `valorar` para
+siempre después de valorar, porque nadie volvería a preguntar por `getRatable`.
+Que el test del tic compruebe las dos.
 
 - [ ] **Step 3: `SessionCard`**
 
@@ -547,26 +558,44 @@ y `npm test -- --coverage` para confirmar que el suelo no baja.
 ### Task 7: E2E Android y cierre
 
 **Files:**
-- Create: `e2e/session-ended.sql`
-- Modify: `e2e/session.yaml`, `e2e/verify.mjs`, `e2e/run.mjs`, `e2e/session.test.mjs`
+- Create: `e2e/session-rate.yaml`
+- Modify: `e2e/verify.mjs`, `e2e/run.mjs`, `e2e/session.test.mjs`
 - Modify: `docs/plan/todo/valoracion.md`, `docs/plan/TODO.md`
 
 **Interfaces:**
 - Consumes: todo lo anterior.
 
-- [ ] **Step 1: El fixture**
+> **Por qué no hay fixture nuevo de seed, aunque lo pida el instinto.** El
+> patrón de `e2e/session-now.sql` es un trigger que se instala con el seed y
+> dispara al insertarse el mensaje del recorrido. Si se añadiera otro que
+> crease una sesión ya terminada, quedarían **dos sesiones en el mismo match**:
+> la de `session-now.sql` sigue viva 30 minutos —el recorrido entra y sale de
+> ella, pero salir no la termina— y, por la precedencia de la Tarea 6, la viva
+> gana. La tarjeta nunca llegaría a `valorar` y el caso fallaría sin que nada
+> estuviera roto. Se reaprovecha la sesión que el recorrido acaba de vivir.
 
-`e2e/session-ended.sql` con el patrón de `e2e/session-now.sql`: una sesión
-`aceptada` cuyo `starts_at` ya pasó lo bastante como para haber terminado, más
-las **dos** filas de `session_attendance` con `joined_at` anterior al final. Sin
-las dos filas la sesión no es valorable y el caso fallaría por diseño.
+- [ ] **Step 1: Envejecer la sesión entre flujos**
 
-- [ ] **Step 2: El caso**
+En `e2e/run.mjs`, entre el flujo `session.yaml` y el nuevo, un paso que con el
+cliente de `service_role` (el mismo patrón de `e2e/verify.mjs`, que ya lo crea
+con `status.SERVICE_ROLE_KEY` y por tanto se salta RLS):
 
-En `e2e/session.yaml`, después de salir de la sesión: la tarjeta del chat debe
-estar en `valorar`, se toca `Genial`, y aparece "Gracias". Engánchalo en
-`e2e/run.mjs` donde ya se engancha `session.yaml`, con `session-ended.sql` en el
-seed.
+1. Mueve `starts_at` de esa sesión al pasado, lo bastante para que haya
+   terminado con sus `blocks` (con 1 bloque, `now() - 40 min` deja `endsAt` diez
+   minutos atrás y la ventana de 24 h abierta de sobra).
+2. Inserta la fila de `session_attendance` de **la otra persona**, con
+   `joined_at` anterior a ese final. La del usuario del recorrido ya existe: la
+   escribió la app al entrar, y es justo lo que verificó `verifySessionAttendance`.
+
+Sin el punto 2 la sesión no es valorable —regla 4— y el flujo fallaría por
+diseño, así que si el caso sale en rojo, mira esa fila antes que nada.
+
+- [ ] **Step 2: El flujo**
+
+`e2e/session-rate.yaml`, con el estilo de `e2e/session.yaml`: abre el chat del
+match, comprueba que la tarjeta pregunta por la valoración, toca `Genial` y
+espera a "Gracias". Engánchalo en `e2e/run.mjs` donde ya se engancha
+`session.yaml`, después del paso del Step 1.
 
 - [ ] **Step 3: El oráculo**
 
