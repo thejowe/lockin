@@ -23,19 +23,35 @@ import type { MatchWithProfile } from '@/data';
 /** Lo que se lee bajo el nombre mientras nadie ha escrito nada. */
 export const NO_MESSAGES_HINT = 'Decidid cuándo hacer vuestro primer Lock-In';
 
-export function MatchRow({ match }: { match: MatchWithProfile }) {
+/**
+ * Textos de la racha de pareja. Son copia de `streakTag`/`streakLine` de
+ * `sesiones`: `chat` no importa de ese bloque, así que la fila recibe solo el
+ * número y su test fija que los textos no divergen.
+ */
+const streakTag = (count: number) => `· Racha ${count}`;
+const streakLine = (count: number) => `Racha de ${count} sesiones seguidas`;
+
+export function MatchRow({
+  match,
+  streak = null,
+}: {
+  match: MatchWithProfile;
+  /** Racha visible de la pareja, ya filtrada por quien compone la lista. */
+  streak?: number | null;
+}) {
   const theme = useTheme();
   const { counterpart, lastMessage } = match;
 
   const isMine = lastMessage !== null && lastMessage.senderId !== counterpart.id;
   const preview = lastMessage ? `${isMine ? 'Tú: ' : ''}${lastMessage.body}` : NO_MESSAGES_HINT;
   const timestamp = formatRelative(lastMessage?.sentAt ?? match.createdAt);
+  const streakPart = streak === null ? '' : `${streakLine(streak)}. `;
 
   return (
     <Link href={`/chat/${match.id}`} asChild>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Conversación con ${counterpart.name}. ${preview}`}
+        accessibilityLabel={`Conversación con ${counterpart.name}. ${streakPart}${preview}`}
         style={({ pressed }) => [
           styles.root,
           {
@@ -62,6 +78,11 @@ export function MatchRow({ match }: { match: MatchWithProfile }) {
             {lastMessage === null && (
               <ThemedText type="label" themeColor="brass">
                 · Nuevo
+              </ThemedText>
+            )}
+            {streak !== null && (
+              <ThemedText type="label" themeColor="brass">
+                {streakTag(streak)}
               </ThemedText>
             )}
           </View>

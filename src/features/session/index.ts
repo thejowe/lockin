@@ -30,6 +30,7 @@ export { STREAK_MIN_VISIBLE, streakDeadline, streakLine, streakTag, visibleStrea
 export { useActiveSession } from './use-active-session';
 export { useAttendance } from './use-attendance';
 export { useCounterpartPresence, type CounterpartPresence } from './use-counterpart-presence';
+export { useMatchStreaks } from './use-match-streaks';
 export { useNow } from './use-now';
 export { useRating, type RatingState } from './use-rating';
 export { useSessionRoom } from './use-session-room';

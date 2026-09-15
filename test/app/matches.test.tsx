@@ -16,6 +16,7 @@
 import { screen, waitFor } from '@testing-library/react-native';
 
 import { buildProfileInput } from '@/data/test-fixtures';
+import { advanceMockClock, createMockSessionRepository, mockNowMs } from '@/data/mock';
 import { SEED_RECIPROCAL_IDS } from '@/data/mock/seed';
 
 import { renderRoute, repositories, resetRepositories, resetRouter } from '../routes';
@@ -26,6 +27,25 @@ jest.mock('expo-router', () => require('../routes').expoRouterMock());
 
 const EMPTY_HEADLINE = 'Todavía no hay nadie al otro lado';
 const ERROR_NOTICE = 'No hemos podido cargar tus matches. Desliza hacia abajo para reintentar.';
+const MINUTE = 60_000;
+
+/**
+ * Una sesión aceptada con las dos personas dentro, como `sharedSession` de la
+ * suite de contrato: el reloj simulado del mock salta al margen de entrada sin
+ * esperar.
+ */
+async function sharedSession(matchId: string, counterpartId: string) {
+  const theirs = createMockSessionRepository(counterpartId);
+  const session = await repositories.sessions.propose({
+    matchId,
+    startsAt: new Date(mockNowMs() + 5 * MINUTE + 2_000).toISOString(),
+    blocks: 1,
+  });
+  await theirs.respond(session.id, 'aceptada');
+  advanceMockClock(3_000);
+  await repositories.sessions.join(session.id);
+  await theirs.join(session.id);
+}
 
 beforeEach(() => {
   resetRepositories();
@@ -57,6 +77,32 @@ describe('MatchesScreen', () => {
 
     await waitFor(() => expect(screen.getByText(counterpart!.name)).toBeTruthy());
     expect(screen.queryByText(EMPTY_HEADLINE)).toBeNull();
+  });
+
+  it('la fila de una pareja con dos sesiones compartidas seguidas lleva su racha', async () => {
+    await repositories.profiles.saveCurrent(buildProfileInput());
+    const [withStreakId, withoutStreakId] = SEED_RECIPROCAL_IDS;
+    const { match } = await repositories.discovery.recordDecision(withStreakId, 'like');
+    await repositories.discovery.recordDecision(withoutStreakId, 'like');
+    await sharedSession(match!.id, withStreakId);
+    advanceMockClock(36 * MINUTE);
+    await sharedSession(match!.id, withStreakId);
+    const withStreak = await repositories.profiles.getById(withStreakId);
+    const withoutStreak = await repositories.profiles.getById(withoutStreakId);
+
+    await renderRoute(<MatchesScreen />);
+
+    await waitFor(() => expect(screen.getByText('· Racha 2')).toBeTruthy());
+    expect(screen.getAllByText(/Racha/)).toHaveLength(1);
+    expect(
+      screen.getByLabelText(
+        new RegExp(`^Conversación con ${withStreak!.name}\\. Racha de 2 sesiones seguidas\\. `)
+      )
+    ).toBeTruthy();
+    expect(
+      screen.getByLabelText(new RegExp(`^Conversación con ${withoutStreak!.name}\\.`))
+    ).toBeTruthy();
+    expect(screen.queryByLabelText(new RegExp(`${withoutStreak!.name}\\. Racha`))).toBeNull();
   });
 
   it('si la lectura falla avisa en vez de fingir que no hay matches', async () => {

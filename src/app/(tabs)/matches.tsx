@@ -12,11 +12,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { MatchRow, MatchesEmpty, useMatches } from '@/features/chat';
+import { useMatchStreaks } from '@/features/session';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function MatchesScreen() {
   const theme = useTheme();
   const { data, loading, error, refresh } = useMatches();
+  const streaks = useMatchStreaks();
   const matches = data ?? [];
 
   return (
@@ -25,7 +27,10 @@ export default function MatchesScreen() {
         <FlatList
           data={matches}
           keyExtractor={(match) => match.id}
-          renderItem={({ item }) => <MatchRow match={item} />}
+          renderItem={({ item }) => <MatchRow match={item} streak={streaks.streakFor(item.id)} />}
+          // Sin `extraData` la lista no repinta las filas cuando las rachas llegan
+          // después que los matches.
+          extraData={streaks}
           contentContainerStyle={[styles.list, matches.length === 0 && styles.listEmpty]}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           ListHeaderComponent={
@@ -45,7 +50,14 @@ export default function MatchesScreen() {
           // matches" cuando en realidad aún no lo sabemos.
           ListEmptyComponent={loading || error ? null : <MatchesEmpty />}
           refreshControl={
-            <RefreshControl refreshing={loading} onRefresh={refresh} tintColor={theme.brass} />
+            <RefreshControl
+              refreshing={loading}
+              onRefresh={() => {
+                refresh();
+                streaks.refresh();
+              }}
+              tintColor={theme.brass}
+            />
           }
         />
       </SafeAreaView>

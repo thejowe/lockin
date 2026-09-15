@@ -15,6 +15,7 @@
 import { render, screen } from '@testing-library/react-native';
 
 import { buildProfile } from '@/data/test-fixtures';
+import { streakLine, streakTag } from '@/features/session/streak';
 
 import { MatchRow, NO_MESSAGES_HINT } from './match-row';
 
@@ -141,6 +142,36 @@ describe('MatchRow', () => {
 
       expect(
         screen.getByLabelText(`Conversación con Núria Bosch. ${NO_MESSAGES_HINT}`)
+      ).toBeTruthy();
+    });
+  });
+
+  describe('racha de pareja', () => {
+    it('sin racha no pinta etiqueta', async () => {
+      await render(<MatchRow match={buildMatch()} streak={null} />);
+
+      expect(screen.queryByText(/Racha/)).toBeNull();
+    });
+
+    it('con racha la etiqueta va tras el modo y la anuncia el nombre accesible', async () => {
+      await render(<MatchRow match={buildMatch({ lastMessage: buildMessage() })} streak={3} />);
+
+      expect(screen.getByText('· Racha 3')).toBeTruthy();
+      expect(
+        screen.getByLabelText(
+          'Conversación con Núria Bosch. Racha de 3 sesiones seguidas. Te escribo mañana.'
+        )
+      ).toBeTruthy();
+    });
+
+    // `chat` no importa de `sesiones`: los textos se copian en la fila y aquí se
+    // fija que no divergen de los de la tarjeta.
+    it('usa los mismos textos que la tarjeta de sesión', async () => {
+      await render(<MatchRow match={buildMatch({ lastMessage: buildMessage() })} streak={4} />);
+
+      expect(screen.getByText(streakTag(4))).toBeTruthy();
+      expect(
+        screen.getByLabelText(`Conversación con Núria Bosch. ${streakLine(4)}. Te escribo mañana.`)
       ).toBeTruthy();
     });
   });

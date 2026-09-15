@@ -57,6 +57,10 @@ export function expoRouterMock() {
       return null;
     },
     useLocalSearchParams: () => searchParams,
+    // Sin navegación real no hay foco que ganar: el efecto corre al montar, que es
+    // lo que ve una pestaña al abrirse.
+    useFocusEffect: (effect: () => void | (() => void)) =>
+      require('react').useEffect(effect, [effect]),
   };
 }
 
