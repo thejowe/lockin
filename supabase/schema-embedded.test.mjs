@@ -313,6 +313,29 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       where s.match_id::text like '%e00_';`);
     await asActor(ana);
     assert.deepEqual(await streaks(), deAna);
+    // Sin zona horaria: los 7 días son 168 horas exactas aunque la sesión
+    // tenga una zona con cambio de hora dentro de la ventana. Una zona POSIX
+    // inventada adelanta la hora a medianoche de dentro de 3 días (juliano sin
+    // 29 de febrero), así que siempre cae entre el final de la última sesión y
+    // su caducidad, sea cual sea la fecha en que corra el test. Con
+    // `interval '7 days'` la caducidad saldría una hora antes.
+    const julianDay = (ms) => {
+      const date = new Date(ms);
+      const year = date.getUTCFullYear();
+      const day = Math.floor((ms - Date.UTC(year, 0, 1)) / 86_400_000) + 1;
+      const leap = new Date(Date.UTC(year, 1, 29)).getUTCMonth() === 1;
+      return leap && day >= 60 ? day - 1 : day;
+    };
+    const dstStart = julianDay(Date.now() + 3 * 86_400_000);
+    await db.exec(
+      `set local timezone = 'RCH0RCV,J${dstStart}/0,J${((dstStart + 59) % 365) + 1}/0';`
+    );
+    const calendarWeek = await db.query(
+      `select extract(epoch from (now() + interval '7 days') - now())::integer / 3600 as horas`
+    );
+    assert.equal(calendarWeek.rows[0].horas, 167, 'la zona de prueba no cambia de hora');
+    assert.deepEqual(await streaks(), deAna);
+    await db.exec('set local timezone = utc;');
     // Y no puede depender de la valoración porque no la lee: ni la función ni
     // el helper de asistencia que usa nombran la tabla. Es la decisión de
     // privacidad de la spec de valoración; no se relaja para que pase un test.

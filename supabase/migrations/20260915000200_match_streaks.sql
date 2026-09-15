@@ -46,7 +46,10 @@
 --   * `last_chain`: `distinct on` con `chain desc` se queda con la última.
 --
 -- Viva mientras `now() < último final + 7 días`; sin fila si no. Sin zona
--- horaria: todo son instantes.
+-- horaria: todo son instantes. Por eso los 7 días se escriben `168 hours` y no
+-- `7 days`: sumar días a un timestamptz cuenta días de calendario en la zona de
+-- la sesión, y un cambio de hora en medio los deja en 167 o 169 horas, cuando
+-- `STREAK_GAP_DAYS` son 168 exactas.
 
 create or replace function public.match_streaks()
 returns table (match_id uuid, streak_count integer, alive_until timestamptz)
@@ -70,7 +73,7 @@ as $fn$
            sh.starts_at,
            sh.ends_at,
            case
-             when sh.starts_at - lag(sh.ends_at) over w < interval '7 days' then 0
+             when sh.starts_at - lag(sh.ends_at) over w < interval '168 hours' then 0
              else 1
            end as starts_chain
     from shared sh
@@ -93,9 +96,9 @@ as $fn$
   )
   select lc.match_id,
          lc.streak_count::integer,
-         lc.last_ends_at + interval '7 days'
+         lc.last_ends_at + interval '168 hours'
   from last_chain lc
-  where now() < lc.last_ends_at + interval '7 days';
+  where now() < lc.last_ends_at + interval '168 hours';
 $fn$;
 
 
