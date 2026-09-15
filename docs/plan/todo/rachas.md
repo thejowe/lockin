@@ -179,11 +179,19 @@ todas.
       --strip-trailing-cr`); `npm test -- --coverage` con 611 pasando, 72
       saltados y sin aviso de umbral — 92.81/85.71/92.38/94.54 sobre el suelo
       89.82/82.56/91.49/91.38.
-- [ ] [Claude] Tarea 7 — E2E Android y cierre — `prepareSessionStreak`,
-      `e2e/session-streak.yaml`, guardia en `session.test.mjs`, y tablero con
-      evidencia. `[Claude]` porque la señal solo existe en Actions (aquí no hay
-      emulador, y `npm run test:e2e` falla por CRLF en Windows) y se diagnostica
-      con `gh run download` y los volcados de Maestro.
+- [x] Tarea 7 — E2E Android y cierre — `prepareSessionStreak`,
+      `e2e/session-streak.yaml` y guardia en `session.test.mjs` (`4958776`).
+      Verificado en Actions sobre `674c0c3`: `CI` en verde, sus 7 jobs
+      ([run 35006640122](https://github.com/thejowe/lockin/actions/runs/35006640122));
+      `E2E Android` en verde en las dos variantes
+      ([run 35006639859](https://github.com/thejowe/lockin/actions/runs/35006639859)),
+      con `postgres.json` de la variante `supabase` marcando
+      `"streak": "verified"` y su carpeta `streak/` de volcados; `Schema
+      drift` con el job local ("Huella local y controles negativos") en verde
+      y el remoto en rojo solo por `match_streaks()`
+      ([run 35006640045](https://github.com/thejowe/lockin/actions/runs/35006640045)).
+      Ese rojo es el esperado de "Pendiente del usuario": la migración no está
+      aplicada en `grrzmzktrhksbttpbblg`.
 
 ## Pendiente del usuario
 
@@ -192,5 +200,8 @@ todas.
       `session_both_attended`, de `20260915000100_session_ratings.sql`, que ya
       está aplicada (`0430117`). Desde que se fusione la migración hasta que se
       aplique, el job remoto de `schema-drift.yml` sale en rojo y ese rojo es
-      esperado; hoy está en verde, así que cualquier otro rojo es deriva real.
-      Nada más depende de esto.
+      esperado — así sale sobre `674c0c3`
+      ([run 35006640045](https://github.com/thejowe/lockin/actions/runs/35006640045)),
+      solo por `match_streaks()`; un rojo por cualquier otra cosa es deriva
+      real. Aplicarla es del usuario, no de un agente. Nada más depende de
+      esto.
