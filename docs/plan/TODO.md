@@ -47,7 +47,7 @@ Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>
 
 ## Fase 2 — Sesiones Lock-In
 - [ ] Sesión agendada + Pomodoro compartido + presencia + aviso local — plan `docs/superpowers/plans/2026-09-13-sesiones-lockin.md`, detalle y evidencia en `todo/sesiones.md`. Tareas 1-10 y 3b cerradas; en la Tarea 11 solo falta la verificación con dos móviles (CI, Schema drift y E2E Android en verde sobre 45f24f2). El contrato opt-in está en verde contra Supabase local en Actions (`contract.yml`, run 34897871055: 49 pasan, 0 fallan, 3 saltados a propósito por reloj simulado)
-- [ ] Valoración de 1 toque post-sesión (spec propia, lee `session_attendance`)
+- [ ] Valoración de 1 toque post-sesión — spec y plan escritos el 2026-09-15 (`docs/superpowers/specs/2026-09-15-valoracion-post-sesion-design.md`, `.../plans/2026-09-15-valoracion-post-sesion.md`), bloque 8 `valoracion` en `PLAN.md`, detalle y evidencia en `todo/valoracion.md`. Tres opciones de un toque sobre una sesión terminada a la que entraron los dos, ventana de 24 h, y **privada de quien la escribe** — sin nota pública ni media, que es la decisión que hay que releer antes de tocarla. Lee `session_attendance` con la semántica que fijó la spec de sesiones. Implementación sin empezar
 - [ ] Rachas (spec propia)
 - [ ] Vídeo real en la sesión (spec propia)
 
