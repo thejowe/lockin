@@ -130,11 +130,35 @@ todas.
       cambio de contenido: confirmado con `git diff`); y `npm test --
       coverage` con 602 pasando, 72 saltados y sin aviso de umbral —
       92.77/85.41/92.29/94.53 sobre el suelo 89.82/82.56/91.49/91.38.
-- [ ] [Codex] Tarea 5 — La tarjeta del chat — `streak.ts`, `streak` en
-      `useActiveSession` (dentro del `refresh` combinado) y las líneas de
-      `SessionCard` por estado. Todo dentro de `src/features/session/`; los
-      textos ya están fijados en la spec. Terminado = tests de tarjeta por
-      estado, `tsc`, lint, formato y cobertura.
+- [x] Tarea 5 — La tarjeta del chat — `streak.ts` (`STREAK_MIN_VISIBLE = 2`,
+      `visibleStreak`, `streakTag`, `streakLine`, `streakDeadline`, puro y sin
+      React); `streak: MatchStreak | null` en `useActiveSession` con
+      `useQuery('session:streaks', () => repositories.sessions.listStreaks())`
+      metido en el mismo `refresh` combinado del `subscribe` y el tic de 30 s
+      (si la consulta falla, `streak` es `null`, nunca un error hacia la
+      tarjeta); en `SessionCard`, justo debajo de "Sesión Lock-In",
+      `shown = visibleStreak(streak, nowMs)` pinta `streakLine(shown)` salvo en
+      `valorar`, y además `streakDeadline(streak, nowMs)` solo en `agendar`.
+      Exportado desde `index.ts` en orden alfabético, entre `slots` y
+      `use-active-session`.
+      TDD: `npx jest src/features/session/streak.test.ts` en rojo primero
+      (`Cannot find module './streak'`), verde tras escribir `streak.ts`
+      (8/8). `use-active-session.test.tsx`: en rojo con el hook sin tocar
+      (`result.current.streak` `undefined` en vez de `null`, `listStreaks` sin
+      llamar), verde tras meterlo en el `refresh` combinado (3/3, incluida "si
+      listStreaks rechaza"). `session-card.test.tsx`: 8 casos nuevos
+      (`pastStreakOfTwo`, dos sesiones compartidas con hueco de 2 días) en
+      rojo (5 fallando por falta de las líneas; los 3 casos de "no se pinta
+      nada" ya pasaban por ausencia total de la función), verde tras las
+      líneas en `SessionCard` (20/20 en el archivo, sin tocar los 12 casos
+      previos).
+      Verificado 2026-09-15: `npx jest src/features/session test/app` 24
+      suites, 159/159; `npx tsc --noEmit` limpio; `npm run lint` limpio;
+      `npx prettier --check` sobre los 7 archivos tocados sin diferencias
+      reales (`diff --strip-trailing-cr` limpio tras partir dos líneas que
+      superaban `printWidth`); `npm test -- --coverage` con 602 pasando, 72
+      saltados (contrato opt-in) y sin aviso de umbral —
+      92.77/85.41/92.29/94.53 sobre el suelo 89.82/82.56/91.49/91.38.
 - [ ] [Claude] Tarea 6 — La lista de Matches — `useMatchStreaks`, `useFocusEffect`
       en `test/routes.tsx`, prop `streak` en `MatchRow` y composición en
       `matches.tsx`. `[Claude]` porque **cruza dos bloques** (`chat` y
