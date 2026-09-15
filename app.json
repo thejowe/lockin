@@ -20,7 +20,9 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "permissions": ["android.permission.SCHEDULE_EXACT_ALARM"]
+      "permissions": [
+        "android.permission.SCHEDULE_EXACT_ALARM"
+      ]
     },
     "web": {
       "output": "static",
@@ -41,6 +43,19 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/cd6e3675-5748-49ab-8500-72b3b3ed5779"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "cd6e3675-5748-49ab-8500-72b3b3ed5779"
+      }
+    },
+    "owner": "thejowe"
   }
 }
