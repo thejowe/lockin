@@ -24,6 +24,7 @@ import {
 } from './triage.mjs';
 import {
   prepareSessionRating,
+  prepareSessionStreak,
   verifyAbsence,
   verifyPersistence,
   verifySessionAttendance,
@@ -39,6 +40,9 @@ const sessionFile = join(root, 'e2e/session.yaml');
 // Tercer caso, encadenado al anterior: valora de un toque esa misma sesión, ya
 // terminada por `prepareSessionRating`. Ver la cabecera de ese `.yaml`.
 const ratingFile = join(root, 'e2e/session-rate.yaml');
+// Cuarto caso, encadenado al anterior: la racha de pareja en Matches y en el
+// chat, con la sesión anterior que siembra `prepareSessionStreak`.
+const streakFile = join(root, 'e2e/session-streak.yaml');
 // Nombre con el que Android llama a la app en sus propios diálogos. Se lee de
 // `app.json` para que no se quede atrás si el bloque `arquitecto` lo cambia: de
 // él depende poder decir si el "X no responde" de un ANR habla de nosotros.
@@ -571,10 +575,47 @@ if (command === 'test') {
       }
       await verifySessionRating(status, profileName);
 
+      // Después del oráculo de la valoración: la sesión sembrada queda fuera de
+      // su ventana de 24 h y no toca `session_ratings`. Sin oráculo detrás: la
+      // racha no se guarda, así que lo que se comprueba es lo que pinta la app.
+      await prepareSessionStreak(status, profileName);
+
+      const streakDir = join(dir, 'streak');
+      mkdirSync(streakDir, { recursive: true });
+      const streakRun = spawnSync(
+        'maestro',
+        [
+          'test',
+          '--format',
+          'junit',
+          '--output',
+          join(streakDir, 'maestro.xml'),
+          '--debug-output',
+          streakDir,
+          '--test-output-dir',
+          streakDir,
+          '--flatten-debug-output',
+          streakFile,
+        ],
+        { cwd: root, stdio: 'inherit' }
+      );
+      if (streakRun.error) throw streakRun.error;
+      if (streakRun.status !== 0) {
+        const diagnosis = diagnose(streakDir);
+        return { outcome: diagnosis.kind, why: 'session-streak.yaml: ' + diagnosis.why };
+      }
+
       writeFileSync(
         join(dir, 'postgres.json'),
         JSON.stringify(
-          { runId, variant, persistence: 'verified', session: 'verified', rating: 'verified' },
+          {
+            runId,
+            variant,
+            persistence: 'verified',
+            session: 'verified',
+            rating: 'verified',
+            streak: 'verified',
+          },
           null,
           2
         )

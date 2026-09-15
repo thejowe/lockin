@@ -18,6 +18,8 @@ const read = (path) => readFileSync(join(here, path), 'utf8');
 
 const flow = read('session.yaml');
 const rating = read('session-rate.yaml');
+const streakFlow = read('session-streak.yaml');
+const streak = read('../src/features/session/streak.ts');
 const fixture = read('session-now.sql');
 const runner = read('run.mjs');
 const verify = read('verify.mjs');
@@ -89,5 +91,52 @@ describe('session-rate.yaml', () => {
     // nuevo final y la sesión dejaría de contar como asistida por los dos.
     assert.match(verify, /\.update\(\{ joined_at: joinedAt\.toISOString\(\)/);
     assert.match(verify, /starts_at: startsAt\.toISOString\(\)/);
+  });
+});
+
+describe('session-streak.yaml', () => {
+  it('espera etiquetas que salen de streakLine', () => {
+    // El `.yaml` escribe el texto que pinta `streakLine(2)`; si la plantilla
+    // cambia, esto falla aquí y no media hora después en el emulador.
+    assert.match(
+      streak,
+      /streakLine = \(count: number\) => `Racha de \$\{count\} sesiones seguidas`/
+    );
+    assert.match(streakFlow, /visible: 'Conversación con \.\*Racha de 2 sesiones seguidas\.\*'/);
+    assert.match(streakFlow, /tapOn: 'Conversación con \.\*Racha de 2 sesiones seguidas\.\*'/);
+    assert.match(streakFlow, /visible: 'Racha de 2 sesiones seguidas'\r?\n/);
+  });
+
+  it('no borra el estado: la racha cuelga del match de las sesiones anteriores', () => {
+    assert.match(streakFlow, /clearState: false/);
+    assert.doesNotMatch(streakFlow, /clearState: true/);
+  });
+
+  it('el runner lo encadena después de session-rate.yaml y de su oráculo', () => {
+    assert.match(runner, /e2e\/session-streak\.yaml/);
+    assert.match(runner, /await prepareSessionStreak\(status, profileName\);/);
+    assert.match(runner, /streak: 'verified'/);
+    // Anclado en los argumentos del spawn, como en session-rate.yaml.
+    const rated = runner.indexOf('await verifySessionRating(');
+    const seeded = runner.indexOf('await prepareSessionStreak(');
+    const flowRun = runner.indexOf('streakFile,');
+    assert(rated < seeded, 'Se siembra después de comprobar la valoración');
+    assert(seeded < flowRun, 'Se siembra antes de lanzar el flujo');
+    assert(runner.indexOf('ratingFile,') < flowRun, 'La racha va después de la valoración');
+  });
+
+  it('la sesión sembrada queda fuera de las 24 h y a menos de 7 días de la envejecida', () => {
+    const days = Number(verify.match(/export const STREAK_SEED_DAYS_AGO = (\d+);/)?.[1]);
+    // Un bloque de 30 min: la sembrada terminó `days * 24 − 0,5` horas atrás, y
+    // la ventana de valoración se cierra 24 h después del final.
+    const endedHoursAgo = days * 24 - 0.5;
+    assert(endedHoursAgo > 24, 'Dentro de la ventana de valoración competiría con la valorada');
+    // La envejecida empezó hace menos de una hora, así que el hueco entre el
+    // final de la sembrada y ese inicio es menor que `endedHoursAgo`.
+    assert(endedHoursAgo < 7 * 24, 'A 7 días o más la racha se rompería');
+    assert.match(verify, /Date\.now\(\) - STREAK_SEED_DAYS_AGO \* 24 \* 60 \* 60_000/);
+    assert.match(verify, /blocks: 1,/);
+    assert.match(verify, /status: 'aceptada',/);
+    assert.match(verify, /responded_at: startsAt\.toISOString\(\)/);
   });
 });

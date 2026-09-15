@@ -1,0 +1,25 @@
+# Ver la racha de pareja en Matches y en la tarjeta del chat. Lo lanza run.mjs
+# DESPUÉS de session-rate.yaml y de su oráculo, sin borrar el estado: usa el mismo
+# match, donde `prepareSessionStreak` siembra una sesión anterior con las dos
+# asistencias. Solo en la variante con credenciales. `e2e/session.test.mjs` fija
+# las etiquetas contra el código.
+#
+# No hay oráculo de Postgres: la racha no se guarda, así que lo único que se
+# puede comprobar es lo que pinta la app. Relanza la app por lo mismo que
+# session-rate.yaml: la siembra ocurre en Postgres con la app abierta.
+appId: app.lockin.mobile
+name: Ver la racha de pareja en Matches y en el chat
+---
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible: 'Descubrir'
+    timeout: 60000
+- tapOn: 'Matches'
+- extendedWaitUntil:
+    visible: 'Conversación con .*Racha de 2 sesiones seguidas.*'
+    timeout: 30000
+- tapOn: 'Conversación con .*Racha de 2 sesiones seguidas.*'
+- extendedWaitUntil:
+    visible: 'Racha de 2 sesiones seguidas'
+    timeout: 60000

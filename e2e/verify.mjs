@@ -189,6 +189,87 @@ export async function prepareSessionRating(status, profileName) {
   console.log('Postgres: sesión terminada y con los dos dentro, lista para valorarse.');
 }
 
+/** Días hacia atrás de la sesión que siembra `prepareSessionStreak`. */
+export const STREAK_SEED_DAYS_AGO = 3;
+
+/**
+ * Prepara la racha de `session-streak.yaml`: siembra, en el mismo match que la
+ * sesión que acaba de envejecer `prepareSessionRating`, una sesión anterior
+ * aceptada y con las dos asistencias. Con ella la pareja lleva dos seguidas.
+ *
+ * **Por qué tres días.** Fuera de la ventana de valoración de 24 h, para que no
+ * compita con la que se acaba de valorar y la tarjeta vuelva a `agendar`, que es
+ * donde se pinta la racha. Y a menos de 7 días del inicio de la envejecida, que
+ * es la condición para que las dos sean seguidas.
+ *
+ * **Por qué aquí y no en un fixture de seed.** Una sesión así en el seed ya
+ * estaría en el match cuando `session.yaml` entra, y `prepareSessionRating`
+ * dejaría de encontrar una sola asistencia de la cuenta. No hay oráculo después:
+ * la racha no se guarda, solo se ve.
+ */
+export async function prepareSessionStreak(status, profileName) {
+  assert.equal(status.API_URL, 'http://127.0.0.1:54321');
+  const client = createClient(status.API_URL, status.SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  const { data: profile, error: profileError } = await client
+    .from('profiles')
+    .select('id')
+    .eq('name', profileName)
+    .single();
+  assert.ifError(profileError);
+
+  const { data: mine, error: mineError } = await client
+    .from('session_attendance')
+    .select('session_id')
+    .eq('profile_id', profile.id)
+    .single();
+  assert.ifError(mineError);
+
+  const { data: aged, error: agedError } = await client
+    .from('lockin_sessions')
+    .select('id, match_id')
+    .eq('id', mine.session_id)
+    .single();
+  assert.ifError(agedError);
+
+  const { data: match, error: matchError } = await client
+    .from('matches')
+    .select('profile_a, profile_b')
+    .eq('id', aged.match_id)
+    .single();
+  assert.ifError(matchError);
+  const counterpartId = match.profile_a === profile.id ? match.profile_b : match.profile_a;
+
+  const startsAt = new Date(Date.now() - STREAK_SEED_DAYS_AGO * 24 * 60 * 60_000);
+  // Un minuto después del inicio: dentro de la sesión, que dura 30 min.
+  const joinedAt = new Date(startsAt.getTime() + 60_000);
+
+  const { data: earlier, error: earlierError } = await client
+    .from('lockin_sessions')
+    .insert({
+      match_id: aged.match_id,
+      proposed_by: profile.id,
+      starts_at: startsAt.toISOString(),
+      blocks: 1,
+      status: 'aceptada',
+      // `lockin_sessions_responded_iff_not_proposal`: aceptada exige respuesta.
+      responded_at: startsAt.toISOString(),
+    })
+    .select('id')
+    .single();
+  assert.ifError(earlierError);
+
+  const { error: attendanceError } = await client.from('session_attendance').insert([
+    { session_id: earlier.id, profile_id: profile.id, joined_at: joinedAt.toISOString() },
+    { session_id: earlier.id, profile_id: counterpartId, joined_at: joinedAt.toISOString() },
+  ]);
+  assert.ifError(attendanceError);
+
+  console.log('Postgres: sesión anterior sembrada en el mismo match, racha de 2 lista.');
+}
+
 /**
  * Oráculo de `session-rate.yaml`: el toque en "Genial" llegó a Postgres.
  *
