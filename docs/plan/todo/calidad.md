@@ -109,6 +109,17 @@ y compara la huella, que dice qué objetos existen, no qué hacen.
 - [ ] **Verlo verde en Actions.** Aquí está comprobado paso a paso, pero el job
   `schema` no ha corrido todavía en un runner: falta el run de `CI` sobre este
   commit.
+- [x] **Verde en Actions**, que es lo que faltaba para dar el job por bueno:
+  `CI` sobre `890dc16`,
+  [run 34992782667](https://github.com/thejowe/lockin/actions/runs/34992782667),
+  con los siete jobs en verde — `SQL embebido` incluido, o sea que la guarda del
+  `grep` no se disparó y el SQL se ejecutó entero en el runner, no solo aquí.
+  En el mismo commit, `E2E Android`
+  ([run 34992782434](https://github.com/thejowe/lockin/actions/runs/34992782434))
+  con sus dos variantes en verde, y `Schema drift`
+  ([run 34992782362](https://github.com/thejowe/lockin/actions/runs/34992782362))
+  con el job local en verde y solo el remoto en rojo, que es el esperado
+  mientras la migración de `valoracion` no esté aplicada en el proyecto real.
 - [ ] **`supabase/cleanup.test.mjs` sigue sin correr en ningún sitio.** Está en
   la misma situación que estaba el embebido —se salta sin `PGLITE_MODULE`— y
   con PGlite ya en el árbol arreglarlo es el mismo cambio de dos líneas. No se
