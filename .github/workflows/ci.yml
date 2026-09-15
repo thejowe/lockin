@@ -99,9 +99,16 @@ jobs:
           set -euo pipefail
           npm run test:schema | tee "$RUNNER_TEMP/schema-embedded.log"
           # `node --test` sale en verde tanto si un archivo de la lista no
-          # existe como si todos sus tests se saltan. Esta línea la imprime el
-          # test justo antes de cerrar, así que solo aparece si el cuerpo entero
-          # llegó al final: es el control de que aquí se ha ejecutado SQL.
+          # existe como si todos sus tests se saltan. Estas líneas las imprime
+          # cada test justo antes de cerrar, así que solo aparecen si su cuerpo
+          # entero llegó al final: son el control de que aquí se ha ejecutado SQL.
+          #
+          # Una por archivo, y no solo la del embebido: con una sola, borrar o
+          # renombrar el otro dejaría este job en verde sin haberlo ejecutado,
+          # que es justo el fallo que esta guarda existe para evitar.
           grep -q 'Rol lector, 4 mutaciones, teardown dos veces y guardia de sobrecarga: OK' \
             "$RUNNER_TEMP/schema-embedded.log" \
             || { echo 'El SQL embebido no llegó a ejecutarse entero'; exit 1; }
+          grep -q 'Guardias: acuse sin rellenar, perfil no reconocible, id inexistente y repetición: OK' \
+            "$RUNNER_TEMP/schema-embedded.log" \
+            || { echo 'El limpiador de cuentas no llegó a ejecutarse entero'; exit 1; }
