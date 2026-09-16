@@ -30,11 +30,19 @@ alter table public.profiles
 -- irrepresentable en vez de vigilarla: sin esto, quien está verificado podría
 -- quedarse el sello y apuntar `link_github` a la cuenta de otro, que es el
 -- ataque original entrando por la ventana.
+--
+-- El `link_github is not null` NO sobra, aunque lo parezca: sin él la
+-- constraint no cierra el caso del enlace vacío. Con `github_handle` puesto y
+-- `link_github` a NULL, la igualdad da NULL, y `false or null` es NULL — no
+-- FALSE. Un CHECK solo rechaza cuando el resultado es FALSE, así que NULL pasa,
+-- y quien está verificado podría quedarse el sello con el enlace en blanco:
+-- exactamente el estado que esta constraint existe para hacer irrepresentable.
+-- Lo fija `schema-embedded.test.mjs`; no lo "simplifiques" quitándolo.
 alter table public.profiles
   add constraint profiles_github_link_matches_handle
   check (
     github_handle is null
-    or link_github = 'https://github.com/' || github_handle
+    or (link_github is not null and link_github = 'https://github.com/' || github_handle)
   );
 
 

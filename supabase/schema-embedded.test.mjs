@@ -492,6 +492,21 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       sello.rows[0].github_verified_at.getTime(),
       'el `coalesce` de la función: la fecha es la del primer sello'
     );
+    // Con el sello puesto, vaciar el enlace tampoco vale. Es el caso que la
+    // lógica de tres valores se come si la constraint se escribe sin el
+    // `link_github is not null`: la igualdad daría NULL, `false or null` es NULL
+    // —no FALSE—, y un CHECK solo rechaza en FALSE, así que pasaría.
+    //
+    // Va aquí, y no con los otros casos de sello a medias, porque solo
+    // significa algo con el sello ENCENDIDO y como `authenticated`: `link_github`
+    // es columna abierta, así que este UPDATE es algo que el usuario verificado
+    // puede intentar de verdad desde el cliente. Lo único que lo para es la
+    // constraint.
+    await rechaza(
+      `update public.profiles set link_github = null where id = '${ana}';`,
+      /profiles_github_link_matches_handle/i,
+      'con sello, el enlace no se puede vaciar'
+    );
     // Y sin identidad, lo apaga: un solo camino de escritura para las dos cosas.
     await db.exec('reset role');
     await db.exec(`delete from auth.identities where user_id = '${ana}';`);
