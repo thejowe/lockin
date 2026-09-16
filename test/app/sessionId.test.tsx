@@ -247,6 +247,28 @@ describe('SessionScreen', () => {
     expect(screen.queryByText('Ya no se puede valorar')).toBeNull();
   });
 
+  it('el hueco de vídeo aparece solo dentro de la ventana de la sesión, no antes ni después', async () => {
+    const { startsAtMs } = await seedSession({ blocks: 1 });
+    jest.setSystemTime(startsAtMs - 6 * MINUTE);
+
+    await renderRoute(<SessionScreen />);
+    await waitFor(() => expect(screen.getByText('Todavía no puedes entrar')).toBeTruthy());
+    expect(screen.queryByRole('button', { name: 'Colgar' })).toBeNull();
+
+    await act(async () => {
+      jest.setSystemTime(startsAtMs - 4 * MINUTE);
+      jest.advanceTimersByTime(1_000);
+    });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Colgar' })).toBeTruthy());
+
+    await act(async () => {
+      jest.setSystemTime(startsAtMs + 31 * MINUTE);
+      jest.advanceTimersByTime(1_000);
+    });
+    await waitFor(() => expect(screen.getByText('Sesión completada')).toBeTruthy());
+    expect(screen.queryByRole('button', { name: 'Colgar' })).toBeNull();
+  });
+
   it('salir pide confirmación, registra la salida y vuelve', async () => {
     const { session, startsAtMs } = await seedSession();
     jest.setSystemTime(startsAtMs + MINUTE);

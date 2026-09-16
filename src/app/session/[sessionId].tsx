@@ -32,6 +32,7 @@ import {
   useNow,
   useRating,
   useSessionRoom,
+  VideoCallView,
   type CounterpartPresence,
   type Phase,
 } from '@/features/session';
@@ -188,6 +189,12 @@ export default function SessionScreen() {
         ) : phase ? (
           <>
             <View style={styles.clock}>
+              <VideoCallView
+                sessionId={session.id}
+                myProfileId={me?.id ?? null}
+                counterpartId={match.counterpart.id}
+                active={canJoin && !ended}
+              />
               <ThemedText type="label" themeColor="textSecondary">
                 {phaseTitle(phase, session.blocks)}
               </ThemedText>
