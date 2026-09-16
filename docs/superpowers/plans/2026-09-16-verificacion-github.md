@@ -637,6 +637,8 @@ git commit -m "feat(verificacion): migración del sello, con el permiso de colum
 
 ### Task 5: El repositorio de Supabase
 
+- [x] Tarea 5 completada: tipos de solo lectura para el sello, mapeo completo, OAuth PKCE y RPC sin handle; capacidad del contrato ya declarada. Verificado: `npx jest src/data/` (219 pasan, 78 omitidos; 13 suites pasan y 1 remota opt-in omitida), `npx tsc --noEmit` (0 errores) y `npm run lint` (PASS). Los dos tests iniciales de mapeo se vieron fallar antes de implementarlo.
+
 **Files:**
 - Modify: `src/data/supabase/database.types.ts`, `src/data/supabase/mappers.ts`, `src/data/supabase/index.ts`, `src/data/supabase/auth.ts`
 - Test: `src/data/supabase/mappers.test.ts`, `src/data/supabase/auth.test.ts`
@@ -645,7 +647,7 @@ git commit -m "feat(verificacion): migración del sello, con el permiso de colum
 - Consumes: `flowType: 'pkce'` (Tarea 1), los dos métodos del contrato (Tarea 2), la RPC `sync_github_verification` (Tarea 4).
 - Produces: `verifyGithub()` y `unverifyGithub()` reales. La Tarea 6 los llama desde la pantalla.
 
-- [ ] **Step 1: Tipos de fila**
+- [x] **Step 1: Tipos de fila**
 
 En `database.types.ts`, a `ProfileRow` (y a `ProfileInsert` **no**, que el cliente no los escribe):
 
@@ -663,7 +665,7 @@ y la función a la sección de `Functions`:
       };
 ```
 
-- [ ] **Step 2: El test del mapeo**
+- [x] **Step 2: El test del mapeo**
 
 En `src/data/supabase/mappers.test.ts`:
 
@@ -693,7 +695,7 @@ it('sin columnas, el perfil no está verificado', () => {
 });
 ```
 
-- [ ] **Step 3: Verlo fallar, luego mapear**
+- [x] **Step 3: Verlo fallar, luego mapear**
 
 Run: `npx jest src/data/supabase/mappers.test.ts` → FAIL.
 
@@ -714,7 +716,7 @@ function toGithubVerification(row: ProfileRow): GithubVerification | null {
 
 y en `toProfile`, después de `links`: `githubVerification: toGithubVerification(row),`.
 
-- [ ] **Step 4: El link de identidad en `auth.ts`**
+- [x] **Step 4: El link de identidad en `auth.ts`**
 
 Dos funciones nuevas, con el mismo tono de las que ya hay (que nombran el ajuste del dashboard cuando falla — «Anonymous sign-ins», «Confirm email»):
 
@@ -774,7 +776,7 @@ export async function unlinkGithubIdentity(): Promise<void> {
 
 `completeOAuthCallback(url)` es el canje que confirmaste en la Tarea 1. **Escríbelo como lo confirmaste ahí, no como lo recuerdes**: si el SDK ya resuelve el `code`, esta función se reduce a nada y lo dices en un comentario; si hay que canjearlo, extrae `code` de la URL y llama a `exchangeCodeForSession`.
 
-- [ ] **Step 5: Los dos métodos del repositorio**
+- [x] **Step 5: Los dos métodos del repositorio**
 
 En `src/data/supabase/index.ts`, dentro del objeto `profiles`:
 
@@ -805,11 +807,11 @@ En `src/data/supabase/index.ts`, dentro del objeto `profiles`:
   },
 ```
 
-- [ ] **Step 6: Declarar la capacidad del contrato**
+- [x] **Step 6: Declarar la capacidad del contrato**
 
 Donde el backend de Supabase declara sus capacidades para `repositories.contract.ts`, `canLinkIdentityWithoutBrowser: false`, con el motivo en un comentario: un OAuth real necesita navegador y humano, así que esos dos casos se saltan aquí y se cierran a mano en la Tarea 8.
 
-- [ ] **Step 7: Verde y commit**
+- [x] **Step 7: Verde y commit**
 
 Run: `npx jest src/data/ && npx tsc --noEmit && npm run lint`
 Expected: PASS las tres.

@@ -7,7 +7,14 @@
  */
 
 import type { MatchRow, MessageRow, ProfileInsert, ProfileRow } from './database.types';
-import type { Match, Message, Profile, ProfileInput, ProfileLinks } from '../types';
+import type {
+  GithubVerification,
+  Match,
+  Message,
+  Profile,
+  ProfileInput,
+  ProfileLinks,
+} from '../types';
 
 /**
  * Iniciales a partir del nombre: "Núria Bosch" -> "NB".
@@ -34,6 +41,17 @@ function toLinks(row: ProfileRow): ProfileLinks {
   return links;
 }
 
+/**
+ * Las dos columnas van juntas o ninguna (lo fija la constraint
+ * `profiles_github_verification_complete`). Se exigen las dos igualmente: una
+ * fila a medias sería un sello sin fecha, y preferimos leerlo como «no
+ * verificado» antes que pintar medio sello.
+ */
+function toGithubVerification(row: ProfileRow): GithubVerification | null {
+  if (!row.github_handle || !row.github_verified_at) return null;
+  return { handle: row.github_handle, verifiedAt: row.github_verified_at };
+}
+
 export function toProfile(row: ProfileRow): Profile {
   return {
     id: row.id,
@@ -52,6 +70,7 @@ export function toProfile(row: ProfileRow): Profile {
     },
     ambition: row.ambition,
     links: toLinks(row),
+    githubVerification: toGithubVerification(row),
     prompts: row.prompts,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

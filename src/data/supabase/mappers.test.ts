@@ -40,6 +40,8 @@ function buildProfileRow(overrides: Partial<ProfileRow> = {}): ProfileRow {
     availability_bands: ['tarde', 'noche'],
     ambition: 'todo-o-nada',
     link_github: 'https://github.com/example-nuria',
+    github_handle: null,
+    github_verified_at: null,
     link_portfolio: null,
     link_linkedin: null,
     prompts: [{ question: 'Lo que quiero construir es…', answer: 'Herramientas pequeñas.' }],
@@ -79,6 +81,36 @@ describe('initialsFrom', () => {
 });
 
 describe('toProfile', () => {
+  it.each([
+    { github_handle: 'anagarcia', github_verified_at: null },
+    { github_handle: null, github_verified_at: '2026-09-16T10:00:00.000Z' },
+  ])('una fila a medias no da un sello: %j', (columns) => {
+    expect(toProfile(buildProfileRow(columns)).githubVerification).toBeNull();
+  });
+  it('mapea el sello cuando las dos columnas vienen puestas', () => {
+    const profile = toProfile({
+      ...buildProfileRow(),
+      github_handle: 'anagarcia',
+      github_verified_at: '2026-09-16T10:00:00.000Z',
+      link_github: 'https://github.com/anagarcia',
+    });
+
+    expect(profile.githubVerification).toEqual({
+      handle: 'anagarcia',
+      verifiedAt: '2026-09-16T10:00:00.000Z',
+    });
+  });
+
+  it('sin columnas, el perfil no está verificado', () => {
+    const profile = toProfile({
+      ...buildProfileRow(),
+      github_handle: null,
+      github_verified_at: null,
+    });
+
+    expect(profile.githubVerification).toBeNull();
+  });
+
   it('reconstruye availability y avatar desde columnas planas', () => {
     const profile = toProfile(buildProfileRow());
 

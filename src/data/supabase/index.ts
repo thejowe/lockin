@@ -18,7 +18,7 @@
  *   acción que acaba de hacer el usuario.
  */
 
-import { ensureUserId } from './auth';
+import { ensureUserId, linkGithubIdentity, unlinkGithubIdentity } from './auth';
 import { getSupabaseClient } from './client';
 import {
   byRecentActivity,
@@ -190,6 +190,31 @@ const session: SessionRepository = {
 };
 
 const profiles: ProfileRepository = {
+  async verifyGithub() {
+    const completed = await linkGithubIdentity();
+    if (!completed) throw new Error('Verificación cancelada.');
+
+    // La verdad la escribe Postgres leyendo auth.identities. Aquí no viaja
+    // ningún handle: si viajara, sería falsificable.
+    const { error } = await getSupabaseClient().rpc('sync_github_verification');
+    if (error) throw error;
+
+    const profile = await profiles.getCurrent();
+    if (!profile) throw new Error('No hay perfil que verificar todavía.');
+    return profile;
+  },
+
+  async unverifyGithub() {
+    await unlinkGithubIdentity();
+
+    const { error } = await getSupabaseClient().rpc('sync_github_verification');
+    if (error) throw error;
+
+    const profile = await profiles.getCurrent();
+    if (!profile) throw new Error('No hay perfil que desverificar todavía.');
+    return profile;
+  },
+
   async getCurrent() {
     const client = getSupabaseClient();
     const userId = await ensureUserId();

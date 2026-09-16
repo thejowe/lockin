@@ -51,6 +51,8 @@ export type ProfileRow = {
   availability_bands: TimeBand[];
   ambition: Ambition;
   link_github: string | null;
+  github_handle: string | null;
+  github_verified_at: string | null;
   link_portfolio: string | null;
   link_linkedin: string | null;
   /** `ProfilePrompt[]` serializado como jsonb. Máximo 2 elementos. */
@@ -60,7 +62,10 @@ export type ProfileRow = {
 };
 
 /** Lo que se envía al crear o actualizar un perfil. */
-export type ProfileInsert = Omit<ProfileRow, 'created_at' | 'updated_at'>;
+export type ProfileInsert = Omit<
+  ProfileRow,
+  'created_at' | 'updated_at' | 'github_handle' | 'github_verified_at'
+>;
 
 /** Fila de `public.user_settings`. */
 export type UserSettingsRow = {
@@ -243,6 +248,10 @@ export type Database = {
     };
     Views: Record<never, never>;
     Functions: {
+      sync_github_verification: {
+        Args: Record<string, never>;
+        Returns: undefined;
+      };
       /** `discovery_deck(p_mode, p_specialties, p_limit)` → `setof profiles`. */
       discovery_deck: {
         Args: {

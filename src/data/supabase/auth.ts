@@ -25,6 +25,8 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 
 import { getSupabaseClient } from './client';
 
@@ -194,4 +196,68 @@ export async function signOut(): Promise<void> {
   const { error } = await getSupabaseClient().auth.signOut();
   await AsyncStorage.removeItem(DEVICE_ACCOUNT_KEY);
   if (error) throw error;
+}
+
+/**
+ * PKCE devuelve un code: con detectSessionInUrl: false el SDK no lo canjea
+ * automáticamente (confirmado en la Tarea 1, commit 360d693).
+ */
+async function completeOAuthCallback(url: string): Promise<void> {
+  const code = new URL(url).searchParams.get('code');
+  if (!code) throw new Error('GitHub no devolvió el código de verificación.');
+
+  const { error } = await getSupabaseClient().auth.exchangeCodeForSession(code);
+  if (error) throw error;
+}
+
+/**
+ * Abre GitHub en el navegador del sistema y linka esa identidad a la cuenta
+ * actual, conservando perfil, matches y mensajes: el `auth.uid()` no cambia.
+ *
+ * Requiere "Enable Manual Linking" en Authentication → Settings del dashboard.
+ * Está DESACTIVADO por defecto y sin él esto falla siempre, así que el error lo
+ * dice por su nombre en vez de propagar el mensaje crudo del servidor.
+ *
+ * @returns `true` si el usuario completó el flujo; `false` si lo canceló.
+ */
+export async function linkGithubIdentity(): Promise<boolean> {
+  const client = getSupabaseClient();
+  const redirectTo = Linking.createURL('/auth/callback');
+
+  const { data, error } = await client.auth.linkIdentity({
+    provider: 'github',
+    options: { redirectTo, skipBrowserRedirect: true },
+  });
+
+  if (error) {
+    if (/manual linking/i.test(error.message)) {
+      throw new Error(
+        'Falta activar "Enable Manual Linking" en Authentication → Settings del ' +
+          'dashboard de Supabase: sin él no se puede verificar GitHub.'
+      );
+    }
+    if (/already/i.test(error.message)) {
+      throw new Error('Esa cuenta de GitHub ya está verificada en otro perfil de LockIn.');
+    }
+    throw error;
+  }
+
+  const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+  if (result.type !== 'success') return false;
+
+  await completeOAuthCallback(result.url);
+  return true;
+}
+
+/** Desvincula la identidad de GitHub de la cuenta actual. */
+export async function unlinkGithubIdentity(): Promise<void> {
+  const client = getSupabaseClient();
+  const { data, error } = await client.auth.getUserIdentities();
+  if (error) throw error;
+
+  const github = data.identities.find((identity) => identity.provider === 'github');
+  if (!github) return;
+
+  const { error: unlinkError } = await client.auth.unlinkIdentity(github);
+  if (unlinkError) throw unlinkError;
 }
