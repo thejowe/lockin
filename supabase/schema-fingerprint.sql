@@ -177,6 +177,36 @@ with
     from rel r,
          aclexplode(coalesce(r.relacl, acldefault('r', r.relowner))) g
 
+    -- Y los de COLUMNA, que viven en `attacl` y NO en `relacl`. Son los que
+    -- sujetan el sello de verificación de GitHub: `profiles.github_handle` y
+    -- `profiles.github_verified_at` quedan cerradas a `authenticated` en
+    -- `20260916000100_github_verification.sql`, y esa es la única cosa que
+    -- impide que cualquiera se ponga la insignia de «verificado» con la clave
+    -- anon, que viaja en el bundle.
+    --
+    -- Sin esta línea, quien reabriera la columna en el proyecto real —un `grant`
+    -- a mano en el SQL Editor, un `alter default privileges` que se cuele— vería
+    -- el job `Schema drift` en verde: compara huellas, y la huella no lo miraba.
+    -- Es el falso negativo más caro del bloque. `drift-check.mjs` también lo
+    -- sonda, pero ese script no es lo que corre el job.
+    --
+    -- `attacl` nulo significa «sin ACL propia, hereda la de la tabla», que es el
+    -- caso de casi todas las columnas. No se expande con `acldefault` a
+    -- propósito: así solo salen líneas donde alguien tocó el permiso aposta, y
+    -- una columna nueva no ensucia la huella. `aclexplode(null)` no devuelve
+    -- filas, así que el `cross join lateral` las descarta solo.
+    union all
+    select format(
+      'grantcol %s.%s %s %s',
+      r.relname,
+      a.attname,
+      case when g.grantee = 0 then 'PUBLIC' else pg_get_userbyid(g.grantee) end,
+      g.privilege_type
+    )
+    from rel r
+    join pg_attribute a on a.attrelid = r.oid and a.attnum > 0 and not a.attisdropped
+    cross join lateral aclexplode(a.attacl) g
+
     -- Y los de las funciones: `record_decision` y `discovery_deck` tienen el
     -- execute revocado de `public`/`anon` a propósito.
     union all

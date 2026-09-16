@@ -456,9 +456,14 @@ contra una fotografía de un commit anterior. El remoto se compara contra
 esa misma referencia de migraciones, sin excluir ninguna función de desarrollo.
 
 Además, en la base desechable se alteran por separado una columna, un índice,
-una política RLS y el cuerpo de una función. Cada mutación está en una
-transacción que acaba en rollback: debe producir un diff; un control que no
-lo produzca falla el trabajo. Se verifica también el catálogo bajo un rol sin
+una política RLS, el cuerpo de una función y un permiso **de columna** —
+reabrir `profiles.github_verified_at` a `authenticated`, que es lo que
+convertiría el sello de verificación de GitHub en falsificable. Cada mutación
+está en una transacción que acaba en rollback: debe producir un diff; un
+control que no lo produzca falla el trabajo. La última es la que justifica la
+línea `grantcol` de la huella: los permisos de columna viven en `attacl`, que
+ni `relacl` ni `proacl` recogen, así que sin ella ese `grant` no movería un
+solo byte y el job daría verde sobre un despliegue con el sello abierto. Se verifica también el catálogo bajo un rol sin
 SELECT sobre tablas y la idempotencia de la retirada. Los artefactos
 `schema-local` y `schema-remote` conservan huellas completas, versión de
 Postgres y diffs durante 14 días, también si falla. El comparador rechaza

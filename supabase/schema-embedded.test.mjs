@@ -538,6 +538,38 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
     assert.match(expected, /column\s+profiles.seeking_specialties/);
     assert.match(expected, /column\s+profiles.github_handle/);
     assert.match(expected, /column\s+profiles.github_verified_at/);
+    // El estado del sello, tal y como lo cuenta la huella — que es lo único que
+    // compara el job `Schema drift` contra el proyecto real.
+    //
+    // Se lee en dos sitios y hacen falta los dos, porque el permiso se puede
+    // reabrir por dos caminos distintos:
+    //
+    //   * `grant` (relacl): `authenticated` ya NO tiene el INSERT/UPDATE de
+    //     TABLA. Si alguien se lo devuelve entero, reaparece esa línea.
+    //   * `grantcol` (attacl): están las 20 columnas que sí se volvieron a
+    //     conceder, y NO están las dos del sello. Cerrado se representa por
+    //     ausencia, así que reabrir una por columna AÑADE una línea.
+    for (const privilegio of ['INSERT', 'UPDATE']) {
+      assert.doesNotMatch(
+        expected,
+        new RegExp(`^grant\\s+profiles authenticated ${privilegio}$`, 'm'),
+        `authenticated no debe conservar el ${privilegio} de tabla sobre profiles`
+      );
+      for (const columna of ['github_handle', 'github_verified_at']) {
+        assert.doesNotMatch(
+          expected,
+          new RegExp(`^grantcol profiles\\.${columna} authenticated ${privilegio}$`, 'm'),
+          `${columna} debe seguir cerrada a authenticated en ${privilegio}`
+        );
+      }
+      // Y el contraste, para que el bloque de arriba no pase por estar la huella
+      // vacía de `grantcol`: las columnas normales sí llevan su permiso.
+      assert.match(
+        expected,
+        new RegExp(`^grantcol profiles\\.link_github authenticated ${privilegio}$`, 'm'),
+        `link_github sin sello es un campo del formulario: conserva el ${privilegio}`
+      );
+    }
     // El INSERT de perfiles del seed, contra las constraints de verdad.
     // `supabase db reset` lo ejecuta tal cual, y si en una fila con sello
     // `link_github` no es exactamente 'https://github.com/' || github_handle, la
@@ -597,6 +629,12 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       'create index schema_drift_probe on public.profiles (name);',
       'alter policy "profiles: cualquier autenticado puede leer" on public.profiles using (false);',
       "create or replace function public.is_valid_prompts(prompts jsonb) returns boolean language sql immutable set search_path = '' as $$ select true; $$;",
+      // Reabrir el sello. Es la mutación que demuestra que la línea `grantcol`
+      // de la huella sirve para algo: sin ella este `grant` no movería ni un
+      // byte —el permiso de columna vive en `attacl`, y la huella solo leía
+      // `relacl`/`proacl`—, y el job `Schema drift` daría verde sobre un
+      // despliegue en el que cualquiera puede encenderse la insignia.
+      'grant update (github_verified_at) on public.profiles to authenticated;',
     ];
     for (const mutation of mutations) {
       await db.exec(`begin; ${mutation}`);
@@ -622,7 +660,7 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       /Quedan sobrecargas/
     );
     await db.exec('rollback;');
-    console.log('Rol lector, 4 mutaciones, teardown dos veces y guardia de sobrecarga: OK');
+    console.log('Rol lector, 5 mutaciones, teardown dos veces y guardia de sobrecarga: OK');
   } finally {
     await db.close();
   }

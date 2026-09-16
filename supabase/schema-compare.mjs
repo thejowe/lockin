@@ -12,7 +12,10 @@ export function parseFingerprint(text) {
   assert(
     lines.length > 0 &&
       lines.every((line) =>
-        /^(table|column|constr|index|enum|func|trigger|policy|grant|grantfn|publish)\s+\S/.test(
+        // `grantcol` son los permisos DE COLUMNA (`attacl`): sin él en esta
+        // lista, la huella entera se declara inválida y el cotejo no llega a
+        // comparar nada.
+        /^(table|column|constr|index|enum|func|trigger|policy|grant|grantcol|grantfn|publish)\s+\S/.test(
           line
         )
       ),
