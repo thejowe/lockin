@@ -1,5 +1,98 @@
 # TODO — calidad
 
+## CI en rojo desde `db763db`: al lock le faltaban `@emnapi/core` y `@emnapi/runtime` (2026-09-16)
+
+CI llevaba tres commits en rojo —`db763db`, `0c124b9`, `d7b2581`— y el rojo
+no era de nadie en particular: `npm ci` fallaba, o sea que **caían los siete
+trabajos a la vez**, y con ellos `E2E Android`. Último verde antes del corte:
+[run 35011460081](https://github.com/thejowe/lockin/actions/runs/35011460081) (`dc7343c`).
+
+- [x] **La causa, leída del log y no adivinada.** En
+  [run 35111658929](https://github.com/thejowe/lockin/actions/runs/35111658929) (`d7b2581`), paso `npm ci`:
+
+  ```
+  npm error code EUSAGE
+  npm error `npm ci` can only install packages when your package.json and
+  package-lock.json or npm-shrinkwrap.json are in sync.
+  npm error Missing: @emnapi/core@1.11.3 from lock file
+  npm error Missing: @emnapi/runtime@1.11.3 from lock file
+  npm error Invalid: lock file's @emnapi/wasi-threads@1.2.1 does not satisfy @emnapi/wasi-threads@1.2.3
+  npm error Missing: @emnapi/core@1.10.0 from lock file
+  npm error Missing: @emnapi/runtime@1.10.0 from lock file
+  ```
+
+  Quien las pide es `@unrs/resolver-binding-wasm32-wasi` (vía `unrs-resolver`,
+  que arrastra `eslint-import-resolver-typescript`): las declara como
+  **dependencias directas y exactas**, `@emnapi/core@1.10.0` y
+  `@emnapi/runtime@1.10.0`, y el lock tenía `@emnapi/wasi-threads` pero no esas
+  dos. El segundo par (1.11.3) sale de resolver los `peerDependencies`
+  `^1.7.1 || ^2.0.0-alpha.4` de `@napi-rs/wasm-runtime` contra el registro. Es
+  el **árbol resuelto** el que estaba incompleto, no un rango mal puesto: por
+  eso `package.json` no se toca.
+
+- [x] **Lock regenerado desde cero**, no parcheado a mano:
+  `rm -rf node_modules package-lock.json && npm install`. El diff es
+  auditable y pequeño —136 líneas añadidas, 89 quitadas— y se comprobó entrada
+  a entrada antes de commitear:
+  - **+2 paquetes, −0**. `diff` de la lista de claves `node_modules/*` entre el
+    lock viejo y el nuevo: aparecen `@emnapi/core` y `@emnapi/runtime`, y no
+    desaparece ninguno. 1174 → 1176 entradas.
+  - **Las 17 entradas `"linux"` siguen ahí**, las mismas que antes. Era el
+    riesgo real de regenerar en Windows —que npm se dejara fuera los binarios
+    opcionales del otro sistema y el lock solo sirviera aquí— y no ocurrió;
+    npm guarda el árbol completo con sus campos `os`/`cpu`/`libc`.
+  - El resto del diff son **metadatos que recalcula npm 11**: marcas `peer` que
+    entran y salen, y campos `libc: [glibc|musl]` nuevos en los binarios de
+    Linux. Más dos transitivas al día (`@expo-google-fonts/material-symbols`
+    0.4.47 → 0.4.48, `brace-expansion` 5.0.9 → 5.0.12) y `@types/node`
+    26.5.1 → 22.20.3 con su `undici-types` (ninguna de las dos está declarada
+    en `package.json`: son resoluciones transitivas, y la de `@types/node`
+    queda además alineada con el Node 22 de CI).
+  - `git diff package.json` **vacío**, comprobado antes del commit.
+
+- [x] **Trabajo `Formato` en rojo, tapado por el anterior.** Con `npm ci`
+  arreglado, CI llegó por primera vez desde `db763db` a ejecutar los trabajos
+  de verdad, y ahí salió lo que el fallo de instalación escondía: 8 archivos
+  del bloque `video` que nunca habían pasado por Prettier —`jest.setup.js`,
+  `src/data/video-signal.ts`, `src/data/supabase/video-signal.test.ts`,
+  `src/features/session/use-video-call.ts` y `.test.ts`, y las tres vistas
+  `video-call-view.tsx` / `.web.tsx` / `.test.tsx`—. `prettier --write` sobre
+  esos ocho y nada más; el diff entero son saltos de línea en props JSX y
+  argumentos que pasaban de 100 columnas, ni una expresión cambia.
+
+  **Es un cruce de alcance** (`src/features/session/` es de `video`), con el
+  precedente de la décima pasada: el trabajo `Formato` es de este bloque y su
+  rojo se arregla aquí.
+
+  Por qué no se vio en local antes de empujar: en esta máquina
+  `npm run format:check` avisa de **104 archivos** por el checkout con CRLF
+  (`core.autocrlf=true`), el mismo ruido ya documentado en pasadas anteriores,
+  y esos 8 se pierden dentro. Con el nombre de los archivos delante,
+  `npx prettier --check` sobre la lista exacta sí da señal limpia. **Regla para
+  la próxima**: cuando `format:check` local avise en masa, el veredicto se lee
+  del log de CI, no de aquí.
+
+### Verificación de esta pasada
+
+- **`npm ci` sobre árbol limpio**: 1139 paquetes, sin `EUSAGE`.
+- `npm run lint` y `npx tsc --noEmit` — limpios.
+- `npm run test:coverage -- --ci` — **642 tests en 60 suites** (1 suite y 72
+  casos omitidos por su opt-in), verde con **92.57 / 85.26 / 91.59 / 94.45**
+  sobre el suelo 89.82/82.56/91.49/91.38 de `jest.config.js`. El suelo no se
+  toca.
+- `npm run format:check` — los 8 archivos tocados salen limpios uno a uno; el
+  comando completo sigue avisando en masa por el CRLF de esta máquina, también
+  sin estos cambios.
+- **El criterio de terminado no es ninguna de las líneas de arriba, sino el
+  run**: [run 35116428974](https://github.com/thejowe/lockin/actions/runs/35116428974)
+  sobre `77f9b61`, **CI entero en verde** — Lint, Formato, Tipos, Tests, Runner
+  E2E, SQL embebido y Export web, los siete. Es el primer verde desde
+  `dc7343c`.
+- El commit intermedio `977e67d` (solo el lock) ya dejó
+  [run 35114296282](https://github.com/thejowe/lockin/actions/runs/35114296282)
+  con los siete `npm ci` pasados y 6/7 trabajos verdes: ahí se separó lo que
+  arreglaba el lock de lo que no, antes de tocar el formato.
+
 ## El SQL embebido entra en CI: PGlite como devDependency (2026-09-15)
 
 Deuda que dejó anotada `valoracion` en `docs/plan/todo/valoracion.md` →
