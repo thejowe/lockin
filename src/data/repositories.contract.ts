@@ -565,8 +565,19 @@ export function describeRepositoryContract(backend: ContractBackend): void {
         expect(plain.links.github).toBeUndefined();
       });
 
+      itIfLinkable('un sello ya encendido sobrevive a guardar el perfil', async () => {
+        await repositories.profiles.saveCurrent(buildProfileInput());
+        await repositories.profiles.verifyGithub();
+
+        await repositories.profiles.saveCurrent(buildProfileInput({ name: 'Nombre Cambiado' }));
+
+        const after = await repositories.profiles.getCurrent();
+        expect(after?.githubVerification).not.toBeNull();
+      });
+
       it('el sello de otra persona se lee, pero de solo lectura', async () => {
         const others = await repositories.profiles.list();
+        expect(others.some((profile) => profile.githubVerification !== null)).toBe(true);
         for (const other of others) {
           expect(
             other.githubVerification === null || typeof other.githubVerification.handle === 'string'
