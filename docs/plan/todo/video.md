@@ -130,12 +130,45 @@ qué puede solaparse).
       `npx expo export --platform web` sigue en verde (15 rutas exportadas)
       tras tocar `use-video-call.ts` (el sibling `.web.ts` no importa nada de
       ese archivo en runtime, solo tipos).
-- [ ] Tarea 7 — Cierre del bloque y actualización de `docs/plan/TODO.md`
+- [x] Tarea 7 — Cierre del bloque y actualización de `docs/plan/TODO.md`.
+      Commits de código del bloque (6, por `git log --oneline`): `9829e15`
+      (Tarea 1, dependencia + plugin + mock), `d0fae92` (Tarea 2,
+      señalización en memoria), `de3c140` (Tarea 3, señalización sobre
+      Supabase Realtime Broadcast), `00e1f6f` (Tarea 4, hook
+      `use-video-call`), `5853e10` (Tarea 5, `VideoCallView` + integración +
+      siblings `.web`), `c82a3e4` (Tarea 6, casos límite). Entrada de "Vídeo
+      real en la sesión" añadida a `docs/plan/TODO.md`
+      sustituyendo la línea suelta "Vídeo real en la sesión (spec propia)".
+      Verificación final sobre el estado acumulado de las Tareas 1-6: `npm
+      test` completo en verde (60/61 suites, 1 skip preexistente, 642 tests);
+      `npm test -- --coverage` sin bajar el suelo de `jest.config.js`
+      (92.57/85.26/91.59/94.45 % sobre el mínimo 89.82/82.56/91.49/91.38 %,
+      exit 0 — los dos `.web.*` nuevos de la Tarea 5 quedan a 0 % de cobertura
+      propia porque Jest nunca los resuelve bajo el preset nativo, igual que
+      `use-color-scheme.web.ts`, y el conjunto sigue por encima del suelo);
+      `npx tsc --noEmit` limpio; `npm run lint` limpio (exit 0); `npx expo
+      export --platform web` en verde (15 rutas, incluida
+      `/session/[sessionId]`). `test/app/layouts.test.tsx` dio un timeout
+      aislado corriendo la suite completa con `--coverage`
+      ("Exceeded timeout of 5000 ms"); repetido en solitario pasa limpio
+      (7/7) — flakiness de carga de máquina en este entorno, no una
+      regresión de este bloque (el archivo no toca nada de `video`).
+      **Sin verificar, y no ejecutable desde un agente** (mismo precedente
+      que la Tarea 11 de `sesiones`): la llamada real entre dos dispositivos
+      físicos (cámara y audio en los dos sentidos) y que el config plugin de
+      `react-native-webrtc` compile de verdad en un build de EAS — las dos
+      necesitan `eas build --profile development` y hardware real. Hasta que
+      el usuario las corra, todo lo marcado en este bloque está verificado
+      solo contra mocks (`jest.setup.js`) y contra `expo export --platform
+      web`, nunca contra WebRTC nativo de verdad.
 
-## Bloqueo conocido
+## Pendiente del usuario
 
-La verificación real de la llamada entre dos dispositivos (cámara y audio en
-los dos sentidos) necesita un build de dev client de EAS y dos móviles
-físicos — no es algo que un agente pueda ejecutar. No bloquea las Tareas 1-7,
-que avanzan contra mocks; se cierra al final con la palabra del usuario,
-igual que la Tarea 11 de `sesiones`.
+- [ ] `eas build --profile development` para confirmar que el plugin nativo
+      de `react-native-webrtc` (Tarea 1) compila de verdad en iOS/Android.
+- [ ] Con ese build en dos móviles reales: abrir la misma sesión Lock-In
+      desde los dos, comprobar que la llamada conecta (STUN público, sin
+      TURN — puede no conectar en redes con NAT simétrico, ver la spec,
+      "Qué problema resuelve, y cuál no") y que cámara y audio se ven/oyen
+      en los dos sentidos, que mic/cámara/colgar responden, y que salir de
+      la sesión o volver a entrar deja la llamada en el estado esperado.
