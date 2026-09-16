@@ -36,22 +36,40 @@
  * | `GET /tabla?col_enum=eq.<valor>`                | si el enum admite ese valor      |
  * | `POST /rpc/fn` con los nombres de sus argumentos | `PGRST202` → no existe esa firma |
  * | `GET /tabla` sin sesión                         | `42501` → `anon` sigue revocado  |
+ * | `PATCH`/`POST` de una columna cerrada           | `42501` → el permiso DE COLUMNA sigue puesto |
  *
  * Ninguna sonda tiene efectos: las RPC se llaman con todos los argumentos a
  * `null` y el usuario de la sonda es anónimo y sin perfil, así que
  * `record_decision()` muere en su propia comprobación de perfil antes de
- * insertar nada, y `dev_reset_current_user()` no tiene nada que borrar.
+ * insertar nada, y `dev_reset_current_user()` no tiene nada que borrar. Las de
+ * escritura tampoco: el permiso de columna se comprueba antes de tocar fila
+ * alguna, y aunque estuviera abierto, RLS deja la sonda sin ninguna fila que
+ * modificar (detalle en `makeProbes`).
+ *
+ * ## Lo único que solo se ve desde aquí
+ *
+ * Los privilegios de COLUMNA. `supabase/schema-fingerprint.sql` lee `relacl`
+ * (tabla) y `proacl` (función), pero no `attacl`. Así que el permiso que
+ * protege el sello de verificación de GitHub —`profiles.github_handle` y
+ * `profiles.github_verified_at`, cerradas a `authenticated` en
+ * `20260916000100`— no lo coteja ningún otro control del repo. Si esa sonda
+ * desaparece, un despliegue con el permiso abierto sale verde por todas partes
+ * y la insignia de «verificado» se la pone cualquiera con la clave anon del
+ * bundle. Lo fija `supabase/drift-check.test.mjs`.
  *
  * ## Qué NO puede ver
  *
  * Todo lo que no asoma por PostgREST: cuerpos de las políticas RLS, CHECKs,
  * índices, triggers, `default`s, y las columnas, tablas o valores de enum que
  * existan en el despliegue **de más** respecto a las migraciones. Para eso está
- * `supabase/schema-fingerprint.sql`, ejecutado en CI con acceso SQL. Tampoco
- * sondea cuerpos, tipos de argumentos/retorno o defaults de funciones. Un
- * CREATE OR REPLACE que cambia el ranking conserva la firma y puede pasar.
- * El parser no es un intérprete SQL: DROP/RENAME, ALTER COLUMN/TYPE y ADD sin
- * COLUMN pueden quedar ignorados; tampoco interpreta índices ni políticas.
+ * `supabase/schema-fingerprint.sql`, ejecutado en CI con acceso SQL. Los CHECKs
+ * de `alter table … add constraint` sí se parsean, pero solo para listarlos como
+ * no comprobables: darlos por buenos sin mirarlos sería peor que no nombrarlos.
+ * Tampoco sondea cuerpos, tipos de argumentos/retorno o defaults de funciones.
+ * Un CREATE OR REPLACE que cambia el ranking conserva la firma y puede pasar.
+ * El parser no es un intérprete SQL: DROP/RENAME y ALTER COLUMN/TYPE no los
+ * entiende —y por eso revienta al verlos, en vez de ignorarlos—; tampoco
+ * interpreta índices ni políticas.
  * Ver supabase/README.md → auditoría de límites. Un verde aquí es parcial.
  *
  * ## Uso
@@ -68,7 +86,7 @@
 
 import { readdirSync, readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { tmpdir } from 'node:os';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -86,11 +104,12 @@ const GARBAGE = 'zz-lockin-drift-probe';
 // divergir — justo el problema que este script existe para detectar. Así que la
 // referencia se saca de las migraciones en cada ejecución, con un parser
 // deliberadamente estricto: solo entiende las formas que usan nuestras
-// migraciones —`create table`, `alter table … add column`, `create type … as
-// enum` y `create function`— y grita si encuentra algo que no sabe leer, en vez
-// de callarse y dar un falso verde.
+// migraciones —`create table`, `alter table … add column`, `alter table … add
+// constraint`, `create type … as enum`, `create function` y los
+// `revoke`/`grant` de privilegios por columna— y grita si encuentra algo que no
+// sabe leer, en vez de callarse y dar un falso verde.
 
-function migrationSql() {
+export function migrationSql() {
   const dir = join(root, 'supabase/migrations');
   const files = readdirSync(dir)
     .filter((f) => f.endsWith('.sql'))
@@ -107,7 +126,7 @@ function migrationSql() {
  * comas de un `create table`, así que dejarlos dentro convierte el comentario
  * en el nombre de la columna siguiente.
  */
-function stripComments(sql) {
+export function stripComments(sql) {
   return sql.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/--[^\n]*/g, '');
 }
 
@@ -166,7 +185,7 @@ const AFTER_TYPE = new Set([
   'collate',
 ]);
 
-function parseMigrations(sql) {
+export function parseMigrations(sql) {
   const enums = new Map();
   for (const m of sql.matchAll(/create type public\.(\w+) as enum\s*\(/gi)) {
     const body = balanced(sql, m.index + m[0].length - 1);
@@ -208,6 +227,20 @@ function parseMigrations(sql) {
   // El resto de `alter table` (RLS, `replica identity`) no trae `add column` y
   // pasa de largo. La forma que no sepa leer la deja sin tipo y revienta, que es
   // la misma regla que arriba: antes un error que un verde falso.
+  // `alter table … add constraint`. Un CHECK no asoma por PostgREST, así que de
+  // estos no sale una sonda: salen las líneas `no comprobable` del informe. Se
+  // parsean igual para que el script sepa que existen y lo diga — la regla de la
+  // casa es no callarse nada, y un CHECK invisible Y no mencionado es justo
+  // cómo se pierde de vista que `profiles_github_link_matches_handle`
+  // (`20260916000100`) es media defensa del sello de GitHub. El cotejo que sí
+  // los ve es `supabase/schema-fingerprint.sql`, con sus líneas `constr`.
+  const constraints = [];
+  for (const m of sql.matchAll(
+    /alter table (?:only\s+)?public\.(\w+)\s+add constraint\s+(\w+)\s+(\w+)/gi
+  )) {
+    constraints.push({ table: m[1], name: m[2], kind: m[3].toLowerCase() });
+  }
+
   for (const m of sql.matchAll(/alter table (?:only\s+)?public\.(\w+)([\s\S]*?);/gi)) {
     const columns = tables.get(m[1]);
     const clauses = [
@@ -215,7 +248,20 @@ function parseMigrations(sql) {
         /add column\s+(?:if not exists\s+)?(\w+)\s+([\s\S]*?)(?=\s*,\s*(?:add|alter|drop)\s|\s*$)/gi
       ),
     ];
-    if (clauses.length === 0) continue;
+    if (clauses.length === 0) {
+      // Las formas sin `add column` que sí conocemos. Cualquier otra revienta en
+      // vez de pasar de largo: un `alter table` que el parser no entiende es
+      // esquema que no se está cotejando, y eso no puede ser un verde silencioso.
+      const body = m[2].trim().toLowerCase();
+      const known =
+        /^(enable|disable|force|no force) row level security$|^replica identity |^add constraint /;
+      if (!known.test(body)) {
+        throw new Error(
+          `alter table public.${m[1]} con forma desconocida "${body}": parser desfasado`
+        );
+      }
+      continue;
+    }
     if (!columns) {
       throw new Error(
         `add column sobre public.${m[1]}, que no tiene create table: parser desfasado`
@@ -230,6 +276,91 @@ function parseMigrations(sql) {
       }
       if (type.length === 0) throw new Error(`Columna ${m[1]}.${name} sin tipo: parser desfasado`);
       columns.push({ name, type: type.join(' ').replace(/^public\./, '') });
+    }
+  }
+
+  // --- Privilegios de COLUMNA ----------------------------------------------
+  //
+  // Esto es lo único que este script puede sondear y la huella por catálogo no:
+  // `schema-fingerprint.sql` lee `relacl` (tabla) y `proacl` (función), pero no
+  // `attacl`. Sin lo de aquí abajo, el permiso de columna del sello de GitHub no
+  // lo estaría mirando NADIE, ni este script ni el job `Schema drift`. Y un
+  // permiso de escritura abierto de más en producción es, literalmente, el sello
+  // de verificación falsificable con la clave que va en el bundle.
+  //
+  // La forma que hay que entender (`20260916000100_github_verification.sql`):
+  //
+  //     revoke insert, update on public.profiles from authenticated;
+  //     grant  update (col, col, …) on public.profiles to authenticated;
+  //
+  // Cerrado = las columnas de la tabla que NO vuelven en el `grant`.
+  //
+  // Y la trampa, que el parser denuncia en vez de tragarse: un
+  // `revoke update (col) on … from …` A SECAS no cierra nada. PostgreSQL:
+  // «if a role has been granted privileges on a table, then revoking the same
+  // privileges from individual columns will have no effect». Como Supabase deja
+  // a `authenticated` el privilegio de tabla sobre todo `public`, ese revoke es
+  // un no-op silencioso — el error más caro posible aquí, porque *parece* la
+  // protección. Solo cuenta si antes se revocó el privilegio ancho.
+  const wideRevokes = new Set();
+  for (const m of sql.matchAll(
+    /revoke\s+([a-z\s,]+?)\s+on\s+(?:table\s+)?public\.(\w+)\s+from\s+([^;]+);/gi
+  )) {
+    for (const priv of splitTopLevel(m[1])) {
+      for (const role of splitTopLevel(m[3])) {
+        wideRevokes.add(`${m[2]}.${priv.trim().toLowerCase()}.${role.trim().toLowerCase()}`);
+      }
+    }
+  }
+
+  const columnGrants = new Map();
+  for (const m of sql.matchAll(
+    /grant\s+(\w+)\s*\(([^)]*)\)\s+on\s+(?:table\s+)?public\.(\w+)\s+to\s+([^;]+);/gi
+  )) {
+    const priv = m[1].toLowerCase();
+    const granted = splitTopLevel(m[2]).map((c) => c.trim());
+    for (const role of splitTopLevel(m[4])) {
+      columnGrants.set(`${m[3]}.${priv}.${role.trim().toLowerCase()}`, granted);
+    }
+  }
+
+  const sealed = [];
+  for (const m of sql.matchAll(
+    /revoke\s+(\w+)\s*\(([^)]*)\)\s+on\s+(?:table\s+)?public\.(\w+)\s+from\s+([^;]+);/gi
+  )) {
+    const priv = m[1].toLowerCase();
+    for (const role of splitTopLevel(m[4])) {
+      const who = role.trim().toLowerCase();
+      if (!wideRevokes.has(`${m[3]}.${priv}.${who}`) && !wideRevokes.has(`${m[3]}.all.${who}`)) {
+        throw new Error(
+          `revoke ${priv} (…) on public.${m[3]} from ${who} sin revocar antes el ${priv} ` +
+            `de TABLA: PostgreSQL lo ignora y no cierra nada. Revoca el privilegio ancho y ` +
+            `devuelve por columna las que sí deben poder escribirse.`
+        );
+      }
+      for (const column of splitTopLevel(m[2])) {
+        sealed.push({ table: m[3], column: column.trim(), privilege: priv, role: who });
+      }
+    }
+  }
+  for (const [key, granted] of columnGrants) {
+    const [table, priv, role] = key.split('.');
+    if (!wideRevokes.has(`${table}.${priv}.${role}`) && !wideRevokes.has(`${table}.all.${role}`)) {
+      continue; // Un grant por columna sobre un privilegio ancho vivo no cierra nada.
+    }
+    const columns = tables.get(table);
+    if (!columns)
+      throw new Error(`grant por columna sobre public.${table}, que no tiene create table`);
+    const unknown = granted.filter((c) => !columns.some((col) => col.name === c));
+    if (unknown.length > 0) {
+      throw new Error(
+        `grant ${priv} sobre columnas inexistentes de public.${table}: ${unknown.join(', ')}`
+      );
+    }
+    for (const column of columns) {
+      if (!granted.includes(column.name)) {
+        sealed.push({ table, column: column.name, privilege: priv, role });
+      }
     }
   }
 
@@ -248,7 +379,7 @@ function parseMigrations(sql) {
     functions.push({ name: m[1], args, returns: returns[2].toLowerCase() });
   }
 
-  return { enums, tables, functions };
+  return { enums, tables, functions, constraints, sealed };
 }
 
 // ---------------------------------------------------------------------------
@@ -362,7 +493,33 @@ function makeProbes(url, key, token) {
     );
   }
 
-  return { rest, rpc, anonHeaders: { apikey: key } };
+  /**
+   * Sonda de ESCRITURA, para los privilegios de columna. Sin efectos, y por dos
+   * motivos independientes —hace falta que sea por dos, porque de esto depende
+   * que se pueda correr contra producción—:
+   *
+   *   1. PostgreSQL comprueba el privilegio de columna al arrancar el ejecutor,
+   *      ANTES de tocar una sola fila. Si el permiso está cerrado sale 42501 sin
+   *      que nada se haya escrito, que es justo lo que queremos leer.
+   *   2. Y si está abierto —o sea, si hay deriva—, tampoco pasa nada: el UPDATE
+   *      filtra por un uuid aleatorio, y RLS ("solo editas el tuyo") deja fuera
+   *      cualquier fila que no sea la del usuario de la sonda, que es una cuenta
+   *      anónima recién creada y sin perfil. El INSERT muere en su propio
+   *      `with check` de RLS por la misma razón.
+   */
+  async function write(table, column, privilege) {
+    const body = JSON.stringify({ [column]: null });
+    const headers = { ...authed, 'Content-Type': 'application/json' };
+    const target =
+      privilege === 'update'
+        ? `${url}/rest/v1/${table}?id=eq.${crypto.randomUUID()}`
+        : `${url}/rest/v1/${table}`;
+    return parse(
+      await fetch(target, { method: privilege === 'update' ? 'PATCH' : 'POST', headers, body })
+    );
+  }
+
+  return { rest, rpc, write, anonHeaders: { apikey: key } };
 }
 
 /**
@@ -409,195 +566,249 @@ function note(message) {
   console.log(`  - ${message}`);
 }
 
-const { url: rawUrl, key } = readEnv();
-const url = rawUrl
-  .trim()
-  .replace(/\/+$/, '')
-  .replace(/\/rest\/v1$/, '');
-const expected = parseMigrations(stripComments(migrationSql()));
+// Solo al ejecutarlo como script. Importado —lo hace drift-check.test.mjs para
+// probar el parser sin red ni credenciales— no debe sondear nada ni salir.
+const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 
-console.log(`Proyecto:   ${url}`);
-console.log(
-  `Referencia: supabase/migrations/ — ${expected.tables.size} tablas, ` +
-    `${expected.enums.size} enums, ${expected.functions.length} funciones`
-);
+if (isMain) {
+  const { url: rawUrl, key } = readEnv();
+  const url = rawUrl
+    .trim()
+    .replace(/\/+$/, '')
+    .replace(/\/rest\/v1$/, '');
+  const expected = parseMigrations(stripComments(migrationSql()));
 
-const token = await openSession(url, key);
-const { rest, rpc, anonHeaders } = makeProbes(url, key, token);
+  console.log(`Proyecto:   ${url}`);
+  console.log(
+    `Referencia: supabase/migrations/ — ${expected.tables.size} tablas, ` +
+      `${expected.enums.size} enums, ${expected.functions.length} funciones`
+  );
 
-// --- Tablas y columnas -----------------------------------------------------
-console.log('\nTablas y columnas');
-for (const [table, columns] of expected.tables) {
-  const head = await rest(`${table}?limit=0`);
-  if (head.code === 'PGRST205' || head.code === '42P01') {
-    drift(`falta la tabla public.${table}`);
-    continue;
-  }
-  if (head.status !== 200) {
-    drift(`public.${table} no es legible por un usuario autenticado: ${head.code} ${head.message}`);
-    continue;
-  }
+  const token = await openSession(url, key);
+  const { rest, rpc, write, anonHeaders } = makeProbes(url, key, token);
 
-  const problems = [];
-  for (const column of columns) {
-    const signature = expectedTypeSignature(column.type, expected.enums);
-    if (signature.kind === 'unknown') {
-      note(
-        `no sé sondear el tipo "${column.type}" de ${table}.${column.name}; solo compruebo que la columna existe`
+  // --- Tablas y columnas -----------------------------------------------------
+  console.log('\nTablas y columnas');
+  for (const [table, columns] of expected.tables) {
+    const head = await rest(`${table}?limit=0`);
+    if (head.code === 'PGRST205' || head.code === '42P01') {
+      drift(`falta la tabla public.${table}`);
+      continue;
+    }
+    if (head.status !== 200) {
+      drift(
+        `public.${table} no es legible por un usuario autenticado: ${head.code} ${head.message}`
       );
-    }
-    const filter = signature.kind === 'enum-array' ? `cs.{${GARBAGE}}` : `eq.${GARBAGE}`;
-    const probe = await rest(`${table}?${column.name}=${filter}&limit=0`);
-
-    if (probe.code === '42703') {
-      problems.push(`falta la columna ${table}.${column.name}`);
-      continue;
-    }
-    if (probe.code === '42501') {
-      problems.push(`${table}.${column.name} existe pero el usuario autenticado no puede leerla`);
       continue;
     }
 
-    // El mensaje del error revela el tipo desplegado.
-    const said = probe.message || `HTTP ${probe.status}`;
-    if (signature.kind === 'text') {
-      if (probe.status !== 200) problems.push(`${table}.${column.name} debería ser text: ${said}`);
-    } else if (signature.kind === 'cast') {
-      if (!probe.message.includes(`type ${signature.pg}`)) {
-        problems.push(`${table}.${column.name} debería ser ${column.type}: ${said}`);
-      }
-    } else if (signature.kind === 'enum' || signature.kind === 'enum-array') {
-      const suffix = signature.kind === 'enum-array' ? '[]' : '';
-      if (!probe.message.includes(`enum ${signature.enumName}`)) {
-        problems.push(
-          `${table}.${column.name} debería ser el enum ${signature.enumName}${suffix}: ${said}`
+    const problems = [];
+    for (const column of columns) {
+      const signature = expectedTypeSignature(column.type, expected.enums);
+      if (signature.kind === 'unknown') {
+        note(
+          `no sé sondear el tipo "${column.type}" de ${table}.${column.name}; solo compruebo que la columna existe`
         );
       }
-    } else if (signature.kind === 'array') {
-      if (!/malformed array literal/.test(probe.message)) {
-        problems.push(`${table}.${column.name} debería ser un array: ${said}`);
+      const filter = signature.kind === 'enum-array' ? `cs.{${GARBAGE}}` : `eq.${GARBAGE}`;
+      const probe = await rest(`${table}?${column.name}=${filter}&limit=0`);
+
+      if (probe.code === '42703') {
+        problems.push(`falta la columna ${table}.${column.name}`);
+        continue;
+      }
+      if (probe.code === '42501') {
+        problems.push(`${table}.${column.name} existe pero el usuario autenticado no puede leerla`);
+        continue;
+      }
+
+      // El mensaje del error revela el tipo desplegado.
+      const said = probe.message || `HTTP ${probe.status}`;
+      if (signature.kind === 'text') {
+        if (probe.status !== 200)
+          problems.push(`${table}.${column.name} debería ser text: ${said}`);
+      } else if (signature.kind === 'cast') {
+        if (!probe.message.includes(`type ${signature.pg}`)) {
+          problems.push(`${table}.${column.name} debería ser ${column.type}: ${said}`);
+        }
+      } else if (signature.kind === 'enum' || signature.kind === 'enum-array') {
+        const suffix = signature.kind === 'enum-array' ? '[]' : '';
+        if (!probe.message.includes(`enum ${signature.enumName}`)) {
+          problems.push(
+            `${table}.${column.name} debería ser el enum ${signature.enumName}${suffix}: ${said}`
+          );
+        }
+      } else if (signature.kind === 'array') {
+        if (!/malformed array literal/.test(probe.message)) {
+          problems.push(`${table}.${column.name} debería ser un array: ${said}`);
+        }
+      }
+    }
+
+    if (problems.length === 0)
+      ok(`public.${table} — ${columns.length} columnas con el tipo esperado`);
+    else problems.forEach(drift);
+  }
+
+  // --- Privilegios de columna ------------------------------------------------
+  //
+  // La sonda más importante del archivo. Una columna que las migraciones cierran
+  // y el despliegue tiene abierta no la ve nadie más: `schema-fingerprint.sql`
+  // lee `relacl` y `proacl`, pero no `attacl`. En el caso del sello de GitHub,
+  // «abierta de más» significa que cualquiera se pone la insignia de verificado
+  // con la clave anon que viaja en el bundle. Un verde aquí sin esta sección
+  // sería el peor falso negativo del repo.
+  if (expected.sealed.length > 0) {
+    console.log('\nPrivilegios de columna (lo que la huella por catálogo no ve)');
+  }
+  for (const seal of expected.sealed) {
+    if (seal.role !== 'authenticated') {
+      note(
+        `${seal.table}.${seal.column} cerrada a ${seal.role}: la sonda va como authenticated, no puedo comprobarlo`
+      );
+      continue;
+    }
+    const probe = await write(seal.table, seal.column, seal.privilege);
+    if (probe.code === '42501') {
+      ok(`${seal.table}.${seal.column} — ${seal.privilege.toUpperCase()} denegado a authenticated`);
+    } else if (probe.code === '42703' || probe.code === 'PGRST204') {
+      drift(`falta la columna ${seal.table}.${seal.column}`);
+    } else {
+      drift(
+        `${seal.table}.${seal.column} ADMITE ${seal.privilege.toUpperCase()} de authenticated ` +
+          `(${probe.status} ${probe.code ?? ''} ${probe.message}): el revoke/grant por columna de ` +
+          'las migraciones no está aplicado en el despliegue'
+      );
+    }
+  }
+
+  // --- CHECKs: declarados no comprobables ------------------------------------
+  //
+  // No asoman por PostgREST. Se listan para que consten, no para darlos por
+  // buenos: quien los coteja de verdad son las líneas `constr` de la huella.
+  if (expected.constraints.length > 0) {
+    console.log('\nConstraints de `alter table … add constraint`');
+    for (const c of expected.constraints) {
+      note(`${c.table}.${c.name} (${c.kind}) no asoma por PostgREST: lo coteja la huella`);
+    }
+  }
+
+  // --- Valores de los enums --------------------------------------------------
+  //
+  // Un enum solo se puede sondear a través de una columna que lo use. El que no
+  // tenga columna se declara no comprobable en vez de darse por bueno en silencio.
+  console.log('\nValores de los enums');
+  const enumColumn = new Map();
+  for (const [table, columns] of expected.tables) {
+    for (const column of columns) {
+      const isArray = column.type.endsWith('[]');
+      const base = isArray ? column.type.slice(0, -2) : column.type;
+      if (expected.enums.has(base) && !enumColumn.has(base)) {
+        enumColumn.set(base, { table, column: column.name, isArray });
       }
     }
   }
+  for (const [name, values] of expected.enums) {
+    const site = enumColumn.get(name);
+    if (!site) {
+      note(`el enum ${name} no lo usa ninguna columna: no hay por dónde sondearlo`);
+      continue;
+    }
+    const missing = [];
+    for (const value of values) {
+      const filter = site.isArray ? `cs.{${value}}` : `eq.${value}`;
+      const probe = await rest(`${site.table}?${site.column}=${filter}&limit=0`);
+      if (probe.status !== 200) missing.push(`${value} (${probe.code} ${probe.message})`);
+    }
+    if (missing.length === 0) ok(`${name} — ${values.length} valores presentes`);
+    else drift(`al enum ${name} le faltan valores en el despliegue: ${missing.join(', ')}`);
+  }
 
-  if (problems.length === 0)
-    ok(`public.${table} — ${columns.length} columnas con el tipo esperado`);
-  else problems.forEach(drift);
-}
-
-// --- Valores de los enums --------------------------------------------------
-//
-// Un enum solo se puede sondear a través de una columna que lo use. El que no
-// tenga columna se declara no comprobable en vez de darse por bueno en silencio.
-console.log('\nValores de los enums');
-const enumColumn = new Map();
-for (const [table, columns] of expected.tables) {
-  for (const column of columns) {
-    const isArray = column.type.endsWith('[]');
-    const base = isArray ? column.type.slice(0, -2) : column.type;
-    if (expected.enums.has(base) && !enumColumn.has(base)) {
-      enumColumn.set(base, { table, column: column.name, isArray });
+  // --- Funciones -------------------------------------------------------------
+  //
+  // PostgREST no expone las funciones que devuelven `trigger`, así que sondearlas
+  // daría un PGRST202 que no significa nada. Se saltan explícitamente.
+  console.log('\nFunciones expuestas por PostgREST');
+  for (const fn of expected.functions) {
+    if (fn.returns === 'trigger') {
+      note(`${fn.name}() devuelve trigger: PostgREST no la expone, no se puede sondear desde aquí`);
+      continue;
+    }
+    const args = Object.fromEntries(fn.args.map((arg) => [arg, null]));
+    const probe = await rpc(fn.name, args);
+    if (probe.code === 'PGRST202') {
+      drift(
+        `no existe public.${fn.name}(${fn.args.join(', ')}) en el despliegue, ` +
+          'o sus argumentos se llaman de otra forma'
+      );
+    } else if (probe.code === '42501') {
+      drift(`public.${fn.name}() existe pero el rol authenticated no puede ejecutarla`);
+    } else {
+      ok(`${fn.name}(${fn.args.join(', ')})`);
     }
   }
-}
-for (const [name, values] of expected.enums) {
-  const site = enumColumn.get(name);
-  if (!site) {
-    note(`el enum ${name} no lo usa ninguna columna: no hay por dónde sondearlo`);
-    continue;
-  }
-  const missing = [];
-  for (const value of values) {
-    const filter = site.isArray ? `cs.{${value}}` : `eq.${value}`;
-    const probe = await rest(`${site.table}?${site.column}=${filter}&limit=0`);
-    if (probe.status !== 200) missing.push(`${value} (${probe.code} ${probe.message})`);
-  }
-  if (missing.length === 0) ok(`${name} — ${values.length} valores presentes`);
-  else drift(`al enum ${name} le faltan valores en el despliegue: ${missing.join(', ')}`);
-}
 
-// --- Funciones -------------------------------------------------------------
-//
-// PostgREST no expone las funciones que devuelven `trigger`, así que sondearlas
-// daría un PGRST202 que no significa nada. Se saltan explícitamente.
-console.log('\nFunciones expuestas por PostgREST');
-for (const fn of expected.functions) {
-  if (fn.returns === 'trigger') {
-    note(`${fn.name}() devuelve trigger: PostgREST no la expone, no se puede sondear desde aquí`);
-    continue;
+  // --- Funciones de desarrollo ----------------------------------------------
+  //
+  // No están en `migrations/` a propósito (ver la cabecera de `supabase/seed.sql`
+  // y la sección "Deriva de esquema" de `supabase/README.md`). Aquí no se juzga
+  // si "faltan": se informa de dónde están instaladas, que es justo el dato que
+  // nadie tenía.
+  console.log('\nFunciones solo-desarrollo de supabase/seed.sql');
+  const seedSql = stripComments(readFileSync(join(root, 'supabase/seed.sql'), 'utf8'));
+  const devFunctions = [
+    ...seedSql.matchAll(/create (?:or replace )?function public\.(\w+)\s*\(([^)]*)\)/gi),
+  ].map((m) => ({
+    name: m[1],
+    args: splitTopLevel(m[2]).map((arg) => arg.split(/\s+/)[0]),
+  }));
+  let devInstalled = 0;
+  for (const fn of devFunctions) {
+    const args = Object.fromEntries(fn.args.map((arg) => [arg, null]));
+    const probe = await rpc(fn.name, args);
+    const signature = `${fn.name}(${fn.args.join(', ')})`;
+    if (probe.code === 'PGRST202') {
+      note(`${signature} NO está instalada`);
+    } else {
+      devInstalled += 1;
+      note(`${signature} SÍ está instalada`);
+    }
   }
-  const args = Object.fromEntries(fn.args.map((arg) => [arg, null]));
-  const probe = await rpc(fn.name, args);
-  if (probe.code === 'PGRST202') {
-    drift(
-      `no existe public.${fn.name}(${fn.args.join(', ')}) en el despliegue, ` +
-        'o sus argumentos se llaman de otra forma'
-    );
-  } else if (probe.code === '42501') {
-    drift(`public.${fn.name}() existe pero el rol authenticated no puede ejecutarla`);
-  } else {
-    ok(`${fn.name}(${fn.args.join(', ')})`);
-  }
-}
-
-// --- Funciones de desarrollo ----------------------------------------------
-//
-// No están en `migrations/` a propósito (ver la cabecera de `supabase/seed.sql`
-// y la sección "Deriva de esquema" de `supabase/README.md`). Aquí no se juzga
-// si "faltan": se informa de dónde están instaladas, que es justo el dato que
-// nadie tenía.
-console.log('\nFunciones solo-desarrollo de supabase/seed.sql');
-const seedSql = stripComments(readFileSync(join(root, 'supabase/seed.sql'), 'utf8'));
-const devFunctions = [
-  ...seedSql.matchAll(/create (?:or replace )?function public\.(\w+)\s*\(([^)]*)\)/gi),
-].map((m) => ({
-  name: m[1],
-  args: splitTopLevel(m[2]).map((arg) => arg.split(/\s+/)[0]),
-}));
-let devInstalled = 0;
-for (const fn of devFunctions) {
-  const args = Object.fromEntries(fn.args.map((arg) => [arg, null]));
-  const probe = await rpc(fn.name, args);
-  const signature = `${fn.name}(${fn.args.join(', ')})`;
-  if (probe.code === 'PGRST202') {
-    note(`${signature} NO está instalada`);
-  } else {
-    devInstalled += 1;
-    note(`${signature} SÍ está instalada`);
-  }
-}
-if (devInstalled > 0) {
-  note(
-    'Son herramientas de desarrollo. Antes de que este proyecto tenga usuarios ' +
-      'reales hay que retirarlas: supabase/dev-teardown.sql'
-  );
-}
-
-// --- RLS: `anon` sigue fuera ----------------------------------------------
-console.log('\nRLS — anon sin sesión');
-for (const table of expected.tables.keys()) {
-  const probe = await rest(`${table}?limit=1`, anonHeaders);
-  if (probe.code === '42501') ok(`public.${table} — denegado a anon`);
-  else {
-    drift(
-      `public.${table} responde ${probe.status} ${probe.code ?? ''} a anon sin sesión: ` +
-        'los REVOKE de la migración de RLS no están puestos'
+  if (devInstalled > 0) {
+    note(
+      'Son herramientas de desarrollo. Antes de que este proyecto tenga usuarios ' +
+        'reales hay que retirarlas: supabase/dev-teardown.sql'
     );
   }
-}
 
-// --- Veredicto -------------------------------------------------------------
-console.log('');
-if (findings.length === 0) {
-  console.log('Sin deriva detectable desde el cliente.');
+  // --- RLS: `anon` sigue fuera ----------------------------------------------
+  console.log('\nRLS — anon sin sesión');
+  for (const table of expected.tables.keys()) {
+    const probe = await rest(`${table}?limit=1`, anonHeaders);
+    if (probe.code === '42501') ok(`public.${table} — denegado a anon`);
+    else {
+      drift(
+        `public.${table} responde ${probe.status} ${probe.code ?? ''} a anon sin sesión: ` +
+          'los REVOKE de la migración de RLS no están puestos'
+      );
+    }
+  }
+
+  // --- Veredicto -------------------------------------------------------------
+  console.log('');
+  if (findings.length === 0) {
+    console.log('Sin deriva detectable desde el cliente.');
+    console.log(
+      'Alcance: esto no ve políticas, CHECKs, índices, triggers ni objetos de más.\n' +
+        'Tampoco valida cuerpos/retornos/defaults de funciones ni toda evolución DDL.\n' +
+        'Para el cotejo por catálogo, supabase/schema-fingerprint.sql y schema-drift.yml.'
+    );
+    process.exit(0);
+  }
   console.log(
-    'Alcance: esto no ve políticas, CHECKs, índices, triggers ni objetos de más.\n' +
-      'Tampoco valida cuerpos/retornos/defaults de funciones ni toda evolución DDL.\n' +
-      'Para el cotejo por catálogo, supabase/schema-fingerprint.sql y schema-drift.yml.'
+    `DERIVA: ${findings.length} diferencia(s) entre supabase/migrations/ y el despliegue.`
   );
-  process.exit(0);
+  for (const finding of findings) console.log(`  - ${finding}`);
+  console.log('\nNo la parchees a ciegas: decide primero quién tiene razón, si el repo o la base.');
+  process.exit(1);
 }
-console.log(`DERIVA: ${findings.length} diferencia(s) entre supabase/migrations/ y el despliegue.`);
-for (const finding of findings) console.log(`  - ${finding}`);
-console.log('\nNo la parchees a ciegas: decide primero quién tiene razón, si el repo o la base.');
-process.exit(1);

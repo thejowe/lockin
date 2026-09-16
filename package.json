@@ -61,7 +61,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:e2e": "node --test \"e2e/*.test.mjs\"",
-    "test:schema": "node --test supabase/schema-compare.test.mjs supabase/schema-embedded.test.mjs supabase/cleanup.test.mjs"
+    "test:schema": "node --test supabase/schema-compare.test.mjs supabase/drift-check.test.mjs supabase/schema-embedded.test.mjs supabase/cleanup.test.mjs"
   },
   "private": true
 }

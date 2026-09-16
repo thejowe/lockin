@@ -102,7 +102,8 @@ insert into public.profiles (
   specialties, seeking_specialties,
   looking_for, starting_point,
   availability_hours_per_week, availability_bands,
-  ambition, link_github, link_portfolio, link_linkedin, prompts
+  ambition, link_github, link_portfolio, link_linkedin, prompts,
+  github_handle, github_verified_at
 )
 values
   (
@@ -113,7 +114,12 @@ values
     'par', 'idea-sin-empezar',
     25, array['tarde', 'noche']::public.time_band[],
     'todo-o-nada', 'https://github.com/example-nuria', null, null,
-    '[{"question":"Lo que quiero construir es…","answer":"Herramientas para equipos pequeños que odian las hojas de cálculo."}]'::jsonb
+    '[{"question":"Lo que quiero construir es…","answer":"Herramientas para equipos pequeños que odian las hojas de cálculo."}]'::jsonb,
+    -- Con sello. `link_github` tiene que ser exactamente
+    -- 'https://github.com/' || github_handle o la constraint
+    -- `profiles_github_link_matches_handle` rechaza la fila y el seed muere con
+    -- un error que no dice nada de esto.
+    'example-nuria', '2026-08-01T10:00:00.000Z'
   ),
   (
     '11111111-1111-4111-8111-000000000002', 'Marc Oller', 34, 'Valencia', 'Europe/Madrid',
@@ -123,7 +129,8 @@ values
     'ambos', 'algo-empezado',
     15, array['manana']::public.time_band[],
     'equilibrado', null, 'https://example.com/marc', null,
-    '[{"question":"Mi mejor sesión de trabajo empieza…","answer":"A las siete de la mañana, con el café todavía hirviendo."}]'::jsonb
+    '[{"question":"Mi mejor sesión de trabajo empieza…","answer":"A las siete de la mañana, con el café todavía hirviendo."}]'::jsonb,
+    null, null
   ),
   (
     '11111111-1111-4111-8111-000000000003', 'Alba Ferrer', 26, 'Ciudad de México', 'America/Mexico_City',
@@ -133,7 +140,8 @@ values
     'lockin', 'solo-ganas',
     10, array['noche']::public.time_band[],
     'lifestyle', null, null, null,
-    '[{"question":"Necesito compañía para…","answer":"Sentarme a escribir sin abrir otra pestaña. Dos horas, sin excusas."}]'::jsonb
+    '[{"question":"Necesito compañía para…","answer":"Sentarme a escribir sin abrir otra pestaña. Dos horas, sin excusas."}]'::jsonb,
+    null, null
   ),
   (
     '11111111-1111-4111-8111-000000000004', 'Diego Salas', 31, 'Bogotá', 'America/Bogota',
@@ -143,7 +151,8 @@ values
     'par', 'solo-ganas',
     30, array['manana', 'tarde']::public.time_band[],
     'todo-o-nada', null, null, 'https://linkedin.com/in/example-diego',
-    '[{"question":"Lo que aporto desde el día uno es…","answer":"Conseguir los diez primeros clientes antes de que exista el producto."},{"question":"Busco a alguien que…","answer":"Sepa construir lo que yo ya sé vender."}]'::jsonb
+    '[{"question":"Lo que aporto desde el día uno es…","answer":"Conseguir los diez primeros clientes antes de que exista el producto."},{"question":"Busco a alguien que…","answer":"Sepa construir lo que yo ya sé vender."}]'::jsonb,
+    null, null
   ),
   (
     '11111111-1111-4111-8111-000000000005', 'Inés Aranda', 24, 'Sevilla', 'Europe/Madrid',
@@ -153,7 +162,8 @@ values
     'ambos', 'idea-sin-empezar',
     20, array['noche', 'madrugada']::public.time_band[],
     'equilibrado', 'https://github.com/example-ines', 'https://example.com/ines', null,
-    '[{"question":"Lo que quiero construir es…","answer":"Algo aburrido y necesario para gremios que aún trabajan por WhatsApp."},{"question":"Mi mejor sesión de trabajo empieza…","answer":"Cuando el resto del mundo ya se ha ido a dormir."}]'::jsonb
+    '[{"question":"Lo que quiero construir es…","answer":"Algo aburrido y necesario para gremios que aún trabajan por WhatsApp."},{"question":"Mi mejor sesión de trabajo empieza…","answer":"Cuando el resto del mundo ya se ha ido a dormir."}]'::jsonb,
+    null, null
   ),
   (
     '11111111-1111-4111-8111-000000000006', 'Tomás Ruiz', 38, 'Buenos Aires', 'America/Argentina/Buenos_Aires',
@@ -163,7 +173,8 @@ values
     'lockin', 'algo-empezado',
     8, array['manana']::public.time_band[],
     'lifestyle', null, null, null,
-    '[{"question":"Necesito compañía para…","answer":"Las dos horas de antes del trabajo. Solo no las cumplo nunca."}]'::jsonb
+    '[{"question":"Necesito compañía para…","answer":"Las dos horas de antes del trabajo. Solo no las cumplo nunca."}]'::jsonb,
+    null, null
   ),
   (
     '11111111-1111-4111-8111-000000000007', 'Lucía Pardo', 27, 'Lisboa', 'Europe/Lisbon',
@@ -175,7 +186,8 @@ values
     'par', 'algo-empezado',
     35, array['tarde', 'noche']::public.time_band[],
     'todo-o-nada', null, 'https://example.com/lucia', null,
-    '[{"question":"Lo que ya intenté y no salió…","answer":"Una marca de cerámica preciosa que no vendió nada. Aprendí a validar antes."},{"question":"Busco a alguien que…","answer":"Se enfade conmigo cuando me pase tres días puliendo un icono."}]'::jsonb
+    '[{"question":"Lo que ya intenté y no salió…","answer":"Una marca de cerámica preciosa que no vendió nada. Aprendí a validar antes."},{"question":"Busco a alguien que…","answer":"Se enfade conmigo cuando me pase tres días puliendo un icono."}]'::jsonb,
+    null, null
   ),
   (
     '11111111-1111-4111-8111-000000000008', 'Omar Chaib', 33, 'Madrid', 'Europe/Madrid',
@@ -184,8 +196,11 @@ values
     array[]::public.specialty[],
     'ambos', 'idea-sin-empezar',
     12, array['noche']::public.time_band[],
-    'equilibrado', null, null, 'https://linkedin.com/in/example-omar',
-    '[{"question":"Lo que aporto desde el día uno es…","answer":"Que el pacto entre nosotros esté escrito antes de que haga falta."}]'::jsonb
+    -- `link_github` deja de ser null al ganar sello: con sello, el enlace ES el
+    -- de la identidad, y la constraint no admite otra cosa.
+    'equilibrado', 'https://github.com/example-omar', null, 'https://linkedin.com/in/example-omar',
+    '[{"question":"Lo que aporto desde el día uno es…","answer":"Que el pacto entre nosotros esté escrito antes de que haga falta."}]'::jsonb,
+    'example-omar', '2026-08-01T10:00:00.000Z'
   )
 on conflict (id) do nothing;
 

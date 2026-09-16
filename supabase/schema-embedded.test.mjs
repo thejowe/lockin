@@ -23,11 +23,34 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
   const db = new PGlite();
   const here = dirname(fileURLToPath(import.meta.url));
   try {
-    // Solo fixture de Auth: no GoTrue, REST, seeds de cuentas ni permisos Supabase.
+    // Solo fixture de Auth: no GoTrue ni REST, ni seeds de cuentas.
+    //
+    // `auth.identities` es la tabla que GoTrue escribe al terminar el OAuth y de
+    // la que `sync_github_verification()` lee la verdad. Sin ella la migración
+    // del sello ni siquiera se ejecuta.
+    //
+    // Los `alter default privileges` NO son adorno de fidelidad: son lo que hace
+    // que el test del sello signifique algo. Todo proyecto de Supabase los lleva
+    // puestos sobre `public`, así que `authenticated` nace con el INSERT/UPDATE
+    // de TABLA sobre cada tabla nueva —está en la huella real del despliegue,
+    // `supabase/evidence/…/expected.txt`—. Sin emularlos aquí, `authenticated`
+    // no tendría ningún permiso, cualquier escritura fallaría, y el test de
+    // "no puedes encenderte el sello" pasaría por el motivo equivocado: un
+    // verde que no prueba nada. Con ellos puestos, el único motivo por el que
+    // el sello no se deja escribir es el permiso de columna de la migración.
     await db.exec(`create schema auth;
       create table auth.users (id uuid primary key, email text);
+      create table auth.identities (
+        provider_id text not null,
+        user_id uuid not null,
+        identity_data jsonb not null,
+        provider text not null,
+        primary key (provider, provider_id)
+      );
       create function auth.uid() returns uuid language sql as $$ select null::uuid $$;
       create role anon; create role authenticated; create role service_role;
+      alter default privileges in schema public
+        grant all on tables to anon, authenticated, service_role;
       create publication supabase_realtime;`);
     const migrations = readdirSync(join(here, 'migrations'))
       .filter((f) => f.endsWith('.sql'))
@@ -365,7 +388,205 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       }
     );
     await db.exec('rollback;');
+    // --- Verificación de GitHub ---------------------------------------------
+    //
+    // El test central del bloque, y no es que el sello se encienda: es que NO se
+    // pueda encender a mano. La clave anon viaja en el bundle, así que cualquier
+    // usuario puede mandar el PATCH que quiera contra `profiles`; lo único que
+    // separa eso de una insignia falsa es el permiso de columna de
+    // `20260916000100`. Aquí se comprueba con el rol `authenticated` de verdad,
+    // que en este fixture llega con los mismos permisos de tabla que en Supabase.
+    //
+    // Cada rechazo va en un savepoint: un error aborta la transacción entera.
+    await db.exec(`begin;
+      insert into auth.users (id, email) values ('${ana}', 'ana@lockin.test');
+      insert into public.profiles (
+        id, name, age, location, timezone, avatar_initials, specialties,
+        looking_for, starting_point, availability_hours_per_week,
+        availability_bands, ambition
+      ) values
+        ('${ana}', 'Ana', 30, 'Madrid', 'Europe/Madrid', 'A',
+         array['dev']::public.specialty[], 'lockin', 'solo-ganas', 10,
+         array['tarde']::public.time_band[], 'equilibrado');`);
+    // La guardia del peaje de la migración: el sello son las DOS únicas columnas
+    // de `profiles` cerradas a `authenticated`. Se lee de la tabla real, así que
+    // una columna nueva que nadie vuelva a conceder sale por aquí en rojo en vez
+    // de quedarse en solo-lectura sin que se entere nadie.
+    const permisos = await db.query(`select a.attname,
+        has_column_privilege('authenticated', 'public.profiles', a.attname, 'INSERT') as inserta,
+        has_column_privilege('authenticated', 'public.profiles', a.attname, 'UPDATE') as actualiza,
+        has_column_privilege('authenticated', 'public.profiles', a.attname, 'SELECT') as lee
+      from pg_attribute a
+      where a.attrelid = 'public.profiles'::regclass and a.attnum > 0 and not a.attisdropped
+      order by a.attnum`);
+    assert.deepEqual(
+      permisos.rows.filter((c) => !c.inserta || !c.actualiza).map((c) => c.attname),
+      ['github_handle', 'github_verified_at'],
+      'el sello, y solo el sello, está cerrado a authenticated'
+    );
+    assert.deepEqual(
+      permisos.rows.filter((c) => !c.lee).map((c) => c.attname),
+      [],
+      'el sello se lee: es lo que pinta la insignia'
+    );
+    await asActor(ana);
+    await db.exec('set local role authenticated');
+    const rechaza = async (sql, pattern, message) => {
+      await db.exec('savepoint sonda;');
+      await assert.rejects(() => db.exec(sql), pattern, message);
+      await db.exec('rollback to savepoint sonda;');
+    };
+    await rechaza(
+      `update public.profiles set github_verified_at = now() where id = '${ana}';`,
+      /permission denied|no privileges/i,
+      'authenticated no debe poder encenderse el sello a mano'
+    );
+    await rechaza(
+      `update public.profiles set github_handle = 'torvalds' where id = '${ana}';`,
+      /permission denied|no privileges/i,
+      'authenticated no debe poder escribir el handle a mano'
+    );
+    // Y por la otra puerta: el perfil se crea con un `.upsert()`, así que un
+    // INSERT abierto sería el mismo agujero con el sello ya encendido de fábrica.
+    await rechaza(
+      `insert into public.profiles (
+         id, name, age, location, timezone, avatar_initials, specialties,
+         looking_for, starting_point, availability_hours_per_week,
+         availability_bands, ambition, link_github, github_handle, github_verified_at
+       ) values ('${bea}', 'Bea', 31, 'Madrid', 'Europe/Madrid', 'B',
+         array['dev']::public.specialty[], 'lockin', 'solo-ganas', 10,
+         array['tarde']::public.time_band[], 'equilibrado',
+         'https://github.com/torvalds', 'torvalds', now());`,
+      /permission denied|no privileges/i,
+      'tampoco se nace con el sello puesto'
+    );
+    // Pero el enlace sin sello SÍ se escribe: es un campo del formulario.
+    await db.exec(
+      `update public.profiles set link_github = 'https://github.com/loquesea' where id = '${ana}';`
+    );
+    await db.exec('reset role');
+    // Con identidad, la función enciende el sello y deriva el enlace. La
+    // identidad la escribe GoTrue, no el cliente: por eso se siembra fuera del
+    // rol `authenticated`, que no tiene nada que hacer en el esquema `auth`.
+    await db.exec(`insert into auth.identities (provider_id, user_id, identity_data, provider)
+      values ('12345', '${ana}', '{"user_name":"anagarcia"}'::jsonb, 'github');`);
+    await db.exec('set local role authenticated');
+    await db.exec('select public.sync_github_verification();');
+    const sello = await db.query(
+      `select github_handle, github_verified_at, link_github from public.profiles where id = '${ana}';`
+    );
+    assert.equal(sello.rows[0].github_handle, 'anagarcia');
+    assert.equal(
+      sello.rows[0].link_github,
+      'https://github.com/anagarcia',
+      'el enlace que el usuario había escrito a mano queda sustituido por el de la identidad'
+    );
+    assert.ok(sello.rows[0].github_verified_at, 'la fecha debe quedar puesta');
+    // Resincronizar no rejuvenece un sello que ya existía.
+    await db.exec('select public.sync_github_verification();');
+    const resello = await db.query(
+      `select github_verified_at from public.profiles where id = '${ana}';`
+    );
+    assert.equal(
+      resello.rows[0].github_verified_at.getTime(),
+      sello.rows[0].github_verified_at.getTime(),
+      'el `coalesce` de la función: la fecha es la del primer sello'
+    );
+    // Y sin identidad, lo apaga: un solo camino de escritura para las dos cosas.
+    await db.exec('reset role');
+    await db.exec(`delete from auth.identities where user_id = '${ana}';`);
+    await db.exec('set local role authenticated');
+    await db.exec('select public.sync_github_verification();');
+    const apagado = await db.query(
+      `select github_handle, github_verified_at, link_github from public.profiles where id = '${ana}';`
+    );
+    assert.equal(apagado.rows[0].github_handle, null);
+    assert.equal(apagado.rows[0].github_verified_at, null);
+    assert.equal(apagado.rows[0].link_github, null);
+    await db.exec('reset role');
+    // Un sello a medias no debe poder existir ni desde postgres.
+    await rechaza(
+      `update public.profiles set github_handle = 'solo-handle' where id = '${ana}';`,
+      /profiles_github_verification_complete|profiles_github_link_matches_handle/i,
+      'el sello no puede quedar a medias'
+    );
+    // Ni un sello entero apuntando a la cuenta de otro: es el ataque original
+    // entrando por la ventana.
+    await rechaza(
+      `update public.profiles
+         set github_handle = 'anagarcia', github_verified_at = now(),
+             link_github = 'https://github.com/otrapersona'
+       where id = '${ana}';`,
+      /profiles_github_link_matches_handle/i,
+      'con sello, el enlace ES el de la identidad'
+    );
+    // La función es la puerta y la puerta no tiene picaporte: CERO argumentos,
+    // así que no hay nada que el cliente pueda pasarle. Si algún día aparece un
+    // `p_handle`, este test es el que tiene que gritar.
+    const sync = await db.query(`select p.pronargs, p.prosecdef, p.proconfig,
+        has_function_privilege('anon', p.oid, 'execute') as anon_ejecuta,
+        has_function_privilege('authenticated', p.oid, 'execute') as authenticated_ejecuta
+      from pg_proc p where p.oid = 'public.sync_github_verification()'::regprocedure`);
+    assert.deepEqual(sync.rows[0], {
+      pronargs: 0,
+      prosecdef: true,
+      proconfig: ['search_path=""'],
+      anon_ejecuta: false,
+      authenticated_ejecuta: true,
+    });
+    await db.exec('rollback;');
     assert.match(expected, /column\s+profiles.seeking_specialties/);
+    assert.match(expected, /column\s+profiles.github_handle/);
+    assert.match(expected, /column\s+profiles.github_verified_at/);
+    // El INSERT de perfiles del seed, contra las constraints de verdad.
+    // `supabase db reset` lo ejecuta tal cual, y si en una fila con sello
+    // `link_github` no es exactamente 'https://github.com/' || github_handle, la
+    // rechaza `profiles_github_link_matches_handle` y el seed muere con un error
+    // que no dice nada de sellos. Que salte aquí cuesta dos segundos; que salte
+    // allí cuesta una tarde.
+    const seedTexto = readFileSync(join(here, 'seed.sql'), 'utf8');
+    const finSeed = 'on conflict (id) do nothing;';
+    // El `on conflict (id) do nothing;` sale antes en el archivo (las cuentas de
+    // `auth.users`), así que se busca a partir del INSERT, no desde el principio.
+    const inicioSeed = seedTexto.indexOf('insert into public.profiles (');
+    assert(inicioSeed >= 0, 'el seed debe traer el INSERT de perfiles');
+    const perfilesSeed = seedTexto.slice(
+      inicioSeed,
+      seedTexto.indexOf(finSeed, inicioSeed) + finSeed.length
+    );
+    assert.match(perfilesSeed, /github_handle/, 'el seed debe sembrar el sello');
+    const idsSeed = [
+      ...new Set(
+        [...perfilesSeed.matchAll(/'([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})'/gi)].map(
+          (m) => m[1]
+        )
+      ),
+    ];
+    await db.exec(`begin;
+      insert into auth.users (id, email) values
+        ${idsSeed.map((id, i) => `('${id}', 'seed${i}@lockin.test')`).join(',\n        ')};
+      ${perfilesSeed}`);
+    const conSello = await db.query(
+      `select name, github_handle, link_github from public.profiles
+        where github_handle is not null order by name`
+    );
+    assert.deepEqual(
+      conSello.rows,
+      [
+        {
+          name: 'Núria Bosch',
+          github_handle: 'example-nuria',
+          link_github: 'https://github.com/example-nuria',
+        },
+        {
+          name: 'Omar Chaib',
+          github_handle: 'example-omar',
+          link_github: 'https://github.com/example-omar',
+        },
+      ],
+      'el seed siembra exactamente los dos perfiles con sello del mock'
+    );
+    await db.exec('rollback;');
     await db.exec(
       'create role lockin_schema_reader; grant usage on schema public to lockin_schema_reader; begin; set local role lockin_schema_reader;'
     );
