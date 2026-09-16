@@ -279,11 +279,18 @@ alter table public.profiles
 -- irrepresentable en vez de vigilarla: sin esto, quien está verificado podría
 -- dejarse el sello y apuntar `link_github` a la cuenta de otro, que es el
 -- ataque original entrando por la ventana.
+--
+-- El `link_github is not null` explícito no sobra, aunque lo parezca. Sin él,
+-- con el handle puesto y el enlace a NULL la comparación da NULL, y
+-- `FALSE OR NULL` es NULL: un CHECK solo rechaza con FALSE, así que ese estado
+-- —sello encendido, enlace vacío— pasaría, justo el que esta constraint dice
+-- hacer imposible. Es la lógica de tres valores de SQL, y se come la garantía
+-- entera si se escribe la versión corta.
 alter table public.profiles
   add constraint profiles_github_link_matches_handle
   check (
     github_handle is null
-    or link_github = 'https://github.com/' || github_handle
+    or (link_github is not null and link_github = 'https://github.com/' || github_handle)
   );
 
 -- Permiso DE COLUMNA. RLS es de fila y no sabe expresar esto: sin esto,
