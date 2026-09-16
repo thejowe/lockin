@@ -33,6 +33,27 @@
 | `npm run format:check` | **No** — da ~100 archivos falsos por CRLF. Corre `npx prettier --write` sobre lo que tocaste y lee el veredicto del job «Formato» en CI |
 | `npm run test:e2e` | **No** — sus 2 fallos aquí son CRLF, no regresión |
 
+### Nombres reales, ya verificados contra el repo
+
+No los adivines ni inventes helpers nuevos: existen con exactamente estos nombres.
+
+| Qué | Dónde |
+|---|---|
+| `buildProfile(overrides)`, `buildProfileInput(overrides)` | `src/data/test-fixtures.ts` |
+| `buildProfileRow(overrides)` | `src/data/supabase/mappers.test.ts` (local del archivo) |
+| `SEED_PROFILES` | `src/data/mock/seed.ts` |
+| `describeRepositoryContract(backend)`, con `fixture = await backend.reset()` | `src/data/repositories.contract.ts` |
+| Patrón de capacidad: `const itWithTimeTravel = backend.canTimeTravel ? it : it.skip;` | `src/data/repositories.contract.ts:540` |
+| Declaración de capacidades del backend | `src/data/mock/index.test.ts:32` (mock) y `src/data/supabase/contract.test.ts:306` (Supabase) |
+| Ficha ajena | `src/features/profile/profile-details.tsx` + `.test.tsx` |
+| Formulario | `src/features/profile/profile-form.tsx` + `.test.tsx` |
+| Tarjeta del deck | `src/features/discover/profile-card.tsx` + `.test.tsx` |
+| Perfil propio (pantalla) | `src/app/(tabs)/profile.tsx`, con `src/features/profile/controls.tsx` |
+
+`canLinkIdentityWithoutBrowser` es **nuevo**: añádelo a la interfaz
+`ContractBackend` y decláralo en los dos sitios de la tabla, junto a
+`canTimeTravel`.
+
 ---
 
 ### Task 1: Confirmar el flujo OAuth y fijar `flowType`
@@ -196,18 +217,18 @@ En `src/data/repositories.contract.ts`, un bloque nuevo. Los dos primeros corren
 ```ts
 describe('verificación de GitHub', () => {
   it('un perfil nuevo no está verificado', async () => {
-    const profile = await repositories.profiles.saveCurrent(validProfileInput());
+    const profile = await repositories.profiles.saveCurrent(buildProfileInput());
     expect(profile.githubVerification).toBeNull();
   });
 
   it('guardar el perfil no enciende ni apaga el sello', async () => {
     // La invariante que sostiene todo lo demás: el formulario no puede
     // tocar la verificación ni por accidente ni a propósito.
-    await repositories.profiles.saveCurrent(validProfileInput());
+    await repositories.profiles.saveCurrent(buildProfileInput());
     const before = await repositories.profiles.getCurrent();
 
     await repositories.profiles.saveCurrent({
-      ...validProfileInput(),
+      ...buildProfileInput(),
       name: 'Nombre Cambiado',
     });
     const after = await repositories.profiles.getCurrent();
@@ -215,10 +236,10 @@ describe('verificación de GitHub', () => {
     expect(after?.githubVerification).toEqual(before?.githubVerification ?? null);
   });
 
-  const itIfLinkable = canLinkIdentityWithoutBrowser ? it : it.skip;
+  const itIfLinkable = backend.canLinkIdentityWithoutBrowser ? it : it.skip;
 
   itIfLinkable('al verificar, el enlace se deriva de la identidad', async () => {
-    await repositories.profiles.saveCurrent(validProfileInput());
+    await repositories.profiles.saveCurrent(buildProfileInput());
 
     const verified = await repositories.profiles.verifyGithub();
 
@@ -228,7 +249,7 @@ describe('verificación de GitHub', () => {
   });
 
   itIfLinkable('desverificar apaga el sello y vacía el enlace', async () => {
-    await repositories.profiles.saveCurrent(validProfileInput());
+    await repositories.profiles.saveCurrent(buildProfileInput());
     await repositories.profiles.verifyGithub();
 
     const plain = await repositories.profiles.unverifyGithub();
@@ -282,11 +303,11 @@ En `src/data/mock/index.test.ts`:
 it('saveCurrent conserva el sello: no viene del input y no se puede perder', async () => {
   // `saveCurrent` hace `...input`, y `ProfileInput` no tiene el sello. Sin
   // preservarlo a mano, cada edición del perfil desverificaría al usuario.
-  await repositories.profiles.saveCurrent(validProfileInput());
+  await repositories.profiles.saveCurrent(buildProfileInput());
   await repositories.profiles.verifyGithub();
 
   const edited = await repositories.profiles.saveCurrent({
-    ...validProfileInput(),
+    ...buildProfileInput(),
     name: 'Otro Nombre',
   });
 
@@ -370,15 +391,15 @@ En `src/data/mock/seed.test.ts`:
 
 ```ts
 it('todo perfil verificado del seed tiene su enlace derivado del handle', () => {
-  for (const profile of seedProfiles) {
+  for (const profile of SEED_PROFILES) {
     if (!profile.githubVerification) continue;
     expect(profile.links.github).toBe(`https://github.com/${profile.githubVerification.handle}`);
   }
 });
 
 it('el seed tiene perfiles de los dos estados', () => {
-  expect(seedProfiles.some((p) => p.githubVerification)).toBe(true);
-  expect(seedProfiles.some((p) => !p.githubVerification)).toBe(true);
+  expect(SEED_PROFILES.some((p) => p.githubVerification)).toBe(true);
+  expect(SEED_PROFILES.some((p) => !p.githubVerification)).toBe(true);
 });
 ```
 
@@ -642,7 +663,7 @@ En `src/data/supabase/mappers.test.ts`:
 ```ts
 it('mapea el sello cuando las dos columnas vienen puestas', () => {
   const profile = toProfile({
-    ...profileRowFixture(),
+    ...buildProfileRow(),
     github_handle: 'anagarcia',
     github_verified_at: '2026-09-16T10:00:00.000Z',
     link_github: 'https://github.com/anagarcia',
@@ -656,7 +677,7 @@ it('mapea el sello cuando las dos columnas vienen puestas', () => {
 
 it('sin columnas, el perfil no está verificado', () => {
   const profile = toProfile({
-    ...profileRowFixture(),
+    ...buildProfileRow(),
     github_handle: null,
     github_verified_at: null,
   });
@@ -807,13 +828,13 @@ git commit -m "feat(verificacion): verificación real contra Supabase e identida
 
 ```tsx
 it('sin sello, ofrece verificar', () => {
-  renderProfile({ ...profileFixture(), githubVerification: null });
+  renderOwnProfile({ ...buildProfile(), githubVerification: null });
   expect(screen.getByText('Verificar con GitHub')).toBeTruthy();
 });
 
 it('con sello, lo anuncia y ofrece quitarlo', () => {
-  renderProfile({
-    ...profileFixture(),
+  renderOwnProfile({
+    ...buildProfile(),
     links: { github: 'https://github.com/anagarcia' },
     githubVerification: { handle: 'anagarcia', verifiedAt: '2026-09-16T10:00:00.000Z' },
   });
@@ -824,8 +845,8 @@ it('con sello, lo anuncia y ofrece quitarlo', () => {
 });
 
 it('avisa antes de sobrescribir un enlace escrito a mano', async () => {
-  renderProfile({
-    ...profileFixture(),
+  renderOwnProfile({
+    ...buildProfile(),
     links: { github: 'https://github.com/otracosa' },
     githubVerification: null,
   });
@@ -840,7 +861,7 @@ it('avisa antes de sobrescribir un enlace escrito a mano', async () => {
 
 it('con sello, el campo de GitHub no se puede editar', () => {
   renderProfileForm({
-    ...profileFixture(),
+    ...buildProfile(),
     links: { github: 'https://github.com/anagarcia' },
     githubVerification: { handle: 'anagarcia', verifiedAt: '2026-09-16T10:00:00.000Z' },
   });
@@ -850,7 +871,7 @@ it('con sello, el campo de GitHub no se puede editar', () => {
 
 it('cancelar en GitHub no es un error', async () => {
   (verifyGithub as jest.Mock).mockRejectedValue(new Error('Verificación cancelada.'));
-  renderProfile({ ...profileFixture(), githubVerification: null });
+  renderOwnProfile({ ...buildProfile(), githubVerification: null });
 
   fireEvent.press(screen.getByText('Verificar con GitHub'));
 
@@ -879,8 +900,8 @@ El test primero:
 
 ```tsx
 it('al abrir el perfil propio, resincroniza el sello', async () => {
-  renderProfile({
-    ...profileFixture(),
+  renderOwnProfile({
+    ...buildProfile(),
     githubVerification: { handle: 'viejo', verifiedAt: '2026-08-01T10:00:00.000Z' },
   });
 
@@ -888,7 +909,7 @@ it('al abrir el perfil propio, resincroniza el sello', async () => {
 });
 
 it('no resincroniza si no hay sello que refrescar', async () => {
-  renderProfile({ ...profileFixture(), githubVerification: null });
+  renderOwnProfile({ ...buildProfile(), githubVerification: null });
 
   await waitFor(() => expect(syncGithubVerification).not.toHaveBeenCalled());
 });
@@ -943,15 +964,19 @@ git commit -m "feat(verificacion): verificar y quitar el sello desde el perfil p
 
 ```tsx
 it('la tarjeta enseña el sello de quien lo tiene', () => {
-  renderCard({
-    ...profileFixture(),
-    githubVerification: { handle: 'anagarcia', verifiedAt: '2026-09-16T10:00:00.000Z' },
-  });
+  render(
+    <ProfileCard
+      profile={{
+        ...buildProfile(),
+        githubVerification: { handle: 'anagarcia', verifiedAt: '2026-09-16T10:00:00.000Z' },
+      }}
+    />
+  );
   expect(screen.getByLabelText('GitHub verificado: anagarcia')).toBeTruthy();
 });
 
 it('sin sello, la tarjeta no dice nada: no hay marca de "sin verificar"', () => {
-  renderCard({ ...profileFixture(), githubVerification: null });
+  render(<ProfileCard profile={{ ...buildProfile(), githubVerification: null }} />);
   expect(screen.queryByLabelText(/GitHub verificado/)).toBeNull();
   // Marcar lo NO verificado castiga a las nueve especialidades que no tienen
   // GitHub, y es filtrar por profesión por la puerta del copy. Ver la spec.
