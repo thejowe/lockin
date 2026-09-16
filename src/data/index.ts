@@ -8,7 +8,7 @@
  * constante `repositories`.
  */
 
-export { presence, repositories } from './active';
+export { presence, repositories, videoSignal } from './active';
 export * from './types';
 export * from './repositories';
 export { DataProvider, useRepositories, useQuery } from './provider';

@@ -34,3 +34,4 @@ export { useMatchStreaks } from './use-match-streaks';
 export { useNow } from './use-now';
 export { useRating, type RatingState } from './use-rating';
 export { useSessionRoom } from './use-session-room';
+export { useVideoCall, type VideoCall, type VideoCallStatus } from './use-video-call';
