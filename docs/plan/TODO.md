@@ -154,3 +154,8 @@ querying schema`**. El seed ya las rellena a cadena vacía, y lleva anotado el
   seguro en cuanto haya usuarios reales entrando por `signInAnonymously()`).
   Sus perfiles ya los borra el `teardown()`, así que no saturan la paginación
   del deck; queda solo la fila de la cuenta.
+
+## Recuperación del perfil al reabrir (2026-09-16)
+
+- [x] Corregidos errores de arranque que enviaban al onboarding o abrían otra cuenta cuando fallaba la recuperación. Detalle y pruebas en `todo/arquitecto.md`.
+- [ ] Confirmar cierre y reapertura en el Expo Go del usuario.

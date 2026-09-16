@@ -1,19 +1,38 @@
 import { Redirect } from 'expo-router';
+import { Button, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ThemedText } from '@/components/themed-text';
 import { useQuery, useRepositories } from '@/data';
+import { useTheme } from '@/hooks/use-theme';
 
-/**
- * Puerta de entrada. Decide, con la capa de datos, si el usuario va al
- * onboarding o directamente a las tabs. No pinta interfaz propia.
- */
+/** Recupera el perfil antes de decidir si hace falta onboarding. */
 export default function IndexRoute() {
   const repositories = useRepositories();
-  const { data: onboarded, loading } = useQuery('session:onboarded', () =>
-    repositories.session.isOnboarded()
-  );
+  const theme = useTheme();
+  const {
+    data: onboarded,
+    loading,
+    error,
+    refresh,
+  } = useQuery('session:onboarded', () => repositories.session.isOnboarded());
 
-  // El splash sigue visible mientras resolvemos: no parpadeamos una pantalla vacía.
   if (loading) return null;
+
+  // Una consulta fallida no significa que el usuario no tenga perfil.
+  if (error) {
+    return (
+      <SafeAreaView style={[styles.error, { backgroundColor: theme.background }]}>
+        <ThemedText type="subtitle">No hemos podido recuperar tu perfil</ThemedText>
+        <ThemedText>Comprueba tu conexión y vuelve a intentarlo.</ThemedText>
+        <Button title="Reintentar" onPress={refresh} color={theme.brass} />
+      </SafeAreaView>
+    );
+  }
 
   return <Redirect href={onboarded ? '/discover' : '/mode'} />;
 }
+
+const styles = StyleSheet.create({
+  error: { flex: 1, justifyContent: 'center', padding: 24, gap: 16 },
+});

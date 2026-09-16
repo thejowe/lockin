@@ -8,7 +8,7 @@
  * Ojo: en RNTL 14 `render` es asíncrono.
  */
 
-import { waitFor } from '@testing-library/react-native';
+import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { buildProfileInput } from '@/data/test-fixtures';
 
@@ -38,4 +38,16 @@ describe('IndexRoute', () => {
 
     await waitFor(() => expect(router.redirects).toEqual(['/discover']));
   });
+});
+
+it('un fallo de lectura no abre onboarding y permite reintentar', async () => {
+  jest
+    .spyOn(repositories.session, 'isOnboarded')
+    .mockRejectedValueOnce(new Error('Sin conexión'))
+    .mockResolvedValueOnce(true);
+  await renderRoute(<IndexRoute />);
+  expect(await screen.findByText('No hemos podido recuperar tu perfil')).toBeOnTheScreen();
+  expect(router.redirects).toEqual([]);
+  await fireEvent.press(screen.getByRole('button', { name: 'Reintentar' }));
+  await waitFor(() => expect(router.redirects).toEqual(['/discover']));
 });

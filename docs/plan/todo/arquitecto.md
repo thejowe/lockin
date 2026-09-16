@@ -344,3 +344,13 @@ nuevos del contrato ejecutan más de `repositories.contract.ts`. Sigue faltando
 en sentencias y funciones. No se ha tocado `jest.config.js`: es vuestro, y
 bajar un suelo para dejar pasar un cambio va contra vuestra propia regla — lo
 que toca es cubrir lo que entró con `696408a`.
+
+## Recuperación del perfil al reabrir (2026-09-16)
+
+- [x] La ruta inicial muestra un error recuperable y permite reintentar si falla `isOnboarded`, en lugar de enviar al usuario al onboarding.
+- [x] `ensureUserId` y `currentUserId` propagan errores de recuperación de sesión; un error de renovación no inicia otra cuenta anónima.
+- [x] Regresiones automatizadas para sesión guardada, error de renovación y reintento desde la ruta inicial.
+- [ ] Verificar en el Expo Go del usuario: cerrar por completo y reabrir con el mismo perfil. La causa concreta en ese dispositivo no se ha confirmado; estos cambios corrigen dos fallos comprobados del arranque.
+
+Validación: `typecheck` detecta errores ajenos a este cambio en la integración de GitHub: faltan `verifyGithub`/`unverifyGithub` en `src/data/supabase/index.ts` y `githubVerification` en `mappers.ts`. Esos archivos no se han modificado.
+Las 6 pruebas de `test/app/index.test.tsx` y `src/data/supabase/auth.test.ts` pasan (2 suites).

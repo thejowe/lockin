@@ -143,7 +143,8 @@ async function createSession(): Promise<string> {
 export async function ensureUserId(): Promise<string> {
   const client = getSupabaseClient();
 
-  const { data } = await client.auth.getSession();
+  const { data, error } = await client.auth.getSession();
+  if (error) throw error;
   if (data.session?.user) return data.session.user.id;
 
   pending ??= createSession().finally(() => {
@@ -155,7 +156,8 @@ export async function ensureUserId(): Promise<string> {
 
 /** El `auth.uid()` actual sin abrir sesión. `null` si no hay ninguna. */
 export async function currentUserId(): Promise<string | null> {
-  const { data } = await getSupabaseClient().auth.getSession();
+  const { data, error } = await getSupabaseClient().auth.getSession();
+  if (error) throw error;
   return data.session?.user.id ?? null;
 }
 
