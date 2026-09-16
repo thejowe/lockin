@@ -49,7 +49,24 @@ qué puede solaparse).
       canal y deja de poder enviar); `npx tsc --noEmit` limpio; `npm run
       lint` limpio (exit 0); `npm test` completo en verde (58 suites, 625
       tests, 1 suite skip ya existente antes de esta tarea).
-- [ ] Tarea 4 — Hook `use-video-call.ts` (WebRTC, offer/answer, ICE)
+- [x] Tarea 4 — Hook `use-video-call.ts` (WebRTC, offer/answer, ICE)
+      (`00e1f6f`). `RTCPeerConnection` con STUN público, offer/answer/ICE por
+      `VideoSignalChannel` (vía `@/data`); el `profileId` menor en orden
+      lexicográfico ofrece, sin coordinación extra. El status se deriva de un
+      outcome interno en vez de fijarse con `setState` directo en el efecto
+      (evita `react-hooks/set-state-in-effect` y tocar refs durante el
+      render). `src/data/index.ts` reexporta ahora `videoSignal` desde
+      `active.ts` — la Tarea 3 no lo hizo porque su propio plan no lo pedía,
+      pero este hook lo necesita vía `@/data`, igual que
+      `use-counterpart-presence` con `presence`. Evidencia: `npx jest
+      src/features/session/use-video-call.test.ts` en verde (6 tests: arranca
+      inactiva sin unirse al canal, pasa a conectando aunque nadie responda,
+      quién ofrece según orden lexicográfico, las dos partes llegan a
+      conectada tras intercambiar offer/answer/ICE, `active=false` limpia la
+      conexión y suelta el stream local, `toggleMic`/`toggleCamera` cambian
+      estado y tracks); `npx tsc --noEmit` limpio; `npm run lint` limpio
+      (exit 0); `npm test` completo en verde (59/60 suites, 1 skip
+      preexistente, 631 tests).
 - [ ] Tarea 5 — Pantalla `video-call-view.tsx` e integración en la sesión
 - [ ] Tarea 6 — Cobertura de casos límite (permiso denegado, timeout, colgar)
 - [ ] Tarea 7 — Cierre del bloque y actualización de `docs/plan/TODO.md`
