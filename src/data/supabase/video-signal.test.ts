@@ -1,0 +1,121 @@
+/** Adaptador de señalización de vídeo sobre Realtime, con un canal falso: sin red. */
+
+import { createSupabaseVideoSignalAdapter } from './video-signal';
+
+import type { LockInSupabaseClient } from './client';
+import type { VideoSignalMessage } from '../video-signal';
+
+interface FakeChannel {
+  on: jest.Mock<FakeChannel, [string, unknown, (payload: { payload: VideoSignalMessage }) => void]>;
+  subscribe: jest.Mock<FakeChannel, [(status: string) => void]>;
+  send: jest.Mock<Promise<string>, unknown[]>;
+}
+
+function fakeRealtime() {
+  let onBroadcast: (payload: { payload: VideoSignalMessage }) => void = () => {};
+  let onStatus: (status: string) => void = () => {};
+  const channel: FakeChannel = {
+    on: jest.fn((_type: string, _filter: unknown, callback: (payload: { payload: VideoSignalMessage }) => void) => {
+      onBroadcast = callback;
+      return channel;
+    }),
+    subscribe: jest.fn((callback: (status: string) => void) => {
+      onStatus = callback;
+      return channel;
+    }),
+    send: jest.fn(async () => 'ok'),
+  };
+  const client = {
+    channel: jest.fn(() => channel),
+    removeChannel: jest.fn(async () => 'ok'),
+  };
+  return {
+    client: client as unknown as LockInSupabaseClient,
+    rawClient: client,
+    channel,
+    broadcast: (message: VideoSignalMessage) => onBroadcast({ payload: message }),
+    status: (value: string) => onStatus(value),
+  };
+}
+
+function offer(from: string): VideoSignalMessage {
+  return { kind: 'offer', from, payload: { type: 'offer', sdp: 'sdp' } };
+}
+
+describe('createSupabaseVideoSignalAdapter', () => {
+  it('abre un canal por sesión y avisa de la conexión al suscribirse', () => {
+    const realtime = fakeRealtime();
+    const adapter = createSupabaseVideoSignalAdapter(() => realtime.client);
+    const handlers = { onMessage: jest.fn(), onConnection: jest.fn() };
+
+    adapter.join('s1', 'ana', handlers);
+    realtime.status('SUBSCRIBED');
+
+    expect(realtime.rawClient.channel).toHaveBeenCalledWith('lockin:video:s1');
+    expect(handlers.onConnection).toHaveBeenCalledWith(true);
+  });
+
+  it.each(['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'])('%s se publica como sin conexión', (value) => {
+    const realtime = fakeRealtime();
+    const handlers = { onMessage: jest.fn(), onConnection: jest.fn() };
+    createSupabaseVideoSignalAdapter(() => realtime.client).join('s1', 'ana', handlers);
+
+    realtime.status(value);
+
+    expect(handlers.onConnection).toHaveBeenLastCalledWith(false);
+  });
+
+  it('un mensaje de otro perfil llega a `onMessage`', () => {
+    const realtime = fakeRealtime();
+    const handlers = { onMessage: jest.fn(), onConnection: jest.fn() };
+    createSupabaseVideoSignalAdapter(() => realtime.client).join('s1', 'bea', handlers);
+
+    realtime.broadcast(offer('ana'));
+
+    expect(handlers.onMessage).toHaveBeenCalledWith(offer('ana'));
+  });
+
+  it('un mensaje propio no vuelve como eco', () => {
+    const realtime = fakeRealtime();
+    const handlers = { onMessage: jest.fn(), onConnection: jest.fn() };
+    createSupabaseVideoSignalAdapter(() => realtime.client).join('s1', 'ana', handlers);
+
+    realtime.broadcast(offer('ana'));
+
+    expect(handlers.onMessage).not.toHaveBeenCalled();
+  });
+
+  it('enviar transmite por el canal de la sesión ya unida', () => {
+    const realtime = fakeRealtime();
+    const adapter = createSupabaseVideoSignalAdapter(() => realtime.client);
+    adapter.join('s1', 'ana', { onMessage: jest.fn(), onConnection: jest.fn() });
+
+    adapter.send('s1', offer('ana'));
+
+    expect(realtime.channel.send).toHaveBeenCalledWith({
+      type: 'broadcast',
+      event: 'signal',
+      payload: offer('ana'),
+    });
+  });
+
+  it('enviar a una sesión sin unirse no revienta', () => {
+    const realtime = fakeRealtime();
+    const adapter = createSupabaseVideoSignalAdapter(() => realtime.client);
+
+    expect(() => adapter.send('vacia', offer('ana'))).not.toThrow();
+    expect(realtime.channel.send).not.toHaveBeenCalled();
+  });
+
+  it('salir cierra el canal y deja de poder enviar', () => {
+    const realtime = fakeRealtime();
+    const adapter = createSupabaseVideoSignalAdapter(() => realtime.client);
+    const leave = adapter.join('s1', 'ana', { onMessage: jest.fn(), onConnection: jest.fn() });
+
+    leave();
+    adapter.send('s1', offer('ana'));
+
+    expect(realtime.rawClient.removeChannel).toHaveBeenCalledWith(realtime.channel);
+    expect(realtime.channel.send).not.toHaveBeenCalled();
+  });
+});

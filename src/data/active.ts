@@ -17,9 +17,12 @@ import { createMemoryPresenceAdapter } from './presence';
 import { createSupabaseRepositories } from './supabase';
 import { hasSupabaseCredentials } from './supabase/client';
 import { createSupabasePresenceAdapter } from './supabase/presence';
+import { createSupabaseVideoSignalAdapter } from './supabase/video-signal';
+import { createMemoryVideoSignalAdapter } from './video-signal';
 
 import type { PresenceAdapter } from './presence';
 import type { Repositories } from './repositories';
+import type { VideoSignalChannel } from './video-signal';
 
 /** La implementación activa: Supabase si hay credenciales, mock si no. */
 export const repositories: Repositories = hasSupabaseCredentials
@@ -30,3 +33,8 @@ export const repositories: Repositories = hasSupabaseCredentials
 export const presence: PresenceAdapter = hasSupabaseCredentials
   ? createSupabasePresenceAdapter()
   : createMemoryPresenceAdapter();
+
+/** Señalización de vídeo, con la misma regla. Sin credenciales, en memoria. */
+export const videoSignal: VideoSignalChannel = hasSupabaseCredentials
+  ? createSupabaseVideoSignalAdapter()
+  : createMemoryVideoSignalAdapter();
