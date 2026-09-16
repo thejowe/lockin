@@ -286,16 +286,41 @@ alter table public.profiles
     or link_github = 'https://github.com/' || github_handle
   );
 
--- Permiso DE COLUMNA. RLS es de fila y no sabe expresar esto: sin este revoke,
+-- Permiso DE COLUMNA. RLS es de fila y no sabe expresar esto: sin esto,
 -- "profiles: solo editas el tuyo" deja a cualquiera encenderse el sello con un
--- update normal desde la clave anon. Ver la spec.
+-- update normal desde la clave anon.
 --
--- `link_github` NO se revoca: sin sello sigue siendo un campo del formulario y
--- el usuario debe poder escribirlo. Quien lo sujeta cuando sí hay sello es la
--- constraint de arriba, no el permiso.
-revoke update (github_handle, github_verified_at)
-  on public.profiles from authenticated;
+-- **Ojo con la forma.** Lo intuitivo sería `revoke update (github_handle,
+-- github_verified_at) … from authenticated`, y es un NO-OP: Postgres ignora la
+-- revocación de un privilegio de columna cuando el rol tiene el privilegio de
+-- TABLA, y `authenticated` lo tiene por los `alter default privileges` que
+-- Supabase deja sobre `public` (verificado en la huella capturada del
+-- despliegue: `grant profiles authenticated UPDATE`). Esa versión entraría en
+-- producción PARECIENDO la protección, con el sello falsificable.
+--
+-- La forma que sí cierra es quitar el privilegio ancho y devolverlo columna a
+-- columna, dejando fuera solo las dos del sello:
+revoke insert, update on public.profiles from authenticated;
+
+grant insert (id, name, age, /* …el resto de columnas… */ link_github)
+  on public.profiles to authenticated;
+grant update (id, name, age, /* …el resto de columnas… */ link_github)
+  on public.profiles to authenticated;
 ```
+
+`insert` se cierra igual que `update`, y no es simetría decorativa: el perfil se
+crea con `.upsert()`, así que con el INSERT abierto el sello se mandaría ya
+encendido en el alta.
+
+`link_github` **sí** se concede: sin sello sigue siendo un campo del formulario
+y el usuario debe poder escribirlo. Quien lo sujeta cuando sí hay sello es la
+constraint de arriba, no el permiso.
+
+El peaje de esta forma, que hay que saber antes de aceptarla: **una columna
+nueva de `profiles` nacerá sin permiso de escritura para `authenticated`** hasta
+que alguien la añada a las dos listas. Se paga con una guardia en los tests que
+recorre las columnas reales y se pone roja si las cerradas dejan de ser
+exactamente las dos del sello.
 
 Y la función que sí puede escribirlas:
 

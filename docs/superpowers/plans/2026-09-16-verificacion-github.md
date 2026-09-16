@@ -486,11 +486,18 @@ alter table public.profiles
     or link_github = 'https://github.com/' || github_handle
   );
 
--- `link_github` NO se revoca: sin sello sigue siendo un campo del formulario y
--- el usuario debe poder escribirlo. Quien lo sujeta cuando sí hay sello es la
--- constraint de arriba, no el permiso.
-revoke update (github_handle, github_verified_at)
-  on public.profiles from authenticated;
+-- **Ojo con la forma**: `revoke update (col, col) … from authenticated` es un
+-- NO-OP, porque Postgres ignora la revocación de columna cuando el rol tiene el
+-- privilegio de TABLA, y `authenticated` lo tiene (huella del despliegue:
+-- `grant profiles authenticated UPDATE`). Hay que quitar el privilegio ancho y
+-- devolverlo columna a columna, dejando fuera solo las dos del sello. `insert`
+-- se cierra igual que `update` porque el perfil se crea con `.upsert()`.
+-- `link_github` SÍ se concede: sin sello es un campo del formulario.
+revoke insert, update on public.profiles from authenticated;
+grant insert (/* todas las columnas menos las dos del sello */)
+  on public.profiles to authenticated;
+grant update (/* todas las columnas menos las dos del sello */)
+  on public.profiles to authenticated;
 
 
 create or replace function public.sync_github_verification()
