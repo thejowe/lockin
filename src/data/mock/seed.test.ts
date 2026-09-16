@@ -99,3 +99,17 @@ describe('el catálogo mock sostiene el recorrido E2E', () => {
     expect(maximos.map((profile) => profile.id)).toEqual(['seed-marc']);
   });
 });
+
+describe('verificación de GitHub del catálogo', () => {
+  it('todo perfil verificado del seed tiene su enlace derivado del handle', () => {
+    for (const profile of SEED_PROFILES) {
+      if (!profile.githubVerification) continue;
+      expect(profile.links.github).toBe(`https://github.com/${profile.githubVerification.handle}`);
+    }
+  });
+
+  it('el seed tiene perfiles de los dos estados', () => {
+    expect(SEED_PROFILES.some((p) => p.githubVerification)).toBe(true);
+    expect(SEED_PROFILES.some((p) => !p.githubVerification)).toBe(true);
+  });
+});

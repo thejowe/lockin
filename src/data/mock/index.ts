@@ -116,6 +116,9 @@ const profiles: ProfileRepository = {
       },
       createdAt: existing?.createdAt ?? timestamp,
       updatedAt: timestamp,
+      // NO sale de `input` — `ProfileInput` no lo tiene, y ese es el diseño.
+      // Se hereda del perfil que ya estaba: editar la ficha no desverifica.
+      githubVerification: existing?.githubVerification ?? null,
     };
 
     state.profiles.set(profile.id, profile);
@@ -140,6 +143,45 @@ const profiles: ProfileRepository = {
       }
       return true;
     });
+  },
+
+  /**
+   * Simulación, NO una verificación. No habla con GitHub: inventa un handle a
+   * partir del nombre para que las pantallas tengan los dos estados que pintar
+   * sin credenciales. El sello real solo lo puede encender Postgres, en
+   * `src/data/supabase/`. Mismo espíritu que el aviso de `store.ts` sobre que
+   * el MVP no promete persistencia.
+   */
+  async verifyGithub() {
+    const state = getState();
+    const existing = currentProfile();
+    if (!existing) throw new Error('No hay perfil que verificar todavía.');
+
+    const handle = existing.name.trim().toLowerCase().split(/\s+/)[0] || 'usuario';
+    const profile: Profile = {
+      ...existing,
+      links: { ...existing.links, github: `https://github.com/${handle}` },
+      githubVerification: {
+        handle,
+        verifiedAt: existing.githubVerification?.verifiedAt ?? nowIso(),
+      },
+    };
+
+    state.profiles.set(profile.id, profile);
+    return profile;
+  },
+
+  async unverifyGithub() {
+    const state = getState();
+    const existing = currentProfile();
+    if (!existing) throw new Error('No hay perfil que desverificar todavía.');
+
+    const links = { ...existing.links };
+    delete links.github;
+
+    const profile: Profile = { ...existing, links, githubVerification: null };
+    state.profiles.set(profile.id, profile);
+    return profile;
   },
 };
 

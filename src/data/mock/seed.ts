@@ -38,6 +38,20 @@
  * habría vuelto a salir por donde nadie mira. Se arregló donde estaba el
  * defecto, dándole a Lucía lo que de verdad busca (`ventas`, `datos`, que
  * además no los buscaba nadie).
+ *
+ * Dos perfiles nacen con `githubVerification`: Núria (`dev` entre sus
+ * especialidades) y Omar (sin `dev`; `legal`, `producto`), para que las
+ * pantallas enseñen desde el primer arranque que el sello no es cosa solo de
+ * programadores. Elegidos así y no, p. ej., con Inés (que también tiene
+ * `links.github` pero es `dev`): las dos personas con enlace de GitHub del
+ * seed original eran `dev`, y con las dos verificadas la pantalla habría
+ * contado justo lo contrario de lo que la spec pide. Los handles siguen la
+ * convención `example-<nombre>` que ya usaban `example-nuria` y
+ * `example-ines` en este mismo archivo, para no mezclar estilos. Los mismos
+ * dos perfiles, con los mismos handles, están sembrados en
+ * `supabase/seed.sql` — si cambian aquí, cambian allí también, o el mock y
+ * Supabase contarán historias distintas. El resto del catálogo lleva
+ * `githubVerification: null`.
  */
 
 import type { Profile } from '../types';
@@ -59,6 +73,11 @@ export const SEED_PROFILES: Profile[] = [
     availability: { hoursPerWeek: 25, bands: ['tarde', 'noche'] },
     ambition: 'todo-o-nada',
     links: { github: 'https://github.com/example-nuria' },
+    // Verificada: uno de los dos perfiles del catálogo que nace con sello.
+    // Esta lleva `dev` entre sus especialidades — ver `seed-omar` para el
+    // otro estado, que no lo lleva. Handle igual al que ya tenía en
+    // `links.github`: no hacía falta reescribirlo.
+    githubVerification: { handle: 'example-nuria', verifiedAt: '2026-08-01T10:00:00.000Z' },
     prompts: [
       {
         question: 'Lo que quiero construir es…',
@@ -82,6 +101,7 @@ export const SEED_PROFILES: Profile[] = [
     availability: { hoursPerWeek: 15, bands: ['manana'] },
     ambition: 'equilibrado',
     links: { portfolio: 'https://example.com/marc' },
+    githubVerification: null,
     prompts: [
       {
         question: 'Mi mejor sesión de trabajo empieza…',
@@ -105,6 +125,7 @@ export const SEED_PROFILES: Profile[] = [
     availability: { hoursPerWeek: 10, bands: ['noche'] },
     ambition: 'lifestyle',
     links: {},
+    githubVerification: null,
     prompts: [
       {
         question: 'Necesito compañía para…',
@@ -128,6 +149,7 @@ export const SEED_PROFILES: Profile[] = [
     availability: { hoursPerWeek: 30, bands: ['manana', 'tarde'] },
     ambition: 'todo-o-nada',
     links: { linkedin: 'https://linkedin.com/in/example-diego' },
+    githubVerification: null,
     prompts: [
       {
         question: 'Lo que aporto desde el día uno es…',
@@ -158,6 +180,9 @@ export const SEED_PROFILES: Profile[] = [
       github: 'https://github.com/example-ines',
       portfolio: 'https://example.com/ines',
     },
+    // No verificada a propósito: un `links.github` escrito a mano sin sello es
+    // justo el caso que la spec dice que la app pinta hoy sin adorno.
+    githubVerification: null,
     prompts: [
       {
         question: 'Lo que quiero construir es…',
@@ -185,6 +210,7 @@ export const SEED_PROFILES: Profile[] = [
     availability: { hoursPerWeek: 8, bands: ['manana'] },
     ambition: 'lifestyle',
     links: {},
+    githubVerification: null,
     prompts: [
       {
         question: 'Necesito compañía para…',
@@ -212,6 +238,7 @@ export const SEED_PROFILES: Profile[] = [
     availability: { hoursPerWeek: 35, bands: ['tarde', 'noche'] },
     ambition: 'todo-o-nada',
     links: { portfolio: 'https://example.com/lucia' },
+    githubVerification: null,
     prompts: [
       {
         question: 'Lo que ya intenté y no salió…',
@@ -238,7 +265,14 @@ export const SEED_PROFILES: Profile[] = [
     startingPoint: 'idea-sin-empezar',
     availability: { hoursPerWeek: 12, bands: ['noche'] },
     ambition: 'equilibrado',
-    links: { linkedin: 'https://linkedin.com/in/example-omar' },
+    links: {
+      linkedin: 'https://linkedin.com/in/example-omar',
+      github: 'https://github.com/example-omar',
+    },
+    // Verificada: el segundo perfil con sello, y a propósito sin `dev` entre
+    // sus especialidades — ver la nota de `seed-nuria` — para que las
+    // pantallas no den a entender que el sello es cosa solo de programadores.
+    githubVerification: { handle: 'example-omar', verifiedAt: '2026-08-01T10:00:00.000Z' },
     prompts: [
       {
         question: 'Lo que aporto desde el día uno es…',
