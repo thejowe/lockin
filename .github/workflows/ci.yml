@@ -106,7 +106,7 @@ jobs:
           # Una por archivo, y no solo la del embebido: con una sola, borrar o
           # renombrar el otro dejaría este job en verde sin haberlo ejecutado,
           # que es justo el fallo que esta guarda existe para evitar.
-          grep -q 'Rol lector, 4 mutaciones, teardown dos veces y guardia de sobrecarga: OK' \
+          grep -q 'Rol lector, 5 mutaciones, teardown dos veces y guardia de sobrecarga: OK' \
             "$RUNNER_TEMP/schema-embedded.log" \
             || { echo 'El SQL embebido no llegó a ejecutarse entero'; exit 1; }
           grep -q 'Guardias: acuse sin rellenar, perfil no reconocible, id inexistente y repetición: OK' \
