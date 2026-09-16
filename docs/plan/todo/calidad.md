@@ -2295,3 +2295,68 @@ variante `supabase` cierre, no antes, y con la evidencia del run delante.
   sigue avisando de 155 archivos **también sin estos cambios**: es el checkout
   Windows con CRLF de esta máquina (`core.autocrlf=true`), no el repo.
 - **No ejecutado aquí**: build Android, Maestro y emulador, por lo dicho arriba.
+
+## Los dos rojos de CI que dejó abiertos la pasada del lock (2026-09-16)
+
+Cierra lo que la pasada anterior dejó anotado y añade un segundo rojo que no
+estaba visto, porque el del lock lo tapaba. Los dos son de infraestructura, no
+de código de producto, y ninguno toca `src/`.
+
+- [x] **`SQL embebido`: la guarda esperaba 4 mutaciones y ya son 5** (`ffebe59`).
+      `7330a1f` —la huella que vigila los permisos de columna del sello de
+      GitHub— añadió la quinta mutación y subió la línea de cierre del test a
+      «Rol lector, 5 mutaciones, …», sin tocar el `grep` de `ci.yml:109`.
+      Es el peor modo de fallo para una guarda: `npm run test:schema` pasaba
+      20/20 y el job moría igualmente diciendo «El SQL embebido no llegó a
+      ejecutarse entero», o sea, justo lo contrario de lo que ocurría. Las
+      guardas de las líneas 101-108 siguen intactas: se actualizó el número, no
+      se debilitó el control.
+
+- [x] **`E2E Android`: el daemon de Gradle se quedaba sin Metaspace** (`5e015f5`).
+      Diagnosticado en la sección anterior, resuelto aquí. Se toma la salida del
+      Metaspace y no la de saltarse `lintVitalRelease`, y el motivo lo da el
+      propio log del [run 35116867137](https://github.com/thejowe/lockin/actions/runs/35116867137):
+      nombra el mando («These settings can be adjusted by setting
+      `org.gradle.jvmargs`») y publica los valores vigentes —heap 2 GiB,
+      metaspace **512 MiB**—, que son el stock que planta `expo prebuild` y se
+      han quedado cortos para Android Lint con el árbol nativo de después de
+      `react-native-webrtc`. Pasa a `-Xmx4g -XX:MaxMetaspaceSize=1g`; el runner
+      de Actions tiene 16 GB, así que no se acerca al límite.
+
+      Excluir el lint por nombre de tarea (`-x lintVitalAnalyzeRelease`) queda
+      escrito como plan B en el comentario, sin ejecutar: el fallo estaba en un
+      **módulo de librería** (`:react-native-async-storage_async-storage:`), no
+      en `app:`, así que depende de que la exclusión por nombre case también
+      ahí, y comprobarlo cuesta otro build de 13 minutos.
+
+      Va parcheado en `e2e/run.mjs` justo después de `expo prebuild`, no en un
+      `android/gradle.properties` del repo, porque `android/` se regenera en
+      cada pasada y está en `.gitignore` — el mismo motivo por el que el
+      `AndroidManifest.xml` también se parchea ahí al lado. Con una guarda
+      (`assert.notEqual`): si Expo renombra o comenta esa línea de su plantilla,
+      el `.replace` se quedaría en nada y el build volvería a morir igual 13
+      minutos después sin que nada dijera por qué. Un no-op silencioso ahí
+      cuesta un run entero, así que falla ruidosamente.
+
+### Verificación de esta pasada
+
+- `npm run test:schema` — 20 tests, 20 pass, 0 fail. Imprime exactamente
+  `Rol lector, 5 mutaciones, teardown dos veces y guardia de sobrecarga: OK`,
+  que es la cadena que ahora busca `ci.yml`, carácter a carácter.
+- `node --check e2e/run.mjs` — limpio.
+- `npx prettier --check .github/workflows/ci.yml` — limpio. `e2e/run.mjs` sale
+  avisado, **pero también sale avisado su versión de HEAD sin tocar**
+  (`git show HEAD:e2e/run.mjs`): es el CRLF de esta máquina, no el cambio. El
+  veredicto de formato se lee del job «Formato» en CI, como siempre aquí.
+- `git diff --numstat e2e/run.mjs` → `37 0`: solo inserciones, ninguna línea
+  reescrita por finales de línea. Con `core.autocrlf=true` el blob se guarda en
+  LF igual que el resto.
+- **El criterio de terminado no es nada de lo anterior, sino el run**: hacen
+  falta `CI` con sus siete trabajos en verde y `E2E Android` con las **dos**
+  variantes (`mock` y `supabase`) en verde sobre el commit empujado. Pendiente
+  de anotar aquí cuando salga.
+
+> Recordatorio, que esta pasada no lo cambia: el trabajo remoto de
+> `Schema drift` **debe** seguir en rojo hasta que el usuario aplique
+> `supabase/migrations/20260916000100_github_verification.sql` en
+> `grrzmzktrhksbttpbblg`. Ese rojo no es deriva ni es de esta pasada.
