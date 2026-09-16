@@ -7,6 +7,7 @@
  */
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { mediaDevices } from 'react-native-webrtc';
 
 import { createMemoryVideoSignalAdapter } from '@/data';
 
@@ -83,5 +84,20 @@ describe('VideoCallView', () => {
     expect(both.queryAllByTestId('video-call-local')).toHaveLength(0);
     expect(both.queryAllByTestId('video-call-remote')).toHaveLength(0);
     expect(both.getAllByText('La videollamada empieza cuando entráis los dos.')).toHaveLength(2);
+  });
+
+  it('permiso de cámara/micrófono denegado pinta el aviso de error sin crashear', async () => {
+    jest.spyOn(mediaDevices, 'getUserMedia').mockRejectedValueOnce(new Error('NotAllowedError'));
+    const channel = createMemoryVideoSignalAdapter();
+
+    await render(
+      <VideoCallView sessionId="s1" myProfileId="ana" counterpartId="bea" active channel={channel} />
+    );
+
+    expect(await screen.findByText('No se pudo acceder a la cámara o al micrófono.')).toBeVisible();
+    // El resto del hueco (controles) sigue ahí: un fallo de vídeo no se lleva
+    // por delante el resto de la sesión.
+    expect(screen.getByRole('button', { name: 'Colgar' })).toBeVisible();
+    expect(screen.queryByTestId('video-call-remote')).toBeNull();
   });
 });

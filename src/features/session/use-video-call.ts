@@ -25,6 +25,14 @@ import type { VideoSignalChannel, VideoSignalMessage } from '@/data';
 /** STUN público, sin cuenta — ver la spec ("Decisiones tomadas") para el porqué de no pagar TURN. */
 const ICE_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }];
 
+/**
+ * Sin ICE restart (fuera de alcance, ver spec §6), una conexión que nunca
+ * cierra se quedaría en 'conectando' para siempre si la otra parte no tiene
+ * cámara, no da permiso, o simplemente no entra. 30 s es el margen que da la
+ * spec para pasar a un 'error' observable en vez de un limbo silencioso.
+ */
+export const CONNECT_TIMEOUT_MS = 30_000;
+
 export type VideoCallStatus = 'inactiva' | 'conectando' | 'conectada' | 'error';
 
 export interface VideoCall {
@@ -113,10 +121,19 @@ export function useVideoCall(
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
     const amOfferer = myProfileId < counterpartId;
 
+    // Ver `CONNECT_TIMEOUT_MS`: sin esto, "nadie contesta" se queda en
+    // 'conectando' para siempre en vez de convertirse en un error observable.
+    const connectTimeout = setTimeout(() => {
+      if (cancelled) return;
+      setOutcome('error');
+      setError('No se pudo conectar el vídeo.');
+    }, CONNECT_TIMEOUT_MS);
+
     const cleanup = () => {
       if (closed) return;
       closed = true;
       cancelled = true;
+      clearTimeout(connectTimeout);
       leaveChannel();
       pc.close();
       localStreamRef.current?.getTracks().forEach((track) => track.stop());
@@ -130,8 +147,10 @@ export function useVideoCall(
     const syncConnectionState = () => {
       if (cancelled) return;
       if (pc.connectionState === 'connected') {
+        clearTimeout(connectTimeout);
         setOutcome('conectada');
       } else if (pc.connectionState === 'failed') {
+        clearTimeout(connectTimeout);
         setOutcome('error');
         setError('No se pudo conectar el vídeo.');
       }
@@ -203,6 +222,9 @@ export function useVideoCall(
         }
       } catch {
         if (!cancelled) {
+          // Sin esto, un permiso denegado ahora quedaría pisado 30 s después
+          // por el timeout de conexión, con un mensaje que ya no aplica.
+          clearTimeout(connectTimeout);
           setOutcome('error');
           setError('No se pudo acceder a la cámara o al micrófono.');
         }

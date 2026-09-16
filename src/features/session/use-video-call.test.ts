@@ -7,11 +7,11 @@
  */
 
 import { act, renderHook, waitFor } from '@testing-library/react-native';
-import { RTCPeerConnection } from 'react-native-webrtc';
+import { mediaDevices, RTCPeerConnection } from 'react-native-webrtc';
 
 import { createMemoryVideoSignalAdapter } from '@/data';
 
-import { useVideoCall } from './use-video-call';
+import { CONNECT_TIMEOUT_MS, useVideoCall } from './use-video-call';
 
 /** Deja correr varias rondas de microtareas sin depender de temporizadores reales. */
 async function flushMicrotasks(rounds = 10) {
@@ -134,5 +134,109 @@ describe('useVideoCall', () => {
     });
     expect(result.current.micOn).toBe(true);
     expect(result.current.localStream!.getAudioTracks()[0].enabled).toBe(true);
+  });
+
+  it('permiso de cámara/micrófono denegado deja error sin crashear, con el resto de la sesión intacto', async () => {
+    const getUserMediaSpy = jest
+      .spyOn(mediaDevices, 'getUserMedia')
+      .mockRejectedValueOnce(new Error('NotAllowedError'));
+    const channel = createMemoryVideoSignalAdapter();
+
+    const { result } = await renderHook(() => useVideoCall('s1', 'ana', 'bea', true, channel));
+
+    await waitFor(() => expect(result.current.status).toBe('error'));
+    expect(result.current.error).toBe('No se pudo acceder a la cámara o al micrófono.');
+    expect(result.current.localStream).toBeNull();
+    expect(getUserMediaSpy).toHaveBeenCalled();
+  });
+
+  it('sin respuesta de la otra parte en el tiempo de espera, pasa a error en vez de quedarse conectando para siempre', async () => {
+    jest.useFakeTimers();
+    try {
+      const channel = createMemoryVideoSignalAdapter();
+      const { result } = await renderHook(() => useVideoCall('s1', 'ana', 'bea', true, channel));
+
+      await flushMicrotasks();
+      expect(result.current.status).toBe('conectando');
+
+      await act(async () => {
+        jest.advanceTimersByTime(CONNECT_TIMEOUT_MS);
+      });
+
+      expect(result.current.status).toBe('error');
+      expect(result.current.error).toBe('No se pudo conectar el vídeo.');
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('colgar sale del canal y cierra la conexión: un mensaje tardío no revive el estado', async () => {
+    const addTrackSpy = jest.spyOn(RTCPeerConnection.prototype, 'addTrack');
+    const channel = createMemoryVideoSignalAdapter();
+    const { result } = await renderHook(() => useVideoCall('s1', 'ana', 'bea', true, channel));
+
+    await waitFor(() => expect(addTrackSpy).toHaveBeenCalled());
+    const pc = addTrackSpy.mock.instances[0] as InstanceType<typeof RTCPeerConnection>;
+
+    await act(async () => {
+      result.current.hangUp();
+    });
+
+    expect(pc.close).toHaveBeenCalledTimes(1);
+    expect(result.current.status).toBe('inactiva');
+    expect(result.current.localStream).toBeNull();
+    expect(result.current.remoteStream).toBeNull();
+
+    // 'bea' manda un offer tarde, como si no supiera todavía que 'ana' colgó:
+    // 'ana' ya salió del canal (memory adapter borra su entrada al salir), así
+    // que no debe llegarle ni revivir nada.
+    await act(async () => {
+      channel.send('s1', {
+        kind: 'offer',
+        from: 'bea',
+        payload: { type: 'offer', sdp: 'late-offer' },
+      });
+    });
+    await flushMicrotasks();
+
+    expect(result.current.status).toBe('inactiva');
+    expect(result.current.remoteStream).toBeNull();
+    expect(pc.close).toHaveBeenCalledTimes(1);
+  });
+
+  it('volver a entrar tras colgar levanta una llamada nueva sin arrastrar el estado de la anterior', async () => {
+    const addTrackSpy = jest.spyOn(RTCPeerConnection.prototype, 'addTrack');
+    const channel = createMemoryVideoSignalAdapter();
+    const { result, rerender } = await renderHook(
+      ({ active }: { active: boolean }) => useVideoCall('s1', 'ana', 'bea', active, channel),
+      { initialProps: { active: true } }
+    );
+
+    await waitFor(() => expect(addTrackSpy).toHaveBeenCalled());
+    const firstPc = addTrackSpy.mock.instances[0] as InstanceType<typeof RTCPeerConnection>;
+
+    await act(async () => {
+      result.current.toggleMic();
+    });
+    expect(result.current.micOn).toBe(false);
+
+    await rerender({ active: false });
+    expect(firstPc.close).toHaveBeenCalledTimes(1);
+    expect(result.current.status).toBe('inactiva');
+    expect(result.current.localStream).toBeNull();
+
+    await rerender({ active: true });
+    await waitFor(() => expect(addTrackSpy.mock.instances.length).toBeGreaterThan(1));
+    const secondPc = addTrackSpy.mock.instances[
+      addTrackSpy.mock.instances.length - 1
+    ] as InstanceType<typeof RTCPeerConnection>;
+
+    expect(secondPc).not.toBe(firstPc);
+    expect(firstPc.close).toHaveBeenCalledTimes(1);
+    // Ni el mute ni el error de la llamada colgada sobreviven a la nueva.
+    expect(result.current.micOn).toBe(true);
+    expect(result.current.error).toBeNull();
+    await waitFor(() => expect(result.current.localStream).not.toBeNull());
+    expect(result.current.status).not.toBe('error');
   });
 });
