@@ -102,7 +102,34 @@ qué puede solaparse).
       pedía el criterio); `npx tsc --noEmit` limpio; `npm run lint` limpio
       (exit 0); `npm test` completo en verde (60/61 suites, 1 skip
       preexistente, 637 tests).
-- [ ] Tarea 6 — Cobertura de casos límite (permiso denegado, timeout, colgar)
+- [x] Tarea 6 — Cobertura de casos límite (permiso denegado, timeout, colgar)
+      (`c82a3e4`). Hallazgo real: el timeout de conexión de 30 s que
+      describe la spec §6 ("La otra persona no tiene cámara... mi lado se
+      queda en 'conectando' indefinidamente salvo timeout razonable") no
+      estaba implementado en `use-video-call.ts` pese al criterio de la Tarea
+      4 ("transición de estados") — se añadió `CONNECT_TIMEOUT_MS = 30_000`
+      (exportada) con un `setTimeout` que pasa a `'error'` con "No se pudo
+      conectar el vídeo." si nadie completa la conexión a tiempo, limpiado en
+      `cleanup()`, al conectar y al fallar por permiso denegado (para no pisar
+      30 s después el mensaje de permiso con el genérico de timeout). Tests
+      añadidos en `use-video-call.test.ts` (4 nuevos): `getUserMedia`
+      rechazado deja `error` sin crashear; sin respuesta de la otra parte,
+      `jest.useFakeTimers()` + `advanceTimersByTime(CONNECT_TIMEOUT_MS)` pasa
+      de `'conectando'` a `'error'`; colgar cierra el `RTCPeerConnection`
+      (`close()` una vez) y sale del canal — un `offer` tardío del otro lado
+      ya no llega ni revive el estado; volver a entrar tras colgar levanta un
+      `RTCPeerConnection` nuevo (instancia distinta) sin arrastrar el mic
+      muteado ni el error de la llamada anterior. `video-call-view.test.tsx`
+      gana un test: permiso denegado pinta el aviso de texto sin desmontar los
+      controles. Evidencia: `npx jest src/features/session/use-video-call.test.ts
+      src/features/session/video-call-view.test.tsx` en verde (10 + 6 = 16
+      tests); `npm test -- --coverage` en verde (60/61 suites, 1 skip
+      preexistente, 642 tests, cobertura global 92.57/85.26/91.59/94.45 %,
+      por encima del suelo de `jest.config.js` 89.82/82.56/91.49/91.38 %,
+      exit 0); `npx tsc --noEmit` limpio; `npm run lint` limpio (exit 0);
+      `npx expo export --platform web` sigue en verde (15 rutas exportadas)
+      tras tocar `use-video-call.ts` (el sibling `.web.ts` no importa nada de
+      ese archivo en runtime, solo tipos).
 - [ ] Tarea 7 — Cierre del bloque y actualización de `docs/plan/TODO.md`
 
 ## Bloqueo conocido
