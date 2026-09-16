@@ -174,8 +174,9 @@ jest.mock('react-native-webrtc', () => {
   }
 
   const mediaDevices = {
-    getUserMedia: jest.fn(async () =>
-      new MockMediaStream([new MockMediaStreamTrack('audio'), new MockMediaStreamTrack('video')])
+    getUserMedia: jest.fn(
+      async () =>
+        new MockMediaStream([new MockMediaStreamTrack('audio'), new MockMediaStreamTrack('video')])
     ),
   };
 

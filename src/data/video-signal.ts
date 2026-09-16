@@ -30,7 +30,10 @@ export interface VideoSignalChannel {
 
 /** Salas en memoria del proceso. Es la del backend mock y la de los tests. */
 export function createMemoryVideoSignalAdapter(): VideoSignalChannel {
-  const rooms = new Map<string, Map<symbol, { profileId: string; handlers: VideoSignalHandlers }>>();
+  const rooms = new Map<
+    string,
+    Map<symbol, { profileId: string; handlers: VideoSignalHandlers }>
+  >();
 
   return {
     join(sessionId, profileId, handlers) {

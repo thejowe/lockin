@@ -15,10 +15,16 @@ function fakeRealtime() {
   let onBroadcast: (payload: { payload: VideoSignalMessage }) => void = () => {};
   let onStatus: (status: string) => void = () => {};
   const channel: FakeChannel = {
-    on: jest.fn((_type: string, _filter: unknown, callback: (payload: { payload: VideoSignalMessage }) => void) => {
-      onBroadcast = callback;
-      return channel;
-    }),
+    on: jest.fn(
+      (
+        _type: string,
+        _filter: unknown,
+        callback: (payload: { payload: VideoSignalMessage }) => void
+      ) => {
+        onBroadcast = callback;
+        return channel;
+      }
+    ),
     subscribe: jest.fn((callback: (status: string) => void) => {
       onStatus = callback;
       return channel;

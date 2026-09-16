@@ -67,10 +67,7 @@ describe('useVideoCall', () => {
     await renderHook(() => useVideoCall('s1', 'bea', 'ana', true, channelBea));
     await flushMicrotasks();
 
-    expect(sendBea).not.toHaveBeenCalledWith(
-      's1',
-      expect.objectContaining({ kind: 'offer' })
-    );
+    expect(sendBea).not.toHaveBeenCalledWith('s1', expect.objectContaining({ kind: 'offer' }));
   });
 
   it('las dos partes acaban en conectada tras intercambiar offer/answer/ICE', async () => {

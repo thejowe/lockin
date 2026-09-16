@@ -25,7 +25,13 @@ describe('VideoCallView', () => {
   it('en cuanto está activa pinta los controles y un aviso mientras conecta', async () => {
     const channel = createMemoryVideoSignalAdapter();
     await render(
-      <VideoCallView sessionId="s1" myProfileId="ana" counterpartId="bea" active channel={channel} />
+      <VideoCallView
+        sessionId="s1"
+        myProfileId="ana"
+        counterpartId="bea"
+        active
+        channel={channel}
+      />
     );
 
     expect(screen.getByText('Conectando…')).toBeVisible();
@@ -45,8 +51,20 @@ describe('VideoCallView', () => {
     const channel = createMemoryVideoSignalAdapter();
     const both = await render(
       <>
-        <VideoCallView sessionId="s1" myProfileId="ana" counterpartId="bea" active channel={channel} />
-        <VideoCallView sessionId="s1" myProfileId="bea" counterpartId="ana" active channel={channel} />
+        <VideoCallView
+          sessionId="s1"
+          myProfileId="ana"
+          counterpartId="bea"
+          active
+          channel={channel}
+        />
+        <VideoCallView
+          sessionId="s1"
+          myProfileId="bea"
+          counterpartId="ana"
+          active
+          channel={channel}
+        />
       </>
     );
 
@@ -57,7 +75,13 @@ describe('VideoCallView', () => {
   it('silenciar/activar mic y cámara cambia la etiqueta del botón', async () => {
     const channel = createMemoryVideoSignalAdapter();
     await render(
-      <VideoCallView sessionId="s1" myProfileId="ana" counterpartId="bea" active channel={channel} />
+      <VideoCallView
+        sessionId="s1"
+        myProfileId="ana"
+        counterpartId="bea"
+        active
+        channel={channel}
+      />
     );
 
     await fireEvent.press(screen.getByRole('button', { name: 'Silenciar micrófono' }));
@@ -71,8 +95,20 @@ describe('VideoCallView', () => {
     const channel = createMemoryVideoSignalAdapter();
     const both = await render(
       <>
-        <VideoCallView sessionId="s1" myProfileId="ana" counterpartId="bea" active channel={channel} />
-        <VideoCallView sessionId="s1" myProfileId="bea" counterpartId="ana" active channel={channel} />
+        <VideoCallView
+          sessionId="s1"
+          myProfileId="ana"
+          counterpartId="bea"
+          active
+          channel={channel}
+        />
+        <VideoCallView
+          sessionId="s1"
+          myProfileId="bea"
+          counterpartId="ana"
+          active
+          channel={channel}
+        />
       </>
     );
     await waitFor(() => expect(both.getAllByTestId('video-call-remote')).toHaveLength(2));
@@ -91,7 +127,13 @@ describe('VideoCallView', () => {
     const channel = createMemoryVideoSignalAdapter();
 
     await render(
-      <VideoCallView sessionId="s1" myProfileId="ana" counterpartId="bea" active channel={channel} />
+      <VideoCallView
+        sessionId="s1"
+        myProfileId="ana"
+        counterpartId="bea"
+        active
+        channel={channel}
+      />
     );
 
     expect(await screen.findByText('No se pudo acceder a la cámara o al micrófono.')).toBeVisible();

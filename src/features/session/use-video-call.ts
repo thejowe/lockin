@@ -74,7 +74,9 @@ export function useVideoCall(
   active: boolean,
   channel: VideoSignalChannel = videoSignal
 ): VideoCall {
-  const canRun = Boolean(sessionId && myProfileId && counterpartId && active && Platform.OS !== 'web');
+  const canRun = Boolean(
+    sessionId && myProfileId && counterpartId && active && Platform.OS !== 'web'
+  );
 
   const [outcome, setOutcome] = useState<Outcome>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -266,5 +268,15 @@ export function useVideoCall(
     cleanupRef.current();
   }, [channel, sessionId, myProfileId]);
 
-  return { status, localStream, remoteStream, micOn, cameraOn, error, toggleMic, toggleCamera, hangUp };
+  return {
+    status,
+    localStream,
+    remoteStream,
+    micOn,
+    cameraOn,
+    error,
+    toggleMic,
+    toggleCamera,
+    hangUp,
+  };
 }

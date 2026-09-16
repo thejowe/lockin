@@ -57,7 +57,10 @@ export function VideoCallView({
 
   return (
     <View
-      style={[styles.remote, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+      style={[
+        styles.remote,
+        { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+      ]}>
       {call.remoteStream ? (
         <RTCView
           testID="video-call-remote"

@@ -23,7 +23,10 @@ export function VideoCallView({ active }: { active: boolean }) {
 
   return (
     <View
-      style={[styles.root, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+      style={[
+        styles.root,
+        { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+      ]}>
       <ThemedText type="small" themeColor="textSecondary" style={styles.text}>
         La videollamada solo está disponible desde la app móvil.
       </ThemedText>
