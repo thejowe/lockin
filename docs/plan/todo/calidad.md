@@ -72,6 +72,33 @@ trabajos a la vez**, y con ellos `E2E Android`. Último verde antes del corte:
   la próxima**: cuando `format:check` local avise en masa, el veredicto se lee
   del log de CI, no de aquí.
 
+### Qué queda abierto: `E2E Android` se cae en Gradle por Metaspace
+
+No lo arregla esta pasada y no es del lock, pero sale de ella: con `npm ci`
+otra vez en pie, `E2E Android` llegó por fin a compilar —primera vez desde
+`dc7343c`— y se cayó antes de arrancar Maestro.
+[run 35116867137](https://github.com/thejowe/lockin/actions/runs/35116867137), variante `mock`,
+`BUILD FAILED in 13m` con `app:assembleRelease` en ✗:
+
+```
+Execution failed for task ':react-native-async-storage_async-storage:lintVitalAnalyzeRelease'.
+> A failure occurred while executing com.android.build.gradle.internal.lint.AndroidLintWorkAction
+   > Metaspace
+```
+
+Es agotamiento de Metaspace de la JVM dentro de Android Lint, no una aserción
+del recorrido ni un fallo del emulador: el triage no llegó a correr y la
+variante `supabase` quedó cancelada por el fail-fast de la matriz. `e2e.yml` no
+fija memoria para Gradle en ninguna parte —solo `gradle/actions/setup-gradle@v6`
+en la línea 64—, y el árbol nativo acaba de crecer con `react-native-webrtc`
+del bloque `video`, que es el cambio que hace que el mismo `lintVital` que antes
+cabía ahora no quepa.
+
+Dos salidas, las dos dentro de `e2e.yml` y por tanto de este bloque, pendientes
+de decidir con el run delante: subir `org.gradle.jvmargs` con un
+`-XX:MaxMetaspaceSize` explícito, o saltarse `lintVitalRelease` en el build de
+E2E (lo que comprueba ese lint no es lo que este workflow viene a comprobar).
+
 ### Verificación de esta pasada
 
 - **`npm ci` sobre árbol limpio**: 1139 paquetes, sin `EUSAGE`.
