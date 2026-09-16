@@ -381,6 +381,43 @@ if (command === 'build') {
       ? xml.replace(/android:usesCleartextTraffic="[^"]*"/, 'android:usesCleartextTraffic="true"')
       : xml.replace('<application ', '<application android:usesCleartextTraffic="true" ')
   );
+  // El daemon de Gradle se queda sin Metaspace compilando este árbol nativo.
+  // Lo destapó el bloque `video` al meter `react-native-webrtc`: el primer build
+  // que llegó a Gradle desde entonces murió en
+  // `:react-native-async-storage_async-storage:lintVitalAnalyzeRelease` con
+  // `> Metaspace` (run 35116867137, `BUILD FAILED in 13m`), sin llegar a Maestro.
+  //
+  // El propio Gradle nombra el mando en ese log —«These settings can be adjusted
+  // by setting 'org.gradle.jvmargs'»— y dice cuánto había: heap 2 GiB y
+  // metaspace 512 MiB, que es el stock que planta `expo prebuild`. 512 MiB no le
+  // llega a Android Lint con estos módulos. El runner tiene 16 GB, así que esto
+  // va sobrado sin acercarse al límite.
+  //
+  // Se parchea aquí y no en un `android/gradle.properties` del repo porque
+  // `android/` lo regenera `prebuild` en cada pasada y está en `.gitignore` —
+  // mismo motivo por el que el manifiesto de arriba también se parchea después.
+  //
+  // Si vuelve a caerse por Metaspace pese a esto, la otra salida es sacar
+  // `lintVitalRelease` del build de E2E (`-x lintVitalAnalyzeRelease`): lo que
+  // comprueba ese lint no es lo que este workflow viene a comprobar. No se hace
+  // ya porque excluir por nombre depende de que case en los módulos de librería
+  // generados, y eso no se puede verificar sin gastar otro build de 13 min.
+  const gradleProps = join(app, 'android/gradle.properties');
+  const propsBefore = readFileSync(gradleProps, 'utf8');
+  const propsAfter = propsBefore.replace(
+    /^org\.gradle\.jvmargs=.*$/m,
+    'org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g'
+  );
+  // Sin esta guarda, que Expo renombrase o comentara la línea dejaría el parche
+  // en nada y el build volvería a morir igual 13 minutos después, sin que nada
+  // dijera por qué. Un no-op silencioso aquí cuesta un run entero.
+  assert.notEqual(
+    propsAfter,
+    propsBefore,
+    'No se encontró `org.gradle.jvmargs` en el gradle.properties de prebuild: ' +
+      'revisa la plantilla de Expo antes de fiarte de este build'
+  );
+  writeFileSync(gradleProps, propsAfter);
   const arch = process.env.E2E_ANDROID_ARCH ?? 'x86_64';
   assert(['x86_64', 'arm64-v8a'].includes(arch), 'Arquitectura E2E no soportada');
   run(
