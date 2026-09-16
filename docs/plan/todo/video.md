@@ -67,7 +67,41 @@ qué puede solaparse).
       estado y tracks); `npx tsc --noEmit` limpio; `npm run lint` limpio
       (exit 0); `npm test` completo en verde (59/60 suites, 1 skip
       preexistente, 631 tests).
-- [ ] Tarea 5 — Pantalla `video-call-view.tsx` e integración en la sesión
+- [x] Tarea 5 — Pantalla `video-call-view.tsx` e integración en la sesión
+      (`5853e10`). `VideoCallView` pinta dos `RTCView` (remoto grande, propio en
+      esquina) sobre `useVideoCall`, con controles de mic/cámara/colgar; se
+      monta siempre en el bloque `clock` de `[sessionId].tsx` y decide sola si
+      pinta algo (`active = canJoin && !ended`), sin que la pantalla tenga que
+      condicionar su presencia en el árbol ni se tocara su lógica de
+      fases/asistencia/valoración. **Desviación de alcance, con hallazgo real**:
+      al verificar `npx expo export --platform web` (no pedido explícitamente
+      por el criterio de esta tarea, pero sí por el de la Tarea 7 y por la
+      propia spec: "el CI de `export web` sigue en verde") se confirmó que ya
+      estaba roto *desde la Tarea 4* — `use-video-call.ts` importa
+      `react-native-webrtc` sin guardar por plataforma, y `index.ts` ya lo
+      reexportaba con `[sessionId].tsx` importando ese barrel, así que el
+      módulo nativo se evaluaba igual en el bundle web
+      (`requireNativeComponent is not a function`). Un `if (Platform.OS ===
+      'web')` dentro del archivo no lo habría arreglado: el `import` se
+      ejecuta al cargar el archivo, no al entrar en la rama — hueco que la
+      spec no cubre explícitamente. Se resolvió con el mecanismo de extensión
+      de plataforma que ya usa el repo (`app-tabs.web.tsx`,
+      `use-color-scheme.web.ts`): `use-video-call.web.ts` y
+      `video-call-view.web.tsx` (nuevos, sin importar `react-native-webrtc`)
+      que Metro resuelve en vez de sus pares nativos para cualquier bundle
+      web. Evidencia: `npx expo export --platform web --output-dir <tmp>`
+      fallaba con `TypeError: requireNativeComponent is not a function` antes
+      del fix, en verde (15 rutas exportadas, incluida `/session/[sessionId]`)
+      después; `npx jest src/features/session/video-call-view.test.tsx` en
+      verde (5 tests: no pinta nada fuera de ventana, controles + aviso
+      mientras conecta, los dos `RTCView` cuando conecta de verdad,
+      mic/cámara cambian de etiqueta, colgar limpia sin desmontar el hueco);
+      `npx jest test/app/sessionId.test.tsx` en verde (14 tests, incluido el
+      nuevo "el hueco de vídeo aparece solo dentro de la ventana de la sesión,
+      no antes ni después" — test de pantalla que ya existía, extendido según
+      pedía el criterio); `npx tsc --noEmit` limpio; `npm run lint` limpio
+      (exit 0); `npm test` completo en verde (60/61 suites, 1 skip
+      preexistente, 637 tests).
 - [ ] Tarea 6 — Cobertura de casos límite (permiso denegado, timeout, colgar)
 - [ ] Tarea 7 — Cierre del bloque y actualización de `docs/plan/TODO.md`
 
