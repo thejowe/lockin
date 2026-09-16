@@ -33,7 +33,22 @@ qué puede solaparse).
       mensajes cruzados, sin eco propio, salir deja de recibir, sesiones
       distintas no se cruzan, enviar a sala vacía no revienta); `npx tsc
       --noEmit` limpio; `npm run lint` limpio (exit 0).
-- [ ] Tarea 3 — Señalización sobre Supabase Realtime Broadcast
+- [x] Tarea 3 — Señalización sobre Supabase Realtime Broadcast
+      (`src/data/supabase/video-signal.ts`). `createSupabaseVideoSignalAdapter`
+      igual que `createSupabasePresenceAdapter`: un canal
+      `lockin:video:<sessionId>` por sesión, sin `track()`; `join` se suscribe
+      a `broadcast`/`signal` y descarta ecos propios comparando
+      `payload.from`; `send` reutiliza el canal que dejó abierto `join` para
+      esa sesión (cacheado en un `Map<sessionId, RealtimeChannel>`, mismo
+      truco que el mock en memoria) y no revienta si no hay canal abierto.
+      `src/data/active.ts` gana `videoSignal` con la misma regla que
+      `presence`. Evidencia: `npx jest src/data/supabase/video-signal.test.ts`
+      en verde (9 tests: canal por sesión, `onConnection` en los tres estados
+      de error, mensaje ajeno llega, eco propio no vuelve, `send` transmite
+      por el canal correcto, enviar sin unirse no revienta, salir cierra el
+      canal y deja de poder enviar); `npx tsc --noEmit` limpio; `npm run
+      lint` limpio (exit 0); `npm test` completo en verde (58 suites, 625
+      tests, 1 suite skip ya existente antes de esta tarea).
 - [ ] Tarea 4 — Hook `use-video-call.ts` (WebRTC, offer/answer, ICE)
 - [ ] Tarea 5 — Pantalla `video-call-view.tsx` e integración en la sesión
 - [ ] Tarea 6 — Cobertura de casos límite (permiso denegado, timeout, colgar)
