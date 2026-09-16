@@ -68,6 +68,12 @@ export function getSupabaseClient(): LockInSupabaseClient {
       persistSession: true,
       // No hay callback OAuth en una URL: en nativo no hay nada que detectar.
       detectSessionInUrl: false,
+      // La app es un cliente público: su código lo tiene quien la ejecuta, así
+      // que no hay secreto que guardar y el flujo implícito dejaría un token de
+      // acceso en la URL de vuelta. PKCE devuelve un `code` de un solo uso
+      // ligado a un verificador que solo conoce este dispositivo.
+      // Lo necesita `verifyGithub()`; ver la spec de verificación.
+      flowType: 'pkce',
     },
   });
 
