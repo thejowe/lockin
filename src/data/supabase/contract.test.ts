@@ -304,6 +304,9 @@ function sessionRepositoryFor(actor: Reciprocal): LockInSessionRepository {
 const supabaseBackend: ContractBackend = {
   name: 'supabase',
   canTimeTravel: false,
+  // Un OAuth real necesita un navegador y un humano del otro lado: esta suite
+  // no puede completar verifyGithub()/unverifyGithub() sola.
+  canLinkIdentityWithoutBrowser: false,
 
   async reset(): Promise<ContractFixture> {
     const currentUserId = await resetCurrentUser();

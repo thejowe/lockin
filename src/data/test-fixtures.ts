@@ -24,6 +24,7 @@ const BASE_PROFILE: Profile = {
   availability: { hoursPerWeek: 12, bands: ['noche'] },
   ambition: 'equilibrado',
   links: {},
+  githubVerification: null,
   prompts: [{ question: 'Lo que quiero construir es…', answer: 'Algo pequeño y rentable.' }],
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z',

@@ -94,6 +94,13 @@ export interface ContractBackend {
    * esa lógica la cubre `session_is_live()` en `supabase/schema-embedded.test.mjs`.
    */
   canTimeTravel: boolean;
+  /**
+   * `true` si este backend puede completar `verifyGithub()`/`unverifyGithub()`
+   * sin abrir un navegador ni pedirle nada a un humano. El mock lo simula, así
+   * que puede: `true`. Un backend real de OAuth necesita un navegador y una
+   * persona del otro lado, así que Supabase declara `false`.
+   */
+  canLinkIdentityWithoutBrowser: boolean;
   /** Estado limpio para el test que viene. Se llama en cada `beforeEach`. */
   reset(): Promise<ContractFixture>;
   /** Cierre de lo que quede abierto (sesiones, canales de realtime). */
@@ -512,6 +519,59 @@ export function describeRepositoryContract(backend: ContractBackend): void {
         expect(edited.createdAt).toBe(created.createdAt);
         expect(edited.name).toBe('Otro nombre');
         expect(await repositories.profiles.getCurrent()).toEqual(edited);
+      });
+    });
+
+    describe('verificación de GitHub', () => {
+      it('un perfil nuevo no está verificado', async () => {
+        const profile = await repositories.profiles.saveCurrent(buildProfileInput());
+        expect(profile.githubVerification).toBeNull();
+      });
+
+      it('guardar el perfil no enciende ni apaga el sello', async () => {
+        // La invariante que sostiene todo lo demás: el formulario no puede
+        // tocar la verificación ni por accidente ni a propósito.
+        await repositories.profiles.saveCurrent(buildProfileInput());
+        const before = await repositories.profiles.getCurrent();
+
+        await repositories.profiles.saveCurrent({
+          ...buildProfileInput(),
+          name: 'Nombre Cambiado',
+        });
+        const after = await repositories.profiles.getCurrent();
+
+        expect(after?.githubVerification).toEqual(before?.githubVerification ?? null);
+      });
+
+      const itIfLinkable = backend.canLinkIdentityWithoutBrowser ? it : it.skip;
+
+      itIfLinkable('al verificar, el enlace se deriva de la identidad', async () => {
+        await repositories.profiles.saveCurrent(buildProfileInput());
+
+        const verified = await repositories.profiles.verifyGithub();
+
+        expect(verified.githubVerification).not.toBeNull();
+        const handle = verified.githubVerification!.handle;
+        expect(verified.links.github).toBe(`https://github.com/${handle}`);
+      });
+
+      itIfLinkable('desverificar apaga el sello y vacía el enlace', async () => {
+        await repositories.profiles.saveCurrent(buildProfileInput());
+        await repositories.profiles.verifyGithub();
+
+        const plain = await repositories.profiles.unverifyGithub();
+
+        expect(plain.githubVerification).toBeNull();
+        expect(plain.links.github).toBeUndefined();
+      });
+
+      it('el sello de otra persona se lee, pero de solo lectura', async () => {
+        const others = await repositories.profiles.list();
+        for (const other of others) {
+          expect(
+            other.githubVerification === null || typeof other.githubVerification.handle === 'string'
+          ).toBe(true);
+        }
       });
     });
 

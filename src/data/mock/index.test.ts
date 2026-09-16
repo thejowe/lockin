@@ -30,6 +30,9 @@ const NON_RECIPROCAL_ID = 'seed-diego';
 const mockBackend: ContractBackend = {
   name: 'mock',
   canTimeTravel: true,
+  // El mock simula la verificación sin tocar un navegador: puede completar el
+  // flujo entero sola.
+  canLinkIdentityWithoutBrowser: true,
 
   async reset() {
     resetState();

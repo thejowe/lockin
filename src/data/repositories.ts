@@ -52,6 +52,19 @@ export interface ProfileRepository {
   getById(id: string): Promise<Profile | null>;
   /** Lista perfiles ajenos. Nunca incluye el del usuario actual. */
   list(filter?: ProfileFilter): Promise<Profile[]>;
+  /**
+   * Abre el flujo de OAuth de GitHub y, al volver, sincroniza el sello del
+   * perfil propio. Devuelve el perfil ya actualizado.
+   *
+   * **Sobrescribe `links.github`** con la URL derivada de la identidad: quien
+   * la llama debe haber avisado al usuario si ya había una distinta.
+   *
+   * Lanza si el usuario cancela el flujo o si el proveedor lo rechaza.
+   */
+  verifyGithub(): Promise<Profile>;
+
+  /** Desvincula la identidad, apaga el sello y vacía `links.github`. */
+  unverifyGithub(): Promise<Profile>;
 }
 
 /** El deck de swipe y lo que pasa al soltar una tarjeta. */

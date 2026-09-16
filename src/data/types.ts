@@ -58,6 +58,24 @@ export interface ProfileLinks {
   linkedin?: string;
 }
 
+/**
+ * Prueba de que el enlace de GitHub del perfil pertenece a quien controla la
+ * cuenta. Se obtiene linkando una identidad OAuth real; el cliente no puede
+ * encenderla escribiendo en su propia fila, porque las columnas que la guardan
+ * están fuera de su permiso de escritura. Ver
+ * `docs/superpowers/specs/2026-09-16-verificacion-github-design.md`.
+ *
+ * Certifica autoría del enlace y NADA más: ni competencia, ni identidad legal,
+ * ni que exista una persona detrás. No la uses como antifraude ni escribas
+ * copy que prometa más que eso.
+ */
+export interface GithubVerification {
+  /** El `user_name` de la identidad. `github.com/<handle>` es su perfil. */
+  handle: string;
+  /** Cuándo se verificó, en ISO. */
+  verifiedAt: string;
+}
+
 /** Respuesta corta de texto libre, estilo Hinge. Es lo que hace el perfil "swipeable". */
 export interface ProfilePrompt {
   /** La pregunta mostrada, p. ej. "Lo que quiero construir es…". */
@@ -112,6 +130,14 @@ export interface Profile {
   availability: Availability;
   ambition: Ambition;
   links: ProfileLinks;
+  /**
+   * Sello de GitHub, o `null` si esta persona no lo ha verificado.
+   *
+   * **No está en `ProfileInput` a propósito**: si el formulario pudiera
+   * mandarlo, cualquiera se lo encendería. Solo se mueve con `verifyGithub()` y
+   * `unverifyGithub()`.
+   */
+  githubVerification: GithubVerification | null;
   /** 1-2 prompts de texto libre. */
   prompts: ProfilePrompt[];
   createdAt: string;
@@ -123,7 +149,7 @@ export interface Profile {
  */
 export type ProfileInput = Omit<
   Profile,
-  'id' | 'createdAt' | 'updatedAt' | 'avatar' | 'seekingSpecialties'
+  'id' | 'createdAt' | 'updatedAt' | 'avatar' | 'seekingSpecialties' | 'githubVerification'
 > & {
   /** Opcional: si no se envía, el repositorio deriva las iniciales del nombre. */
   avatar?: Partial<Avatar>;
