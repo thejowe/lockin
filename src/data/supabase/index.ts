@@ -29,6 +29,7 @@ import {
   toProfileInsert,
 } from './mappers';
 import { createSupabaseSessionRepository } from './sessions';
+import { GITHUB_VERIFICATION_CANCELLED } from '../repositories';
 
 import type { MatchRow, MessageRow, ProfileRow } from './database.types';
 import type {
@@ -192,7 +193,7 @@ const session: SessionRepository = {
 const profiles: ProfileRepository = {
   async verifyGithub() {
     const completed = await linkGithubIdentity();
-    if (!completed) throw new Error('Verificación cancelada.');
+    if (!completed) throw new Error(GITHUB_VERIFICATION_CANCELLED);
 
     // La verdad la escribe Postgres leyendo auth.identities. Aquí no viaja
     // ningún handle: si viajara, sería falsificable.
@@ -213,6 +214,24 @@ const profiles: ProfileRepository = {
     const profile = await profiles.getCurrent();
     if (!profile) throw new Error('No hay perfil que desverificar todavía.');
     return profile;
+  },
+
+  async refreshGithubVerification() {
+    const before = await profiles.getCurrent();
+    if (!before) throw new Error('No hay perfil que sincronizar todavía.');
+
+    // Sin sello no hay nada que refrescar, y llamar al RPC aquí sería
+    // destructivo: su rama «no hay identidad de GitHub» vacía `link_github`, y
+    // sin sello ese campo es lo que la persona escribió a mano en el
+    // formulario. Salir antes es la guarda, no una optimización.
+    if (!before.githubVerification) return before;
+
+    const { error } = await getSupabaseClient().rpc('sync_github_verification');
+    if (error) throw error;
+
+    const after = await profiles.getCurrent();
+    if (!after) throw new Error('No hay perfil que sincronizar todavía.');
+    return after;
   },
 
   async getCurrent() {

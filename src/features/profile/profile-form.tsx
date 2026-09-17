@@ -207,6 +207,9 @@ export function ProfileForm({
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  /** Con sello, `links.github` deja de ser un campo y pasa a derivarse de la identidad. */
+  const githubLocked = Boolean(initial?.githubVerification);
+
   /** Cambia un campo y borra su error: reñir mientras se corrige es hostil. */
   function update<K extends keyof Draft>(key: K, value: Draft[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -439,7 +442,11 @@ export function ProfileForm({
 
         <Field
           label="Enlaces (opcional)"
-          hint="Lo que enseñe qué has hecho, si tienes algo."
+          hint={
+            githubLocked
+              ? 'Tu GitHub está verificado: lo lleva el sello, no este campo. Para cambiarlo, quita la verificación desde tu perfil.'
+              : 'Lo que enseñe qué has hecho, si tienes algo.'
+          }
           error={errors.github}>
           <TextField
             value={draft.github}
@@ -449,6 +456,10 @@ export function ProfileForm({
             autoCorrect={false}
             inputMode="url"
             accessibilityLabel="GitHub"
+            // Con sello, el enlace lo deriva el servidor de la identidad. Dejarlo
+            // editable devolvería el ataque que cierra la verificación entera:
+            // verifico como `alice` y enseño el GitHub de otro.
+            editable={!githubLocked}
           />
           <TextField
             value={draft.portfolio}

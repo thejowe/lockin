@@ -390,6 +390,43 @@ describe('ProfileForm', () => {
     });
   });
 
+  describe('con el GitHub verificado', () => {
+    /**
+     * Con sello, el enlace lo deriva el servidor de la identidad de GitHub. Si
+     * el campo siguiera editable volvería el ataque que la verificación cierra:
+     * verifico como `alice` y dejo el perfil enseñando el GitHub de otro.
+     */
+    const VERIFICADA = buildProfile({
+      links: { github: 'https://github.com/anagarcia' },
+      githubVerification: { handle: 'anagarcia', verifiedAt: '2026-09-16T10:00:00.000Z' },
+    });
+
+    it('el campo de GitHub no se puede editar', async () => {
+      await render(<ProfileForm initial={VERIFICADA} submitLabel="Guardar" onSubmit={jest.fn()} />);
+
+      expect(screen.getByLabelText('GitHub')).toBeDisabled();
+    });
+
+    it('dice por qué está bloqueado y dónde se desbloquea', async () => {
+      await render(<ProfileForm initial={VERIFICADA} submitLabel="Guardar" onSubmit={jest.fn()} />);
+
+      // Un campo gris sin explicación se lee como una avería.
+      expect(screen.getByText(/quita la verificación/i)).toBeTruthy();
+    });
+
+    it('sin sello el campo sigue siendo editable', async () => {
+      await render(
+        <ProfileForm
+          initial={buildProfile({ githubVerification: null })}
+          submitLabel="Guardar"
+          onSubmit={jest.fn()}
+        />
+      );
+
+      expect(screen.getByLabelText('GitHub')).not.toBeDisabled();
+    });
+  });
+
   it('cambia la pregunta de un prompt sin perder la respuesta ya escrita', async () => {
     const onSubmit = jest.fn<Promise<void>, [ProfileInput]>().mockResolvedValue(undefined);
     await render(<ProfileForm submitLabel="Guardar" onSubmit={onSubmit} />);

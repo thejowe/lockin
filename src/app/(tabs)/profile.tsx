@@ -1,12 +1,12 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useQuery, useRepositories, type ProfileInput } from '@/data';
-import { ProfileDetails, ProfileForm } from '@/features/profile';
+import { GithubVerification, ProfileDetails, ProfileForm } from '@/features/profile';
 import { PrimaryButton, SecondaryButton } from '@/features/profile/controls';
 
 /**
@@ -25,6 +25,42 @@ export default function ProfileScreen() {
     loading,
     refresh,
   } = useQuery('profile:current', () => repositories.profiles.getCurrent());
+
+  /**
+   * Resincroniza el sello de GitHub al abrir la ficha.
+   *
+   * Es el único caso que ninguna otra pantalla cubre: si la persona se renombra
+   * en GitHub, el sello se queda apuntando al handle viejo. Se hace aquí y no
+   * en el arranque de la app porque sería una llamada de red en el camino
+   * crítico de inicio para un caso raro.
+   *
+   * Sin sello no se llama: `refreshGithubVerification()` no enciende ninguno, y
+   * pedirlo sería una llamada de red para nada.
+   */
+  const synced = useRef(false);
+  const handle = profile?.githubVerification?.handle ?? null;
+
+  useEffect(() => {
+    if (!handle || synced.current) return;
+    synced.current = true;
+
+    let cancelled = false;
+    repositories.profiles
+      .refreshGithubVerification()
+      .then((fresh) => {
+        // Releer solo si de verdad cambió: si no, sería un render por nada.
+        if (!cancelled && fresh.githubVerification?.handle !== handle) refresh();
+      })
+      .catch(() => {
+        // Sincronizar es oportunista. Si falla, la ficha sigue enseñando el
+        // sello que ya tenía, que es lo último que se sabe cierto — no hay
+        // nada que contarle a quien solo venía a mirar su perfil.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [handle, refresh, repositories]);
 
   async function handleSubmit(input: ProfileInput) {
     await repositories.profiles.saveCurrent(input);
@@ -80,6 +116,8 @@ export default function ProfileScreen() {
         </ThemedText>
 
         <ProfileDetails profile={profile} />
+
+        <GithubVerification profile={profile} onChange={refresh} />
 
         <SecondaryButton label="Editar perfil" onPress={() => setEditing(true)} />
       </ScrollView>

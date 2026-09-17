@@ -6,6 +6,7 @@
  */
 
 export * from './catalog';
+export { GithubVerification } from './github-verification';
 export { ProfileAvatar } from './profile-avatar';
 export { ProfileDetails } from './profile-details';
 export { ProfileForm, type ProfileFormProps } from './profile-form';

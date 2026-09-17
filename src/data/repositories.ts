@@ -32,6 +32,14 @@ import type {
 /** Cancela una suscripción. */
 export type Unsubscribe = () => void;
 
+/**
+ * Mensaje con el que `verifyGithub()` avisa de que la persona cerró GitHub sin
+ * terminar. Cancelar no es un fallo y la pantalla lo cuenta distinto que un
+ * error de verdad, así que el texto lo fija el contrato en vez de dejar que
+ * cada backend invente el suyo y la UI adivine cuál es cuál.
+ */
+export const GITHUB_VERIFICATION_CANCELLED = 'Verificación cancelada.';
+
 /** Quién es el usuario y bajo qué modo navega. */
 export interface SessionRepository {
   get(): Promise<Session>;
@@ -65,6 +73,17 @@ export interface ProfileRepository {
 
   /** Desvincula la identidad, apaga el sello y vacía `links.github`. */
   unverifyGithub(): Promise<Profile>;
+
+  /**
+   * Relee el sello del proveedor y actualiza el perfil propio si cambió — el
+   * caso real es que la persona se renombre en GitHub y el sello se quede
+   * apuntando al handle viejo. No abre navegador ni pide nada al usuario: solo
+   * sincroniza lo que ya está linkado. Devuelve el perfil.
+   *
+   * Nunca **enciende** un sello que no estaba: encenderlo es lo que exige pasar
+   * por el navegador, y eso es `verifyGithub()`.
+   */
+  refreshGithubVerification(): Promise<Profile>;
 }
 
 /** El deck de swipe y lo que pasa al soltar una tarjeta. */

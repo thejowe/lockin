@@ -575,6 +575,25 @@ export function describeRepositoryContract(backend: ContractBackend): void {
         expect(after?.githubVerification).not.toBeNull();
       });
 
+      it('resincronizar sin sello no lo enciende', async () => {
+        // Encender el sello exige pasar por el navegador. Si `refresh` pudiera
+        // hacerlo, habría un camino a la verificación que no pasa por GitHub.
+        await repositories.profiles.saveCurrent(buildProfileInput());
+
+        const synced = await repositories.profiles.refreshGithubVerification();
+
+        expect(synced.githubVerification).toBeNull();
+      });
+
+      itIfLinkable('resincronizar mantiene el sello que ya estaba', async () => {
+        await repositories.profiles.saveCurrent(buildProfileInput());
+        const verified = await repositories.profiles.verifyGithub();
+
+        const synced = await repositories.profiles.refreshGithubVerification();
+
+        expect(synced.githubVerification).toEqual(verified.githubVerification);
+      });
+
       it('el sello de otra persona se lee, pero de solo lectura', async () => {
         const others = await repositories.profiles.list();
         expect(others.some((profile) => profile.githubVerification !== null)).toBe(true);

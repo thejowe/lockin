@@ -183,6 +183,18 @@ const profiles: ProfileRepository = {
     state.profiles.set(profile.id, profile);
     return profile;
   },
+
+  /**
+   * Devuelve el perfil tal cual. No hay proveedor del que releer nada: el sello
+   * del mock se lo inventa `verifyGithub()` a partir del nombre, así que no
+   * puede quedarse obsoleto por su cuenta como sí le pasa al de verdad cuando
+   * alguien se renombra en GitHub.
+   */
+  async refreshGithubVerification() {
+    const existing = currentProfile();
+    if (!existing) throw new Error('No hay perfil que sincronizar todavía.');
+    return existing;
+  },
 };
 
 const discovery: DiscoveryRepository = {

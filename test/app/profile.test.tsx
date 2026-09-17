@@ -117,6 +117,42 @@ describe('ProfileScreen', () => {
       });
     });
 
+    /**
+     * El caso que no cubre ninguna otra pantalla: si la persona se renombra en
+     * GitHub, el sello se queda apuntando al handle viejo. Se resincroniza al
+     * abrir la ficha, no en cada arranque — sería una llamada de red en el
+     * camino crítico de inicio para un caso raro.
+     */
+    describe('sello de GitHub', () => {
+      it('al abrir la ficha, resincroniza el sello', async () => {
+        await withProfile();
+        await repositories.profiles.verifyGithub();
+        const sync = jest.spyOn(repositories.profiles, 'refreshGithubVerification');
+
+        await renderRoute(<ProfileScreen />);
+
+        await waitFor(() => expect(sync).toHaveBeenCalled());
+      });
+
+      it('no resincroniza si no hay sello que refrescar', async () => {
+        await withProfile();
+        const sync = jest.spyOn(repositories.profiles, 'refreshGithubVerification');
+
+        await renderRoute(<ProfileScreen />);
+
+        await waitFor(() => expect(screen.getByText('Perfil')).toBeTruthy());
+        expect(sync).not.toHaveBeenCalled();
+      });
+
+      it('la ficha ofrece verificar sin salir de la tab', async () => {
+        await withProfile();
+
+        await renderRoute(<ProfileScreen />);
+
+        await waitFor(() => expect(screen.getByText('Verificar con GitHub')).toBeTruthy());
+      });
+    });
+
     it('guardar cierra la edición y relee: la ficha no se queda con lo viejo', async () => {
       await withProfile('Perfil Prueba');
 
