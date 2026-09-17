@@ -2543,15 +2543,68 @@ Local:
 - **No ejecutado aquí**: el contrato contra Supabase. Necesita Docker y el CLI
   de Supabase, y escribe usuarios; por eso existe el job.
 
-En CI — es el criterio de terminado de verdad, y queda **pendiente de anotar**:
+En CI, que es el criterio de terminado de verdad — sobre `6414da0`,
+[run 35281202527](https://github.com/thejowe/lockin/actions/runs/35281202527):
 
-- [ ] `CI` verde sobre el commit empujado, con el job `Contrato Supabase`
-      **ejecutado** (no `skipped`) y su `grep` pasando. Es lo que demuestra que
-      el contrato corrió de verdad.
-- [ ] **La guarda rota a propósito una vez**, y el job en rojo por ello. Se hace
-      sobre una rama desechable con `workflow_dispatch`, cambiando la cadena
-      del `grep` por una que la suite no imprime; el job tiene que morir
-      diciendo «El contrato contra Supabase no llegó a ejecutarse entero». Sin
-      esta comprobación la guarda es una línea de YAML que nadie ha visto
-      fallar, que es justo lo que le pasó a la de `SQL embebido` hasta
-      `ffebe59`.
+- [x] **El job `Contrato Supabase` se ejecutó y salió en verde.** No
+      `skipped`: `success`, con `Test Suites: 1 passed, 1 total` y
+      `Tests: 23 skipped, 59 passed, 82 total`. Es la primera vez que la mitad
+      de Supabase del contrato corre sin que nadie la lance a mano.
+- [x] **La puerta `if` funciona en los dos sentidos.** En el mismo commit sobre
+      una rama que no es la principal
+      ([run 35281233442](https://github.com/thejowe/lockin/actions/runs/35281233442)),
+      el job sale `skipped` — que es lo buscado: ahí no se levanta Docker.
+- [x] **La guarda rota a propósito, y el job rojo por ella.**
+      [run 35281256165](https://github.com/thejowe/lockin/actions/runs/35281256165),
+      rama desechable `calidad-c1-guarda-rota` (`66f4d87`), con la cadena del
+      `grep` cambiada por una que nadie imprime. El log es concluyente: la
+      suite **pasó igual** —`Test Suites: 1 passed, 1 total`,
+      `23 skipped, 59 passed`— y el paso murió después con
+
+      ```
+      El contrato contra Supabase no llegó a ejecutarse entero (suite saltada: ¿faltan credenciales?)
+      ##[error]Process completed with exit code 1.
+      ```
+
+      O sea: el rojo vino de la guarda y de nada más. El commit se publicó con
+      plumbing (`read-tree`/`commit-tree` sobre un `GIT_INDEX_FILE` temporal),
+      sin un solo `git add` en este worktree compartido.
+
+### Lo que sigue rojo en `CI`, y no es de este bloque
+
+Ese mismo run tiene dos trabajos en rojo. **Ninguno de los dos lo causa `C1`**:
+salen los dos igual en la rama desechable, cuyo único cambio respecto a
+`6414da0` es la cadena del `grep`. Último `CI` verde: `9089c56`. `9cc0f1c`
+(D1) y `fa3759c` (A1) no llegaron a tener run propio —estaban commiteados en
+local y se empujaron junto con `6414da0`—, así que este es el primer veredicto
+de la Ola 1 entera.
+
+- **`Export web` — es el Problema 5 de la orden A1, que ha hecho exactamente
+  lo que se le pidió y se ha llevado por delante el job.** `expo export`
+  compila con `__DEV__ === false` y el runner no tiene credenciales, así que la
+  guarda nueva de `src/data/active.ts` corta el render estático:
+
+  ```
+  Metro error: LockIn no puede arrancar sin backend: faltan EXPO_PUBLIC_SUPABASE_URL
+  y EXPO_PUBLIC_SUPABASE_ANON_KEY.
+  ```
+
+  Hay dos arreglos posibles y la elección no es mía: **(a)** darle al job
+  credenciales de relleno en `ci.yml` —el export es una prueba de humo del
+  bundle, no una release, y las de verdad viven en el perfil de EAS—, o **(b)**
+  que `active.ts` distinga el render estático de Expo de una app arrancando.
+  `src/data/active.ts` es de `arquitecto` y el criterio de terminado de A1
+  incluía `npx expo export --platform web`, así que la decisión le toca a ese
+  bloque. Si elige (a), el cambio es de una sola clave `env:` en `ci.yml` y lo
+  hace este bloque en cuanto lo pida.
+
+- **`Formato` — dos archivos que A1 tocó, sin pasar por Prettier.**
+  `src/features/session/use-active-session.ts` y
+  `src/features/session/use-session-room.ts`. Los dos están en `src/`, fuera
+  del alcance de C1 y dentro del de A1 (son los archivos de los que la orden le
+  pedía quitar el import de `useResolvedOrPrevious`). Se arregla con
+  `npx prettier --write` sobre esos dos y nada más.
+
+> Queda publicada la rama desechable `calidad-c1-guarda-rota`. No se fusiona:
+> existe solo para que el run 35281256165 se pueda volver a leer. Se puede
+> borrar en cuanto alguien lea esta sección.
