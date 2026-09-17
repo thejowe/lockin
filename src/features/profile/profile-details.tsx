@@ -21,6 +21,7 @@ import {
   specialtyLabel,
   startingPointSentence,
 } from './catalog';
+import { GithubSeal } from './github-seal';
 import { ProfileAvatar } from './profile-avatar';
 
 import type { Href } from 'expo-router';
@@ -131,6 +132,15 @@ export function ProfileDetails({ profile }: { profile: Profile }) {
               </ThemedText>
             </ExternalLink>
           ))}
+
+          {/*
+            Junto al enlace y no junto al nombre: lo que está verificado es el
+            enlace, y ponerlo arriba lo convertiría en «perfil verificado», que
+            es justo lo que este sello no dice.
+          */}
+          {profile.githubVerification ? (
+            <GithubSeal handle={profile.githubVerification.handle} />
+          ) : null}
         </Section>
       ) : null}
     </View>

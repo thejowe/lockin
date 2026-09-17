@@ -23,6 +23,7 @@ import { GITHUB_VERIFICATION_CANCELLED, useRepositories } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 
 import { PrimaryButton, SecondaryButton } from './controls';
+import { GithubSeal } from './github-seal';
 
 import type { Profile } from '@/data';
 
@@ -93,18 +94,7 @@ export function GithubVerification({
         Verificación
       </ThemedText>
 
-      {seal ? (
-        // El sello no puede ser solo un icono: sin `accessibilityLabel`, quien
-        // navega con lector de pantalla no oye nada.
-        <View
-          accessible
-          accessibilityLabel={`GitHub verificado: ${seal.handle}`}
-          style={[styles.seal, { backgroundColor: theme.brassSoft }]}>
-          <ThemedText type="bodyStrong" themeColor="brass">
-            {`✓ @${seal.handle} · verificado`}
-          </ThemedText>
-        </View>
-      ) : null}
+      {seal ? <GithubSeal handle={seal.handle} /> : null}
 
       <ThemedText type="small" themeColor="textSecondary">
         {seal
@@ -164,12 +154,6 @@ export function GithubVerification({
 const styles = StyleSheet.create({
   root: {
     gap: Spacing.two,
-  },
-  seal: {
-    alignSelf: 'flex-start',
-    paddingVertical: Spacing.one,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Radii.pill,
   },
   confirm: {
     gap: Spacing.two,

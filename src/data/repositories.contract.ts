@@ -594,6 +594,28 @@ export function describeRepositoryContract(backend: ContractBackend): void {
         expect(synced.githubVerification).toEqual(verified.githubVerification);
       });
 
+      it('el deck sirve verificados y no verificados por igual', async () => {
+        // Es señal, no puerta — mismo precedente que la complementariedad. Un
+        // filtro de «solo verificados» sería filtrar por profesión sin decirlo:
+        // `Specialty` tiene diez valores y solo uno es `dev`.
+        await repositories.profiles.saveCurrent(buildProfileInput());
+
+        const deck = await repositories.discovery.getDeck({ mode: 'ambos' });
+
+        expect(deck.some((profile) => profile.githubVerification !== null)).toBe(true);
+        expect(deck.some((profile) => profile.githubVerification === null)).toBe(true);
+      });
+
+      itIfLinkable('verificarse no reordena el deck de quien se verifica', async () => {
+        await repositories.profiles.saveCurrent(buildProfileInput());
+        const antes = await repositories.discovery.getDeck({ mode: 'ambos' });
+
+        await repositories.profiles.verifyGithub();
+
+        const despues = await repositories.discovery.getDeck({ mode: 'ambos' });
+        expect(despues.map((profile) => profile.id)).toEqual(antes.map((profile) => profile.id));
+      });
+
       it('el sello de otra persona se lee, pero de solo lectura', async () => {
         const others = await repositories.profiles.list();
         expect(others.some((profile) => profile.githubVerification !== null)).toBe(true);

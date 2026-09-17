@@ -93,5 +93,33 @@ describe('ProfileDetails', () => {
       expect(screen.queryByText('Enlaces')).toBeNull();
       expect(mockLinkHrefs).toEqual([]);
     });
+
+    it('sella el GitHub verificado junto a su enlace', async () => {
+      await render(
+        <ProfileDetails
+          profile={buildProfile({
+            links: { github: 'https://github.com/anagarcia' },
+            githubVerification: { handle: 'anagarcia', verifiedAt: '2026-09-16T10:00:00.000Z' },
+          })}
+        />
+      );
+
+      expect(screen.getByLabelText('GitHub verificado: anagarcia')).toBeTruthy();
+    });
+
+    it('sin sello, el enlace se pinta como siempre y sin ningún negativo', async () => {
+      await render(
+        <ProfileDetails
+          profile={buildProfile({
+            links: { github: 'https://github.com/anagarcia' },
+            githubVerification: null,
+          })}
+        />
+      );
+
+      expect(screen.getByText('GitHub')).toBeTruthy();
+      expect(screen.queryByLabelText(/GitHub verificado/)).toBeNull();
+      expect(screen.queryByText(/sin verificar/i)).toBeNull();
+    });
   });
 });

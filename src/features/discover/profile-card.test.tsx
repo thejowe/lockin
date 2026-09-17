@@ -95,6 +95,41 @@ describe('ProfileCard', () => {
     expect(screen.queryByText('✓ Encajas')).toBeNull();
   });
 
+  describe('sello de GitHub', () => {
+    it('enseña el sello de quien lo tiene', async () => {
+      const profile = buildProfile({
+        links: { github: 'https://github.com/anagarcia' },
+        githubVerification: { handle: 'anagarcia', verifiedAt: '2026-09-16T10:00:00.000Z' },
+      });
+
+      await render(<ProfileCard profile={profile} />);
+
+      // Con etiqueta explícita: de un icono, un lector de pantalla no lee nada.
+      expect(screen.getByLabelText('GitHub verificado: anagarcia')).toBeTruthy();
+    });
+
+    it('sin sello no dice nada: no hay marca de "sin verificar"', async () => {
+      await render(<ProfileCard profile={buildProfile({ githubVerification: null })} />);
+
+      expect(screen.queryByLabelText(/GitHub verificado/)).toBeNull();
+      // Marcar lo NO verificado castiga a las nueve especialidades que no
+      // tienen GitHub, y es filtrar por profesión por la puerta del copy.
+      expect(screen.queryByText(/sin verificar/i)).toBeNull();
+    });
+
+    it('el sello nombra GitHub: no es un check a secas junto al nombre', async () => {
+      const profile = buildProfile({
+        githubVerification: { handle: 'anagarcia', verifiedAt: '2026-09-16T10:00:00.000Z' },
+      });
+
+      await render(<ProfileCard profile={profile} />);
+
+      // Un "✓" solo se leería como «perfil verificado», que es justo lo que
+      // este sello NO dice: certifica el enlace y nada más.
+      expect(screen.getByText(/GitHub @anagarcia/)).toBeTruthy();
+    });
+  });
+
   it('el modo se lee sin confundirse con lo que busca en skills', async () => {
     const profile = buildProfile({ lookingFor: 'par' });
 

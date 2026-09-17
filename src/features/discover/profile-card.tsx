@@ -20,6 +20,7 @@ import { StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Radii, Spacing } from '@/constants/theme';
 import {
+  GithubSeal,
   ProfileAvatar,
   ambitionLabel,
   availabilitySummary,
@@ -73,6 +74,15 @@ export function ProfileCard({
           <View style={styles.headerChips}>
             <Chip label={`Quiere: ${modeLabel(profile.lookingFor)}`} />
             {complement.length > 0 ? <Chip label="✓ Encajas" tone="match" /> : null}
+            {/*
+              Aquí arriba porque es donde se decide el swipe. Sin sello no se
+              pinta nada: marcar lo no verificado castigaría a las nueve
+              especialidades que no tienen GitHub, y el sello es señal —no
+              filtra el deck, no lo ordena, no condiciona el match.
+            */}
+            {profile.githubVerification ? (
+              <GithubSeal handle={profile.githubVerification.handle} compact />
+            ) : null}
           </View>
         </View>
       </View>
