@@ -160,14 +160,44 @@ commits con CI rojo que nadie miró porque «en local iba».
       CRLF, así que el veredicto solo se puede leer aquí.
 - [x] `Schema drift` — [run 35211856006](https://github.com/thejowe/lockin/actions/runs/35211856006),
       verde en local **y en remoto**.
-- [ ] `E2E Android` — **sin veredicto todavía**. El [run 35211855989](https://github.com/thejowe/lockin/actions/runs/35211855989)
-      sobre este commit salió `cancelled`, y no por un fallo: `calidad` empujó
-      tres commits de documentación seguidos mientras corría y el grupo de
-      concurrencia del workflow cancela la pasada anterior en cada push. El job
-      tarda ~13 min, así que no llegó a terminar ninguna. Hay que anotar la
-      primera pasada que termine sobre un HEAD que incluya `5170f64` —
-      **ninguno de esos commits toca código de la app**, así que el veredicto
-      vale igual.
+- [x] `E2E Android` — [run 35214150045](https://github.com/thejowe/lockin/actions/runs/35214150045)
+      sobre `4427d21` (el primer HEAD que incluye `5170f64` y llegó a terminar;
+      los cuatro intentos anteriores salieron `cancelled` porque `calidad`
+      empujó documentación mientras corrían y el grupo de concurrencia cancela
+      la pasada previa en cada push). **Variante `mock` verde; variante
+      `supabase` roja, y no por este bloque** — ver abajo.
+
+### El rojo de `E2E Android (supabase)` es anterior a este bloque
+
+Falla en la **primerísima aserción** del recorrido, antes de tocar nada de
+verificación: `extendedWaitUntil visible: 'Cofundador'` con 60 s de margen, o
+sea la pantalla de modo del onboarding recién arrancada la app. El volcado de
+Maestro (`window.xml` de `attempt-02`) enseña lo que hay en pantalla en su
+lugar:
+
+    No hemos podido recuperar tu perfil
+    Comprueba tu conexión y vuelve a intentarlo.
+    REINTENTAR
+
+Eso es la pantalla de error de arranque que introdujo `d76ba71`
+(`fix: handle profile and session recovery errors on startup`, de
+`arquitecto`): la app no pudo resolver su sesión contra Supabase real y lo dijo
+en vez de mandar al onboarding. La variante `mock` pasa entera, que es lo que
+descarta que sea la UI.
+
+**No lo causa `verificacion`.** El mismo fallo, con la misma aserción y la
+misma variante, sale en el [run 35154808314](https://github.com/thejowe/lockin/actions/runs/35154808314)
+sobre `1987a9c` —el commit *anterior* a la Tarea 5 de este bloque— y en las
+pasadas del 2026-09-16 desde `docs(video): cierra el bloque`. Es decir: la
+variante `supabase` lleva roja desde antes de que existiera una sola línea de
+sello.
+
+Sospecha para quien lo coja (no verificada, y por eso se escribe como
+sospecha): el arranque usa `signInAnonymously()`, y el proyecto tiene un límite
+de **30 altas anónimas por hora e IP** que `supabase/README.md` ya documenta.
+El 2026-09-16 y el 2026-09-17 se encadenaron muchas pasadas de E2E y de la
+suite de contrato desde la misma IP de Actions. Antes de tocar código conviene
+descartarlo mirando la respuesta real del endpoint de auth.
 
 ### Y el que sí cerró
 
