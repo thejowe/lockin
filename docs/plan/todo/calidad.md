@@ -2360,3 +2360,60 @@ de código de producto, y ninguno toca `src/`.
 > `Schema drift` **debe** seguir en rojo hasta que el usuario aplique
 > `supabase/migrations/20260916000100_github_verification.sql` en
 > `grrzmzktrhksbttpbblg`. Ese rojo no es deriva ni es de esta pasada.
+
+## `Contrato Supabase`: once saltos sin declarar, y por qué nadie los vio (2026-09-16)
+
+- [x] **La lista blanca de saltos de `contract.yml:90` iba once entradas por
+      detrás de la suite** (`ad69754`). El [run 35210842158](https://github.com/thejowe/lockin/actions/runs/35210842158)
+      sobre `31c277f` salía rojo diciendo «La suite no corrió entera», y era
+      justo lo contrario: 57 passed, **0 failed**, `"numFailedTests": 0`. El que
+      reventaba era el `jq -e` de la guarda, que resta los tests saltados menos
+      una lista blanca explícita y falla si queda algo — comportamiento buscado,
+      lo dice su propio comentario. Faltaban los **seis de rachas** y los
+      **cinco de verificación**.
+
+      Los dos grupos se saltan por motivos distintos, y el comentario ahora los
+      separa: los de rachas son de reloj (`itWithTimeTravel`, sin viaje en el
+      tiempo no se fabrican sesiones pasadas), los de verificación son de
+      navegador (`canLinkIdentityWithoutBrowser: false`, un OAuth de verdad
+      necesita a una persona al otro lado). Contra el mock corren enteros los
+      veintitrés. Es el mismo modo de fallo que el `SQL embebido` de la pasada
+      anterior: la guarda dice lo contrario de lo que pasa.
+
+- [x] **El hallazgo: el rojo de rachas llevaba desde el 2026-09-15 sin que
+      nadie lo viera porque este job es `workflow_dispatch`.** `contract.yml` no
+      tiene `push` ni `pull_request` — necesita levantar un Supabase local, así
+      que es opt-in a propósito. Un job que solo corre cuando alguien lo lanza a
+      mano **no se pone rojo solo**: se queda con el último veredicto que se le
+      pidió, y ese era anterior a los tests de rachas. La deuda no se acumuló en
+      el job, se acumuló en el hueco entre dos ejecuciones manuales, y por eso
+      salieron once entradas de golpe en vez de seis y luego cinco. La lección
+      para el siguiente bloque que toque `repositories.contract.ts`: si el test
+      nuevo se salta en CI, la entrada en la lista blanca va **en el mismo
+      commit**, porque el rojo no llega hasta que alguien dispare el job.
+
+### Verificación de esta pasada
+
+- **El veredicto es el [run 35213552961](https://github.com/thejowe/lockin/actions/runs/35213552961),
+  en verde** sobre `ad69754` — lanzado a mano con
+  `gh workflow run "Contrato Supabase"`, porque no se dispara solo. Imprime
+  `Tests: 23 skipped, 59 passed, 82 total` y `"numFailedTests": 0`, y la guarda
+  pasa: `$unexpected` queda vacío.
+- Antes de commitear, los conjuntos comparados a máquina y no a ojo: los títulos
+  de `itIfLinkable` + `itWithTimeTravel` de `src/data/repositories.contract.ts`
+  son **23** y la lista blanca **23**, idénticos en los dos sentidos. Y los 21
+  `○ skipped` del log del run rojo tienen entrada exacta en la lista, carácter a
+  carácter.
+- Las dos entradas de verificación que **no** salen en aquel log
+  (`resincronizar mantiene el sello que ya estaba` y `verificarse no reordena el
+  deck de quien se verifica`) no sobran: nacieron en `87ac129` y `427f3ad`,
+  posteriores al commit del run. La lista está escrita contra HEAD, que es
+  contra lo que se va a ejecutar.
+- El diff venía ya escrito y sin commitear de otra sesión; se revisó y se
+  commiteó tal cual, sin reescribirlo. `git add` con **ruta explícita**: este
+  worktree lo comparten varios bloques y `docs/plan/TODO.md` y
+  `docs/plan/todo/verificacion.md` siguen modificados sin commitear, son de
+  `verificacion`.
+- De propina sobre `ad69754`: `CI` y `Schema drift` verdes. `E2E Android` se
+  relanzó sobre este commit — el anterior sobre `5170f64` salió **cancelled**,
+  no rojo: `e2e.yml:10` lleva `cancel-in-progress: true` y el push lo mató.
