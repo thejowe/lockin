@@ -54,13 +54,19 @@ import type {
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 export {
+  AccountError,
+  completeAuthLink,
   currentUserId,
   ensureUserId,
+  getAccountState,
   linkEmailToCurrentUser,
+  sendPasswordReset,
+  setAccountPassword,
   signInWithEmail,
   signOut,
   signUpWithEmail,
 } from './auth';
+export type { AccountErrorReason, AccountKind, AccountState } from './auth';
 
 const MATCHES_TOPIC = 'matches';
 const messagesTopic = (matchId: string) => `messages:${matchId}`;

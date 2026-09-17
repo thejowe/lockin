@@ -1220,14 +1220,74 @@ el rol que usa `supabase db reset`, algo que desde este equipo no se puede
 comprobar (no hay Docker).
 
 
-### Orden `D2` — identidad real y recuperación de cuenta (Ola 2)
+### Orden `D2` — identidad real y recuperación de cuenta (Ola 2) — ENTREGADA 2026-09-17
 
-Sin etiqueta de herramienta: bloqueada por la Ola 1. Cuando se desbloquee va a
-`[Claude]` — decide el contrato de vinculación que luego consume `P1` en `perfil`,
-así que cruza bloques.
+- [x] **Hallazgo 1, el más grave del producto: las cuentas son irrecuperables por diseño.** Cada usuario es una sesión anónima o una cuenta sintética `device-…@lockin.app` cuya contraseña se genera en el dispositivo y vive en AsyncStorage (`src/data/supabase/auth.ts`). Desinstalar la app, limpiar el almacenamiento o cambiar de móvil deja el perfil, los matches y los chats huérfanos para siempre, sin ninguna vía de recuperación. `signInWithEmail` y `linkEmailToCurrentUser` existen y se reexportan en `src/data/supabase/index.ts`, pero **nada de `src/app/` los llama nunca** (verificado el 2026-09-17). Para un producto de matching esto destruye datos de usuario en silencio
+  - La capa de datos ya está: falta la pantalla, que es la orden `P1` de `perfil`. Ver "Lo que le queda a `perfil`" abajo
+- [x] Decidido y escrito **con el usuario** qué se le promete (2026-09-17). Las cuatro respuestas, que son ahora el contrato:
+  1. **Vincular email es opcional siempre.** No hay pantalla de login obligatoria, ni recordatorio, ni puerta antes del primer chat. Se entra anónimo y se asciende la cuenta cuando al usuario le apetece, desde Perfil. El arranque sin fricción de `CONCEPTO.md` queda intacto
+  2. **La cuenta solo es recuperable tras confirmar el correo.** `linkEmailToCurrentUser` no la salva: solo pide la confirmación. Hasta que el usuario pincha el enlace, `recoverable` sigue en `false` y la app no puede prometer nada. Es el estado `pending-email`
+  3. **Si el email ya está en uso, error claro y sin salida.** Nada de ofrecer entrar en la otra cuenta: eso abandonaría el perfil, los matches y los chats de este dispositivo, y no es algo que se proponga de pasada en un mensaje de error
+  4. **`signOut()` desde una cuenta sin email lanza**, salvo `signOut({ acceptDataLoss: true })`. El flag existe para que la pantalla tenga que haber avisado antes de pasarlo
+- [x] `getAccountState()` nuevo en `src/data/supabase/auth.ts`: devuelve `{ kind, userId, email, pendingEmail, recoverable }` con `kind` en `'none' | 'anonymous' | 'device' | 'pending-email' | 'email'`. Pregunta al servidor con `getUser()` y no a la sesión guardada, porque la confirmación del email ocurre fuera de la app —en el cliente de correo— y el JWT de `AsyncStorage` sigue diciendo lo de antes. Si el servidor no contesta se cae a la sesión local: sin red la pantalla queda desactualizada, no en blanco
+- [x] `AccountError` con `reason` tipado (`email-in-use`, `weak-password`, `invalid-email`, `same-password`, `too-many-emails`, `needs-confirmed-email`, `unrecoverable-account`, `no-session`, `offline`, `unknown`). Traduce los `code` de GoTrue una sola vez, para que `perfil` no tenga que hacer expresiones regulares sobre el texto inglés del servidor, que cambia entre versiones
+- [x] `linkEmailToCurrentUser(email)` — **cambió de firma**: ya no acepta contraseña. GoTrue exige el email verificado antes de aceptar una contraseña en una cuenta anónima ([docs de Anonymous Sign-Ins](https://supabase.com/docs/guides/auth/auth-anonymous)), así que el ascenso es de dos pasos. Nadie la consumía todavía, así que no rompe nada
+- [x] `setAccountPassword(password)` — el segundo paso, ya con el email confirmado. Es también el que cierra una recuperación de contraseña
+- [x] `sendPasswordReset(email)` — `resetPasswordForEmail` con `redirectTo` al `lockin://auth/callback` que ya usa el flujo de GitHub. No dice si el email existe: responder distinto sería contarle a cualquiera quién tiene cuenta en LockIn
+- [x] `completeAuthLink(url)` — cierra el enlace que llega por `lockin://auth/callback`. Acepta las dos formas (`?code=` PKCE y `?token_hash=&type=`), traduce los enlaces caducados en vez de dejar al usuario esperando, y cuando la cuenta ya es recuperable borra `DEVICE_ACCOUNT_KEY`: seguir guardándolo dejaría una segunda puerta a la misma cuenta escrita en claro en el teléfono
+- [x] `signOut({ acceptDataLoss })` — se niega si `recoverable` es `false`
+- [x] Encabezado de `auth.ts` reescrito con el ciclo de vida completo (anónima/dispositivo → `pending-email` → `email`) y con lo que hace falta tocar en el dashboard. Antes describía el estado provisional como si fuera definitivo
+- [x] Los nuevos exports salen por `src/data/supabase/index.ts`, tipos incluidos
+- [x] Cobertura en `src/data/supabase/auth.test.ts`: 43 casos, uno por rama nueva. `npm run typecheck`, `npm run lint` y `npm test -- --ci --runInBand` (743 pasados, 82 saltados, 0 rojos) verdes el 2026-09-17
 
-- [ ] **Hallazgo 1, el más grave del producto: las cuentas son irrecuperables por diseño.** Cada usuario es una sesión anónima o una cuenta sintética `device-…@lockin.app` cuya contraseña se genera en el dispositivo y vive en AsyncStorage (`src/data/supabase/auth.ts`). Desinstalar la app, limpiar el almacenamiento o cambiar de móvil deja el perfil, los matches y los chats huérfanos para siempre, sin ninguna vía de recuperación. `signInWithEmail` y `linkEmailToCurrentUser` existen y se reexportan en `src/data/supabase/index.ts:59-60`, pero **nada de `src/app/` los llama nunca** (verificado el 2026-09-17). Para un producto de matching esto destruye datos de usuario en silencio
-- [ ] Decidido y escrito **con el usuario** qué se le promete: qué pasa con la sesión anónima al vincular, si la vinculación es opcional o se pide en algún momento, y qué se ve cuando la recuperación falla. Es decisión de producto, no de implementación — no la improvises
+#### Falta que el usuario toque el dashboard de `grrzmzktrhksbttpbblg`
+
+Sin esto, el estado `pending-email` no existe y la promesa "solo tras confirmar
+el correo" es falsa:
+
+1. **Authentication → Providers → Email → "Confirm email": ACTIVAR.** Ojo al
+   efecto colateral: eso inutiliza el paso 3 de `auth.ts` (la cuenta de
+   dispositivo con email sintético, que necesita justo lo contrario). Mientras
+   "Anonymous sign-ins" siga activo el paso 3 no se ejecuta nunca, así que el
+   coste real es cero — pero si algún día se apagan los anónimos, el arranque se
+   queda sin red de seguridad y hay que replantearlo.
+2. **Authentication → Providers → Email → "Secure email change": DESACTIVAR.**
+   Con él, ascender una cuenta de dispositivo mandaría también una confirmación
+   al buzón `device-…@lockin.app`, que no existe, y el ascenso no se completaría
+   jamás.
+3. **Authentication → URL Configuration → Redirect URLs:** añadir
+   `lockin://auth/callback` si no está ya (lo usa el flujo de GitHub, así que es
+   probable que sí).
+
+#### Lo que le queda a `perfil` (orden `P1`, Ola 3)
+
+La capa de datos no necesita nada más. `P1` consume esto y nada de `src/data/`
+tiene que volver a tocarse:
+
+- `getAccountState()` decide qué se enseña. `kind === 'anonymous' | 'device'` →
+  el aviso de "tus datos viven solo en este teléfono" y el formulario de email.
+  `kind === 'pending-email'` → "te hemos mandado un correo a `pendingEmail`,
+  pínchalo"; **no** es el estado a salvo, no lo pintes como tal.
+  `kind === 'email'` → enseña `email` y ofrece cerrar sesión.
+- El ascenso son **dos pasos**, no uno: `linkEmailToCurrentUser(email)` primero
+  y `setAccountPassword(password)` solo después de que el usuario vuelva del
+  correo. Un formulario con email y contraseña juntos no funciona contra GoTrue.
+- El enlace del correo lo tiene que recoger la app: un handler de deep link que
+  llame a `completeAuthLink(url)` y repinte con el `AccountState` que devuelve.
+  `src/data/` no puede registrar ese handler — es `src/app/`, o sea tuyo.
+- Los errores vienen ya traducidos: `catch` → `error instanceof AccountError` →
+  `error.reason`. Enseña `error.message`, que está escrito en español y para el
+  usuario. Nada de mirar el texto del servidor.
+- Cerrar sesión desde `recoverable === false` lanza `reason:
+  'unrecoverable-account'`. Si el copy decide ofrecerlo igualmente, hay que pasar
+  `signOut({ acceptDataLoss: true })` **después** de una confirmación explícita,
+  no antes.
+- Vincular GitHub (`linkGithubIdentity`) **no** hace la cuenta recuperable y
+  `AccountState` no lo cuenta como tal: en LockIn es el distintivo de
+  verificación y la app no ofrece "entrar con GitHub". No lo presentes como una
+  vía de recuperación.
+- El copy que manda `P1`: no es "crear cuenta" ni "registrarse". La cuenta ya
+  existe; esto es **asegurarla**.
 
 ### Orden `D3` — consultas sin paginar y reloj del dispositivo (Ola 3)
 
