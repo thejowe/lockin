@@ -7,7 +7,6 @@ import { useEffect, useState } from 'react';
 
 import { useQuery, useRepositories } from '@/data';
 
-import { useResolvedOrPrevious } from './use-resolved-or-previous';
 
 import type { LockInSession, MatchWithProfile, Profile } from '@/data';
 
@@ -27,13 +26,13 @@ export function useSessionRoom(sessionId: string): SessionRoom {
   const sessionQuery = useQuery(`session:${sessionId}`, () =>
     repositories.sessions.getById(sessionId)
   );
-  const session = useResolvedOrPrevious(sessionQuery.data, sessionQuery.loading);
+  const session = sessionQuery.data;
   const matchId = session?.matchId ?? null;
 
   const matchQuery = useQuery(`match:${matchId ?? 'ninguno'}`, () =>
     matchId ? repositories.matches.getById(matchId) : Promise.resolve(null)
   );
-  const match = useResolvedOrPrevious(matchQuery.data, matchQuery.loading);
+  const match = matchQuery.data;
   const meQuery = useQuery('profile:current', () => repositories.profiles.getCurrent());
 
   const refreshSession = sessionQuery.refresh;

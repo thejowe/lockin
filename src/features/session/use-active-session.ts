@@ -19,7 +19,6 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { useQuery, useRepositories } from '@/data';
 
-import { useResolvedOrPrevious } from './use-resolved-or-previous';
 
 import type { LockInSession, MatchStreak } from '@/data';
 
@@ -40,9 +39,9 @@ export function useActiveSession(matchId: string): {
     repositories.sessions.getRatable(matchId)
   );
   const streaksQuery = useQuery('session:streaks', () => repositories.sessions.listStreaks());
-  const session = useResolvedOrPrevious(activeQuery.data, activeQuery.loading);
-  const ratable = useResolvedOrPrevious(ratableQuery.data, ratableQuery.loading);
-  const streaks = useResolvedOrPrevious(streaksQuery.data, streaksQuery.loading);
+  const session = activeQuery.data;
+  const ratable = ratableQuery.data;
+  const streaks = streaksQuery.data;
   const streak = streaks?.find((entry) => entry.matchId === matchId) ?? null;
   const refreshActive = activeQuery.refresh;
   const refreshRatable = ratableQuery.refresh;

@@ -21,7 +21,6 @@ import {
 } from '@/data';
 
 import { RATING_CLOSED, RATING_FAILED } from './rating';
-import { useResolvedOrPrevious } from './use-resolved-or-previous';
 
 import type { SessionAttendance, SessionRating } from '@/data';
 
@@ -45,8 +44,8 @@ export function useRating(sessionId: string): RatingState {
   const attendanceQuery = useQuery(`session:attendance:${sessionId}`, () =>
     repositories.sessions.listAttendance(sessionId)
   );
-  const rating = useResolvedOrPrevious(ratingQuery.data, ratingQuery.loading);
-  const attendance = useResolvedOrPrevious(attendanceQuery.data, attendanceQuery.loading);
+  const rating = ratingQuery.data;
+  const attendance = attendanceQuery.data;
 
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);

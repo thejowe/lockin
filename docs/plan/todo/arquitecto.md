@@ -365,9 +365,79 @@ pantallas, así que no es un cambio local por mucho que lo parezca.
 
 ### Orden `A1` — `useQuery` y el arranque del backend (Ola 1) — **[Claude]**
 
-- [ ] **Hallazgo 3: `useQuery` publica `data: null, loading: true` en cada relectura.** `src/data/provider.tsx` no tiene caché, ni deduplicado, ni coalescencia de peticiones. El parpadeo que provoca ya causó un fallo real de E2E, y el codebase **ya está esquivando la abstracción**: hay dos copias del mismo hook, `src/features/chat/use-conversation.ts` y `src/features/session/use-resolved-or-previous.ts`, y sus propios comentarios dicen que hay que borrar las dos cuando esto se arregle. Cada notificación de realtime dispara relecturas completas de match + mensajes + perfil
-- [ ] **Hallazgo 5: cambio silencioso de backend.** `src/data/active.ts` evalúa `hasSupabaseCredentials ? supabase : mock` **al cargar el módulo**. Una build de producción con el entorno mal configurado no falla: publica una app llena de perfiles de seed que parece funcionar perfectamente. Un backend ausente tiene que ser un fallo ruidoso, no un respaldo. Ojo al decidir el criterio: el respaldo al mock **sí** tiene que seguir funcionando en desarrollo y en tests — lo que no puede pasar es que sobreviva a una build de release
-- [ ] Borradas las dos copias de `useResolvedOrPrevious` que la Ola 1 deja sin razón de ser (están fuera del alcance de `arquitecto`: coordínalo antes de tocarlas, o déjalo anotado para `chat` y `sesiones`)
+- [x] **Hallazgo 3: `useQuery` publica `data: null, loading: true` en cada relectura.** `src/data/provider.tsx` no tenía caché, ni deduplicado, ni coalescencia de peticiones. El parpadeo que provocaba ya causó un fallo real de E2E, y el codebase **estaba esquivando la abstracción**: dos copias del mismo hook, `src/features/chat/use-conversation.ts` y `src/features/session/use-resolved-or-previous.ts`, con sus propios comentarios pidiendo borrarlas cuando esto se arreglara
+- [x] **Hallazgo 5: cambio silencioso de backend.** `src/data/active.ts` evaluaba `hasSupabaseCredentials ? supabase : mock` **al cargar el módulo**. Una build de producción con el entorno mal configurado no fallaba: publicaba una app llena de perfiles de seed que parecía funcionar perfectamente
+- [x] Borradas las dos copias de `useResolvedOrPrevious`. `grep -r "useResolvedOrPrevious" src/` no devuelve nada
+
+### Cómo quedó `A1` (2026-09-17)
+
+**Hallazgo 3 — `useQuery` con retención, `refreshing` y una petición por `key`.**
+
+`QueryState` gana un campo: `loading` es ahora "no hay dato todavía" (primera
+carga) y `refreshing` es "hay dato de antes y se está releyendo por encima". Las
+pantallas que hacen `loading && !match` siguen funcionando sin tocarlas, porque
+en la primera carga `loading` sigue siendo cierto y `data` sigue siendo `null`.
+
+Cuatro decisiones que conviene no deshacer sin leer esto:
+
+1. **Lo resuelto se guarda etiquetado con su `key` y su `requestKey`, y es el
+   render el que decide si sirve.** Así no hay que ajustar estado durante el
+   render (lo que hacían las copias) ni hace falta un `useEffect`, que llegaría
+   un render tarde: ese render tardío era justo el que desmontaba el compositor
+   y cerraba el teclado de Android. No existe ningún render intermedio con
+   `data: null`, y hay un test que lo comprueba render a render.
+2. **La retención no cruza el cambio de `key`.** Las copias sí lo hacían (solo
+   miraban `data`/`loading`), y eso enseñaba el perfil de Ana en el chat de
+   Bruno durante la carga. `use-session-room.ts` depende de ello: su `key` pasa
+   de `match:ninguno` a `match:<id>` cuando resuelve la sesión.
+3. **Un fallo no deja dato que retener.** El reintento vuelve a ser una primera
+   carga (`loading: true`, `error: null`), no una relectura con el hueco de la
+   petición que falló. Sin esto, `test/app/index.test.tsx` se iba a `/mode` al
+   pulsar Reintentar: veía `data: null` con `loading: false` y `error: null`, y
+   lo leía como "no hay onboarding".
+4. **El `nonce` y la petición en vuelo se comparten por `key`**, en un registro
+   particionado por juego de repositorios (`WeakMap<Repositories, …>`). Por eso
+   `useConversation` y la tarjeta de sesión, que piden `profile:current` por
+   separado en el mismo commit, hacen una sola lectura; y un `refresh` de
+   cualquiera relee para todos. La partición por repositorios es lo que evita
+   que dos árboles con `DataProvider` distintos —dos tests, o la app y un
+   Storybook— se pasen datos de un backend al otro. La entrada se borra cuando
+   se desmonta su último lector: nada sobrevive a la pantalla que lo pidió.
+
+**Hallazgo 5 — el backend ya no cambia en silencio.** `active.ts` exporta
+`backend: 'supabase' | 'mock'` y, si `__DEV__ === false` y faltan credenciales,
+lanza al cargar el módulo nombrando las que faltan y explicando que las
+`EXPO_PUBLIC_*` se inlinean en tiempo de build. En desarrollo el respaldo al
+mock sigue igual. Un `console.info` al arrancar dice qué backend está activo
+(se calla bajo Jest, donde lo importa cada archivo de suite y no aporta nada);
+se ve en la salida de `npx expo export`. La forma de `Repositories` no cambia.
+
+**Lo que se borró.** `src/features/session/use-resolved-or-previous.ts` entero, y
+la función privada del final de `use-conversation.ts` con su comentario de "esto
+es de `arquitecto`". Los cinco consumidores (`use-conversation.ts`,
+`use-active-session.ts`, `use-rating.ts`, `use-session-room.ts`) leen ya
+`query.data` directamente.
+
+Validación: `typecheck` y `lint` limpios; `npm run test:coverage -- --ci
+--runInBand` en verde (65 suites, 715 tests) sin tocar `jest.config.js`;
+`npx expo export --platform web` genera sus 15 rutas. 17 casos nuevos en
+`src/data/provider.test.tsx` y `src/data/active.test.ts`.
+
+#### Aviso para `calidad` — el suelo de cobertura está muy por debajo de lo real
+
+`jest.config.js` pide 89.82 / 82.56 / 91.49 / 91.38 y la suite mide ahora
+**93.58 / 87.56 / 92.76 / 95.38** (`data/` al 99.02 / 97.24 / 97.88 / 99.69, con
+`provider.tsx` al 100 en las cuatro). Es vuestro archivo y la orden `A1` dice
+explícitamente que no lo toque: ponedlo al día en `C1`.
+
+#### Ojo con `act()` en RNTL 14
+
+`rerender` y `unmount` de `renderHook` son **asíncronos**, igual que `render`.
+Sin `await`, dejan un `act()` abierto que se cuela en los tests siguientes del
+mismo archivo: el síntoma es "You seem to have overlapping act() calls" y un
+`result.current` que se queda en `null` hasta que `waitFor` agota su espera, en
+un test que pasa perfectamente si se corre solo. Costó un buen rato en
+`provider.test.tsx`.
 
 ### Orden `A2` — estado mutable de módulo (Ola 3)
 
