@@ -119,9 +119,39 @@ describe('elección de backend', () => {
 
     const active = loadActive();
     expect(active.activeBackend()).toBe('supabase');
-    expect(active.repositories.profiles).toBeDefined();
     expect(active.presence).toBeDefined();
     expect(active.videoSignal).toBeDefined();
+  });
+
+  it('la fachada sirve los seis repositorios, no solo el primero que se pida', () => {
+    setDev(true);
+    setCredentials(false);
+
+    const { repositories } = loadActive();
+
+    // Cada propiedad es un getter perezoso propio: si alguna se quedara sin
+    // resolver, la pantalla que la usa vería `undefined` en tiempo de ejecución.
+    expect(repositories.session).toBeDefined();
+    expect(repositories.profiles).toBeDefined();
+    expect(repositories.discovery).toBeDefined();
+    expect(repositories.matches).toBeDefined();
+    expect(repositories.messages).toBeDefined();
+    expect(repositories.sessions).toBeDefined();
+  });
+
+  it('la fachada de presencia y vídeo delega en el adaptador del backend', () => {
+    setDev(true);
+    setCredentials(false);
+
+    const { presence, videoSignal } = loadActive();
+    const handlers = { onPeers: () => {}, onConnection: () => {} };
+
+    // En memoria, entrar y salir de una sala no falla y devuelve la salida.
+    expect(typeof presence.join('s1', 'p1', handlers)).toBe('function');
+    expect(
+      typeof videoSignal.join('s1', 'p1', { onMessage: () => {}, onConnection: () => {} })
+    ).toBe('function');
+    videoSignal.send('s1', { kind: 'hangup', from: 'p1', payload: null });
   });
 
   it('deja rastro de qué backend está activo al arrancar', () => {

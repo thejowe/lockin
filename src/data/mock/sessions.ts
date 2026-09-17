@@ -5,6 +5,10 @@
  * contrato necesita a la otra persona del match aceptando una propuesta, y en
  * memoria no hay sesiones de verdad que abrir. La app usa siempre
  * `CURRENT_USER_ID`; los tests crean también el repositorio del otro lado.
+ *
+ * El store es el segundo argumento y por defecto es el compartido: los dos
+ * actores de un test tienen que ver los mismos datos, así que pasarles el mismo
+ * store es justo lo que los pone en el mismo match.
  */
 
 import {
@@ -22,8 +26,9 @@ import {
   isValidStartsAt,
 } from '../sessions';
 import { pairStreak } from '../streaks';
-import { createId, getState, mockNowMs, notify, subscribeTo } from './store';
+import { defaultMockStore } from './store';
 
+import type { MockStore } from './store';
 import type { LockInSessionRepository } from '../repositories';
 import type { LockInSession, SessionAttendance, SessionRatingEntry } from '../types';
 
@@ -31,21 +36,31 @@ export const sessionsTopic = (matchId: string) => `sessions:${matchId}`;
 
 const iso = (ms: number) => new Date(ms).toISOString();
 
-function membersOf(matchId: string): readonly string[] {
-  return getState().matches.find((match) => match.id === matchId)?.profileIds ?? [];
-}
+export function createMockSessionRepository(
+  actorId: string,
+  store: MockStore = defaultMockStore
+): LockInSessionRepository {
+  const getState = () => store.state;
+  const createId = (prefix: string) => store.createId(prefix);
+  const mockNowMs = () => store.nowMs();
+  const notify = (topic: string) => store.notify(topic);
+  const subscribeTo = (topic: string, listener: () => void) => store.subscribeTo(topic, listener);
 
-/**
- * Entraron las dos personas del match antes de que la sesión acabara. Es la
- * regla 4 de la spec: sin las dos no hubo sesión, así que no se pregunta nada.
- * Un match tiene siempre exactamente dos miembros.
- */
-function bothAttended(session: LockInSession): boolean {
-  const rows = getState().attendance.filter((row) => row.sessionId === session.id);
-  return membersOf(session.matchId).every((profileId) => attendedSession(rows, profileId, session));
-}
+  const membersOf = (matchId: string): readonly string[] =>
+    getState().matches.find((match) => match.id === matchId)?.profileIds ?? [];
 
-export function createMockSessionRepository(actorId: string): LockInSessionRepository {
+  /**
+   * Entraron las dos personas del match antes de que la sesión acabara. Es la
+   * regla 4 de la spec: sin las dos no hubo sesión, así que no se pregunta nada.
+   * Un match tiene siempre exactamente dos miembros.
+   */
+  const bothAttended = (session: LockInSession): boolean => {
+    const rows = getState().attendance.filter((row) => row.sessionId === session.id);
+    return membersOf(session.matchId).every((profileId) =>
+      attendedSession(rows, profileId, session)
+    );
+  };
+
   const isMember = (matchId: string) => membersOf(matchId).includes(actorId);
 
   /** La sesión si existe y es de un match del actor; si no, como si no existiera. */

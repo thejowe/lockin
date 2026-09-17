@@ -443,4 +443,103 @@ un test que pasa perfectamente si se corre solo. Costó un buen rato en
 
 Sin etiqueta de herramienta **a propósito**: está bloqueada por las olas 1 y 2.
 
-- [ ] **Hallazgo 7.** `src/data/mock/store.ts` guarda un `state` a nivel de módulo, y la implementación de Supabase mantiene listeners, canales y un `emittedLocally` con tope de 256 y desalojo FIFO (`src/data/supabase/index.ts:91-110`). Ese deduplicado es best-effort **por construcción**: una cuenta activa puede desalojar un marcador antes de que llegue su eco, y ahí empieza una tormenta de relecturas duplicadas. `DataProvider` sugiere que los repositorios son inyectables, pero son singletons creados al importar
+- [x] **Hallazgo 7.** `src/data/mock/store.ts` guarda un `state` a nivel de módulo, y la implementación de Supabase mantiene listeners, canales y un `emittedLocally` con tope de 256 y desalojo FIFO (`src/data/supabase/index.ts:91-110`). Ese deduplicado es best-effort **por construcción**: una cuenta activa puede desalojar un marcador antes de que llegue su eco, y ahí empieza una tormenta de relecturas duplicadas. `DataProvider` sugiere que los repositorios son inyectables, pero son singletons creados al importar
+
+#### Lo que rompió `A1` en CI, y cómo quedó (2026-09-17)
+
+`A1` se entregó con dos jobs rojos. Los dos eran suyos y se cerraron antes de
+empezar `A2`:
+
+- **Formato.** `use-active-session.ts` y `use-session-room.ts` se quedaron con
+  una línea en blanco de más donde estaba el import del hook borrado. En esta
+  máquina `format:check` da ~100 falsos por CRLF, así que el veredicto bueno es
+  el del job de Actions: nombra exactamente esos dos archivos.
+- **Export web.** La guarda del hallazgo 5 se evaluaba **en el cuerpo del
+  módulo**, y `npx expo export --platform web` compila sin ninguna variable de
+  entorno (`ci.yml:70`, job `build`, sin bloque `env:`) recorriendo los módulos
+  para descubrir las rutas. Resultado: el export moría con «LockIn no puede
+  arrancar sin backend» sin generar ni una ruta.
+
+El arreglo es **perezoso, no permisivo**: `repositories`, `presence` y
+`videoSignal` son fachadas de propiedades/métodos que resuelven el backend en el
+primer acceso real, y es ahí donde lanza. Una build de release mal configurada
+sigue reventando ruidosamente en cuanto pide un dato; el export vuelve a sacar
+sus 15 rutas. `backend` pasó a ser `activeBackend()` (resuelve igual); nadie
+fuera de `active.ts` y su test lo usaba. No se tocó `.github/workflows/`.
+
+### Cómo quedó `A2` (2026-09-17)
+
+**El estado dejó de ser del módulo y pasó a ser de la instancia.**
+
+*Mock.* `src/data/mock/store.ts` expone `createMockStore()`, que devuelve un
+`MockStore` con sus datos, su reloj (`nowMs`/`advanceClock`), su contador de ids
+y sus suscriptores. `createMockRepositories(store?)` y
+`createMockSessionRepository(actorId, store?)` construyen sobre el que se les
+pase. Sin argumento usan `defaultMockStore`, que es lo que hace la app y sobre
+lo que siguen operando `resetState()`, `advanceMockClock()` y `mockNowMs()` con
+su forma exacta: la suite de contrato, las de sesiones y `CURRENT_USER_ID` no
+cambian ni una línea.
+
+*Supabase.* `createSupabaseRepositories()` crea su propio `Notifier` con los
+`listeners`, los `channels` y las marcas de escritura propia. Dos instancias no
+comparten nada, así que un test puede aislarlas.
+
+**El `Set` de 256 con desalojo FIFO ya no existe.** Las marcas son ahora un
+`Map<id, instante de caducidad>` con `EMITTED_MARK_TTL_MS = 30_000`: caducan
+**por tiempo y solo por tiempo**, así que una ráfaga de escrituras no puede
+tirar la marca de una fila cuyo eco aún viene de camino — que era justo el
+mecanismo que, combinado con el hallazgo 3, produjo el incidente del chat. La
+purga recorre el mapa en cada marca nueva y tira solo lo ya caducado.
+
+**`provider.tsx` no hizo falta tocarlo.** `A1` ya lo dejó particionado por juego
+de repositorios con un `WeakMap<Repositories, …>`, que es exactamente lo que
+pedía el hallazgo; la parte de "singletons creados al importar" la resolvió la
+fachada perezosa de `active.ts`.
+
+#### Archivos tocados fuera del alcance declarado de `A2`
+
+La orden listaba `src/data/mock/store.ts` y «solo el bloque de
+listeners/canales/`emittedLocally`» de `src/data/supabase/index.ts`. Eso no
+alcanza para lo que pide el hallazgo, porque los consumidores del estado están
+en otros archivos:
+
+- `src/data/mock/index.ts` y `src/data/mock/sessions.ts`: los repositorios eran
+  constantes de módulo que llamaban a `getState()`/`notify()`/`subscribeTo()`
+  directamente. Ahora se construyen dentro de la fábrica, cerrando sobre el
+  store. Son archivos de `arquitecto` y no están en el alcance de ninguna orden
+  de la Ola 3.
+- `src/data/supabase/index.ts`: por lo mismo, los cinco repositorios se movieron
+  dentro de `createSupabaseRepositories()`. `lastMessagesByMatch` y
+  `resolveMatches` no tocan estado compartido y se quedaron a nivel de módulo,
+  justo encima de la fábrica. **Ojo, `datos`: la orden `D3` edita este archivo y
+  el contenido está reindentado un nivel.**
+
+Sin scope creep: no se tocó `.github/workflows/`, ni `src/app/`, ni
+`src/features/`.
+
+#### Recado para `perfil` (orden `P1`)
+
+`src/features/profile/github-verification.test.tsx:36` lleva el comentario
+«`createMockRepositories()` devuelve siempre los mismos objetos de módulo». Ya
+no es cierto: cada llamada devuelve objetos nuevos (los datos sí se comparten,
+vía `defaultMockStore`). El test pasa igual y el `jest.restoreAllMocks()` sigue
+haciendo falta, pero el porqué es otro. No lo toco: ese archivo es vuestro.
+
+#### Verificación de esta pasada
+
+- `npm run typecheck` y `npx eslint src --no-cache` limpios.
+- `npm run test:coverage -- --ci --runInBand` en verde: 71 suites, 787 tests,
+  sin tocar `jest.config.js`.
+- `npx expo export --platform web` genera sus 15 rutas, y con
+  `EXPO_NO_DOTENV=1` —sin ninguna credencial, como en CI— también.
+- Tests nuevos: `src/data/mock/instances.test.ts` (4 casos: datos, suscriptores
+  y reloj aislados, más el store por defecto que se sigue compartiendo) y
+  `src/data/supabase/instances.test.ts` (3 casos: listeners y canales propios,
+  marcas propias, y una ráfaga de 301 escrituras que antes habría desalojado la
+  primera marca y ahora no).
+
+#### Aviso para `calidad` — el suelo de cobertura sigue por debajo de lo real
+
+`jest.config.js` pide **93.58 / 87.56 / 92.76 / 95.38** y la suite mide ahora
+**93.94 / 87.91 / 93.64 / 95.81**. Es vuestro archivo: subidlo cuando toque.
+

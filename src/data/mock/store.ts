@@ -3,6 +3,12 @@
  *
  * Vive mientras dura la sesión de la app: al recargar se vuelve a las semillas.
  * Es deliberado — el MVP no promete persistencia; eso llega con Supabase.
+ *
+ * El estado es de un **store**, no del módulo: `createMockStore()` devuelve uno
+ * aislado con sus datos, su reloj, su contador de ids y sus suscriptores, y
+ * `createMockRepositories(store)` construye sobre él. `defaultMockStore` es el
+ * que usa la app y sobre el que operan `resetState()`, `advanceMockClock()` y
+ * `mockNowMs()`, que conservan su forma de siempre.
  */
 
 import { SEED_PROFILES, SEED_RECIPROCAL_IDS } from './seed';
@@ -52,69 +58,124 @@ function initialState(): MockState {
   };
 }
 
-let state: MockState = initialState();
+/**
+ * Un juego aislado de estado mock: datos, reloj, contador de ids y
+ * suscriptores.
+ *
+ * Todo esto vivía en variables de módulo, así que dos `createMockRepositories()`
+ * del mismo proceso compartían hasta el último `Set` de listeners y no había
+ * forma limpia de aislar dos instancias en un test. Ahora el estado es del
+ * store, y el store se le pasa a la fábrica.
+ */
+export interface MockStore {
+  /** Los datos. Es un getter: `reset()` sustituye el objeto entero. */
+  readonly state: MockState;
+  /** Reloj de las sesiones: `Date.now()` más el desfase acumulado. */
+  nowMs(): number;
+  /** Adelanta el reloj de las sesiones. Solo para tests. */
+  advanceClock(ms: number): void;
+  /** Vuelve al estado semilla y avisa a todos los suscriptores. */
+  reset(): void;
+  createId(prefix: string): string;
+  subscribeTo(topic: string, listener: () => void): () => void;
+  notify(topic: string): void;
+}
 
-export function getState(): MockState {
-  return state;
+export function createMockStore(): MockStore {
+  let state = initialState();
+
+  /**
+   * Reloj de las sesiones. Solo lo usan las sesiones; el resto del mock sigue
+   * con `nowIso()`. Existe para que la suite de contrato pueda hacer caducar una
+   * propuesta o terminar una sesión sin esperar media hora.
+   */
+  let clockOffsetMs = 0;
+  let sequence = 0;
+
+  /**
+   * Suscripciones por tema. `matches` para la lista de matches,
+   * `messages:<matchId>` para una conversación concreta.
+   */
+  const listeners = new Map<string, Set<() => void>>();
+
+  const notify = (topic: string): void => {
+    listeners.get(topic)?.forEach((listener) => listener());
+  };
+
+  return {
+    get state() {
+      return state;
+    },
+
+    nowMs: () => Date.now() + clockOffsetMs,
+
+    advanceClock(ms) {
+      clockOffsetMs += ms;
+    },
+
+    reset() {
+      state = initialState();
+      clockOffsetMs = 0;
+      listeners.forEach((set) => set.forEach((listener) => listener()));
+    },
+
+    createId(prefix) {
+      sequence += 1;
+      return `${prefix}-${Date.now().toString(36)}-${sequence}`;
+    },
+
+    subscribeTo(topic, listener) {
+      const set = listeners.get(topic) ?? new Set<() => void>();
+      set.add(listener);
+      listeners.set(topic, set);
+
+      return () => {
+        set.delete(listener);
+        if (set.size === 0) listeners.delete(topic);
+      };
+    },
+
+    notify,
+  };
 }
 
 /**
- * Reloj de las sesiones del mock. Solo lo usan las sesiones; el resto del mock
- * sigue con `nowIso()`. Existe para que la suite de contrato pueda hacer caducar
- * una propuesta o terminar una sesión sin esperar media hora.
+ * El store que usa la app, y el que usan las suites que no piden otro.
+ *
+ * `resetState()`, `advanceMockClock()` y `mockNowMs()` operan sobre él: son la
+ * API que consumen la suite de contrato y las de sesiones, y conservan su forma
+ * exacta. Un test que quiera aislamiento pide su propio `createMockStore()` y se
+ * lo pasa a `createMockRepositories(store)`.
  */
-let clockOffsetMs = 0;
+export const defaultMockStore: MockStore = createMockStore();
 
-export function mockNowMs(): number {
-  return Date.now() + clockOffsetMs;
+export function getState(): MockState {
+  return defaultMockStore.state;
 }
 
-/** Adelanta el reloj de las sesiones. Solo para tests. */
+export function mockNowMs(): number {
+  return defaultMockStore.nowMs();
+}
+
+/** Adelanta el reloj de las sesiones del store por defecto. Solo para tests. */
 export function advanceMockClock(ms: number): void {
-  clockOffsetMs += ms;
+  defaultMockStore.advanceClock(ms);
 }
 
 /** Vuelve al estado semilla. Pensado para tests — no lo llames desde una pantalla. */
 export function resetState(): void {
-  state = initialState();
-  clockOffsetMs = 0;
-  notifyAll();
-}
-
-let sequence = 0;
-
-export function createId(prefix: string): string {
-  sequence += 1;
-  return `${prefix}-${Date.now().toString(36)}-${sequence}`;
-}
-
-export function nowIso(): string {
-  return new Date().toISOString();
+  defaultMockStore.reset();
 }
 
 /**
- * Suscripciones por tema. `matches` para la lista de matches,
- * `messages:<matchId>` para una conversación concreta.
+ * Marca de tiempo de las escrituras del mock.
+ *
+ * No pasa por el reloj del store a propósito: `advanceClock()` existe para
+ * hacer caducar sesiones, y adelantarlo no debería reescribir el `createdAt` de
+ * un perfil. Es el comportamiento que ya tenía.
  */
-const listeners = new Map<string, Set<() => void>>();
-
-export function subscribeTo(topic: string, listener: () => void): () => void {
-  const set = listeners.get(topic) ?? new Set();
-  set.add(listener);
-  listeners.set(topic, set);
-
-  return () => {
-    set.delete(listener);
-    if (set.size === 0) listeners.delete(topic);
-  };
-}
-
-export function notify(topic: string): void {
-  listeners.get(topic)?.forEach((listener) => listener());
-}
-
-function notifyAll(): void {
-  listeners.forEach((set) => set.forEach((listener) => listener()));
+export function nowIso(): string {
+  return new Date().toISOString();
 }
 
 /** Iniciales a partir del nombre: "Núria Bosch" -> "NB". */

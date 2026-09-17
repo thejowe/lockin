@@ -8,16 +8,15 @@
 
 import {
   CURRENT_USER_ID,
-  createId,
-  getState,
+  defaultMockStore,
   initialsFrom,
   matchesMode,
-  notify,
   nowIso,
   resolveMatchMode,
-  subscribeTo,
 } from './store';
 import { createMockSessionRepository } from './sessions';
+
+import type { MockStore } from './store';
 
 import type {
   DiscoveryRepository,
@@ -41,277 +40,298 @@ import type {
   Session,
 } from '../types';
 
-export { advanceMockClock, CURRENT_USER_ID, mockNowMs, resetState } from './store';
+export {
+  advanceMockClock,
+  createMockStore,
+  CURRENT_USER_ID,
+  defaultMockStore,
+  mockNowMs,
+  resetState,
+} from './store';
+export type { MockStore } from './store';
 export { createMockSessionRepository, sessionsTopic } from './sessions';
 
 const MATCHES_TOPIC = 'matches';
 const messagesTopic = (matchId: string) => `messages:${matchId}`;
 
-function currentProfile(): Profile | null {
-  const state = getState();
-  return state.session.profileId ? (state.profiles.get(state.session.profileId) ?? null) : null;
-}
+/**
+ * Construye un juego de repositorios sobre un store.
+ *
+ * Sin argumento usa `defaultMockStore`, que es lo que hace la app y lo que
+ * esperan `resetState()`, `advanceMockClock()` y las suites que las usan. Con un
+ * `createMockStore()` propio, dos juegos del mismo proceso no comparten ni
+ * datos, ni reloj, ni suscriptores.
+ */
+export function createMockRepositories(store: MockStore = defaultMockStore): Repositories {
+  const getState = () => store.state;
+  const createId = (prefix: string) => store.createId(prefix);
+  const notify = (topic: string) => store.notify(topic);
+  const subscribeTo = (topic: string, listener: () => void) => store.subscribeTo(topic, listener);
 
-/** El modo con el que filtrar: el activo de la sesión, o el declarado en el perfil. */
-function effectiveMode(): ModePreference | undefined {
-  const state = getState();
-  return state.session.activeMode ?? currentProfile()?.lookingFor;
-}
-
-function lastMessageOf(matchId: string): Message | null {
-  const messages = getState().messages.filter((message) => message.matchId === matchId);
-  return messages.length > 0 ? messages[messages.length - 1] : null;
-}
-
-function withCounterpart(match: Match): MatchWithProfile | null {
-  const state = getState();
-  const counterpartId = match.profileIds.find((id) => id !== CURRENT_USER_ID);
-  const counterpart = counterpartId ? state.profiles.get(counterpartId) : undefined;
-  if (!counterpart) return null;
-
-  return { ...match, counterpart, lastMessage: lastMessageOf(match.id) };
-}
-
-const session: SessionRepository = {
-  async get(): Promise<Session> {
-    return { ...getState().session };
-  },
-
-  async setActiveMode(mode) {
+  function currentProfile(): Profile | null {
     const state = getState();
-    state.session = { ...state.session, activeMode: mode };
-    return { ...state.session };
-  },
+    return state.session.profileId ? (state.profiles.get(state.session.profileId) ?? null) : null;
+  }
 
-  async setProfileId(profileId) {
+  /** El modo con el que filtrar: el activo de la sesión, o el declarado en el perfil. */
+  function effectiveMode(): ModePreference | undefined {
     const state = getState();
-    state.session = { ...state.session, profileId };
-    return { ...state.session };
-  },
+    return state.session.activeMode ?? currentProfile()?.lookingFor;
+  }
 
-  async isOnboarded() {
-    const { session: current } = getState();
-    return current.profileId !== null && current.activeMode !== null;
-  },
-};
+  function lastMessageOf(matchId: string): Message | null {
+    const messages = getState().messages.filter((message) => message.matchId === matchId);
+    return messages.length > 0 ? messages[messages.length - 1] : null;
+  }
 
-const profiles: ProfileRepository = {
-  async getCurrent() {
-    return currentProfile();
-  },
-
-  async saveCurrent(input: ProfileInput) {
+  function withCounterpart(match: Match): MatchWithProfile | null {
     const state = getState();
-    const existing = currentProfile();
-    const timestamp = nowIso();
+    const counterpartId = match.profileIds.find((id) => id !== CURRENT_USER_ID);
+    const counterpart = counterpartId ? state.profiles.get(counterpartId) : undefined;
+    if (!counterpart) return null;
 
-    const profile: Profile = {
-      ...input,
-      id: existing?.id ?? CURRENT_USER_ID,
-      // Ausente significa «abierto a cualquiera»; ver `ProfileInput` en types.ts.
-      seekingSpecialties: input.seekingSpecialties ?? [],
-      avatar: {
-        initials: input.avatar?.initials ?? initialsFrom(input.name),
-        accent: input.avatar?.accent ?? existing?.avatar.accent ?? 'brass',
-      },
-      createdAt: existing?.createdAt ?? timestamp,
-      updatedAt: timestamp,
-      // NO sale de `input` — `ProfileInput` no lo tiene, y ese es el diseño.
-      // Se hereda del perfil que ya estaba: editar la ficha no desverifica.
-      githubVerification: existing?.githubVerification ?? null,
-    };
+    return { ...match, counterpart, lastMessage: lastMessageOf(match.id) };
+  }
 
-    state.profiles.set(profile.id, profile);
-    state.session = { ...state.session, profileId: profile.id };
-    notify(MATCHES_TOPIC);
+  const session: SessionRepository = {
+    async get(): Promise<Session> {
+      return { ...getState().session };
+    },
 
-    return profile;
-  },
+    async setActiveMode(mode) {
+      const state = getState();
+      state.session = { ...state.session, activeMode: mode };
+      return { ...state.session };
+    },
 
-  async getById(id) {
-    return getState().profiles.get(id) ?? null;
-  },
+    async setProfileId(profileId) {
+      const state = getState();
+      state.session = { ...state.session, profileId };
+      return { ...state.session };
+    },
 
-  async list(filter: ProfileFilter = {}) {
-    const excluded = new Set([CURRENT_USER_ID, ...(filter.excludeIds ?? [])]);
+    async isOnboarded() {
+      const { session: current } = getState();
+      return current.profileId !== null && current.activeMode !== null;
+    },
+  };
 
-    return [...getState().profiles.values()].filter((profile) => {
-      if (excluded.has(profile.id)) return false;
-      if (!matchesMode(profile, filter.mode)) return false;
-      if (filter.specialties?.length) {
-        return filter.specialties.some((specialty) => profile.specialties.includes(specialty));
-      }
-      return true;
-    });
-  },
+  const profiles: ProfileRepository = {
+    async getCurrent() {
+      return currentProfile();
+    },
 
-  /**
-   * Simulación, NO una verificación. No habla con GitHub: inventa un handle a
-   * partir del nombre para que las pantallas tengan los dos estados que pintar
-   * sin credenciales. El sello real solo lo puede encender Postgres, en
-   * `src/data/supabase/`. Mismo espíritu que el aviso de `store.ts` sobre que
-   * el MVP no promete persistencia.
-   */
-  async verifyGithub() {
-    const state = getState();
-    const existing = currentProfile();
-    if (!existing) throw new Error('No hay perfil que verificar todavía.');
+    async saveCurrent(input: ProfileInput) {
+      const state = getState();
+      const existing = currentProfile();
+      const timestamp = nowIso();
 
-    const handle = existing.name.trim().toLowerCase().split(/\s+/)[0] || 'usuario';
-    const profile: Profile = {
-      ...existing,
-      links: { ...existing.links, github: `https://github.com/${handle}` },
-      githubVerification: {
-        handle,
-        verifiedAt: existing.githubVerification?.verifiedAt ?? nowIso(),
-      },
-    };
+      const profile: Profile = {
+        ...input,
+        id: existing?.id ?? CURRENT_USER_ID,
+        // Ausente significa «abierto a cualquiera»; ver `ProfileInput` en types.ts.
+        seekingSpecialties: input.seekingSpecialties ?? [],
+        avatar: {
+          initials: input.avatar?.initials ?? initialsFrom(input.name),
+          accent: input.avatar?.accent ?? existing?.avatar.accent ?? 'brass',
+        },
+        createdAt: existing?.createdAt ?? timestamp,
+        updatedAt: timestamp,
+        // NO sale de `input` — `ProfileInput` no lo tiene, y ese es el diseño.
+        // Se hereda del perfil que ya estaba: editar la ficha no desverifica.
+        githubVerification: existing?.githubVerification ?? null,
+      };
 
-    state.profiles.set(profile.id, profile);
-    return profile;
-  },
+      state.profiles.set(profile.id, profile);
+      state.session = { ...state.session, profileId: profile.id };
+      notify(MATCHES_TOPIC);
 
-  async unverifyGithub() {
-    const state = getState();
-    const existing = currentProfile();
-    if (!existing) throw new Error('No hay perfil que desverificar todavía.');
+      return profile;
+    },
 
-    const links = { ...existing.links };
-    delete links.github;
+    async getById(id) {
+      return getState().profiles.get(id) ?? null;
+    },
 
-    const profile: Profile = { ...existing, links, githubVerification: null };
-    state.profiles.set(profile.id, profile);
-    return profile;
-  },
+    async list(filter: ProfileFilter = {}) {
+      const excluded = new Set([CURRENT_USER_ID, ...(filter.excludeIds ?? [])]);
 
-  /**
-   * Devuelve el perfil tal cual. No hay proveedor del que releer nada: el sello
-   * del mock se lo inventa `verifyGithub()` a partir del nombre, así que no
-   * puede quedarse obsoleto por su cuenta como sí le pasa al de verdad cuando
-   * alguien se renombra en GitHub.
-   */
-  async refreshGithubVerification() {
-    const existing = currentProfile();
-    if (!existing) throw new Error('No hay perfil que sincronizar todavía.');
-    return existing;
-  },
-};
+      return [...getState().profiles.values()].filter((profile) => {
+        if (excluded.has(profile.id)) return false;
+        if (!matchesMode(profile, filter.mode)) return false;
+        if (filter.specialties?.length) {
+          return filter.specialties.some((specialty) => profile.specialties.includes(specialty));
+        }
+        return true;
+      });
+    },
 
-const discovery: DiscoveryRepository = {
-  async getDeck(filter: ProfileFilter = {}) {
-    const decided = [...getState().decisions.keys()];
+    /**
+     * Simulación, NO una verificación. No habla con GitHub: inventa un handle a
+     * partir del nombre para que las pantallas tengan los dos estados que pintar
+     * sin credenciales. El sello real solo lo puede encender Postgres, en
+     * `src/data/supabase/`. Mismo espíritu que el aviso de `store.ts` sobre que
+     * el MVP no promete persistencia.
+     */
+    async verifyGithub() {
+      const state = getState();
+      const existing = currentProfile();
+      if (!existing) throw new Error('No hay perfil que verificar todavía.');
 
-    const mode = filter.mode ?? effectiveMode();
-    const viewer = currentProfile();
-    const candidates = await profiles.list({
-      ...filter,
-      mode,
-      excludeIds: [...decided, ...(filter.excludeIds ?? [])],
-    });
-    // Espejo del criterio de producto en DiscoveryRepository.getDeck.
-    const score = (other: Profile): number => {
-      if (
-        !viewer ||
-        mode === 'lockin' ||
-        viewer.lookingFor === 'lockin' ||
-        other.lookingFor === 'lockin'
-      )
-        return 0;
-      return (
-        Number(viewer.specialties.some((tag) => other.seekingSpecialties.includes(tag))) +
-        Number(other.specialties.some((tag) => viewer.seekingSpecialties.includes(tag)))
+      const handle = existing.name.trim().toLowerCase().split(/\s+/)[0] || 'usuario';
+      const profile: Profile = {
+        ...existing,
+        links: { ...existing.links, github: `https://github.com/${handle}` },
+        githubVerification: {
+          handle,
+          verifiedAt: existing.githubVerification?.verifiedAt ?? nowIso(),
+        },
+      };
+
+      state.profiles.set(profile.id, profile);
+      return profile;
+    },
+
+    async unverifyGithub() {
+      const state = getState();
+      const existing = currentProfile();
+      if (!existing) throw new Error('No hay perfil que desverificar todavía.');
+
+      const links = { ...existing.links };
+      delete links.github;
+
+      const profile: Profile = { ...existing, links, githubVerification: null };
+      state.profiles.set(profile.id, profile);
+      return profile;
+    },
+
+    /**
+     * Devuelve el perfil tal cual. No hay proveedor del que releer nada: el sello
+     * del mock se lo inventa `verifyGithub()` a partir del nombre, así que no
+     * puede quedarse obsoleto por su cuenta como sí le pasa al de verdad cuando
+     * alguien se renombra en GitHub.
+     */
+    async refreshGithubVerification() {
+      const existing = currentProfile();
+      if (!existing) throw new Error('No hay perfil que sincronizar todavía.');
+      return existing;
+    },
+  };
+
+  const discovery: DiscoveryRepository = {
+    async getDeck(filter: ProfileFilter = {}) {
+      const decided = [...getState().decisions.keys()];
+
+      const mode = filter.mode ?? effectiveMode();
+      const viewer = currentProfile();
+      const candidates = await profiles.list({
+        ...filter,
+        mode,
+        excludeIds: [...decided, ...(filter.excludeIds ?? [])],
+      });
+      // Espejo del criterio de producto en DiscoveryRepository.getDeck.
+      const score = (other: Profile): number => {
+        if (
+          !viewer ||
+          mode === 'lockin' ||
+          viewer.lookingFor === 'lockin' ||
+          other.lookingFor === 'lockin'
+        )
+          return 0;
+        return (
+          Number(viewer.specialties.some((tag) => other.seekingSpecialties.includes(tag))) +
+          Number(other.specialties.some((tag) => viewer.seekingSpecialties.includes(tag)))
+        );
+      };
+      return candidates.sort(
+        (a, b) => score(b) - score(a) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
       );
-    };
-    return candidates.sort(
-      (a, b) => score(b) - score(a) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
-    );
-  },
+    },
 
-  async recordDecision(profileId: string, decision: Decision): Promise<DecisionResult> {
-    const state = getState();
-    state.decisions.set(profileId, decision);
+    async recordDecision(profileId: string, decision: Decision): Promise<DecisionResult> {
+      const state = getState();
+      state.decisions.set(profileId, decision);
 
-    const other = state.profiles.get(profileId);
-    const isReciprocal = decision === 'like' && state.incomingLikes.has(profileId);
-    if (!other || !isReciprocal) return { decision, match: null };
+      const other = state.profiles.get(profileId);
+      const isReciprocal = decision === 'like' && state.incomingLikes.has(profileId);
+      if (!other || !isReciprocal) return { decision, match: null };
 
-    const match: Match = {
-      id: createId('match'),
-      profileIds: [CURRENT_USER_ID, other.id],
-      mode: resolveMatchMode(effectiveMode() ?? 'ambos', other.lookingFor),
-      createdAt: nowIso(),
-      lastMessageAt: null,
-    };
+      const match: Match = {
+        id: createId('match'),
+        profileIds: [CURRENT_USER_ID, other.id],
+        mode: resolveMatchMode(effectiveMode() ?? 'ambos', other.lookingFor),
+        createdAt: nowIso(),
+        lastMessageAt: null,
+      };
 
-    state.matches.push(match);
-    notify(MATCHES_TOPIC);
+      state.matches.push(match);
+      notify(MATCHES_TOPIC);
 
-    return { decision, match };
-  },
+      return { decision, match };
+    },
 
-  async listDecided() {
-    return [...getState().decisions.keys()];
-  },
-};
+    async listDecided() {
+      return [...getState().decisions.keys()];
+    },
+  };
 
-const matches: MatchRepository = {
-  async list() {
-    return getState()
-      .matches.map(withCounterpart)
-      .filter((match): match is MatchWithProfile => match !== null)
-      .sort((a, b) =>
-        (b.lastMessageAt ?? b.createdAt).localeCompare(a.lastMessageAt ?? a.createdAt)
-      );
-  },
+  const matches: MatchRepository = {
+    async list() {
+      return getState()
+        .matches.map(withCounterpart)
+        .filter((match): match is MatchWithProfile => match !== null)
+        .sort((a, b) =>
+          (b.lastMessageAt ?? b.createdAt).localeCompare(a.lastMessageAt ?? a.createdAt)
+        );
+    },
 
-  async getById(matchId) {
-    const match = getState().matches.find((candidate) => candidate.id === matchId);
-    return match ? withCounterpart(match) : null;
-  },
+    async getById(matchId) {
+      const match = getState().matches.find((candidate) => candidate.id === matchId);
+      return match ? withCounterpart(match) : null;
+    },
 
-  subscribe(listener) {
-    return subscribeTo(MATCHES_TOPIC, listener);
-  },
-};
+    subscribe(listener) {
+      return subscribeTo(MATCHES_TOPIC, listener);
+    },
+  };
 
-const messages: MessageRepository = {
-  async listByMatch(matchId) {
-    return getState().messages.filter((message) => message.matchId === matchId);
-  },
+  const messages: MessageRepository = {
+    async listByMatch(matchId) {
+      return getState().messages.filter((message) => message.matchId === matchId);
+    },
 
-  async send({ matchId, body }: MessageInput) {
-    const state = getState();
-    const message: Message = {
-      id: createId('message'),
-      matchId,
-      senderId: CURRENT_USER_ID,
-      body,
-      sentAt: nowIso(),
-    };
+    async send({ matchId, body }: MessageInput) {
+      const state = getState();
+      const message: Message = {
+        id: createId('message'),
+        matchId,
+        senderId: CURRENT_USER_ID,
+        body,
+        sentAt: nowIso(),
+      };
 
-    state.messages.push(message);
+      state.messages.push(message);
 
-    const match = state.matches.find((candidate) => candidate.id === matchId);
-    if (match) match.lastMessageAt = message.sentAt;
+      const match = state.matches.find((candidate) => candidate.id === matchId);
+      if (match) match.lastMessageAt = message.sentAt;
 
-    notify(messagesTopic(matchId));
-    notify(MATCHES_TOPIC);
+      notify(messagesTopic(matchId));
+      notify(MATCHES_TOPIC);
 
-    return message;
-  },
+      return message;
+    },
 
-  subscribe(matchId, listener) {
-    return subscribeTo(messagesTopic(matchId), listener);
-  },
-};
+    subscribe(matchId, listener) {
+      return subscribeTo(messagesTopic(matchId), listener);
+    },
+  };
 
-export function createMockRepositories(): Repositories {
   return {
     session,
     profiles,
     discovery,
     matches,
     messages,
-    sessions: createMockSessionRepository(CURRENT_USER_ID),
+    sessions: createMockSessionRepository(CURRENT_USER_ID, store),
   };
 }
