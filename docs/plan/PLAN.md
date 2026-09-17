@@ -214,6 +214,37 @@ nadie lo descubra a mitad:
 4. `calidad` va incorporando cobertura de lo que se vaya fusionando.
 5. Integración real de `datos` con Supabase en cuanto el usuario tenga las credenciales.
 
+## Saneamiento de arquitectura (auditoría del 2026-09-17)
+
+Siete problemas de arquitectura detectados el 2026-09-17 y verificados contra el
+código el mismo día. **No son un bloque nuevo**: se reparten entre los bloques que
+ya existen, respetando su alcance de archivos. El reparto, las órdenes
+autocontenidas (una por pegar en una sesión nueva, Claude Code o Codex) y el
+criterio de terminado de cada una están en
+[`ordenes-arquitectura.md`](ordenes-arquitectura.md). El estado se marca en
+`TODO.md` → «Saneamiento de arquitectura» y en el `todo/<bloque>.md` de cada uno.
+
+| # | Hallazgo | Bloque | Orden | Ola |
+|---|---|---|---|---|
+| 1 | No hay identidad real: la cuenta es irrecuperable | `datos` + `perfil` | D2, P1 | 2, 3 |
+| 2 | Canales de vídeo y presencia sin autenticar | `datos` | D1 | 1 |
+| 3 | `useQuery` sin caché: parpadeo y dos hooks duplicados | `arquitecto` | A1 | 1 |
+| 4 | Dos implementaciones del dominio, contrato opt-in en CI | `calidad` | C1 | 2 |
+| 5 | Cambio silencioso de backend si faltan credenciales | `arquitecto` | A1 | 1 |
+| 6 | Consultas sin paginar y reloj del dispositivo | `datos` | D3 | 3 |
+| 7 | Estado mutable de módulo en los dos backends | `arquitecto` | A2 | 3 |
+
+Las olas van en orden y ningún par de órdenes de la misma ola toca los mismos
+archivos: **Ola 1** = `A1` + `D1` · **Ola 2** = `D2` + `C1` · **Ola 3** = `P1` +
+`D3` + `A2`, con `D3` **nunca** a la vez que `D2` (se pisan en
+`src/data/supabase/index.ts`). Solo la Ola 1 lleva etiqueta de herramienta; las
+demás están sin etiquetar porque están **bloqueadas por la ola anterior**, no
+porque falte decidirlas — la etiqueta que les toca está anotada en su bloque.
+
+Dos de estos hallazgos son de seguridad y van primero por eso: el 2 (cualquiera
+con un `sessionId` entra en la señalización WebRTC de otros) y el 1 (pérdida
+silenciosa de datos de usuario).
+
 ## Qué NO hacer
 
 - No adelantar trabajo de Fase 2+ (video real, salas grupales, Modo Talento, premium) — ver "Fuera de alcance" en `CONCEPTO.md`.

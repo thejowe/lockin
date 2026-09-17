@@ -2425,3 +2425,17 @@ de código de producto, y ninguno toca `src/`.
 - De propina sobre `ad69754`: `CI` y `Schema drift` verdes. `E2E Android` se
   relanzó sobre este commit — el anterior sobre `5170f64` salió **cancelled**,
   no rojo: `e2e.yml:10` lleva `cancel-in-progress: true` y el push lo mató.
+
+## Saneamiento de arquitectura (auditoría del 2026-09-17)
+
+Uno de los siete hallazgos de la auditoría del 2026-09-17 es de este bloque. La
+orden completa está en `docs/plan/ordenes-arquitectura.md` → `ORDEN C1`.
+
+### Orden `C1` — el contrato de Supabase no corre nunca (Ola 2)
+
+Sin etiqueta de herramienta: bloqueada por la Ola 1. Cuando se desbloquee va a
+`[Codex]` — alcance cerrado (`.github/workflows/`) y criterio objetivo.
+
+- [ ] **Hallazgo 4: hay dos implementaciones completas de las mismas reglas de negocio y lo único que las mantiene honestas no se ejecuta en CI.** `src/data/mock/` y `src/data/supabase/` implementan por separado ventanas de sesión, rachas, ranking y resolución de match. El árbitro es `src/data/repositories.contract.ts` (**48 215 bytes**), y su mitad de Supabase es opt-in con `LOCKIN_SUPABASE_CONTRACT=1`. `.github/workflows/contract.yml` se dispara **solo con `workflow_dispatch`** (verificado el 2026-09-17, `contract.yml:10-11`), con el motivo escrito en su cabecera: escribe usuarios y tarda más que CI. Resultado: el CI de cada push no ejecuta jamás la mitad de Supabase del contrato
+- [ ] El precedente que dice por qué esto cuesta dinero está ya en este archivo y en `TODO.md`: **`seeking_specialties` desaparecía en silencio al guardar contra Supabase mientras todos los tests por defecto seguían verdes**. No es un riesgo hipotético, pasó
+- [ ] Decidido el compromiso y escrito **dónde se decidió**: el motivo de `workflow_dispatch` es real (el contrato contra Supabase local levanta Docker y tarda), así que la salida no es «ponlo en cada push» sin más. Las palancas: un `schedule` nocturno, un `push` solo a la rama principal, o un job que corra únicamente los casos que cubren la deriva de mapeo. Elige una, escribe el porqué, y que quede un artefacto verde que se pueda citar

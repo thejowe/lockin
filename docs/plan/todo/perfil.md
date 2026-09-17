@@ -58,5 +58,21 @@
 
   Pero el verde **no lo cierra**, por lo que documenta `calidad.md:826`: el auto-capitalizado es intermitente (dos runs sobre el mismo commit `91e98a1`, uno murió en `verify.mjs:27` con `'Una Herramienta para Construir en equipo'` y el otro pasó de largo). Y de los tres verdes seguidos de `supabase` solo **uno** —`e0f4ca7`, run 34283362375— lleva el arreglo dentro: `78c90b8` y `0149634` salen de la rama de `calidad`, que forkeó antes. Un verde con ~50% de intermitencia medida es 50% de probabilidad de falso negativo. Lo que lo cierra es acumular pasadas de `supabase` sobre commits que contengan `48c1ac6`, cada una comparando la cadena exacta en `verify.mjs:27`; a cinco seguidas el falso negativo baja al 3%. Contador: **7** (2026-09-13) — runs [34283362375](https://github.com/thejowe/lockin/actions/runs/34283362375) (`e0f4ca7`), [34409724164](https://github.com/thejowe/lockin/actions/runs/34409724164) (`d4f0810`), [34411945877](https://github.com/thejowe/lockin/actions/runs/34411945877) (`ce7ccc6`), [34413652963](https://github.com/thejowe/lockin/actions/runs/34413652963) (`b863e5f`), [34415065566](https://github.com/thejowe/lockin/actions/runs/34415065566) (`a6e4c9b`), [34415842422](https://github.com/thejowe/lockin/actions/runs/34415842422) (`74897b4`), [34657015107](https://github.com/thejowe/lockin/actions/runs/34657015107) (`7f986af`). Los siete: job `E2E Android (supabase)` en `success`, `48c1ac6` ancestro del commit (`git merge-base --is-ancestor`), y la línea «Postgres: alta, perfil…» en el log, que `verify.mjs` solo imprime después de pasar la comparación de la línea 27. Ningún rojo de `supabase` con el arreglo dentro muere en `verify.mjs:27` (revisados los `failure` de los últimos 200 runs). Con ~50% de intermitencia, siete pasadas dejan el falso negativo por debajo del 1%: casilla cerrada. Si vuelve a salir `'Una Herramienta para Construir en equipo'`, se reabre. Los tests unitarios no pueden ayudar aquí —renderizan sin IME, así que prueban que los props están declarados, no que Android los respete.
 
+## Saneamiento de arquitectura (auditoría del 2026-09-17)
+
+Uno de los siete hallazgos de la auditoría del 2026-09-17 llega a este bloque: la
+mitad de UI del hallazgo 1 (cuentas irrecuperables). La orden completa está en
+`docs/plan/ordenes-arquitectura.md` → `ORDEN P1`.
+
+### Orden `P1` — pantalla de recuperación de cuenta (Ola 3)
+
+Sin etiqueta de herramienta, y no por falta de decisión: **está bloqueada por
+`D2`** (`datos`), que es quien fija el contrato de vinculación. Empezar la
+pantalla antes de eso es escribir UI contra una API que todavía no existe.
+
+- [ ] **Hallazgo 1, la parte que se ve.** Hoy no hay ninguna pantalla desde la que vincular un email a la cuenta ni recuperarla en otro dispositivo: `signInWithEmail` y `linkEmailToCurrentUser` están implementadas en `src/data/supabase/auth.ts` y reexportadas en `index.ts:59-60`, pero **ni un solo archivo de `src/app/` las llama** (verificado el 2026-09-17). El usuario que cambia de móvil pierde perfil, matches y chats sin aviso previo
+- [ ] Copy y UX decididos con el criterio de este bloque, no improvisados: cuándo se ofrece vincular (no en mitad del onboarding, que es donde más se abandona), qué se ve si la recuperación falla, y cómo se dice «esta cuenta solo vive en este teléfono» sin asustar a quien acaba de entrar
+- [ ] Lo de siempre de este bloque: labels de accesibilidad, tamaño táctil y contraste AA — `theme.test.ts` tiene `KNOWN_GAPS` vacío y se queda vacío
+
 ## Recuerda
 Nadie contrata a nadie: no metas campos de "salario" o "equity que ofrezco" — eso es Modo Talento, Fase 4, fuera de este MVP.

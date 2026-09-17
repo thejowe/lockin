@@ -162,3 +162,25 @@ querying schema`**. El seed ya las rellena a cadena vacía, y lleva anotado el
 
 - [x] Corregidos errores de arranque que enviaban al onboarding o abrían otra cuenta cuando fallaba la recuperación. Detalle y pruebas en `todo/arquitecto.md`.
 - [ ] Confirmar cierre y reapertura en el Expo Go del usuario.
+
+## Saneamiento de arquitectura (auditoría del 2026-09-17)
+
+Siete problemas de arquitectura detectados en la auditoría del 2026-09-17, todos
+verificados contra el código el mismo día. Las órdenes autocontenidas (alcance de
+archivos, criterio de terminado y olas) están en
+[`docs/plan/ordenes-arquitectura.md`](ordenes-arquitectura.md) — **ese archivo es
+el detalle; estas casillas son solo el estado**. El detalle accionable por bloque
+vive, como siempre, en `todo/<bloque>.md`.
+
+Las olas van en orden y ninguna orden de la misma ola toca los archivos de otra:
+**Ola 1** = A1 + D1 · **Ola 2** = D2 + C1 · **Ola 3** = P1 + D3 + A2 (`D3` no
+puede correr a la vez que `D2`). Por eso solo la Ola 1 lleva etiqueta de
+herramienta: las demás están bloqueadas por la ola anterior, no sin decidir.
+
+- [ ] **[Claude]** Hallazgo 3 + 5 — `useQuery` sin caché y cambio silencioso de backend (orden `A1`, `arquitecto`, Ola 1). `src/data/provider.tsx` publica `data: null, loading: true` en cada relectura: eso ya causó un fallo real de E2E y obligó a copiar el mismo hook dos veces (`src/features/chat/use-conversation.ts` y `src/features/session/use-resolved-or-previous.ts`, cuyos comentarios piden borrar ambas copias cuando esto se arregle). Y `src/data/active.ts` elige `hasSupabaseCredentials ? supabase : mock` al cargar el módulo, así que una build de producción mal configurada no falla: publica una app llena de perfiles de seed que parece funcionar. Es `[Claude]` porque cambia la API que consumen todas las pantallas y toca archivos de `chat` y `sesiones`
+- [ ] **[Codex]** Hallazgo 2 — canales de vídeo y presencia sin autenticar (orden `D1`, `datos`, Ola 1). `client.channel('lockin:video:<sessionId>')` en `src/data/supabase/video-signal.ts` y `lockin:presence:<sessionId>` en `presence.ts` son broadcast público: sin `config: { private: true }` y sin una sola política de Realtime Authorization en `supabase/migrations/`. Como cualquiera puede darse de alta anónimamente, quien conozca o adivine un `sessionId` entra en la señalización WebRTC, puede inyectar una `offer` y leer la presencia. **Es el único camino que se salta el modelo de RLS que protege todas las tablas**
+- [ ] Hallazgo 1 — no hay identidad real, la cuenta es irrecuperable (orden `D2`, `datos`, Ola 2; bloqueada por la Ola 1). Cada usuario es una sesión anónima o una cuenta sintética `device-…@lockin.app` cuya contraseña se genera en el dispositivo y se guarda en AsyncStorage. Desinstalar, limpiar datos o cambiar de móvil deja perfil, matches y chats huérfanos para siempre. `signInWithEmail`/`linkEmailToCurrentUser` existen en `src/data/supabase/auth.ts` y se reexportan en `index.ts`, pero **nada de `src/app/` los llama nunca** (comprobado el 2026-09-17). Para un producto de matching es el problema más grave: destruye datos de usuario en silencio
+- [ ] Hallazgo 4 — dos implementaciones del dominio y el contrato de Supabase no corre nunca en CI (orden `C1`, `calidad`, Ola 2; bloqueada por la Ola 1). `src/data/mock/` y `src/data/supabase/` implementan por separado ventanas de sesión, rachas, ranking y resolución de match, y lo único que las mantiene honestas es `src/data/repositories.contract.ts` (48 KB). Su mitad de Supabase es opt-in (`LOCKIN_SUPABASE_CONTRACT=1`) y `.github/workflows/contract.yml` es **`workflow_dispatch` a secas**, así que el CI de cada push no la ejecuta jamás. Precedente: `seeking_specialties` desaparecía al guardar contra Supabase mientras todos los tests por defecto seguían verdes
+- [ ] Hallazgo 6 — consultas sin paginar y reloj del dispositivo (orden `D3`, `datos`, Ola 3). `matches.list()` trae todos los matches sin paginación; las vistas previas del último mensaje se reconstruyen en el cliente trayendo los `RECENT_MESSAGES_WINDOW = 200` mensajes más recientes y agrupándolos, documentado como «correcto salvo que alguien tenga más de 200». `getDeck` aplica `excludeIds` en JS **después** de la página de 50 filas del RPC, así que las páginas encogen de forma impredecible. Y `sessions.getActive` decide si una sesión está viva con `Date.now()`, cuando `serverNow()` existe justo porque ese reloj no es de fiar
+- [ ] Hallazgo 7 — estado mutable de módulo en los dos backends (orden `A2`, `arquitecto`, Ola 3). `src/data/mock/store.ts` guarda un `state` de módulo, y la implementación de Supabase mantiene listeners, canales y un `emittedLocally` tope 256 con desalojo FIFO. Ese deduplicado es best-effort **por construcción**: una cuenta activa puede desalojar un marcador antes de que llegue su eco, y eso dispara una tormenta de relecturas duplicadas. `DataProvider` sugiere inyectabilidad, pero los repositorios son singletons creados al importar
+- [ ] Hallazgo 1 (parte de UI) — pantalla de recuperación de cuenta (orden `P1`, `perfil`, Ola 3; **bloqueada por `D2`**, que es quien decide el contrato de vinculación)

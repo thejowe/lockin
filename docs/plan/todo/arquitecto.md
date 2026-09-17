@@ -354,3 +354,23 @@ que toca es cubrir lo que entró con `696408a`.
 
 Validación: `typecheck` detecta errores ajenos a este cambio en la integración de GitHub: faltan `verifyGithub`/`unverifyGithub` en `src/data/supabase/index.ts` y `githubVerification` en `mappers.ts`. Esos archivos no se han modificado.
 Las 6 pruebas de `test/app/index.test.tsx` y `src/data/supabase/auth.test.ts` pasan (2 suites).
+
+## Saneamiento de arquitectura (auditoría del 2026-09-17)
+
+Dos de los siete hallazgos de la auditoría del 2026-09-17 son de este bloque. La
+orden completa —alcance de archivos cerrado, criterio de terminado y en qué ola
+va— está en `docs/plan/ordenes-arquitectura.md`; aquí solo se marca el estado.
+**Lee la orden antes de tocar nada**: `A1` cambia la API que consumen todas las
+pantallas, así que no es un cambio local por mucho que lo parezca.
+
+### Orden `A1` — `useQuery` y el arranque del backend (Ola 1) — **[Claude]**
+
+- [ ] **Hallazgo 3: `useQuery` publica `data: null, loading: true` en cada relectura.** `src/data/provider.tsx` no tiene caché, ni deduplicado, ni coalescencia de peticiones. El parpadeo que provoca ya causó un fallo real de E2E, y el codebase **ya está esquivando la abstracción**: hay dos copias del mismo hook, `src/features/chat/use-conversation.ts` y `src/features/session/use-resolved-or-previous.ts`, y sus propios comentarios dicen que hay que borrar las dos cuando esto se arregle. Cada notificación de realtime dispara relecturas completas de match + mensajes + perfil
+- [ ] **Hallazgo 5: cambio silencioso de backend.** `src/data/active.ts` evalúa `hasSupabaseCredentials ? supabase : mock` **al cargar el módulo**. Una build de producción con el entorno mal configurado no falla: publica una app llena de perfiles de seed que parece funcionar perfectamente. Un backend ausente tiene que ser un fallo ruidoso, no un respaldo. Ojo al decidir el criterio: el respaldo al mock **sí** tiene que seguir funcionando en desarrollo y en tests — lo que no puede pasar es que sobreviva a una build de release
+- [ ] Borradas las dos copias de `useResolvedOrPrevious` que la Ola 1 deja sin razón de ser (están fuera del alcance de `arquitecto`: coordínalo antes de tocarlas, o déjalo anotado para `chat` y `sesiones`)
+
+### Orden `A2` — estado mutable de módulo (Ola 3)
+
+Sin etiqueta de herramienta **a propósito**: está bloqueada por las olas 1 y 2.
+
+- [ ] **Hallazgo 7.** `src/data/mock/store.ts` guarda un `state` a nivel de módulo, y la implementación de Supabase mantiene listeners, canales y un `emittedLocally` con tope de 256 y desalojo FIFO (`src/data/supabase/index.ts:91-110`). Ese deduplicado es best-effort **por construcción**: una cuenta activa puede desalojar un marcador antes de que llegue su eco, y ahí empieza una tormenta de relecturas duplicadas. `DataProvider` sugiere que los repositorios son inyectables, pero son singletons creados al importar

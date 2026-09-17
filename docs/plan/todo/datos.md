@@ -1033,3 +1033,34 @@ Las dos casillas que `calidad` dejó abiertas en `docs/plan/todo/calidad.md` →
   test justo antes de cerrar: `Guardias: acuse sin rellenar, perfil no
   reconocible, id inexistente y repetición: OK`. No se ha tocado porque
   `.github/workflows/` es alcance de `calidad`.
+
+## Saneamiento de arquitectura (auditoría del 2026-09-17)
+
+Tres de los siete hallazgos de la auditoría del 2026-09-17 son de este bloque —
+es el que más carga. Las órdenes completas, con alcance de archivos y criterio de
+terminado, están en `docs/plan/ordenes-arquitectura.md`. **`D3` no puede correr a
+la vez que `D2`**: se pisan en `src/data/supabase/index.ts`.
+
+### Orden `D1` — canales de Realtime sin autenticar (Ola 1) — **[Codex]**
+
+- [ ] **Hallazgo 2, y es el más grave de seguridad.** `client.channel('lockin:video:<sessionId>')` en `src/data/supabase/video-signal.ts:24` y `client.channel('lockin:presence:<sessionId>')` en `presence.ts:19` son canales de broadcast **públicos**: ninguno pasa `config: { private: true }` y no hay una sola política de Realtime Authorization en `supabase/migrations/` (comprobado el 2026-09-17: cero coincidencias de `realtime.messages` en todo el directorio). Como cualquiera puede darse de alta anónimamente, quien conozca o adivine un `sessionId` entra en la señalización WebRTC, puede inyectar una `offer` y leer la presencia de la pareja. **Todas las tablas están cuidadosamente protegidas por RLS y este camino se salta ese modelo entero** — es la excepción, no una laguna menor
+- [ ] Migración nueva con las políticas sobre `realtime.messages` que dejen entrar solo a las dos personas del match de esa sesión, `npm run test:schema` en verde y `drift-check.mjs` enseñado a verlas si hace falta
+- [ ] **Pendiente del usuario** (no lo puede hacer un agente): pegar la migración en el SQL Editor de `grrzmzktrhksbttpbblg` y ver `Schema drift` verde en local **y** remoto. Hasta entonces el job remoto estará rojo a propósito — anótalo aquí el día que pase, que es la excepción que la memoria del proyecto dice que hay que declarar
+
+### Orden `D2` — identidad real y recuperación de cuenta (Ola 2)
+
+Sin etiqueta de herramienta: bloqueada por la Ola 1. Cuando se desbloquee va a
+`[Claude]` — decide el contrato de vinculación que luego consume `P1` en `perfil`,
+así que cruza bloques.
+
+- [ ] **Hallazgo 1, el más grave del producto: las cuentas son irrecuperables por diseño.** Cada usuario es una sesión anónima o una cuenta sintética `device-…@lockin.app` cuya contraseña se genera en el dispositivo y vive en AsyncStorage (`src/data/supabase/auth.ts`). Desinstalar la app, limpiar el almacenamiento o cambiar de móvil deja el perfil, los matches y los chats huérfanos para siempre, sin ninguna vía de recuperación. `signInWithEmail` y `linkEmailToCurrentUser` existen y se reexportan en `src/data/supabase/index.ts:59-60`, pero **nada de `src/app/` los llama nunca** (verificado el 2026-09-17). Para un producto de matching esto destruye datos de usuario en silencio
+- [ ] Decidido y escrito **con el usuario** qué se le promete: qué pasa con la sesión anónima al vincular, si la vinculación es opcional o se pide en algún momento, y qué se ve cuando la recuperación falla. Es decisión de producto, no de implementación — no la improvises
+
+### Orden `D3` — consultas sin paginar y reloj del dispositivo (Ola 3)
+
+Sin etiqueta: bloqueada por las olas 1 y 2, y **nunca a la vez que `D2`**.
+
+- [ ] **Hallazgo 6a: `matches.list()` no pagina.** Trae todos los matches de la cuenta sin límite (`src/data/supabase/index.ts:434`: sin `where`, apoyándose solo en que la política «matches: solo los tuyos» acota la lectura)
+- [ ] **Hallazgo 6b: las vistas previas del último mensaje son una heurística.** Se reconstruyen en el cliente trayendo los `RECENT_MESSAGES_WINDOW = 200` mensajes más recientes y agrupándolos (`index.ts:74-79`, `386`). El propio comentario lo admite: «correcto salvo que alguien tenga más de 200»
+- [ ] **Hallazgo 6c: `getDeck` encoge las páginas.** El RPC `discovery_deck` pagina a 50 filas en SQL y **después** `excludeIds` se aplica en JS (`index.ts:324-325`), así que el tamaño de página varía de forma impredecible según lo que ya hayas swipeado
+- [ ] **Hallazgo 6d: `sessions.getActive` usa el reloj del dispositivo.** `src/data/supabase/sessions.ts:136` decide si una sesión está viva con `Date.now()`, cuando `serverNow()` existe en la interfaz (`src/data/repositories.ts:182`) precisamente porque ese reloj no es de fiar. El comentario de al lado dice que se acepta «donde no importa» — hay que releerlo y decidir si aquí importa, que es justo donde se decide si alguien entra o no a su sesión
