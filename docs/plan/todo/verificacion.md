@@ -114,19 +114,23 @@ veredicto de formato se lee del job «Formato» en CI.
 
 ---
 
-## El rojo de `Schema drift` que es el estado correcto
+## El rojo de `Schema drift`: previsto, y ya resuelto
 
-> Hasta que la migración se aplique en el proyecto real, el job remoto de
-> `Schema drift` **debe salir rojo**, y eso no es deriva: es esta migración
-> esperando. Es la única vez que un rojo ahí es el estado correcto. En cuanto
-> se aplique, vuelve a ser deriva real.
+Mientras la migración estuvo escrita y sin aplicar, el job remoto de
+`Schema drift` salió **rojo a propósito** — no era deriva, era esta migración
+esperando. Fue la única vez que un rojo ahí era el estado correcto, y por eso
+se escribió en vez de dejar que alguien lo descubriera con un rojo confuso.
 
-Esto contradice temporalmente lo que dice `docs/plan/TODO.md` desde el
-2026-09-13 («desde aquí, un rojo del job remoto es deriva real»), y por eso se
-escribe explícitamente aquí y allí — para que nadie lo descubra a base de un
-rojo confuso y se ponga a «arreglar» una deriva que no existe.
+**Ya no aplica.** El usuario aplicó `20260916000100_github_verification.sql` en
+`grrzmzktrhksbttpbblg` el 2026-09-17, y el cotejo remoto lo confirma sobre el
+commit de cierre: [run 35211856006](https://github.com/thejowe/lockin/actions/runs/35211856006),
+`remote.diff` → `Sin diferencias.`, con las dos columnas, las dos `constraint`,
+`sync_github_verification()` y los permisos de columna presentes en la huella
+remota (`grantcol profiles.link_github authenticated INSERT/UPDATE`, y las dos
+del sello **ausentes**, que es justo lo que protege el sello).
 
----
+Así que vuelve a valer lo que dice `docs/plan/TODO.md` desde el 2026-09-13: un
+rojo del job remoto es deriva real.
 
 ## Pendiente del usuario
 
@@ -138,13 +142,49 @@ está probado contra el mock y contra PGlite, que es donde llega el desarrollo.
       callback URL que indique el propio dashboard.
 - [ ] Activar **Enable Manual Linking** en Authentication → Settings. Está
       desactivado por defecto y sin él `linkIdentity()` falla siempre.
-- [ ] Aplicar `20260916000100_github_verification.sql` en
-      `grrzmzktrhksbttpbblg` por el SQL Editor.
+- [x] Aplicar `20260916000100_github_verification.sql` en
+      `grrzmzktrhksbttpbblg` por el SQL Editor — **hecho el 2026-09-17**,
+      confirmado por el cotejo remoto (ver arriba).
 - [ ] Verificar el flujo en un dispositivo con el dev client de EAS: el OAuth
       necesita un navegador de verdad y un deep link de vuelta.
 
-## Runs de CI
+## Runs de CI sobre el commit de cierre (`5170f64`)
 
-- [ ] Anotar aquí `CI` y `E2E Android` sobre el commit de cierre. Una pasada
-      local no es el veredicto: este repo lo aprendió a base de tres commits
-      con CI rojo que nadie miró porque «en local iba».
+Una pasada local no es el veredicto: este repo lo aprendió a base de tres
+commits con CI rojo que nadie miró porque «en local iba».
+
+- [x] `CI` — [run 35211856053](https://github.com/thejowe/lockin/actions/runs/35211856053),
+      **verde entera**: Lint, Formato, Tipos, Tests, Export web, SQL embebido y
+      Runner E2E. El **Formato en verde** es lo que cierra el punto ciego de
+      esta máquina: en local `npm run format:check` da ~100 archivos falsos por
+      CRLF, así que el veredicto solo se puede leer aquí.
+- [x] `Schema drift` — [run 35211856006](https://github.com/thejowe/lockin/actions/runs/35211856006),
+      verde en local **y en remoto**.
+- [ ] `E2E Android` — **sin veredicto todavía**. El [run 35211855989](https://github.com/thejowe/lockin/actions/runs/35211855989)
+      sobre este commit salió `cancelled`, y no por un fallo: `calidad` empujó
+      tres commits de documentación seguidos mientras corría y el grupo de
+      concurrencia del workflow cancela la pasada anterior en cada push. El job
+      tarda ~13 min, así que no llegó a terminar ninguna. Hay que anotar la
+      primera pasada que termine sobre un HEAD que incluya `5170f64` —
+      **ninguno de esos commits toca código de la app**, así que el veredicto
+      vale igual.
+
+### Y el que sí cerró
+
+- [x] `Contrato Supabase` (opt-in) — [run 35213552961](https://github.com/thejowe/lockin/actions/runs/35213552961),
+      **verde**: 57 pasan, 0 fallan, 21 saltados y todos declarados. Es la
+      primera pasada verde de este job desde el 2026-09-15.
+
+### El rojo de `Contrato Supabase`, que no era de este bloque solo
+
+Ese job llevaba **rojo desde el 2026-09-15** sin que nadie lo viera: su guarda
+compara los tests saltados contra una lista blanca explícita y revienta si
+aparece uno sin declarar, y los **seis casos de `rachas`** nunca se añadieron.
+Como el job es `workflow_dispatch`, no se ejecuta solo y el rojo no se vio.
+
+Los **cinco de verificación** de este bloque se sumaban al problema, y no son
+saltos de reloj como los demás: se saltan por `canLinkIdentityWithoutBrowser:
+false`, porque un OAuth de verdad necesita un navegador y una persona al otro
+lado. Contra el mock corren enteros.
+
+Los once se declararon en `ad69754` y el job volvió a verde a la primera.
