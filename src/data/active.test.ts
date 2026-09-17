@@ -7,6 +7,12 @@
  * perfectamente. Aquí se fija que fuera de desarrollo eso lanza, y que dice
  * exactamente qué variable falta.
  *
+ * La comprobación es **perezosa**: salta al primer uso del repositorio, no al
+ * cargar el módulo. `npx expo export` carga los módulos sin ninguna variable de
+ * entorno, y con la comprobación en el cuerpo del módulo el export moría. Por
+ * eso cada caso que espera el fallo toca `repositories` o `activeBackend()`,
+ * y hay un caso que fija que la sola carga no lanza.
+ *
  * Las credenciales se manipulan en `process.env` y el módulo se carga con
  * `jest.isolateModules`: `./supabase/client` las lee una sola vez al
  * importarse, así que cada caso necesita una carga limpia.
@@ -59,14 +65,17 @@ describe('elección de backend', () => {
     setDev(true);
     setCredentials(false);
 
-    expect(loadActive().backend).toBe('mock');
+    expect(loadActive().activeBackend()).toBe('mock');
   });
 
   it('fuera de desarrollo sin credenciales lanza y nombra las dos variables que faltan', () => {
     setDev(false);
     setCredentials(false);
 
-    expect(() => loadActive()).toThrow(/EXPO_PUBLIC_SUPABASE_URL y EXPO_PUBLIC_SUPABASE_ANON_KEY/);
+    const active = loadActive();
+    expect(() => active.repositories.profiles).toThrow(
+      /EXPO_PUBLIC_SUPABASE_URL y EXPO_PUBLIC_SUPABASE_ANON_KEY/
+    );
   });
 
   it('fuera de desarrollo nombra solo la variable que falta', () => {
@@ -74,7 +83,34 @@ describe('elección de backend', () => {
     setCredentials(false);
     process.env.EXPO_PUBLIC_SUPABASE_URL = 'https://ref.supabase.co';
 
-    expect(() => loadActive()).toThrow(/faltan EXPO_PUBLIC_SUPABASE_ANON_KEY\./);
+    const active = loadActive();
+    expect(() => active.activeBackend()).toThrow(/faltan EXPO_PUBLIC_SUPABASE_ANON_KEY\./);
+  });
+
+  it('cargar el módulo sin entorno no lanza: es lo que hace `expo export` al compilar el bundle', () => {
+    setDev(false);
+    setCredentials(false);
+
+    // Ni la carga ni la referencia a los tres exports resuelven nada. El
+    // export web corre sin bloque `env:` y recorre los módulos para descubrir
+    // las rutas; si esto lanza, no se genera ninguna.
+    const active = loadActive();
+    expect(active.repositories).toBeDefined();
+    expect(active.presence).toBeDefined();
+    expect(active.videoSignal).toBeDefined();
+  });
+
+  it('la presencia y el vídeo también fallan en release sin credenciales', () => {
+    setDev(false);
+    setCredentials(false);
+
+    const active = loadActive();
+    expect(() =>
+      active.presence.join('s1', 'p1', { onPeers: () => {}, onConnection: () => {} })
+    ).toThrow(/LockIn no puede arrancar sin backend/);
+    expect(() =>
+      active.videoSignal.send('s1', { kind: 'hangup', from: 'p1', payload: null })
+    ).toThrow(/LockIn no puede arrancar sin backend/);
   });
 
   it('con credenciales elige Supabase, también fuera de desarrollo', () => {
@@ -82,7 +118,7 @@ describe('elección de backend', () => {
     setCredentials(true);
 
     const active = loadActive();
-    expect(active.backend).toBe('supabase');
+    expect(active.activeBackend()).toBe('supabase');
     expect(active.repositories.profiles).toBeDefined();
     expect(active.presence).toBeDefined();
     expect(active.videoSignal).toBeDefined();
@@ -96,7 +132,7 @@ describe('elección de backend', () => {
     // no aporta nada ahí. Fuera de tests sí tiene que salir.
     process.env.NODE_ENV = 'development';
 
-    loadActive();
+    loadActive().activeBackend();
 
     expect(info).toHaveBeenCalledWith(expect.stringContaining('mock en memoria'));
   });
@@ -107,7 +143,7 @@ describe('elección de backend', () => {
     setCredentials(true);
     process.env.NODE_ENV = 'development';
 
-    loadActive();
+    loadActive().activeBackend();
 
     expect(info).toHaveBeenCalledWith(expect.stringContaining('Supabase'));
   });

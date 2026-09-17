@@ -7,7 +7,6 @@ import { useEffect, useState } from 'react';
 
 import { useQuery, useRepositories } from '@/data';
 
-
 import type { LockInSession, MatchWithProfile, Profile } from '@/data';
 
 export interface SessionRoom {

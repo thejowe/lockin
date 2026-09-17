@@ -19,7 +19,6 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { useQuery, useRepositories } from '@/data';
 
-
 import type { LockInSession, MatchStreak } from '@/data';
 
 export const SESSION_TICK_MS = 30_000;

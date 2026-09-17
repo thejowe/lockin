@@ -12,8 +12,14 @@
  * credenciales publicaba una app llena de perfiles semilla que parecía
  * funcionar perfectamente: nadie se enteraba de que el entorno estaba mal
  * configurado hasta que un usuario buscaba sus datos y no estaban. Fuera de
- * desarrollo, la falta de credenciales lanza al cargar el módulo y dice cuál
- * falta.
+ * desarrollo, la falta de credenciales lanza y dice cuál falta.
+ *
+ * **Cuándo lanza**: al primer uso real del repositorio, no al evaluar el
+ * módulo. `npx expo export` compila el bundle sin ninguna variable de entorno
+ * y ejecuta los módulos para descubrir las rutas; con la comprobación en el
+ * cuerpo del módulo, el export moría antes de generar nada. Perezosa, la
+ * protección se mantiene entera —una app de release mal configurada revienta
+ * ruidosamente en cuanto pide un dato— y el export estático sigue saliendo.
  *
  * `createSupabaseRepositories()` no abre ninguna conexión al llamarse: el
  * cliente y la sesión se crean en la primera consulta real.
@@ -66,29 +72,102 @@ function chooseBackend(): Backend {
   return 'mock';
 }
 
-/** El backend elegido para esta ejecución. */
-export const backend: Backend = chooseBackend();
-
-// Rastro de qué backend está activo: mirando la app no había forma de saberlo,
-// y confundir el mock con Supabase es exactamente el fallo que se persigue
-// aquí. Se calla en tests, donde se importa una vez por archivo de suite y el
-// dato no aporta nada.
-if (process.env.NODE_ENV !== 'test') {
-  console.info(
-    backend === 'supabase'
-      ? '[lockin] backend de datos: Supabase'
-      : '[lockin] backend de datos: mock en memoria (sin credenciales; solo desarrollo)'
-  );
+interface Active {
+  backend: Backend;
+  repositories: Repositories;
+  presence: PresenceAdapter;
+  videoSignal: VideoSignalChannel;
 }
 
-/** La implementación activa: Supabase si hay credenciales, mock si no. */
-export const repositories: Repositories =
-  backend === 'supabase' ? createSupabaseRepositories() : createMockRepositories();
+let active: Active | null = null;
+
+/**
+ * Resuelve el backend la primera vez que alguien pide un dato, y lo recuerda.
+ *
+ * Todo lo que decide el backend pasa por aquí, de modo que los tres adaptadores
+ * de una ejecución vienen siempre del mismo lado: no puede haber repositorios
+ * de Supabase con presencia en memoria.
+ */
+function resolveActive(): Active {
+  if (active) return active;
+
+  const backend = chooseBackend();
+
+  // Rastro de qué backend está activo: mirando la app no había forma de
+  // saberlo, y confundir el mock con Supabase es exactamente el fallo que se
+  // persigue aquí. Se calla en tests, donde se resuelve una vez por archivo de
+  // suite y el dato no aporta nada.
+  if (process.env.NODE_ENV !== 'test') {
+    console.info(
+      backend === 'supabase'
+        ? '[lockin] backend de datos: Supabase'
+        : '[lockin] backend de datos: mock en memoria (sin credenciales; solo desarrollo)'
+    );
+  }
+
+  active =
+    backend === 'supabase'
+      ? {
+          backend,
+          repositories: createSupabaseRepositories(),
+          presence: createSupabasePresenceAdapter(),
+          videoSignal: createSupabaseVideoSignalAdapter(),
+        }
+      : {
+          backend,
+          repositories: createMockRepositories(),
+          presence: createMemoryPresenceAdapter(),
+          videoSignal: createMemoryVideoSignalAdapter(),
+        };
+
+  return active;
+}
+
+/**
+ * El backend elegido para esta ejecución. Resuelve si aún no lo estaba, así que
+ * fuera de desarrollo y sin credenciales lanza igual que pedir un dato.
+ */
+export function activeBackend(): Backend {
+  return resolveActive().backend;
+}
+
+/**
+ * La implementación activa: Supabase si hay credenciales, mock si no.
+ *
+ * Es una fachada de propiedades perezosas, no el objeto real: leer
+ * `repositories.profiles` es lo que resuelve el backend. Las pantallas no
+ * notan la diferencia, y `npx expo export` puede cargar el módulo sin entorno.
+ */
+export const repositories: Repositories = {
+  get session() {
+    return resolveActive().repositories.session;
+  },
+  get profiles() {
+    return resolveActive().repositories.profiles;
+  },
+  get discovery() {
+    return resolveActive().repositories.discovery;
+  },
+  get matches() {
+    return resolveActive().repositories.matches;
+  },
+  get messages() {
+    return resolveActive().repositories.messages;
+  },
+  get sessions() {
+    return resolveActive().repositories.sessions;
+  },
+};
 
 /** Presencia en sesiones, con la misma regla. Sin credenciales, en memoria. */
-export const presence: PresenceAdapter =
-  backend === 'supabase' ? createSupabasePresenceAdapter() : createMemoryPresenceAdapter();
+export const presence: PresenceAdapter = {
+  join: (sessionId, profileId, handlers) =>
+    resolveActive().presence.join(sessionId, profileId, handlers),
+};
 
 /** Señalización de vídeo, con la misma regla. Sin credenciales, en memoria. */
-export const videoSignal: VideoSignalChannel =
-  backend === 'supabase' ? createSupabaseVideoSignalAdapter() : createMemoryVideoSignalAdapter();
+export const videoSignal: VideoSignalChannel = {
+  join: (sessionId, profileId, handlers) =>
+    resolveActive().videoSignal.join(sessionId, profileId, handlers),
+  send: (sessionId, message) => resolveActive().videoSignal.send(sessionId, message),
+};
