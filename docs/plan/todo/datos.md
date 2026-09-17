@@ -1043,9 +1043,182 @@ la vez que `D2`**: se pisan en `src/data/supabase/index.ts`.
 
 ### Orden `D1` — canales de Realtime sin autenticar (Ola 1) — **[Claude]**
 
-- [ ] **Hallazgo 2, y es el más grave de seguridad.** `client.channel('lockin:video:<sessionId>')` en `src/data/supabase/video-signal.ts:24` y `client.channel('lockin:presence:<sessionId>')` en `presence.ts:19` son canales de broadcast **públicos**: ninguno pasa `config: { private: true }` y no hay una sola política de Realtime Authorization en `supabase/migrations/` (comprobado el 2026-09-17: cero coincidencias de `realtime.messages` en todo el directorio). Como cualquiera puede darse de alta anónimamente, quien conozca o adivine un `sessionId` entra en la señalización WebRTC, puede inyectar una `offer` y leer la presencia de la pareja. **Todas las tablas están cuidadosamente protegidas por RLS y este camino se salta ese modelo entero** — es la excepción, no una laguna menor
-- [ ] Migración nueva con las políticas sobre `realtime.messages` que dejen entrar solo a las dos personas del match de esa sesión, `npm run test:schema` en verde y `drift-check.mjs` enseñado a verlas si hace falta
+- [x] **Hallazgo 2, y es el más grave de seguridad.** `client.channel('lockin:video:<sessionId>')` en `src/data/supabase/video-signal.ts:24` y `client.channel('lockin:presence:<sessionId>')` en `presence.ts:19` son canales de broadcast **públicos**: ninguno pasa `config: { private: true }` y no hay una sola política de Realtime Authorization en `supabase/migrations/` (comprobado el 2026-09-17: cero coincidencias de `realtime.messages` en todo el directorio). Como cualquiera puede darse de alta anónimamente, quien conozca o adivine un `sessionId` entra en la señalización WebRTC, puede inyectar una `offer` y leer la presencia de la pareja. **Todas las tablas están cuidadosamente protegidas por RLS y este camino se salta ese modelo entero** — es la excepción, no una laguna menor
+- [x] Migración nueva con las políticas sobre `realtime.messages` que dejen entrar solo a las dos personas del match de esa sesión, `npm run test:schema` en verde y `drift-check.mjs` enseñado a verlas si hace falta
 - [ ] **Pendiente del usuario** (no lo puede hacer un agente): pegar la migración en el SQL Editor de `grrzmzktrhksbttpbblg` y ver `Schema drift` verde en local **y** remoto. Hasta entonces el job remoto estará rojo a propósito — anótalo aquí el día que pase, que es la excepción que la memoria del proyecto dice que hay que declarar
+
+#### Lo que se entregó (2026-09-17)
+
+**El candado son dos mitades y hacen falta las dos.** La migración sola no
+protege nada si el cliente no marca el canal como privado, y el flag del cliente
+solo no protege nada si no hay políticas. Van en el mismo commit a propósito.
+
+- [x] **`supabase/migrations/20260917000100_realtime_authorization.sql`**, nueva.
+  Trae tres cosas:
+  - Una **guarda** que mata la migración si `realtime.messages` no existe o no
+    tiene RLS activo. Supabase lo trae activado de fábrica; si algún día no lo
+    estuviera, es preferible morir a dejar creado un candado que no cierra. No
+    se activa desde el SQL a propósito: el esquema `realtime` está **cerrado**
+    (crear tablas o funciones dentro falla con permiso denegado), y lo único que
+    Supabase permite ahí es gestionar las políticas de `realtime.messages`. Por
+    eso la lógica vive en `public` y la política solo la llama.
+  - `public.is_session_topic_member(text)`: saca el `sessionId` del nombre del
+    topic y delega en `public.is_session_member()`, que ya era `SECURITY
+    DEFINER` y ya estaba concedida a `authenticated`. La expresión regular exige
+    el UUID completo y el topic entero (`^lockin:(?:video|presence):<uuid>$`).
+    Estricta a propósito: un patrón laxo tipo `[0-9a-f-]{36}` dejaría llegar
+    cadenas que no son UUID al `::uuid`, y **un error dentro de una política no
+    es un «no», es una puerta rota**. Sin coincidencia, `substring` devuelve
+    NULL y la respuesta es `false`.
+  - Dos políticas sobre `realtime.messages`, `for select` y `for insert`, `to
+    authenticated`, con `extension in ('broadcast', 'presence')`. Las dos
+    extensiones van juntas en la misma política y no una por canal: al unirse,
+    Realtime comprueba los permisos de ambas para decidir qué puede hacer la
+    conexión, y afinar más aquí solo serviría para que un `join` legítimo
+    fallara por el lado que no usa. La puerta que importa —de quién es la
+    sesión— es la misma para vídeo y para presencia.
+- [x] **Una línea en cada adaptador**, sin tocar su lógica (son de `video` y de
+  `sesiones`): `config: { private: true }` en
+  `src/data/supabase/video-signal.ts` y en `src/data/supabase/presence.ts`. Ese
+  flag es lo que hace que el servidor **evalúe** las políticas. Sus dos tests
+  (`video-signal.test.ts`, `presence.test.ts`) pasan a exigirlo con un comentario
+  que dice por qué, para que quitarlo no sea un cambio silencioso.
+- [x] **`supabase/schema-embedded.test.mjs`** cubre la política contra Postgres
+  de verdad, como la evalúa Realtime: unirse a un topic privado es insertar un
+  mensaje en `realtime.messages` y leerlo con el nombre del canal en
+  `realtime.topic()`. Ana y Bea (el match) entran en los dos canales; Carla
+  —perfil y cuenta propios, o sea exactamente el atacante— recibe `42501` en
+  los cuatro intentos, igual que un `sessionId` inexistente, un topic sin UUID
+  (`42501`, **no** `22P02`) y un topic ajeno. Aparte, la mitad de lectura: el
+  mensaje que escribe Ana lo ve Bea y no lo ve Carla. Hay fixture nueva del
+  esquema `realtime` (tabla, RLS, permisos y `realtime.topic()`), por el mismo
+  motivo que ya había una de `auth`: sin ella la migración ni se ejecuta.
+- [x] **La huella ve las políticas.** `supabase/schema-fingerprint.sql` solo
+  miraba `public`, así que borrar estas políticas en el proyecto real habría
+  dejado `Schema drift` en verde sobre el agujero. Nueva línea `rtpolicy`, y
+  **solo para las políticas que empiezan por `lockin`**: las que Supabase pueda
+  traer de fábrica dependen de la versión de Realtime desplegada, y compararlas
+  pondría el job en rojo por algo que este repo ni pone ni puede quitar. De ahí
+  el prefijo en los nombres de las dos políticas — no es decoración.
+- [x] **`supabase/drift-check.mjs`** las lee de las migraciones y las **declara
+  no comprobables** desde ahí, que es la regla de ese archivo. No asoman por
+  PostgREST —el esquema `realtime` no está expuesto— y verificarlas de verdad
+  exigiría abrir un canal privado por WebSocket, que es otro programa. Quien las
+  coteja contra el despliegue es la huella; quien prueba que dicen lo que deben
+  es el SQL embebido.
+
+##### Controles negativos, ejecutados aquí
+
+Ninguna de las tres comprobaciones se da por buena sin haberla visto fallar:
+
+1. Política permisiva (`and true` en vez de la llamada al helper) →
+   `# fail 1`, con `carla_video: 'dentro'` y `carla_presencia: 'dentro'` donde
+   se esperaba `'42501'`.
+2. Huella ciega (el filtro `like 'lockin%'` cambiado para no coincidir) →
+   `# fail 1`, `AssertionError: la huella debe traer las dos políticas de
+   realtime`.
+3. `private: true` quitado de `presence.ts` → `Tests: 1 failed`, con
+   `- "private": true` en el diff de Jest.
+
+Y el control negativo *dentro* del test: se borra una de las dos políticas y se
+comprueba que la huella cambia. Va suelto y **no** en la lista `mutations` de ese
+archivo porque la guarda de `ci.yml` exige literalmente la línea `Rol lector, 5
+mutaciones, teardown dos veces y guardia de sobrecarga: OK`, y
+`.github/workflows/` es alcance de `calidad`.
+
+##### Verificación (2026-09-17, en este entorno)
+
+- `npm run test:schema` → `# tests 21`, `# pass 21`, `# fail 0`, `# skipped 0`,
+  con las dos líneas de guarda impresas y `SQL ejecutado: 12 migraciones;
+  digest 6b1bbe086c6a6f0512e9a5a741cafc71; 461 objetos`.
+- `npm run typecheck` y `npm run lint`: limpios.
+- `npx prettier --check` sobre los archivos tocados: limpio. (El `format:check`
+  completo sigue siendo ruido CRLF en este equipo; el veredicto se lee del log
+  de CI.)
+- `npm test -- --ci --runInBand`: **2 fallos, y no son de aquí.** Los dos están
+  en `src/data/provider.test.tsx`, archivo **sin commitear** de la orden `A1`
+  (`arquitecto`), que estaba corriendo en paralelo en este mismo worktree.
+  Excluyendo los dos archivos en vuelo de `A1`
+  (`--testPathIgnorePatterns src/data/provider.test.tsx src/data/active.test.ts`):
+  **63 suites pasando, 698 tests pasando, 0 fallos**, 82 saltados (contrato
+  opt-in). Ni un solo archivo de `A1` tocado por esta orden.
+
+##### Archivos fuera del alcance literal de la orden, y por qué
+
+- `supabase/schema-compare.mjs` y `supabase/schema-compare.test.mjs`: el
+  comparador valida la huella contra una lista blanca de prefijos de línea. Sin
+  añadir `rtpolicy` ahí, la huella entera se declara inválida y el cotejo no
+  llega a comparar nada. Es consecuencia obligada de tocar
+  `schema-fingerprint.sql`, que sí está en el alcance.
+- `supabase/cleanup.test.mjs`: monta su propia fixture y aplica **todas** las
+  migraciones. Sin el mínimo de `realtime` ahí, la migración nueva mata ese test.
+  Se le ha puesto lo justo (tabla + RLS + `realtime.topic()`); no prueba nada de
+  Realtime, eso es del embebido.
+- `src/data/supabase/video-signal.test.ts` y `presence.test.ts`: sus aserciones
+  comparaban los argumentos exactos de `channel(...)`. Sin actualizarlas, el
+  cambio de una línea no cumple el criterio de «sin regresiones».
+
+##### Lo que NO se ha tocado
+
+- `.github/workflows/`: es de `calidad`. La línea de guarda del job sigue
+  diciendo «5 mutaciones» y sigue siendo cierta: se refiere a la lista
+  `mutations` de `schema-embedded.test.mjs`, que no ha cambiado.
+- `supabase/README.md`: no está en el alcance de la orden. **Para quien venga
+  detrás**: su tabla de migraciones está tres filas por detrás del directorio —
+  le faltan `20260915000200_match_streaks.sql`,
+  `20260916000100_github_verification.sql` y
+  `20260917000100_realtime_authorization.sql`.
+- `src/data/provider.tsx` y `src/data/active.ts`: son de `A1`, que corría a la vez.
+
+#### Pendiente del usuario — dos cosas, y la segunda no es SQL
+
+**1. Pegar `supabase/migrations/20260917000100_realtime_authorization.sql`** en
+el SQL Editor de `grrzmzktrhksbttpbblg`. El archivo es idempotente (`drop policy
+if exists` antes de cada `create`), así que pegarlo dos veces no rompe nada.
+
+**2. Desactivar «Allow public access» en los ajustes de Realtime del proyecto**
+(panel de Supabase → Realtime → Settings). Esto **no se puede hacer por SQL** y
+sin ello el arreglo está a medias: un topic es un topic, y mientras el acceso
+público siga permitido cualquiera puede abrir `lockin:video:<sessionId>` **sin**
+`private: true` y quedarse fuera del alcance de estas políticas. La documentación
+de Supabase es explícita: «To enforce private channels you need to disable the
+"Allow public access" setting».
+
+##### El rojo esperado de `Schema drift`, declarado por escrito
+
+Esto es lo que la memoria del proyecto exige anotar. Partimos de que el remoto
+estaba **al día**: la migración de verificación de GitHub (`20260916000100`) la
+aplicó el usuario el 2026-09-16 y el run 35211856006 dejó `remote.diff` en «Sin
+diferencias.». Desde ese punto, **todo rojo del job remoto es deriva real**.
+
+Con este commit, el job `Comparar grrzmzktrhksbttpbblg (solo lectura)` se va a
+poner **rojo a propósito**, y lo hará por estas líneas y solo por estas:
+
+```
+- func     public.is_session_topic_member(text) …
+- grantfn  public.is_session_topic_member(text) authenticated EXECUTE
+- grantfn  public.is_session_topic_member(text) postgres EXECUTE
+- rtpolicy lockin: envías a los canales de tus sesiones cmd=INSERT …
+- rtpolicy lockin: recibes de los canales de tus sesiones cmd=SELECT …
+```
+
+(Con `-`, es decir: están en las migraciones y **faltan** en el despliegue.)
+
+- **Si el `remote.diff` trae exactamente eso**, es esta excepción: falta aplicar
+  la migración. Se cierra pegándola.
+- **Si trae cualquier otra línea**, no es esta excepción: es deriva de verdad y
+  hay que diagnosticarla aparte.
+- **Cuando el usuario la aplique**, hay que volver aquí, marcar la casilla de
+  arriba, anotar el número de run que sale verde y **dar la excepción por
+  cerrada**, para que el siguiente rojo vuelva a leerse como deriva real.
+
+El job `local` de `Schema drift` (Supabase desechable desde `migrations/`) debe
+seguir **verde**: ahí la migración sí se aplica. Si el que se pone rojo es el
+local, el problema es la migración y no el despliegue — el sitio más probable
+sería que el stack local no dejara crear políticas sobre `realtime.messages` con
+el rol que usa `supabase db reset`, algo que desde este equipo no se puede
+comprobar (no hay Docker).
+
 
 ### Orden `D2` — identidad real y recuperación de cuenta (Ola 2)
 

@@ -55,8 +55,10 @@ describe('createSupabasePresenceAdapter', () => {
     realtime.state.bea = [{}];
     realtime.sync();
 
+    // `private: true`: el canal de presencia va por las mismas políticas de
+    // `realtime.messages` que el de vídeo. Ver `20260917000100_realtime_authorization.sql`.
     expect(realtime.rawClient.channel).toHaveBeenCalledWith('lockin:presence:s1', {
-      config: { presence: { key: 'ana' } },
+      config: { presence: { key: 'ana' }, private: true },
     });
     expect(handlers.onConnection).toHaveBeenCalledWith(true);
     expect(realtime.channel.track).toHaveBeenCalledWith({ profileId: 'ana' });

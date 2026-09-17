@@ -17,7 +17,7 @@ export function createSupabasePresenceAdapter(
     join(sessionId, profileId, { onPeers, onConnection }) {
       const client = getClient();
       const channel = client.channel(`lockin:presence:${sessionId}`, {
-        config: { presence: { key: profileId } },
+        config: { presence: { key: profileId }, private: true },
       });
 
       channel

@@ -219,6 +219,30 @@ with
     from proc p,
          aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) g
 
+    -- Realtime Authorization: las políticas de `realtime.messages` son lo único
+    -- que separa la señalización WebRTC de una sesión de cualquiera que adivine
+    -- su id (`20260917000100_realtime_authorization.sql`). No viven en `public`,
+    -- así que ninguna otra línea de esta consulta las mira: sin esto, borrarlas
+    -- en el proyecto real deja `Schema drift` en verde sobre un agujero.
+    --
+    -- Solo las nuestras, las que empiezan por `lockin`. Las que Supabase pueda
+    -- traer de fábrica dependen de la versión de Realtime desplegada, y
+    -- compararlas pondría el job en rojo por algo que este repo ni pone ni
+    -- puede quitar.
+    union all
+    select format(
+      'rtpolicy %s cmd=%s permissive=%s roles=%s using=%s check=%s',
+      p.policyname,
+      p.cmd,
+      p.permissive,
+      array_to_string(p.roles, ','),
+      coalesce(p.qual, '-'),
+      coalesce(p.with_check, '-')
+    )
+    from pg_policies p
+    where p.schemaname = 'realtime'
+      and p.tablename = 'messages'
+      and p.policyname like 'lockin%'
     -- Realtime: si una tabla se cae de la publicación, los `subscribe()` del
     -- contrato dejan de recibir eventos sin que falle nada más.
     union all

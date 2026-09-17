@@ -26,7 +26,7 @@ test('rechaza salida vacía, truncada, digest falso y orden no canónico', () =>
   }
 });
 
-for (const kind of ['column', 'index', 'policy', 'func', 'grantcol', 'grantfn']) {
+for (const kind of ['column', 'index', 'policy', 'rtpolicy', 'func', 'grantcol', 'grantfn']) {
   test(`diff legible detecta cambio de ${kind}`, () => {
     const diff = compareFingerprints(
       fingerprint([`${kind}    antes`]),

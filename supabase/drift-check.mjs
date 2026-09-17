@@ -379,7 +379,15 @@ export function parseMigrations(sql) {
     functions.push({ name: m[1], args, returns: returns[2].toLowerCase() });
   }
 
-  return { enums, tables, functions, constraints, sealed };
+  // Políticas de Realtime Authorization. Viven en `realtime.messages`, no en
+  // `public`, así que ninguna de las sondas de arriba las ve. Se leen aquí solo
+  // para poder DECLARARLAS no comprobables más abajo, que es la regla de la
+  // casa: antes un «no lo sé» que un verde que no significa nada.
+  const realtimePolicies = [
+    ...sql.matchAll(/create policy "([^"]+)"\s+on\s+realtime\.messages/gi),
+  ].map((m) => m[1]);
+
+  return { enums, tables, functions, constraints, sealed, realtimePolicies };
 }
 
 // ---------------------------------------------------------------------------
@@ -690,6 +698,24 @@ if (isMain) {
     console.log('\nConstraints de `alter table … add constraint`');
     for (const c of expected.constraints) {
       note(`${c.table}.${c.name} (${c.kind}) no asoma por PostgREST: lo coteja la huella`);
+    }
+  }
+
+  // --- Realtime Authorization: declarada no comprobable desde aquí -----------
+  //
+  // Estas políticas son lo único que impide que cualquiera que adivine un
+  // `sessionId` entre en la señalización WebRTC de una sesión ajena. No asoman
+  // por PostgREST —el esquema `realtime` no está expuesto— y comprobarlas de
+  // verdad exigiría abrir un canal privado por WebSocket y leer el `join`, que
+  // es otro programa. Se listan para que consten: quien las coteja contra el
+  // despliegue son las líneas `rtpolicy` de `supabase/schema-fingerprint.sql`,
+  // y quien prueba que dicen lo que deben es `supabase/schema-embedded.test.mjs`.
+  if (expected.realtimePolicies.length > 0) {
+    console.log('\nPolíticas de Realtime Authorization');
+    for (const name of expected.realtimePolicies) {
+      note(
+        `"${name}" sobre realtime.messages: la cotejan la huella y el SQL embebido, no esta sonda`
+      );
     }
   }
 

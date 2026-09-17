@@ -21,7 +21,7 @@ export function createSupabaseVideoSignalAdapter(
   return {
     join(sessionId, profileId, { onMessage, onConnection }) {
       const client = getClient();
-      const channel = client.channel(`lockin:video:${sessionId}`);
+      const channel = client.channel(`lockin:video:${sessionId}`, { config: { private: true } });
 
       channel
         .on('broadcast', { event: 'signal' }, ({ payload }: { payload: VideoSignalMessage }) => {

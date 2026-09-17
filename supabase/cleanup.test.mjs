@@ -50,7 +50,16 @@ async function freshDatabase(PGlite) {
     create function extensions.gen_salt(text) returns text language sql as $$ select 'salt' $$;
     create function extensions.crypt(text, text) returns text language sql as $$ select 'hash' $$;
     create role anon; create role authenticated; create role service_role;
-    create publication supabase_realtime;`);
+    create publication supabase_realtime;
+    -- Mínimo de realtime para que 20260917000100 se pueda aplicar: esa
+    -- migración crea políticas sobre realtime.messages y se niega a seguir si
+    -- la tabla no existe o no tiene RLS. Aquí no se prueba nada de Realtime
+    -- —eso es schema-embedded.test.mjs—, solo se deja aplicar la migración.
+    create schema realtime;
+    create table realtime.messages (topic text not null, extension text not null);
+    alter table realtime.messages enable row level security;
+    create function realtime.topic() returns text language sql stable
+      as $$ select nullif(current_setting('realtime.topic', true), '') $$;`);
   for (const file of readdirSync(join(here, 'migrations'))
     .filter((f) => f.endsWith('.sql'))
     .sort()) {

@@ -57,7 +57,12 @@ describe('createSupabaseVideoSignalAdapter', () => {
     adapter.join('s1', 'ana', handlers);
     realtime.status('SUBSCRIBED');
 
-    expect(realtime.rawClient.channel).toHaveBeenCalledWith('lockin:video:s1');
+    // `private: true` no es cosmético: es lo que hace que el servidor evalúe las
+    // políticas de `realtime.messages` de `20260917000100_realtime_authorization.sql`.
+    // Sin él, el canal vuelve a ser público y la migración no protege nada.
+    expect(realtime.rawClient.channel).toHaveBeenCalledWith('lockin:video:s1', {
+      config: { private: true },
+    });
     expect(handlers.onConnection).toHaveBeenCalledWith(true);
   });
 

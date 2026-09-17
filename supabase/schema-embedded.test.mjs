@@ -51,7 +51,31 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       create role anon; create role authenticated; create role service_role;
       alter default privileges in schema public
         grant all on tables to anon, authenticated, service_role;
-      create publication supabase_realtime;`);
+      create publication supabase_realtime;
+      -- Fixture de Realtime, por el mismo motivo que la de Auth: sin ella,
+      -- la migración 20260917000100_realtime_authorization.sql ni se ejecuta. En
+      -- Supabase el esquema realtime viene puesto y CERRADO —crear cosas dentro
+      -- falla con permiso denegado—, así que aquí se emula lo justo que esa
+      -- migración toca: la tabla, su RLS (que allí viene activada de fábrica, y
+      -- la migración se niega a seguir si no lo está), los permisos con los que
+      -- nace el rol authenticated y el helper realtime.topic(), que es de donde
+      -- sale el nombre del canal al que el cliente se está uniendo.
+      create schema realtime;
+      create table realtime.messages (
+        id uuid primary key default gen_random_uuid(),
+        topic text not null,
+        extension text not null,
+        payload jsonb,
+        event text,
+        private boolean default false,
+        inserted_at timestamptz not null default now(),
+        updated_at timestamptz not null default now()
+      );
+      alter table realtime.messages enable row level security;
+      grant usage on schema realtime to anon, authenticated;
+      grant select, insert on realtime.messages to authenticated;
+      create function realtime.topic() returns text language sql stable
+        as $$ select nullif(current_setting('realtime.topic', true), '') $$;`);
     const migrations = readdirSync(join(here, 'migrations'))
       .filter((f) => f.endsWith('.sql'))
       .sort();
@@ -549,6 +573,133 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       anon_ejecuta: false,
       authenticated_ejecuta: true,
     });
+    await db.exec('rollback;');
+    // --- Realtime Authorization ---------------------------------------------
+    //
+    // Lo que tapa `20260917000100`: hasta esa migración, `lockin:video:<id>` y
+    // `lockin:presence:<id>` eran canales PÚBLICOS, así que cualquier cuenta
+    // —y darse de alta es anónimo— que adivinara un `sessionId` entraba en la
+    // señalización WebRTC de una sesión ajena. Es el único camino del repo que
+    // se saltaba el modelo de RLS entero.
+    //
+    // Se comprueba como lo evalúa Realtime de verdad: unirse a un topic privado
+    // es insertar un mensaje en `realtime.messages` y leerlo, con el nombre del
+    // canal en `realtime.topic()`. Lo que las políticas dejen pasar es lo que la
+    // conexión puede hacer. No hay otra forma de cubrir esto desde el repo: la
+    // suite de contrato habla con PostgREST, que no ve el esquema `realtime`.
+    await db.exec(`begin;
+      insert into auth.users (id, email) values
+        ('${ana}', 'ana@lockin.test'), ('${bea}', 'bea@lockin.test'),
+        ('${carla}', 'carla@lockin.test');
+      insert into public.profiles (
+        id, name, age, location, timezone, avatar_initials, specialties,
+        looking_for, starting_point, availability_hours_per_week,
+        availability_bands, ambition
+      )
+      select p.id::uuid, p.name, 30, 'Madrid', 'Europe/Madrid', left(p.name, 1),
+             array['dev']::public.specialty[], 'lockin', 'solo-ganas', 10,
+             array['tarde']::public.time_band[], 'equilibrado'
+      from (values ('${ana}', 'Ana'), ('${bea}', 'Bea'), ('${carla}', 'Carla')) as p(id, name);
+      insert into public.matches (id, profile_a, profile_b, mode) values
+        ('${match}', '${ana}', '${bea}', 'lockin');
+      insert into public.lockin_sessions
+        (id, match_id, proposed_by, starts_at, blocks, status, responded_at)
+      values
+        ('${session(1)}', '${match}', '${ana}', now() + interval '1 hour', 1, 'aceptada', now());`);
+    const videoTopic = `lockin:video:${session(1)}`;
+    const presenceTopic = `lockin:presence:${session(1)}`;
+    // Cada sonda va en un savepoint: un rechazo de RLS aborta la transacción, y
+    // el `set local role` se deshace solo al volver al savepoint.
+    const entraEn = async (actor, topic, extension) => {
+      await asActor(actor);
+      await db.exec('savepoint canal;');
+      try {
+        await db.exec(`set local "realtime.topic" = '${topic}'; set local role authenticated;`);
+        await db.query(
+          `insert into realtime.messages (topic, extension, private)
+             values ('${topic}', '${extension}', true)`
+        );
+        const leido = await db.query(
+          `select count(*)::int as n from realtime.messages where topic = '${topic}'`
+        );
+        return leido.rows[0].n === 1 ? 'dentro' : 'escribe pero no lee';
+      } catch (error) {
+        return error.code ?? 'error';
+      } finally {
+        await db.exec('rollback to savepoint canal;');
+      }
+    };
+    assert.deepEqual(
+      {
+        ana_video: await entraEn(ana, videoTopic, 'broadcast'),
+        bea_video: await entraEn(bea, videoTopic, 'broadcast'),
+        bea_presencia: await entraEn(bea, presenceTopic, 'presence'),
+        carla_video: await entraEn(carla, videoTopic, 'broadcast'),
+        carla_presencia: await entraEn(carla, presenceTopic, 'presence'),
+        sesion_inexistente: await entraEn(ana, `lockin:video:${session(9)}`, 'broadcast'),
+        topic_sin_uuid: await entraEn(ana, 'lockin:video:no-soy-un-uuid', 'broadcast'),
+        topic_ajeno: await entraEn(ana, 'room-1', 'broadcast'),
+      },
+      {
+        // Las dos personas del match, en los dos canales.
+        ana_video: 'dentro',
+        bea_video: 'dentro',
+        bea_presencia: 'dentro',
+        // Carla tiene perfil y cuenta, y aun así no entra en ninguno: es
+        // exactamente el ataque, y es lo que antes de esta migración funcionaba.
+        carla_video: '42501',
+        carla_presencia: '42501',
+        sesion_inexistente: '42501',
+        // 42501 y no 22P02: la expresión regular exige el UUID entero, así que
+        // el `::uuid` no llega a ejecutarse. Un error dentro de una política no
+        // es un «no», es una puerta rota.
+        topic_sin_uuid: '42501',
+        topic_ajeno: '42501',
+      }
+    );
+    // La otra mitad de la política, la de quién ESCUCHA: el mensaje lo escribe
+    // Ana y se queda; Bea lo recibe y Carla no lo ve.
+    await asActor(ana);
+    await db.exec(`set local "realtime.topic" = '${videoTopic}'; set local role authenticated;`);
+    await db.query(
+      `insert into realtime.messages (topic, extension, private)
+         values ('${videoTopic}', 'broadcast', true)`
+    );
+    await db.exec('reset role');
+    const recibe = async (actor) => {
+      await asActor(actor);
+      await db.exec('set local role authenticated');
+      const filas = await db.query('select count(*)::int as n from realtime.messages');
+      await db.exec('reset role');
+      return filas.rows[0].n;
+    };
+    assert.deepEqual(
+      { bea: await recibe(bea), carla: await recibe(carla) },
+      { bea: 1, carla: 0 },
+      'la otra persona del match recibe el broadcast; un tercero no lo ve'
+    );
+    await db.exec('rollback;');
+    // Las dos políticas, en la huella. `Schema drift` es lo único que vigila el
+    // proyecto real, y no mira el esquema `realtime` por ningún otro sitio: sin
+    // estas líneas, borrarlas allí saldría en verde.
+    const rtPolicies = expected
+      .split('\n')
+      .filter((line) => line.startsWith('rtpolicy'))
+      .sort();
+    assert.equal(rtPolicies.length, 2, 'la huella debe traer las dos políticas de realtime');
+    for (const line of rtPolicies) {
+      assert.match(line, /roles=authenticated/);
+      assert.match(line, /is_session_topic_member/);
+    }
+    assert.match(rtPolicies[0], /^rtpolicy lockin: envías .* cmd=INSERT .*check=\(/);
+    assert.match(rtPolicies[1], /^rtpolicy lockin: recibes .* cmd=SELECT .*using=\(/);
+    // Y el control negativo de esas líneas. Va aquí y no en la lista de
+    // `mutations` de más abajo porque la guarda de `ci.yml` exige literalmente
+    // «Rol lector, 5 mutaciones…» y `.github/workflows/` es de `calidad`.
+    await db.exec(
+      'begin; drop policy "lockin: recibes de los canales de tus sesiones" on realtime.messages;'
+    );
+    assert.notEqual(compareFingerprints(expected, await fingerprint()), '');
     await db.exec('rollback;');
     assert.match(expected, /column\s+profiles.seeking_specialties/);
     assert.match(expected, /column\s+profiles.github_handle/);

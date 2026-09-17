@@ -14,8 +14,9 @@ export function parseFingerprint(text) {
       lines.every((line) =>
         // `grantcol` son los permisos DE COLUMNA (`attacl`): sin él en esta
         // lista, la huella entera se declara inválida y el cotejo no llega a
-        // comparar nada.
-        /^(table|column|constr|index|enum|func|trigger|policy|grant|grantcol|grantfn|publish)\s+\S/.test(
+        // comparar nada. `rtpolicy` es lo mismo para las políticas de
+        // `realtime.messages`, que son el candado de los canales de sesión.
+        /^(table|column|constr|index|enum|func|trigger|policy|rtpolicy|grant|grantcol|grantfn|publish)\s+\S/.test(
           line
         )
       ),
