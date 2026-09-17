@@ -165,6 +165,47 @@ Realtime Broadcast (sin tabla nueva ni credenciales adicionales). Diseño en
 - Depende de: `sesiones` entregado (usa su pantalla y su noción de ventana de
   sesión).
 
+### 11. `verificacion` — Verificación de autoría de enlaces (Fase 3)
+
+Entrega: que el enlace de GitHub de un perfil pueda probarse suyo, con un sello
+que el cliente **no puede encenderse solo**. Se linka una identidad OAuth de
+GitHub a la cuenta de Supabase que ya existe (`linkIdentity()` sobre la sesión
+anónima) y el sello lo escribe una función `SECURITY DEFINER` que lee
+`auth.identities`, sobre dos columnas que el rol `authenticated` no tiene
+permiso de escribir. Diseño en
+`docs/superpowers/specs/2026-09-16-verificacion-github-design.md`; plan en
+`docs/superpowers/plans/2026-09-16-verificacion-github.md`; checklist en
+`docs/plan/todo/verificacion.md`.
+
+**Fase 3 son tres sub-proyectos** («salas grupales, verificación, plantillas de
+acuerdo entre cofundadores» en `CONCEPTO.md`) y este es el primero. Los otros
+dos no están empezados y no comparten nada con él.
+
+Este bloque **cruza cuatro bloques**, y el alcance se declara entero para que
+nadie lo descubra a mitad:
+
+| Archivo | Dueño original | Qué se toca |
+|---|---|---|
+| `src/data/types.ts` | `arquitecto` | `GithubVerification` + un campo en `Profile` |
+| `src/data/repositories.ts`, `repositories.contract.ts` | `arquitecto` | tres métodos y sus casos |
+| `src/data/supabase/client.ts` | `datos` | una línea: `flowType: 'pkce'` |
+| `src/data/mock/`, `src/data/supabase/` | `arquitecto`/`datos` | implementación |
+| `supabase/migrations/`, `seed.sql`, `drift-check.mjs`, `schema-embedded.test.mjs` | `datos`/`calidad` | migración y cotejo |
+| `src/features/profile/` | `perfil` | el panel de acción y el sello en la ficha |
+| `src/features/discover/` | `descubrir` | el sello en la tarjeta |
+
+- **Nunca se lanza a la vez que `perfil`, `descubrir` ni `datos`**: pisa archivos
+  suyos, así que va por turnos, no en paralelo.
+- **El sello es señal, no puerta**: no filtra el deck, no lo ordena y no
+  condiciona el match. Mismo precedente explícito que la complementariedad.
+- **El copy dice GitHub y nada más.** Certifica autoría del enlace: ni «perfil
+  verificado», ni «persona verificada», ni un check a secas junto al nombre.
+- Cero dependencias nuevas y ninguna build nativa: `expo-web-browser`,
+  `expo-linking` y `"scheme": "lockin"` ya estaban.
+- Depende de: nada del código — no toca Fase 2. **Del usuario sí**: GitHub OAuth
+  App en el dashboard, «Enable Manual Linking», aplicar la migración y probar el
+  flujo en un dispositivo. Ver `todo/verificacion.md` → "Pendiente del usuario".
+
 ## Orden recomendado de trabajo
 
 1. `arquitecto` primero y solo — es la base de todo lo demás.
