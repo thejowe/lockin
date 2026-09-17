@@ -2392,6 +2392,14 @@ de código de producto, y ninguno toca `src/`.
       nuevo se salta en CI, la entrada en la lista blanca va **en el mismo
       commit**, porque el rojo no llega hasta que alguien dispare el job.
 
+      Y no es la primera vez: la pasada «La lista blanca de `contract.yml` se
+      había quedado corta» (2026-09-15) arregló exactamente esto para los nueve
+      casos de `valoracion`, con el mismo diagnóstico escrito al final —«no se
+      ha notado antes porque ese workflow es solo `workflow_dispatch`»—. Los
+      seis de rachas entraron **el mismo día**, después de ese arreglo. Van tres
+      repeticiones del mismo tropiezo: la nota no basta, y la única guarda que
+      lo cerraría de verdad es que el job deje de ser solo a mano.
+
 ### Verificación de esta pasada
 
 - **El veredicto es el [run 35213552961](https://github.com/thejowe/lockin/actions/runs/35213552961),
