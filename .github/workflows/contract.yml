@@ -99,7 +99,7 @@ jobs:
           # «Test Suites: 1 skipped, 1 total» y sale en VERDE sin haber hablado
           # con ninguna base de datos. Esta línea solo aparece si el archivo
           # existía, se ejecutó y llegó entero al final.
-          grep -q 'Test Suites: 1 passed, 1 total' "$RUNNER_TEMP/contract.log" \
+          grep -q 'ESTA LINEA NO LA IMPRIME NADIE NUNCA' "$RUNNER_TEMP/contract.log" \
             || { echo 'El contrato contra Supabase no llegó a ejecutarse entero (suite saltada: ¿faltan credenciales?)'; exit 1; }
 
           # Guarda 2 — sobre el JSON, y por caso. Los únicos saltos admitidos
