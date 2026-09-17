@@ -87,6 +87,13 @@ jobs:
           # sesión ya terminada y `propose_session` exige 5 minutos de margen,
           # así que aquí no se pueden fabricar. Su SQL lo ejecuta el job
           # "SQL embebido" de `ci.yml` (`npm run test:schema`).
+          # Los seis de rachas son del mismo tipo y del mismo día, pero se
+          # quedaron sin añadir: este job es opt-in (`workflow_dispatch`), así
+          # que llevaba rojo desde entonces sin que nadie lo viera.
+          # Los cinco de verificación se añadieron el 2026-09-16 y NO son de
+          # reloj: se saltan por `canLinkIdentityWithoutBrowser: false`, porque
+          # un OAuth de verdad necesita un navegador y una persona al otro lado.
+          # Contra el mock corren enteros.
           jq -e '
             ([.testResults[].assertionResults[] | select(.status == "pending") | .title]
               - ["una propuesta caducada ya no está viva ni se puede aceptar",
@@ -100,7 +107,18 @@ jobs:
                  "repetir el mismo valor es idempotente",
                  "mandar otro valor choca y no reescribe el primero",
                  "pasadas 24 horas la sesión se queda sin valorar",
-                 "la otra persona del match no ve tu valoración"]) as $unexpected
+                 "la otra persona del match no ve tu valoración",
+                 "dos sesiones compartidas seguidas suman 2",
+                 "un hueco de 7 días o más entre dos compartidas no las une",
+                 "pasados 7 días del final de la última ya no hay racha",
+                 "un plantón entre dos compartidas no rompe la racha",
+                 "una cancelada entre dos compartidas no rompe la racha",
+                 "valorar una sesión no cambia la racha de ninguno de los dos",
+                 "al verificar, el enlace se deriva de la identidad",
+                 "desverificar apaga el sello y vacía el enlace",
+                 "un sello ya encendido sobrevive a guardar el perfil",
+                 "resincronizar mantiene el sello que ya estaba",
+                 "verificarse no reordena el deck de quien se verifica"]) as $unexpected
             | .numPassedTests > 0 and .numFailedTests == 0 and ($unexpected | length) == 0
           ' contract-result.json \
             || { echo 'La suite no corrió entera'; jq '{numPassedTests, numPendingTests, numFailedTests}' contract-result.json; exit 1; }
