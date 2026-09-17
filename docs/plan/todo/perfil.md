@@ -70,9 +70,77 @@ Sin etiqueta de herramienta, y no por falta de decisión: **está bloqueada por
 `D2`** (`datos`), que es quien fija el contrato de vinculación. Empezar la
 pantalla antes de eso es escribir UI contra una API que todavía no existe.
 
-- [ ] **Hallazgo 1, la parte que se ve.** Hoy no hay ninguna pantalla desde la que vincular un email a la cuenta ni recuperarla en otro dispositivo: `signInWithEmail` y `linkEmailToCurrentUser` están implementadas en `src/data/supabase/auth.ts` y reexportadas en `index.ts:59-60`, pero **ni un solo archivo de `src/app/` las llama** (verificado el 2026-09-17). El usuario que cambia de móvil pierde perfil, matches y chats sin aviso previo
-- [ ] Copy y UX decididos con el criterio de este bloque, no improvisados: cuándo se ofrece vincular (no en mitad del onboarding, que es donde más se abandona), qué se ve si la recuperación falla, y cómo se dice «esta cuenta solo vive en este teléfono» sin asustar a quien acaba de entrar
-- [ ] Lo de siempre de este bloque: labels de accesibilidad, tamaño táctil y contraste AA — `theme.test.ts` tiene `KNOWN_GAPS` vacío y se queda vacío
+- [x] **Hallazgo 1, la parte que se ve.** `AccountSection` (`src/features/profile/account-section.tsx`), montada al final de la tab Perfil. Los tres estados de `AccountState` tienen bloque propio: irrecuperable (`anonymous` / `device`) avisa y pide email; `pending-email` dice a qué correo y **no** se pinta como estado a salvo; `email` enseña la dirección y ofrece contraseña, recuperación y cierre de sesión
+- [x] Copy y UX decididos con el criterio de este bloque, no improvisados. Ver «Cómo quedó la orden `P1`» abajo
+- [x] Lo de siempre de este bloque: labels de accesibilidad, tamaño táctil y contraste AA — `theme.test.ts` sigue con `KNOWN_GAPS` vacío. Los dos campos llevan `accessibilityLabel` propio porque la etiqueta visible de `Field` no se asocia sola en React Native, y todo el color sale de `@/constants/theme`
+
+#### Cómo quedó la orden `P1` (2026-09-17)
+
+**Dónde está.** `src/features/profile/account-section.tsx` (la sección),
+`account-gateway.ts` (el puente con la capa de cuentas), `auth-callback.tsx` (la
+vuelta del enlace del correo) y `src/app/auth/callback.tsx` (la ruta de tres
+líneas que la monta). La tab Perfil solo añade `<AccountSection />`.
+
+**Por qué hay un `account-gateway.ts`.** La regla del proyecto es que las
+pantallas importen de `@/data` y nunca de `@/data/supabase`. La cuenta es la
+única excepción y está encerrada ahí a propósito: el contrato de
+`src/data/repositories.ts` no tiene login —`SessionRepository` solo habla de modo
+activo y de perfil propio—, así que no hay forma de preguntarle por el estado de
+la cuenta, y `P1` prohíbe tocar `src/data/` para ampliarlo. Con la excepción en
+un solo archivo, el día que la cuenta entre en `Repositories` solo cambia ese.
+Además le da su única decisión propia: sin credenciales de Supabase,
+`readAccountState()` devuelve `null` en vez de llamar a `getSupabaseClient()`,
+que lanzaría — en el arranque de desarrollo con el mock en memoria no hay
+ninguna cuenta que asegurar, y la sección no pinta nada.
+
+**El bloqueo de cerrar sesión no lo decide la pantalla.** `handleSignOut` llama a
+`signOut()` sin flag y deja que la capa de datos se niegue; el
+`unrecoverable-account` que lanza es lo que abre el panel de confirmación, y solo
+desde ahí se pasa `signOut({ acceptDataLoss: true })`. Duplicar la regla aquí
+habría dejado dos copias que se pueden desincronizar. Verificado por mutación:
+cambiar esa llamada por la de `acceptDataLoss: true` tira 4 tests.
+
+**El ascenso son dos pasos y se nota en la UI.** El formulario pide email a
+secas, no email y contraseña juntos: GoTrue no acepta contraseña en una cuenta
+anónima hasta que el email está verificado. El campo de contraseña solo aparece
+cuando `recoverable` es cierto. Desde `pending-email` se puede reenviar el correo
+o cambiar de email sin salir de la pantalla, y «Ya lo he confirmado» relee el
+estado —`getAccountState()` pregunta al servidor, así que se entera aunque el
+enlace se haya pinchado en otro sitio—.
+
+**Fuera del alcance de archivos que enumera la orden**, y por qué: `P1` lista
+`(tabs)/profile.tsx`, `src/features/profile/` y este TODO, pero pide «ofrezca
+recuperar contraseña», y una recuperación no se puede cerrar sin recoger el
+enlace del correo — es el canje del `code` lo que abre la sesión en la que
+después se pone la contraseña nueva. Sin ruta, `lockin://auth/callback` cae en la
+pantalla de «ruta no encontrada» de expo-router. De ahí `src/app/auth/callback.tsx`,
+que además es lo que `datos` dejó escrito que era de este bloque
+(`docs/plan/todo/datos.md` → «El enlace del correo lo tiene que recoger la app…
+`src/data/` no puede registrar ese handler — es `src/app/`, o sea tuyo»). No
+toca `_layout.tsx` (es de `arquitecto`): expo-router monta la ruta por el árbol
+de archivos y los `<Stack.Screen>` explícitos solo fijan opciones.
+
+**Lo que NO se hizo, y es decisión y no olvido.** Si el email ya está en uso, el
+error se queda ahí: no se ofrece entrar en la otra cuenta, porque eso abandonaría
+el perfil, los matches y los chats de este dispositivo. Tampoco se ofrece
+«recuperar contraseña» desde una cuenta sin email, que sería lo mismo por la
+puerta de atrás. Y no hay ningún empujón a vincular email fuera de esta pantalla:
+vincular es opcional siempre, y el onboarding —donde más se abandona— sigue sin
+pedir nada.
+
+**Verificación (2026-09-17).** `npm run typecheck` y `npm run lint` limpios.
+`npm test -- --ci --runInBand`: 787 pasados, 82 saltados, 0 rojos. Cobertura
+global por encima de los umbrales de `jest.config.js` (93.94 / 87.91 / 93.64 /
+95.81 frente a 93.58 / 87.56 / 92.76 / 95.38). Tests nuevos: `account-section.test.tsx`
+(23 casos: los tres estados, el bloqueo de cierre de sesión y su confirmación, y
+los errores de email en uso, sin conexión y rechazo que no es `Error`),
+`account-gateway.test.ts`, `auth-callback.test.tsx` y `test/app/auth-callback.test.tsx`.
+
+**Para `calidad`.** Los umbrales de `jest.config.js` se quedaron como estaban
+aunque la cobertura ha subido. Su propio comentario dice que se suben cuando
+sube; no se han tocado aquí porque el archivo es de ese bloque y las órdenes
+`A2` y `D3` corren en paralelo, y subir el suelo ahora les pondría en rojo por
+algo que no es suyo.
 
 ## Recuerda
 Nadie contrata a nadie: no metas campos de "salario" o "equity que ofrezco" — eso es Modo Talento, Fase 4, fuera de este MVP.

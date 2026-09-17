@@ -6,7 +6,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useQuery, useRepositories, type ProfileInput } from '@/data';
-import { GithubVerification, ProfileDetails, ProfileForm } from '@/features/profile';
+import {
+  AccountSection,
+  GithubVerification,
+  ProfileDetails,
+  ProfileForm,
+} from '@/features/profile';
 import { PrimaryButton, SecondaryButton } from '@/features/profile/controls';
 
 /**
@@ -120,6 +125,10 @@ export default function ProfileScreen() {
         <GithubVerification profile={profile} onChange={refresh} />
 
         <SecondaryButton label="Editar perfil" onPress={() => setEditing(true)} />
+
+        {/* La cuenta va al final: es lo que menos se visita y donde vive la
+            salida destructiva. Arriba está lo que se viene a mirar. */}
+        <AccountSection />
       </ScrollView>
     </SafeAreaView>
   );

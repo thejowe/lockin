@@ -28,6 +28,26 @@ jest.mock('expo-router', () => require('../routes').expoRouterMock());
 /** Lo que envía el doble del formulario al pulsar su botón. */
 const mockEdited = buildProfileInput({ name: 'Núria Bosch', location: 'Girona' });
 
+/**
+ * La sección de cuenta llega hasta Supabase, que aquí no existe: sin
+ * credenciales `readAccountState()` devuelve `null` y no pintaría nada. Se
+ * sustituye por una cuenta anónima —la que tiene cualquiera que acabe de
+ * entrar— para poder comprobar que la tab la monta. Lo que la sección hace con
+ * cada estado se prueba en `src/features/profile/account-section.test.tsx`.
+ */
+jest.mock('@/features/profile/account-gateway', () => ({
+  ...jest.requireActual('@/features/profile/account-gateway'),
+  readAccountState: jest.fn(() =>
+    Promise.resolve({
+      kind: 'anonymous',
+      userId: 'uid-1',
+      email: null,
+      pendingEmail: null,
+      recoverable: false,
+    })
+  ),
+}));
+
 jest.mock('@/features/profile', () => {
   const actual = jest.requireActual('@/features/profile');
   const { Pressable, Text } = require('react-native');
@@ -144,6 +164,22 @@ describe('ProfileScreen', () => {
         expect(sync).not.toHaveBeenCalled();
       });
 
+      it('si la resincronización falla, la ficha sigue enseñando el sello que tenía', async () => {
+        // Sincronizar es oportunista: quien abre su perfil no venía a que le
+        // contaran que la red va mal, y el último handle conocido sigue siendo
+        // lo último que se sabe cierto.
+        await withProfile();
+        await repositories.profiles.verifyGithub();
+        jest
+          .spyOn(repositories.profiles, 'refreshGithubVerification')
+          .mockRejectedValue(new Error('sin red'));
+
+        await renderRoute(<ProfileScreen />);
+
+        await waitFor(() => expect(screen.getByText('Quitar verificación')).toBeTruthy());
+        expect(screen.queryByText('Verificar con GitHub')).toBeNull();
+      });
+
       it('la ficha ofrece verificar sin salir de la tab', async () => {
         await withProfile();
 
@@ -151,6 +187,22 @@ describe('ProfileScreen', () => {
 
         await waitFor(() => expect(screen.getByText('Verificar con GitHub')).toBeTruthy());
       });
+    });
+
+    /**
+     * La cuenta de quien no ha vinculado email vive solo en este teléfono, y
+     * hasta la orden `P1` la app no lo decía en ninguna parte. La tab Perfil es
+     * el sitio donde se dice y el único desde el que se puede arreglar.
+     */
+    it('la ficha avisa de que la cuenta vive solo en este teléfono', async () => {
+      await withProfile();
+
+      await renderRoute(<ProfileScreen />);
+
+      await waitFor(() =>
+        expect(screen.getByText('Tus datos viven solo en este teléfono')).toBeTruthy()
+      );
+      expect(screen.getByRole('button', { name: 'Asegurar mi cuenta' })).toBeTruthy();
     });
 
     it('guardar cierra la edición y relee: la ficha no se queda con lo viejo', async () => {
