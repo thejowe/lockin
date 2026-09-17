@@ -1041,7 +1041,7 @@ es el que más carga. Las órdenes completas, con alcance de archivos y criterio
 terminado, están en `docs/plan/ordenes-arquitectura.md`. **`D3` no puede correr a
 la vez que `D2`**: se pisan en `src/data/supabase/index.ts`.
 
-### Orden `D1` — canales de Realtime sin autenticar (Ola 1) — **[Codex]**
+### Orden `D1` — canales de Realtime sin autenticar (Ola 1) — **[Claude]**
 
 - [ ] **Hallazgo 2, y es el más grave de seguridad.** `client.channel('lockin:video:<sessionId>')` en `src/data/supabase/video-signal.ts:24` y `client.channel('lockin:presence:<sessionId>')` en `presence.ts:19` son canales de broadcast **públicos**: ninguno pasa `config: { private: true }` y no hay una sola política de Realtime Authorization en `supabase/migrations/` (comprobado el 2026-09-17: cero coincidencias de `realtime.messages` en todo el directorio). Como cualquiera puede darse de alta anónimamente, quien conozca o adivine un `sessionId` entra en la señalización WebRTC, puede inyectar una `offer` y leer la presencia de la pareja. **Todas las tablas están cuidadosamente protegidas por RLS y este camino se salta ese modelo entero** — es la excepción, no una laguna menor
 - [ ] Migración nueva con las políticas sobre `realtime.messages` que dejen entrar solo a las dos personas del match de esa sesión, `npm run test:schema` en verde y `drift-check.mjs` enseñado a verlas si hace falta

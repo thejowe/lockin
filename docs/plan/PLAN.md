@@ -219,7 +219,7 @@ nadie lo descubra a mitad:
 Siete problemas de arquitectura detectados el 2026-09-17 y verificados contra el
 código el mismo día. **No son un bloque nuevo**: se reparten entre los bloques que
 ya existen, respetando su alcance de archivos. El reparto, las órdenes
-autocontenidas (una por pegar en una sesión nueva, Claude Code o Codex) y el
+autocontenidas (una por pegar en una sesión nueva de Claude Code) y el
 criterio de terminado de cada una están en
 [`ordenes-arquitectura.md`](ordenes-arquitectura.md). El estado se marca en
 `TODO.md` → «Saneamiento de arquitectura» y en el `todo/<bloque>.md` de cada uno.
@@ -240,6 +240,12 @@ archivos: **Ola 1** = `A1` + `D1` · **Ola 2** = `D2` + `C1` · **Ola 3** = `P1`
 `src/data/supabase/index.ts`). Solo la Ola 1 lleva etiqueta de herramienta; las
 demás están sin etiquetar porque están **bloqueadas por la ola anterior**, no
 porque falte decidirlas — la etiqueta que les toca está anotada en su bloque.
+
+**Las siete van a Claude Code**, decidido con el usuario el 2026-09-17. `D1` y
+`C1` cumplen el criterio de `[Codex]` de este mismo archivo — alcance cerrado y
+criterio de terminado objetivo — y estuvieron etiquetadas así; se reetiquetaron a
+`[Claude]` por decisión del usuario. El criterio de reparto de arriba no cambia y
+sigue valiendo para lo que venga después de esta ola.
 
 Dos de estos hallazgos son de seguridad y van primero por eso: el 2 (cualquiera
 con un `sessionId` entra en la señalización WebRTC de otros) y el 1 (pérdida

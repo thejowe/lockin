@@ -2434,7 +2434,9 @@ orden completa está en `docs/plan/ordenes-arquitectura.md` → `ORDEN C1`.
 ### Orden `C1` — el contrato de Supabase no corre nunca (Ola 2)
 
 Sin etiqueta de herramienta: bloqueada por la Ola 1. Cuando se desbloquee va a
-`[Codex]` — alcance cerrado (`.github/workflows/`) y criterio objetivo.
+`[Claude]`, como las otras seis — decidido con el usuario el 2026-09-17. Por el
+criterio de `PLAN.md` sería `[Codex]` (alcance cerrado en `.github/workflows/`,
+criterio objetivo); se cambió por decisión suya, no porque el criterio falle.
 
 - [ ] **Hallazgo 4: hay dos implementaciones completas de las mismas reglas de negocio y lo único que las mantiene honestas no se ejecuta en CI.** `src/data/mock/` y `src/data/supabase/` implementan por separado ventanas de sesión, rachas, ranking y resolución de match. El árbitro es `src/data/repositories.contract.ts` (**48 215 bytes**), y su mitad de Supabase es opt-in con `LOCKIN_SUPABASE_CONTRACT=1`. `.github/workflows/contract.yml` se dispara **solo con `workflow_dispatch`** (verificado el 2026-09-17, `contract.yml:10-11`), con el motivo escrito en su cabecera: escribe usuarios y tarda más que CI. Resultado: el CI de cada push no ejecuta jamás la mitad de Supabase del contrato
 - [ ] El precedente que dice por qué esto cuesta dinero está ya en este archivo y en `TODO.md`: **`seeking_specialties` desaparecía en silencio al guardar contra Supabase mientras todos los tests por defecto seguían verdes**. No es un riesgo hipotético, pasó
