@@ -2438,6 +2438,120 @@ Sin etiqueta de herramienta: bloqueada por la Ola 1. Cuando se desbloquee va a
 criterio de `PLAN.md` sería `[Codex]` (alcance cerrado en `.github/workflows/`,
 criterio objetivo); se cambió por decisión suya, no porque el criterio falle.
 
-- [ ] **Hallazgo 4: hay dos implementaciones completas de las mismas reglas de negocio y lo único que las mantiene honestas no se ejecuta en CI.** `src/data/mock/` y `src/data/supabase/` implementan por separado ventanas de sesión, rachas, ranking y resolución de match. El árbitro es `src/data/repositories.contract.ts` (**48 215 bytes**), y su mitad de Supabase es opt-in con `LOCKIN_SUPABASE_CONTRACT=1`. `.github/workflows/contract.yml` se dispara **solo con `workflow_dispatch`** (verificado el 2026-09-17, `contract.yml:10-11`), con el motivo escrito en su cabecera: escribe usuarios y tarda más que CI. Resultado: el CI de cada push no ejecuta jamás la mitad de Supabase del contrato
-- [ ] El precedente que dice por qué esto cuesta dinero está ya en este archivo y en `TODO.md`: **`seeking_specialties` desaparecía en silencio al guardar contra Supabase mientras todos los tests por defecto seguían verdes**. No es un riesgo hipotético, pasó
-- [ ] Decidido el compromiso y escrito **dónde se decidió**: el motivo de `workflow_dispatch` es real (el contrato contra Supabase local levanta Docker y tarda), así que la salida no es «ponlo en cada push» sin más. Las palancas: un `schedule` nocturno, un `push` solo a la rama principal, o un job que corra únicamente los casos que cubren la deriva de mapeo. Elige una, escribe el porqué, y que quede un artefacto verde que se pueda citar
+- [x] **Hallazgo 4: hay dos implementaciones completas de las mismas reglas de negocio y lo único que las mantiene honestas no se ejecuta en CI.** `src/data/mock/` y `src/data/supabase/` implementan por separado ventanas de sesión, rachas, ranking y resolución de match. El árbitro es `src/data/repositories.contract.ts` (**48 215 bytes**), y su mitad de Supabase es opt-in con `LOCKIN_SUPABASE_CONTRACT=1`. `.github/workflows/contract.yml` se dispara **solo con `workflow_dispatch`** (verificado el 2026-09-17, `contract.yml:10-11`), con el motivo escrito en su cabecera: escribe usuarios y tarda más que CI. Resultado: el CI de cada push no ejecuta jamás la mitad de Supabase del contrato
+- [x] El precedente que dice por qué esto cuesta dinero está ya en este archivo y en `TODO.md`: **`seeking_specialties` desaparecía en silencio al guardar contra Supabase mientras todos los tests por defecto seguían verdes**. No es un riesgo hipotético, pasó
+- [x] Decidido el compromiso y escrito **dónde se decidió**: el motivo de `workflow_dispatch` es real (el contrato contra Supabase local levanta Docker y tarda), así que la salida no es «ponlo en cada push» sin más. Las palancas: un `schedule` nocturno, un `push` solo a la rama principal, o un job que corra únicamente los casos que cubren la deriva de mapeo. Elige una, escribe el porqué, y que quede un artefacto verde que se pueda citar
+
+### Cómo quedó (2026-09-17)
+
+**La opción 1 de la orden —apuntar la suite de contrato al Postgres embebido—
+no era alcanzable, y no por falta de ganas.** `supabase/schema-embedded.test.mjs`
+levanta PGlite, que es Postgres a secas: no trae PostgREST ni GoTrue.
+`src/data/supabase/` no habla SQL, habla HTTP a través de
+`@supabase/supabase-js` —`from().select()`, `rpc()` y `auth.signInAnonymously()`—,
+así que apuntarla ahí obligaría a escribir un sustituto de PostgREST **y** de
+Auth. Y aunque saliera, ese código viviría en `src/` o en `supabase/`, los dos
+fuera del alcance de esta orden. Se toma la alternativa que la propia orden
+declara aceptable, con la palanca elegida y escrita aquí.
+
+- [x] **`contract.yml` deja de ser solo a mano: gana `workflow_call` y lo llama
+      `ci.yml`.** El job nuevo `Contrato Supabase` de `ci.yml` corre en cada
+      push a la rama principal. No se deja como `push:` dentro de
+      `contract.yml` a propósito: llamándolo desde `ci.yml`, **su rojo es el
+      rojo de CI**, que es exactamente lo que pide el criterio de terminado. Un
+      workflow aparte en rojo es otra pestaña que nadie mira — el modo de fallo
+      que esta orden viene a cerrar.
+
+      La condición es
+      `github.ref == format('refs/heads/{0}', github.event.repository.default_branch)`
+      y no el nombre a pelo: la rama principal de este repo se llama
+      `claude/startup-cofounder-matching-app-tfeai1` y una copia más de esa
+      cadena es una copia más que mantener.
+
+      **Por qué esta palanca y no las otras dos.** Un `schedule` nocturno tiene
+      el mismo problema que el `workflow_dispatch`: el rojo llega cuando ya no
+      hay nadie mirando ese commit, y además se desengancha del cambio que lo
+      causó. Un subconjunto de casos «los que cubren la deriva de mapeo» exige
+      decidir cuáles son, y el precedente de `seeking_specialties` dice
+      precisamente que la deriva aparece donde nadie la esperaba. Correrlo en
+      cada push de cualquier rama tampoco: levanta Docker y tarda ~10 minutos,
+      diez veces lo que el resto de la matriz. Lo que cuesta la ventana elegida
+      es **un push de retraso**; lo que costaba no tenerla fueron los nueve
+      saltos sin declarar del 2026-09-15 y los once del 2026-09-16.
+
+- [x] **Guarda `grep` de la misma clase que la del job `SQL embebido`**, en el
+      paso «Suite de contrato». La salida de Jest se guarda con `tee` y se
+      exige con `grep -q` la línea que la propia suite imprime al cerrar:
+
+      ```
+      Test Suites: 1 passed, 1 total
+      ```
+
+      Comprobado aquí que esa línea distingue los dos casos, ejecutando el
+      archivo real:
+
+      | Situación | Línea de cierre | Salida de Jest |
+      |---|---|---|
+      | Sin `LOCKIN_SUPABASE_CONTRACT` / sin credenciales | `Test Suites: 1 skipped, 0 of 1 total` | **0 — verde** |
+      | Suite ejecutada | `Test Suites: 1 passed, 1 total` | 0 |
+
+      Es decir: sin credenciales, `contract.test.ts:397` degrada su `describe`
+      a `describe.skip`, Jest reporta `82 skipped, 82 total` y **sale en
+      verde**. Ese es el «job que pasa sin ejecutar nada» que la orden llama
+      peor que un job rojo.
+
+      Honestidad sobre el alcance de esta guarda: el `jq -e` que ya estaba
+      (ahora «Guarda 2») **ya cubría** ese caso concreto, porque exige
+      `numPassedTests > 0`. Lo que añade la guarda nueva es la forma que pide
+      la orden —una línea nombrada, greppable, idéntica en clase a las dos de
+      `ci.yml:134-139`— y una segunda comprobación que no depende de que el
+      JSON se haya escrito. No se ha tocado el `jq`: sigue siendo el que
+      detecta los saltos sin declarar, que es el fallo que ha aparecido tres
+      veces.
+
+- [x] **Suelo de cobertura al día en `jest.config.js`.** Llevaba fijo desde el
+      2026-09-07 y estaba muy por debajo de lo que mide la suite hoy, con las
+      dos suites que `arquitecto` entregó en `fa3759c`
+      (`src/data/provider.test.tsx` y `src/data/active.test.ts`) ya dentro.
+      Medido con `npx jest --coverage --ci --runInBand`: 715 pasados, 82
+      saltados, 65 de 66 suites.
+
+      | | Antes (2026-09-07) | Ahora (2026-09-17) |
+      |---|---|---|
+      | statements | 89.82 | **93.58** (2394/2558) |
+      | branches | 82.56 | **87.56** (1176/1343) |
+      | functions | 91.49 | **92.76** (705/760) |
+      | lines | 91.38 | **95.38** (2148/2252) |
+
+      Los cuatro suben. Ninguno baja, que es la única regla que el comentario
+      del archivo nunca ha permitido romper.
+
+### Verificación de esta pasada
+
+Local:
+
+- `npm run test:coverage -- --ci --runInBand` — **verde con el suelo nuevo**:
+  715 pasados, 0 fallos, y los cuatro umbrales por encima con margen
+  (93.5887 ≥ 93.58, 87.5651 ≥ 87.56, 92.7631 ≥ 92.76, 95.3819 ≥ 95.38).
+- `npm run lint` y `npm run typecheck` — limpios.
+- Los dos workflows parsean como YAML (`require('yaml').parse`) y `ci.yml`
+  declara ahora cuatro trabajos: `quality`, `build`, **`contract`**, `schema`.
+- `npx prettier` sobre `.github/workflows/contract.yml`: la salida formateada
+  es **byte a byte igual** al archivo salvo los finales de línea
+  (`diff` tras `tr -d ''` sale vacío). El aviso de `format:check` aquí es el
+  CRLF de esta máquina, como siempre; el veredicto se lee del job «Formato».
+- **No ejecutado aquí**: el contrato contra Supabase. Necesita Docker y el CLI
+  de Supabase, y escribe usuarios; por eso existe el job.
+
+En CI — es el criterio de terminado de verdad, y queda **pendiente de anotar**:
+
+- [ ] `CI` verde sobre el commit empujado, con el job `Contrato Supabase`
+      **ejecutado** (no `skipped`) y su `grep` pasando. Es lo que demuestra que
+      el contrato corrió de verdad.
+- [ ] **La guarda rota a propósito una vez**, y el job en rojo por ello. Se hace
+      sobre una rama desechable con `workflow_dispatch`, cambiando la cadena
+      del `grep` por una que la suite no imprime; el job tiene que morir
+      diciendo «El contrato contra Supabase no llegó a ejecutarse entero». Sin
+      esta comprobación la guarda es una línea de YAML que nadie ha visto
+      fallar, que es justo lo que le pasó a la de `SQL embebido` hasta
+      `ffebe59`.

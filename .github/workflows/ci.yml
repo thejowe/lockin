@@ -1,7 +1,9 @@
 name: CI
 
-# Cada push y cada PR pasa por aquí. Los cuatro trabajos son independientes a
+# Cada push y cada PR pasa por aquí. Los trabajos son independientes a
 # propósito: si el formato está mal, quieres seguir viendo si los tests pasan.
+# Uno de ellos, `Contrato Supabase`, solo corre en la rama principal; su motivo
+# está junto a su definición.
 on:
   push:
     branches: ['**']
@@ -66,6 +68,31 @@ jobs:
       # El export de web es la comprobación más barata de que el bundle entero
       # se construye: resuelve todos los imports y renderiza las rutas estáticas.
       - run: npx expo export --platform web --output-dir dist
+
+  # El contrato de `Repositories` contra Supabase de verdad. `src/data/mock/` y
+  # `src/data/supabase/` implementan por separado las mismas reglas —ventanas de
+  # sesión, rachas, ranking del deck, resolución de match— y lo único que las
+  # mantiene alineadas es `src/data/repositories.contract.ts`. Su mitad de
+  # Supabase es opt-in (`LOCKIN_SUPABASE_CONTRACT=1`), así que hasta hoy no la
+  # ejecutaba nadie salvo a mano. Se llama desde aquí, y no se deja en su
+  # workflow aparte, para que su rojo SEA el rojo de CI.
+  #
+  # Solo en pushes a la rama principal: levanta un Supabase local con Docker y
+  # tarda ~10 minutos, diez veces lo que el resto de la matriz. En rama de
+  # trabajo y en PR se salta a propósito. Lo que cuesta esa ventana es un push
+  # de retraso en ver la deriva; lo que costaba no tenerlo fueron los nueve
+  # saltos sin declarar del 2026-09-15 y los once del 2026-09-16, que
+  # envejecieron sin que nadie los viera porque el job solo arrancaba a mano.
+  #
+  # `default_branch` en vez del nombre a pelo: la rama principal de este repo
+  # se llama `claude/startup-cofounder-matching-app-tfeai1` y escribirla aquí
+  # es una copia más que mantener.
+  contract:
+    name: Contrato Supabase
+    if: >-
+      github.event_name == 'push'
+      && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    uses: ./.github/workflows/contract.yml
 
   # Lo que hacen las funciones SQL, no la forma del esquema. `schema-drift.yml`
   # aplica las migraciones a una Supabase desechable y compara la huella: eso

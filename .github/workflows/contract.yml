@@ -6,9 +6,19 @@ name: Contrato Supabase
 # base sale de las migraciones del repo más `supabase/seed.sql`, que sí trae la
 # función, y se tira al terminar.
 #
-# Solo a mano: escribe usuarios y tarda más que CI, y ya hay E2E en cada push.
+# Corre en cada push a la rama principal, llamado desde `ci.yml` (job «Contrato
+# Supabase»), y a mano en cualquier rama. En ramas de trabajo y en los PR no:
+# levanta Docker y tarda ~10 minutos, y el motivo por el que nació opt-in
+# —escribe usuarios y es lento— sigue siendo cierto.
+#
+# Lo que no se sostenía era que la mitad de Supabase del contrato no se
+# ejecutara NUNCA sola. Un workflow que solo arranca a mano no se pone rojo
+# solo: se queda con el veredicto de la última vez que alguien lo lanzó. Así se
+# acumularon los once saltos sin declarar del 2026-09-16 y, antes, los nueve del
+# 2026-09-15 (`docs/plan/todo/calidad.md`).
 on:
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
@@ -77,9 +87,23 @@ jobs:
           LOCKIN_SUPABASE_CONTRACT: '1'
         run: |
           set -euo pipefail
-          npx jest src/data/supabase/contract.test.ts --ci --json --outputFile=contract-result.json
-          # Sin credenciales la suite entera se salta y Jest sale en verde: exigir
-          # que haya corrido algo. Los únicos saltos admitidos son los casos
+          # El reporter de Jest escribe en stderr; se guarda la salida entera
+          # porque de ahí se lee la primera guarda.
+          npx jest src/data/supabase/contract.test.ts --ci --json --outputFile=contract-result.json 2>&1 \
+            | tee "$RUNNER_TEMP/contract.log"
+
+          # Guarda 1 — la misma clase que la del job «SQL embebido» de `ci.yml`:
+          # una línea que la propia suite imprime al terminar, exigida con
+          # `grep -q`. Sin credenciales, `contract.test.ts:397` degrada su
+          # `describe` a `describe.skip`; entonces Jest cierra con
+          # «Test Suites: 1 skipped, 1 total» y sale en VERDE sin haber hablado
+          # con ninguna base de datos. Esta línea solo aparece si el archivo
+          # existía, se ejecutó y llegó entero al final.
+          grep -q 'Test Suites: 1 passed, 1 total' "$RUNNER_TEMP/contract.log" \
+            || { echo 'El contrato contra Supabase no llegó a ejecutarse entero (suite saltada: ¿faltan credenciales?)'; exit 1; }
+
+          # Guarda 2 — sobre el JSON, y por caso. Los únicos saltos admitidos
+          # son los casos
           # `itWithTimeTravel` de `repositories.contract.ts`, que necesitan reloj
           # simulado (`canTimeTravel: false` aquí; los cubren el mock y PGlite).
           # Un caso nuevo de ese tipo obliga a añadirlo a esta lista a propósito.

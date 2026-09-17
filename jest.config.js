@@ -37,10 +37,19 @@ module.exports = {
     '!src/**/index.ts',
     '!src/data/test-fixtures.ts',
   ],
-  // Suelo fijado a la cobertura real de la suite local (2026-09-07).
+  // Suelo fijado a la cobertura real de la suite (2026-09-17, medida con
+  // `npx jest --coverage --ci --runInBand`: 715 pasados, 82 saltados).
   // Se sube cuando la cobertura suba; no se bajan los umbrales ni se excluyen
-  // archivos para dejar pasar un cambio. El contrato remoto sigue siendo opt-in.
+  // archivos para dejar pasar un cambio.
+  //
+  // Los 82 saltados son `src/data/supabase/contract.test.ts`, que sigue siendo
+  // opt-in (`LOCKIN_SUPABASE_CONTRACT=1`) porque escribe en la base a la que
+  // apunte. Desde el 2026-09-17 ya no es cierto que no se ejecute nunca: el job
+  // `Contrato Supabase` de `ci.yml` lo corre en cada push a la rama principal
+  // contra un Supabase local desechable. Su cobertura no cuenta aquí a
+  // propósito — se mide en otra pasada y sobre otra base de datos —, así que
+  // estos números son los de la suite por defecto y solo suben con ella.
   coverageThreshold: {
-    global: { statements: 89.82, branches: 82.56, functions: 91.49, lines: 91.38 },
+    global: { statements: 93.58, branches: 87.56, functions: 92.76, lines: 95.38 },
   },
 };
