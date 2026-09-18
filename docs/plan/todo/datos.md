@@ -1045,7 +1045,7 @@ la vez que `D2`**: se pisan en `src/data/supabase/index.ts`.
 
 - [x] **Hallazgo 2, y es el más grave de seguridad.** `client.channel('lockin:video:<sessionId>')` en `src/data/supabase/video-signal.ts:24` y `client.channel('lockin:presence:<sessionId>')` en `presence.ts:19` son canales de broadcast **públicos**: ninguno pasa `config: { private: true }` y no hay una sola política de Realtime Authorization en `supabase/migrations/` (comprobado el 2026-09-17: cero coincidencias de `realtime.messages` en todo el directorio). Como cualquiera puede darse de alta anónimamente, quien conozca o adivine un `sessionId` entra en la señalización WebRTC, puede inyectar una `offer` y leer la presencia de la pareja. **Todas las tablas están cuidadosamente protegidas por RLS y este camino se salta ese modelo entero** — es la excepción, no una laguna menor
 - [x] Migración nueva con las políticas sobre `realtime.messages` que dejen entrar solo a las dos personas del match de esa sesión, `npm run test:schema` en verde y `drift-check.mjs` enseñado a verlas si hace falta
-- [ ] **Pendiente del usuario** (no lo puede hacer un agente): pegar la migración en el SQL Editor de `grrzmzktrhksbttpbblg` y ver `Schema drift` verde en local **y** remoto. Hasta entonces el job remoto estará rojo a propósito — anótalo aquí el día que pase, que es la excepción que la memoria del proyecto dice que hay que declarar
+- [x] **Pendiente del usuario, cerrado el 2026-09-18**: migración pegada en el SQL Editor de `grrzmzktrhksbttpbblg`. `Schema drift` verde en local y remoto ([run 35361939148](https://github.com/thejowe/lockin/actions/runs/35361939148), `remote.diff` = «Sin diferencias.»). **La excepción queda cerrada: desde aquí, un rojo del job remoto vuelve a ser deriva real**
 
 #### Lo que se entregó (2026-09-17)
 
@@ -1170,19 +1170,13 @@ mutaciones, teardown dos veces y guardia de sobrecarga: OK`, y
   `20260917000100_realtime_authorization.sql`.
 - `src/data/provider.tsx` y `src/data/active.ts`: son de `A1`, que corría a la vez.
 
-#### Pendiente del usuario — dos cosas, y la segunda no es SQL
+#### Pendiente del usuario — cerrado el 2026-09-18
 
-**1. Pegar `supabase/migrations/20260917000100_realtime_authorization.sql`** en
-el SQL Editor de `grrzmzktrhksbttpbblg`. El archivo es idempotente (`drop policy
-if exists` antes de cada `create`), así que pegarlo dos veces no rompe nada.
-
-**2. Desactivar «Allow public access» en los ajustes de Realtime del proyecto**
-(panel de Supabase → Realtime → Settings). Esto **no se puede hacer por SQL** y
-sin ello el arreglo está a medias: un topic es un topic, y mientras el acceso
-público siga permitido cualquiera puede abrir `lockin:video:<sessionId>` **sin**
-`private: true` y quedarse fuera del alcance de estas políticas. La documentación
-de Supabase es explícita: «To enforce private channels you need to disable the
-"Allow public access" setting».
+Las dos cosas, hechas: **1.** `supabase/migrations/20260917000100_realtime_authorization.sql`
+pegada en el SQL Editor de `grrzmzktrhksbttpbblg`. **2.** «Allow public access»
+desactivado en Realtime → Settings — sin esto el flag `private: true` del
+cliente no bastaba, porque el acceso público seguía dejando entrar a cualquiera
+al margen de las políticas nuevas.
 
 ##### El rojo esperado de `Schema drift`, declarado por escrito
 
@@ -1204,20 +1198,12 @@ poner **rojo a propósito**, y lo hará por estas líneas y solo por estas:
 
 (Con `-`, es decir: están en las migraciones y **faltan** en el despliegue.)
 
-- **Si el `remote.diff` trae exactamente eso**, es esta excepción: falta aplicar
-  la migración. Se cierra pegándola.
-- **Si trae cualquier otra línea**, no es esta excepción: es deriva de verdad y
-  hay que diagnosticarla aparte.
-- **Cuando el usuario la aplique**, hay que volver aquí, marcar la casilla de
-  arriba, anotar el número de run que sale verde y **dar la excepción por
-  cerrada**, para que el siguiente rojo vuelva a leerse como deriva real.
-
-El job `local` de `Schema drift` (Supabase desechable desde `migrations/`) debe
-seguir **verde**: ahí la migración sí se aplica. Si el que se pone rojo es el
-local, el problema es la migración y no el despliegue — el sitio más probable
-sería que el stack local no dejara crear políticas sobre `realtime.messages` con
-el rol que usa `supabase db reset`, algo que desde este equipo no se puede
-comprobar (no hay Docker).
+**Así pasó.** El `run 35361097480` (workflow_dispatch, antes de que el usuario
+aplicara esta migración) trajo el `remote.diff` exacto de arriba, y solo esas
+cinco líneas — confirmado que era esta excepción y no deriva de otra cosa. Tras
+aplicarla, el `run 35361939148` salió verde en local **y** remoto (`Sin
+diferencias.`). **Excepción cerrada**: desde aquí, un rojo del job remoto vuelve
+a leerse como deriva real.
 
 
 ### Orden `D2` — identidad real y recuperación de cuenta (Ola 2) — ENTREGADA 2026-09-17
@@ -1336,16 +1322,14 @@ Los cuatro, en `supabase/migrations/20260918000100_deck_exclude_last_messages_ac
   `create or replace function` y `drift-check.test.mjs` sigue en verde, así
   que recoge los tres RPC nuevos sin cambios propios.
 
-##### Pendiente del usuario
+##### Pendiente del usuario — cerrado el 2026-09-18
 
-Igual que `D1`: la migración nueva
-(`20260918000100_deck_exclude_last_messages_active_session.sql`) hay que
-pegarla en el SQL Editor de `grrzmzktrhksbttpbblg`. Hasta entonces:
-`getDeck` con `excludeIds`, la previsualización del último mensaje y
-`sessions.getActive` siguen funcionando contra el proyecto real con el
-código **anterior a esta entrega solo si no se despliega el código nuevo
-a la vez** — pero como los tres cambios de `index.ts`/`sessions.ts` ya
-llaman a funciones que solo existen en la migración nueva, **hay que
-aplicar la migración antes de desplegar este commit**, o `getDeck`,
-`matches.list()` y `sessions.getActive` fallarán contra Supabase con
-`PGRST202` (función no encontrada). No afecta al mock ni a `npm test`.
+Migración `20260918000100_deck_exclude_last_messages_active_session.sql`
+pegada en el SQL Editor de `grrzmzktrhksbttpbblg`, en el mismo lote que la
+de `D1`. `Schema drift` verde en local y remoto
+([run 35361939148](https://github.com/thejowe/lockin/actions/runs/35361939148)),
+así que `getDeck`, `matches.list()` y `sessions.getActive` ya pueden
+desplegarse contra Supabase real sin el riesgo de `PGRST202`.
+
+**Con esto, los 7 hallazgos del saneamiento de arquitectura del
+2026-09-17 quedan cerrados** — el último en pie era este `D3`.
