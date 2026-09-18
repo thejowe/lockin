@@ -13,7 +13,6 @@ import {
   SessionForbiddenError,
   SessionWindowError,
 } from '../session-errors';
-import { isSessionLive } from '../sessions';
 import { ensureUserId } from './auth';
 import { getSupabaseClient } from './client';
 
@@ -120,24 +119,17 @@ export function createSupabaseSessionRepository(
   const repository: LockInSessionRepository = {
     async getActive(matchId) {
       await deps.getUserId();
-      const { data, error } = await deps
-        .getClient()
-        .from('lockin_sessions')
-        .select('*')
-        .eq('match_id', matchId)
-        .in('status', ['propuesta', 'aceptada'])
-        .order('created_at', { ascending: false })
-        .limit(5);
+      // "Viva" la decide Postgres con su propio `now()`, no el reloj del
+      // teléfono: un dispositivo desfasado abriría o cerraría la ventana de la
+      // sesión antes de tiempo, y eso es justo lo que corrige `server_now()` en
+      // el resto del repositorio. `setof`: cero o una fila.
+      const { data, error } = await deps.getClient().rpc('active_session', {
+        p_match_id: matchId,
+      });
       if (error) throw error;
 
-      // "Viva" depende de la hora, que no se puede filtrar en la consulta sin un
-      // RPC más. Se usa el reloj del dispositivo: la pantalla de sesión corrige
-      // el desfase con `serverNow()` donde de verdad importa.
-      const now = Date.now();
-      const live = (data as SessionRow[])
-        .map(toLockInSession)
-        .find((session) => isSessionLive(session, now));
-      return live ? remember(live) : null;
+      const rows = data as SessionRow[];
+      return rows.length > 0 ? remember(toLockInSession(rows[0])) : null;
     },
 
     async getById(sessionId) {

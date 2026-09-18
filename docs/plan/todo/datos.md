@@ -489,7 +489,7 @@ nada: hay que esperar a la hora siguiente.
 
 ## Deuda anotada
 - `initialsFrom()` está duplicada en `src/data/mock/store.ts` y `src/data/supabase/mappers.ts`. Es lógica de dominio compartida, pero subirla a `src/data/` es territorio de `arquitecto`. Si divergen, el avatar de un mismo perfil cambia al conectar Supabase.
-- `MatchRepository.list()` resuelve el último mensaje de cada conversación con una ventana de los 200 mensajes más recientes (PostgREST no expone `distinct on`). El orden de la lista nunca se ve afectado — lo da `matches.last_message_at` —, solo la previsualización de un match muy antiguo.
+- ~~`MatchRepository.list()` resuelve el último mensaje de cada conversación con una ventana de los 200 mensajes más recientes~~ — cerrado por la orden `D3` (2026-09-18): ahora es el RPC `last_messages_for_matches` (`distinct on` en SQL). Ver esa sección.
 
 ## Orden por complementariedad mutua (2026-09-07)
 
@@ -1289,11 +1289,63 @@ tiene que volver a tocarse:
 - El copy que manda `P1`: no es "crear cuenta" ni "registrarse". La cuenta ya
   existe; esto es **asegurarla**.
 
-### Orden `D3` — consultas sin paginar y reloj del dispositivo (Ola 3)
+### Orden `D3` — consultas sin paginar y reloj del dispositivo (Ola 3) — ENTREGADA 2026-09-18
 
-Sin etiqueta: bloqueada por las olas 1 y 2, y **nunca a la vez que `D2`**.
+Sin etiqueta: bloqueada por las olas 1 y 2, y **nunca a la vez que `D2`**. Se
+comprobó antes de lanzarla que no hay trabajo sin fusionar de `D2` en este
+worktree (`git status` limpio, `git log` con `D2`/`C1`/`P1` ya en el historial).
 
-- [ ] **Hallazgo 6a: `matches.list()` no pagina.** Trae todos los matches de la cuenta sin límite (`src/data/supabase/index.ts:434`: sin `where`, apoyándose solo en que la política «matches: solo los tuyos» acota la lectura)
-- [ ] **Hallazgo 6b: las vistas previas del último mensaje son una heurística.** Se reconstruyen en el cliente trayendo los `RECENT_MESSAGES_WINDOW = 200` mensajes más recientes y agrupándolos (`index.ts:74-79`, `386`). El propio comentario lo admite: «correcto salvo que alguien tenga más de 200»
-- [ ] **Hallazgo 6c: `getDeck` encoge las páginas.** El RPC `discovery_deck` pagina a 50 filas en SQL y **después** `excludeIds` se aplica en JS (`index.ts:324-325`), así que el tamaño de página varía de forma impredecible según lo que ya hayas swipeado
-- [ ] **Hallazgo 6d: `sessions.getActive` usa el reloj del dispositivo.** `src/data/supabase/sessions.ts:136` decide si una sesión está viva con `Date.now()`, cuando `serverNow()` existe en la interfaz (`src/data/repositories.ts:182`) precisamente porque ese reloj no es de fiar. El comentario de al lado dice que se acepta «donde no importa» — hay que releerlo y decidir si aquí importa, que es justo donde se decide si alguien entra o no a su sesión
+- [x] **Hallazgo 6a: `matches.list()` no pagina.** Trae todos los matches de la cuenta sin límite (`src/data/supabase/index.ts:434`: sin `where`, apoyándose solo en que la política «matches: solo los tuyos» acota la lectura)
+- [x] **Hallazgo 6b: las vistas previas del último mensaje son una heurística.** Se reconstruyen en el cliente trayendo los `RECENT_MESSAGES_WINDOW = 200` mensajes más recientes y agrupándolos (`index.ts:74-79`, `386`). El propio comentario lo admite: «correcto salvo que alguien tenga más de 200»
+- [x] **Hallazgo 6c: `getDeck` encoge las páginas.** El RPC `discovery_deck` pagina a 50 filas en SQL y **después** `excludeIds` se aplica en JS (`index.ts:324-325`), así que el tamaño de página varía de forma impredecible según lo que ya hayas swipeado
+- [x] **Hallazgo 6d: `sessions.getActive` usa el reloj del dispositivo.** `src/data/supabase/sessions.ts:136` decide si una sesión está viva con `Date.now()`, cuando `serverNow()` existe en la interfaz (`src/data/repositories.ts:182`) precisamente porque ese reloj no es de fiar. El comentario de al lado dice que se acepta «donde no importa» — hay que releerlo y decidir si aquí importa, que es justo donde se decide si alguien entra o no a su sesión
+
+#### Cómo quedó (2026-09-18)
+
+Los cuatro, en `supabase/migrations/20260918000100_deck_exclude_last_messages_active_session.sql`
+(migración nueva; ninguna de las aplicadas se reescribe):
+
+- **6a — `matches.list()` paginado por dentro, sin cambiar su firma.** `MatchRepository.list()` la consumen `chat` (`use-matches.ts`) y `sesiones` (`session-reminder-sync.tsx`), y las dos esperan la lista completa — no un cursor —, así que **no** se tocó la firma del contrato (la orden pedía parar y avisar si hiciera falta; no hizo falta). El riesgo real no era "trae demasiado": es que un `select('*')` sin `range()` se apoya en el tope de fila por defecto de PostgREST (`max-rows`, 1000 en un proyecto nuevo de Supabase) y **lo supera en silencio** — no falla, corta la respuesta. `fetchAllPages()` (nueva, en `index.ts`) pide en vueltas de 500 con `range()` y `order('id')` hasta que una vuelta vuelve corta, así que ninguna cuenta con más matches que el tope pierde los de más allá. `resolveMatches()` sigue ordenando el resultado por actividad reciente; el `order('id')` de la paginación es solo para que las vueltas no se salten ni repitan filas.
+- **6b — `last_messages_for_matches(p_match_ids)`, RPC nuevo.** `distinct on (match_id)` en SQL, que PostgREST no expone directamente. Sustituye la ventana de 200 mensajes agrupada en el cliente: exacto para cualquier historial, no solo "salvo que alguien tenga más de 200 mensajes por delante". `SECURITY INVOKER` (el valor por defecto, sin declararlo aparte): la política `messages: lees los de tus matches` ya limita las filas a los matches de quien llama, así que pasar el id de un match ajeno en `p_match_ids` simplemente no devuelve nada para ese id — RLS, no un chequeo aparte en la función.
+- **6c — `excludeIds` bajado al `where` de `discovery_deck`.** Parámetro nuevo `p_exclude_ids uuid[] default null`, **añadido al final** de la firma (no reordena `p_mode`/`p_specialties`/`p_limit`), así que `create or replace function` conserva la identidad de la función y cualquier llamada vieja sin este argumento sigue funcionando. Antes `getDeck` traía la página de 50 y **después** quitaba `excludeIds` en JS, así que la página encogía de forma impredecible; ahora la exclusión entra en el mismo `where` que el resto de filtros, antes del `limit`, así que la página siempre sale completa. Cubierto en `schema-embedded.test.mjs` con el caso que distingue las dos versiones: `p_limit=2` con el primer candidato excluido devuelve **dos** filas, no una.
+- **6d — `active_session(p_match_id)`, RPC nuevo.** Resuelve "viva" con el `now()` de Postgres (`session_is_live`, ya existía desde `20260913000100`), no con `Date.now()` del teléfono. Mismo patrón defensivo que `ratable_session`: `SECURITY DEFINER` con `is_match_member(p_match_id)` explícito en el `where`, aunque la política de `lockin_sessions` ya acota la lectura — es el estilo que ya sigue el resto del archivo, y aquí importa de verdad: un teléfono desfasado ya no puede abrir o cerrar la ventana de la sesión antes de tiempo.
+- **Fixture de la suite embebida ampliada.** Cubrir 6b (SECURITY INVOKER puro) expuso que `schema-embedded.test.mjs` nunca había ejercitado una política RLS que llama a `auth.uid()` directamente bajo el rol `authenticated` sin pasar antes por una función `SECURITY DEFINER` que ya eleva el privilegio — las que sí lo hacían (el resto del archivo) siempre pasaban por una. La fixture de `auth` no concedía `usage on schema auth` ni `execute on function auth.uid()` a `authenticated`, algo que Supabase da por hecho fuera de cualquier migración (el esquema `auth` lo gestiona la plataforma). Añadidos los dos grants en la fixture, con el motivo escrito ahí mismo — no es una migración nueva, es solo que la fixture mentía por omisión en una ruta que hasta ahora nadie había tomado.
+
+##### Verificación (2026-09-18)
+
+- `npm run test:schema` → `# tests 21`, `# pass 21`, `# fail 0`, con `SQL
+  ejecutado: 13 migraciones; digest f684f00c2a79143420b8c8e6a32b453b; 470
+  objetos`. Los tres RPC nuevos, cubiertos dentro de la misma prueba
+  embebida: `discovery_deck` con y sin `p_exclude_ids` (incluida la
+  distinción de página que antes se encogía), `last_messages_for_matches`
+  con un match ajeno en la consulta que RLS deja fuera (verificado también
+  que **sin** el rol `authenticated` de verdad el test daba falso verde —
+  se detectó al escribirlo, no se asumió), y `active_session` con una
+  sesión rechazada (no cuenta como viva) y una sesión viva de un match
+  ajeno que `is_match_member` bloquea a quien no es parte.
+- `npm run typecheck`, `npm run lint`: limpios.
+- `npm test -- --ci --runInBand`: **788 pasados, 71 suites** (82 saltados,
+  la suite de contrato remota, opt-in), 0 fallos. `getActive` en
+  `src/data/supabase/sessions.test.ts` reescrito: ya no simula la
+  liviandad en el cliente (ese comportamiento lo cubre ahora
+  `schema-embedded.test.mjs` contra Postgres de verdad), solo que el
+  repositorio llama al RPC con el `matchId` correcto y traduce la fila
+  (o su ausencia).
+- `node supabase/drift-check.mjs` no se ejecutó contra el proyecto remoto
+  (necesita `grrzmzktrhksbttpbblg` real); su parser es genérico sobre
+  `create or replace function` y `drift-check.test.mjs` sigue en verde, así
+  que recoge los tres RPC nuevos sin cambios propios.
+
+##### Pendiente del usuario
+
+Igual que `D1`: la migración nueva
+(`20260918000100_deck_exclude_last_messages_active_session.sql`) hay que
+pegarla en el SQL Editor de `grrzmzktrhksbttpbblg`. Hasta entonces:
+`getDeck` con `excludeIds`, la previsualización del último mensaje y
+`sessions.getActive` siguen funcionando contra el proyecto real con el
+código **anterior a esta entrega solo si no se despliega el código nuevo
+a la vez** — pero como los tres cambios de `index.ts`/`sessions.ts` ya
+llaman a funciones que solo existen en la migración nueva, **hay que
+aplicar la migración antes de desplegar este commit**, o `getDeck`,
+`matches.list()` y `sessions.getActive` fallarán contra Supabase con
+`PGRST202` (función no encontrada). No afecta al mock ni a `npm test`.

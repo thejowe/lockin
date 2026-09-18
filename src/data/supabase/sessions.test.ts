@@ -184,15 +184,21 @@ describe('createSupabaseSessionRepository', () => {
     );
   });
 
-  it('getActive descarta lo que ya no está vivo y pide solo estados vivos', async () => {
-    const expired = row({ id: 'old', starts_at: new Date(Date.now() - MINUTE).toISOString() });
-    const live = row({ id: 'live' });
-    const { chain, repository } = fakeClient({ select: { data: [expired, live], error: null } });
+  it('getActive pide la sesión viva por RPC, sin decidir "viva" con el reloj del cliente', async () => {
+    const { client, repository } = fakeClient({
+      rpc: { active_session: { data: [row({ id: 'live' })], error: null } },
+    });
 
     const session = await repository.getActive('match-1');
 
+    expect(client.rpc).toHaveBeenCalledWith('active_session', { p_match_id: 'match-1' });
     expect(session?.id).toBe('live');
-    expect(chain).toContain('in(["status",["propuesta","aceptada"]])');
+  });
+
+  it('getActive devuelve null cuando el RPC no trae ninguna fila viva', async () => {
+    const { repository } = fakeClient({ rpc: { active_session: { data: [], error: null } } });
+
+    expect(await repository.getActive('match-1')).toBeNull();
   });
 
   it('join avisa al match de la sesión aunque no se haya leído antes', async () => {

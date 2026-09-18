@@ -72,17 +72,17 @@ const MATCHES_TOPIC = 'matches';
 const messagesTopic = (matchId: string) => `messages:${matchId}`;
 
 /**
- * Cuántos mensajes se traen para resolver el "último mensaje" de cada match.
+ * Cuántas filas se piden por vuelta al paginar `matches` y `messages`.
  *
- * `MatchRepository.list()` necesita el último mensaje de cada conversación.
- * Postgres sabría resolverlo con un `distinct on`, pero PostgREST no lo expone,
- * así que se piden los mensajes más recientes del usuario y se agrupan aquí.
- * Con este techo la lista es correcta salvo que alguien tenga más de 200
- * mensajes repartidos por delante del último de alguna conversación vieja; ese
- * match aparecería sin previsualización, nunca en el orden equivocado (el orden
- * lo da `matches.last_message_at`, que mantiene un trigger).
+ * PostgREST tiene un tope de fila por defecto (`max-rows`, 1000 en un proyecto
+ * nuevo de Supabase): un `select('*')` sin `range()` no falla al superarlo,
+ * **corta la respuesta en silencio**. `matches.list()` no llevaba `range()`
+ * en absoluto, así que una cuenta con más matches que ese tope perdía los de
+ * más allá sin ningún aviso. Paginar con esta vuelta evita depender de ese
+ * límite ajeno sin cambiar la firma del contrato: `list()` sigue devolviendo
+ * todo, solo que en varias peticiones en vez de una que podía truncarse.
  */
-const RECENT_MESSAGES_WINDOW = 200;
+const FETCH_PAGE_SIZE = 500;
 
 // ---------------------------------------------------------------------------
 // Avisos a las pantallas
@@ -178,26 +178,49 @@ function createNotifier(): Notifier {
   };
 }
 
-/** Último mensaje de cada conversación, indexado por `matchId`. */
+/**
+ * Último mensaje de cada conversación, indexado por `matchId`.
+ *
+ * Antes era una heurística: traer los 200 mensajes más recientes del usuario
+ * y agrupar en JS, correcto "salvo que alguien tenga más de 200 mensajes por
+ * delante del último de alguna conversación vieja". `last_messages_for_matches`
+ * resuelve el `distinct on (match_id)` en Postgres, que PostgREST no expone
+ * directamente — exacto para cualquier historial, sin techo.
+ */
 async function lastMessagesByMatch(matchIds: string[]): Promise<Map<string, Message>> {
   const byMatch = new Map<string, Message>();
   if (matchIds.length === 0) return byMatch;
 
-  const { data, error } = await getSupabaseClient()
-    .from('messages')
-    .select('*')
-    .in('match_id', matchIds)
-    .order('sent_at', { ascending: false })
-    .order('id', { ascending: false })
-    .limit(RECENT_MESSAGES_WINDOW);
+  const { data, error } = await getSupabaseClient().rpc('last_messages_for_matches', {
+    p_match_ids: matchIds,
+  });
   if (error) throw error;
 
-  // Al venir en orden descendente, el primero de cada match es el último enviado.
-  for (const row of data) {
-    if (!byMatch.has(row.match_id)) byMatch.set(row.match_id, toMessage(row));
-  }
+  for (const row of data as MessageRow[]) byMatch.set(row.match_id, toMessage(row));
 
   return byMatch;
+}
+
+/**
+ * Trae todas las filas de una tabla en vueltas de `FETCH_PAGE_SIZE`, en vez de
+ * un único `select` sin `range()` que PostgREST podría truncar en silencio al
+ * superar su tope de fila. Orden estable por `id` para que ninguna fila se
+ * salte ni se repita entre vueltas.
+ */
+async function fetchAllPages<Row>(
+  query: (from: number, to: number) => PromiseLike<{ data: Row[] | null; error: unknown }>
+): Promise<Row[]> {
+  const rows: Row[] = [];
+  let offset = 0;
+
+  for (;;) {
+    const { data, error } = await query(offset, offset + FETCH_PAGE_SIZE - 1);
+    if (error) throw error;
+
+    rows.push(...(data ?? []));
+    if (!data || data.length < FETCH_PAGE_SIZE) return rows;
+    offset += FETCH_PAGE_SIZE;
+  }
 }
 
 /** Añade a cada match el perfil del otro lado y su último mensaje. */
@@ -421,19 +444,25 @@ export function createSupabaseRepositories(): Repositories {
       const client = getSupabaseClient();
       await ensureUserId();
 
-      // `discovery_deck` ya excluye el perfil propio y todo lo swipeado, y aplica
-      // el modo efectivo (el activo de la sesión o, si no hay, el del perfil)
-      // cuando `p_mode` va nulo. Eso es `effectiveMode()` del mock, en SQL.
-      // También ordena por encaje mutuo e id ANTES de paginar (20260907000200).
-      // Conservar ese orden: ordenar aquí solo clasificaría la primera página.
+      // `discovery_deck` ya excluye el perfil propio, todo lo swipeado y ahora
+      // también `excludeIds`, y aplica el modo efectivo (el activo de la sesión
+      // o, si no hay, el del perfil) cuando `p_mode` va nulo. Eso es
+      // `effectiveMode()` del mock, en SQL. También ordena por encaje mutuo e id
+      // ANTES de paginar (20260907000200). Conservar ese orden: ordenar aquí
+      // solo clasificaría la primera página.
+      //
+      // `excludeIds` bajó al `where` de la propia función (20260918000100): antes
+      // se filtraba aquí, DESPUÉS de que el RPC ya hubiera aplicado `p_limit`, así
+      // que la página encogía de forma impredecible según cuánto llevara ya
+      // swipeado quien pide el deck.
       const { data, error } = await client.rpc('discovery_deck', {
         p_mode: filter.mode ?? null,
         p_specialties: filter.specialties?.length ? filter.specialties : null,
+        p_exclude_ids: filter.excludeIds?.length ? filter.excludeIds : null,
       });
       if (error) throw error;
 
-      const excluded = new Set(filter.excludeIds ?? []);
-      return (data as ProfileRow[]).filter((row) => !excluded.has(row.id)).map(toProfile);
+      return (data as ProfileRow[]).map(toProfile);
     },
 
     async recordDecision(profileId: string, decision: Decision): Promise<DecisionResult> {
@@ -491,10 +520,17 @@ export function createSupabaseRepositories(): Repositories {
       // Sin `where`: la política "matches: solo los tuyos" ya limita la lectura a
       // los matches del usuario. Filtrar otra vez aquí solo daría una falsa
       // sensación de seguridad sobre dónde vive de verdad la regla.
-      const { data, error } = await client.from('matches').select('*');
-      if (error) throw error;
+      //
+      // Sí lleva `range()`, en vueltas de `fetchAllPages`: sin él, una cuenta
+      // con más matches que el tope de fila de PostgREST perdía los de más allá
+      // sin ningún error. El orden por `id` es solo para que la paginación sea
+      // estable entre vueltas — el orden que ve la pantalla lo pone
+      // `byRecentActivity` en `resolveMatches`.
+      const rows = await fetchAllPages<MatchRow>((from, to) =>
+        client.from('matches').select('*').order('id', { ascending: true }).range(from, to)
+      );
 
-      return resolveMatches(data, userId);
+      return resolveMatches(rows, userId);
     },
 
     async getById(matchId) {

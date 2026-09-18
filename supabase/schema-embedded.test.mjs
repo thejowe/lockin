@@ -49,6 +49,16 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       );
       create function auth.uid() returns uuid language sql as $$ select null::uuid $$;
       create role anon; create role authenticated; create role service_role;
+      -- Supabase concede esto de fábrica fuera de cualquier migración —
+      -- auth es un esquema gestionado por la plataforma, no por este repo.
+      -- Hasta ahora ningún caso de esta fixture ejercitaba una política RLS
+      -- SECURITY INVOKER llamando a auth.uid() directamente bajo el rol
+      -- authenticated (las que sí lo hacían pasaban antes por una función
+      -- SECURITY DEFINER, que ya eleva el privilegio); sin este grant esa
+      -- ruta falla aquí con «permission denied for schema auth», y en el
+      -- proyecto real no falla nunca, así que sin él la fixture mentiría.
+      grant usage on schema auth to anon, authenticated, service_role;
+      grant execute on function auth.uid() to anon, authenticated, service_role;
       alter default privileges in schema public
         grant all on tables to anon, authenticated, service_role;
       create publication supabase_realtime;
@@ -700,6 +710,129 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       'begin; drop policy "lockin: recibes de los canales de tus sesiones" on realtime.messages;'
     );
     assert.notEqual(compareFingerprints(expected, await fingerprint()), '');
+    await db.exec('rollback;');
+    // --- Orden D3: excludeIds en discovery_deck, último mensaje por RPC, ------
+    // --- sesión activa resuelta por el reloj de Postgres ----------------------
+    //
+    // `viewer` es quien pide el deck y quien lista mensajes/sesiones; `c1` <
+    // `c2` < `c3` por id, así que con encaje mutuo empatado (mismas
+    // especialidades, nada buscado) el desempate por id da un orden conocido.
+    const viewer = person('e100');
+    const c1 = person('e101');
+    const c2 = person('e102');
+    const c3 = person('e103');
+    const matchViewerC1 = person('e110');
+    const matchViewerC2 = person('e111');
+    const matchForeign = person('e112'); // c1 <-> c3, sin viewer.
+    const sessionLive = person('e120');
+    const sessionRejected = person('e121');
+    const sessionForeignLive = person('e122');
+    await db.exec(`begin;
+      insert into auth.users (id, email) values
+        ('${viewer}', 'viewer@lockin.test'), ('${c1}', 'c1@lockin.test'),
+        ('${c2}', 'c2@lockin.test'), ('${c3}', 'c3@lockin.test');
+      insert into public.profiles (
+        id, name, age, location, timezone, avatar_initials, specialties,
+        looking_for, starting_point, availability_hours_per_week,
+        availability_bands, ambition
+      )
+      select p.id::uuid, p.name, 30, 'Madrid', 'Europe/Madrid', left(p.name, 1),
+             array['dev']::public.specialty[], 'ambos', 'solo-ganas', 10,
+             array['tarde']::public.time_band[], 'equilibrado'
+      from (values ('${viewer}', 'Viewer'), ('${c1}', 'C1'), ('${c2}', 'C2'), ('${c3}', 'C3'))
+        as p(id, name);
+      insert into public.matches (id, profile_a, profile_b, mode) values
+        ('${matchViewerC1}', '${viewer}', '${c1}', 'par'),
+        ('${matchViewerC2}', '${viewer}', '${c2}', 'par'),
+        ('${matchForeign}', '${c1}', '${c3}', 'par');
+      insert into public.messages (match_id, sender_id, body, sent_at) values
+        ('${matchViewerC1}', '${viewer}', 'primero e110', now() - interval '2 minutes'),
+        ('${matchViewerC1}', '${c1}', 'segundo e110', now() - interval '1 minute'),
+        ('${matchViewerC1}', '${viewer}', 'último e110', now()),
+        ('${matchViewerC2}', '${c2}', 'primero e111', now() - interval '1 minute'),
+        ('${matchViewerC2}', '${viewer}', 'último e111', now()),
+        ('${matchForeign}', '${c1}', 'único e112', now());
+      insert into public.lockin_sessions
+        (id, match_id, proposed_by, starts_at, blocks, status, responded_at)
+      values
+        ('${sessionLive}', '${matchViewerC1}', '${viewer}', now() - interval '10 minutes', 1, 'aceptada', now() - interval '15 minutes'),
+        ('${sessionRejected}', '${matchViewerC2}', '${viewer}', now() + interval '10 minutes', 1, 'rechazada', now()),
+        ('${sessionForeignLive}', '${matchForeign}', '${c1}', now() - interval '5 minutes', 1, 'aceptada', now() - interval '10 minutes');`);
+
+    // 6c — `excludeIds` bajado al SQL: la página no encoge al excluir.
+    await asActor(viewer);
+    const uuidArray = (ids) => (ids ? `array[${ids.map((id) => `'${id}'`).join(',')}]::uuid[]` : 'null');
+    const deck = async (excludeIds, limit) =>
+      (
+        await db.query(
+          `select id from public.discovery_deck(p_mode := 'ambos', p_specialties := null, p_limit := ${limit}, p_exclude_ids := ${uuidArray(excludeIds)})`
+        )
+      ).rows.map((r) => r.id);
+    assert.deepEqual(await deck(null, 50), [c1, c2, c3], 'sin excludeIds, los tres candidatos');
+    assert.deepEqual(
+      await deck([c1], 2),
+      [c2, c3],
+      'con p_limit=2 y c1 excluido, la página trae los DOS restantes — antes, ' +
+        'al filtrar después del límite, un c1 dentro de la primera página se ' +
+        'llevaba una plaza y devolvía uno solo'
+    );
+    assert.deepEqual(await deck([c2], 50), [c1, c3], 'excluye exactamente el pedido, nada más');
+
+    // 6b — último mensaje por match vía `distinct on` en SQL, no una ventana
+    // de 200 mensajes agrupada en el cliente. `matchForeign` va en la consulta
+    // a propósito: `viewer` no es miembro, así que RLS debe dejarlo fuera sin
+    // que haga falta ningún filtro explícito en la función. La función es
+    // SECURITY INVOKER (a diferencia de `active_session`), así que su
+    // protección depende enteramente de RLS — hace falta `authenticated` de
+    // verdad, no el superusuario de la fixture, que la salta.
+    const lastMessages = async (matchIds) =>
+      Object.fromEntries(
+        (
+          await db.query(
+            `select match_id, body from public.last_messages_for_matches(${uuidArray(matchIds)})`
+          )
+        ).rows.map((r) => [r.match_id, r.body])
+      );
+    await db.exec('set local role authenticated;');
+    assert.deepEqual(
+      await lastMessages([matchViewerC1, matchViewerC2, matchForeign]),
+      { [matchViewerC1]: 'último e110', [matchViewerC2]: 'último e111' },
+      'una fila por match, el mensaje más reciente de cada uno; el match ajeno no aparece'
+    );
+    await db.exec('reset role;');
+    await asActor(c1);
+    await db.exec('set local role authenticated;');
+    assert.deepEqual(
+      await lastMessages([matchViewerC1, matchViewerC2, matchForeign]),
+      { [matchViewerC1]: 'último e110', [matchForeign]: 'único e112' },
+      'c1 ve sus dos matches (uno compartido con viewer, otro no) y no el que no es suyo'
+    );
+    await db.exec('reset role;');
+
+    // 6d — "viva" la decide `now()` de Postgres: estado y pertenencia al match,
+    // no el reloj de quien llama.
+    await asActor(viewer);
+    const active = async (matchId) =>
+      (await db.query(`select id from public.active_session('${matchId}')`)).rows.map(
+        (r) => r.id
+      );
+    assert.deepEqual(await active(matchViewerC1), [sessionLive], 'aceptada y dentro de ventana');
+    assert.deepEqual(
+      await active(matchViewerC2),
+      [],
+      'rechazada no cuenta como viva aunque su hora todavía no haya llegado'
+    );
+    assert.deepEqual(
+      await active(matchForeign),
+      [],
+      'viewer no es miembro de este match: is_match_member lo bloquea aunque la sesión esté viva'
+    );
+    await asActor(c1);
+    assert.deepEqual(
+      await active(matchForeign),
+      [sessionForeignLive],
+      'c1 sí es miembro y ve la misma sesión que a viewer se le negó'
+    );
     await db.exec('rollback;');
     assert.match(expected, /column\s+profiles.seeking_specialties/);
     assert.match(expected, /column\s+profiles.github_handle/);

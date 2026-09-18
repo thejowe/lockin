@@ -252,14 +252,24 @@ export type Database = {
         Args: Record<string, never>;
         Returns: undefined;
       };
-      /** `discovery_deck(p_mode, p_specialties, p_limit)` → `setof profiles`. */
+      /** `discovery_deck(p_mode, p_specialties, p_limit, p_exclude_ids)` → `setof profiles`. */
       discovery_deck: {
         Args: {
           p_mode?: ModePreference | null;
           p_specialties?: Specialty[] | null;
           p_limit?: number | null;
+          p_exclude_ids?: string[] | null;
         };
         Returns: ProfileRow[];
+      };
+      /**
+       * `last_messages_for_matches(p_match_ids)` → una fila por match, el
+       * mensaje más reciente de cada uno (`distinct on`, que PostgREST no
+       * expone directamente).
+       */
+      last_messages_for_matches: {
+        Args: { p_match_ids: string[] };
+        Returns: MessageRow[];
       };
       /**
        * `record_decision(p_target_id, p_decision)` → la fila de `matches`
@@ -286,6 +296,12 @@ export type Database = {
       };
       /** `ratable_session(p_match_id)` → cero o una fila de `lockin_sessions`. */
       ratable_session: { Args: { p_match_id: string }; Returns: SessionRow[] };
+      /**
+       * `active_session(p_match_id)` → cero o una fila de `lockin_sessions`: la
+       * sesión viva de ese match, resuelta con `now()` de Postgres en vez del
+       * reloj del dispositivo.
+       */
+      active_session: { Args: { p_match_id: string }; Returns: SessionRow[] };
       /** `match_streaks()` → una fila por match del actor con racha viva. */
       match_streaks: { Args: Record<string, never>; Returns: MatchStreakRow[] };
       /** `server_now()` → `timestamptz` serializado. */
