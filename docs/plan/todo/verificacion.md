@@ -199,6 +199,16 @@ El 2026-09-16 y el 2026-09-17 se encadenaron muchas pasadas de E2E y de la
 suite de contrato desde la misma IP de Actions. Antes de tocar código conviene
 descartarlo mirando la respuesta real del endpoint de auth.
 
+> **DESCARTADA el 2026-09-18, por `calidad`.** La variante `supabase` de
+> `E2E Android` habla con un Supabase **local desechable** (`127.0.0.1:54321`,
+> Docker, levantado y tirado en cada run — `e2e/run.mjs:108`), nunca con el
+> proyecto cloud `grrzmzktrhksbttpbblg` al que sí aplica el límite de 30/hora
+> que documenta `supabase/README.md:392-393`. Y solo hay una llamada a
+> `signInAnonymously()` antes de la aserción que falla, contra un `auth.users`
+> recién creado. No puede ser el límite. Causa real seguida buscando en el
+> arranque, sin cerrar; detalle en `docs/plan/todo/calidad.md` →
+> "`E2E Android (supabase)` en rojo desde antes de `verificacion`".
+
 ### Y el que sí cerró
 
 - [x] `Contrato Supabase` (opt-in) — [run 35213552961](https://github.com/thejowe/lockin/actions/runs/35213552961),

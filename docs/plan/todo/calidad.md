@@ -2608,3 +2608,89 @@ de la Ola 1 entera.
 > Queda publicada la rama desechable `calidad-c1-guarda-rota`. No se fusiona:
 > existe solo para que el run 35281256165 se pueda volver a leer. Se puede
 > borrar en cuanto alguien lea esta sección.
+
+## `E2E Android (supabase)` en rojo desde antes de `verificacion`: la sospecha del límite de altas, descartada (2026-09-18)
+
+Retoma la nota que dejó `verificacion` en `docs/plan/todo/verificacion.md` →
+"El rojo de `E2E Android (supabase)` es anterior a este bloque": la variante
+`supabase` falla en la **primerísima aserción** del recorrido
+(`extendedWaitUntil visible: 'Cofundador'`) con la pantalla de error de
+arranque que introdujo `d76ba71` — "No hemos podido recuperar tu perfil" — y
+lleva así desde antes de que existiera una sola línea de `verificacion`
+([run 35154808314](https://github.com/thejowe/lockin/actions/runs/35154808314)
+sobre `1987a9c`, el commit anterior a su Tarea 5).
+
+- [x] **La sospecha del límite de 30 altas anónimas por hora e IP,
+      descartada con evidencia, no a ojo.** `verificacion` la dejó apuntada sin
+      verificar. Tres hechos, todos leídos del código y no supuestos, la
+      descartan:
+      1. `e2e/run.mjs:108` — `assert.equal(status.API_URL,
+         'http://127.0.0.1:54321', 'Solo Supabase local desechable')`: la
+         variante `supabase` de `E2E Android` **nunca** habla con el proyecto
+         cloud `grrzmzktrhksbttpbblg`. Habla con un Supabase local levantado en
+         Docker por `supabase(['start', ...])`, **desde cero en cada run**
+         (`supabase init` + migraciones copiadas + `supabase db reset
+         --local`), y tirado abajo al final (`node e2e/run.mjs stop`).
+      2. El «límite de GoTrue de 30 altas por hora e IP» que cita
+         `supabase/README.md:392-393` está escrito en la sección de limpieza de
+         `auth.users` del proyecto **cloud** (`grrzmzktrhksbttpbblg`, el que usa
+         `Contrato Supabase` y el trabajo remoto de `Schema drift`), no en el
+         local desechable de E2E. Son dos backends distintos con historiales
+         distintos; la sospecha mezclaba el límite documentado de uno con el
+         fallo del otro.
+      3. `e2e/full-journey.yaml` empieza con `launchApp: clearState: true` y la
+         aserción que falla es la **siguiente** línea: solo hay una llamada a
+         `signInAnonymously()` antes del fallo, contra un `auth.users` recién
+         creado y vacío. Un límite por hora e IP no se agota con una sola alta
+         en una base nueva.
+      Conclusión: estructuralmente no puede ser el límite de la cuenta cloud.
+      Toca seguir buscando en el arranque, como decía el encargo.
+
+- [ ] **Causa real, sin cerrar.** Lo que sí confirma el artefacto del run rojo
+      (`logcat.txt`, `window.xml`, `maestro.log` descargados con `gh run
+      download 35154808314 -n e2e-android-supabase`):
+      - `window.xml` del momento del fallo **sí** muestra la pantalla de error
+        completa (los tres textos), o sea que `useQuery('session:onboarded',
+        ...)` llegó a resolver en `error`, no se quedó colgada ni es un
+        problema de UI — coherente con que la variante `mock` pase entera.
+      - **No hay forma de leer el mensaje real desde CI.** `src/app/index.tsx`
+        (línea 26) pinta un texto fijo y nunca `error.message`; ni ese
+        componente ni `useQuery` (`src/data/provider.tsx:81-88`) hacen
+        `console.*` con la causa. En `logcat.txt` no aparece **ninguna** línea
+        de `ReactNativeJS` después de `Running "main"` (22:17:01.946): el APK
+        release no deja rastro del error en ningún sitio que el runner suba
+        como evidencia.
+      - `session.get()` (`src/data/supabase/index.ts:144-160`) hace tres cosas
+        tras el `launchApp`: `ensureUserId()` (que intenta
+        `signInAnonymously()` y, si falla, cae a una cuenta de dispositivo por
+        email/contraseña) y luego dos `select` de PostgREST
+        (`profiles`, `user_settings`). Cualquiera de las tres puede ser el
+        punto real de fallo; el artefacto de CI no distingue cuál.
+      - Revisadas las migraciones nuevas desde el último `E2E Android` verde
+        confirmado (14ª pasada, `74897b4`, 2026-09-11) hasta `1987a9c`: ninguna
+        toca permisos de `profiles`/`user_settings` en `select`, ni nada de
+        `auth.*` — los `revoke`/`grant` de `lockin_sessions`,
+        `session_ratings`, `match_streaks` y `github_verification` son todos
+        sobre tablas y funciones ajenas a este arranque. Tampoco es
+        `flowType: 'pkce'` de `360d693`: no afecta a `signInAnonymously()` ni a
+        `signInWithPassword()`, ya verificado en su momento por `verificacion`.
+      - Comprobado también, para descartarlo sin dejarlo como sospecha suelta:
+        el parche de `android:usesCleartextTraffic="true"` que hace
+        `e2e/run.mjs` sobre el `AndroidManifest.xml` de `prebuild` (línea 380)
+        sigue casando con la plantilla actual de Expo 57.0.20 — reproducido
+        aquí con `npx expo prebuild --platform android` y el mismo `.replace`
+        del script contra el manifiesto real: sí cambia. No es tráfico HTTP
+        bloqueado.
+      - **No reproducible en esta máquina**: no hay Docker instalado, así que
+        no se puede levantar el mismo Supabase local desechable ni ver el error
+        de primera mano.
+      Próximo paso más barato para cerrar esto: instrumentar una vez —
+      loguear `error.message`/`error.status`/`error.code` en el `catch` de
+      `useQuery` o imprimirlo en la propia pantalla de `index.tsx` de forma
+      temporal, empujarlo, leer el `logcat.txt` del siguiente run rojo con el
+      mensaje real, y revertir la instrumentación en el mismo commit que
+      arregle la causa. Sin eso, seguir adivinando entre las tres llamadas de
+      `session.get()` no está verificado, solo acotado. `src/app/index.tsx` y
+      `src/data/supabase/` son de `arquitecto`/`datos`, así que ese cambio (aun
+      siendo temporal y de una línea) se coordina con quien siga esto, no se
+      hace aquí sin más.
