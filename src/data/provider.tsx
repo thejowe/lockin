@@ -134,6 +134,40 @@ function bumpNonce(registry: Map<string, QueryEntry>, key: string): void {
   for (const listener of [...entry.listeners]) listener();
 }
 
+function toError(cause: unknown): Error {
+  if (cause instanceof Error) return cause;
+  // Un objeto con `message` —lo que devuelve cualquier SDK que no herede de
+  // `Error`— se traduce entero. `String(cause)` lo dejaría en «[object
+  // Object]», que es la peor versión posible de un fallo que sí se sabía
+  // explicar.
+  if (typeof cause === 'object' && cause !== null) {
+    const message = (cause as { message?: unknown }).message;
+    const error = new Error(typeof message === 'string' ? message : JSON.stringify(cause));
+    error.cause = cause;
+    return error;
+  }
+  return new Error(String(cause));
+}
+
+/**
+ * Deja en el log que una consulta falló, con su `key` y el error entero.
+ *
+ * Existe porque el fallo era mudo: las pantallas pintan un texto fijo («No
+ * hemos podido recuperar tu perfil») y nadie —ni en un E2E de CI, ni con la app
+ * en la mano— podía saber la causa. Una vuelta de `E2E Android` cuesta 20
+ * minutos; sin esta línea no traía ninguna información nueva (run 35362453233).
+ *
+ * Se imprime el objeto y no solo `message` a propósito: en un `PostgrestError`
+ * la corrección literal viene en `hint` y el código estable en `code`.
+ *
+ * Se calla bajo Jest, donde los casos que prueban el camino de error harían
+ * ruido en cada pasada. Mismo criterio que el rastro de backend de `./active`.
+ */
+function reportQueryError(key: string, error: Error): void {
+  if (process.env.NODE_ENV === 'test') return;
+  console.error(`[lockin] la consulta "${key}" falló: ${error.message}`, error);
+}
+
 /**
  * Lanza la petición, o se engancha a la que ya está en vuelo para esta misma
  * `requestKey`. Es lo que evita que `useConversation` y la tarjeta de sesión
@@ -153,13 +187,24 @@ function fetchShared<T>(
     return entry.inFlight.settled as Promise<Settled<T>>;
   }
 
-  const settled: Promise<Settled<T>> = run().then(
-    (data) => ({ data, error: null }),
-    (cause: unknown) => ({
-      data: null,
-      error: cause instanceof Error ? cause : new Error(String(cause)),
-    })
-  );
+  // `run()` va dentro del `try` porque puede fallar ANTES de devolver promesa:
+  // basta con que lea una propiedad que lance, como hace la fachada de
+  // `./active` sin credenciales. Ese fallo síncrono escapaba del efecto y
+  // tumbaba la app entera en vez de llegar a `error` — es lo que dejaba la
+  // pantalla en negro en la variante `mock` del E2E (run 35362453233).
+  let settled: Promise<Settled<T>>;
+  try {
+    settled = run().then(
+      (data) => ({ data, error: null }),
+      (cause: unknown) => ({ data: null, error: toError(cause) })
+    );
+  } catch (cause) {
+    settled = Promise.resolve({ data: null, error: toError(cause) });
+  }
+
+  void settled.then(({ error }) => {
+    if (error) reportQueryError(key, error);
+  });
 
   entry.inFlight = { requestKey, settled: settled as Promise<Settled<unknown>> };
   void settled.then(() => {

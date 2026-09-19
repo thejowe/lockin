@@ -200,6 +200,61 @@ describe('useQuery — retención mientras relee', () => {
 
     await waitFor(() => expect(result.current.error?.message).toBe('se cayó la red'));
   });
+
+  it('un objeto con message se publica con su message, no como [object Object]', async () => {
+    // Es la forma de un `PostgrestError` y la de cualquier SDK que no herede de
+    // `Error`: con `String(cause)` el motivo se perdía entero.
+    const causa = { message: 'permission denied for table profiles', code: '42501' };
+    const run = jest.fn(() => Promise.reject(causa));
+
+    const { result } = await renderHook(() => useQuery('rls', run), { wrapper });
+
+    await waitFor(() =>
+      expect(result.current.error?.message).toBe('permission denied for table profiles')
+    );
+    expect(result.current.error?.cause).toBe(causa);
+  });
+
+  it('un run que revienta ANTES de devolver promesa se publica como error, no tumba la app', async () => {
+    // Pasa de verdad: la fachada de `./active` resuelve el backend al leer
+    // `repositories.session`, así que sin credenciales lanza dentro del propio
+    // `run`, sin llegar a haber promesa. Ese fallo síncrono escapaba del efecto
+    // y mataba el árbol entero — pantalla en negro en el E2E (run 35362453233).
+    const run = jest.fn((): Promise<string> => {
+      throw new Error('LockIn no puede arrancar sin backend');
+    });
+
+    const { result } = await renderHook(() => useQuery('síncrono', run), { wrapper });
+
+    await waitFor(() =>
+      expect(result.current.error?.message).toBe('LockIn no puede arrancar sin backend')
+    );
+    expect(result.current.loading).toBe(false);
+  });
+
+  it('deja en el log la key y el error entero: sin eso el fallo es mudo', async () => {
+    const error = jest.spyOn(console, 'error').mockImplementation(() => {});
+    // El rastro se calla bajo Jest —cada caso de error haría ruido—, así que
+    // aquí se pide expresamente el comportamiento de fuera de tests.
+    const nodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+
+    const causa = new Error('no hay red');
+    const run = jest.fn(() => Promise.reject(causa));
+
+    try {
+      const { result } = await renderHook(() => useQuery('session:onboarded', run), { wrapper });
+      await waitFor(() => expect(result.current.error).toBe(causa));
+    } finally {
+      process.env.NODE_ENV = nodeEnv;
+    }
+
+    expect(error).toHaveBeenCalledWith(
+      '[lockin] la consulta "session:onboarded" falló: no hay red',
+      causa
+    );
+    error.mockRestore();
+  });
 });
 
 describe('useQuery — una petición por key', () => {

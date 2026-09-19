@@ -51,3 +51,17 @@ it('un fallo de lectura no abre onboarding y permite reintentar', async () => {
   await fireEvent.press(screen.getByRole('button', { name: 'Reintentar' }));
   await waitFor(() => expect(router.redirects).toEqual(['/discover']));
 });
+
+it('enseña la causa del fallo: el texto fijo a secas no dejaba diagnosticar nada', async () => {
+  // Esta pantalla es donde muere el arranque. Sin la causa escrita en ella, el
+  // volcado de jerarquía que sube `E2E Android` no dice más que «algo falló», y
+  // cada vuelta de CI cuesta 20 minutos sin traer información nueva
+  // (run 35362453233).
+  jest
+    .spyOn(repositories.session, 'isOnboarded')
+    .mockRejectedValue(new Error('permission denied for table profiles'));
+
+  await renderRoute(<IndexRoute />);
+
+  expect(await screen.findByText('permission denied for table profiles')).toBeOnTheScreen();
+});

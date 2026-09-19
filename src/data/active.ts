@@ -12,7 +12,9 @@
  * credenciales publicaba una app llena de perfiles semilla que parecía
  * funcionar perfectamente: nadie se enteraba de que el entorno estaba mal
  * configurado hasta que un usuario buscaba sus datos y no estaban. Fuera de
- * desarrollo, la falta de credenciales lanza y dice cuál falta.
+ * desarrollo, la falta de credenciales lanza y dice cuál falta — salvo que
+ * alguien haya pedido el mock a mano con `EXPO_PUBLIC_LOCKIN_ALLOW_MOCK=1`,
+ * que es lo que necesita el control negativo del E2E (ver abajo).
  *
  * **Cuándo lanza**: al primer uso real del repositorio, no al evaluar el
  * módulo. `npx expo export` compila el bundle sin ninguna variable de entorno
@@ -54,10 +56,27 @@ function missingCredentials(): string[] {
   return missing;
 }
 
+/**
+ * Permiso explícito para usar el mock en una build de release.
+ *
+ * Lo pide el control negativo de `E2E Android`: su APK es *a propósito* una
+ * release sin credenciales, y el recorrido entero tiene que poder correr sobre
+ * el mock para demostrar, al reiniciar, que no hay nada en Postgres. Con la
+ * guarda a secas ese APK reventaba nada más pintar la primera pantalla y el
+ * control dejaba de probar lo que prueba (run 35362453233).
+ *
+ * Que sea una variable propia y no la ausencia de credenciales es justo lo que
+ * conserva la protección: olvidarse de configurar el entorno sigue reventando
+ * ruidosamente; solo pasa quien escribió esta variable a mano sabiendo lo que
+ * hacía. Se lee como acceso literal a `process.env.X` porque es lo que Metro
+ * sustituye en tiempo de build.
+ */
+const mockAllowedInRelease = process.env.EXPO_PUBLIC_LOCKIN_ALLOW_MOCK === '1';
+
 function chooseBackend(): Backend {
   if (hasSupabaseCredentials) return 'supabase';
 
-  if (!__DEV__) {
+  if (!__DEV__ && !mockAllowedInRelease) {
     throw new Error(
       'LockIn no puede arrancar sin backend: ' +
         `faltan ${missingCredentials().join(' y ')}. ` +
@@ -101,7 +120,10 @@ function resolveActive(): Active {
     console.info(
       backend === 'supabase'
         ? '[lockin] backend de datos: Supabase'
-        : '[lockin] backend de datos: mock en memoria (sin credenciales; solo desarrollo)'
+        : mockAllowedInRelease
+          ? '[lockin] backend de datos: mock en memoria (EXPO_PUBLIC_LOCKIN_ALLOW_MOCK=1; ' +
+            'esta build NO habla con ningún servidor)'
+          : '[lockin] backend de datos: mock en memoria (sin credenciales; solo desarrollo)'
     );
   }
 

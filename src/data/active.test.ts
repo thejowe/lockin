@@ -23,6 +23,7 @@
 const originalUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const originalAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 const originalNodeEnv = process.env.NODE_ENV;
+const originalAllowMock = process.env.EXPO_PUBLIC_LOCKIN_ALLOW_MOCK;
 const originalDev = __DEV__;
 
 function setDev(value: boolean): void {
@@ -57,6 +58,8 @@ afterEach(() => {
   else process.env.EXPO_PUBLIC_SUPABASE_URL = originalUrl;
   if (originalAnonKey === undefined) delete process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
   else process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = originalAnonKey;
+  if (originalAllowMock === undefined) delete process.env.EXPO_PUBLIC_LOCKIN_ALLOW_MOCK;
+  else process.env.EXPO_PUBLIC_LOCKIN_ALLOW_MOCK = originalAllowMock;
   jest.restoreAllMocks();
 });
 
@@ -111,6 +114,40 @@ describe('elección de backend', () => {
     expect(() =>
       active.videoSignal.send('s1', { kind: 'hangup', from: 'p1', payload: null })
     ).toThrow(/LockIn no puede arrancar sin backend/);
+  });
+
+  it('fuera de desarrollo con permiso explícito sirve el mock en vez de lanzar', () => {
+    // Es el control negativo de `E2E Android`: un APK de release *a propósito*
+    // sin credenciales, que tiene que recorrer la app entera sobre el mock para
+    // demostrar al reiniciar que no hay nada en Postgres. Con la guarda a secas
+    // reventaba en la primera pantalla (run 35362453233).
+    setDev(false);
+    setCredentials(false);
+    process.env.EXPO_PUBLIC_LOCKIN_ALLOW_MOCK = '1';
+
+    const active = loadActive();
+    expect(active.activeBackend()).toBe('mock');
+    expect(active.repositories.session).toBeDefined();
+  });
+
+  it('el permiso solo vale escrito exactamente como `1`: nada de valores por aproximación', () => {
+    setDev(false);
+    setCredentials(false);
+    process.env.EXPO_PUBLIC_LOCKIN_ALLOW_MOCK = 'true';
+
+    expect(() => loadActive().activeBackend()).toThrow(/LockIn no puede arrancar sin backend/);
+  });
+
+  it('el rastro dice que el mock va con permiso, para que nadie lo confunda con Supabase', () => {
+    const info = jest.spyOn(console, 'info').mockImplementation(() => {});
+    setDev(false);
+    setCredentials(false);
+    process.env.EXPO_PUBLIC_LOCKIN_ALLOW_MOCK = '1';
+    process.env.NODE_ENV = 'production';
+
+    loadActive().activeBackend();
+
+    expect(info).toHaveBeenCalledWith(expect.stringContaining('EXPO_PUBLIC_LOCKIN_ALLOW_MOCK=1'));
   });
 
   it('con credenciales elige Supabase, también fuera de desarrollo', () => {

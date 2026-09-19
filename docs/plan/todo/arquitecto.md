@@ -543,3 +543,93 @@ haciendo falta, pero el porqué es otro. No lo toco: ese archivo es vuestro.
 `jest.config.js` pide **93.58 / 87.56 / 92.76 / 95.38** y la suite mide ahora
 **93.94 / 87.91 / 93.64 / 95.81**. Es vuestro archivo: subidlo cuando toque.
 
+
+---
+
+## Orden `A3` — el arranque mudo y la variante `mock` del E2E (2026-09-18)
+
+`E2E Android` llevaba rojo desde la Ola 1 en las **dos** variantes y nadie podía
+leer la causa desde CI. Esta pasada arregla la variante `mock` entera (menos una
+línea que es de `calidad`, abajo) y hace que la de `supabase` diga por qué falla.
+
+### Lo hecho
+
+- [x] **La causa deja rastro.** `useQuery` (`src/data/provider.tsx`) escribe
+  `console.error('[lockin] la consulta "<key>" falló: <message>', error)` cuando
+  una consulta falla, con el objeto entero y no solo el `message` — en un
+  `PostgrestError` la corrección literal viene en `hint` y el código estable en
+  `code`. Se calla bajo Jest, mismo criterio que el rastro de backend de `A1`.
+- [x] **Y la deja en pantalla.** `src/app/index.tsx` pinta `error.message` bajo
+  el texto fijo. No es decorado: el E2E sube el volcado de jerarquía de la
+  pantalla (`window.xml`), así que a partir de ahora el motivo se lee ahí sin
+  tener que cruzar el logcat.
+- [x] **Un `run` que revienta antes de devolver promesa ya no tumba la app.**
+  `fetchShared` llamaba a `run()` fuera del `try`. La fachada de `active.ts`
+  resuelve el backend al leer `repositories.session`, así que sin credenciales
+  lanzaba **síncronamente**, el fallo escapaba del efecto y mataba el árbol
+  entero. Ahora cae en `error` como cualquier otro.
+- [x] **Los fallos que no heredan de `Error` conservan su motivo.** `toError`
+  traduce un objeto con `message` en vez de dejar `String(cause)` →
+  «[object Object]», y guarda el original en `cause`.
+- [x] **Permiso explícito para el mock en release.** `active.ts` acepta
+  `EXPO_PUBLIC_LOCKIN_ALLOW_MOCK=1`, y solo ese valor exacto. Sigue reventando
+  quien se olvide de configurar el entorno; pasa solo quien lo escribió a mano.
+- [x] Tests nuevos: 4 en `src/data/provider.test.tsx` (fallo síncrono, objeto
+  con `message`, rastro en el log, `cause` conservada), 3 en
+  `src/data/active.test.ts` (permiso concedido, valor aproximado rechazado,
+  rastro que lo dice) y 1 en `test/app/index.test.tsx` (la causa en pantalla).
+
+### La causa de la variante `mock`, con la evidencia delante
+
+No era de `datos` ni de `perfil`: era mía, de `A1`. El APK del control negativo
+es una release **a propósito** sin credenciales (`e2e/run.mjs`, `buildEnv`), y
+la guarda de `A1` lo mata en la primera pantalla. Está escrito con todas las
+letras en el artefacto `e2e-android-mock` del run 35362453233,
+`attempt-01/.../logs/crash-report.txt`:
+
+    FATAL EXCEPTION: expo-updates-error-recovery
+    com.facebook.react.common.JavascriptException: Error: LockIn no puede
+    arrancar sin backend: faltan EXPO_PUBLIC_SUPABASE_URL y
+    EXPO_PUBLIC_SUPABASE_ANON_KEY...
+        at IndexRoute (...)
+
+Por eso Maestro moría en el comando 5 sin ver «Cofundador»: no había app. Y por
+eso el control negativo no valía: `run.mjs` exige que el mock falle **después**
+del reinicio («el mock falló ANTES del reinicio»), que es lo único que prueba
+que las aserciones del caso positivo necesitan Postgres.
+
+### Lo que falta y es de `calidad` — una línea en `e2e/run.mjs`
+
+Con lo de arriba el APK ya no crashea, pero la guarda sigue negando el mock, así
+que la variante seguirá roja hasta que el build del control negativo conceda el
+permiso. En `buildEnv`, donde hoy pone `if (negative) return base;`:
+
+```js
+if (negative) return { ...base, EXPO_PUBLIC_LOCKIN_ALLOW_MOCK: '1' };
+```
+
+El `assert` de `build` no se entera: solo mira `EXPO_PUBLIC_SUPABASE_URL` y
+`EXPO_PUBLIC_SUPABASE_ANON_KEY`. No lo toco yo: `e2e/` es vuestro y hay sesión
+abierta encima.
+
+### La variante `supabase` sigue roja, y ahora se podrá leer por qué
+
+El APK arranca bien (`[lockin] backend de datos: Supabase` en el logcat) y muere
+en la pantalla de error de `index.tsx`: `session.isOnboarded()` **rechaza**. El
+logcat del run 35362453233 no tiene ni una línea de `ReactNativeJS` que lo
+explique, porque hasta hoy no había ninguna que escribir. Con el rastro nuevo,
+la próxima vuelta nombra la causa en el logcat **y** en `window.xml`. Los dos
+sospechosos que quedan están fuera de mi alcance —`src/data/supabase/**` y las
+migraciones de `D3`—, así que no se investiga más desde aquí.
+
+### Verificación de esta pasada
+
+Medida sobre un árbol limpio (HEAD + solo mis seis archivos, en un clon
+desechable), porque el worktree tiene trabajo sin commitear de `datos` y de
+`calidad` que mueve los números:
+
+- `npm run typecheck` y `npm run lint` limpios.
+- `npx jest --coverage --ci --runInBand`: 71 suites, 795 tests, 82 saltados.
+- Cobertura **93.97 / 88.02 / 93.65 / 95.83**, por encima del suelo de `calidad`
+  (93.94 / 87.98 / 93.63 / 95.81). No hace falta bajar nada.
+- `npx expo export --platform web` con `EXPO_NO_DOTENV=1`: 16 rutas.
