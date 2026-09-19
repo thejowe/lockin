@@ -2694,3 +2694,252 @@ sobre `1987a9c`, el commit anterior a su Tarea 5).
       `src/data/supabase/` son de `arquitecto`/`datos`, así que ese cambio (aun
       siendo temporal y de una línea) se coordina con quien siga esto, no se
       hace aquí sin más.
+
+> **Corregido el 2026-09-18, más abajo.** Este rojo NO es continuo: hubo dos
+> verdes posteriores (`33b0e15` y `d63c139`) y el siguiente rojo llegó con un
+> commit de solo documentación. Es intermitente, no una regresión. La tabla de
+> runs y el siguiente paso —una sonda de alcanzabilidad en `e2e/run.mjs`, que sí
+> cabe en este bloque— están en la sección del 2026-09-18.
+
+## `E2E Android` rojo en las dos variantes sobre `34df7e9` (2026-09-18)
+
+[run 35362453233](https://github.com/thejowe/lockin/actions/runs/35362453233).
+Las dos variantes mueren en el mismo sitio —el comando 5 de
+`full-journey.yaml`, `extendedWaitUntil visible: 'Cofundador'`— y **por causas
+distintas**. Que el síntoma sea idéntico es lo que hace que parezcan un solo
+rojo; no lo son, y ninguno de los dos se arregla desde este bloque.
+
+### La variante `mock`: la app se mata al arrancar, y es la guarda de `fa3759c`
+
+- [x] **Leído del volcado, no deducido.** `gh run download 35362453233`, y en
+      `e2e-android-mock/.../logs/crash-report.txt`:
+
+      ```
+      E/AndroidRuntime( 3879): Process: app.lockin.mobile, PID: 3879
+      E/AndroidRuntime( 3879): com.facebook.react.common.JavascriptException:
+      Error: LockIn no puede arrancar sin backend: faltan
+      EXPO_PUBLIC_SUPABASE_URL y EXPO_PUBLIC_SUPABASE_ANON_KEY. ...
+      This error is located at:
+          at IndexRoute (address at index.android.bundle:1:1537448)
+      ```
+
+      La jerarquía de pantalla del fallo lo confirma desde el otro lado: lo que
+      Maestro ve en el comando 5 **no es la app**, es el lanzador de Android
+      (`Chrome`, `Gmail`, `Predicted app: lockin`). El proceso ya no existe.
+
+- [x] **El origen es `src/data/active.ts`, y tiene nombre y commit.** El texto
+      del `throw` está literal en `chooseBackend()`: sin credenciales y con
+      `__DEV__ === false`, lanza. `git log -S` sobre esa cadena da **un solo**
+      commit: `fa3759c` (`fix(arquitecto): useQuery retiene el dato al releer y
+      el backend deja de cambiar en silencio`), o sea el **Problema 5 de la
+      orden A1**. `b9412c9` la hizo perezosa —salta al primer uso y no al
+      cargar el módulo—, lo que salvó `npx expo export` pero no esto:
+      `IndexRoute` pide un dato en su primer render, así que el primer uso llega
+      igual.
+
+- [x] **La fecha casa exactamente.** Último `E2E Android` con la variante `mock`
+      en verde: [run 35216423826](https://github.com/thejowe/lockin/actions/runs/35216423826)
+      (`9089c56`), que es el commit **anterior** a `fa3759c`. El primer rojo,
+      [run 35281233174](https://github.com/thejowe/lockin/actions/runs/35281233174)
+      (`66f4d87`), es el primero que ya lo lleva dentro. Descargado también el
+      `crash-report.txt` de [run 35281788435](https://github.com/thejowe/lockin/actions/runs/35281788435)
+      (`33b0e15`): **la misma excepción, palabra por palabra**. Entre `9089c56`
+      y `34df7e9`, los únicos commits que tocan `src/app/`, `src/data/active.ts`
+      o `src/data/provider.tsx` son `fa3759c`, `b9412c9` y `6df3386`, y el
+      `throw` lo pone uno solo de los tres.
+
+- [x] **Descartado que sea D1 o D3, sin depender de que el enunciado lo dijera.**
+      El APK de la variante `mock` se compila con `E2E_NEGATIVE_CONTROL=1`, y
+      `e2e/run.mjs:116` borra del entorno del build **toda** clave que case
+      `/SUPABASE|^EXPO_PUBLIC_/`; la línea 369 lo vuelve a afirmar antes de
+      `prebuild`. Ese APK no puede hablar con Supabase ni por accidente: el
+      código de `src/data/supabase/` nunca llega a ejecutarse.
+
+- [x] **Por qué el arreglo NO cabe en `e2e/` ni en `.github/workflows/`, que es
+      lo que esta orden pedía comprobar antes que nada.** El control negativo
+      necesita, por definición, un **APK de release corriendo sobre el mock**:
+      es la única forma de que la única variable entre las dos ejecuciones sean
+      las credenciales. Las dos salidas que caben en mi alcance rompen
+      justamente eso:
+      - *Darle credenciales de relleno al job `mock`*: con credenciales
+        `active.ts` elige Supabase, y el recorrido pasaría a ser «Supabase
+        apuntando a una URL muerta». Deja de existir un control negativo.
+      - *Compilar la variante `mock` en debug para que `__DEV__` sea `true`*:
+        cambia el artefacto que se prueba (otro bundle, otras rutas de código,
+        red box en vez de crash) y, sobre todo, esquiva la decisión de producto
+        en lugar de resolverla. Un control negativo que solo pasa en debug no
+        dice nada del APK que se publica.
+
+      Así que **paro aquí y no toco `src/`**, como pedía la orden.
+
+- [x] **Para `arquitecto` (A1), con el arreglo acotado.** *(Entregado en `c8e89a5`
+      como `A3`, con otro nombre: `EXPO_PUBLIC_LOCKIN_ALLOW_MOCK=1`. La línea de
+      `e2e/run.mjs` que quedaba pendiente aquí está aplicada — ver la sección del
+      2026-09-18, segunda pasada.)* Lo que falta es una
+      forma **explícita** de pedir el mock en release, que es exactamente lo
+      contrario del fallo que `fa3759c` vino a cerrar (caer al mock **en
+      silencio**). La forma más pequeña: que `chooseBackend()` acepte un opt-in
+      declarado —del estilo `EXPO_PUBLIC_LOCKIN_BACKEND=mock`— y siga lanzando
+      cuando no hay ni credenciales ni opt-in. En cuanto esa palanca exista, lo
+      que toca aquí es **una línea** en `e2e/run.mjs` (añadirla al entorno del
+      build de la variante negativa, junto al borrado de las `EXPO_PUBLIC_*`),
+      y lo hago en el momento en que se pida.
+
+      **Aviso que importa para no dar esto por arreglado dos veces:** el rojo de
+      `Export web` que ya está anotado más arriba tiene el mismo origen pero
+      **no la misma solución**. Allí la opción (b) —distinguir el render
+      estático de Expo de una app arrancando— vale, porque el export no es una
+      app. Aquí no vale ninguna variante de esa idea: esto **es** una app de
+      release arrancando de verdad en un emulador, que es justo el caso que la
+      guarda quiere matar. Arreglar `Export web` no pone verde el E2E.
+
+### La variante `supabase`: no es una regresión nueva, es intermitente
+
+Corrige, con evidencia, lo que esta misma libreta daba por continuo en la
+sección anterior («lleva así desde antes de que existiera una sola línea de
+`verificacion`»). Hubo dos verdes **después** de aquel rojo:
+
+| Run | Commit | `supabase` | `mock` |
+|---|---|---|---|
+| [35216423826](https://github.com/thejowe/lockin/actions/runs/35216423826) | `9089c56` | verde | verde |
+| [35281233174](https://github.com/thejowe/lockin/actions/runs/35281233174) | `66f4d87` | **rojo** | rojo |
+| [35281788435](https://github.com/thejowe/lockin/actions/runs/35281788435) | `33b0e15` | verde | rojo |
+| [35286478254](https://github.com/thejowe/lockin/actions/runs/35286478254) | `d63c139` | verde | rojo |
+| [35325496576](https://github.com/thejowe/lockin/actions/runs/35325496576) | `5d93c09` | **rojo** | rojo |
+| [35359202818](https://github.com/thejowe/lockin/actions/runs/35359202818) | `e7c4387` | **rojo** | rojo |
+| [35362453233](https://github.com/thejowe/lockin/actions/runs/35362453233) | `34df7e9` | **rojo** | rojo |
+
+- [x] **El dato que lo cierra: `5d93c09` es hijo directo de `d63c139` y solo
+      toca dos archivos `.md`** (`docs/plan/todo/calidad.md` y
+      `docs/plan/todo/verificacion.md`; `git show --stat` lo dice). Verde el
+      padre, rojo el hijo, sin una línea de código de diferencia. Lo que falla
+      ahí **no puede** ser un cambio de código: es no determinista.
+
+- [x] **El síntoma sí es siempre el mismo.** Volcada la jerarquía de pantalla de
+      los dos rojos con artefacto (`35325496576` y `35362453233`): en los dos,
+      la app **sí arranca** —`I/ReactNativeJS: [lockin] backend de datos:
+      Supabase`— y lo que Maestro encuentra es la pantalla de error de
+      `src/app/index.tsx`: «No hemos podido recuperar tu perfil» / «Comprueba tu
+      conexión y vuelve a intentarlo.» / `REINTENTAR`. O sea,
+      `useQuery('session:onboarded', …)` resolvió en `error`. Eso es lo
+      contrario de la variante `mock`, donde no hay app ninguna en pantalla.
+
+- [x] **El mensaje real sigue sin poder leerse desde CI**, tal cual lo dejó la
+      pasada anterior: no hay ni una línea de `ReactNativeJS` después de
+      `Running "main"` que nombre la causa, porque `index.tsx` pinta un texto
+      fijo y ni él ni `useQuery` hacen `console.*` con el error.
+
+- [ ] **Próximo paso, y esta vez sí cabe en `e2e/`.** La pasada anterior dejó
+      como único camino instrumentar `src/app/index.tsx`, que no es de este
+      bloque y por eso quedó parado. Hay una alternativa dentro de mi alcance
+      que no toca producto: **una sonda de alcanzabilidad desde el propio
+      dispositivo**, entre el `adb reverse` y el lanzamiento de Maestro
+      (`e2e/run.mjs`, fase `test`) — un `adb shell curl` contra
+      `http://127.0.0.1:54321/auth/v1/health` y `/rest/v1/`, con su salida
+      guardada en el artefacto. Parte el problema en dos mitades que hoy no se
+      distinguen: si la sonda falla, el rojo es del puente `adb reverse` o del
+      Supabase local y es mío; si la sonda pasa y la app sigue pintando la
+      pantalla de error, el fallo está dentro de `session.get()` y es de
+      `datos`/`arquitecto`, ya sin discusión. **No la he montado en esta pasada
+      a propósito**: mientras la variante `mock` no arranque, el workflow sigue
+      rojo igual y la sonda se publicaría sin un run que la valide.
+
+### Suelo de cobertura al día (segunda subida)
+
+- [x] **`jest.config.js` sube los cuatro umbrales.** Lo dejaron anotado
+      `arquitecto` y `perfil` en sus TODO: el suelo del 2026-09-17 se quedó por
+      debajo de lo que mide la suite con A2 y P1 dentro. Medido aquí sobre
+      `34df7e9` con `npx jest --coverage --ci --runInBand`: **788 pasados, 82
+      saltados, 71 de 72 suites**.
+
+      | | Antes (2026-09-17) | Ahora (2026-09-18) |
+      |---|---|---|
+      | statements | 93.58 | **93.94** (2605/2773) |
+      | branches | 87.56 | **87.98** (1318/1498) |
+      | functions | 92.76 | **93.63** (765/817) |
+      | lines | 95.38 | **95.81** (2335/2437) |
+
+      Los cuatro suben; ninguno baja, que es la única regla que el comentario de
+      ese archivo nunca ha permitido romper.
+
+- [x] **Los umbrales se fijan al valor exacto, no al que quede bonito.** Los
+      porcentajes crudos (de `coverage-summary.json`) son 93.941580, 87.983979,
+      **93.635251** y 95.814526. De ahí que `functions` quede en `93.63` y no en
+      `93.64`: Jest compara contra el valor sin redondear, así que `93.64`
+      habría dejado el suelo **por encima** de la cobertura real y el job
+      `Calidad` habría salido rojo el mismo día de subirlo.
+
+### Verificación de esta pasada
+
+Local, sobre `34df7e9`:
+
+- `npx jest --coverage --ci --runInBand` con el suelo nuevo — **verde**, salida
+  0, 788 pasados y 0 fallos. Comprobado explícitamente el código de salida, que
+  es lo que decide el job, y no solo la tabla.
+- `npx prettier --check jest.config.js` — `All matched files use Prettier code
+  style!`. Un archivo suelto, no `format:check` entero: ahí el ruido es el CRLF
+  de esta máquina, como siempre.
+- **No ejecutado aquí**: nada del E2E. No hay emulador en esta máquina y el
+  diagnóstico entero sale de `gh run download` y de los volcados de Maestro.
+- `src/` sin tocar, que era la condición de la orden. El único archivo de código
+  modificado es `jest.config.js`.
+
+> `src/data/supabase/auth.test.ts` aparece modificado en el worktree y **no es
+> mío**: es `datos` trabajando en paralelo. Comprobado antes de medir que su
+> diff es solo formato (tres líneas reordenadas por Prettier, sin un `expect`
+> nuevo), así que no mueve la cobertura sobre la que se fija el suelo.
+
+## `E2E Android`: el control negativo pide el mock explícitamente (2026-09-18, segunda pasada)
+
+Cierra el pendiente de la sección anterior. `arquitecto` entregó en `c8e89a5`
+(`A3`) la palanca que allí se pedía, con otro nombre del que yo había propuesto:
+`EXPO_PUBLIC_LOCKIN_ALLOW_MOCK=1`, y **solo ese valor exacto** (`src/data/active.ts:74`,
+`mockAllowedInRelease`). Con ella, lo que quedaba aquí era una línea.
+
+- [x] **La línea, en `e2e/run.mjs`, `buildEnv`.** Donde ponía
+      `if (negative) return base;` ahora pone:
+
+      ```js
+      if (negative) return { ...base, EXPO_PUBLIC_LOCKIN_ALLOW_MOCK: '1' };
+      ```
+
+      El control negativo sigue significando lo mismo: el borrado de la línea 116
+      (`/SUPABASE|^EXPO_PUBLIC_/`) corre **antes** de construir `base`, así que la
+      clave nueva se añade después y el APK sigue **sin** `EXPO_PUBLIC_SUPABASE_URL`
+      ni `EXPO_PUBLIC_SUPABASE_ANON_KEY`. Lo único que cambia es que ahora arranca
+      en vez de morir en `IndexRoute`.
+
+- [x] **Comprobado que el `assert` de `build` no se entera, en lugar de darlo por
+      hecho.** El de `e2e/run.mjs:374-378` compara `negative` contra
+      `!('EXPO_PUBLIC_SUPABASE_URL' in env) && !('EXPO_PUBLIC_SUPABASE_ANON_KEY' in env)`:
+      nombra esas dos claves y ninguna más, así que con `negative === true` las dos
+      siguen ausentes y sigue dando `true === true`. `grep -n EXPO_PUBLIC e2e/run.mjs
+      .github/workflows/*.yml` confirma que no hay ningún otro sitio que mire el
+      entorno del build; las líneas 431/443 comparan el `run.json`/`postgres.json`
+      del artefacto, que no lleva entorno.
+
+- [x] **Comprobado que el control negativo sigue teniendo sentido.** La condición no
+      es «el job pasa», es «el job falla **después** del `stopApp`»: `firstFailure()`
+      exige `failed > stopApp` y revienta con «El mock falló ANTES del reinicio» si
+      no. Y `verifyAbsence(status, …)` se ejecuta igual contra el Postgres local. Si
+      la variante `mock` pasara **entera**, el `assert.notEqual(result.status, 0, 'El
+      recorrido pasó con el mock: …')` la mataría — y eso ya no sería un rojo de E2E
+      sino un APK sin credenciales escribiendo en Postgres, o sea un problema mayor.
+      Se lee en el veredicto de CI de más abajo cuál de los tres desenlaces salió.
+
+- [x] **Suelo de cobertura commiteado.** La subida a 93.94/87.98/93.63/95.81 se quedó
+      sin commitear en la pasada anterior (`jest.config.js` salía como modificado en el
+      worktree). Va en este commit. No se vuelve a medir aquí: `arquitecto` midió `A3`
+      en un clon limpio y dio **93.97/88.02/93.65/95.83**, los cuatro por encima del
+      suelo, así que no hay nada que tocar. Medirlo en este worktree no valdría: `datos`
+      tiene ocho archivos de `src/` sin commitear y el número saldría de otro árbol.
+
+- [x] **Formato.** `npx prettier --check` sobre `e2e/run.mjs` normalizado a LF —
+      `All matched files use Prettier code style!`. Sin normalizar falla, y también
+      falla la copia de `HEAD` sin tocar: es el ruido CRLF de esta máquina, no el
+      cambio.
+
+- [x] **No ejecutado aquí:** nada del E2E. Sin emulador en esta máquina; el veredicto
+      sale de Actions.
+
+### Veredicto de CI

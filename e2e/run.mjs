@@ -118,7 +118,14 @@ function buildEnv(status) {
   const base = { ...env, CI: '1', EXPO_NO_DOTENV: '1', EXPO_NO_TELEMETRY: '1' };
   // El control negativo se queda aquí: sin estas dos variables el bundle no
   // lleva credenciales y `hasSupabaseCredentials` es falso dentro del APK.
-  if (negative) return base;
+  //
+  // Pero desde A3 el APK es una release y la guarda de backend mata el arranque
+  // antes de la primera pantalla (`FATAL EXCEPTION ... LockIn no puede arrancar
+  // sin backend`, run 35362453233). El mock en release solo se permite si se
+  // pide a mano, así que el control negativo pide permiso explícito: sigue sin
+  // credenciales — que es lo que lo hace control — pero ahora arranca y llega al
+  // `stopApp`, donde tiene que fallar.
+  if (negative) return { ...base, EXPO_PUBLIC_LOCKIN_ALLOW_MOCK: '1' };
   return {
     ...base,
     EXPO_PUBLIC_SUPABASE_URL: status.API_URL,

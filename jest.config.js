@@ -37,8 +37,9 @@ module.exports = {
     '!src/**/index.ts',
     '!src/data/test-fixtures.ts',
   ],
-  // Suelo fijado a la cobertura real de la suite (2026-09-17, medida con
-  // `npx jest --coverage --ci --runInBand`: 715 pasados, 82 saltados).
+  // Suelo fijado a la cobertura real de la suite (2026-09-18, medida con
+  // `npx jest --coverage --ci --runInBand`: 788 pasados, 82 saltados, 71 de 72
+  // suites). Anterior: 93.58/87.56/92.76/95.38, del 2026-09-17.
   // Se sube cuando la cobertura suba; no se bajan los umbrales ni se excluyen
   // archivos para dejar pasar un cambio.
   //
@@ -50,6 +51,6 @@ module.exports = {
   // propósito — se mide en otra pasada y sobre otra base de datos —, así que
   // estos números son los de la suite por defecto y solo suben con ella.
   coverageThreshold: {
-    global: { statements: 93.58, branches: 87.56, functions: 92.76, lines: 95.38 },
+    global: { statements: 93.94, branches: 87.98, functions: 93.63, lines: 95.81 },
   },
 };
