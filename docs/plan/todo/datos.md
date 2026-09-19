@@ -1585,3 +1585,28 @@ Se tocaron `src/data/supabase/realtime.ts` (nuevo), `realtime.test.ts` (nuevo),
   `prettier --check` con el `.prettierrc` del repo → limpios. Aquí
   `npm run format:check` no sirve: el ruido de CRLF de Windows tapa lo de verdad
   entre ~100 falsos.
+
+#### La variante `supabase` del E2E Android ya no está roja
+
+La segunda tarea de esta orden era diagnosticar ese rojo con el rastro que
+`arquitecto` añadió en `c8e89a5`. **No hay rojo que diagnosticar**: en
+[run 35438092381](https://github.com/thejowe/lockin/actions/runs/35438092381),
+sobre `63009e2`, las dos variantes salen en verde.
+
+El job sí tuvo dos intentos fallidos antes, pero por el runner y no por el caso,
+y la propia guarda del workflow lo clasificó así:
+
+```
+[Failed] Alta, perfil, deck, match, mensaje y persistencia (Assertion is false: "Cofundador" is visible)
+Veredicto de attempt-01: runner — un diálogo ANR del sistema tapaba la pantalla
+  ("System UI isn't responding"): la aserción no llegó a mirar la app
+Veredicto de attempt-02: runner — [lo mismo]
+…
+[Passed] Alta, perfil, deck, match, mensaje y persistencia (2m 52s)   ← segundo emulador
+```
+
+De `session.isOnboarded()` rechazando, que era la causa que había que buscar, no
+queda rastro en el logcat ni en el volcado. Lo cerraron `c8e89a5` (`arquitecto`:
+el arranque deja de ser mudo) y `63009e2` (`calidad`: el control negativo pide el
+mock explícitamente), no nada de este bloque — no hacía falta tocar
+`src/data/supabase/**` ni las migraciones de `D3`.
