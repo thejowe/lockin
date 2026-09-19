@@ -2943,3 +2943,100 @@ Cierra el pendiente de la sección anterior. `arquitecto` entregó en `c8e89a5`
       sale de Actions.
 
 ### Veredicto de CI
+
+[run 35438092381](https://github.com/thejowe/lockin/actions/runs/35438092381) y
+[run 35438092528](https://github.com/thejowe/lockin/actions/runs/35438092528), sobre
+`63009e2`. **`E2E Android` verde en las dos variantes**, por primera vez desde
+`9089c56`. Y la variante `supabase`, que esta libreta daba por rota, resultó estar
+rota por otra cosa.
+
+- [x] **La variante `mock` da el desenlace bueno de los tres, no simplemente
+      «verde».** `e2e-android-mock/mock/attempt-01/postgres.json`:
+
+      ```json
+      { "variant": "mock", "control": "negativo",
+        "failedCommand": 47, "stopAppCommand": 45,
+        "persistence": "ausente, como se esperaba" }
+      ```
+
+      `47 > 45`: falla **después** del `stopApp`, que era la condición. No pasó
+      entero —el caso que habría significado un APK sin credenciales escribiendo en
+      Postgres— y no falló antes del reinicio. `verdict.json` lo resume: «el mock
+      falló después del reinicio y no escribió nada». Y el logcat confirma que ahora
+      arranca, con el rastro de A3:
+
+      ```
+      [lockin] backend de datos: mock en memoria (EXPO_PUBLIC_LOCKIN_ALLOW_MOCK=1;
+      esta build NO habla con ningún servidor)
+      ```
+
+- [x] **`Runner E2E` y `Tests` verdes.** El primero es el que prueba el propio
+      `e2e/run.mjs`: el cambio de `buildEnv` no rompe su contrato. El segundo es el
+      veredicto que le faltaba al suelo de cobertura 93.94/87.98/93.63/95.81.
+
+- [x] **`Formato` rojo, y no es de este bloque.** El log nombra
+      `src/data/supabase/auth.test.ts` y `supabase/schema-embedded.test.mjs`, dos
+      archivos que este commit no toca. Extraídos sus blobs de `63009e2` con
+      `git show` y pasados por `prettier --check`: fallan, o sea que ya venían rotos
+      de `e7c4387` (D3). Ya está resuelto: `datos` commiteó `c627462` (D4) encima y
+      con esos blobs `prettier --check` sale limpio.
+
+### La variante `supabase`: no era `src/data/supabase/**` ni las migraciones de D3
+
+El recado que se pedía recoger. Con el rastro que añadió A3, el logcat nombra la
+causa — y son **dos intermitentes distintos**, ninguno de los dos donde se
+sospechaba.
+
+- [x] **Lo que tumbó los intentos 1 y 2 es un ANR del sistema, no la app.**
+      `verdict.json` clasifica los dos como `runner`, y el volcado de pantalla lo
+      confirma literalmente: lo único que hay en `window.xml` de `attempt-01` y
+      `attempt-02` es
+
+      ```
+      text="System UI isn't responding"   text="Wait"   text="Close app"
+      ```
+
+      El diálogo del sistema tapaba la pantalla, así que la aserción del comando 5
+      («Cofundador») nunca llegó a mirar la app. `attempt-03` pasó limpio y con toda
+      la evidencia: `{ "persistence": "verified", "session": "verified",
+      "rating": "verified", "streak": "verified" }`. El reintento hizo su trabajo.
+
+      Esto reescribe la sección de más arriba: el síntoma que allí se atribuyó a
+      `useQuery('session:onboarded', …)` resolviendo en `error` es real, pero **no es
+      el único**, y en este run no fue el que mandó. Un rojo del comando 5 puede ser
+      la app o puede ser el emulador, y hasta ahora no se distinguían.
+
+- [x] **Pero hay un error real de Supabase escondido detrás, y tiene código.** En
+      `attempt-01`, y **solo** ahí (3 líneas; 0 en `attempt-02` y `attempt-03`):
+
+      ```
+      [lockin] la consulta "session:onboarded" falló: JWT issued at future
+        cause: { code: 'PGRST303', details: null, hint: null,
+                 message: 'JWT issued at future' }
+      ```
+
+      `PGRST303` lo lanza PostgREST cuando el `iat` del token que recibe es posterior
+      a su propio reloj. El token no lo fabrica la app: lo emite GoTrue al dar de
+      alta. O sea que esto no es un fallo de `src/data/supabase/**` ni de las
+      migraciones de D3 — es **desfase de reloj** entre quien firma el token y quien
+      lo valida, en el borde del segundo. Que aparezca en 1 de 3 intentos, y 3 veces
+      dentro de ese intento, encaja con una carrera, no con un cambio de código. Y
+      encaja con la intermitencia documentada más arriba: `5d93c09`, hijo de
+      `d63c139` y con solo dos `.md` de diferencia, rojo con el padre verde.
+
+- [ ] **Lo que hay que endurecer aquí, y es de este bloque.** `diagnose()` clasificó
+      `attempt-01` como `runner` —correctamente, el ANR estaba— y el reintento se lo
+      llevó por delante. Pero en ese mismo intento había un `PGRST303` real que solo
+      se ve leyendo el logcat a mano. **Un error de la app detrás de un ANR se está
+      reintentando en silencio.** El arreglo cabe entero en `e2e/run.mjs`: que el
+      diagnóstico, además de clasificar, recoja del logcat toda línea
+      `[lockin] la consulta "…" falló: …` y la escriba en `verdict.json` aunque el
+      desenlace sea `runner`. Así un rojo intermitente deja rastro en el artefacto en
+      vez de desaparecer con el reintento. No lo monto en esta pasada: el run ya está
+      verde y el cambio merece su propio commit y su propio run que lo valide.
+
+- [ ] **Para `datos`, con el dato en la mano.** El `PGRST303` es real y está en
+      producción de CI. No pido que se arregle a ciegas: lo que lo cerraría es saber
+      si el desfase está entre los contenedores de GoTrue y PostgREST o en el `iat`
+      redondeado al segundo. Mientras tanto **no es un bloqueo**: el recorrido pasa
+      al reintentar y la persistencia se verifica entera.
