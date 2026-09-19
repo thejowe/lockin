@@ -44,6 +44,21 @@ export type { AccountErrorReason, AccountKind, AccountState } from '@/data/supab
 export const accountsAvailable = hasSupabaseCredentials;
 
 /**
+ * Si el alta exige una cuenta con email confirmado antes de crear el perfil.
+ *
+ * Decisión del usuario del 2026-09-20 (`docs/plan/todo/perfil.md` → «Decisión
+ * de alta»): el registro es obligatorio. Solo tiene sentido con capa de cuentas;
+ * sin ella no hay servidor al que registrarse y la puerta no existe.
+ *
+ * `EXPO_PUBLIC_REQUIRE_ACCOUNT=false` la apaga **en tiempo de compilación** y
+ * existe por una sola razón: el E2E de la variante `supabase` recorre el alta de
+ * verdad contra un Postgres desechable y no tiene un buzón en el que pinchar el
+ * enlace de confirmación. Una build de usuario no lleva esa variable.
+ */
+export const registrationRequired =
+  accountsAvailable && process.env.EXPO_PUBLIC_REQUIRE_ACCOUNT !== 'false';
+
+/**
  * El estado de la cuenta, o `null` si esta ejecución no tiene capa de cuentas.
  *
  * `null` no es un fallo: es el arranque de desarrollo sin `.env.local`, donde

@@ -70,3 +70,29 @@ describe('readAccountState', () => {
     expect(mockGetAccountState).not.toHaveBeenCalled();
   });
 });
+
+describe('registrationRequired', () => {
+  afterEach(() => {
+    delete process.env.EXPO_PUBLIC_REQUIRE_ACCOUNT;
+  });
+
+  it('con capa de cuentas, el alta exige la cuenta: el registro es obligatorio', () => {
+    expect(load(true).registrationRequired).toBe(true);
+  });
+
+  it('sin capa de cuentas no hay puerta: no hay servidor al que registrarse', () => {
+    expect(load(false).registrationRequired).toBe(false);
+  });
+
+  it('EXPO_PUBLIC_REQUIRE_ACCOUNT=false la apaga aunque haya credenciales', () => {
+    process.env.EXPO_PUBLIC_REQUIRE_ACCOUNT = 'false';
+
+    expect(load(true).registrationRequired).toBe(false);
+  });
+
+  it('solo el valor exacto «false» la apaga: un descuido no abre la puerta', () => {
+    process.env.EXPO_PUBLIC_REQUIRE_ACCOUNT = '0';
+
+    expect(load(true).registrationRequired).toBe(true);
+  });
+});

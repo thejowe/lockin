@@ -1,22 +1,27 @@
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useQuery, useRepositories, type ProfileInput } from '@/data';
-import { ProfileForm } from '@/features/profile';
+import { ProfileForm, useRegistrationGate } from '@/features/profile';
 
 /**
  * Paso 2 del onboarding: crear el perfil.
  *
  * El formulario es el mismo componente que usa la tab Perfil para editar. Aquí
  * arranca vacío, con "qué busco" precargado desde el modo elegido en el paso 1.
+ *
+ * Con el registro obligatorio (2026-09-20) tampoco se llega aquí sin cuenta: la
+ * puerta manda a `/register`, igual que `mode`, para que una URL directa no la
+ * salte.
  */
 export default function ProfileFormScreen() {
   const router = useRouter();
   const repositories = useRepositories();
 
+  const gate = useRegistrationGate();
   const { data: session, loading } = useQuery('session:mode', () => repositories.session.get());
 
   async function handleSubmit(input: ProfileInput) {
@@ -27,7 +32,8 @@ export default function ProfileFormScreen() {
 
   // Esperamos al modo elegido antes de montar el formulario: si llegara después,
   // el campo "qué busco" ya estaría inicializado en vacío.
-  if (loading) return null;
+  if (loading || gate === 'checking') return null;
+  if (gate === 'required') return <Redirect href="/register" />;
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>

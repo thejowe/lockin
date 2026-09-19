@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useRepositories, type ModePreference } from '@/data';
-import { MODE_OPTIONS } from '@/features/profile';
+import { MODE_OPTIONS, useRegistrationGate } from '@/features/profile';
 import { accountsAvailable } from '@/features/profile/account-gateway';
 import { OptionCard, PrimaryButton, SecondaryButton } from '@/features/profile/controls';
 
@@ -15,10 +15,15 @@ import { OptionCard, PrimaryButton, SecondaryButton } from '@/features/profile/c
  *
  * Guarda el modo en la sesión antes de navegar, para que el formulario del paso
  * 2 pueda precargar "qué busco" y el deck de `descubrir` arranque ya filtrado.
+ *
+ * Sin la cuenta creada no se entra: el registro es obligatorio (2026-09-20) y la
+ * puerta manda a `/register`. Está aquí y en `profile-form` porque son las dos
+ * pantallas del alta a las que se puede llegar sin pasar por la otra.
  */
 export default function ModeScreen() {
   const router = useRouter();
   const repositories = useRepositories();
+  const gate = useRegistrationGate();
 
   const [selected, setSelected] = useState<ModePreference | null>(null);
   const [saving, setSaving] = useState(false);
@@ -38,6 +43,9 @@ export default function ModeScreen() {
       setSaving(false);
     }
   }
+
+  if (gate === 'checking') return null;
+  if (gate === 'required') return <Redirect href="/register" />;
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>

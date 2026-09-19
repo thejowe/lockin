@@ -8,7 +8,9 @@
  *
  * `ProfileForm` se sustituye por un doble que guarda sus props y pinta su
  * cabecera: montar el formulario real aquí duplicaría `profile-form.test.tsx`
- * de `perfil` y taparía justo lo que esta pantalla aporta.
+ * de `perfil` y taparía justo lo que esta pantalla aporta. La puerta del
+ * registro obligatorio (`useRegistrationGate`) se sustituye por un valor que el
+ * test elige: su lógica se prueba en `src/features/profile/`.
  *
  * Ojo: en RNTL 14 `render` y `fireEvent` son asíncronos.
  */
@@ -34,10 +36,14 @@ const mockForm: { props: ProfileFormProps | null } = { props: null };
 /** Lo que envía el doble al pulsar: el perfil ya relleno. */
 const mockInput = buildProfileInput({ name: 'Núria Bosch' });
 
+/** Lo que responde la puerta del registro en cada test. */
+const mockGate: { value: 'checking' | 'required' | 'open' } = { value: 'open' };
+
 jest.mock('@/features/profile', () => {
   const { Pressable, Text } = require('react-native');
 
   return {
+    useRegistrationGate: () => mockGate.value,
     ProfileForm: (props: ProfileFormProps) => {
       mockForm.props = props;
       return (
@@ -54,11 +60,33 @@ jest.mock('@/features/profile', () => {
 
 beforeEach(() => {
   mockForm.props = null;
+  mockGate.value = 'open';
   resetRepositories();
   resetRouter();
 });
 
 describe('ProfileFormScreen', () => {
+  describe('puerta del registro obligatorio', () => {
+    it('sin cuenta creada manda a /register en vez de pintar el formulario', async () => {
+      mockGate.value = 'required';
+
+      await renderRoute(<ProfileFormScreen />);
+
+      expect(router.redirects).toEqual(['/register']);
+      expect(mockForm.props).toBeNull();
+    });
+
+    it('mientras comprueba la cuenta no pinta nada ni redirige', async () => {
+      mockGate.value = 'checking';
+
+      await renderRoute(<ProfileFormScreen />);
+
+      expect(router.redirects).toEqual([]);
+      expect(mockForm.props).toBeNull();
+      expect(screen.queryByText('Crear perfil')).toBeNull();
+    });
+  });
+
   it('sitúa el paso y explica qué se pide en la cabecera del formulario', async () => {
     await renderRoute(<ProfileFormScreen />);
 

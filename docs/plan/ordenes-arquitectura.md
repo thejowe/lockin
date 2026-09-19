@@ -243,6 +243,12 @@ pérdida de datos silenciosa.
 - No metas una pantalla de login obligatoria. El arranque sin fricción es una
   decisión de producto deliberada: se entra anónimo y se **asciende** la cuenta
   después. No la rompas.
+  **Revocada para el alta el 2026-09-20:** el usuario decidió que el registro con
+  email y contraseña es **obligatorio** en el onboarding (ver `todo/perfil.md` →
+  "Registro con email"). `mode` y `profile-form` mandan a `/register` mientras la
+  cuenta no tenga el email confirmado. Sigue en pie lo demás: se **asciende** la
+  sesión anónima en vez de abrir otra, y quien ya tiene perfil no vuelve a pasar
+  por ahí. Sin capa de cuentas (mock) no hay puerta.
 - No cambies `auth.uid()` en el ascenso: `linkEmailToCurrentUser` conserva el id,
   y eso es justo lo que salva perfil, matches y mensajes.
 

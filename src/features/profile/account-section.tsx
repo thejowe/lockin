@@ -1,9 +1,9 @@
 /**
  * Sección de cuenta del perfil propio.
  *
- * Es el único sitio de la app desde el que se puede asegurar la cuenta, y
- * existe porque hasta ahora la app nunca decía la verdad más incómoda que
- * tiene: mientras no haya un email confirmado, el perfil, los matches y las
+ * Es el sitio de la tab Perfil desde el que se asegura la cuenta (el alta, en el
+ * onboarding, hace lo mismo con `register-form.tsx`), y existe porque hasta
+ * ahora la app nunca decía la verdad más incómoda que tiene: mientras no haya un email confirmado, el perfil, los matches y las
  * conversaciones viven solo en el `AsyncStorage` de este teléfono.
  *
  * ## El copy no es negociable
@@ -40,133 +40,64 @@ import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Radii, Spacing } from '@/constants/theme';
-import { useQuery } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 
-import {
-  AccountError,
-  linkEmailToCurrentUser,
-  readAccountState,
-  sendPasswordReset,
-  setAccountPassword,
-  signOut,
-} from './account-gateway';
+import { AccountError, signOut } from './account-gateway';
 import { Field, PrimaryButton, SecondaryButton, TextField } from './controls';
-
-/** Qué se le está pidiendo al servidor ahora mismo, si es que se le pide algo. */
-type Busy = 'asegurar' | 'reenviar' | 'contrasena' | 'recuperar' | 'salir' | null;
-
-/** Aviso bajo los controles: neutro para lo que salió bien, `danger` para lo que no. */
-interface Notice {
-  text: string;
-  tone: 'textSecondary' | 'danger';
-}
-
-/**
- * El mensaje que se le enseña a la persona.
- *
- * Los `AccountError` de `@/data` ya vienen escritos en español y para el
- * usuario, así que no hay nada que traducir aquí — y sobre todo no hay que
- * mirar el texto inglés del servidor, que cambia entre versiones de GoTrue.
- */
-function describe(cause: unknown): string {
-  if (cause instanceof Error) return cause.message;
-  return 'No hemos podido completar la operación. Inténtalo otra vez.';
-}
+import { useAccountActions } from './use-account-actions';
 
 export function AccountSection() {
   const theme = useTheme();
-  const { data: account, refresh } = useQuery('account:state', readAccountState);
+  const {
+    account,
+    refresh,
+    busy,
+    notice,
+    setNotice,
+    run,
+    link,
+    resend,
+    savePassword,
+    resetPassword,
+  } = useAccountActions();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   /** Cierto cuando se pide otro email estando ya a la espera de confirmar uno. */
   const [changingEmail, setChangingEmail] = useState(false);
   const [confirmingLeave, setConfirmingLeave] = useState(false);
-  const [busy, setBusy] = useState<Busy>(null);
-  const [notice, setNotice] = useState<Notice | null>(null);
 
   // Sin cuenta que enseñar no hay sección: o todavía está cargando, o esta
   // ejecución corre contra el mock en memoria, o no hay sesión abierta.
   if (!account || account.kind === 'none') return null;
 
-  async function run(action: Exclude<Busy, null>, call: () => Promise<unknown>, done?: () => void) {
-    if (busy) return;
-
-    setBusy(action);
-    setNotice(null);
-
-    try {
-      await call();
-      // `done` va antes de `refresh` a propósito: es quien deja el aviso de
-      // "salió bien", y `refresh` no lo pisa.
-      done?.();
-      refresh();
-    } catch (cause) {
-      setNotice({ text: describe(cause), tone: 'danger' });
-    } finally {
-      setBusy(null);
-    }
-  }
-
   function handleLink() {
-    const value = email.trim();
-    if (!value) {
-      setNotice({ text: 'Escribe tu email para que podamos mandarte el enlace.', tone: 'danger' });
-      return;
-    }
-
-    void run(
-      'asegurar',
-      () => linkEmailToCurrentUser(value),
-      () => {
-        setEmail('');
-        setChangingEmail(false);
-      }
-    );
+    link(email, () => {
+      setEmail('');
+      setChangingEmail(false);
+    });
   }
 
   function handleResend() {
-    if (!pendingEmail) return;
-
-    void run(
-      'reenviar',
-      () => linkEmailToCurrentUser(pendingEmail),
-      () => setNotice({ text: 'Te lo hemos vuelto a mandar.', tone: 'textSecondary' })
-    );
+    resend(() => setNotice({ text: 'Te lo hemos vuelto a mandar.', tone: 'textSecondary' }));
   }
 
   function handleSavePassword() {
-    if (!password) {
-      setNotice({ text: 'Escribe la contraseña que quieres usar.', tone: 'danger' });
-      return;
-    }
-
-    void run(
-      'contrasena',
-      () => setAccountPassword(password),
-      () => {
-        setPassword('');
-        setNotice({
-          text: 'Contraseña guardada. Ya puedes entrar con ella desde otro teléfono.',
-          tone: 'textSecondary',
-        });
-      }
-    );
+    savePassword(password, () => {
+      setPassword('');
+      setNotice({
+        text: 'Contraseña guardada. Ya puedes entrar con ella desde otro teléfono.',
+        tone: 'textSecondary',
+      });
+    });
   }
 
   function handlePasswordReset() {
-    const address = account?.email;
-    if (!address) return;
-
-    void run(
-      'recuperar',
-      () => sendPasswordReset(address),
-      () =>
-        setNotice({
-          text: 'Te hemos mandado un correo para cambiar la contraseña.',
-          tone: 'textSecondary',
-        })
+    resetPassword(() =>
+      setNotice({
+        text: 'Te hemos mandado un correo para cambiar la contraseña.',
+        tone: 'textSecondary',
+      })
     );
   }
 
@@ -176,24 +107,19 @@ export function AccountSection() {
    * Si la cuenta no es recuperable, `signOut()` lanza `unrecoverable-account`, y
    * eso —y no una comprobación duplicada aquí— es lo que abre el aviso.
    */
-  async function handleSignOut() {
-    if (busy) return;
-
-    setBusy('salir');
-    setNotice(null);
-
-    try {
-      await signOut();
-      refresh();
-    } catch (cause) {
-      if (cause instanceof AccountError && cause.reason === 'unrecoverable-account') {
-        setConfirmingLeave(true);
-      } else {
-        setNotice({ text: describe(cause), tone: 'danger' });
+  function handleSignOut() {
+    void run(
+      'salir',
+      () => signOut(),
+      undefined,
+      (cause) => {
+        if (cause instanceof AccountError && cause.reason === 'unrecoverable-account') {
+          setConfirmingLeave(true);
+          return true;
+        }
+        return false;
       }
-    } finally {
-      setBusy(null);
-    }
+    );
   }
 
   const pendingEmail = account.pendingEmail;
@@ -337,7 +263,7 @@ export function AccountSection() {
       ) : (
         <SecondaryButton
           label={busy === 'salir' ? 'Cerrando sesión…' : 'Cerrar sesión'}
-          onPress={() => void handleSignOut()}
+          onPress={handleSignOut}
         />
       )}
 
