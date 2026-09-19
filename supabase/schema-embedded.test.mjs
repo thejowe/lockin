@@ -761,7 +761,8 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
 
     // 6c — `excludeIds` bajado al SQL: la página no encoge al excluir.
     await asActor(viewer);
-    const uuidArray = (ids) => (ids ? `array[${ids.map((id) => `'${id}'`).join(',')}]::uuid[]` : 'null');
+    const uuidArray = (ids) =>
+      ids ? `array[${ids.map((id) => `'${id}'`).join(',')}]::uuid[]` : 'null';
     const deck = async (excludeIds, limit) =>
       (
         await db.query(
@@ -813,9 +814,7 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
     // no el reloj de quien llama.
     await asActor(viewer);
     const active = async (matchId) =>
-      (await db.query(`select id from public.active_session('${matchId}')`)).rows.map(
-        (r) => r.id
-      );
+      (await db.query(`select id from public.active_session('${matchId}')`)).rows.map((r) => r.id);
     assert.deepEqual(await active(matchViewerC1), [sessionLive], 'aceptada y dentro de ventana');
     assert.deepEqual(
       await active(matchViewerC2),

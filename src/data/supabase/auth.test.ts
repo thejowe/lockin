@@ -379,9 +379,9 @@ describe('completeAuthLink', () => {
   it('canjea el code y, ya recuperable, olvida las credenciales del dispositivo', async () => {
     auth.exchangeCodeForSession.mockResolvedValueOnce({ error: null });
     signedInAs({ email: 'ana@example.com', email_confirmed_at: '2026-09-17T10:00:00Z' });
-    await expect(completeAuthLink('lockin://auth/callback?code=confirmacion')).resolves.toMatchObject(
-      { kind: 'email', recoverable: true }
-    );
+    await expect(
+      completeAuthLink('lockin://auth/callback?code=confirmacion')
+    ).resolves.toMatchObject({ kind: 'email', recoverable: true });
     expect(auth.exchangeCodeForSession).toHaveBeenCalledWith('confirmacion');
     expect(AsyncStorage.removeItem).toHaveBeenCalledWith('lockin.supabase.device-account');
   });

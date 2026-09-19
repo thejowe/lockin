@@ -825,20 +825,51 @@ export function describeRepositoryContract(backend: ContractBackend): void {
         await expect(mine.leave(session.id)).rejects.toBeInstanceOf(SessionWindowError);
       });
 
+      /**
+       * El cambio se REPITE hasta que la otra persona lo ve, en vez de hacerse
+       * una sola vez y esperar.
+       *
+       * `subscribe()` vuelve antes de que el servidor haya registrado la
+       * suscripción, y `postgres_changes` no reemite nada: entrega solo lo que
+       * ocurre después de ese registro. Un único cambio puede caer dentro de
+       * esa ventana y perderse para siempre — y entonces esperar más no sirve
+       * de nada, porque ya no queda nada que esperar. Medido contra la Supabase
+       * local del job: en el run 35436601088 el `SUBSCRIBED` de la otra persona
+       * llegó 2 ms antes del insert que tenía que ver, y en el 35362453548 cayó
+       * del otro lado y el caso salió en rojo tras agotar los 10 s.
+       *
+       * Reintentar el cambio, y no solo la comprobación, es lo que quita la
+       * carrera sin rebajar lo que el caso demuestra: el aviso sigue teniendo
+       * que llegar por el cable, porque `theirs` no escribe nada aquí.
+       */
       it('avisa a las dos personas de un cambio en la sesión', async () => {
         const mineListener = jest.fn();
         const theirsListener = jest.fn();
         const unsubscribeMine = mine.subscribe(matchId, mineListener);
         const unsubscribeTheirs = theirs.subscribe(matchId, theirsListener);
 
-        await mine.propose({ matchId, startsAt: await later(), blocks: 1 });
-
-        await eventually(() => {
-          expect(mineListener).toHaveBeenCalled();
-          expect(theirsListener).toHaveBeenCalled();
-        });
-        unsubscribeMine();
-        unsubscribeTheirs();
+        try {
+          const deadline = Date.now() + 30_000;
+          for (;;) {
+            const session = await mine.propose({ matchId, startsAt: await later(), blocks: 1 });
+            try {
+              await eventually(() => {
+                expect(mineListener).toHaveBeenCalled();
+                expect(theirsListener).toHaveBeenCalled();
+              }, 2_000);
+              return;
+            } catch (error) {
+              if (Date.now() > deadline) throw error;
+            }
+            // Solo puede haber una sesión viva por match: para volver a
+            // proponer hay que retirar la anterior. La retirada es otro cambio
+            // que las dos personas deberían ver, así que tampoco se desperdicia.
+            await mine.cancel(session.id);
+          }
+        } finally {
+          unsubscribeMine();
+          unsubscribeTheirs();
+        }
       });
 
       itWithTimeTravel('una propuesta caducada ya no está viva ni se puede aceptar', async () => {

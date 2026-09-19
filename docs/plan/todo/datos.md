@@ -1333,3 +1333,131 @@ desplegarse contra Supabase real sin el riesgo de `PGRST202`.
 
 **Con esto, los 7 hallazgos del saneamiento de arquitectura del
 2026-09-17 quedan cerrados** — el último en pie era este `D3`.
+
+### Orden `D4` — los dos rojos del CI sobre `34df7e9` (Ola 3) — ENTREGADA 2026-09-19
+
+El run [35362453548](https://github.com/thejowe/lockin/actions/runs/35362453548)
+dejó dos jobs en rojo, los dos de este bloque. Ninguno de los dos era una
+regresión de `D3`.
+
+#### Job «Formato»: dos archivos, no uno
+
+- [x] `src/data/supabase/auth.test.ts` (lo dejó `D2`) — una sola expresión, tres líneas
+- [x] `supabase/schema-embedded.test.mjs` (lo dejó `D3`) — dos expresiones, siete líneas
+
+El aviso de la orden decía «solo ese archivo», pero el log del job listaba
+**dos**: `Code style issues found in 2 files`. Arreglar solo el primero habría
+dejado el job igual de rojo. Ninguno de los dos se ve desde aquí con
+`npm run format:check` —el ruido de CRLF de Windows tapa los dos de verdad entre
+~100 falsos—, así que se comprobaron copiando cada archivo con finales LF a un
+directorio temporal y pasándole `prettier --check` con el `.prettierrc` del
+repo: exactamente lo que hace el runner de Linux. `core.autocrlf=true` y el blob
+de git guarda LF, así que esa copia es byte a byte lo que ve el CI.
+
+#### Job «Contrato Supabase»: ni la política ni `D3`. Es una carrera del test
+
+- [x] Descartada la sospecha 1 (`private: true` de `D1` + políticas de `realtime.messages`)
+- [x] Descartada la sospecha 2 (`active_session()` y `sessions.ts` de `D3`)
+- [x] Causa real encontrada y medida
+- [x] Arreglada donde estaba, sin tocar la política ni `private: true`
+
+**La política no tiene nada que ver, y no se ha relajado ni un milímetro.** El
+canal del caso que fallaba es `lockin:sessions:<matchId>`, que es
+`postgres_changes` y es **público**: las políticas de
+`20260917000100_realtime_authorization.sql` filtran por
+`extension in ('broadcast', 'presence')` y Realtime solo las evalúa en canales
+**privados**. Por eso `presence.ts` y `video-signal.ts` llevan `private: true` y
+este no. El candado del hallazgo 2 sigue entero.
+
+##### Cómo se descartaron las dos sospechas
+
+Aquí no hay Docker, así que el diagnóstico se hizo con ramas desechables
+—creadas con `read-tree`/`commit-tree` sobre un `GIT_INDEX_FILE` temporal, sin
+un solo `git add` en el worktree compartido— y `workflow_dispatch` sobre
+`contract.yml`:
+
+| Rama | Qué lleva | Resultado |
+|---|---|---|
+| `datos-diag-sin-d3` (`d63c139`) | `D1` sí, `D3` no | [35436179475](https://github.com/thejowe/lockin/actions/runs/35436179475) **verde** |
+| `datos-diag-sin-realtime-auth` | `D3` sí, migración de `D1` fuera | [35436180772](https://github.com/thejowe/lockin/actions/runs/35436180772) **verde** |
+| `datos-diag-tal-cual-a` (`34df7e9` intacto) | las dos | [35436373530](https://github.com/thejowe/lockin/actions/runs/35436373530) **verde** |
+| `datos-diag-tal-cual-b` (`34df7e9` intacto) | las dos | [35436375506](https://github.com/thejowe/lockin/actions/runs/35436375506) **verde** |
+
+El commit rojo, sin tocarle nada, pasa. Es intermitente: no es ninguna de las
+dos sospechas.
+
+##### La causa, cronometrada
+
+Una quinta rama instrumentó `sessions.ts` para imprimir el instante del
+`SUBSCRIBED` de cada canal y el del insert. El
+[run 35436601088](https://github.com/thejowe/lockin/actions/runs/35436601088)
+—verde— dejó esto:
+
+```
+[diag] repo#16 join 34370247-… -> SUBSCRIBED @1789812683306
+[diag] repo#1  propose 34370247-… insertado  @1789812683308
+```
+
+**Dos milisegundos.** `repo#16` es la otra persona; `repo#1`, quien propone.
+
+`subscribe()` vuelve antes de que el servidor haya registrado la suscripción, y
+`postgres_changes` **no reemite nada**: entrega solo lo que ocurre después de
+ese registro. El caso hacía **un** cambio y luego esperaba 10 s. Si el cambio
+cae dentro de esa ventana, el aviso no se pierde «con retraso»: no existe, y
+esperar más no sirve de nada. El `mineListener` siempre pasaba porque `changed()`
+avisa en local sin tocar el cable; el que se quedaba a cero era el de la otra
+persona. Eso es exactamente el `10099 ms` del run rojo.
+
+##### Qué se cambió, y qué NO
+
+Arreglado en `src/data/repositories.contract.ts`: el caso **repite el cambio**
+hasta que la otra persona lo ve (`propose` → comprobar 2 s → `cancel` → repetir,
+con tope de 30 s) en vez de hacerlo una vez y esperar. Reintentar el cambio, y
+no solo la comprobación, quita la carrera **sin rebajar lo que demuestra**: el
+aviso sigue teniendo que llegar por el cable, porque `theirs` no escribe nada.
+
+Ese archivo está fuera del alcance que traía la orden (`src/data/supabase/`,
+`supabase/`), aunque tampoco en la lista de lo prohibido. Se tocó porque el
+defecto está literalmente ahí y no hay ningún otro sitio desde el que
+arreglarlo. Queda anotado a propósito.
+
+**Vía descartada, y por qué.** El primer intento fue arreglarlo en producción:
+avisar una vez al llegar el `SUBSCRIBED` (`resyncOnJoin`), en los tres canales.
+Cierra la ventana de verdad, pero rompe otro caso del contrato —
+`messages › avisa solo a los suscriptores de ese hilo`, que exige **exactamente
+un** aviso por `send` ([run 35437206224](https://github.com/thejowe/lockin/actions/runs/35437206224):
+`Expected 1, Received 2`). Esa cuenta exacta es lo que protege la lógica de
+marcas de escritura propia (`emittedLocally`), y vale más que el parche.
+Aplicarlo solo al canal de sesiones habría puesto el job en verde dejando que el
+caso pasara aunque realtime estuviera roto del todo, que es peor que un job rojo.
+Revertido entero.
+
+##### Lo que queda abierto (hallazgo nuevo, para otra orden)
+
+Diagnosticando salió un agujero de producto que **no** se ha arreglado aquí,
+porque excede la orden y no se puede verificar de punta a punta desde este job:
+
+- **Hallazgo 8: al reconectar, la app pierde en silencio todo lo ocurrido
+  mientras estuvo desconectada.** Los tres canales (`lockin:matches`,
+  `lockin:messages:<matchId>`, `lockin:sessions:<matchId>`) son
+  `postgres_changes`, que no reemite: tras una caída de red, el `phx_join` nuevo
+  no trae nada de lo perdido y la pantalla se queda con el dato viejo hasta el
+  siguiente cambio. La misma ventana existe, más corta, entre `subscribe()` y el
+  primer `SUBSCRIBED`. El arreglo natural es releer al reengancharse, pero tiene
+  que distinguir el **reenganche** del primer `join` — si avisa también en el
+  primero, choca con la cuenta exacta del caso de `messages` (ver arriba).
+
+##### Verificación (2026-09-19)
+
+- **Job «Contrato Supabase»**, rama `datos-fix-carrera`:
+  [run 35437524543](https://github.com/thejowe/lockin/actions/runs/35437524543)
+  **verde** — `23 skipped, 59 passed, 82 total`, `numFailedTests: 0`. Los 23
+  saltos son los declarados en `contract.yml`; el caso que fallaba ya no salta,
+  pasa.
+- **Job «Formato»**: los tres archivos tocados, copiados con finales LF y
+  pasados por `prettier --check` con el `.prettierrc` del repo → limpios. El
+  veredicto del runner, en el CI de la rama.
+- `npm run test:schema` → `pass 21`, `fail 0`.
+- `npm run typecheck`, `npm run lint`: limpios.
+- `npm test -- --ci --runInBand` → **795 pasados**, 82 saltados, 0 fallos, 71
+  suites.
