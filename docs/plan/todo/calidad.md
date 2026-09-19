@@ -3351,8 +3351,10 @@ condiciones de *medirla* y evaluar quitarla en CI. Solo `e2e/**`,
       una semana de runs sin `PGRST303` sí lo sostendría. La repetición sigue
       haciendo falta para proyectos alojados con PostgREST anterior, y su única
       prueba seguirá siendo el test con `fetch` de mentira. Si se quiere verla
-      actuar de verdad, hay que poner `E2E_POSTGREST_VERSION` vacío en un
-      `workflow_dispatch` y esperar a que toque. Queda abierta a propósito.
+      actuar de verdad, hay que poner `E2E_POSTGREST_VERSION: ''` en el `env` de
+      `e2e.yml` (hoy el workflow no lo pasa: `run.mjs` usa su valor por defecto
+      `v16.3`, y `workflow_dispatch` no tiene input para cambiarlo) y esperar a
+      que toque. Queda abierta a propósito.
 - [ ] **Retirar la fijación** cuando una CLI estable levante PostgREST ≥ v16.3 por
       defecto (`resumen.txt` lo dirá sin la fijación).
 
