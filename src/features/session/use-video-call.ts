@@ -16,11 +16,13 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
-import { mediaDevices, MediaStream, RTCPeerConnection } from 'react-native-webrtc';
 
 import { videoSignal } from '@/data';
 
+import { loadWebRTC } from './webrtc';
+
 import type { VideoSignalChannel, VideoSignalMessage } from '@/data';
+import type { MediaStream } from 'react-native-webrtc';
 
 /** STUN público, sin cuenta — ver la spec ("Decisiones tomadas") para el porqué de no pagar TURN. */
 const ICE_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }];
@@ -33,7 +35,11 @@ const ICE_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }];
  */
 export const CONNECT_TIMEOUT_MS = 30_000;
 
-export type VideoCallStatus = 'inactiva' | 'conectando' | 'conectada' | 'error';
+/**
+ * `'no-disponible'`: la build no trae el módulo nativo de WebRTC (Expo Go).
+ * No es un error de la llamada, es que no puede existir — ver `webrtc.ts`.
+ */
+export type VideoCallStatus = 'inactiva' | 'conectando' | 'conectada' | 'error' | 'no-disponible';
 
 export interface VideoCall {
   status: VideoCallStatus;
@@ -74,9 +80,9 @@ export function useVideoCall(
   active: boolean,
   channel: VideoSignalChannel = videoSignal
 ): VideoCall {
-  const canRun = Boolean(
-    sessionId && myProfileId && counterpartId && active && Platform.OS !== 'web'
-  );
+  const webrtc = Platform.OS === 'web' ? null : loadWebRTC();
+  const wanted = Boolean(sessionId && myProfileId && counterpartId && active);
+  const canRun = wanted && webrtc !== null;
 
   const [outcome, setOutcome] = useState<Outcome>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -110,13 +116,20 @@ export function useVideoCall(
   }
 
   const status: VideoCallStatus =
-    !canRun || outcome === 'colgada' ? 'inactiva' : outcome === 'idle' ? 'conectando' : outcome;
+    wanted && webrtc === null && Platform.OS !== 'web'
+      ? 'no-disponible'
+      : !canRun || outcome === 'colgada'
+        ? 'inactiva'
+        : outcome === 'idle'
+          ? 'conectando'
+          : outcome;
 
   useEffect(() => {
-    if (!sessionId || !myProfileId || !counterpartId || !active || Platform.OS === 'web') {
+    if (!sessionId || !myProfileId || !counterpartId || !active || !webrtc) {
       return;
     }
 
+    const { mediaDevices, RTCPeerConnection } = webrtc;
     let cancelled = false;
     let closed = false;
     let leaveChannel = () => {};
@@ -239,7 +252,7 @@ export function useVideoCall(
       cleanup();
       cleanupRef.current = () => {};
     };
-  }, [sessionId, myProfileId, counterpartId, active, channel]);
+  }, [sessionId, myProfileId, counterpartId, active, channel, webrtc]);
 
   const toggleMic = useCallback(() => {
     setMicOn((prev) => {

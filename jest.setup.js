@@ -68,6 +68,11 @@ jest.mock('expo-notifications', () => ({
 // (local y remota) quedan puestas se da la conexión por hecha —no hay forma de
 // simular ICE de verdad en Node— y `setRemoteDescription` dispara `ontrack` con
 // un stream remoto falso, como haría el navegador al llegar vídeo.
+// `loadWebRTC` (src/features/session/webrtc.ts) comprueba que la build traiga
+// el módulo nativo antes de hacer `require`; bajo Jest el doble de arriba lo
+// sustituye, así que basta con que la comprobación lo vea presente.
+require('react-native').NativeModules.WebRTCModule = {};
+
 jest.mock('react-native-webrtc', () => {
   class MockMediaStreamTrack {
     constructor(kind) {

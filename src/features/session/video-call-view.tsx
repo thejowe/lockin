@@ -18,13 +18,13 @@
  */
 
 import { Pressable, StyleSheet, View } from 'react-native';
-import { RTCView } from 'react-native-webrtc';
 
 import { ThemedText } from '@/components/themed-text';
 import { Radii, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { useVideoCall, type VideoCallStatus } from './use-video-call';
+import { loadWebRTC } from './webrtc';
 
 import type { VideoSignalChannel } from '@/data';
 
@@ -33,6 +33,7 @@ const STATUS_TEXT: Record<VideoCallStatus, string> = {
   conectando: 'Conectando…',
   conectada: 'Esperando vídeo…',
   error: 'No se pudo conectar el vídeo.',
+  'no-disponible': 'La videollamada necesita la app de desarrollo.',
 };
 
 export function VideoCallView({
@@ -54,6 +55,23 @@ export function VideoCallView({
   // Fuera de ventana o ya colgada: nada que pintar, sin que quien la monta
   // tenga que condicionar su presencia en el árbol.
   if (!active) return null;
+
+  // Sin módulo nativo (Expo Go) no hay `RTCView` ni controles que valgan: solo
+  // el aviso, y el resto de la sesión (reloj, presencia, chat) sigue igual.
+  const RTCView = loadWebRTC()?.RTCView;
+  if (!RTCView || call.status === 'no-disponible') {
+    return (
+      <View
+        style={[
+          styles.remote,
+          { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+        ]}>
+        <ThemedText type="small" themeColor="textSecondary" style={styles.centeredText}>
+          {STATUS_TEXT['no-disponible']}
+        </ThemedText>
+      </View>
+    );
+  }
 
   return (
     <View
