@@ -2229,11 +2229,20 @@ seguir fallando donde debe. Solo toca la base desechable de `e2e/.runtime`.
   preparación de la suite; con caché fría son ~60 s de suite para 7 casos que
   suman 148 ms. Eso era lo que se buscaba y es estable, así que la casilla se
   cierra.
-- **[ ] Recorrido completo verde en emulador** (octava y novena pasada) y
-  **[ ] recorrido completo verde en CI** (séptima). No se cierran, y el motivo
-  ya no es `chat`: en ese mismo run la sonda del teclado pasa y el control
-  negativo llega al reinicio. Lo que falla es la variante `supabase`, en el paso
-  "Resultado del recorrido".
+- **[x] Recorrido completo verde en emulador** (octava y novena pasada) y
+  **[x] recorrido completo verde en CI** (séptima). *(Cerradas el 2026-09-11, y
+  la casilla se quedó sin marcar hasta el 2026-09-19: run
+  [34413652963](https://github.com/thejowe/lockin/actions/runs/34413652963)
+  (`b863e5f`) y run
+  [34415842422](https://github.com/thejowe/lockin/actions/runs/34415842422)
+  (`74897b4`), los dos con `supabase` y `mock` en verde al primer intento; y desde
+  entonces, entre otros, el
+  [35455996761](https://github.com/thejowe/lockin/actions/runs/35455996761)
+  (`0d7ef7f`) y el
+  [35457431177](https://github.com/thejowe/lockin/actions/runs/35457431177)
+  (`2c18854`), con `attempt-01` en verde y sin reintento.)* Lo que sigue es el
+  texto de cuando estaba abierta: la variante `supabase` fallaba en el paso
+  "Resultado del recorrido", y ya no era `chat`.
   > **CORREGIDO el 2026-09-08.** Lo que decía este punto —que el log y el
   > artefacto respondían `403 Must have admin rights to Repository` y que por eso
   > no se podía nombrar la causa— **ya no es cierto**: `gh` CLI está instalado y
@@ -2646,7 +2655,14 @@ sobre `1987a9c`, el commit anterior a su Tarea 5).
       Conclusión: estructuralmente no puede ser el límite de la cuenta cloud.
       Toca seguir buscando en el arranque, como decía el encargo.
 
-- [ ] **Causa real, sin cerrar.** Lo que sí confirma el artefacto del run rojo
+- [x] **Causa real, cerrada** *(2026-09-19: PostgREST/postgrest#5196, ver «El
+      artefacto trae los logs de contenedores…» al final. Ojo con lo que sí y lo
+      que no queda probado: la causa de `PGRST303` está identificada en la fuente
+      y vista en el logcat del run 35438092381; que ESTE rojo, 35154808314, fuera
+      ese, no se puede comprobar —su logcat no traía rastro de la app— aunque
+      encaja: variante `supabase`, arranque, intermitente. Y el «próximo paso» de
+      abajo, instrumentar `useQuery`, ya no procede: lo hizo A3 con
+      `reportQueryError`.)* Lo que sí confirma el artefacto del run rojo
       (`logcat.txt`, `window.xml`, `maestro.log` descargados con `gh run
       download 35154808314 -n e2e-android-supabase`):
       - `window.xml` del momento del fallo **sí** muestra la pantalla de error
@@ -3268,3 +3284,93 @@ Local. El diagnóstico se hizo sobre `1c16e5b`; el suelo se midió y se fijó so
   `e2e/triage.mjs`, `e2e/triage.test.mjs`, `e2e/README.md`, `jest.config.js` y
   este archivo. `.github/workflows/` no necesitó cambios: `gate` ya corre y
   ahora imprime.
+
+## El artefacto trae los logs de contenedores y PostgREST sube a v16.3 (2026-09-19)
+
+Orden posterior a D7 de `datos`: con la causa ya nombrada, dejar el E2E en
+condiciones de *medirla* y evaluar quitarla en CI. Solo `e2e/**`,
+`.github/workflows/e2e.yml` y este archivo; `src/data/supabase/**` sin tocar.
+
+### 1. Lo que dice el run 35455996761 (push de `0d7ef7f`)
+
+- [x] **Verde en los dos trabajos, y la repetición NO actuó.** `gh run download`
+      de `e2e-android-supabase` y `-mock`: `verdict.json` con un solo intento
+      (`attempt-01`, `pass`, `appErrors: []`) y `postgres.json` con
+      persistencia, sesión, valoración y racha `verified`. En el `logcat.txt`
+      de la variante `supabase` (1616 líneas) hay **0** coincidencias con
+      `PGRST`, `JWT`, `rechaz` o `se repite`; la única línea `[lockin]` es
+      `backend de datos: Supabase`. Es decir: no hay `warn` de
+      `resilient-fetch.ts` y el `PGRST303` ni siquiera se produjo.
+- [x] **Consecuencia, dicha sin adornos:** la repetición de `resilient-fetch.ts`
+      **sigue sin haber actuado nunca en un emulador**. Sus garantías salen del
+      test con un `fetch` de mentira, no de un run. Que dos runs seguidos
+      (35455996761 y 35457431177) pasen sin ella no la prueba ni la desmiente.
+
+### 2. Medible la próxima vez
+
+- [x] **`attempt-NN/clock.json`**: `date -u +%s` del runner
+      (`recorridoEpoch`, más su ISO) y `date +%s` del emulador
+      (`dispositivoEpoch`) al arrancar el recorrido. En el run 35457431177 los
+      dos coinciden (1789839204).
+- [x] **`containers/`**, de `node e2e/run.mjs containers` (paso nuevo del
+      workflow, con `if: always()`, antes de subir y de `stop`):
+      `docker logs --timestamps` de `supabase_rest_*` y `supabase_auth_*`, y
+      `resumen.txt` con imagen, estado y hora de arranque. Comprobado sobre el
+      artefacto del run 35457431177, no supuesto: los dos logs y el resumen están
+      en las dos variantes.
+- [x] **Límite conocido, que conviene no descubrir dos veces:** PostgREST loguea
+      a nivel `error`, y en ese run su log son 311 líneas de arranque y de
+      recargas de esquema, **ninguna por petición**. Un 401 `PGRST303` no dejaría
+      línea propia. Lo que sí hay es GoTrue —el `/signup` del recorrido consta a
+      las 17:34:08Z— y `clock.json` (17:33:24Z): con eso se mide cuánto llevaba
+      PostgREST sin tráfico (ahí, desde las 17:16:05Z, ~18 min), que es la
+      condición del bug. Ver el `PGRST303` en sí sigue dependiendo del logcat de
+      la app.
+
+### 3. Quitar la causa en CI: PostgREST ≥ v16.3
+
+- [x] **`supabase/setup-cli` no sirve para esto.** La 2.117.0 es la última estable
+      (`npm view supabase dist-tags`: `latest` 2.117.0, `beta` 2.118.0-beta.55) y
+      levanta v16.2, sin el arreglo. Subir de CLI no lo consigue.
+- [x] **Aplicado: fijar la imagen desde `e2e/run.mjs prepare`.** La CLI lee
+      `supabase/.temp/rest-version` para cambiar la etiqueta de la imagen de
+      PostgREST (lo escribe `supabase link`; `config.go` lo aplica a
+      `Api.Image`). Es un mecanismo de la propia CLI, no un parche a Docker. Se
+      escribe ahí `v16.3` (`E2E_POSTGREST_VERSION`; vacío = no fijar nada) y
+      **`prepare` falla si `docker inspect` no ve esa etiqueta**, para que una
+      CLI que ignore el archivo no deje el E2E en v16.1 sin que nadie lo note.
+      Sin Docker en esta máquina no se pudo probar en local: la prueba es CI, y en
+      el run 35457431177 `resumen.txt` dice
+      `ghcr.io/supabase/postgrest:v16.3 estado=running` en las dos variantes.
+      Estable en la única medida que hay: 1 run, verde, con la guarda pasando.
+- [x] **Sin calentamiento previo a PostgREST**, como se pidió.
+- [ ] **Lo que se pierde con esto, para decidir con los ojos abiertos.** En CI la
+      repetición ya no tendrá ocasión de actuar: con v16.3 el bug no existe, y por
+      tanto el `warn` no saldrá jamás. No demuestra que v16.3 lo arregle —un
+      verde no prueba una ausencia; antes salía en 1 de 3 intentos, no siempre—:
+      una semana de runs sin `PGRST303` sí lo sostendría. La repetición sigue
+      haciendo falta para proyectos alojados con PostgREST anterior, y su única
+      prueba seguirá siendo el test con `fetch` de mentira. Si se quiere verla
+      actuar de verdad, hay que poner `E2E_POSTGREST_VERSION` vacío en un
+      `workflow_dispatch` y esperar a que toque. Queda abierta a propósito.
+- [ ] **Retirar la fijación** cuando una CLI estable levante PostgREST ≥ v16.3 por
+      defecto (`resumen.txt` lo dirá sin la fijación).
+
+### 4. Casillas de este archivo que estaban obsoletas
+
+- [x] «Recorrido completo verde en emulador / en CI» (cerca de la octava pasada):
+      marcadas, con los runs 34413652963 y 34415842422, que ya cerraron el
+      2026-09-11 el texto sin marcar la casilla.
+- [x] «Causa real, sin cerrar» (`PGRST303` del 2026-09-18): marcada con la matización
+      de que el rojo 35154808314 no se puede atribuir a ella con certeza.
+
+### Verificación
+
+- `node --test "e2e/*.test.mjs"` — 70 casos, 69 pasados, 1 fallo: el caso CRLF
+  de `full-journey.test.mjs` que ya consta arriba, ruido de esta máquina.
+- `npx eslint e2e/run.mjs` — limpio. Formato comprobado con `prettier` sobre una
+  copia LF.
+- E2E: run
+  [35457431177](https://github.com/thejowe/lockin/actions/runs/35457431177)
+  (`2c18854`), `supabase` y `mock` en verde en `attempt-01`, con
+  `containers/` y `clock.json` en el artefacto.
