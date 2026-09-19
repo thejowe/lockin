@@ -84,9 +84,24 @@ assert(
 );
 const command = process.argv[2];
 assert(
-  ['prepare', 'build', 'test', 'triage', 'gate', 'stop'].includes(command),
-  'Uso: node e2e/run.mjs prepare|build|test|triage|gate|stop'
+  ['prepare', 'build', 'test', 'triage', 'containers', 'gate', 'stop'].includes(command),
+  'Uso: node e2e/run.mjs prepare|build|test|triage|containers|gate|stop'
 );
+// PostgREST >= v16.3 trae el arreglo de PostgREST/postgrest#5196, la causa del
+// `PGRST303` intermitente («JWT issued at future») que tumbó el E2E: tras un
+// rato sin tráfico su primera petición valida contra un reloj viejo. La CLI
+// 2.116.0 de CI levanta v16.1 y la 2.117.0 (la última estable) v16.2, así que
+// `supabase/setup-cli` no la trae y se fija la imagen desde aquí. Cuando una CLI
+// estable levante >= v16.3 por defecto, esta fijación sobra y se retira.
+// Vacía, no se fija nada y el Supabase local usa lo que traiga la CLI.
+const postgrestVersion = process.env.E2E_POSTGREST_VERSION ?? 'v16.3';
+assert(
+  postgrestVersion === '' || /^v\d+\.\d+(\.\d+)?$/.test(postgrestVersion),
+  'E2E_POSTGREST_VERSION debe ser una etiqueta tipo v16.3, o vacía para no fijar nada'
+);
+// Nombres que la CLI da a los contenedores: `supabase_<servicio>_<project_id>`,
+// con el `project_id` que `prepare` escribe en el config.
+const restContainer = 'supabase_rest_lockin-e2e';
 
 function run(binary, args, options = {}) {
   const result = spawnSync(binary, args, {
@@ -140,6 +155,20 @@ function deviceState() {
   const result = spawnSync('adb', ['get-state'], { encoding: 'utf8', timeout: 10000 });
   if (result.error) return 'adb no responde (' + (result.error.code ?? result.error.message) + ')';
   return (result.stdout ?? '').trim() || (result.stderr ?? '').trim() || 'sin estado';
+}
+
+/** `date -u +%s` del runner. Nunca lanza: es evidencia, no un requisito. */
+function unixNow() {
+  const result = spawnSync('date', ['-u', '+%s'], { encoding: 'utf8', timeout: 10000 });
+  const epoch = Number((result.stdout ?? '').trim());
+  return Number.isInteger(epoch) && epoch > 0 ? epoch : Math.floor(Date.now() / 1000);
+}
+
+/** `date +%s` del emulador, o `null` si adb no responde. Nunca lanza. */
+function adbEpoch() {
+  const result = spawnSync('adb', ['shell', 'date', '+%s'], { encoding: 'utf8', timeout: 10000 });
+  const epoch = Number((result.stdout ?? '').trim());
+  return Number.isInteger(epoch) && epoch > 0 ? epoch : null;
 }
 
 /** Volcados de comandos de Maestro de UN intento: en su raíz o en su subcarpeta. */
@@ -381,8 +410,30 @@ if (command === 'prepare') {
       '\n' +
       readFileSync(join(root, 'e2e/session-now.sql'), 'utf8')
   );
+  // La CLI lee `supabase/.temp/rest-version` —lo escribe `supabase link`— para
+  // cambiar la etiqueta de la imagen de PostgREST. Aquí se usa sin proyecto
+  // enlazado, y por eso se comprueba abajo qué imagen quedó corriendo.
+  if (postgrestVersion !== '') {
+    mkdirSync(join(runtime, 'supabase/.temp'), { recursive: true });
+    writeFileSync(join(runtime, 'supabase/.temp/rest-version'), postgrestVersion);
+  }
   // Auth, Postgres, REST and Realtime remain real. Omit unrelated services.
   supabase(['start', '-x', 'studio,imgproxy,edge-runtime,logflare,vector,supavisor']);
+  const restImage = run('docker', ['inspect', '-f', '{{.Config.Image}}', restContainer], {
+    stdio: ['ignore', 'pipe', 'inherit'],
+  });
+  console.log('PostgREST del Supabase local: ' + restImage);
+  // Sin esta guarda, que la CLI ignorase el archivo dejaría el E2E en la v16.1
+  // de siempre y nadie se enteraría de que la causa del PGRST303 sigue puesta.
+  if (postgrestVersion !== '') {
+    assert(
+      restImage.endsWith(':' + postgrestVersion),
+      'La CLI no aplicó rest-version: PostgREST corre como ' +
+        restImage +
+        ' y se pidió ' +
+        postgrestVersion
+    );
+  }
   supabase(['db', 'reset', '--local']);
   localBackend();
 }
@@ -541,6 +592,18 @@ if (command === 'test') {
       journeyFile,
     ];
     writeFileSync(join(dir, 'run.json'), JSON.stringify({ runId, variant }, null, 2));
+    // Ancla temporal para cruzar con `containers/*.log`, que llevan marcas de
+    // tiempo de Docker (UTC). Sin ella, un PGRST303 del logcat no se puede
+    // situar respecto a lo que hacían GoTrue y PostgREST en ese segundo.
+    const clock = {
+      recorridoEpoch: unixNow(),
+      recorridoIso: new Date().toISOString(),
+      // El reloj del emulador es otro que el del runner (donde corren los
+      // contenedores): se guarda por si algún día el desfase estuviera de ese lado.
+      dispositivoEpoch: adbEpoch(),
+    };
+    writeFileSync(join(dir, 'clock.json'), JSON.stringify(clock, null, 2));
+    console.log('Recorrido ' + basename(dir) + ' arranca en epoch ' + clock.recorridoEpoch + '.');
     // El buffer es del dispositivo, no del intento: sin vaciarlo, el logcat del
     // reintento arrastra el del anterior y no se sabe cuál es cuál.
     spawnSync('adb', ['logcat', '-c'], { timeout: 10000 });
@@ -769,6 +832,49 @@ if (command === 'triage') {
   if (process.env.GITHUB_OUTPUT) {
     appendFileSync(process.env.GITHUB_OUTPUT, 'retry=' + decision.retry + '\n');
   }
+}
+
+// Logs con marca de tiempo de PostgREST y GoTrue, y qué imagen y desde cuándo
+// corría cada uno. Va ANTES de subir el artefacto y de `stop`, que se lleva los
+// contenedores. Nunca falla: si Docker no responde, el artefacto lo dice y punto.
+//
+// Ojo con lo que NO va a haber: PostgREST loguea a nivel `error`, así que un
+// 401 `PGRST303` no deja línea propia. Lo que sí sale es lo de GoTrue —cuándo
+// firmó cada token— y el arranque de PostgREST; con `clock.json` de cada
+// intento eso basta para medir cuánto llevaba PostgREST sin tráfico.
+if (command === 'containers') {
+  const dir = join(artifacts, 'containers');
+  mkdirSync(dir, { recursive: true });
+  const listed = spawnSync('docker', ['ps', '-a', '--format', '{{.Names}}'], { encoding: 'utf8' });
+  const names = (listed.stdout ?? '')
+    .split('\n')
+    .map((name) => name.trim())
+    .filter((name) => /^supabase_(rest|auth)_/.test(name));
+  const summary = ['runner date -u +%s: ' + unixNow(), 'contenedores: ' + names.join(' ')];
+  for (const name of names) {
+    // `sh -c` para mezclar stdout y stderr en el orden en que salieron: con dos
+    // tuberías separadas el orden entre ellas se pierde.
+    const logs = spawnSync('sh', ['-c', 'docker logs --timestamps "$0" 2>&1', name], {
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
+    });
+    writeFileSync(join(dir, name + '.log'), logs.stdout ?? '');
+    const inspect = spawnSync(
+      'docker',
+      [
+        'inspect',
+        '-f',
+        '{{.Config.Image}} estado={{.State.Status}} arranque={{.State.StartedAt}}',
+        name,
+      ],
+      { encoding: 'utf8' }
+    );
+    summary.push(name + ': ' + (inspect.stdout ?? '').trim());
+  }
+  if (names.length === 0)
+    summary.push('no hay contenedores supabase_rest_/supabase_auth_ (¿cayó prepare?)');
+  writeFileSync(join(dir, 'resumen.txt'), summary.join('\n') + '\n');
+  console.log(summary.join('\n'));
 }
 
 // Resultado real del trabajo, después de todos los emuladores que hayan corrido.

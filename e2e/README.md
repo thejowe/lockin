@@ -103,6 +103,19 @@ solo si todas las verificaciones pasan. Cada intento tiene su carpeta y su
 raíz. Ningún archivo con las claves del backend forma parte del artefacto que
 sube CI.
 
+Dos piezas más para medir el `PGRST303` (ver «Intermitentes conocidos»):
+
+- `attempt-NN/clock.json`: `date -u +%s` del runner al arrancar el recorrido
+  (`recorridoEpoch`, con su versión ISO) y `date +%s` del emulador
+  (`dispositivoEpoch`).
+- `containers/`: `docker logs --timestamps` de `supabase_rest_*` y
+  `supabase_auth_*` (`node e2e/run.mjs containers`, antes de subir y de
+  `stop`), más `resumen.txt` con imagen, estado y hora de arranque de cada
+  uno. Las marcas de Docker son UTC: se cruzan con `clock.json`. Ojo: PostgREST
+  loguea a nivel `error`, así que un 401 `PGRST303` **no** deja línea ahí;
+  GoTrue sí deja cuándo firmó cada token, y con eso se mide cuánto llevaba
+  PostgREST sin tráfico antes de la primera petición.
+
 ## El reintento: qué se repite y qué no
 
 El emulador de Actions se cae solo. `device offline`,
@@ -166,14 +179,15 @@ aquí convertiría un intermitente conocido en un rojo permanente.
 | Rastro | Qué es | De quién |
 |---|---|---|
 | `System UI isn't responding` en `window.xml` | ANR de OTRO proceso tapando la pantalla: la aserción no llegó a mirar la app. `parseAnrDialog` lo detecta por `android:id/aerr_*` y lo manda a `runner` | del emulador |
-| `code: 'PGRST303'`, `JWT issued at future` | PostgREST rechaza un token cuyo `iat` es posterior a **su** reloj. El token no lo fabrica la app: lo firma GoTrue al dar de alta. Es **desfase de reloj** entre el contenedor que firma y el que valida, en el borde del segundo — no código de la app, ni de `src/data/supabase/**`, ni de las migraciones | del Supabase local |
+| `code: 'PGRST303'`, `JWT issued at future` | Bug de PostgREST (PostgREST/postgrest#5196): tras un rato sin tráfico, su **primera** petición valida el `iat` contra un reloj interno viejo y rechaza un token recién firmado; la siguiente con el mismo token pasa. **No** es desfase entre contenedores ni el `iat` al segundo (hacen falta 30 s). Arreglado en PostgREST v16.3 / v14.18; la CLI 2.116.0 de CI levanta v16.1 | de PostgREST |
 
-El `PGRST303` se vio 1 de cada 3 intentos el 2026-09-19 y el recorrido pasó al
-reintentar, así que **no bloquea**. Lo que lo cerraría del todo es saber si el
-desfase está entre los contenedores de GoTrue y PostgREST o en el `iat`
-redondeado al segundo; queda anotado para `datos` en
-`docs/plan/todo/calidad.md`. Mientras tanto, un rojo con esa firma se reconoce
-aquí en un minuto en vez de costar una sesión.
+La app lo absorbe repitiendo la petición una vez (`src/data/supabase/resilient-fetch.ts`,
+que deja `[lockin] PostgREST rechazó el token con PGRST303; se repite la
+petición una vez` en el logcat). `prepare` fija la imagen de PostgREST a
+`E2E_POSTGREST_VERSION` (por defecto `v16.3`) escribiendo
+`supabase/.temp/rest-version` y **falla** si la CLI no la aplica, así que en CI
+ya no debería aparecer. Si aparece, o si aparece ese `warn`, es un dato:
+`containers/resumen.txt` dice qué imagen corría.
 
 ## Control negativo: el mismo caso con un APK sin credenciales
 

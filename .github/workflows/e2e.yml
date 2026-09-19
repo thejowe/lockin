@@ -138,6 +138,10 @@ jobs:
           mkdir -p "$E2E_ARTIFACTS"
           printf '%s\n' "$PHASES" > "$E2E_ARTIFACTS/phases.json"
           df -h > "$E2E_ARTIFACTS/disk.txt"
+      # Antes de subir la evidencia y de `stop`, que retira los contenedores.
+      - name: Logs de PostgREST y GoTrue con marcas de tiempo
+        if: always()
+        run: node e2e/run.mjs containers
       - name: Evidencia (también si falla)
         if: always()
         uses: actions/upload-artifact@v7
