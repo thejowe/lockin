@@ -15,6 +15,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 
+import { resilientFetch } from './resilient-fetch';
+
 import type { Database } from './database.types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -75,6 +77,9 @@ export function getSupabaseClient(): LockInSupabaseClient {
       // Lo necesita `verifyGithub()`; ver la spec de verificación.
       flowType: 'pkce',
     },
+    // Repite una vez el `PGRST303` que da PostgREST tras un rato sin tráfico.
+    // Ver `resilient-fetch.ts`: es un bug upstream, no un fallo de esta app.
+    global: { fetch: resilientFetch },
   });
 
   return client;

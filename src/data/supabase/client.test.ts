@@ -20,6 +20,7 @@ process.env.EXPO_PUBLIC_SUPABASE_URL = 'https://ref.supabase.co';
 process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = 'anon-key';
 
 const { getSupabaseClient, resetSupabaseClient } = require('./client') as typeof import('./client');
+const { resilientFetch } = require('./resilient-fetch') as typeof import('./resilient-fetch');
 
 describe('getSupabaseClient — configuración', () => {
   afterEach(() => {
@@ -33,6 +34,13 @@ describe('getSupabaseClient — configuración', () => {
     expect(options.auth.autoRefreshToken).toBe(true);
     expect(options.auth.persistSession).toBe(true);
     expect(options.auth.detectSessionInUrl).toBe(false);
+  });
+
+  it('pasa por el fetch que repite un PGRST303: el bug de reloj de PostgREST no llega a las pantallas', () => {
+    getSupabaseClient();
+
+    const [, , options] = (createClient as jest.Mock).mock.calls.at(-1);
+    expect(options.global.fetch).toBe(resilientFetch);
   });
 
   it('usa PKCE: el callback de OAuth trae un code de un solo uso, no un token en la URL', () => {
