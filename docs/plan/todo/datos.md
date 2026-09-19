@@ -1610,3 +1610,85 @@ queda rastro en el logcat ni en el volcado. Lo cerraron `c8e89a5` (`arquitecto`:
 el arranque deja de ser mudo) y `63009e2` (`calidad`: el control negativo pide el
 mock explícitamente), no nada de este bloque — no hacía falta tocar
 `src/data/supabase/**` ni las migraciones de `D3`.
+
+### Orden `D6` — el job «Tests» en verde sin bajar el suelo — ENTREGADA 2026-09-19
+
+- [x] Diagnosticado dónde estaba el hueco de verdad (no donde parecía)
+- [x] Cubierto el cableado de `subscribeResyncingOnRejoin` en `sessions.ts`
+- [x] Cubiertos los métodos del repositorio que nadie ejercía por defecto
+- [x] `jest.config.js` intacto: el suelo no se toca
+- [x] Verificado con el código de salida, no con la tabla
+
+#### Qué pasaba
+
+Los cuatro umbrales de `jest.config.js` cayeron por debajo del suelo en
+[run 35439652697](https://github.com/thejowe/lockin/actions/runs/35439652697),
+sobre `1c16e5b`:
+
+```
+statements (93.94%) not met: 93.4%
+branches   (87.98%) not met: 87.91%
+lines      (95.81%) not met: 95.27%
+functions  (93.63%) not met: 93.22%
+```
+
+#### Dónde estaba el hueco, que no era donde parecía
+
+`subscribeResyncingOnRejoin()` **ya estaba al 100%** en el job «Tests»:
+`realtime.test.ts` lo cubre entero con un canal falso. Y sus dos usos en
+`src/data/supabase/index.ts` no cuentan, porque `collectCoverageFrom` excluye
+`!src/**/index.ts`.
+
+El único archivo medido que `D5` tocó es `src/data/supabase/sessions.ts`, y
+allí el agujero no era la función sino **el cable**: las tres lambdas que el
+repositorio le pasa al canal —los dos handlers de `postgres_changes` y el
+`onRejoin` nuevo— no las ejecutaba nadie, porque el doble de canal de
+`sessions.test.ts` era `{ on: jest.fn(), subscribe: jest.fn() }`: guardaba los
+handlers en el olvido y nunca los llamaba. `D5` añadió una lambda más a ese
+grupo, y con ella el archivo se quedó en 88/115 sentencias, 36/55 ramas,
+24/30 funciones.
+
+La prueba buena del comportamiento —la caída de red de verdad— sigue donde
+estaba, en `src/data/repositories.contract.ts`, que corre en el job «Contrato
+Supabase» y no mide cobertura. No se ha tocado ni se ha duplicado.
+
+#### Qué se hizo
+
+Todo en `src/data/supabase/sessions.test.ts`; ni una línea de producto.
+
+- El doble de canal ahora **tiene los mandos fuera**: `fakeChannel()` guarda el
+  handler de cada tabla y el callback de estado, y expone `change(tabla)` y
+  `status(estado)` para disparar a mano lo que llegaría por realtime.
+- `describe('el canal de sesiones de un match')`, cinco casos, al nivel del
+  cable y no de la semántica: un cambio de `lockin_sessions` avisa; uno de
+  `session_attendance` también (no lleva `match_id`); el **primer** `SUBSCRIBED`
+  no avisa; el **segundo** sí; y tras desengancharse ya no avisa ni el
+  reenganche ni un cambio.
+- Los métodos que el contrato prueba contra Postgres y la suite por defecto no
+  veía: `respond` (éxito), `cancel`, `leave`, `listAttendance`, `join` sin match
+  que leer, y las fechas no nulas de `responded_at`/`left_at`.
+- Dos `it.each` de propagación de errores —siete RPCs y tres selects— que fijan
+  que ninguna de esas ramas devuelve un dato a medias en vez de romper.
+
+#### Verificación (2026-09-19)
+
+- `npx jest --coverage --ci --runInBand` → **código de salida 0**, sin ninguna
+  línea `threshold … not met`. 820 pasados, 84 saltados, 0 fallos, 72 suites.
+  Cobertura: `94.36` sent. / `89.09` ramas / `93.94` func. / `95.96` líneas,
+  contra un suelo de `93.94 / 87.98 / 93.63 / 95.81`.
+- `src/data/supabase/sessions.ts` pasa de `76.52 / 65.45 / 80 / 82.29` a
+  **`100 / 96.36 / 100 / 100`**. Las dos ramas que quedan son el parámetro por
+  defecto `deps = defaultDeps` y el `if (channel)` del desenganche, que no es
+  alcanzable: el canal siempre está en el mapa cuando se borra.
+- `npm run typecheck`, `npm run lint`: limpios (salida 0 los dos).
+- **Formato**: el único archivo tocado, copiado con finales LF y pasado por
+  `prettier --check` con el `.prettierrc` del repo → limpio. Aquí
+  `npm run format:check` no sirve, por el ruido de CRLF de Windows.
+- `jest.config.js` **sin tocar** (`git diff -- jest.config.js` vacío), y `e2e/`
+  tampoco: hay una sesión de `calidad` dentro.
+
+#### Para `calidad`
+
+El suelo se puede subir, y su propio comentario dice que se sube cuando la
+cobertura sube. Los números nuevos son `94.36 / 89.09 / 93.94 / 95.96`. No lo
+hago yo porque `jest.config.js` es tuyo.
