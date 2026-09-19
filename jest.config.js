@@ -37,20 +37,59 @@ module.exports = {
     '!src/**/index.ts',
     '!src/data/test-fixtures.ts',
   ],
-  // Suelo fijado a la cobertura real de la suite (2026-09-18, medida con
-  // `npx jest --coverage --ci --runInBand`: 788 pasados, 82 saltados, 71 de 72
-  // suites). Anterior: 93.58/87.56/92.76/95.38, del 2026-09-17.
+  // Suelo fijado a la cobertura real de la suite (2026-09-19, sobre `72bf34f`,
+  // medida con `npx jest --coverage --ci --runInBand`: 820 pasados, 84
+  // saltados, 72 de 73 suites). Anterior: 93.94/87.98/93.63/95.81, del
+  // 2026-09-18.
   // Se sube cuando la cobertura suba; no se bajan los umbrales ni se excluyen
   // archivos para dejar pasar un cambio.
   //
-  // Los 82 saltados son `src/data/supabase/contract.test.ts`, que sigue siendo
+  // Los cuatro se truncan hacia abajo y no se redondean: los crudos son
+  // 94.365698 / 89.093298 / 93.946731 / 95.964487, y Jest compara contra el
+  // valor sin redondear. Poner 95.97 en `lines` dejaría el suelo POR ENCIMA de
+  // la cobertura real y el job `Calidad` saldría rojo el mismo día de subirlo.
+  //
+  // Los saltados son `src/data/supabase/contract.test.ts`, que sigue siendo
   // opt-in (`LOCKIN_SUPABASE_CONTRACT=1`) porque escribe en la base a la que
   // apunte. Desde el 2026-09-17 ya no es cierto que no se ejecute nunca: el job
   // `Contrato Supabase` de `ci.yml` lo corre en cada push a la rama principal
   // contra un Supabase local desechable. Su cobertura no cuenta aquí a
   // propósito — se mide en otra pasada y sobre otra base de datos —, así que
   // estos números son los de la suite por defecto y solo suben con ella.
+  //
+  // ── Un caso del contrato que solo corre en Supabase BAJA este suelo ──
+  //
+  // Criterio decidido el 2026-09-19, tras el rojo de `Tests` sobre `1c16e5b`.
+  // No dejarlo escrito costó una pasada, así que aquí va entero.
+  //
+  // `src/data/repositories.contract.ts` no es un `.test.ts`: es el contrato
+  // compartido que invocan DOS suites, la del mock (`src/data/mock/index.test.ts`,
+  // que corre siempre) y la de Supabase (opt-in). Como no case con
+  // `collectCoverageFrom`, cuenta como código medido — y así se queda:
+  // excluirlo bajaría tres de los cuatro umbrales (medido el 2026-09-19:
+  // 92.77/88.07/92.77/94.77 sin él, frente a 93.40/87.91/93.22/95.27 con él),
+  // o sea que excluirlo ES bajar el suelo, que es lo único que nunca se hace.
+  //
+  // La consecuencia: un caso detrás de una capacidad del backend
+  // (`itWithTimeTravel`, `itWithNetworkDrop`) es `it.skip` sobre el mock, así
+  // que su cuerpo es código muerto para la suite por defecto y hunde el suelo
+  // por su propio tamaño. Le pasó a D5 (`9815d8b`): el caso del hallazgo 8 son
+  // 27 líneas que solo corren con `dropRealtime`, que el mock no implementa.
+  //
+  // Que el job `Contrato Supabase` aporte su cobertura queda DESCARTADO, y no
+  // por trabajo: ataría el suelo a un trabajo que necesita Docker y un Supabase
+  // local, que está detrás de una lista blanca de rutas (que ya se quedó corta
+  // una vez, ver `docs/plan/todo/calidad.md`, 2026-09-15) y que no se puede
+  // reproducir en una máquina cualquiera. Un suelo que no se puede medir en
+  // local deja de ser un suelo y pasa a ser una lotería de CI.
+  //
+  // Así que el hueco se acepta, y quien añada un caso así lo compensa, eligiendo:
+  //   (a) que el mock implemente la capacidad y el caso corra por defecto, o
+  //   (b) cubrir con un test por defecto el código de producto que ese caso
+  //       ejercita — es lo que hizo `realtime.test.ts` con
+  //       `subscribeResyncingOnRejoin`, que quedó al 100 %.
+  // Lo que no es una salida es bajar estos cuatro números ni excluir el archivo.
   coverageThreshold: {
-    global: { statements: 93.94, branches: 87.98, functions: 93.63, lines: 95.81 },
+    global: { statements: 94.36, branches: 89.09, functions: 93.94, lines: 95.96 },
   },
 };

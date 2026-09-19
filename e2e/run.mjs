@@ -17,7 +17,9 @@ import { createHash, randomUUID } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import {
   classifyFailure,
+  mergeAppQueryErrors,
   parseAnrDialog,
+  parseAppQueryErrors,
   parseCommandFailures,
   parseMaestroFailure,
   shouldRetry,
@@ -298,9 +300,25 @@ function collectEvidence(dir) {
 }
 
 /**
+ * Errores de la app que dejó este intento en el logcat que acaba de volcar
+ * `collectEvidence`. Se lee SIEMPRE, pase lo que pase con el diagnóstico: ver
+ * la cabecera de `parseAppQueryErrors`.
+ */
+function appQueryErrors(dir) {
+  const file = join(dir, 'logcat.txt');
+  if (!existsSync(file)) return [];
+  return parseAppQueryErrors(readFileSync(file, 'utf8'));
+}
+
+/**
  * Veredicto acumulado de la variante. Se anexa, no se pisa: si el workflow
  * arranca un segundo emulador, el historial de los dos queda en el artefacto y
  * `outcome` es siempre el del último intento.
+ *
+ * `appErrors` de la raíz es la unión de los de todos los intentos, incluidos
+ * los que el reintento dejó atrás. Es deliberado que siga ahí cuando
+ * `outcome` es `pass`: un error de la app tapado por un ANR y borrado por el
+ * reintento es precisamente lo que esto viene a impedir.
  */
 function recordVerdict(entry) {
   mkdirSync(artifacts, { recursive: true });
@@ -308,8 +326,25 @@ function recordVerdict(entry) {
   const verdict = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : { variant, runs: [] };
   verdict.runs.push(entry);
   verdict.outcome = entry.outcome;
+  verdict.appErrors = mergeAppQueryErrors(verdict.runs);
   writeFileSync(file, JSON.stringify(verdict, null, 2));
   return verdict;
+}
+
+/** Los errores de app a una línea, para que el log del paso no obligue a abrir el artefacto. */
+function reportAppErrors(errors, where) {
+  for (const error of errors) {
+    console.log(
+      'Error de la app en el logcat de ' +
+        where +
+        ': la consulta "' +
+        error.key +
+        '" falló' +
+        (error.code ? ' [' + error.code + ']' : '') +
+        ' — ' +
+        error.message
+    );
+  }
 }
 
 function readVerdict() {
@@ -678,9 +713,12 @@ if (command === 'test') {
   for (let index = 1; index <= maestroAttempts; index += 1) {
     const dir = nextAttemptDir();
     console.log('\n=== Recorrido ' + variant + ', ' + basename(dir) + ' ===');
-    last = { ...(await attempt(dir)), attempt: basename(dir) };
+    // El logcat lo acaba de volcar el `finally` de `attempt`, así que se lee
+    // aquí y entra en el veredicto con el intento, sea cual sea su desenlace.
+    last = { ...(await attempt(dir)), attempt: basename(dir), appErrors: appQueryErrors(dir) };
     recordVerdict(last);
     console.log('Veredicto de ' + basename(dir) + ': ' + last.outcome + ' — ' + last.why);
+    reportAppErrors(last.appErrors, basename(dir));
     if (last.outcome !== 'runner') break;
     if (index === maestroAttempts) break;
     const state = deviceState();
@@ -745,6 +783,20 @@ if (command === 'gate') {
   );
   const runs = verdict.runs.length;
   const why = verdict.runs[runs - 1].why;
+  // ANTES del `assert`, y a propósito: en un rojo es cuando más falta hace
+  // leerlos, y el `assert` corta la ejecución aquí mismo. Nunca tumba el
+  // trabajo por sí solo — el veredicto lo decide el recorrido, no esto: romper
+  // aquí convertiría un intermitente conocido en un rojo permanente.
+  const errors = mergeAppQueryErrors(verdict.runs);
+  if (errors.length > 0) {
+    console.log(
+      'Algún intento dejó ' +
+        errors.length +
+        ' error(es) de la app en el logcat, incluidos los intentos que el ' +
+        'reintento dejó atrás. Están en verdict.json (`appErrors`).'
+    );
+    reportAppErrors(errors, 'la variante ' + variant);
+  }
   assert.equal(
     verdict.outcome,
     'pass',

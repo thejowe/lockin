@@ -217,3 +217,96 @@ export function shouldRetry(verdict) {
       '. No se reintenta: repetirlo lo enmascararía.',
   };
 }
+
+/** Rastro de `reportQueryError` (`src/data/provider.tsx`), tal cual sale por logcat. */
+const QUERY_FAILURE = /\[lockin\] la consulta "([^"]+)" falló: (.*)$/;
+
+/**
+ * Deja el mensaje del error y tira lo que la consola pega detrás: el objeto ya
+ * inspeccionado (`', { [Error: …]`) por una etiqueta, la pila (` Error: …,
+ * stack:`) por la otra. Sin esto el mismo error cuenta como dos distintos.
+ */
+function tidyQueryMessage(raw) {
+  let end = raw.length;
+  for (const marker of ["', ", ' Error: ', ', stack:']) {
+    const at = raw.indexOf(marker);
+    if (at >= 0 && at < end) end = at;
+  }
+  return raw.slice(0, end).trim();
+}
+
+/** `code: 'PGRST303'` del `cause:` que el inspector imprime bajo la línea `index`. */
+function findCauseCode(lines, index) {
+  const limit = Math.min(lines.length, index + 12);
+  for (let cursor = index + 1; cursor < limit; cursor += 1) {
+    // Otro rastro de consulta fallida es donde este `cause:` deja de ser suyo.
+    if (QUERY_FAILURE.test(lines[cursor])) break;
+    const code = /\bcode: '([^']+)'/.exec(lines[cursor]);
+    if (code) return code[1];
+  }
+  return '';
+}
+
+/**
+ * Errores de la app que quedaron en el logcat, aunque el intento se clasifique
+ * como caída del runner.
+ *
+ * Existe por un fallo concreto: el 2026-09-19, `attempt-01` de la variante
+ * `supabase` murió con un ANR del sistema por delante —clasificado `runner`, y
+ * bien clasificado— y el reintento lo repitió en verde. Detrás del ANR había un
+ * `PGRST303` real de PostgREST que solo se vio leyendo el logcat a mano. Un
+ * reintento que borra la evidencia del intento anterior es justo el fallo que el
+ * control negativo existe para no tener, así que este rastro se recoge SIEMPRE y
+ * se escribe en `verdict.json`, gane quien gane el diagnóstico.
+ *
+ * El mismo error sale por dos etiquetas —`E ReactNativeJS` con el objeto
+ * inspeccionado y `E unknown:ReactNative: console.error:` con la pila—, así que
+ * se agrupa por consulta y mensaje: `logcatLines` cuenta líneas del volcado, no
+ * veces que falló la consulta.
+ *
+ * @param {unknown} logcat Contenido de `logcat.txt`.
+ * @returns {{key: string, message: string, code: string, logcatLines: number}[]}
+ */
+export function parseAppQueryErrors(logcat) {
+  if (typeof logcat !== 'string') return [];
+  const lines = logcat.split(/\r?\n/);
+  const found = new Map();
+  for (let index = 0; index < lines.length; index += 1) {
+    const match = QUERY_FAILURE.exec(lines[index]);
+    if (!match) continue;
+    const key = match[1];
+    const message = tidyQueryMessage(match[2]);
+    const id = key + '||' + message;
+    const entry = found.get(id) ?? { key, message, code: '', logcatLines: 0 };
+    entry.logcatLines += 1;
+    // El `code` de PostgREST viene en el `cause:` de debajo, y solo por una de
+    // las dos etiquetas: se busca en la primera aparición que lo traiga.
+    if (!entry.code) entry.code = findCauseCode(lines, index);
+    found.set(id, entry);
+  }
+  return [...found.values()];
+}
+
+/**
+ * Une los errores de app de varios intentos sin perder de cuál venían. Es lo
+ * que deja el resumen a la vista en la raíz de `verdict.json`, para que un rojo
+ * intermitente no haya que ir a buscarlo intento por intento.
+ */
+export function mergeAppQueryErrors(runs) {
+  const found = new Map();
+  for (const run of Array.isArray(runs) ? runs : []) {
+    for (const error of Array.isArray(run?.appErrors) ? run.appErrors : []) {
+      const id = error.key + '||' + error.message;
+      const seen = found.get(id);
+      // `{...error}` ya trae su cuenta: sumar solo cuando el error ya estaba.
+      const entry = seen ?? { ...error, attempts: [] };
+      if (seen) {
+        entry.logcatLines += error.logcatLines;
+        if (!entry.code) entry.code = error.code;
+      }
+      if (run.attempt && !entry.attempts.includes(run.attempt)) entry.attempts.push(run.attempt);
+      found.set(id, entry);
+    }
+  }
+  return [...found.values()];
+}

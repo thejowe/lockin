@@ -138,6 +138,43 @@ Sin veredicto escrito (`verdict.json`) se reintenta: eso significa que el proces
 no sobrevivió al emulador, nunca que el caso fallara — un fallo del caso siempre
 deja veredicto.
 
+### El reintento no borra la evidencia del intento anterior
+
+Un `runner` bien clasificado puede llevar dentro un error real de la app. Pasó el
+2026-09-19 en [run 35438092381](https://github.com/thejowe/lockin/actions/runs/35438092381):
+`attempt-01` murió con un ANR del sistema por delante, el reintento pasó en verde
+y el trabajo salió verde — con un `PGRST303` de PostgREST dentro del primer
+intento que solo se vio abriendo el `logcat.txt` a mano.
+
+Por eso `parseAppQueryErrors` recoge de cada `logcat.txt` toda línea
+`[lockin] la consulta "…" falló: …` —el rastro de `reportQueryError` en
+`src/data/provider.tsx`— y la escribe en `verdict.json` **sea cual sea el
+desenlace del intento**:
+
+- `runs[n].appErrors`: los de ese intento, incluidos los que el reintento dejó
+  atrás.
+- `appErrors` en la raíz: la unión de todos, con `attempts` diciendo de cuáles
+  vienen. Sigue ahí cuando `outcome` es `pass`, que es justo el caso que se
+  escapaba.
+
+`gate` los imprime **antes** de su `assert`, para que se lean también en un rojo,
+y no tumba el trabajo por sí solo: el veredicto lo decide el recorrido. Romper
+aquí convertiría un intermitente conocido en un rojo permanente.
+
+### Intermitentes conocidos
+
+| Rastro | Qué es | De quién |
+|---|---|---|
+| `System UI isn't responding` en `window.xml` | ANR de OTRO proceso tapando la pantalla: la aserción no llegó a mirar la app. `parseAnrDialog` lo detecta por `android:id/aerr_*` y lo manda a `runner` | del emulador |
+| `code: 'PGRST303'`, `JWT issued at future` | PostgREST rechaza un token cuyo `iat` es posterior a **su** reloj. El token no lo fabrica la app: lo firma GoTrue al dar de alta. Es **desfase de reloj** entre el contenedor que firma y el que valida, en el borde del segundo — no código de la app, ni de `src/data/supabase/**`, ni de las migraciones | del Supabase local |
+
+El `PGRST303` se vio 1 de cada 3 intentos el 2026-09-19 y el recorrido pasó al
+reintentar, así que **no bloquea**. Lo que lo cerraría del todo es saber si el
+desfase está entre los contenedores de GoTrue y PostgREST o en el `iat`
+redondeado al segundo; queda anotado para `datos` en
+`docs/plan/todo/calidad.md`. Mientras tanto, un rojo con esa firma se reconoce
+aquí en un minuto en vez de costar una sesión.
+
 ## Control negativo: el mismo caso con un APK sin credenciales
 
 `E2E_NEGATIVE_CONTROL=1` compila el APK **sin** `EXPO_PUBLIC_SUPABASE_*`, así que

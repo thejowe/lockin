@@ -12,7 +12,9 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   classifyFailure,
+  mergeAppQueryErrors,
   parseAnrDialog,
+  parseAppQueryErrors,
   parseCommandFailures,
   parseMaestroFailure,
   shouldRetry,
@@ -317,5 +319,127 @@ describe('shouldRetry', () => {
   it('explica por qué no reintenta un fallo real', () => {
     const decision = shouldRetry({ runs: [{ outcome: 'caso', why: 'Element not found' }] });
     assert.match(decision.why, /enmascarar/i);
+  });
+});
+
+/**
+ * El logcat de verdad, copiado del artefacto de
+ * [run 35438092381](https://github.com/thejowe/lockin/actions/runs/35438092381),
+ * `e2e-android-supabase/supabase/attempt-01/logcat.txt`, líneas 5205-5213. Es
+ * el intento que el ANR mandó a `runner` y que el reintento borró: el error que
+ * escondía solo se vio leyendo esto a mano.
+ *
+ * Se deja entero, con su ruido de por medio, porque las dos formas del mismo
+ * error —el objeto inspeccionado y la pila de `console.error`— son justo lo que
+ * el parser tiene que saber agrupar.
+ */
+const LOGCAT_PGRST303 = [
+  '09-19 11:01:58.077  1205  1205 I VvmSimStateTracker: onCarrierConfigChanged: in service',
+  '09-19 11:01:58.081  3869  3925 E ReactNativeJS: \'[lockin] la consulta "session:onboarded" falló: JWT issued at future\', { [Error: JWT issued at future]',
+  '09-19 11:01:58.081  3869  3925 E ReactNativeJS:   cause: ',
+  "09-19 11:01:58.081  3869  3925 E ReactNativeJS:    { code: 'PGRST303',",
+  '09-19 11:01:58.081  3869  3925 E ReactNativeJS:      details: null,',
+  '09-19 11:01:58.081  3869  3925 E ReactNativeJS:      hint: null,',
+  "09-19 11:01:58.081  3869  3925 E ReactNativeJS:      message: 'JWT issued at future' } }",
+  '09-19 11:01:58.085  2324  2324 D BoundBrokerSvc: onUnbind: Intent { act=...clearcut... }',
+  '09-19 11:01:58.088  3869  3926 E unknown:ReactNative: console.error: [lockin] la consulta "session:onboarded" falló: JWT issued at future Error: JWT issued at future, stack:',
+  '09-19 11:01:58.088  3869  3926 E unknown:ReactNative: SyntheticError@1:614515',
+  '09-19 11:01:58.096   654   654 V ConditionProviders: Not registering ...',
+].join('\n');
+
+describe('parseAppQueryErrors', () => {
+  it('agrupa las dos etiquetas del mismo error y le saca el código de PostgREST', () => {
+    assert.deepEqual(parseAppQueryErrors(LOGCAT_PGRST303), [
+      {
+        key: 'session:onboarded',
+        message: 'JWT issued at future',
+        code: 'PGRST303',
+        logcatLines: 2,
+      },
+    ]);
+  });
+
+  it('no inventa errores en un logcat limpio', () => {
+    assert.deepEqual(parseAppQueryErrors('09-19 11:01:58.081 I ReactNativeJS: todo bien'), []);
+    assert.deepEqual(parseAppQueryErrors(''), []);
+    assert.deepEqual(parseAppQueryErrors(undefined), []);
+  });
+
+  it('cuenta por separado dos consultas distintas', () => {
+    const logcat = [
+      'E ReactNativeJS: [lockin] la consulta "profile:current" falló: no hay red',
+      'E ReactNativeJS: [lockin] la consulta "session:onboarded" falló: JWT issued at future',
+      "E ReactNativeJS:    { code: 'PGRST303', details: null }",
+    ].join('\n');
+    assert.deepEqual(parseAppQueryErrors(logcat), [
+      { key: 'profile:current', message: 'no hay red', code: '', logcatLines: 1 },
+      {
+        key: 'session:onboarded',
+        message: 'JWT issued at future',
+        code: 'PGRST303',
+        logcatLines: 1,
+      },
+    ]);
+  });
+
+  it('no le roba el `cause` al error de al lado', () => {
+    // Sin el corte en el rastro siguiente, el primero se quedaría con PGRST303.
+    const logcat = [
+      'E ReactNativeJS: [lockin] la consulta "profile:current" falló: no hay red',
+      'E ReactNativeJS: [lockin] la consulta "session:onboarded" falló: JWT issued at future',
+      "E ReactNativeJS:    { code: 'PGRST303' }",
+    ].join('\n');
+    assert.equal(parseAppQueryErrors(logcat)[0].code, '');
+  });
+
+  it('no se traga un `cause` que llega demasiado lejos como para ser suyo', () => {
+    const logcat = [
+      'E ReactNativeJS: [lockin] la consulta "profile:current" falló: no hay red',
+      ...Array.from({ length: 20 }, (_, index) => 'D ruido: línea ' + index),
+      "E ReactNativeJS:    { code: 'PGRST303' }",
+    ].join('\n');
+    assert.equal(parseAppQueryErrors(logcat)[0].code, '');
+  });
+});
+
+describe('mergeAppQueryErrors', () => {
+  it('conserva el error del intento que el reintento dejó atrás', () => {
+    // El caso real: `attempt-01` a `runner` con un PGRST303 dentro, `attempt-02`
+    // en verde. Sin esto, del primero no quedaba nada en `verdict.json`.
+    const runs = [
+      { attempt: 'attempt-01', outcome: 'runner', appErrors: parseAppQueryErrors(LOGCAT_PGRST303) },
+      { attempt: 'attempt-02', outcome: 'pass', appErrors: [] },
+    ];
+    assert.deepEqual(mergeAppQueryErrors(runs), [
+      {
+        key: 'session:onboarded',
+        message: 'JWT issued at future',
+        code: 'PGRST303',
+        logcatLines: 2,
+        attempts: ['attempt-01'],
+      },
+    ]);
+  });
+
+  it('suma las líneas y los intentos del mismo error repetido', () => {
+    const error = { key: 'session:onboarded', message: 'JWT issued at future', code: '' };
+    const runs = [
+      { attempt: 'attempt-01', appErrors: [{ ...error, logcatLines: 2 }] },
+      { attempt: 'attempt-02', appErrors: [{ ...error, code: 'PGRST303', logcatLines: 1 }] },
+    ];
+    assert.deepEqual(mergeAppQueryErrors(runs), [
+      {
+        key: 'session:onboarded',
+        message: 'JWT issued at future',
+        code: 'PGRST303',
+        logcatLines: 3,
+        attempts: ['attempt-01', 'attempt-02'],
+      },
+    ]);
+  });
+
+  it('sobre un veredicto viejo, sin `appErrors`, no revienta', () => {
+    assert.deepEqual(mergeAppQueryErrors([{ attempt: 'attempt-01', outcome: 'pass' }]), []);
+    assert.deepEqual(mergeAppQueryErrors(undefined), []);
   });
 });

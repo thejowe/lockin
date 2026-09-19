@@ -2829,7 +2829,17 @@ sección anterior («lleva así desde antes de que existiera una sola línea de
       `Running "main"` que nombre la causa, porque `index.tsx` pinta un texto
       fijo y ni él ni `useQuery` hacen `console.*` con el error.
 
-- [ ] **Próximo paso, y esta vez sí cabe en `e2e/`.** La pasada anterior dejó
+- [x] **Próximo paso, y esta vez sí cabe en `e2e/`.** *(Cerrado el 2026-09-19 por
+      otro camino, más barato y ya validado: A3 instrumentó `provider.tsx` con
+      `reportQueryError`, así que la app **dice** en el logcat por qué falló la
+      consulta, y `parseAppQueryErrors` lo recoge en `verdict.json`. La pregunta
+      que la sonda venía a responder —«¿el fallo está dentro de `session.get()`
+      o en el puente?»— la contesta ya el propio rastro: si hay una línea
+      `[lockin] la consulta … falló`, la petición salió y volvió con error, que
+      es la mitad de `datos`/`arquitecto`. La sonda `adb shell curl` solo
+      añadiría señal en el caso en que **no** haya ninguna línea; no se monta
+      hasta que ese caso aparezca, para no publicar código sin un run que lo
+      ejercite.)* La pasada anterior dejó
       como único camino instrumentar `src/app/index.tsx`, que no es de este
       bloque y por eso quedó parado. Hay una alternativa dentro de mi alcance
       que no toca producto: **una sonda de alcanzabilidad desde el propio
@@ -3024,7 +3034,8 @@ sospechaba.
       encaja con la intermitencia documentada más arriba: `5d93c09`, hijo de
       `d63c139` y con solo dos `.md` de diferencia, rojo con el padre verde.
 
-- [ ] **Lo que hay que endurecer aquí, y es de este bloque.** `diagnose()` clasificó
+- [x] **Lo que hay que endurecer aquí, y es de este bloque.** *(Hecho — ver la
+      sección del 2026-09-19 más abajo.)* `diagnose()` clasificó
       `attempt-01` como `runner` —correctamente, el ANR estaba— y el reintento se lo
       llevó por delante. Pero en ese mismo intento había un `PGRST303` real que solo
       se ve leyendo el logcat a mano. **Un error de la app detrás de un ANR se está
@@ -3040,3 +3051,220 @@ sospechaba.
       si el desfase está entre los contenedores de GoTrue y PostgREST o en el `iat`
       redondeado al segundo. Mientras tanto **no es un bloqueo**: el recorrido pasa
       al reintentar y la persistencia se verifica entera.
+
+## El reintento deja de borrar la evidencia, y el suelo gana un criterio escrito (2026-09-19)
+
+Tres cosas, y la segunda es la que importa a largo plazo: hasta hoy el montaje
+de cobertura tenía una regla implícita que nadie había escrito, y el siguiente
+se estrellaba con ella. Ya no.
+
+### 1. Un error de la app detrás de un ANR ya no desaparece con el reintento
+
+El pendiente que yo mismo dejé anotado en `1c16e5b`. En
+[run 35438092381](https://github.com/thejowe/lockin/actions/runs/35438092381),
+`attempt-01` de la variante `supabase` se clasificó `runner` —bien clasificado:
+el ANR del sistema estaba y tapaba la pantalla— y el reintento pasó en verde.
+Dentro de ese primer intento había un `PGRST303` real que solo se vio abriendo
+el `logcat.txt` a mano.
+
+- [x] **El parser se escribió contra el logcat de verdad, no contra un formato
+      inventado.** `gh run download 35438092381` y, en
+      `e2e-android-supabase/supabase/attempt-01/logcat.txt` (líneas 5205-5213),
+      el mismo error sale por **dos** etiquetas distintas:
+
+      ```
+      E ReactNativeJS: '[lockin] la consulta "session:onboarded" falló: JWT issued at future', { [Error: JWT issued at future]
+      E ReactNativeJS:   cause:
+      E ReactNativeJS:    { code: 'PGRST303',
+      ...
+      E unknown:ReactNative: console.error: [lockin] la consulta "session:onboarded" falló: JWT issued at future Error: JWT issued at future, stack:
+      ```
+
+      Una trae el objeto ya inspeccionado (y con él el `code:` del `cause`), la
+      otra la pila. Agruparlas era la mitad del trabajo: sin eso, un error
+      cuenta como dos. Ese texto es el fixture de los casos nuevos, copiado tal
+      cual, ruido de por medio incluido.
+
+- [x] **`parseAppQueryErrors` y `mergeAppQueryErrors`, en `e2e/triage.mjs`.**
+      Recogen del logcat toda línea `[lockin] la consulta "…" falló: …` —el
+      rastro que A3 puso en `reportQueryError` (`src/data/provider.tsx`)— y le
+      pegan el `code` de PostgREST que el inspector imprime debajo. Resultado
+      sobre el artefacto real, comprobado antes de commitear:
+
+      ```json
+      [{ "key": "session:onboarded", "message": "JWT issued at future",
+         "code": "PGRST303", "logcatLines": 2 }]
+      ```
+
+      `attempt-02`, `attempt-03` y la variante `mock` dan `[]`, que es lo que
+      tenían que dar.
+
+- [x] **Se escribe SIEMPRE, no solo cuando el desenlace es del caso.** En el
+      bucle de `run.mjs test`, `appErrors` entra en la entrada del intento junto
+      a `outcome` y `why`; el logcat lo acaba de volcar el `finally` de
+      `attempt`, así que está ahí pase lo que pase. `recordVerdict` añade además
+      `appErrors` en la **raíz** de `verdict.json`, con la unión de todos los
+      intentos y un `attempts` que dice de cuáles vienen. Que siga ahí con
+      `outcome: "pass"` es deliberado: ese es exactamente el caso que se
+      escapaba.
+
+- [x] **`gate` los imprime ANTES de su `assert`.** En un rojo es cuando más
+      falta hacen, y el `assert` corta la ejecución en esa línea. Lo que **no**
+      hace es tumbar el trabajo por sí solo: el veredicto lo sigue decidiendo el
+      recorrido. Romper aquí convertiría un intermitente conocido —desfase de
+      reloj del emulador— en un rojo permanente, que es el error contrario y
+      peor.
+
+- [x] **8 casos nuevos en `e2e/triage.test.mjs`**, incluidos los dos que
+      protegen el corte del `cause`: que un error no le robe el `code` al de al
+      lado, y que no se trague uno que llega 20 líneas después. `node --test
+      e2e/triage.test.mjs`: **43 pasados, 0 fallos**.
+
+### 2. El suelo de cobertura y los casos del contrato que solo corren en Supabase
+
+El rojo de `Tests` sobre `1c16e5b`
+([run 35439652697](https://github.com/thejowe/lockin/actions/runs/35439652697)),
+y el problema estructural que hay detrás. **No es un fallo de D5**: es que el
+montaje tenía una regla que no estaba escrita en ninguna parte.
+
+- [x] **Reproducido en local antes de opinar**, con los mismos cuatro números
+      que CI: `npx jest --coverage --ci --runInBand` da 93.4 / 87.91 / 93.22 /
+      95.27 contra un suelo de 93.94 / 87.98 / 93.63 / 95.81. **799 pasados, 0
+      fallos**: no hay ni un test rojo, lo único que falla son los umbrales.
+
+- [x] **De dónde sale la caída, con el dato y no con la sospecha.** No es
+      `realtime.ts`, que `datos` dejó al **100 %** con `realtime.test.ts` en el
+      mismo commit. Es `src/data/repositories.contract.ts`, que baja a 95.86 /
+      76.19 / 95.27 / 97.06 con tres huecos: `704-705`, `881-886` y **`909-935`**
+      — este último es el cuerpo entero del caso del hallazgo 8, 27 líneas.
+
+      La cadena: el contrato lo corren **dos** suites, la del mock
+      (`src/data/mock/index.test.ts`, siempre) y la de Supabase
+      (`contract.test.ts`, opt-in). El caso nuevo va detrás de
+      `itWithNetworkDrop`, que es `it` solo si el backend implementa
+      `dropRealtime`/`restoreRealtime`. El mock no los implementa, así que sobre
+      el mock es `it.skip` y su cuerpo es **código muerto para la suite por
+      defecto**. Hunde el suelo por su propio tamaño, y lo mismo vale para cada
+      `itWithTimeTravel` que se añada mañana.
+
+- [x] **Descartado excluir el archivo, y por medida, no por principio.**
+      Es la salida que parece obvia —«es un fichero de test, fuera de
+      `collectCoverageFrom`»— y es falsa: quitarlo deja los totales en
+      **92.77 / 88.07 / 92.77 / 94.77**, o sea que **baja tres de los cuatro**
+      umbrales frente a los 93.40 / 87.91 / 93.22 / 95.27 de ahora. Excluirlo
+      *es* bajar el suelo. Queda dentro.
+
+- [x] **Descartado que el job `Contrato Supabase` aporte cobertura.** Era la
+      otra mitad de la pregunta de la orden. Técnicamente se puede (dos
+      `--coverage`, un `nyc merge`, los umbrales contra el informe unido), pero
+      ataría el suelo a un trabajo que necesita Docker y un Supabase local, que
+      vive detrás de una lista blanca de rutas —que **ya se quedó corta una
+      vez**, ver la sección del 2026-09-15— y que no se puede reproducir en una
+      máquina cualquiera. Un suelo que no se puede medir en local deja de ser un
+      suelo: pasa a ser una lotería de CI, y el modo de fallo (lista blanca que
+      no dispara el job → umbral imposible de cumplir) es peor que el hueco que
+      vendría a tapar.
+
+- [x] **El criterio, escrito donde se lo va a encontrar quien se estrelle: el
+      comentario de `jest.config.js`.** Que era literalmente lo que pedía la
+      orden — no dejarlo implícito. Dice las cuatro cosas: que el archivo cuenta
+      y por qué no se excluye (con los números), que un caso detrás de una
+      capacidad del backend hunde el suelo por su tamaño, que el contrato no va
+      a aportar cobertura y por qué, y qué tiene que hacer quien añada uno:
+
+      > (a) que el mock implemente la capacidad y el caso corra por defecto, o
+      > (b) cubrir con un test por defecto el código de producto que ese caso
+      > ejercita — es lo que hizo `realtime.test.ts` con
+      > `subscribeResyncingOnRejoin`, que quedó al 100 %.
+
+      **Bajar los umbrales no está entre las opciones, y excluir el archivo
+      tampoco.**
+
+- [x] **El suelo no se bajó ni un decimal, y el rojo se cerró solo.** Mientras
+      escribía esto, `datos` commiteó `72bf34f` (*«el job «Tests» vuelve al suelo
+      cubriendo el cable, no el termómetro»*) y tomó exactamente la salida (b):
+      cinco casos en `sessions.test.ts` que ejecutan las tres lambdas que el
+      repositorio le pasa al canal —los dos handlers de `postgres_changes` y el
+      `onRejoin` nuevo—, que antes se guardaban y no se llamaba ninguna. Lo que
+      faltaba, medido antes de que aterrizara y anotado aquí porque es la forma
+      de comprobar que la predicción era buena:
+
+      | | Sobre `1c16e5b` | Hacía falta | Faltaban |
+      |---|---|---|---|
+      | statements | 2636/2822 (93.40) | 2651 | **15** |
+      | branches | 1338/1522 (87.91) | 1340 | **2** |
+      | functions | 770/826 (93.22) | 774 | **4** |
+      | lines | 2361/2478 (95.27) | 2375 | **14** |
+
+- [x] **Suelo subido a 94.36 / 89.09 / 93.94 / 95.96**, medido sobre `72bf34f`
+      con `npx jest --coverage --ci --runInBand`: **820 pasados, 84 saltados, 72
+      de 73 suites**, y comprobado el **código de salida 0** con el suelo nuevo
+      puesto, que es lo que decide el job y no la tabla.
+
+      | | Antes (2026-09-18) | Ahora (2026-09-19) |
+      |---|---|---|
+      | statements | 93.94 | **94.36** (2663/2822) |
+      | branches | 87.98 | **89.09** (1356/1522) |
+      | functions | 93.63 | **93.94** (776/826) |
+      | lines | 95.81 | **95.96** (2378/2478) |
+
+      Los cuatro suben. Y los cuatro se truncan hacia abajo, no se redondean:
+      los crudos son 94.365698 / 89.093298 / 93.946731 / 95.964487, y Jest
+      compara contra el valor sin redondear — `95.97` en `lines` habría dejado
+      el suelo por encima de la cobertura real. Es la misma trampa que ya costó
+      una vez en la pasada del 2026-09-18, ahora escrita también en el
+      comentario del archivo.
+
+### 3. El `PGRST303`, anotado como intermitente conocido
+
+Para que el próximo rojo con esa firma se reconozca en un minuto y no en una
+sesión, que era el encargo.
+
+- [x] **En `e2e/README.md`, sección «Intermitentes conocidos»**, junto al ANR
+      del sistema, que es el otro. La causa, en una línea: PostgREST rechaza un
+      token cuyo `iat` es posterior a **su** reloj; el token no lo fabrica la
+      app, lo firma GoTrue al dar de alta. Es **desfase de reloj entre el
+      contenedor que firma y el que valida**, en el borde del segundo — no es
+      `src/data/supabase/**` ni las migraciones de D3. Y no bloquea: se vio 1 de
+      3 intentos y el recorrido pasó al reintentar.
+
+- [x] **En el mismo README, cómo leerlo ahora**: `verdict.json`,
+      `runs[n].appErrors` para el intento y `appErrors` en la raíz para la
+      unión, con la nota de que sigue ahí aunque el trabajo salga verde.
+
+- [ ] **Sigue abierto para `datos`** (repetido aquí para que no se pierda entre
+      secciones): lo que cerraría el `PGRST303` del todo es saber si el desfase
+      está entre los contenedores de GoTrue y PostgREST o en el `iat` redondeado
+      al segundo. No es un bloqueo.
+
+### Verificación de esta pasada
+
+Local. El diagnóstico se hizo sobre `1c16e5b`; el suelo se midió y se fijó sobre
+`72bf34f`, que es donde quedó `HEAD` al llegar el arreglo de `datos`.
+
+- `node --test e2e/triage.test.mjs` — **43 pasados, 0 fallos** (8 de ellos
+  nuevos).
+- `npm run test:e2e` — 70 casos, **69 pasados, 1 fallo**. El fallo es
+  `full-journey.test.mjs:118` («relee la suya de Postgres después del
+  reinicio»), que hace `indexOf` de un literal de dos líneas
+  (`'- launchApp:\n    clearState: false'`) contra un `.yaml` con CRLF: es el
+  ruido de esta máquina, no una regresión. Ese caso lee `full-journey.yaml`, que
+  esta pasada no toca, y el job `Runner E2E` lo da verde.
+- `npx jest --coverage --ci --runInBand` — dos veces. Sobre `1c16e5b`
+  reproduce el rojo de CI **exacto** (93.4 / 87.91 / 93.22 / 95.27), con 799
+  pasados y 0 fallos: ni un test rojo, solo los umbrales. Sobre `72bf34f`, con
+  el suelo nuevo, **verde y salida 0**, 820 pasados.
+- `npx eslint e2e/run.mjs e2e/triage.mjs e2e/triage.test.mjs` — limpio.
+- `npx prettier --config .prettierrc --check` sobre copias normalizadas a LF de
+  los cinco archivos tocados — `All matched files use Prettier code style!`. Se
+  comprueban copias y no el árbol porque aquí `format:check` entero es ruido
+  CRLF; el veredicto real sale del job `Formato`.
+- **No ejecutado aquí:** nada del E2E. Sin emulador en esta máquina. El parser
+  sí está ejercitado contra el `logcat.txt` real del artefacto de
+  [run 35438092381](https://github.com/thejowe/lockin/actions/runs/35438092381),
+  que es la evidencia más cercana que hay sin emulador.
+- `src/` y `supabase/` **sin tocar**, que era la condición de la orden: `datos`
+  está dentro de `src/data/supabase/` ahora mismo. Tocados solo `e2e/run.mjs`,
+  `e2e/triage.mjs`, `e2e/triage.test.mjs`, `e2e/README.md`, `jest.config.js` y
+  este archivo. `.github/workflows/` no necesitó cambios: `gate` ya corre y
+  ahora imprime.
