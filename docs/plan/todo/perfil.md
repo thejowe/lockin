@@ -146,7 +146,60 @@ algo que no es suyo.
 
 Hueco detectado por el usuario: `signInWithEmail()` existe en la capa de cuentas pero ninguna pantalla la llama, así que quien reinstala o cambia de móvil entra siempre como anónimo nuevo y no puede volver a su cuenta con email. **Opcional, no un muro**: `ordenes-arquitectura.md` ("Lo que NO hay que hacer") sigue prohibiendo el login obligatorio.
 
-- [ ] **[Claude]** Enlace «Ya tengo cuenta» en el onboarding → pantalla email + contraseña (`signInWithEmail`) con «He olvidado mi contraseña» (`sendPasswordReset`); oculto sin credenciales de Supabase; aviso antes de abandonar una cuenta anónima que ya tiene perfil; relectura de `session:onboarded` y `profile:current` y redirección (perfil → tabs, sin perfil → onboarding). Alcance: `src/app/(onboarding)/`, `src/features/profile/` (incluido el re-export en `account-gateway.ts`) y sus tests; **no** `src/data/`
+- [x] **[Claude]** Enlace «Ya tengo cuenta» en el onboarding → pantalla email + contraseña (`signInWithEmail`) con «He olvidado mi contraseña» (`sendPasswordReset`); oculto sin credenciales de Supabase; aviso antes de abandonar una cuenta anónima que ya tiene perfil; relectura de `session:onboarded` y `profile:current` y redirección (perfil → tabs, sin perfil → onboarding). Alcance: `src/app/(onboarding)/`, `src/features/profile/` (incluido el re-export en `account-gateway.ts`) y sus tests; **no** `src/data/`
+
+### Cómo quedó «Ya tengo cuenta» (2026-09-19)
+
+**Dónde está.** `src/features/profile/sign-in-form.tsx` (el formulario y toda su
+lógica), `src/app/(onboarding)/sign-in.tsx` (la ruta) y un enlace secundario en
+`src/app/(onboarding)/mode.tsx`. `account-gateway.ts` reexporta
+`signInWithEmail` y añade `accountsAvailable` (= `hasSupabaseCredentials`): es lo que
+oculta el enlace sin credenciales, y la ruta, si alguien llega igualmente, vuelve
+a `/mode` en vez de pintar un formulario que reventaría. No se ha tocado `src/data/`.
+
+**Decisiones.**
+- **Tras entrar, `router.replace('/')`**: la puerta de entrada (`src/app/index.tsx`)
+  relee `session:onboarded` desde cero y decide —perfil → `/discover`, sin perfil →
+  `/mode`—. No hay una segunda copia de esa regla. Y como la caché de `useQuery`
+  muere con cada pantalla, nada montado antes del login puede seguir enseñando el
+  perfil de la cuenta anterior.
+- **El aviso de abandonar el perfil no lee la caché.** Al pulsar «Entrar» se pregunta
+  en el momento (`readAccountState()` + `profiles.getCurrent()`): si la cuenta no
+  es recuperable y tiene perfil, sale un panel de confirmación en la propia pantalla
+  (igual que el de cerrar sesión) y solo «Entrar y dejar este perfil» sigue adelante.
+  Si esa comprobación falla, **no se entra**: perder un perfil sin avisar es peor que
+  pedir que se reintente.
+- **Credenciales erróneas.** `auth.ts` no traduce `invalid_credentials` y lo dejaría
+  en inglés («Invalid login credentials»); el formulario lo reconoce por el `code`
+  de la causa y enseña un mensaje único que no distingue email inexistente de
+  contraseña errónea.
+- **«He olvidado mi contraseña»** usa el email ya escrito y responde igual exista o no
+  la cuenta.
+- Copy: «Entrar» y «Ya tengo cuenta», nunca «registrarse».
+
+**Verificación (2026-09-19).** `npm run typecheck` y `npm run lint` limpios.
+`npm test -- --ci --runInBand --coverage`: 869 pasados, 84 saltados, 0 rojos; cobertura
+global 94.45 / 89.14 / 94.09 / 96.09 frente al suelo de `jest.config.js` (94.36 / 89.09
+/ 93.94 / 95.96), sin tocar los umbrales. Tests nuevos: `sign-in-form.test.tsx` (éxito,
+credenciales erróneas, error traducido y no-`Error`, campos vacíos, doble pulsación,
+aviso de cuenta anónima con perfil —confirmar, «Mejor no», sin perfil, cuenta
+recuperable, comprobación fallida—, reset de contraseña, a11y) y
+`test/app/sign-in.test.tsx` (enlace oculto sin credenciales, la ruta, `replace('/')`, y
+la puerta de entrada relanzada con otra cuenta debajo: perfil → `/discover`, sin
+perfil → `/mode`). Prettier: los ficheros nuevos pasan; los tres tocados
+(`mode.tsx`, `account-gateway.ts`, `index.ts`) solo avisan por CRLF local.
+
+**Lo que NO se pudo verificar.**
+- El flujo real contra Supabase en un dispositivo: `signInWithPassword` con una cuenta
+  con email, el cambio de `auth.uid()` y que la puerta de entrada encuentre el perfil
+  de la cuenta recuperada. Todo lo anterior va con dobles y el mock en memoria.
+- Que `router.replace('/')` desmonte de verdad el onboarding en expo-router (los tests
+  usan un router de mentira). Es el mismo patrón que `profile-form.tsx` con `/discover`.
+- El correo de recuperación desde el onboarding: el enlace cae en `auth/callback`, que
+  termina en `/profile`; para quien recupera en un móvil nuevo y sin perfil local eso
+  no se ha probado, y `src/app/auth/` queda fuera de este alcance.
+- `typecheck` local: `.expo/types/router.d.ts` (gitignored) está obsoleto y no conoce
+  `/sign-in`; se comprobó sin él, como en CI. `expo start` lo regenera.
 
 ## Recuerda
 Nadie contrata a nadie: no metas campos de "salario" o "equity que ofrezco" — eso es Modo Talento, Fase 4, fuera de este MVP.

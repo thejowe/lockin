@@ -29,9 +29,19 @@ export {
   linkEmailToCurrentUser,
   sendPasswordReset,
   setAccountPassword,
+  signInWithEmail,
   signOut,
 } from '@/data/supabase';
 export type { AccountErrorReason, AccountKind, AccountState } from '@/data/supabase';
+
+/**
+ * Si esta ejecución tiene capa de cuentas que ofrecer.
+ *
+ * Es lo que decide si el onboarding enseña «Ya tengo cuenta»: sin credenciales
+ * de Supabase la app corre contra el mock en memoria, donde no hay ningún
+ * servidor al que entrar y `getSupabaseClient()` lanzaría al pulsarlo.
+ */
+export const accountsAvailable = hasSupabaseCredentials;
 
 /**
  * El estado de la cuenta, o `null` si esta ejecución no tiene capa de cuentas.

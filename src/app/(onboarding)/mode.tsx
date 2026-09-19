@@ -7,7 +7,8 @@ import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useRepositories, type ModePreference } from '@/data';
 import { MODE_OPTIONS } from '@/features/profile';
-import { OptionCard, PrimaryButton } from '@/features/profile/controls';
+import { accountsAvailable } from '@/features/profile/account-gateway';
+import { OptionCard, PrimaryButton, SecondaryButton } from '@/features/profile/controls';
 
 /**
  * Paso 1 del onboarding: qué busca la persona.
@@ -74,6 +75,11 @@ export default function ModeScreen() {
           disabled={!selected || saving}
           onPress={handleContinue}
         />
+
+        {/* Opcional y sin capa de cuentas ni existe: ver `sign-in.tsx`. */}
+        {accountsAvailable ? (
+          <SecondaryButton label="Ya tengo cuenta" onPress={() => router.push('/sign-in')} />
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
