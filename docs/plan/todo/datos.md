@@ -1692,3 +1692,103 @@ Todo en `src/data/supabase/sessions.test.ts`; ni una línea de producto.
 El suelo se puede subir, y su propio comentario dice que se sube cuando la
 cobertura sube. Los números nuevos son `94.36 / 89.09 / 93.94 / 95.96`. No lo
 hago yo porque `jest.config.js` es tuyo.
+
+### Orden `D7` — el `PGRST303` del E2E supabase — ENTREGADA 2026-09-19
+
+- [x] Decidido con evidencia si el desfase era entre contenedores o del `iat` al segundo: **ninguna de las dos**
+- [x] Arreglado en el alcance de `datos`: `src/data/supabase/resilient-fetch.ts`, con test
+- [x] `npm test`, `tsc`, `lint` y `prettier` en verde; suelo de cobertura sin tocar
+- [x] E2E Android (supabase) verde en un push, en `attempt-01` (ver «Lo que NO está probado»)
+
+#### La causa: un bug de PostgREST, no de reloj de CI
+
+Las dos hipótesis de la orden se descartan por **tamaño**, leyendo el código de
+la imagen que corre en CI (`ghcr.io/postgrest/postgrest:v16.1`, la que fija
+`supabase` CLI 2.116.0):
+
+- `src/library/PostgREST/Auth/Jwt.hs` (tag `v16.1`) rechaza con
+  `JWTIssuedAtFuture` solo si `iat > ahora + 30 s` (`allowedSkewSeconds = 30`).
+  Un `iat` redondeado al segundo desfasa < 1 s; hacen falta **30 s**.
+- Los contenedores comparten el reloj del kernel del runner, así que tampoco
+  hay «desfase entre GoTrue y PostgREST» que configurar. Un desfase de 30 s
+  entre ellos solo puede venir de que uno de los dos **lea un reloj viejo**.
+- Y eso es lo que hace PostgREST: el «ahora» con el que valida lo sirve
+  `mkAutoUpdate` (`AppState.hs`), y tras un rato sin tráfico la primera petición
+  lee un valor viejo. Es [PostgREST/postgrest#5196](https://github.com/PostgREST/postgrest/issues/5196),
+  con reportes de hosting propio y de Supabase alojado: *«siempre la primera
+  petición, la siguiente con el mismo token a los 3 ms pasa»*, y logs con
+  `diff: 107 seconds`. Arreglado quitando `auto-update` en
+  [#5208](https://github.com/PostgREST/postgrest/pull/5208), publicado en
+  **v14.18 y v16.3**.
+
+Encaja punto por punto con lo que había en los artefactos:
+
+| Dato | Explicación |
+|---|---|
+| Error en la **primera** consulta de la app (`session:onboarded`, 2 s tras arrancar) | Primera petición a PostgREST tras inactividad |
+| `attempt-01` siempre; `attempt-02`/`03` nunca | Entre `db reset` (~12:00) y el recorrido (~12:16) PostgREST estuvo **16 min** sin tráfico; en el 2.º intento ya lo habían usado |
+| 4 de 4 runs desde A3 (`c8e89a5`) lo muestran | Antes de A3 el arranque era mudo: el error existía, no se veía |
+| «Intermitente» | Depende de cuánto lleve PostgREST parado, no de una carrera de segundos |
+| Reloj del emulador y del runner coinciden (12:16:48.39 vs 12:16:48.50) | Descarta un salto de reloj en el runner |
+
+Versiones: CLI **2.116.0 → v16.1**, **2.117.0 → v16.2** (última estable, sigue
+afectada), `develop`/`2.118.0-beta` → **v16.3** (arreglada).
+
+#### La decisión: repetir una vez, en la capa de acceso
+
+`createReplayingFetch` envuelve el `fetch` del cliente (`client.ts`,
+`global.fetch`) y repite **una vez**, tras 300 ms, una petición que devuelve
+`401` con `code: PGRST303`. Es la candidata que planteaba la orden, y se aplica
+porque las dos condiciones se cumplen:
+
+- **Es transitorio**: la fuente muestra que el reloj viejo solo afecta a la
+  primera petición tras la inactividad, y los reportes ven pasar la siguiente
+  con el mismo token.
+- **No oculta un fallo real**: `PGRST303` sale al validar el token, **antes** de
+  ejecutar nada, así que repetir no duplica ninguna escritura. Si el desfase es
+  real (`iat` ≥ 30 s en el futuro), la segunda respuesta también es `PGRST303`
+  y se **devuelve tal cual**: llega a `reportQueryError` con el mismo código.
+  Solo 401 + ese código exacto; otros 401, otros códigos, cuerpos no JSON,
+  cuerpos que no son texto, `Request` y peticiones canceladas pasan intactos.
+
+No es un apaño de CI: **un proyecto de Supabase alojado con PostgREST < 16.3 /
+14.18 le da a un usuario real ese 401 en su primera consulta tras un rato de
+calma**, y la capa de acceso es donde se resuelve para que no llegue a las
+pantallas. Deja un `console.warn('[lockin] PostgREST rechazó el token con
+PGRST303; se repite la petición una vez')`; ese rastro, en el logcat del E2E,
+es lo que dirá que el arreglo actuó.
+
+18 casos en `resilient-fetch.test.ts` (100 % de cobertura del archivo) y uno en
+`client.test.ts` que fija que el cliente pasa por él. `npx jest --coverage --ci
+--runInBand`: **839 pasados, salida 0**, `94.41 / 89.22 / 93.99 / 95.99` contra
+el suelo `94.36 / 89.09 / 93.94 / 95.96`. `tsc`, `lint` y `prettier` limpios.
+
+#### Lo que NO está probado
+
+- **Run [35454139765](https://github.com/thejowe/lockin/actions/runs/35454139765)**
+  (`140f4cd`, push): verde, `verdict.json` = `pass` en `attempt-01`, `appErrors: []`.
+  Pero el `console.warn` **no aparece** en su logcat: en ese run PostgREST no
+  devolvió `PGRST303`, así que el arreglo no llegó a actuar. Es un verde real
+  sin el reintento del runner, no una prueba de que la repetición funcione. El
+  bug depende de cuánto lleve PostgREST parado; **no es determinista**.
+- Un segundo run del mismo commit
+  ([35455578363](https://github.com/thejowe/lockin/actions/runs/35455578363),
+  lanzado a mano para tener otra muestra) se canceló a medias al pushear estos
+  docs, por el `cancel-in-progress` del workflow. No aporta dato. El run que
+  dispare el push de este commit es la muestra siguiente: mirar en su logcat si
+  sale el `warn` y cómo termina.
+- Que la repetición resuelva el caso concreto solo se ha visto en los tests con
+  un `fetch` de mentira. La prueba real es un run que muestre a la vez el
+  `warn` y `pass`.
+
+#### Para `calidad` (no lo toco: es `e2e/**` y el workflow)
+
+El arreglo **de raíz en CI** es que PostgREST sea ≥ v16.3, y eso vive en
+`e2e/run.mjs` / `.github/workflows/e2e.yml`, no en mi alcance. La repetición de
+arriba cubre el síntoma; si se quiere quitar la causa, las salidas son subir
+`supabase/setup-cli` a una versión que traiga v16.3 (hoy solo la beta
+`2.118.0`) o forzar la imagen de PostgREST del `supabase start` local. Y para
+que la próxima vez se pueda **medir** en vez de deducir: guardar en el artefacto
+`docker logs` de `supabase_rest_*` y `supabase_auth_*` con marcas de tiempo, y
+`date -u +%s` del runner al arrancar el recorrido. El artefacto de hoy no traía
+logs de contenedores, y por eso la causa salió de la fuente y no de un log.

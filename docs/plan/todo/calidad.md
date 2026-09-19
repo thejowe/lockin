@@ -3046,7 +3046,7 @@ sospechaba.
       vez de desaparecer con el reintento. No lo monto en esta pasada: el run ya está
       verde y el cambio merece su propio commit y su propio run que lo valide.
 
-- [ ] **Para `datos`, con el dato en la mano.** El `PGRST303` es real y está en
+- [x] **Para `datos`, con el dato en la mano.** *(Cerrado 2026-09-19, orden D7 de `datos.md`: no era desfase entre contenedores ni el `iat` al segundo — es PostgREST/postgrest#5196, reloj cacheado viejo en la primera petición tras inactividad; y **sí** bloqueaba, porque el veredicto era `caso`. Se repite una vez en la capa de acceso.)* El `PGRST303` es real y está en
       producción de CI. No pido que se arregle a ciegas: lo que lo cerraría es saber
       si el desfase está entre los contenedores de GoTrue y PostgREST o en el `iat`
       redondeado al segundo. Mientras tanto **no es un bloqueo**: el recorrido pasa
@@ -3232,7 +3232,7 @@ sesión, que era el encargo.
       `runs[n].appErrors` para el intento y `appErrors` en la raíz para la
       unión, con la nota de que sigue ahí aunque el trabajo salga verde.
 
-- [ ] **Sigue abierto para `datos`** (repetido aquí para que no se pierda entre
+- [x] **Cerrado por `datos`** *(D7, 2026-09-19: la causa es un bug de PostgREST v16.1, no un desfase; ver `datos.md`. Arreglo de raíz en CI —PostgREST ≥ v16.3— queda para `calidad`.)* Antes: **sigue abierto para `datos`** (repetido aquí para que no se pierda entre
       secciones): lo que cerraría el `PGRST303` del todo es saber si el desfase
       está entre los contenedores de GoTrue y PostgREST o en el `iat` redondeado
       al segundo. No es un bloqueo.
