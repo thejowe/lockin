@@ -137,11 +137,11 @@ rojo del job remoto es deriva real.
 Ninguna de estas cuatro la puede cerrar un agente. Hasta entonces el bloque
 está probado contra el mock y contra PGlite, que es donde llega el desarrollo.
 
-- [ ] Crear una GitHub OAuth App y poner client ID y secret en
+- [x] Crear una GitHub OAuth App y poner client ID y secret en
       Authentication → Providers → GitHub del dashboard de Supabase, con la
       callback URL que indique el propio dashboard.
-- [ ] Activar **Enable Manual Linking** en Authentication → Settings. Está
-      desactivado por defecto y sin él `linkIdentity()` falla siempre.
+- [x] Activar **Enable Manual Linking** en Authentication → Settings. Está
+      desactivado por defecto y sin él `linkIdentity()` falla siempre. — **hecho por el usuario el 2026-09-19** (esta casilla y la anterior, según su palabra; no hay artefacto que lo pruebe hasta que el flujo se ejecute en un dispositivo)
 - [x] Aplicar `20260916000100_github_verification.sql` en
       `grrzmzktrhksbttpbblg` por el SQL Editor — **hecho el 2026-09-17**,
       confirmado por el cotejo remoto (ver arriba).

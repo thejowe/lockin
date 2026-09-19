@@ -116,9 +116,9 @@ function fillDeletion({ ids, decisiones, matches, mensajes }) {
   assert(text.includes(marker));
   return text
     .replace(marker, ids.map((id) => `  '${id}'`).join(',\n'))
-    .replace(/-1,?(\s+-- ACUSE_DECISIONES)/, `${decisiones},$1`)
-    .replace(/-1,?(\s+-- ACUSE_MATCHES)/, `${matches},$1`)
-    .replace(/-1(\s+-- ACUSE_MENSAJES)/, `${mensajes}$1`);
+    .replace(/-1;(\s+-- ACUSE_DECISIONES)/, `${decisiones};$1`)
+    .replace(/-1;(\s+-- ACUSE_MATCHES)/, `${matches};$1`)
+    .replace(/-1;(\s+-- ACUSE_MENSAJES)/, `${mensajes};$1`);
 }
 
 test('Limpieza: inventario clasifica y borrado respeta sus guardias', async () => {

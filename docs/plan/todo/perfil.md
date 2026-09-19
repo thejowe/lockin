@@ -142,5 +142,11 @@ sube; no se han tocado aquí porque el archivo es de ese bloque y las órdenes
 `A2` y `D3` corren en paralelo, y subir el suelo ahora les pondría en rojo por
 algo que no es suyo.
 
+## «Ya tengo cuenta» en el onboarding (2026-09-19)
+
+Hueco detectado por el usuario: `signInWithEmail()` existe en la capa de cuentas pero ninguna pantalla la llama, así que quien reinstala o cambia de móvil entra siempre como anónimo nuevo y no puede volver a su cuenta con email. **Opcional, no un muro**: `ordenes-arquitectura.md` ("Lo que NO hay que hacer") sigue prohibiendo el login obligatorio.
+
+- [ ] **[Claude]** Enlace «Ya tengo cuenta» en el onboarding → pantalla email + contraseña (`signInWithEmail`) con «He olvidado mi contraseña» (`sendPasswordReset`); oculto sin credenciales de Supabase; aviso antes de abandonar una cuenta anónima que ya tiene perfil; relectura de `session:onboarded` y `profile:current` y redirección (perfil → tabs, sin perfil → onboarding). Alcance: `src/app/(onboarding)/`, `src/features/profile/` (incluido el re-export en `account-gateway.ts`) y sus tests; **no** `src/data/`
+
 ## Recuerda
 Nadie contrata a nadie: no metas campos de "salario" o "equity que ofrezco" — eso es Modo Talento, Fase 4, fuera de este MVP.

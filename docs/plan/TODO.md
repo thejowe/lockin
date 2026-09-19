@@ -161,7 +161,8 @@ querying schema`**. El seed ya las rellena a cadena vacía, y lleva anotado el
 ## Recuperación del perfil al reabrir (2026-09-16)
 
 - [x] Corregidos errores de arranque que enviaban al onboarding o abrían otra cuenta cuando fallaba la recuperación. Detalle y pruebas en `todo/arquitecto.md`.
-- [ ] Confirmar cierre y reapertura en el Expo Go del usuario.
+- [ ] Confirmar cierre y reapertura en el Expo Go del usuario. **Sospecha del 2026-09-19:** sin `.env.local` la app corre contra el mock en memoria y pierde todo al cerrar; repetir la prueba con `.env.local` puesto (URL y anon key de `grrzmzktrhksbttpbblg`) y `npx expo start -c`.
+- [ ] **[Claude]** «Ya tengo cuenta» en el onboarding (`perfil`): login opcional con `signInWithEmail`/`sendPasswordReset` para recuperar la cuenta en otro dispositivo. Detalle en `todo/perfil.md`.
 
 ## Saneamiento de arquitectura (auditoría del 2026-09-17)
 

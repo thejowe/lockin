@@ -873,10 +873,26 @@ Actualizado el 2026-09-13, tras la retirada (run 34760366206):
 - [x] Inventario de solo lectura de qué filas son de seed, de pruebas o posibles
       usuarios reales, y SQL de borrado para ejecutar como administrador —
       **preparados y probados en PostgreSQL embebido (2026-09-13)**; ver abajo
-- [ ] Inventario ejecutado en el SQL Editor de `grrzmzktrhksbttpbblg` y su
-      resultado revisado y confirmado por el usuario — **pendiente del usuario**
-- [ ] `borrado.sql` ejecutado con los UUID y el acuse confirmados, y su fila de
-      resultado adjunta aquí — **no antes de la casilla anterior**
+- [x] Inventario ejecutado en el SQL Editor de `grrzmzktrhksbttpbblg` y su
+      resultado revisado y confirmado por el usuario — **hecho el 2026-09-19**
+- [x] Borrado de las ocho cuentas de seed — **hecho el 2026-09-19**. Acuse
+      14 decisiones / 0 matches / 0 mensajes (el colateral real que midió la
+      guardia con la lista de pruebas vacía). Fila de comprobación posterior:
+      `cuentas_restantes 72, seed_restantes 0, seed_por_uuid 0,
+      perfiles_restantes 2, perfiles_seed 0, decisiones_restantes 2,
+      matches_restantes 1, mensajes_restantes 1`. **Las 72 cuentas restantes
+      no se han tocado**: son anónimas de pruebas y de uso, sin perfil casi
+      todas; borrarlas es otro inventario, por UUID y nunca por `is_anonymous`.
+      **Trampa del SQL Editor:** `borrado.sql` usa tablas temporales
+      (`on commit drop`) y el editor pasa por un pooler, así que una sentencia
+      puede caer en otra conexión y dar `relation "borrar" does not exist`.
+      El borrado real se ejecutó como **un único bloque `do`** sin tablas
+      temporales, atómico. **Portado el mismo día a `supabase/cleanup/borrado.sql`**
+      (sin `begin`/`commit`; ids y acuse son variables) y a
+      `supabase/cleanup.test.mjs`, que ahora sustituye `-1;` en vez de `-1,`:
+      `node --test supabase/cleanup.test.mjs` en verde contra PGlite (acuse
+      sin rellenar, perfil no reconocible, id inexistente y repetición
+      rechazados; borrado real 19 → 2 cuentas)
 
 ### Por qué no lo ha ejecutado `datos`
 
