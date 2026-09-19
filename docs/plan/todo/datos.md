@@ -1461,3 +1461,127 @@ porque excede la orden y no se puede verificar de punta a punta desde este job:
 - `npm run typecheck`, `npm run lint`: limpios.
 - `npm test -- --ci --runInBand` → **795 pasados**, 82 saltados, 0 fallos, 71
   suites.
+
+### Orden `D5` — Hallazgo 8: releer al reengancharse (Ola 4) — ENTREGADA 2026-09-19
+
+El agujero que dejó abierto `D4`. No salió de la auditoría del 2026-09-17: salió
+de cronometrar su rojo intermitente, y es el mismo defecto de `postgres_changes`
+visto desde producción en vez de desde un test.
+
+- [x] `subscribeResyncingOnRejoin()`, con sus casos de unidad
+- [x] Los tres canales pasando por él
+- [x] Un caso del contrato con una caída de red de verdad
+- [x] `messages › avisa solo a los suscriptores de ese hilo` intacto
+- [x] Enganchado al tablero (`TODO.md`, `ordenes-arquitectura.md`)
+
+#### El defecto
+
+`lockin:matches`, `lockin:messages:<matchId>` y `lockin:sessions:<matchId>` son
+los tres `postgres_changes`, que **no reemite**: entrega lo que ocurre mientras
+la suscripción está viva en el servidor, y nada más. Cuando el socket se cae, el
+servidor no guarda nada para nosotros; el `phx_join` de después llega vacío y la
+pantalla se queda con el dato viejo **hasta el siguiente cambio**, que puede no
+llegar nunca. La misma ventana existe, más corta, entre `subscribe()` y el
+primer `SUBSCRIBED`.
+
+#### El arreglo: `src/data/supabase/realtime.ts`
+
+```ts
+export function subscribeResyncingOnRejoin(channel, onRejoin) {
+  let joined = false;
+  return channel.subscribe((status) => {
+    if (status !== 'SUBSCRIBED') return;
+    if (joined) onRejoin();
+    joined = true;
+  });
+}
+```
+
+Avisar hace que la pantalla relea, y con eso basta: los repositorios no guardan
+estado, leen de la base. Los tres canales pasan por aquí — los dos de
+`index.ts` (matches y mensajes) y el de `sessions.ts`.
+
+**Contar los `SUBSCRIBED` distingue de verdad el reenganche del primer `join`.**
+No es una heurística: al reengancharse, `@supabase/phoenix` reutiliza el mismo
+`joinPush` (`channel.rejoin()` → `joinPush.resend()`), y `Push.reset()` limpia
+`ref`, `refEvent`, `receivedResp` y `sent` pero **no** `recHooks`. El hook de
+`receive('ok')` que registra `RealtimeChannel.subscribe()` sigue enganchado y
+vuelve a disparar. Por eso el segundo `SUBSCRIBED` y los siguientes son siempre
+reenganches.
+
+#### Por qué NO se avisa en el primer `join`
+
+Porque no hace falta —quien se acaba de suscribir ya ha leído— y porque rompe
+otra cosa. `messages › avisa solo a los suscriptores de ese hilo` exige
+**exactamente un** aviso por `send`, y esa cuenta exacta es lo que demuestra que
+la marca de escritura propia (`emittedLocally`) hace su trabajo: con un aviso de
+más al abrir el canal, el caso pasaría igual aunque la marca no silenciara nada.
+La vía fácil —avisar en todos los `SUBSCRIBED`, los tres canales— se intentó en
+`D4` y dio `Expected 1, Received 2`
+([run 35437206224](https://github.com/thejowe/lockin/actions/runs/35437206224)).
+Revertida entonces, y descartada aquí por el mismo motivo.
+
+Tampoco se tomó la salida contraria —aplicarlo solo al canal de sesiones—:
+dejaría ese caso pasando aunque realtime estuviera roto del todo.
+
+#### El caso del contrato: una caída de red de verdad
+
+`al reengancharse recupera el cambio que se perdió sin red`, en el bloque
+`sessions` de `src/data/repositories.contract.ts`. Corta el cable, deja que la
+otra persona escriba por HTTP con su propio cliente, comprueba que **no** nos
+enteramos, devuelve el cable y exige que la pantalla tenga el cambio.
+
+Las dos mitades importan. Sin la comprobación de que el evento se pierde, el
+caso pasaría igual con el arreglo puesto o sin ponerlo — sería un test de que
+realtime funciona, no del reenganche.
+
+`ContractBackend` gana dos miembros **opcionales**, `dropRealtime()` y
+`restoreRealtime()`. Opcionales a propósito: el mock avisa dentro del proceso y
+no tiene conexión que cortar, así que los deja sin definir y el caso se salta
+ahí — el mismo patrón que `canTimeTravel` con los casos de caducidad. Que sean
+opcionales y no obligatorios es además lo que deja `src/data/mock/` sin tocar,
+que es de `arquitecto`.
+
+El backend de Supabase los implementa sobre el cliente del usuario del test:
+
+- `dropRealtime()` espera a que **todos** los canales estén `joined` y luego
+  `realtime.disconnect()`. La espera no es cortesía: `subscribe()` vuelve antes
+  de que el servidor registre la suscripción, y cortar antes del primer `join`
+  dejaría el caso pasando sin demostrar nada, porque el `SUBSCRIBED` de después
+  sería el primero.
+- `restoreRealtime()` es `realtime.connect()`.
+
+Es la secuencia que vive un teléfono que pierde cobertura: `disconnect()` cierra
+el socket y deja los canales en `errored` sin programar reconexión
+(`closeWasClean = true`), y al `connect()` el `onOpen` del canal los reengancha.
+Los clientes de los usuarios de apoyo son otros: siguen escribiendo con
+normalidad mientras nosotros estamos a oscuras.
+
+#### Alcance
+
+Se tocaron `src/data/supabase/realtime.ts` (nuevo), `realtime.test.ts` (nuevo),
+`index.ts`, `sessions.ts`, `contract.test.ts` y
+`src/data/repositories.contract.ts`. `src/data/mock/` no se tocó.
+
+#### Verificación (2026-09-19)
+
+- **Job «Contrato Supabase»**, rama desechable `datos-h8-reenganche` (`f0ce37a`,
+  publicada con `read-tree`/`commit-tree` sobre un `GIT_INDEX_FILE` temporal,
+  sin un solo `git add` en el worktree compartido):
+  [run 35438626382](https://github.com/thejowe/lockin/actions/runs/35438626382)
+  **verde** — `23 skipped, 60 passed, 83 total`, `numFailedTests: 0`. El caso
+  nuevo **corre y pasa**, no salta: `✓ al reengancharse recupera el cambio que
+  se perdió sin red (2413 ms)`. Los 23 saltos son los mismos de siempre, uno
+  más que en `D4` porque el caso del reenganche no se salta aquí — pasa —, y los
+  59 pasados de entonces son 60 ahora.
+- **La cuenta exacta sigue en pie**: `✓ avisa solo a los suscriptores de ese
+  hilo (125 ms)` en el mismo run, contra Supabase de verdad.
+- `npm run test:schema` → `pass 21`, `fail 0`.
+- `npm run typecheck`, `npm run lint`: limpios.
+- `npm test -- --ci --runInBand` → **799 pasados**, 84 saltados, 0 fallos, 72
+  suites (4 casos nuevos en `realtime.test.ts`; los 2 saltos de más son el caso
+  del reenganche en el mock y en la suite opt-in de Supabase).
+- **Formato**: los seis archivos tocados, copiados con finales LF y pasados por
+  `prettier --check` con el `.prettierrc` del repo → limpios. Aquí
+  `npm run format:check` no sirve: el ruido de CRLF de Windows tapa lo de verdad
+  entre ~100 falsos.

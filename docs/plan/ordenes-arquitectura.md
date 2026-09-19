@@ -1,13 +1,19 @@
 # Órdenes — saneamiento de arquitectura (2026-09-17)
 
 > Reparto de los 7 problemas de arquitectura detectados en la auditoría del
-> 2026-09-17. Cada orden es autocontenida: se puede pegar tal cual en una sesión
-> nueva (Claude Code o Codex) sin más contexto que este archivo y el repo.
+> 2026-09-17, más el octavo que salió después diagnosticando uno de sus rojos.
+> Cada orden es autocontenida: se puede pegar tal cual en una sesión nueva
+> (Claude Code o Codex) sin más contexto que este archivo y el repo.
 >
 > **Regla de oro intacta**: ningún par de órdenes de la misma ola toca el mismo
 > archivo. Las olas van en orden; no adelantes una ola sin cerrar la anterior.
 
-## Los 7 hallazgos y a quién le tocan
+## Los 8 hallazgos y a quién le tocan
+
+Los siete primeros son los de la auditoría del 2026-09-17. El octavo no salió de
+ella: apareció el 2026-09-19 cronometrando el rojo intermitente del job
+«Contrato Supabase» (orden `D4`), y es el mismo defecto de `postgres_changes`
+visto desde producción en vez de desde un test.
 
 | # | Hallazgo | Bloque | Orden | Ola |
 |---|---|---|---|---|
@@ -18,6 +24,7 @@
 | 5 | Cambio silencioso de backend si faltan credenciales | `arquitecto` | A1 | 1 |
 | 6 | Consultas sin paginar y reloj del dispositivo | `datos` | D3 | 3 |
 | 7 | Estado mutable de módulo en los dos backends | `arquitecto` | A2 | 3 |
+| 8 | Al reconectar se pierde en silencio lo ocurrido sin red | `datos` | D5 | 4 |
 
 ## Olas
 
@@ -25,6 +32,9 @@
   + `src/data/active.ts` frente a `src/data/supabase/**` + `supabase/migrations/`).
 - **Ola 2** — `D2` y `C1` en paralelo.
 - **Ola 3** — `P1`, `D3` y `A2`. `D3` **no** puede correr a la vez que `D2`.
+- **Ola 4** — `D5`, sola. Toca `src/data/supabase/**` y
+  `src/data/repositories.contract.ts`, así que no puede correr a la vez que
+  ninguna otra orden de `datos`.
 
 Si corres dos a la vez en la misma máquina, cada una en su `git worktree`
 (`git worktree add ../lockin-<orden> -b fix/<orden>`), como manda `PLAN.md`.
@@ -451,6 +461,58 @@ forma limpia de aislar dos instancias.
 - Un test que demuestre que dos instancias de repositorio no se contaminan.
 - `npx expo export --platform web` sin errores.
 - `docs/plan/todo/arquitecto.md` actualizado.
+
+---
+
+# ORDEN D5 — `datos` — releer al reengancharse
+
+**Ola 4. Sola: comparte alcance con las demás órdenes de `datos`.**
+**ENTREGADA el 2026-09-19.**
+
+## Alcance de archivos
+
+- `src/data/supabase/realtime.ts` (nuevo) y `src/data/supabase/realtime.test.ts`
+- `src/data/supabase/index.ts`, `src/data/supabase/sessions.ts`
+- `src/data/supabase/contract.test.ts`, `src/data/repositories.contract.ts`
+
+## El problema
+
+Los tres canales del backend de Supabase —`lockin:matches`,
+`lockin:messages:<matchId>` y `lockin:sessions:<matchId>`— son
+`postgres_changes`, que **no reemite**: entrega lo que ocurre mientras la
+suscripción está viva en el servidor y nada más. Tras una caída de red el
+`phx_join` nuevo llega vacío, así que la pantalla se queda con el dato viejo
+hasta el siguiente cambio — que puede no llegar nunca. La misma ventana existe,
+más corta, entre `subscribe()` y el primer `SUBSCRIBED`.
+
+## Lo que se hizo
+
+`subscribeResyncingOnRejoin()` (`src/data/supabase/realtime.ts`) suscribe el
+canal y avisa **solo a partir del segundo `SUBSCRIBED`**, que es siempre un
+reenganche: el cliente de realtime reutiliza el mismo `joinPush` al rejuntarse y
+sus hooks de recepción sobreviven al `reset()`. Los tres canales pasan por ahí.
+La pantalla relee, que es todo lo que hace falta: los repositorios no guardan
+estado, leen de la base.
+
+**No** se avisa en el primer `join`. Quien se acaba de suscribir ya ha leído, y
+avisar ahí rompe `messages › avisa solo a los suscriptores de ese hilo`, que
+exige exactamente un aviso por `send` — la cuenta que demuestra que la marca de
+escritura propia (`emittedLocally`) funciona. Esa vía se intentó y se revirtió
+entera ([run 35437206224](https://github.com/thejowe/lockin/actions/runs/35437206224),
+`Expected 1, Received 2`).
+
+El contrato lo demuestra con una caída de red de verdad: `ContractBackend` gana
+`dropRealtime()`/`restoreRealtime()` **opcionales** —el mock avisa dentro del
+proceso y no tiene conexión que cortar, así que el caso se salta ahí, igual que
+`canTimeTravel` salta los de caducidad— y el backend de Supabase los implementa
+con `realtime.disconnect()`/`connect()` sobre el cliente del usuario del test.
+
+## Criterio de terminado
+
+- `npm run test:schema`, `npm run typecheck`, `npm run lint` limpios y
+  `npm test -- --ci --runInBand` en verde.
+- El job «Contrato Supabase» en verde, con el caso nuevo pasando y no saltando.
+- `docs/plan/todo/datos.md` actualizado.
 
 ---
 

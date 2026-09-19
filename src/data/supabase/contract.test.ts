@@ -301,12 +301,52 @@ function sessionRepositoryFor(actor: Reciprocal): LockInSessionRepository {
   });
 }
 
+/**
+ * Espera a que todos los canales de realtime abiertos estén enganchados.
+ *
+ * `subscribe()` vuelve antes de que el servidor registre la suscripción. Si el
+ * cable se cortara antes de ese primer `join`, el `SUBSCRIBED` posterior sería
+ * el primero y el caso del reenganche pasaría sin demostrar nada.
+ */
+async function waitUntilChannelsJoined(): Promise<void> {
+  const deadline = Date.now() + 20_000;
+  for (;;) {
+    const channels = appClient.realtime.getChannels();
+    if (channels.length > 0 && channels.every((channel) => channel.state === 'joined')) return;
+    if (Date.now() > deadline) {
+      const states = channels.map((channel) => `${channel.topic}=${channel.state}`).join(', ');
+      throw new Error(
+        `Los canales de realtime no llegaron a engancharse en 20 s: ${states || '(ninguno)'}`
+      );
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+}
+
 const supabaseBackend: ContractBackend = {
   name: 'supabase',
   canTimeTravel: false,
   // Un OAuth real necesita un navegador y un humano del otro lado: esta suite
   // no puede completar verifyGithub()/unverifyGithub() sola.
   canLinkIdentityWithoutBrowser: false,
+
+  /**
+   * La caída de red del caso del reenganche.
+   *
+   * `realtime.disconnect()` cierra el socket y deja los canales en `errored`
+   * sin programar reconexión; `connect()` los hace reengancharse. Es la misma
+   * secuencia que vive un teléfono que pierde cobertura, con la diferencia de
+   * que aquí decidimos cuándo. Solo se toca el cliente del usuario del test:
+   * los de apoyo tienen el suyo y siguen escribiendo con normalidad.
+   */
+  async dropRealtime() {
+    await waitUntilChannelsJoined();
+    await appClient.realtime.disconnect();
+  },
+
+  async restoreRealtime() {
+    appClient.realtime.connect();
+  },
 
   async reset(): Promise<ContractFixture> {
     const currentUserId = await resetCurrentUser();

@@ -28,6 +28,7 @@ import {
   toProfile,
   toProfileInsert,
 } from './mappers';
+import { subscribeResyncingOnRejoin } from './realtime';
 import { createSupabaseSessionRepository } from './sessions';
 import { GITHUB_VERIFICATION_CANCELLED } from '../repositories';
 
@@ -551,20 +552,30 @@ export function createSupabaseRepositories(): Repositories {
 
     subscribe(listener): Unsubscribe {
       return subscribeTo(MATCHES_TOPIC, listener, () =>
-        getSupabaseClient()
-          .channel('lockin:matches')
-          // RLS filtra también el stream de realtime, así que aquí solo llegan
-          // matches y mensajes del usuario: no hace falta filtro de servidor.
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, (payload) => {
-            const row = payload.new as Partial<MatchRow> | undefined;
-            if (wasEmittedLocally(row?.id)) return;
-            notify(MATCHES_TOPIC);
-          })
-          // Un mensaje nuevo mueve `last_message_at` y reordena la lista.
-          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
-            notify(MATCHES_TOPIC);
-          })
-          .subscribe()
+        subscribeResyncingOnRejoin(
+          getSupabaseClient()
+            .channel('lockin:matches')
+            // RLS filtra también el stream de realtime, así que aquí solo llegan
+            // matches y mensajes del usuario: no hace falta filtro de servidor.
+            .on(
+              'postgres_changes',
+              { event: '*', schema: 'public', table: 'matches' },
+              (payload) => {
+                const row = payload.new as Partial<MatchRow> | undefined;
+                if (wasEmittedLocally(row?.id)) return;
+                notify(MATCHES_TOPIC);
+              }
+            )
+            // Un mensaje nuevo mueve `last_message_at` y reordena la lista.
+            .on(
+              'postgres_changes',
+              { event: 'INSERT', schema: 'public', table: 'messages' },
+              () => {
+                notify(MATCHES_TOPIC);
+              }
+            ),
+          () => notify(MATCHES_TOPIC)
+        )
       );
     },
   };
@@ -610,23 +621,25 @@ export function createSupabaseRepositories(): Repositories {
       const topic = messagesTopic(matchId);
 
       return subscribeTo(topic, listener, () =>
-        getSupabaseClient()
-          .channel(`lockin:${topic}`)
-          .on(
-            'postgres_changes',
-            {
-              event: 'INSERT',
-              schema: 'public',
-              table: 'messages',
-              filter: `match_id=eq.${matchId}`,
-            },
-            (payload) => {
-              const row = payload.new as Partial<MessageRow> | undefined;
-              if (wasEmittedLocally(row?.id)) return;
-              notify(topic);
-            }
-          )
-          .subscribe()
+        subscribeResyncingOnRejoin(
+          getSupabaseClient()
+            .channel(`lockin:${topic}`)
+            .on(
+              'postgres_changes',
+              {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'messages',
+                filter: `match_id=eq.${matchId}`,
+              },
+              (payload) => {
+                const row = payload.new as Partial<MessageRow> | undefined;
+                if (wasEmittedLocally(row?.id)) return;
+                notify(topic);
+              }
+            ),
+          () => notify(topic)
+        )
       );
     },
   };

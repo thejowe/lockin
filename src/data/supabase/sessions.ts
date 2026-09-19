@@ -15,6 +15,7 @@ import {
 } from '../session-errors';
 import { ensureUserId } from './auth';
 import { getSupabaseClient } from './client';
+import { subscribeResyncingOnRejoin } from './realtime';
 
 import type { LockInSupabaseClient } from './client';
 import type {
@@ -267,27 +268,29 @@ export function createSupabaseSessionRepository(
       listeners.set(matchId, set);
 
       if (!channels.has(matchId)) {
-        const channel = deps
-          .getClient()
-          .channel(`lockin:sessions:${matchId}`)
-          .on(
-            'postgres_changes',
-            {
-              event: '*',
-              schema: 'public',
-              table: 'lockin_sessions',
-              filter: `match_id=eq.${matchId}`,
-            },
-            () => notify(matchId)
-          )
-          // La asistencia no lleva `match_id`: RLS ya limita el stream a sesiones
-          // de tus matches, así que como mucho avisa de más, nunca de menos.
-          .on(
-            'postgres_changes',
-            { event: '*', schema: 'public', table: 'session_attendance' },
-            () => notify(matchId)
-          )
-          .subscribe();
+        const channel = subscribeResyncingOnRejoin(
+          deps
+            .getClient()
+            .channel(`lockin:sessions:${matchId}`)
+            .on(
+              'postgres_changes',
+              {
+                event: '*',
+                schema: 'public',
+                table: 'lockin_sessions',
+                filter: `match_id=eq.${matchId}`,
+              },
+              () => notify(matchId)
+            )
+            // La asistencia no lleva `match_id`: RLS ya limita el stream a sesiones
+            // de tus matches, así que como mucho avisa de más, nunca de menos.
+            .on(
+              'postgres_changes',
+              { event: '*', schema: 'public', table: 'session_attendance' },
+              () => notify(matchId)
+            ),
+          () => notify(matchId)
+        );
         channels.set(matchId, channel);
       }
 

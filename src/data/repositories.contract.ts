@@ -101,6 +101,23 @@ export interface ContractBackend {
    * persona del otro lado, así que Supabase declara `false`.
    */
   canLinkIdentityWithoutBrowser: boolean;
+  /**
+   * Corta la conexión de realtime del usuario, como una caída de red, y la
+   * devuelve con `restoreRealtime()`.
+   *
+   * Opcional a propósito: solo lo puede un backend que tenga una conexión de
+   * verdad que cortar. El mock avisa dentro del proceso y no tiene ninguna, así
+   * que las deja sin definir y el caso del reenganche se salta ahí — igual que
+   * `canTimeTravel` salta los que hacen caducar una propuesta.
+   *
+   * Quien lo implemente tiene que esperar a que los canales estén enganchados
+   * antes de cortar: `subscribe()` vuelve antes de que el servidor registre la
+   * suscripción, y cortar antes del primer `join` dejaría el caso pasando sin
+   * demostrar nada, porque el `SUBSCRIBED` de después sería el primero.
+   */
+  dropRealtime?(): Promise<void>;
+  /** Devuelve la conexión que cortó `dropRealtime()`. */
+  restoreRealtime?(): Promise<void>;
   /** Estado limpio para el test que viene. Se llama en cada `beforeEach`. */
   reset(): Promise<ContractFixture>;
   /** Cierre de lo que quede abierto (sesiones, canales de realtime). */
@@ -650,6 +667,8 @@ export function describeRepositoryContract(backend: ContractBackend): void {
       const MINUTE = 60_000;
       /** Casos que saltan minutos: solo en backends con reloj simulado. */
       const itWithTimeTravel = backend.canTimeTravel ? it : it.skip;
+      /** Casos que simulan una caída de red: solo en backends con red que cortar. */
+      const itWithNetworkDrop = backend.dropRealtime && backend.restoreRealtime ? it : it.skip;
 
       let matchId: string;
       let mine: LockInSessionRepository;
@@ -869,6 +888,51 @@ export function describeRepositoryContract(backend: ContractBackend): void {
         } finally {
           unsubscribeMine();
           unsubscribeTheirs();
+        }
+      });
+
+      /**
+       * Hallazgo 8: al reconectar, lo ocurrido sin red no llega solo.
+       *
+       * `postgres_changes` no reemite. Mientras el socket está caído el
+       * servidor no guarda nada para nosotros, así que el `phx_join` de después
+       * llega vacío y la pantalla se queda con el dato viejo hasta el siguiente
+       * cambio — que puede no llegar nunca. Lo que cierra el agujero es avisar
+       * al REENGANCHARSE (`subscribeResyncingOnRejoin`), para que la pantalla
+       * relea; los repositorios no guardan estado, leen de la base.
+       *
+       * El caso lo comprueba de las dos formas que importan: que el cambio de
+       * verdad se pierde mientras no hay cable —si no, no habría nada que
+       * demostrar— y que al volver la pantalla ya lo tiene.
+       */
+      itWithNetworkDrop('al reengancharse recupera el cambio que se perdió sin red', async () => {
+        const listener = jest.fn();
+        const unsubscribe = mine.subscribe(matchId, listener);
+
+        try {
+          // Espera al primer `join` antes de cortar: ver `dropRealtime`.
+          await backend.dropRealtime!();
+          listener.mockClear();
+
+          // La otra persona escribe por HTTP, con su cliente y su conexión: el
+          // cambio ocurre de verdad mientras nosotros no tenemos cable por el
+          // que enterarnos.
+          const session = await theirs.propose({ matchId, startsAt: await later(), blocks: 1 });
+
+          // Y en efecto no nos enteramos. Sin esto el caso pasaría igual con el
+          // arreglo puesto o sin ponerlo.
+          await new Promise((resolve) => setTimeout(resolve, 2_000));
+          expect(listener).not.toHaveBeenCalled();
+
+          await backend.restoreRealtime!();
+
+          await eventually(() => expect(listener).toHaveBeenCalled());
+          expect(await mine.getActive(matchId)).toMatchObject({
+            id: session.id,
+            status: 'propuesta',
+          });
+        } finally {
+          unsubscribe();
         }
       });
 
