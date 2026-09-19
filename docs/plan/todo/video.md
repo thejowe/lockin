@@ -172,3 +172,17 @@ qué puede solaparse).
       "Qué problema resuelve, y cuál no") y que cámara y audio se ven/oyen
       en los dos sentidos, que mic/cámara/colgar responden, y que salir de
       la sesión o volver a entrar deja la llamada en el estado esperado.
+
+## Fallback en Expo Go (2026-09-19)
+
+- [x] `react-native-webrtc` se carga de forma perezosa
+      (`src/features/session/webrtc.ts`, `loadWebRTC()`): `require` dentro de
+      `try`, tras comprobar `NativeModules.WebRTCModule`. `use-video-call.ts`
+      y `video-call-view.tsx` ya no lo importan en estático (solo `import
+      type`). Sin módulo nativo (Expo Go) el hook devuelve el estado
+      `'no-disponible'` sin tocar la señalización y la vista pinta «La
+      videollamada necesita la app de desarrollo.»; el resto de la sesión
+      arranca normal. Tests: `webrtc-unavailable.test.tsx`; `jest.setup.js`
+      registra `NativeModules.WebRTCModule` para el doble.
+- [ ] Sin verificar en dispositivo: abrir la app en Expo Go (iPhone) y
+      comprobar que arranca y que la pantalla de sesión muestra el aviso.
