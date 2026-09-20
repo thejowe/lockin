@@ -147,6 +147,22 @@ function buildEnv(status) {
     ...base,
     EXPO_PUBLIC_SUPABASE_URL: status.API_URL,
     EXPO_PUBLIC_SUPABASE_ANON_KEY: status.ANON_KEY,
+    // Apaga la puerta de cuenta obligatoria que `perfil` encendió el 2026-09-20
+    // (`registrationRequired` en src/features/profile/account-gateway.ts). Con
+    // ella encendida el APK arranca en «Crea tu cuenta» y `full-journey.yaml`
+    // muere en su primera afirmación ("Cofundador" is visible, run 35476986324):
+    // el recorrido entra anónimo y aquí no hay buzón en el que pinchar el enlace
+    // de confirmación, así que la puerta no se abriría nunca.
+    //
+    // Va SOLO en esta build desechable: una build de usuario no lleva la
+    // variable y el alta le sigue exigiendo cuenta. El precio es que el registro
+    // —la pantalla, el ascenso de la sesión anónima y el enlace del correo— no
+    // lo recorre nadie en un dispositivo; queda cubierto solo por los tests de
+    // Jest con dobles. Recorrerlo de verdad pide leer el correo del Inbucket que
+    // levanta la CLI (`INBUCKET_URL` de `supabase status`) y abrir su enlace con
+    // `am start -a android.intent.action.VIEW`; anotado en
+    // docs/plan/todo/calidad.md, no se hace aquí.
+    EXPO_PUBLIC_REQUIRE_ACCOUNT: 'false',
   };
 }
 

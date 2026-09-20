@@ -13,10 +13,22 @@ nadie.
 
 ## Qué demuestra
 
-Alta anónima automática (el MVP no tiene pantalla de registro/login) → selección
-de modo → formulario completo → deck → like → modal de match → chat → envío →
-**parada del proceso y relanzamiento sin borrar almacenamiento** → perfil y
-conversación recuperados desde la UI.
+Alta anónima automática → selección de modo → formulario completo → deck → like
+→ modal de match → chat → envío → **parada del proceso y relanzamiento sin
+borrar almacenamiento** → perfil y conversación recuperados desde la UI.
+
+**La puerta de registro va apagada aquí, y eso es un agujero conocido.** Desde
+el 2026-09-20 el alta exige una cuenta con email confirmado
+(`registrationRequired` en `src/features/profile/account-gateway.ts`), así que
+`buildEnv()` compila este APK con `EXPO_PUBLIC_REQUIRE_ACCOUNT=false`: el
+recorrido no tiene buzón donde pinchar el enlace de confirmación y sin apagarla
+se quedaría en «Crea tu cuenta» antes de elegir modo. Una build de usuario no
+lleva la variable. Consecuencia: la pantalla de registro, el ascenso de la
+sesión anónima (`linkEmailToCurrentUser` + `setAccountPassword`) y el enlace
+del correo **no los recorre nadie en un dispositivo**; solo los cubren tests de
+Jest con dobles. Recorrerlos pide leer el correo del Inbucket que levanta la
+CLI (`INBUCKET_URL` de `supabase status`) y abrir su enlace con
+`am start -a android.intent.action.VIEW`.
 
 Incluye los dos lados de `seekingSpecialties`, que es lo único que la prueba de
 punta a punta: se declara en el formulario ("Lo que debe dominar quien busco",
