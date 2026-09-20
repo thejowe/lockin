@@ -1242,10 +1242,15 @@ a leerse como deriva real.
 - [x] Los nuevos exports salen por `src/data/supabase/index.ts`, tipos incluidos
 - [x] Cobertura en `src/data/supabase/auth.test.ts`: 43 casos, uno por rama nueva. `npm run typecheck`, `npm run lint` y `npm test -- --ci --runInBand` (743 pasados, 82 saltados, 0 rojos) verdes el 2026-09-17
 
-#### Falta que el usuario toque el dashboard de `grrzmzktrhksbttpbblg`
+#### El dashboard de `grrzmzktrhksbttpbblg` — **hecho por el usuario el 2026-09-20**
 
 Sin esto, el estado `pending-email` no existe y la promesa "solo tras confirmar
-el correo" es falsa:
+el correo" es falsa. Los tres puntos están aplicados desde el 2026-09-20, **por
+la palabra del usuario**: como el resto de la configuración del dashboard, no
+hay artefacto que lo pruebe hasta que el alta por email se ejecute en un
+dispositivo (casilla abierta en `todo/perfil.md`). Si esa prueba falla con el
+correo de confirmación sin llegar o el ascenso sin cerrarse, **lo primero que
+hay que releer es esta lista**, empezando por el punto 2.
 
 1. **Authentication → Providers → Email → "Confirm email": ACTIVAR.** Ojo al
    efecto colateral: eso inutiliza el paso 3 de `auth.ts` (la cuenta de

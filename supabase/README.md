@@ -315,9 +315,22 @@ PostgreSQL (libpg_query). Queda pendiente ejecutarlo en una máquina con Docker.
 
 ## Configuración de Auth en el dashboard
 
-Dos interruptores de Authentication → Providers importan aquí, y el estado
-actual del proyecto `grrzmzktrhksbttpbblg` es este:
+Cuatro interruptores importan aquí, y el estado actual del proyecto
+`grrzmzktrhksbttpbblg` es este:
 
+- **Providers → Email → "Confirm email": activado** desde el 2026-09-20. Lo
+  pide el registro obligatorio del onboarding: sin él no existe el estado
+  `pending-email` de `getAccountState()` y "tu cuenta es recuperable" sería
+  mentira, porque nadie habría demostrado controlar esa dirección. Efecto
+  colateral conocido: inutiliza el paso 3 de `auth.ts` (la cuenta de dispositivo
+  con email sintético, que necesita justo lo contrario). Mientras
+  `anonymous_users` siga activo ese paso no se ejecuta nunca y el coste real es
+  cero — pero si algún día se apagan los anónimos, el arranque se queda sin red
+  de seguridad y hay que replantearlo.
+- **Providers → Email → "Secure email change": desactivado** desde el
+  2026-09-20. Con él, ascender una cuenta de dispositivo mandaría además una
+  confirmación al buzón `device-…@lockin.app`, que no existe, y el ascenso no se
+  completaría jamás.
 - **`external.anonymous_users: true`** (activado). Es la vía principal de
   `src/data/supabase/auth.ts`: `signInAnonymously()` abre sesión sin pedir nada
   al usuario, que es lo que permite que el contrato de repositorio no tenga
@@ -332,6 +345,17 @@ actual del proyecto `grrzmzktrhksbttpbblg` es este:
   Los ocho usuarios de `seed.sql` no lo necesitan: se insertan con
   `email_confirmed_at` ya puesto. Si algún día el registro por email se vuelve
   la vía principal, se activa el envío de correos de verdad, no el autoconfirm.
+
+Y una lista, no un interruptor: **Authentication → URL Configuration →
+Redirect URLs contiene `lockin://auth/callback`**, confirmado el 2026-09-20. Es
+donde caen tanto el enlace del correo de confirmación como la vuelta del OAuth
+de GitHub; sin esa entrada, GoTrue rechaza el `redirectTo` y el usuario se queda
+con un enlace que no abre la app.
+
+Los tres cambios del 2026-09-20 los hizo el usuario en el dashboard y **constan
+por su palabra**: no hay artefacto que los pruebe hasta que el alta por email se
+recorra en un dispositivo. Si ese recorrido falla —el correo no llega, o llega y
+el ascenso no se cierra— esta sección es lo primero que hay que releer.
 
 ## Mantenimiento: borrar los usuarios anónimos de pruebas
 
