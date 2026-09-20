@@ -3376,3 +3376,78 @@ condiciones de *medirla* y evaluar quitarla en CI. Solo `e2e/**`,
   [35457431177](https://github.com/thejowe/lockin/actions/runs/35457431177)
   (`2c18854`), `supabase` y `mock` en verde en `attempt-01`, con
   `containers/` y `clock.json` en el artefacto.
+
+## `E2E Android (supabase)`: la puerta de registro obligatorio, apagada en el APK desechable (2026-09-20)
+
+Orden de `perfil`, no un rojo encontrado a ciegas: el commit `4b6efa4`
+(«registro obligatorio con email en el onboarding») encendió
+`registrationRequired` en `src/features/profile/account-gateway.ts` y dejó el
+interruptor de escape documentado en `todo/perfil.md` → «Un interruptor que hay
+que conocer», diciendo que el job caería **por diseño** hasta que `e2e/` lo
+usara. Solo `e2e/**` y este archivo.
+
+### 1. Que el rojo era ese, leído del run y no supuesto
+
+- [x] **Run [35476986324](https://github.com/thejowe/lockin/actions/runs/35476986324)**
+      (`4b6efa4`), trabajo `supabase`:
+      `[Failed] Alta, perfil, deck, match, mensaje y persistencia (1m 10s)`
+      con `Assertion is false: "Cofundador" is visible`, y el triaje
+      resolviendo `Reintentar el emulador: false — fallo real del caso`. Esa
+      afirmación es la **primera** de `full-journey.yaml` (línea 17, justo tras
+      el `launchApp`): la app ni llegaba a la pantalla de modo porque la puerta
+      la mandaba a `/register`. El trabajo `mock` pasó verde en el mismo run,
+      que es lo esperado: sin credenciales `accountsAvailable` es falso y
+      `registrationRequired` con él.
+- [x] **No era regresión de `e2e/` ni intermitente.** Un solo intento, sin
+      `appErrors`, con el recorrido muriendo siempre en el mismo comando.
+
+### 2. El arreglo: una variable en `buildEnv()`, solo en la variante positiva
+
+- [x] **`e2e/run.mjs` `buildEnv()` añade `EXPO_PUBLIC_REQUIRE_ACCOUNT: 'false'`**
+      al env de la build `supabase`. Es compilación, no ejecución: Expo la
+      incrusta en el bundle, así que tiene que ir en el `npm ci` /
+      `expo prebuild` / Gradle del comando `build`, que es exactamente donde
+      `buildEnv()` se usa (único punto, `run.mjs`).
+- [x] **El control negativo no se toca.** Sin credenciales la puerta ya estaba
+      apagada por `accountsAvailable`; meterle la variable habría sido ruido y
+      habría acercado las dos variantes, que es justo lo que el control no puede
+      permitirse.
+- [x] **`.github/workflows/e2e.yml` sin cambios.** La variable no es una
+      decisión del workflow sino de la build desechable, y ponerla en el `env`
+      del job la habría filtrado también al control negativo.
+
+### 3. Lo que este arreglo cuesta, dicho donde se ve
+
+- [x] **Anotado en `e2e/README.md` → «Qué demuestra»**, con la primera línea de
+      esa sección corregida de paso: decía «el MVP no tiene pantalla de
+      registro/login», falso desde `4b6efa4`.
+- [ ] **El agujero, abierto a propósito.** La pantalla de registro, el ascenso de
+      la sesión anónima (`linkEmailToCurrentUser` + `setAccountPassword`) y el
+      enlace del correo **no los recorre nadie en un dispositivo**: los cubre
+      solo Jest con dobles. Recorrerlos de verdad es posible sin proveedor de
+      correo —la CLI levanta Inbucket y `supabase status` da su `INBUCKET_URL`;
+      se leería el mensaje por su API y se abriría el enlace con
+      `adb shell am start -a android.intent.action.VIEW -d <url>`—, pero es un
+      caso nuevo entero (más un `assetlinks`/esquema que haga que el enlace
+      vuelva a la app) y cada pasada cuesta un emulador. No se hace aquí.
+- [x] **La puerta en sí sí está probada**, solo que no en emulador:
+      `account-gateway.test.ts` cubre que `EXPO_PUBLIC_REQUIRE_ACCOUNT=false` la
+      apaga y que cualquier otro valor (incluido `'0'`) la deja encendida.
+
+### Verificación
+
+- E2E: run
+  [35523944800](https://github.com/thejowe/lockin/actions/runs/35523944800)
+  (`35b2e9b`), **verde en las dos variantes al primer intento**. Comprobado
+  sobre el artefacto con `gh run download`, no sobre el resumen de la web:
+  `supabase/verdict.json` → un solo `attempt-01`, `pass`, `appErrors: []`,
+  «recorrido, persistencia y sesión Lock-In verificados»; su `postgres.json` →
+  `persistence`, `session`, `rating` y `streak` los cuatro `verified`; su
+  `logcat.txt` (1544 líneas) con la única línea `[lockin]` siendo
+  `backend de datos: Supabase`. `mock/verdict.json` → `pass` con
+  `failedCommand: 47` **después** del `stopAppCommand: 45`, así que el control
+  negativo sigue fallando donde debe.
+- `node --test "e2e/*.test.mjs"` — 70 casos, 69 pasados, 1 fallo: el caso CRLF
+  de `full-journey.test.mjs:118`, ruido de esta máquina.
+- `npx eslint e2e/run.mjs` — limpio. Formato comprobado comparando el archivo
+  con la salida de `prettier` ignorando finales de línea: idénticos.
