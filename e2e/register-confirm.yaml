@@ -1,0 +1,32 @@
+# Registro obligatorio con email, segunda mitad: la vuelta del enlace, la
+# contraseña y la puerta abierta. Lo lanza run.mjs DESPUÉS de abrir el enlace del
+# correo con `am start`, así que la app ya está en `/auth/callback` canjeando el
+# código. Sin `launchApp` al principio a propósito: relanzar la app mataría ese
+# canje a medias.
+appId: app.lockin.mobile
+name: Registro con email (2/2) — volver del correo, elegir contraseña y pasar la puerta
+---
+- assertTrue: ${EMAIL && PASSWORD}
+# El callback, sin perfil todavía, devuelve a `/register`, que ya cae en el paso
+# de la contraseña porque la cuenta es recuperable.
+- extendedWaitUntil:
+    visible: 'Elige tu contraseña'
+    timeout: 60000
+- assertVisible: 'Email confirmado: ${EMAIL}'
+- tapOn: 'Contraseña de tu cuenta|Tu contraseña'
+- inputText: ${PASSWORD}
+- hideKeyboard
+- tapOn: 'Guardar y continuar'
+# La puerta abierta: el onboarding sigue en la elección de modo.
+- extendedWaitUntil:
+    visible: 'Cofundador'
+    timeout: 30000
+# Y sigue abierta tras reiniciar: la puerta pregunta al servidor en cada montaje,
+# así que esto no lo puede sostener ningún estado en memoria de la app.
+- stopApp
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible: 'Cofundador'
+    timeout: 60000
+- assertNotVisible: 'Crea tu cuenta'

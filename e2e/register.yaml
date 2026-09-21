@@ -1,0 +1,27 @@
+# Registro obligatorio con email, primera mitad: la puerta, el email y el correo
+# pedido. Solo en la variante `registro`, la única cuyo APK lleva la puerta
+# encendida (`buildEnv` en run.mjs). Lo lanza run.mjs, que a continuación lee el
+# correo de Mailpit, resuelve el enlace de verificación contra GoTrue y abre el
+# `lockin://auth/callback?code=…` que devuelve con `am start`. La segunda mitad
+# es register-confirm.yaml. `e2e/register.test.mjs` fija las etiquetas contra el
+# código.
+appId: app.lockin.mobile
+name: Registro con email (1/2) — crear la cuenta y quedar a la espera del correo
+---
+- assertTrue: ${EMAIL}
+# Estado limpio: sin sesión guardada, la app abre una anónima al arrancar y la
+# puerta la manda a `/register`. Es la cuenta que se asciende, no otra.
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: 'Crea tu cuenta'
+    timeout: 60000
+- tapOn: 'Email de tu cuenta|tu@email.com'
+- inputText: ${EMAIL}
+# Justo tras teclear: el teclado está delante seguro, así que esto no es un
+# `pressBack` que saque a la app de la pantalla (ver hide-keyboard.test.mjs).
+- hideKeyboard
+- tapOn: 'Crear cuenta'
+- extendedWaitUntil:
+    visible: 'Confirma tu email'
+    timeout: 30000

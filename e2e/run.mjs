@@ -28,10 +28,13 @@ import {
   prepareSessionRating,
   prepareSessionStreak,
   verifyAbsence,
+  verifyPendingRegistration,
   verifyPersistence,
+  verifyRegistration,
   verifySessionAttendance,
   verifySessionRating,
 } from './verify.mjs';
+import { resolveVerifyLink, waitForVerifyLink } from './mail.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const runtime = join(root, 'e2e/.runtime');
@@ -45,6 +48,9 @@ const ratingFile = join(root, 'e2e/session-rate.yaml');
 // Cuarto caso, encadenado al anterior: la racha de pareja en Matches y en el
 // chat, con la sesión anterior que siembra `prepareSessionStreak`.
 const streakFile = join(root, 'e2e/session-streak.yaml');
+// El alta con email, en dos mitades con el correo en medio: solo en `registro`.
+const registerFile = join(root, 'e2e/register.yaml');
+const registerConfirmFile = join(root, 'e2e/register-confirm.yaml');
 // Nombre con el que Android llama a la app en sus propios diálogos. Se lee de
 // `app.json` para que no se quede atrás si el bloque `arquitecto` lo cambia: de
 // él depende poder decir si el "X no responde" de un ANR habla de nosotros.
@@ -62,7 +68,16 @@ const negative = process.env.E2E_NEGATIVE_CONTROL === '1';
 // mensaje" con el teclado delante, y detrás afirma el compositor deshabilitado
 // y la burbuja sin cerrarlo—, así que la sonda solo repetía una pregunta
 // cerrada a cambio de un emulador entero por push.
-const variant = negative ? 'mock' : 'supabase';
+// Tercera variante, `registro`: el APK lleva credenciales y la puerta de cuenta
+// obligatoria ENCENDIDA —la de `supabase` la apaga, ver `buildEnv`—, y lo único
+// que recorre es el alta con email: la pantalla «Crea tu cuenta», el correo que
+// deja GoTrue en Mailpit, el enlace de vuelta por `lockin://auth/callback` y la
+// contraseña. Va aparte y no delante de `full-journey.yaml` porque la puerta se
+// decide al compilar: meterla en el APK de `supabase` obligaría a tocar el caso
+// que comparte con el control negativo.
+const registration = process.env.E2E_REGISTRATION === '1';
+assert(!(negative && registration), 'El control negativo no tiene cuentas que registrar');
+const variant = negative ? 'mock' : registration ? 'registro' : 'supabase';
 // Expo ignores tsconfig aliases for any source path containing /node_modules/.
 // Keep the disposable app outside that path AND outside the checkout's TS glob.
 const appParent = resolve(tmpdir());
@@ -143,6 +158,15 @@ function buildEnv(status) {
   // credenciales — que es lo que lo hace control — pero ahora arranca y llega al
   // `stopApp`, donde tiene que fallar.
   if (negative) return { ...base, EXPO_PUBLIC_LOCKIN_ALLOW_MOCK: '1' };
+  // `registro` es una build de usuario en lo que importa aquí: sin
+  // `EXPO_PUBLIC_REQUIRE_ACCOUNT`, la puerta queda encendida.
+  if (registration) {
+    return {
+      ...base,
+      EXPO_PUBLIC_SUPABASE_URL: status.API_URL,
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: status.ANON_KEY,
+    };
+  }
   return {
     ...base,
     EXPO_PUBLIC_SUPABASE_URL: status.API_URL,
@@ -158,10 +182,8 @@ function buildEnv(status) {
     // variable y el alta le sigue exigiendo cuenta. El precio es que el registro
     // —la pantalla, el ascenso de la sesión anónima y el enlace del correo— no
     // lo recorre nadie en un dispositivo; queda cubierto solo por los tests de
-    // Jest con dobles. Recorrerlo de verdad pide leer el correo del Inbucket que
-    // levanta la CLI (`INBUCKET_URL` de `supabase status`) y abrir su enlace con
-    // `am start -a android.intent.action.VIEW`; anotado en
-    // docs/plan/todo/calidad.md, no se hace aquí.
+    // Jest con dobles. Lo recorre en un dispositivo la variante `registro`, con su
+    // propio APK: la puerta es de compilación y no cabe en los dos a la vez.
     EXPO_PUBLIC_REQUIRE_ACCOUNT: 'false',
   };
 }
@@ -414,6 +436,34 @@ if (command === 'prepare') {
   config = config
     .replace(/^project_id = .*$/m, 'project_id = "lockin-e2e"')
     .replace('enable_anonymous_sign_ins = false', 'enable_anonymous_sign_ins = true');
+  // El Auth del proyecto real tal y como lo dejó el usuario el 2026-09-20
+  // (`supabase/README.md` → «Configuración de Auth en el dashboard»), que es lo
+  // que el registro necesita y los valores por defecto de la CLI contradicen.
+  // Solo en `registro`: las otras dos variantes no tocan cuentas con email.
+  if (registration) {
+    const auth = [
+      // «Confirm email» ACTIVADO: sin él GoTrue confirma el cambio de email en el
+      // acto, no manda correo y la app nunca pasa por `pending-email`.
+      [/(\[auth\.email\][^[]*?)enable_confirmations = false/, '$1enable_confirmations = true'],
+      // «Secure email change» DESACTIVADO, como en el dashboard.
+      ['double_confirm_changes = true', 'double_confirm_changes = false'],
+      // `lockin://auth/callback` en Redirect URLs: sin él GoTrue cae en `site_url`.
+      [
+        'additional_redirect_urls = ["https://127.0.0.1:3000"]',
+        'additional_redirect_urls = ["https://127.0.0.1:3000", "lockin://auth/callback"]',
+      ],
+      // 2 correos/hora de la CLI no aguantan un reintento de Maestro más otro
+      // emulador: cada intento manda el suyo. No es algo que el caso pruebe.
+      ['email_sent = 2', 'email_sent = 10'],
+    ];
+    for (const [from, to] of auth) {
+      const patched = config.replace(from, to);
+      // Un no-op aquí dejaría el registro probando otra configuración que la de
+      // producción sin que nada lo dijera.
+      assert.notEqual(patched, config, 'Cambió el formato de config de Supabase: ' + from);
+      config = patched;
+    }
+  }
   writeFileSync(configPath, config);
   cpSync(join(root, 'supabase/migrations'), join(runtime, 'supabase/migrations'), {
     recursive: true,
@@ -490,6 +540,12 @@ if (command === 'build') {
       ? xml.replace(/android:usesCleartextTraffic="[^"]*"/, 'android:usesCleartextTraffic="true"')
       : xml.replace('<application ', '<application android:usesCleartextTraffic="true" ')
   );
+  // El enlace del correo vuelve por el esquema `lockin` de app.json, que
+  // `prebuild` convierte en un intent-filter. Sin él `am start` no encuentra a
+  // quién entregar el enlace; mejor saberlo aquí que tras 15 min de emulador.
+  if (registration) {
+    assert.match(xml, /android:scheme="lockin"/, 'El manifiesto no declara el esquema lockin://');
+  }
   // El daemon de Gradle se queda sin Metaspace compilando este árbol nativo.
   // Lo destapó el bloque `video` al meter `react-native-webrtc`: el primer build
   // que llegó a Gradle desde entonces murió en
@@ -788,13 +844,119 @@ if (command === 'test') {
     }
   }
 
+  /** Una pasada de Maestro con su propia carpeta de evidencia, que es la que lee `diagnose`. */
+  function maestroFlow(dir, file, vars) {
+    mkdirSync(dir, { recursive: true });
+    const result = spawnSync(
+      'maestro',
+      [
+        'test',
+        '--format',
+        'junit',
+        '--output',
+        join(dir, 'maestro.xml'),
+        '--debug-output',
+        dir,
+        '--test-output-dir',
+        dir,
+        '--flatten-debug-output',
+        ...Object.entries(vars).flatMap(([key, value]) => ['-e', key + '=' + value]),
+        file,
+      ],
+      { cwd: root, stdio: 'inherit' }
+    );
+    if (result.error) throw result.error;
+    return result.status;
+  }
+
+  /**
+   * Un intento de la variante `registro`: el alta con email de punta a punta.
+   *
+   *   register.yaml          → «Crea tu cuenta», email, «Confirma tu email»
+   *   oráculo                → la cuenta anónima espera ese email (su uid)
+   *   Mailpit → GoTrue       → el enlace del correo, resuelto a lockin://…?code=
+   *   am start               → el enlace entra en la app por el esquema
+   *   register-confirm.yaml  → contraseña, la puerta se abre y sigue abierta
+   *   oráculo                → mismo uid, email confirmado, la contraseña entra
+   *
+   * El email lleva el id del intento: un reintento no choca con la cuenta que el
+   * anterior dejara a medias, ni lee su correo.
+   */
+  async function registrationAttempt(dir) {
+    const runId = randomUUID();
+    const email = 'e2e-' + runId + '@example.com';
+    const password = 'E2e-' + randomUUID();
+    writeFileSync(join(dir, 'run.json'), JSON.stringify({ runId, variant, email }, null, 2));
+    const clock = {
+      recorridoEpoch: unixNow(),
+      recorridoIso: new Date().toISOString(),
+      dispositivoEpoch: adbEpoch(),
+    };
+    writeFileSync(join(dir, 'clock.json'), JSON.stringify(clock, null, 2));
+    spawnSync('adb', ['logcat', '-c'], { timeout: 10000 });
+    try {
+      if (maestroFlow(dir, registerFile, { EMAIL: email }) !== 0) {
+        const diagnosis = diagnose(dir);
+        return { outcome: diagnosis.kind, why: 'register.yaml: ' + diagnosis.why };
+      }
+      const userId = await verifyPendingRegistration(status, email);
+
+      const link = await waitForVerifyLink(status, email);
+      const callback = await resolveVerifyLink(link);
+      // El `code` es de un solo uso y ya es una credencial: al artefacto va sin él.
+      writeFileSync(
+        join(dir, 'mail.json'),
+        JSON.stringify(
+          {
+            email,
+            userId,
+            verifyLink: link.replace(/token=[^&]+/, 'token=…'),
+            callback: callback.replace(/code=[^&]+/, 'code=…'),
+          },
+          null,
+          2
+        )
+      );
+      // `adb shell` pasa la orden a un shell del dispositivo: entre comillas, o
+      // un `&` del enlace partiría la orden en dos.
+      run('adb', [
+        'shell',
+        "am start -W -a android.intent.action.VIEW -d '" + callback + "' app.lockin.mobile",
+      ]);
+
+      const confirmDir = join(dir, 'confirm');
+      if (
+        maestroFlow(confirmDir, registerConfirmFile, { EMAIL: email, PASSWORD: password }) !== 0
+      ) {
+        const diagnosis = diagnose(confirmDir);
+        return { outcome: diagnosis.kind, why: 'register-confirm.yaml: ' + diagnosis.why };
+      }
+      await verifyRegistration(status, email, password, userId);
+
+      writeFileSync(
+        join(dir, 'postgres.json'),
+        JSON.stringify({ runId, variant, userId, registration: 'verified' }, null, 2)
+      );
+      return {
+        outcome: 'pass',
+        why: 'registro con email verificado: correo, enlace, contraseña y mismo uid',
+      };
+    } catch (error) {
+      const setup = Boolean(error?.syscall) || error?.code === 'ENOENT';
+      return { outcome: setup ? 'desconocido' : 'caso', why: error.message };
+    } finally {
+      collectEvidence(dir);
+    }
+  }
+
   let last;
   for (let index = 1; index <= maestroAttempts; index += 1) {
     const dir = nextAttemptDir();
     console.log('\n=== Recorrido ' + variant + ', ' + basename(dir) + ' ===');
     // El logcat lo acaba de volcar el `finally` de `attempt`, así que se lee
     // aquí y entra en el veredicto con el intento, sea cual sea su desenlace.
-    last = { ...(await attempt(dir)), attempt: basename(dir), appErrors: appQueryErrors(dir) };
+    const outcome = registration ? await registrationAttempt(dir) : await attempt(dir);
+    last = { ...outcome, attempt: basename(dir), appErrors: appQueryErrors(dir) };
     recordVerdict(last);
     console.log('Veredicto de ' + basename(dir) + ': ' + last.outcome + ' — ' + last.why);
     reportAppErrors(last.appErrors, basename(dir));

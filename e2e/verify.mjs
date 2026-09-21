@@ -294,3 +294,54 @@ export async function verifySessionRating(status, profileName) {
   assert.equal(rows[0].rating, 'genial', 'El toque fue en "Genial"');
   console.log('Postgres: valoración de la sesión Lock-In verificada.');
 }
+
+function adminClient(status) {
+  assert.equal(status.API_URL, 'http://127.0.0.1:54321');
+  return createClient(status.API_URL, status.SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
+/**
+ * Oráculo de la primera mitad del registro (`register.yaml`): la cuenta que
+ * espera el correo es la anónima que abrió la app, con el email pedido como
+ * `new_email` y todavía sin él. Devuelve su id, que es lo que la segunda mitad
+ * tiene que conservar: el ascenso no puede abrir otra cuenta.
+ */
+export async function verifyPendingRegistration(status, email) {
+  const client = adminClient(status);
+  const { data, error } = await client.auth.admin.listUsers({ perPage: 1000 });
+  assert.ifError(error);
+  const pending = data.users.filter((user) => user.new_email === email);
+  assert.equal(pending.length, 1, 'Debe haber una sola cuenta esperando ' + email);
+  const [user] = pending;
+  assert.equal(user.is_anonymous, true, 'El registro asciende la sesión anónima, no abre otra');
+  assert(!user.email, 'Hasta pinchar el enlace la cuenta no tiene email: ' + user.email);
+  assert(!user.email_confirmed_at, 'Sin enlace pinchado no puede haber email confirmado');
+  console.log('Postgres: cuenta anónima ' + user.id + ' esperando la confirmación de su email.');
+  return user.id;
+}
+
+/**
+ * Oráculo del registro completo (`register-confirm.yaml`): la MISMA cuenta
+ * tiene ahora el email confirmado, ya no es anónima y entra con la contraseña
+ * que se tecleó. Esto último se prueba entrando de verdad con la clave anónima,
+ * como haría la app en otro teléfono: es lo que «recuperable» promete.
+ */
+export async function verifyRegistration(status, email, password, userId) {
+  const client = adminClient(status);
+  const { data, error } = await client.auth.admin.getUserById(userId);
+  assert.ifError(error);
+  assert.equal(data.user.email, email, 'El email confirmado es el que se tecleó');
+  assert(data.user.email_confirmed_at, 'El enlace del correo debe dejar el email confirmado');
+  assert.equal(data.user.is_anonymous, false, 'Tras confirmar, la cuenta deja de ser anónima');
+  assert(!data.user.new_email, 'No debe quedar ningún cambio de email pendiente');
+
+  const visitor = createClient(status.API_URL, status.ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const signedIn = await visitor.auth.signInWithPassword({ email, password });
+  assert.ifError(signedIn.error);
+  assert.equal(signedIn.data.user.id, userId, 'La contraseña abre la cuenta ascendida, no otra');
+  console.log('Postgres: registro verificado — mismo uid, email confirmado y contraseña válida.');
+}
