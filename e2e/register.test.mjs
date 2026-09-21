@@ -67,7 +67,10 @@ describe('el enlace del correo vuelve a la app', () => {
   it('por el esquema de app.json, el mismo que usa auth.ts', () => {
     assert.equal(app.expo.scheme, 'lockin');
     assert.equal(AUTH_CALLBACK, app.expo.scheme + '://auth/callback');
-    assert.match(auth, /Linking\.createURL\('\/auth\/callback'\)/);
+    // Sin barra inicial: `createURL('/auth/callback')` da `lockin:///auth/callback`
+    // en release y GoTrue lo manda a `site_url` (run 35656515945).
+    assert.match(auth, /Linking\.createURL\('auth\/callback'\)/);
+    assert.doesNotMatch(auth, /Linking\.createURL\('\//);
   });
 
   it('prepare lo permite en GoTrue y enciende la confirmación, como en el dashboard', () => {

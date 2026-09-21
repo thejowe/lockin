@@ -98,7 +98,8 @@ it('currentUserId distingue un fallo de una sesión ausente', async () => {
 describe('linkGithubIdentity', () => {
   it('vincula GitHub a la cuenta actual y canjea el code PKCE', async () => {
     await expect(linkGithubIdentity()).resolves.toBe(true);
-    expect(Linking.createURL).toHaveBeenCalledWith('/auth/callback');
+    // Sin barra: con ella, en release sale `lockin:///auth/callback` y GoTrue lo rechaza.
+    expect(Linking.createURL).toHaveBeenCalledWith('auth/callback');
     expect(auth.linkIdentity).toHaveBeenCalledWith({
       provider: 'github',
       options: { redirectTo: 'lockin://auth/callback', skipBrowserRedirect: true },

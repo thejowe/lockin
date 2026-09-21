@@ -77,9 +77,16 @@ const DEVICE_ACCOUNT_KEY = 'lockin.supabase.device-account';
  */
 const DEVICE_EMAIL_PATTERN = /^device-[0-9a-f]+@lockin\.app$/i;
 
-/** El destino de los enlaces que Supabase manda por correo. */
+/**
+ * El destino de los enlaces que Supabase manda por correo, y de la vuelta de GitHub.
+ *
+ * Sin barra inicial a propósito: en una build release `createURL('/auth/callback')`
+ * da `lockin:///auth/callback` (tres barras, host vacío), GoTrue no lo encuentra en
+ * Redirect URLs —la comparación es exacta— y manda el enlace a `site_url`, fuera
+ * de la app. Lo destapó el E2E de la variante `registro` (run 35656515945).
+ */
 function authRedirectUrl(): string {
-  return Linking.createURL('/auth/callback');
+  return Linking.createURL('auth/callback');
 }
 
 /* -------------------------------------------------------------------------- */
@@ -602,7 +609,7 @@ async function completeOAuthCallback(url: string): Promise<void> {
  */
 export async function linkGithubIdentity(): Promise<boolean> {
   const client = getSupabaseClient();
-  const redirectTo = Linking.createURL('/auth/callback');
+  const redirectTo = authRedirectUrl();
 
   const { data, error } = await client.auth.linkIdentity({
     provider: 'github',
