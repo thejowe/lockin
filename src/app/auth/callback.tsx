@@ -1,10 +1,10 @@
-import { useRouter } from 'expo-router';
-import { useCallback } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useMemo } from 'react';
 import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useRepositories } from '@/data';
-import { AuthCallback } from '@/features/profile';
+import { AuthCallback, authLinkFromParams } from '@/features/profile';
 
 /**
  * Ruta `lockin://auth/callback`: donde caen los enlaces de los correos de
@@ -22,6 +22,9 @@ import { AuthCallback } from '@/features/profile';
 export default function AuthCallbackRoute() {
   const router = useRouter();
   const repositories = useRepositories();
+  // Del router y no de `Linking.useURL()`: ver la cabecera de `AuthCallback`.
+  const params = useLocalSearchParams();
+  const url = useMemo(() => authLinkFromParams(params), [params]);
 
   // `replace` y no `push`: la pantalla del enlace no es un sitio al que se
   // pueda volver con el botón atrás — su código es de un solo uso.
@@ -35,7 +38,7 @@ export default function AuthCallbackRoute() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <AuthCallback onDone={goNext} />
+      <AuthCallback url={url} onDone={goNext} />
     </SafeAreaView>
   );
 }

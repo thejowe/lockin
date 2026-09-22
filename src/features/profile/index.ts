@@ -7,7 +7,7 @@
 
 export * from './catalog';
 export { AccountSection } from './account-section';
-export { AuthCallback } from './auth-callback';
+export { AuthCallback, authLinkFromParams } from './auth-callback';
 export { GithubSeal } from './github-seal';
 export { GithubVerification } from './github-verification';
 export { ProfileAvatar } from './profile-avatar';

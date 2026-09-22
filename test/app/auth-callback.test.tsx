@@ -33,6 +33,8 @@ jest.mock('@/features/profile', () => {
   const { Pressable, Text } = require('react-native');
 
   return {
+    // La real: es una función pura, y sin ella la ruta no tiene URL que pasar.
+    authLinkFromParams: jest.requireActual('@/features/profile/auth-callback').authLinkFromParams,
     AuthCallback: ({ onDone }: { onDone: () => void }) => (
       <Pressable accessibilityRole="button" onPress={onDone}>
         <Text>terminado</Text>
