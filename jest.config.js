@@ -37,17 +37,20 @@ module.exports = {
     '!src/**/index.ts',
     '!src/data/test-fixtures.ts',
   ],
-  // Suelo fijado a la cobertura real de la suite (2026-09-19, sobre `72bf34f`,
-  // medida con `npx jest --coverage --ci --runInBand`: 820 pasados, 84
-  // saltados, 72 de 73 suites). Anterior: 93.94/87.98/93.63/95.81, del
-  // 2026-09-18.
+  // Suelo fijado a la cobertura real de la suite (2026-09-23, sobre `949a071`,
+  // medida con `npx jest --coverage --ci --runInBand`: 948 pasados, 84
+  // saltados, 80 de 81 suites). Medida sobre un export limpio de ese commit
+  // (`git archive HEAD`), no sobre el árbol de trabajo: cuando el suelo sube,
+  // lo que lo justifica tiene que estar ya commiteado. Anterior:
+  // 94.36/89.09/93.94/95.96, del 2026-09-19 sobre `72bf34f`.
   // Se sube cuando la cobertura suba; no se bajan los umbrales ni se excluyen
   // archivos para dejar pasar un cambio.
   //
   // Los cuatro se truncan hacia abajo y no se redondean: los crudos son
-  // 94.365698 / 89.093298 / 93.946731 / 95.964487, y Jest compara contra el
-  // valor sin redondear. Poner 95.97 en `lines` dejaría el suelo POR ENCIMA de
-  // la cobertura real y el job `Calidad` saldría rojo el mismo día de subirlo.
+  // 94.641085 (2861/3023) / 89.520426 (1512/1689) / 94.279176 (824/874) /
+  // 96.190117 (2550/2651), y Jest compara contra el valor sin redondear.
+  // Poner 96.20 en `lines` dejaría el suelo POR ENCIMA de la cobertura real y
+  // el job `Tests` saldría rojo el mismo día de subirlo.
   //
   // Los saltados son `src/data/supabase/contract.test.ts`, que sigue siendo
   // opt-in (`LOCKIN_SUPABASE_CONTRACT=1`) porque escribe en la base a la que
@@ -90,6 +93,6 @@ module.exports = {
   //       `subscribeResyncingOnRejoin`, que quedó al 100 %.
   // Lo que no es una salida es bajar estos cuatro números ni excluir el archivo.
   coverageThreshold: {
-    global: { statements: 94.36, branches: 89.09, functions: 93.94, lines: 95.96 },
+    global: { statements: 94.64, branches: 89.52, functions: 94.27, lines: 96.19 },
   },
 };

@@ -3630,3 +3630,102 @@ No se ha tocado código: solo `docs/plan/todo/calidad.md` y `docs/plan/TODO.md`.
 - `gh run view 35899273763 --log-failed` para la causa del rojo de hoy.
 - `gh api repos/supabase/cli/contents/apps/cli-go/pkg/config/templates/Dockerfile?ref=<tag>`
   para las versiones de PostgREST de la CLI estable y la beta.
+
+## El suelo de cobertura sube a 94.64/89.52/94.27/96.19, y el `docker login` en ghcr.io no basta (2026-09-23)
+
+Dos cosas independientes de la misma pasada. La primera se cierra; la segunda
+deja el E2E igual de rojo que estaba, y se anota tal cual porque el log no deja
+lugar a interpretación.
+
+### 1. El suelo sube a lo que la suite mide de verdad
+
+`perfil` dejó anotado que la cobertura había subido y que no tocaba
+`jest.config.js` porque el archivo es de este bloque y el árbol estaba sucio.
+Confirmado aquí por una medida propia, no por la suya.
+
+- [x] **Medido sobre el árbol commiteado, no sobre el de trabajo.** El worktree
+      tiene en vuelo el trabajo de Codex (`e2e/`) y cambios sin commitear de
+      otros bloques; medir ahí ataría el suelo a código que no está en ninguna
+      rama. Procedimiento: `git archive HEAD | tar -x -C <tmp>` sobre `949a071`
+      (que ya contiene `862f81d`, `b567adc`, `42af3e5` y `16494ff`), un junction
+      de `node_modules` al del repo, y `npx jest --coverage --ci --runInBand`
+      dentro de esa copia. Es la misma idea que ya está escrita para verificar en
+      CI trabajo ajeno sin commitear, pero al revés: aquí lo que hace falta es
+      dejar fuera todo lo que aún no está en un commit.
+- [x] **Los números, con su fracción y sin redondear.**
+
+      | | crudo | cubierto/total | suelo nuevo | suelo anterior |
+      | --- | --- | --- | --- | --- |
+      | statements | 94.641085 | 2861/3023 | 94.64 | 94.36 |
+      | branches | 89.520426 | 1512/1689 | 89.52 | 89.09 |
+      | functions | 94.279176 | 824/874 | 94.27 | 93.94 |
+      | lines | 96.190117 | 2550/2651 | 96.19 | 95.96 |
+
+      Truncados hacia abajo, que es la regla escrita en el propio
+      `jest.config.js`: con `lines` a 96.20 el suelo quedaría por encima de la
+      cobertura real y `Tests` saldría rojo el mismo día de subirlo. Coinciden
+      con los cuatro que reportó `perfil`.
+- [x] **Verificado con el suelo nuevo puesto.** Segunda pasada completa en la
+      misma copia limpia con `jest.config.js` ya modificado: **948 pasados, 84
+      saltados, 80 de 81 suites**, `All files 94.64 | 89.52 | 94.27 | 96.19` y
+      **código de salida 0**. El saltado sigue siendo el de contrato opt-in.
+
+### 2. `docker login ghcr.io` puesto en los tres workflows — y el run siguió rojo
+
+Las imágenes del Supabase desechable se bajaban anónimamente, y ahí ghcr.io
+limita por IP, una IP que comparte todo el pool de runners de Actions. Eso fue
+lo que mató el run 35899273763 en sus tres trabajos.
+
+- [x] **Montado y commiteado en `949a071`:** un paso
+      `echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin`
+      con el `GITHUB_TOKEN` del propio trabajo, más `packages: read` en los
+      `permissions`, en `e2e.yml` (antes de `prepare`), y en los otros dos
+      workflows que levantan la misma Supabase local y tenían el mismo agujero:
+      `contract.yml` y `schema-drift.yml`. Las imágenes ya eran públicas: el
+      token no da acceso a nada nuevo.
+- [ ] **No ha servido, y esto es el resultado, no una excusa.** Run
+      [35904260226](https://github.com/thejowe/lockin/actions/runs/35904260226)
+      (`949a071`): los **tres** trabajos muertos otra vez en `Supabase desechable
+      con migraciones reales`, sin levantar un contenedor. El paso de login sí
+      pasó en los tres (`Login Succeeded`, y el aviso de credenciales sin cifrar
+      en `/home/runner/.docker/config.json`), y aun así:
+
+      ```
+      Error response from daemon: toomanyrequests: retry-after: 453.054µs, allowed: 44000/minute
+      Retrying after 4s: ghcr.io/supabase/gotrue:v2.196.0
+      …
+      error pulling image configuration: download failed after attempts=1: toomanyrequests: retry-after: 685.87µs, allowed: 44000/minute; ghcr.io/supabase/postgres-meta:v0.98.0 attempt 3: Error response from daemon: toomanyrequests: retry-after: 245.511µs, allowed: 44000/minute
+      ```
+
+- [x] **Y no es que la CLI ignore el login.** En el código de la versión que usa
+      el workflow (`gh api repos/supabase/cli/contents/apps/cli-go/internal/utils/docker.go?ref=v2.116.0`),
+      `DockerImagePull` pasa `RegistryAuth: GetRegistryAuthForImage(imageTag)` y
+      `loadRegistryAuth` lee el `config.json` por defecto de Docker, el mismo que
+      escribe `docker login`. O sea: la credencial llegó al pull y ghcr.io
+      respondió `toomanyrequests` igual. El límite que estamos tocando no es el
+      de anónimo por IP, o el pool entero lo está agotando por su cuenta.
+- [ ] **Lo que queda por probar, en este orden.** (a) Pre-bajar las imágenes con
+      `docker pull` y reintentos antes de `supabase start`, para que la CLI las
+      encuentre en caché —tiene la ventaja de que el reintento es nuestro y se
+      puede alargar—; (b) dejar de fijar `SUPABASE_INTERNAL_IMAGE_REGISTRY` para
+      que la CLI caiga a `public.ecr.aws`, que es su registro por defecto (`const
+      defaultRegistry = "public.ecr.aws"` en ese mismo archivo) — **esto lo está
+      tocando la sesión de Codex en `e2e/run.mjs`**, así que desde aquí no se
+      duplica. El `docker login` se queda puesto: no cuesta nada, y sin él la
+      opción (a) tampoco estaría autenticada.
+- [x] **Caché de imágenes entre runs: descartado, y por qué.** Guardar los
+      `docker save` de siete imágenes son ~2 GB por clave de caché, contra los
+      10 GB que GitHub da al repo entero, y el restore hay que pagarlo también
+      en los runs que hoy pasan sin problema. No se mete un mecanismo así sin
+      poder enseñar que gana tiempo; con los datos de hoy no se puede.
+
+### Verificación de esta pasada
+
+- `npx jest --coverage --ci --runInBand` sobre un export limpio de `949a071`,
+  dos veces: con el suelo viejo (para medir) y con el nuevo (para verificar,
+  salida 0).
+- `npx prettier --check` sobre copias con finales LF de los tres workflows
+  tocados: limpias. En el árbol de Windows `format:check` sigue siendo ruido
+  CRLF, así que el veredicto de `Formato` se lee del log de CI.
+- `gh run view 35904260226 --log-failed` y `--log` para el rojo y para el
+  `Login Succeeded` de los tres trabajos.
