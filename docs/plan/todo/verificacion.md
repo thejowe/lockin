@@ -134,8 +134,10 @@ rojo del job remoto es deriva real.
 
 ## Pendiente del usuario
 
-Ninguna de estas cuatro la puede cerrar un agente. Hasta entonces el bloque
-está probado contra el mock y contra PGlite, que es donde llega el desarrollo.
+Las tres primeras eran del usuario (dashboard y SQL Editor). La cuarta la hace
+el agente `comprobador` en el emulador; del usuario solo hace falta su login de
+GitHub en el navegador del emulador. Hasta entonces el bloque está probado
+contra el mock y contra PGlite, que es donde llega el desarrollo.
 
 - [x] Crear una GitHub OAuth App y poner client ID y secret en
       Authentication → Providers → GitHub del dashboard de Supabase, con la
@@ -145,8 +147,11 @@ está probado contra el mock y contra PGlite, que es donde llega el desarrollo.
 - [x] Aplicar `20260916000100_github_verification.sql` en
       `grrzmzktrhksbttpbblg` por el SQL Editor — **hecho el 2026-09-17**,
       confirmado por el cotejo remoto (ver arriba).
-- [ ] Verificar el flujo en un dispositivo con el dev client de EAS: el OAuth
-      necesita un navegador de verdad y un deep link de vuelta.
+- [ ] **[comprobador]** Verificar el flujo en el emulador con un APK nativo
+      (no Expo Go) contra Supabase real: el OAuth necesita un navegador de
+      verdad y un deep link de vuelta (`lockin://`). Evidencia: el sello en
+      la tab Perfil y `github_*` rellenos en `profiles`. El usuario teclea su
+      login de GitHub cuando el agente se lo pida.
 
 ## Runs de CI sobre el commit de cierre (`5170f64`)
 

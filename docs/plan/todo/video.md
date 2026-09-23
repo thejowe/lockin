@@ -164,9 +164,14 @@ qué puede solaparse).
 
 ## Pendiente del usuario
 
-- [ ] `eas build --profile development` para confirmar que el plugin nativo
-      de `react-native-webrtc` (Tarea 1) compila de verdad en iOS/Android.
-- [ ] Con ese build en dos móviles reales: abrir la misma sesión Lock-In
+- [ ] **[comprobador]** Android: compilar en local (`npx expo run:android`)
+      para confirmar que el plugin nativo de `react-native-webrtc` (Tarea 1)
+      compila, y en el emulador que la pantalla de sesión carga el módulo
+      real (no el aviso de `'no-disponible'`) y pide permisos de cámara/mic.
+- [ ] iOS (usuario): `eas build --profile development` para confirmar que
+      el plugin compila también en iOS — el emulador no lo cubre.
+- [ ] (usuario — el emulador no sirve: su cámara es una escena de juguete)
+      Con ese build en dos móviles reales: abrir la misma sesión Lock-In
       desde los dos, comprobar que la llamada conecta (STUN público, sin
       TURN — puede no conectar en redes con NAT simétrico, ver la spec,
       "Qué problema resuelve, y cuál no") y que cámara y audio se ven/oyen
@@ -186,3 +191,5 @@ qué puede solaparse).
       registra `NativeModules.WebRTCModule` para el doble.
 - [ ] Sin verificar en dispositivo: abrir la app en Expo Go (iPhone) y
       comprobar que arranca y que la pantalla de sesión muestra el aviso.
+      Es iOS: sigue siendo del usuario. **[comprobador]** puede cubrir la
+      mitad Android (Expo Go en el emulador + `npx expo start`).

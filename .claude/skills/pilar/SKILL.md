@@ -25,7 +25,7 @@ Aplica las dependencias de `docs/plan/PLAN.md`: `arquitecto` bloquea al resto; `
 
 ## 4. Genera las órdenes para lanzar
 
-Separa lo que toca lanzar según la etiqueta de cada tarea: `[Claude]` —o sin etiquetar porque cruza bloques— va al paso 4a; `[Codex]`, al 4b. Si hay de las dos listas a la vez, dilo, y recuerda el aviso de `git worktree` de `PLAN.md` si el usuario va a correr ambas herramientas en paralelo en la misma máquina.
+Separa lo que toca lanzar según la etiqueta de cada tarea: `[Claude]` —o sin etiquetar porque cruza bloques— va al paso 4a; `[Codex]`, al 4b; `[comprobador]` (comprobar algo en un dispositivo), al 4c. Si hay de las dos listas a la vez, dilo, y recuerda el aviso de `git worktree` de `PLAN.md` si el usuario va a correr ambas herramientas en paralelo en la misma máquina.
 
 ### 4a. Para Claude Code
 
@@ -62,6 +62,21 @@ etiqueta [Codex]) y anota brevemente qué hiciste, igual que las demás entradas
 ```
 
 Rellena "Hazlo así" con el detalle real que encontraste en el paso 1 — qué archivos existen ya como referencia, qué patrón siguen los tests o el código vecino. Una instrucción vaga es el error más caro con Codex, porque no hay enrutado automático que la reinterprete.
+
+### 4c. Para el agente `comprobador`
+
+Toda casilla que pida comprobar algo en un dispositivo —lleve `[comprobador]` o
+aún diga «a mano», «en el Expo Go del usuario» o «en un dispositivo»— se lanza
+con el agente `comprobador` (emulador Android local), no se deja al usuario. Del
+usuario solo queda lo que el emulador no puede dar: iOS, dos teléfonos físicos,
+o teclear credenciales personales. Como no escribe código, puede ir en paralelo
+con cualquier bloque. Formato:
+
+```
+Actúa como el agente `comprobador` definido en .claude/agents/comprobador.md.
+Comprueba: <la casilla, citada de docs/plan/todo/<bloque>.md>.
+Backend: <mock | Supabase real>. Commit: <HEAD actual>.
+```
 
 ## 5. Si algo no cuadra, dilo primero
 

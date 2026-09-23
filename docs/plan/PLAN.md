@@ -22,9 +22,31 @@ Por eso una tarea abierta en `todo/<bloque>.md` puede llevar etiqueta de herrami
 
 - **`[Codex]`** — acotada a un archivo o carpeta, criterio de terminado objetivo.
 - **`[Claude]`** — cruza bloques, o es una decisión con criterio subjetivo, o necesita releer el roadmap.
+- **`[comprobador]`** — comprobar en un dispositivo que algo funciona (ver «Comprobaciones en dispositivo» abajo). La lanza Claude Code con el agente `comprobador`, no Codex.
 - **Sin etiqueta** — bloqueada (faltan credenciales, o herramientas que no existen en el sandbox) o todavía sin decidir.
 
 Etiquetar es opcional: sirve cuando de verdad vas a repartir. `/pilar` lee estas etiquetas y, si hay tareas abiertas de las dos clases, genera una orden por herramienta en el mismo turno — formato de subagente para Claude Code, instrucción explícita autocontenida para Codex (ver `.claude/skills/pilar/SKILL.md`).
+
+### Comprobaciones en dispositivo: el agente `comprobador`
+
+Toda comprobación que antes decía «a mano», «en el Expo Go del usuario» o «probar
+en un dispositivo» la hace ahora el agente `comprobador`
+(`.claude/agents/comprobador.md`): arranca el emulador Android local (AVD
+`lockin`), compila e instala el APK, recorre la app con `adb` y deja evidencia
+(capturas, `uiautomator dump`, logcat) en `e2e/artifacts/local/`. Cuando la señal
+está en CI, lee los runs de `e2e.yml` con `gh`.
+
+- **No es un bloque**: no tiene alcance de archivos de producto ni checklist
+  propia. Solo lee código; lo que encuentra lo anota en el `todo/<bloque>.md` del
+  responsable («Hallazgos del comprobador») y no marca casillas ajenas.
+- Puede correr **a la vez que cualquier bloque**, porque no escribe código — pero
+  comprueba lo que hay en el árbol en ese momento: di siempre sobre qué commit
+  compiló y contra qué backend (mock o Supabase).
+- **Sigue siendo del usuario** lo que el emulador no puede dar: iOS, dos
+  teléfonos físicos (la cámara del emulador es de juguete, así que la
+  videollamada real no se da por comprobada con él), e introducir credenciales
+  personales (la cuenta de GitHub del OAuth, por ejemplo) — en ese caso el
+  agente prepara todo en el emulador y el usuario solo escribe la contraseña.
 
 ### Reglas de siempre
 
@@ -47,6 +69,7 @@ flowchart TD
         CALIDAD["✅ calidad<br/>tests, lint, CI"]
     end
     PILAR["🧭 pilar (skill)<br/>status + próximas órdenes"]
+    COMPROBADOR["📱 comprobador (agente)<br/>emulador Android + evidencia"]
 
     ARQ --> PERFIL
     ARQ --> DESCUBRIR
@@ -157,8 +180,10 @@ Realtime Broadcast (sin tabla nueva ni credenciales adicionales). Diseño en
   el hueco de vídeo sin tocar la lógica de fases/asistencia/valoración que ya
   hay — coordinación con `sesiones`, dueño original de ese archivo).
 - **No funciona en Expo Go ni en export web** — necesita build de dev client
-  (EAS, ya configurado en el repo). La verificación real entre dos
-  dispositivos la cierra el usuario, no un agente.
+  (EAS, ya configurado en el repo). Que el plugin nativo compila en Android y
+  que la pantalla de sesión arranca con el módulo real lo comprueba el agente
+  `comprobador` en el emulador; la llamada real entre dos dispositivos físicos
+  (cámara y audio de verdad) y iOS siguen siendo del usuario.
 - **Sin bloqueo de credenciales**: Supabase Realtime ya está configurado y
   STUN público no necesita cuenta — a diferencia de `datos`, este bloque no
   espera nada del usuario para avanzar el código.
@@ -203,8 +228,10 @@ nadie lo descubra a mitad:
 - Cero dependencias nuevas y ninguna build nativa: `expo-web-browser`,
   `expo-linking` y `"scheme": "lockin"` ya estaban.
 - Depende de: nada del código — no toca Fase 2. **Del usuario sí**: GitHub OAuth
-  App en el dashboard, «Enable Manual Linking», aplicar la migración y probar el
-  flujo en un dispositivo. Ver `todo/verificacion.md` → "Pendiente del usuario".
+  App en el dashboard, «Enable Manual Linking» y aplicar la migración (hecho).
+  Probar el flujo en un dispositivo lo hace el agente `comprobador` en el
+  emulador; el usuario solo introduce su login de GitHub. Ver
+  `todo/verificacion.md` → "Pendiente del usuario".
 
 ## Orden recomendado de trabajo
 

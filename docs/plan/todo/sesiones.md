@@ -130,6 +130,11 @@ Plan: `docs/superpowers/plans/2026-09-13-sesiones-lockin.md`. Una casilla por ta
 > notificación local disparándose con la app cerrada, y `TODO.md` ya deja
 > escrito, a cuenta de otro episodio, que marcar una casilla no es haberla
 > verificado.
+- [ ] **[comprobador]** Volver a comprobar con evidencia el aviso de 5
+  minutos antes con la app cerrada, en el emulador contra Supabase real
+  (captura de la notificación + logcat), para que la casilla de arriba deje
+  de descansar solo en la palabra del usuario. La presencia entre dos
+  clientes sigue necesitando dos dispositivos.
 - [x] Contrato opt-in contra Supabase (`LOCKIN_SUPABASE_CONTRACT=1`) con los casos de sesiones en verde —
   **contra Supabase local desechable, no contra `grrzmzktrhksbttpbblg`**
   (2026-09-14, decisión del usuario: salida Docker local). No se ejecuta
