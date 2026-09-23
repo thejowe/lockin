@@ -3704,6 +3704,14 @@ lo que mató el run 35899273763 en sus tres trabajos.
       escribe `docker login`. O sea: la credencial llegó al pull y ghcr.io
       respondió `toomanyrequests` igual. El límite que estamos tocando no es el
       de anónimo por IP, o el pool entero lo está agotando por su cuenta.
+- [x] **El mismo minuto se llevó por delante `Contrato Supabase`.** En el run de
+      CI del mismo commit ([35904260740](https://github.com/thejowe/lockin/actions/runs/35904260740)),
+      ese trabajo murió en `Supabase desechable con migraciones y seed del repo`
+      con el mismo `toomanyrequests` y después de su propio `Login Succeeded`.
+      Y a las 18:18Z, 24 minutos antes, el mismo trabajo había pasado en verde
+      (run 35901538809, `3d0ed0b`, sin login ninguno). Es una ventana mala del
+      registro, no algo que dependa de este repo: mientras dura, ni autenticado
+      se baja una imagen.
 - [ ] **Lo que queda por probar, en este orden.** (a) Pre-bajar las imágenes con
       `docker pull` y reintentos antes de `supabase start`, para que la CLI las
       encuentre en caché —tiene la ventaja de que el reintento es nuestro y se
