@@ -1,5 +1,6 @@
 // Linux/macOS runner. Backend state stays in e2e/.runtime; the app uses OS temp.
 import assert from 'node:assert/strict';
+import { createClient } from '@supabase/supabase-js';
 import { spawnSync } from 'node:child_process';
 import {
   appendFileSync,
@@ -34,7 +35,7 @@ import {
   verifySessionAttendance,
   verifySessionRating,
 } from './verify.mjs';
-import { resolveVerifyLink, waitForVerifyLink } from './mail.mjs';
+import { mailpitUrl, resolveVerifyLink, waitForVerifyLink } from './mail.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const runtime = join(root, 'e2e/.runtime');
@@ -51,6 +52,8 @@ const streakFile = join(root, 'e2e/session-streak.yaml');
 // El alta con email, en dos mitades con el correo en medio: solo en `registro`.
 const registerFile = join(root, 'e2e/register.yaml');
 const registerConfirmFile = join(root, 'e2e/register-confirm.yaml');
+const signInFile = join(root, 'e2e/sign-in.yaml');
+const passwordResetFile = join(root, 'e2e/password-reset.yaml');
 // Nombre con el que Android llama a la app en sus propios diálogos. Se lee de
 // `app.json` para que no se quede atrás si el bloque `arquitecto` lo cambia: de
 // él depende poder decir si el "X no responde" de un ANR habla de nosotros.
@@ -70,7 +73,7 @@ const negative = process.env.E2E_NEGATIVE_CONTROL === '1';
 // cerrada a cambio de un emulador entero por push.
 // Tercera variante, `registro`: el APK lleva credenciales y la puerta de cuenta
 // obligatoria ENCENDIDA —la de `supabase` la apaga, ver `buildEnv`—, y lo único
-// que recorre es el alta con email: la pantalla «Crea tu cuenta», el correo que
+// que recorre es el alta y la recuperación con email: la pantalla «Crea tu cuenta», el correo que
 // deja GoTrue en Mailpit, el enlace de vuelta por `lockin://auth/callback` y la
 // contraseña. Va aparte y no delante de `full-journey.yaml` porque la puerta se
 // decide al compilar: meterla en el APK de `supabase` obligaría a tocar el caso
@@ -878,6 +881,11 @@ if (command === 'test') {
    *   am start               → el enlace entra en la app por el esquema
    *   register-confirm.yaml  → contraseña, la puerta se abre y sigue abierta
    *   oráculo                → mismo uid, email confirmado, la contraseña entra
+   *   perfil fixture         → ficha única en ese uid, antes de borrar el estado
+   *   sign-in.yaml           → instalación limpia, entrar y recuperar esa ficha
+   *   password-reset.yaml    → request, correo, am start, confirm
+   *   sign-in.yaml           → instalación limpia con la contraseña nueva
+   *   oráculo                → mismo uid y perfil; la contraseña vieja rechazada
    *
    * El email lleva el id del intento: un reintento no choca con la cuenta que el
    * anterior dejara a medias, ni lee su correo.
@@ -933,13 +941,136 @@ if (command === 'test') {
       }
       await verifyRegistration(status, email, password, userId);
 
+      // El alta acaba en modo, sin ficha. Este fixture prepara la precondición
+      // «ya tiene perfil», sin convertir este caso en otro full-journey.
+      assert.equal(status.API_URL, 'http://127.0.0.1:54321');
+      const admin = createClient(status.API_URL, status.SERVICE_ROLE_KEY, {
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+      const profileName = 'E2E-' + runId;
+      const { error: profileError } = await admin.from('profiles').insert({
+        id: userId,
+        name: profileName,
+        age: 28,
+        location: 'Barcelona',
+        timezone: 'Europe/Madrid',
+        avatar_initials: 'E2',
+        avatar_accent: 'teal',
+        specialties: ['dev'],
+        seeking_specialties: ['diseno'],
+        looking_for: 'ambos',
+        starting_point: 'solo-ganas',
+        availability_hours_per_week: 10,
+        availability_bands: ['tarde'],
+        ambition: 'equilibrado',
+        prompts: [{ question: 'Busco a alguien que…', answer: 'Construya en equipo' }],
+      });
+      assert.ifError(profileError);
+      // El nombre que Maestro ve en Perfil pertenece SOLO al uid del registro.
+      // Leerlo de nuevo tras cada entrada ata la evidencia de UI a Postgres.
+      async function verifyRecoveredProfile(currentPassword) {
+        await verifyRegistration(status, email, currentPassword, userId);
+        const { data, error } = await admin
+          .from('profiles')
+          .select('id')
+          .eq('name', profileName)
+          .single();
+        assert.ifError(error);
+        assert.equal(data.id, userId, 'La ficha recuperada pertenece al uid registrado');
+      }
+      const vars = { EMAIL: email, PASSWORD: password, PROFILE_NAME: profileName };
+      const signInDir = join(dir, 'sign-in');
+      if (maestroFlow(signInDir, signInFile, vars) !== 0) {
+        const diagnosis = diagnose(signInDir);
+        return { outcome: diagnosis.kind, why: 'sign-in.yaml: ' + diagnosis.why };
+      }
+      await verifyRecoveredProfile(password);
+
+      // waitForVerifyLink exige un solo mensaje. Retirar únicamente el correo
+      // ya consumido de ESTE intento antes de pedir el de recuperación.
+      const mailbox = mailpitUrl(status);
+      const search = await fetch(
+        mailbox + '/api/v1/search?query=' + encodeURIComponent('to:"' + email + '"')
+      );
+      assert(search.ok, 'No se pudo localizar el correo de alta consumido');
+      const { messages } = await search.json();
+      assert.equal(messages.length, 1, 'Debe quedar exactamente el correo del alta');
+      const removed = await fetch(mailbox + '/api/v1/messages', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ IDs: messages.map((message) => message.ID) }),
+      });
+      assert(removed.ok, 'No se pudo retirar el correo de alta consumido');
+
+      const newPassword = 'E2e-reset-' + randomUUID();
+      const resetVars = { ...vars, NEW_PASSWORD: newPassword };
+      const requestDir = join(dir, 'password-reset-request');
+      if (maestroFlow(requestDir, passwordResetFile, { ...resetVars, PHASE: 'request' }) !== 0) {
+        const diagnosis = diagnose(requestDir);
+        return { outcome: diagnosis.kind, why: 'password-reset request: ' + diagnosis.why };
+      }
+      const recoveryLink = await waitForVerifyLink(status, email);
+      assert.equal(new URL(recoveryLink).searchParams.get('type'), 'recovery');
+      const recoveryCallback = await resolveVerifyLink(recoveryLink);
+      writeFileSync(
+        join(dir, 'recovery-mail.json'),
+        JSON.stringify(
+          {
+            email,
+            userId,
+            verifyLink: recoveryLink.replace(/token=[^&]+/, 'token=…'),
+            callback: recoveryCallback.replace(/code=[^&]+/, 'code=…'),
+          },
+          null,
+          2
+        )
+      );
+      run('adb', [
+        'shell',
+        "am start -W -a android.intent.action.VIEW -d '" + recoveryCallback + "' app.lockin.mobile",
+      ]);
+      const resetDir = join(dir, 'password-reset-confirm');
+      if (maestroFlow(resetDir, passwordResetFile, { ...resetVars, PHASE: 'confirm' }) !== 0) {
+        const diagnosis = diagnose(resetDir);
+        return { outcome: diagnosis.kind, why: 'password-reset confirm: ' + diagnosis.why };
+      }
+      await verifyRecoveredProfile(newPassword);
+      const visitor = createClient(status.API_URL, status.ANON_KEY, {
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+      const oldLogin = await visitor.auth.signInWithPassword({ email, password });
+      assert.equal(
+        oldLogin.error?.code,
+        'invalid_credentials',
+        'La contraseña anterior debe fallar por credenciales, no por red ni servidor'
+      );
+      assert.equal(oldLogin.data.session, null);
+      const newSignInDir = join(dir, 'sign-in-new-password');
+      if (maestroFlow(newSignInDir, signInFile, { ...vars, PASSWORD: newPassword }) !== 0) {
+        const diagnosis = diagnose(newSignInDir);
+        return { outcome: diagnosis.kind, why: 'sign-in nueva contraseña: ' + diagnosis.why };
+      }
+      await verifyRecoveredProfile(newPassword);
+
       writeFileSync(
         join(dir, 'postgres.json'),
-        JSON.stringify({ runId, variant, userId, registration: 'verified' }, null, 2)
+        JSON.stringify(
+          {
+            runId,
+            variant,
+            userId,
+            profileName,
+            registration: 'verified',
+            signIn: 'verified',
+            passwordReset: 'verified',
+          },
+          null,
+          2
+        )
       );
       return {
         outcome: 'pass',
-        why: 'registro con email verificado: correo, enlace, contraseña y mismo uid',
+        why: 'registro, entrada y recuperación verificados: mismo uid y contraseña anterior rechazada',
       };
     } catch (error) {
       const setup = Boolean(error?.syscall) || error?.code === 'ENOENT';
