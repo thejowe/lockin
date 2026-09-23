@@ -1,0 +1,35 @@
+# La cuenta y su perfil único los prepara registrationAttempt antes de borrar
+# el estado. La ficha recuperada distingue su uid del anónimo del nuevo arranque.
+appId: app.lockin.mobile
+name: Entrar en la cuenta existente desde una instalación limpia
+---
+- assertTrue: ${EMAIL && PASSWORD && PROFILE_NAME}
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: 'Crea tu cuenta'
+    timeout: 60000
+- tapOn: 'Ya tengo cuenta'
+- extendedWaitUntil:
+    visible: 'Vuelve a tu cuenta'
+    timeout: 30000
+- tapOn: 'Email de tu cuenta|tu@email.com'
+- inputText: ${EMAIL}
+- hideKeyboard
+- tapOn: 'Contraseña de tu cuenta|Tu contraseña'
+- inputText: ${PASSWORD}
+- hideKeyboard
+- tapOn: 'Entrar'
+- extendedWaitUntil:
+    visible: 'Matches'
+    timeout: 60000
+- assertNotVisible: 'Crea tu cuenta'
+- assertNotVisible: 'Continuar'
+- tapOn: 'Perfil'
+- extendedWaitUntil:
+    visible: ${PROFILE_NAME}
+    timeout: 30000
+- scrollUntilVisible:
+    element: 'Email de tu cuenta: ${EMAIL}'
+    direction: DOWN
+- assertVisible: 'Email de tu cuenta: ${EMAIL}'

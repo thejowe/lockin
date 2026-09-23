@@ -3753,3 +3753,59 @@ lo que mató el run 35899273763 en sus tres trabajos.
   CRLF, así que el veredicto de `Formato` se lee del log de CI.
 - `gh run view 35904260226 --log-failed` y `--log` para el rojo y para el
   `Login Succeeded` de los tres trabajos.
+
+
+## Entrada y recuperación de contraseña en Android (2026-09-23)
+
+- [x] **Recuperar la cuenta del alta desde una instalación limpia.** La variante
+  `registro` continúa tras `register-confirm.yaml`: el runner prepara una ficha
+  con nombre único y un modo activo para el mismo uid confirmado; `sign-in.yaml`
+  borra el almacenamiento, entra desde «Ya tengo cuenta» con las credenciales
+  del alta y comprueba las tabs, esa ficha y su email. No vuelve al onboarding.
+- [x] **Restablecer la contraseña por el correo real de GoTrue.**
+  `password-reset.yaml` pide el correo desde otra instalación limpia. El runner
+  retira solo el correo de alta consumido, reutiliza `mail.mjs`, exige un enlace
+  `type=recovery`, resuelve el 303 y lo abre con `am start`. La segunda fase
+  conserva PKCE y guarda la nueva contraseña desde Perfil. Después se vuelve a
+  entrar desde cero con ella. El oráculo relee el perfil y el modo, exige el uid
+  original y comprueba que la contraseña vieja devuelve `invalid_credentials`
+  sin sesión. Las claves `signIn` y `passwordReset` solo se escriben `verified`
+  tras completar todo el recorrido.
+- [x] **Guardas y documentación.** Siete casos nuevos de `node:test` fijan las
+  etiquetas contra producto, el uso de `hideKeyboard` tras teclear y el orden
+  de correo, callback, oráculos y entrada final. Recorrido y límites descritos
+  en `e2e/README.md`. Sin cambios en producto, workflow ni migraciones.
+
+### Qué demuestra y qué no
+
+Demuestra entrada y recuperación con almacenamiento local vacío, la puerta de
+cuenta encendida, Supabase local real y la misma identidad y ficha del alta.
+No demuestra SMTP externo, dos móviles físicos, iOS ni el salto navegador → app:
+el runner resuelve la redirección de GoTrue y Android entrega el callback.
+La ficha y su modo son un fixture; este caso no prueba su creación por formulario.
+
+### Evidencia
+
+- **E2E Android verde en las tres variantes**, sobre `3d0ed0b`: [run
+  35901538450](https://github.com/thejowe/lockin/actions/runs/35901538450).
+  Artefactos descargados con `gh run download` y leídos, no solo el resumen:
+  - `registro/verdict.json`: `pass`, `attempt-01`, `appErrors: []`; seis pasadas
+    Maestro sin fallos. `postgres.json`: `registration`, `signIn` y
+    `passwordReset` en `verified`, uid `a01179b6-751f-4276-b8e9-9136ebd18c0c`.
+  - `supabase/verdict.json`: `pass`, `attempt-01`, `appErrors: []`;
+    `persistence`, `session`, `rating` y `streak` en `verified`.
+  - `mock/verdict.json`: `pass`, `attempt-01`, `appErrors: []`; comando fallido
+    **47**, después de `stopApp` **45**, y persistencia ausente en Postgres.
+- El run necesitó dos reintentos del job `mock`, ambos por infraestructura antes
+  de Maestro: puerto 54324 ocupado y después HTTP 403 de Maven Central. Los dos
+  positivos pasaron en la primera ejecución; el tercer intento del job `mock`
+  pasó. No se reintentó una aserción fallida del caso.
+- Antes, el run 35899273763 cayó tres veces descargando imágenes de GHCR por
+  `toomanyrequests`. Dentro de `run.mjs` se retira en Actions la fijación de GHCR
+  heredada de `setup-cli`: la CLI 2.116.0 recupera sus alternativas oficiales
+  ECR/GHCR/origen, sin cambiar etiquetas. El artefacto de `registro` confirma
+  PostgREST **v16.3** y GoTrue **v2.196.0** desde ECR.
+- `npm run test:e2e`: **88 casos, 87 pasan y solo falla el CRLF preexistente**
+  de `full-journey.test.mjs:118` en Windows; siete nuevos pasan. ESLint de
+  `e2e/run.mjs` limpio. CI general verde: [run
+  35901538809](https://github.com/thejowe/lockin/actions/runs/35901538809).

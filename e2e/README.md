@@ -17,18 +17,12 @@ Alta anónima automática → selección de modo → formulario completo → dec
 → modal de match → chat → envío → **parada del proceso y relanzamiento sin
 borrar almacenamiento** → perfil y conversación recuperados desde la UI.
 
-**La puerta de registro va apagada aquí, y eso es un agujero conocido.** Desde
-el 2026-09-20 el alta exige una cuenta con email confirmado
-(`registrationRequired` en `src/features/profile/account-gateway.ts`), así que
-`buildEnv()` compila este APK con `EXPO_PUBLIC_REQUIRE_ACCOUNT=false`: el
-recorrido no tiene buzón donde pinchar el enlace de confirmación y sin apagarla
-se quedaría en «Crea tu cuenta» antes de elegir modo. Una build de usuario no
-lleva la variable. Consecuencia: la pantalla de registro, el ascenso de la
-sesión anónima (`linkEmailToCurrentUser` + `setAccountPassword`) y el enlace
-del correo **no los recorre nadie en un dispositivo**; solo los cubren tests de
-Jest con dobles. Recorrerlos pide leer el correo del Inbucket que levanta la
-CLI (`INBUCKET_URL` de `supabase status`) y abrir su enlace con
-`am start -a android.intent.action.VIEW`.
+**La puerta de registro va apagada en `supabase`.** `buildEnv()` compila ese
+APK con `EXPO_PUBLIC_REQUIRE_ACCOUNT=false` para recorrer el producto desde
+el alta anónima. La variante `registro` tiene la puerta encendida y recorre
+el email, el correo de Mailpit, el callback y la contraseña, seguidos de la
+entrada y la recuperación de cuenta descritas más abajo. Una build de usuario
+no lleva esa variable.
 
 Incluye los dos lados de `seekingSpecialties`, que es lo único que la prueba de
 punta a punta: se declara en el formulario ("Lo que debe dominar quien busco",
@@ -529,3 +523,44 @@ Recorrido supabase verde en attempt-01.
 Al primer intento y sin reintentos. El workflow completo sigue rojo: el control
 negativo se para en `¡Match!` porque la primera tarjeta del orden del mock no
 está en `SEED_RECIPROCAL_IDS` (`src/data/mock/seed.ts`).
+
+## Entrada y recuperación de cuenta en `registro`
+
+La variante `registro` encadena el alta existente (`register.yaml` y
+`register-confirm.yaml`) con `sign-in.yaml` y `password-reset.yaml`. No necesita
+otra entrada en la matriz ni cambia `supabase` o el control negativo `mock`.
+
+El alta termina sin ficha, en la elección de modo. El runner prepara en Postgres
+un perfil con nombre único y su modo activo para ese mismo uid confirmado.
+`sign-in.yaml` borra
+el estado, pulsa «Ya tengo cuenta», entra con el email y la contraseña del alta
+y comprueba las tabs, la ficha única y el email de la cuenta recuperada.
+
+`password-reset.yaml` corre en dos fases (`request` y `confirm`). La primera
+borra otra vez el estado y pide el correo desde «He olvidado mi contraseña».
+Entre ambas el runner usa `mailpitUrl`, `waitForVerifyLink` y `resolveVerifyLink`
+de `mail.mjs`, exige `type=recovery` y abre el callback con `am start`. Antes de
+pedirlo retira solo el correo de alta ya consumido de ese intento, porque el
+lector exige un único mensaje por destinatario. La segunda fase conserva el
+verificador PKCE, comprueba la ficha recuperada y guarda la contraseña nueva
+desde Perfil. Por último, `sign-in.yaml` vuelve a entrar desde cero con ella.
+
+El oráculo relee el perfil por su nombre único, exige el uid del registro y
+comprueba contra GoTrue que la nueva contraseña entra en esa cuenta y la vieja
+devuelve `invalid_credentials`, sin sesión. Solo después escribe `signIn` y
+`passwordReset` como `verified`, junto a `registration`, `userId` y `profileName`
+en `registro/attempt-XX/postgres.json`. El resultado global está en
+`registro/verdict.json`; cada fase tiene su propia carpeta de evidencia Maestro.
+`recovery-mail.json` conserva el enlace con token y código ocultos.
+
+Esto demuestra recuperación con almacenamiento local vacío en el emulador y
+Supabase local real. No demuestra SMTP externo, dos móviles físicos, iOS ni el
+salto navegador → app: el runner resuelve el 303 y entrega el enlace por Android,
+igual que en el alta. El perfil previo es un fixture, no otra prueba del
+formulario de creación de ficha. `sign-in.test.mjs` fija las etiquetas contra
+producto y el orden de las fases; el veredicto del recorrido lo da Actions.
+
+El runner retira en Actions la fijación de GHCR que hereda de `setup-cli`: la
+CLI 2.116.0 usa así sus alternativas oficiales (ECR, GHCR y origen), conservando
+las versiones de las imágenes. El run 35899273763 falló tres veces al descargar
+de GHCR por `toomanyrequests`, antes de compilar ninguno de los tres APK.
