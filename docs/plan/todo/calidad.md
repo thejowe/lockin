@@ -3344,7 +3344,12 @@ condiciones de *medirla* y evaluar quitarla en CI. Solo `e2e/**`,
       `ghcr.io/supabase/postgrest:v16.3 estado=running` en las dos variantes.
       Estable en la única medida que hay: 1 run, verde, con la guarda pasando.
 - [x] **Sin calentamiento previo a PostgREST**, como se pidió.
-- [ ] **Lo que se pierde con esto, para decidir con los ojos abiertos.** En CI la
+- [x] **Lo que se pierde con esto, para decidir con los ojos abiertos.** *(Medido
+      el 2026-09-23: 12 trabajos, 16 intentos, 0 `PGRST303`; la repetición no ha
+      actuado ni una vez. Pero la semana que esta misma nota pedía NO ha pasado
+      —2 d 11 h de runs con la fijación—, así que v16.3 sigue sin estar probado.
+      Los números, en «El registro con email sí se recorre en un emulador, y el
+      recuento de la fijación de PostgREST», al final del archivo.)* En CI la
       repetición ya no tendrá ocasión de actuar: con v16.3 el bug no existe, y por
       tanto el `warn` no saldrá jamás. No demuestra que v16.3 lo arregle —un
       verde no prueba una ausencia; antes salía en 1 de 3 intentos, no siempre—:
@@ -3356,7 +3361,10 @@ condiciones de *medirla* y evaluar quitarla en CI. Solo `e2e/**`,
       `v16.3`, y `workflow_dispatch` no tiene input para cambiarlo) y esperar a
       que toque. Queda abierta a propósito.
 - [ ] **Retirar la fijación** cuando una CLI estable levante PostgREST ≥ v16.3 por
-      defecto (`resumen.txt` lo dirá sin la fijación).
+      defecto (`resumen.txt` lo dirá sin la fijación). *(Recomprobado el
+      2026-09-23 y sigue sin tocar: `latest` es 2.117.0 —el mismo del
+      2026-09-19— y su `templates/Dockerfile` trae `postgrest:v16.2`; solo
+      `2.118.0-beta.72` trae v16.3. Detalle al final del archivo.)*
 
 ### 4. Casillas de este archivo que estaban obsoletas
 
@@ -3421,8 +3429,16 @@ usara. Solo `e2e/**` y este archivo.
 - [x] **Anotado en `e2e/README.md` → «Qué demuestra»**, con la primera línea de
       esa sección corregida de paso: decía «el MVP no tiene pantalla de
       registro/login», falso desde `4b6efa4`.
-- [ ] **El agujero, abierto a propósito.** La pantalla de registro, el ascenso de
-      la sesión anónima (`linkEmailToCurrentUser` + `setAccountPassword`) y el
+- [x] **El agujero, abierto a propósito.** *(CERRADO el 2026-09-22 por `b788b04`
+      + `cd33cac` + `0dd7388`, y comprobado el 2026-09-23 sobre el artefacto del
+      run 35686717809: existe la tercera variante `registro` en la matriz de
+      `e2e.yml`, con `mail.mjs`, `register.yaml` y `register-confirm.yaml`, y el
+      recorrido entero —correo, enlace por `lockin://auth/callback`, contraseña,
+      mismo uid— sale `pass`. Lo de abajo está obsoleto en dos cosas más: el
+      correo lo sirve **Mailpit**, no Inbucket, y no hizo falta `assetlinks`
+      porque el enlace vuelve por el esquema. Sigue sin recorrerse «Ya tengo
+      cuenta»; todo el detalle en la sección del final del archivo.)* La pantalla
+      de registro, el ascenso de la sesión anónima (`linkEmailToCurrentUser` + `setAccountPassword`) y el
       enlace del correo **no los recorre nadie en un dispositivo**: los cubre
       solo Jest con dobles. Recorrerlos de verdad es posible sin proveedor de
       correo —la CLI levanta Inbucket y `supabase status` da su `INBUCKET_URL`;
@@ -3451,3 +3467,166 @@ usara. Solo `e2e/**` y este archivo.
   de `full-journey.test.mjs:118`, ruido de esta máquina.
 - `npx eslint e2e/run.mjs` — limpio. Formato comprobado comparando el archivo
   con la salida de `prettier` ignorando finales de línea: idénticos.
+
+## El registro con email sí se recorre en un emulador, y el recuento de la fijación de PostgREST (2026-09-23)
+
+Pasada de diagnóstico y anotación: **no se tocó `e2e/`** (hay una sesión de Codex
+trabajando ahí: `e2e/sign-in.yaml`, `e2e/sign-in.test.mjs` y
+`e2e/password-reset.yaml` están sin commitear en este árbol) ni
+`.github/workflows/e2e.yml`. Solo `docs/`. Toda la evidencia sale de
+`gh run download`, no del resumen de la web.
+
+### 1. La casilla «El agujero, abierto a propósito» estaba obsoleta
+
+Lo estaba desde `b788b04` («test(e2e): recorre el registro con email en un
+emulador»). Hoy la matriz de `.github/workflows/e2e.yml` tiene **tres** variantes
+—`supabase`, `mock` y `registro`— y la tercera no es otra pasada del mismo caso,
+sino uno propio: `register.yaml` + `register-confirm.yaml`, con `e2e/mail.mjs`
+leyendo el correo. Dos detalles de la nota vieja que ya no valen: el correo no lo
+sirve Inbucket sino **Mailpit**, y el enlace no necesita `assetlinks` porque
+vuelve por el **esquema** `lockin://auth/callback`.
+
+- [x] **Run [35686717809](https://github.com/thejowe/lockin/actions/runs/35686717809)**
+      (`0dd7388`, el HEAD de la rama), trabajo `E2E Android (registro)`
+      (`106615006159`), verde. Bajado el artefacto `e2e-android-registro`:
+      - `verdict.json` → `outcome: pass`, pero **no al primer intento**: tres
+        entradas, `attempt-01` y `attempt-02` con `outcome: runner` y el mismo
+        `why` («un diálogo ANR del sistema tapaba la pantalla, "System UI isn't
+        responding"»), y `attempt-03` con `pass`, `why: "registro con email
+        verificado: correo, enlace, contraseña y mismo uid"`. `appErrors: []` en
+        las tres y en la raíz.
+      - `attempt-03/mail.json` → email `e2e-a960ae3b-…@example.com`, `userId`
+        `105243a4-b17e-4ca3-a63f-938b9bc70b5e`, `verifyLink`
+        `…/auth/v1/verify?token=…&type=email_change&redirect_to=lockin://auth/callback`
+        y `callback` `lockin://auth/callback?code=…` — el token y el `code` van
+        elididos **a propósito** en el artefacto (`run.mjs`: «ya es una
+        credencial»).
+      - `attempt-03/postgres.json` → `{ variant: "registro", userId: "105243a4-…",
+        registration: "verified" }`. El oráculo (`e2e/verify.mjs`
+        `verifyRegistration`) comprueba mismo uid, email confirmado y que la
+        contraseña entra.
+      - `commands.json` de los dos flujos, **todos los comandos `COMPLETED`**:
+        `register.yaml` recorre «Crea tu cuenta» → email → «Crear cuenta» →
+        «Confirma tu email»; `register-confirm.yaml`, tras el
+        `am start -a android.intent.action.VIEW -d 'lockin://auth/callback?code=…'`,
+        recorre «Elige tu contraseña», la aserción `Email confirmado: ${EMAIL}`,
+        la contraseña, «Guardar y continuar» → «Cofundador», y después un
+        `stopApp` + `launchApp` con `clearState: false` que vuelve a exigir
+        «Cofundador» visible y **«Crea tu cuenta» NO visible**: la puerta se abre
+        y **sigue abierta**.
+      - `attempt-03/logcat.txt`, 5848 líneas: la única línea `[lockin]` es
+        `backend de datos: Supabase`, y **0** coincidencias con `PGRST`, `JWT`,
+        `rechaz` o `se repite`.
+- [x] **El caso no es decorativo: pilló dos bugs reales antes de ponerse verde.**
+      Run [35656515945](https://github.com/thejowe/lockin/actions/runs/35656515945)
+      (`b788b04`) → `caso`: «GoTrue redirigió a `http://127.0.0.1:3000?code=…` y
+      no a `lockin://auth/callback`» (lo arregló `cd33cac`). Run
+      [35658934499](https://github.com/thejowe/lockin/actions/runs/35658934499)
+      (`cd33cac`) → `caso` en `attempt-03`: `Assertion is false: "Elige tu
+      contraseña" is visible` (lo arregló `0dd7388`, el canje con la app ya
+      abierta). Dos rojos que solo un dispositivo podía dar.
+- [x] **Lo que cuesta, con su número:** la variante `registro` gastó **3
+      emuladores** en cada uno de los dos runs que llegaron al final
+      (35658934499: `runner`, `runner`, `caso`; 35686717809: `runner`, `runner`,
+      `pass`). Los cuatro primeros intentos se perdieron por intermitentes del
+      runner —dos ANR de System UI, uno `device offline`—, no por el caso. Es el
+      trabajo más frágil de la matriz ahora mismo; si sigue así, merece una
+      pasada propia.
+
+### 2. Lo que sigue sin recorrer nadie en un dispositivo
+
+- [ ] **Entrar con «Ya tengo cuenta»** (`src/app/(onboarding)/sign-in.tsx` +
+      `src/features/profile/sign-in-form.tsx`), **«He olvidado mi contraseña»**
+      (`sign-in-form.tsx:253`) y la rama de abandono del perfil irrecuperable
+      (`abandonsUnrecoverableProfile`, `sign-in-form.tsx:88`). Los cubre solo
+      Jest con dobles. **Lanzado a Codex en paralelo**: en este árbol ya hay
+      `e2e/sign-in.yaml`, `e2e/sign-in.test.mjs` y `e2e/password-reset.yaml` sin
+      commitear, y el run
+      [35899273763](https://github.com/thejowe/lockin/actions/runs/35899273763)
+      (`25aa014`, «recover registered accounts after clean install») es de esa
+      sesión. **No cerrar esta casilla desde aquí**: la cierra quien entregue ese
+      trabajo.
+- [x] **El rojo de hoy (35899273763) no es de ese trabajo ni de la fijación.**
+      Los **tres** trabajos murieron en `Supabase desechable con migraciones
+      reales`, sin levantar un solo contenedor (`containers/resumen.txt`: «no hay
+      contenedores supabase_rest_/supabase_auth_ (¿cayó prepare?)»,
+      `phases.json`: `backend: failure`, `build`/`journey` `skipped`). La causa
+      está en el log: `toomanyrequests: retry-after: …, allowed: 44000/minute` de
+      `ghcr.io` al tirar de `postgres:17.6.1.165`, `kong`, `gotrue`, `realtime`,
+      `storage-api` y `postgres-meta`. Límite del registro, no código.
+      Curiosamente **`postgrest:v16.3` sí se descargó** («Status: Downloaded
+      newer image for ghcr.io/supabase/postgrest:v16.3»): la fijación no tuvo
+      nada que ver.
+
+### 3. Fijación de PostgREST a v16.3: la cuenta, con números
+
+La nota decía que «una semana de runs sin `PGRST303` sostendría la decisión».
+Contado con `gh run list -w "E2E Android" -L 100` y `gh run download` de **todos**
+los runs posteriores a `2c18854` (el commit que aplicó la fijación):
+
+| Run | Commit | Trabajos con backend Supabase | Intentos | `PGRST303` |
+| --- | --- | --- | --- | --- |
+| 35457431177 | `2c18854` | supabase | 1 | 0 |
+| 35458834384 | `80cfbfc` | supabase | 1 | 0 |
+| 35463168841 | `f2a26f1` | supabase | 1 | 0 |
+| 35474537960 | `9818fbb` | supabase | 1 | 0 |
+| 35476986324 | `4b6efa4` | supabase | 1 (`caso`: la puerta) | 0 |
+| 35523944800 | `35b2e9b` | supabase | 1 | 0 |
+| 35525456376 | `b68cbc8` | supabase | 1 | 0 |
+| 35656515945 | `b788b04` | registro | 1 (`caso`) | 0 |
+| 35658934499 | `cd33cac` | registro + supabase | 3 + 1 | 0 |
+| 35686717809 | `0dd7388` | registro + supabase | 3 + 1 | 0 |
+| 35899273763 | `25aa014` | — (cayó `prepare`) | 0 | — |
+
+- [x] **Lo que se pierde con la fijación, ya medido y no supuesto.** **12
+      trabajos** con backend Supabase real llegaron al emulador y sumaron **16
+      intentos**. En los 16, `grep -r "PGRST303"` sobre el artefacto entero
+      (logcat de la app, `device-logcat.txt` de Maestro, logs de los contenedores,
+      `verdict.json`) da **0 coincidencias**, y ningún `verdict.json` trae
+      `appErrors`. Es decir: **la repetición de `resilient-fetch.ts` no ha
+      actuado ni una sola vez desde que se fijó v16.3**, exactamente como la nota
+      preveía. Los `resumen.txt` de los 10 runs que levantaron contenedores dicen
+      los 10 `ghcr.io/supabase/postgrest:v16.3 estado=running`, así que la guarda
+      de `prepare` hizo su trabajo.
+- [x] **Y la condición del bug se cumplía en todos.** De `containers/resumen.txt`
+      (`arranque` de `supabase_rest_*`) a `attempt-NN/clock.json`
+      (`recorridoIso`), PostgREST llevaba parado entre **15,9 y 25,8 minutos**
+      (mediana **18,4**) antes de la primera petición de cada intento. El desfase
+      runner↔emulador de `clock.json` fue **0 o −1 s** en los 16. Matiz honrado:
+      solo el `attempt-01` de cada trabajo mide «inactividad desde el arranque»
+      limpia —el oráculo de `e2e/verify.mjs` también habla por PostgREST
+      (`supabase-js`), así que en los reintentos hubo tráfico por medio—; eso deja
+      **12 medidas limpias**, una por trabajo.
+- [ ] **La semana NO ha pasado, y este es el dato incómodo.** Los runs con la
+      fijación van del **2026-09-19T17:15Z** al **2026-09-22T04:25Z**: **2 días y
+      11 horas**, no siete. Hoy es 2026-09-23 y el único run del día
+      (35899273763) no llegó a arrancar PostgREST. Con el listón que puso la
+      propia nota, la barra se alcanzaría el **2026-09-26T17:15Z** si los runs
+      siguen llegando. Lo que a día de hoy está probado es que **la fijación hace
+      lo que prometía** (16/16 intentos sin el 401, con inactividad de ~18 min en
+      todos); lo que **sigue sin estar probado** es que v16.3 arregle el bug —un
+      verde no prueba una ausencia, y el baseline con el que comparar es flaco:
+      «1 de 3 intentos» de una sola tarde. Se deja abierta con fecha, no con
+      impresión: **volver a contar a partir del 2026-09-26**, con el mismo
+      procedimiento de esta sección.
+- [ ] **Retirar la fijación** sigue sin tocar, y hoy se ha vuelto a comprobar por
+      qué: `npm view supabase dist-tags` → `latest` **2.117.0** (el mismo del
+      2026-09-19), `beta` 2.118.0-beta.72. Y en el propio repo de la CLI,
+      `apps/cli-go/pkg/config/templates/Dockerfile`: la etiqueta `v2.117.0` trae
+      `FROM postgrest/postgrest:v16.2` y solo `v2.118.0-beta.72` trae
+      `postgrest:v16.3`. La estable **todavía no levanta ≥ v16.3**, y el workflow
+      además fija la CLI en 2.116.0 (v16.1). Por eso `.github/workflows/e2e.yml`
+      no se toca en esta pasada.
+
+### Verificación de esta pasada
+
+No se ha tocado código: solo `docs/plan/todo/calidad.md` y `docs/plan/TODO.md`.
+
+- `gh run list -R thejowe/lockin -w "E2E Android" -L 100` → 49 runs desde el
+  2026-09-16, 11 de ellos posteriores a la fijación.
+- `gh run download` de los 11 (artefactos completos, ~58 MB por run) a un
+  directorio temporal; `grep -r "PGRST303"` → 0, y `grep -rh "postgrest"` sobre
+  los `resumen.txt` → v16.3 en los 10 que levantaron contenedores.
+- `gh run view 35899273763 --log-failed` para la causa del rojo de hoy.
+- `gh api repos/supabase/cli/contents/apps/cli-go/pkg/config/templates/Dockerfile?ref=<tag>`
+  para las versiones de PostgREST de la CLI estable y la beta.
