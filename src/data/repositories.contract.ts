@@ -209,19 +209,28 @@ export function describeRepositoryContract(backend: ContractBackend): void {
         return { ...handlers, leave };
       }
 
-      async function connected(...handlers: { onConnection: jest.Mock }[]) {
+      async function connection(online: boolean, ...handlers: { onConnection: jest.Mock }[]) {
         await eventually(() => {
           for (const handler of handlers)
-            expect(handler.onConnection).toHaveBeenLastCalledWith(true);
+            expect(handler.onConnection).toHaveBeenLastCalledWith(online);
         });
       }
 
-      it('presencia distingue ausente de aquí, incluye el perfil propio y avisa al salir', async () => {
+      async function peers(handler: { onPeers: jest.Mock }, ids: string[]) {
+        await eventually(() => expect(handler.onPeers).toHaveBeenLastCalledWith(ids));
+      }
+
+      async function alone() {
         const a = presence(mine, fixture.currentUserId);
-        await connected(a);
-        await eventually(() => expect(a.onPeers).toHaveBeenLastCalledWith([fixture.currentUserId]));
+        await connection(true, a);
+        await peers(a, [fixture.currentUserId]);
+        return a;
+      }
+
+      it('presencia distingue ausente de aquí, incluye el perfil propio y avisa al salir', async () => {
+        const a = await alone();
         const b = presence(theirs, fixture.reciprocalAId);
-        await connected(b);
+        await connection(true, b);
         await eventually(() => {
           for (const handler of [a, b]) {
             const peers = handler.onPeers.mock.calls.at(-1)![0];
@@ -231,14 +240,14 @@ export function describeRepositoryContract(backend: ContractBackend): void {
           }
         });
         b.leave();
-        await eventually(() => expect(a.onPeers).toHaveBeenLastCalledWith([fixture.currentUserId]));
+        await peers(a, [fixture.currentUserId]);
       });
 
       it('presencia aísla sesiones y salir deja de recibir cambios', async () => {
         const a = presence(mine, fixture.currentUserId);
         const b = presence(theirs, fixture.reciprocalAId);
         const c = presence(other, fixture.reciprocalBId, otherSessionId);
-        await connected(a, b, c);
+        await connection(true, a, b, c);
         await eventually(() => {
           expect(a.onPeers).toHaveBeenLastCalledWith(
             expect.arrayContaining([fixture.reciprocalAId])
@@ -249,7 +258,7 @@ export function describeRepositoryContract(backend: ContractBackend): void {
         a.onPeers.mockClear();
         b.leave();
         const back = presence(theirs, fixture.reciprocalAId);
-        await connected(back);
+        await connection(true, back);
         await eventually(() =>
           expect(back.onPeers).toHaveBeenLastCalledWith([fixture.reciprocalAId])
         );
@@ -268,7 +277,7 @@ export function describeRepositoryContract(backend: ContractBackend): void {
         const b = presence(theirs, fixture.reciprocalAId);
         const second = await fixture.realtimeFor(fixture.reciprocalAId);
         const b2 = presence(second, fixture.reciprocalAId);
-        await connected(a, b, b2);
+        await connection(true, a, b, b2);
         const both = [fixture.currentUserId, fixture.reciprocalAId].sort();
         await eventually(() => {
           expect(b2.onPeers.mock.calls.at(-1)![0].slice().sort()).toEqual(both);
@@ -278,7 +287,7 @@ export function describeRepositoryContract(backend: ContractBackend): void {
         await fixture.elapse(500);
         expect(a.onPeers.mock.calls.at(-1)![0].slice().sort()).toEqual(both);
         b2.leave();
-        await eventually(() => expect(a.onPeers).toHaveBeenLastCalledWith([fixture.currentUserId]));
+        await peers(a, [fixture.currentUserId]);
       });
 
       // Sin cable en el mock no hay caída que provocar. Reutiliza la capacidad
@@ -287,25 +296,15 @@ export function describeRepositoryContract(backend: ContractBackend): void {
       itWithNetworkDrop(
         'presencia distingue sin conexión y recupera los presentes al volver',
         async () => {
-          const a = presence(mine, fixture.currentUserId);
-          const b = presence(theirs, fixture.reciprocalAId);
-          await connected(a, b);
-          await eventually(() =>
-            expect(a.onPeers).toHaveBeenLastCalledWith(
-              expect.arrayContaining([fixture.reciprocalAId])
-            )
-          );
+          const a = await alone();
           try {
             await backend.dropRealtime!();
-            await eventually(() => expect(a.onConnection).toHaveBeenLastCalledWith(false));
-            b.leave();
+            await connection(false, a);
           } finally {
             await backend.restoreRealtime!();
           }
-          await connected(a);
-          await eventually(() =>
-            expect(a.onPeers).toHaveBeenLastCalledWith([fixture.currentUserId])
-          );
+          await connection(true, a);
+          await peers(a, [fixture.currentUserId]);
         }
       );
 
@@ -315,7 +314,7 @@ export function describeRepositoryContract(backend: ContractBackend): void {
           const a = signal(mine, fixture.currentUserId);
           const b = signal(theirs, fixture.reciprocalAId);
           const c = signal(other, fixture.reciprocalBId, otherSessionId);
-          await connected(a, b, c);
+          await connection(true, a, b, c);
           const payload = kind === 'hangup' ? null : { value: kind, nested: { number: 1 } };
           const fromA = { kind, from: fixture.currentUserId, payload };
           const fromB = { kind, from: fixture.reciprocalAId, payload };
@@ -333,7 +332,7 @@ export function describeRepositoryContract(backend: ContractBackend): void {
       it('señalización deja de recibir al salir y vuelve a recibir al entrar', async () => {
         const a = signal(mine, fixture.currentUserId);
         const b = signal(theirs, fixture.reciprocalAId);
-        await connected(a, b);
+        await connection(true, a, b);
         const message: VideoSignalMessage = {
           kind: 'hangup',
           from: fixture.currentUserId,
@@ -347,7 +346,7 @@ export function describeRepositoryContract(backend: ContractBackend): void {
         await fixture.elapse(500);
         expect(b.onMessage).not.toHaveBeenCalled();
         const back = signal(theirs, fixture.reciprocalAId);
-        await connected(back);
+        await connection(true, back);
         mine.videoSignal.send(sessionId, message);
         await eventually(() => expect(back.onMessage).toHaveBeenCalledWith(message));
         expect(b.onMessage).not.toHaveBeenCalled();
@@ -358,7 +357,7 @@ export function describeRepositoryContract(backend: ContractBackend): void {
         const b = signal(theirs, fixture.reciprocalAId);
         const extra = await fixture.realtimeFor(fixture.currentUserId);
         const a2 = signal(extra, fixture.currentUserId);
-        await connected(a, b, a2);
+        await connection(true, a, b, a2);
         const message: VideoSignalMessage = {
           kind: 'offer',
           from: fixture.currentUserId,
@@ -382,7 +381,7 @@ export function describeRepositoryContract(backend: ContractBackend): void {
             kind === 'presence'
               ? presence(theirs, fixture.reciprocalAId)
               : signal(theirs, fixture.reciprocalAId);
-          await connected(peer);
+          await connection(true, peer);
           theirs.videoSignal.send(sessionId, {
             kind: 'hangup',
             from: fixture.reciprocalAId,
@@ -392,6 +391,104 @@ export function describeRepositoryContract(backend: ContractBackend): void {
           for (const callback of Object.values(handlers)) expect(callback).not.toHaveBeenCalled();
         }
       );
+
+      it('señalización no reproduce mensajes enviados antes de entrar', async () => {
+        const a = signal(mine, fixture.currentUserId);
+        await connection(true, a);
+        mine.videoSignal.send(sessionId, {
+          kind: 'offer',
+          from: fixture.currentUserId,
+          payload: 'vieja',
+        });
+        await fixture.elapse(500);
+        const b = signal(theirs, fixture.reciprocalAId);
+        await connection(true, b);
+        const fresh: VideoSignalMessage = {
+          kind: 'answer',
+          from: fixture.currentUserId,
+          payload: 'nueva',
+        };
+        mine.videoSignal.send(sessionId, fresh);
+        await eventually(() => expect(b.onMessage).toHaveBeenCalledWith(fresh));
+        await fixture.elapse(500);
+        expect(b.onMessage.mock.calls).toEqual([[fresh]]);
+      });
+
+      it('cada pantalla del receptor recibe y cerrar una conserva la otra', async () => {
+        const a = signal(mine, fixture.currentUserId);
+        const b = signal(theirs, fixture.reciprocalAId);
+        const second = await fixture.realtimeFor(fixture.reciprocalAId);
+        const b2 = signal(second, fixture.reciprocalAId);
+        await connection(true, a, b, b2);
+        const first: VideoSignalMessage = {
+          kind: 'offer',
+          from: fixture.currentUserId,
+          payload: 'primera',
+        };
+        mine.videoSignal.send(sessionId, first);
+        await eventually(() => {
+          expect(b.onMessage).toHaveBeenCalledWith(first);
+          expect(b2.onMessage).toHaveBeenCalledWith(first);
+        });
+        b.leave();
+        b.onMessage.mockClear();
+        const last: VideoSignalMessage = {
+          kind: 'hangup',
+          from: fixture.currentUserId,
+          payload: null,
+        };
+        mine.videoSignal.send(sessionId, last);
+        await eventually(() => expect(b2.onMessage).toHaveBeenCalledWith(last));
+        await fixture.elapse(500);
+        expect(b.onMessage).not.toHaveBeenCalled();
+        expect(b2.onMessage.mock.calls).toEqual([[first], [last]]);
+      });
+
+      it('cerrar una sesión conserva la señalización de otra en el mismo adaptador', async () => {
+        const a = signal(mine, fixture.currentUserId);
+        const aOther = signal(mine, fixture.currentUserId, otherSessionId);
+        const b = signal(theirs, fixture.reciprocalAId);
+        const c = signal(other, fixture.reciprocalBId, otherSessionId);
+        await connection(true, a, aOther, b, c);
+        a.leave();
+        const message: VideoSignalMessage = {
+          kind: 'ice-candidate',
+          from: fixture.currentUserId,
+          payload: { candidate: 'ice' },
+        };
+        mine.videoSignal.send(otherSessionId, message);
+        await eventually(() => expect(c.onMessage).toHaveBeenCalledWith(message));
+        const reply: VideoSignalMessage = { ...message, from: fixture.reciprocalBId };
+        other.videoSignal.send(otherSessionId, reply);
+        await eventually(() => expect(aOther.onMessage).toHaveBeenCalledWith(reply));
+        await fixture.elapse(500);
+        expect(b.onMessage).not.toHaveBeenCalled();
+        expect(a.onMessage).not.toHaveBeenCalled();
+      });
+
+      it('cerrar presencia en una sesión conserva la otra del mismo adaptador', async () => {
+        const a = presence(mine, fixture.currentUserId);
+        const aOther = presence(mine, fixture.currentUserId, otherSessionId);
+        const b = presence(theirs, fixture.reciprocalAId);
+        const c = presence(other, fixture.reciprocalBId, otherSessionId);
+        await connection(true, a, aOther, b, c);
+        await eventually(() =>
+          expect(c.onPeers).toHaveBeenLastCalledWith(
+            expect.arrayContaining([fixture.currentUserId, fixture.reciprocalBId])
+          )
+        );
+        a.leave();
+        await peers(b, [fixture.reciprocalAId]);
+        c.leave();
+        await peers(aOther, [fixture.currentUserId]);
+        const back = presence(other, fixture.reciprocalBId, otherSessionId);
+        await connection(true, back);
+        await eventually(() =>
+          expect(aOther.onPeers).toHaveBeenLastCalledWith(
+            expect.arrayContaining([fixture.currentUserId, fixture.reciprocalBId])
+          )
+        );
+      });
 
       it('enviar sin haber abierto una sesión no revienta', () => {
         expect(() =>

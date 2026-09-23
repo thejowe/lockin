@@ -118,6 +118,22 @@ describe('createSupabaseVideoSignalAdapter', () => {
     expect(realtime.channel.send).not.toHaveBeenCalled();
   });
 
+  it('ignora eventos tardíos del SDK después del cleanup, incluido SUBSCRIBED', () => {
+    const realtime = fakeRealtime();
+    const handlers = { onMessage: jest.fn(), onConnection: jest.fn() };
+    const leave = createSupabaseVideoSignalAdapter(() => realtime.client).join(
+      's1',
+      'ana',
+      handlers
+    );
+    leave();
+    realtime.status('SUBSCRIBED');
+    realtime.status('CLOSED');
+    realtime.broadcast(offer('bea'));
+    expect(handlers.onConnection).not.toHaveBeenCalled();
+    expect(handlers.onMessage).not.toHaveBeenCalled();
+  });
+
   it('salir cierra el canal y deja de poder enviar', () => {
     const realtime = fakeRealtime();
     const adapter = createSupabaseVideoSignalAdapter(() => realtime.client);

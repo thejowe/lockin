@@ -20,14 +20,16 @@ export function createSupabaseVideoSignalAdapter(
 
   return {
     join(sessionId, profileId, { onMessage, onConnection }) {
+      let active = true;
       const client = getClient();
       const channel = client.channel(`lockin:video:${sessionId}`, { config: { private: true } });
 
       channel
         .on('broadcast', { event: 'signal' }, ({ payload }: { payload: VideoSignalMessage }) => {
-          if (payload.from !== profileId) onMessage(payload);
+          if (active && payload.from !== profileId) onMessage(payload);
         })
         .subscribe((status) => {
+          if (!active) return;
           if (status === 'SUBSCRIBED') {
             onConnection(true);
           } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
@@ -38,6 +40,8 @@ export function createSupabaseVideoSignalAdapter(
       channels.set(sessionId, channel);
 
       return () => {
+        // removeChannel es asíncrono: el SDK aún puede entregar eventos en vuelo.
+        active = false;
         channels.delete(sessionId);
         void client.removeChannel(channel);
       };

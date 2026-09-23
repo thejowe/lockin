@@ -75,6 +75,19 @@ describe('createSupabasePresenceAdapter', () => {
     expect(handlers.onConnection).toHaveBeenLastCalledWith(false);
   });
 
+  it('ignora eventos tardíos del SDK después del cleanup, incluido SUBSCRIBED', () => {
+    const realtime = fakeRealtime();
+    const handlers = { onPeers: jest.fn(), onConnection: jest.fn() };
+    const leave = createSupabasePresenceAdapter(() => realtime.client).join('s1', 'ana', handlers);
+    leave();
+    realtime.status('SUBSCRIBED');
+    realtime.status('CLOSED');
+    realtime.sync();
+    expect(handlers.onConnection).not.toHaveBeenCalled();
+    expect(handlers.onPeers).not.toHaveBeenCalled();
+    expect(realtime.channel.track).not.toHaveBeenCalled();
+  });
+
   it('salir deja de anunciarse y cierra el canal', () => {
     const realtime = fakeRealtime();
     const leave = createSupabasePresenceAdapter(() => realtime.client).join('s1', 'ana', {
