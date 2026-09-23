@@ -12,8 +12,10 @@
  * - y que el correo de recuperación no diga si el email existe.
  *
  * La capa de cuentas se sustituye por dobles, igual que en
- * `account-section.test.tsx`; `AccountError` viene del módulo real porque el
- * formulario lo usa con `instanceof`.
+ * `account-section.test.tsx`; `AccountError` viene del módulo real porque
+ * `account-copy.ts` lo usa con `instanceof`. El texto exacto de cada fallo se
+ * fija en `account-copy.test.ts`: aquí solo se comprueba que esta pantalla lo
+ * enseña y que no deja escapar el inglés del servidor.
  *
  * Ojo: en RNTL 14 `render` y `fireEvent` son asíncronos.
  */
@@ -128,7 +130,7 @@ describe('SignInForm', () => {
       expect(onSignedIn).not.toHaveBeenCalled();
     });
 
-    it('un fallo que sí viene traducido se enseña tal cual', async () => {
+    it('sin red lo dice, y no se puede leer como «he puesto mal la contraseña»', async () => {
       gateway.signInWithEmail.mockRejectedValue(
         new AccountError('offline', 'No hay conexión con el servidor.')
       );
@@ -137,7 +139,8 @@ describe('SignInForm', () => {
       await fill('ana@example.com', 'secreta-123');
       await press('Entrar');
 
-      expect(screen.getByText('No hay conexión con el servidor.')).toBeTruthy();
+      expect(screen.getByText(/No hay conexión con el servidor/)).toBeTruthy();
+      expect(screen.queryByText(/incorrectos/)).toBeNull();
       expect(onSignedIn).not.toHaveBeenCalled();
     });
 
@@ -258,13 +261,29 @@ describe('SignInForm', () => {
     });
 
     it('si no puede comprobar qué se perdería, no entra y lo cuenta', async () => {
-      gateway.readAccountState.mockRejectedValue(new Error('Sin conexión.'));
+      gateway.readAccountState.mockRejectedValue(new Error('No se pudo leer la cuenta.'));
       await renderForm();
 
       await fill('ana@example.com', 'secreta-123');
       await press('Entrar');
 
-      expect(screen.getByText('Sin conexión.')).toBeTruthy();
+      expect(screen.getByText(/No hemos podido completar la operación/)).toBeTruthy();
+      expect(gateway.signInWithEmail).not.toHaveBeenCalled();
+    });
+
+    it('quedarse sin red al comprobarlo también se cuenta como falta de red', async () => {
+      // Esta comprobación consulta el perfil por PostgREST, que NO pasa por
+      // `toAccountError`: sin esto la pantalla enseñaba «Network request
+      // failed», el inglés crudo del runtime, justo donde el usuario se está
+      // preguntando si ha escrito mal la contraseña.
+      gateway.readAccountState.mockRejectedValue(new TypeError('Network request failed'));
+      await renderForm();
+
+      await fill('ana@example.com', 'secreta-123');
+      await press('Entrar');
+
+      expect(screen.getByText(/No hay conexión con el servidor/)).toBeTruthy();
+      expect(screen.queryByText(/Network request failed/)).toBeNull();
       expect(gateway.signInWithEmail).not.toHaveBeenCalled();
     });
 

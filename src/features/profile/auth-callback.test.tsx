@@ -88,7 +88,23 @@ describe('AuthCallback', () => {
     await render(<AuthCallback url={ENLACE} onDone={onDone} />);
 
     await waitFor(() => expect(screen.getByText('Ese enlace no ha funcionado')).toBeTruthy());
-    expect(screen.getByText('Ese enlace no ha funcionado.')).toBeTruthy();
+    expect(screen.getByText(/No hemos podido completar la operación/)).toBeTruthy();
+  });
+
+  it('lo que rebota del canje no llega en inglés', async () => {
+    // `completeAuthLink` traduce el enlace caducado, pero el canje del `code`
+    // puede fallar por su cuenta y ahí el mensaje es el de GoTrue.
+    gateway.completeAuthLink.mockRejectedValue(
+      new gateway.AccountError('unknown', 'invalid flow state, no valid flow state found', {
+        code: 'flow_state_not_found',
+      })
+    );
+
+    await render(<AuthCallback url={ENLACE} onDone={onDone} />);
+
+    await waitFor(() => expect(screen.getByText('Ese enlace no ha funcionado')).toBeTruthy());
+    expect(screen.queryByText(/invalid flow state/)).toBeNull();
+    expect(screen.getByText(/No hemos podido completar la operación/)).toBeTruthy();
   });
   it('llega en caliente: la URL puede aparecer después de montarse', async () => {
     const { rerender } = await render(<AuthCallback url={null} onDone={onDone} />);

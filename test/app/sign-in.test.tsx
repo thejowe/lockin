@@ -21,6 +21,7 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { buildProfileInput } from '@/data/test-fixtures';
+import { AccountError } from '@/features/profile/account-gateway';
 
 import { renderRoute, repositories, resetRepositories, resetRouter, router } from '../routes';
 
@@ -105,14 +106,18 @@ describe('SignInScreen', () => {
   });
 
   it('con credenciales erróneas no navega', async () => {
-    mockSignIn.mockRejectedValue(new Error('No se ha podido entrar.'));
+    // El texto exacto lo fija `src/features/profile/account-copy.test.ts`; aquí
+    // lo único que importa es que el fallo se vea y la ruta no cambie.
+    mockSignIn.mockRejectedValue(
+      new AccountError('unknown', 'Invalid login credentials', { code: 'invalid_credentials' })
+    );
     await renderRoute(<SignInScreen />);
 
     await fireEvent.changeText(screen.getByLabelText('Email de tu cuenta'), 'ana@example.com');
     await fireEvent.changeText(screen.getByLabelText('Contraseña de tu cuenta'), 'mala');
     await fireEvent.press(screen.getByRole('button', { name: 'Entrar' }));
 
-    expect(await screen.findByText('No se ha podido entrar.')).toBeTruthy();
+    expect(await screen.findByText(/Email o contraseña incorrectos/)).toBeTruthy();
     expect(router.replace).not.toHaveBeenCalled();
   });
 

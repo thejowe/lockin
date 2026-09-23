@@ -40,8 +40,9 @@ import { StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 
+import { describeAccountError } from './account-copy';
 import { Field, PrimaryButton, SecondaryButton, TextField } from './controls';
-import { describeAccountError, useAccountActions } from './use-account-actions';
+import { useAccountActions } from './use-account-actions';
 
 export function RegisterForm({
   /** La cuenta ya tiene email confirmado y contraseña: el onboarding sigue. */

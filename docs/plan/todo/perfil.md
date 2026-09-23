@@ -247,5 +247,46 @@ Hueco detectado por el usuario al probar «Ya tengo cuenta» (`9818fbb`): la pan
 - Que el correo llegue: el proveedor de correo del proyecto Supabase no se ha tocado ni mirado.
 - `typecheck` local: `.expo/types/router.d.ts` (gitignored) puede no conocer `/register`; se comprobó sin él, como en CI.
 
+## El mapa de `AccountError.reason` estaba a medias (2026-09-23)
+
+Hueco detectado por el usuario: `src/data/supabase/auth.ts` traduce cada fallo del servidor a un `AccountError.reason` **justamente** para que la UI no enseñe el inglés de GoTrue, pero un grep de `reason` en `src/features/profile/*.tsx` solo encontraba un uso (`account-section.tsx:116`, `'unrecoverable-account'`). Las pantallas enseñaban `error.message` y punto.
+
+- [x] **[Claude]** Repasar razón por razón qué ve de verdad el usuario en `register-form.tsx`, `sign-in-form.tsx` y `account-section.tsx`, y cerrar los huecos con copy en español. Alcance: `src/features/profile/` y sus tests; **no** `src/data/`
+
+### Qué se encontró, razón por razón
+
+Enseñar `error.message` funcionaba para seis de las diez razones, porque `auth.ts` las redactó pensando en la pantalla. Los huecos eran los otros cuatro:
+
+| razón | antes | ahora |
+| --- | --- | --- |
+| `email-in-use`, `weak-password`, `invalid-email`, `same-password`, `too-many-emails`, `needs-confirmed-email` | el mensaje de `auth.ts`, ya en español y para el usuario | igual, **tal cual**: duplicar ese copy en la pantalla serían dos textos que se desincronizan |
+| `unrecoverable-account` | «… o pasa `acceptDataLoss` cuando el usuario ya haya dicho que sí a perderlo todo» — una instrucción para quien programa | copy propio, que dice qué se pierde y qué hacer. Hoy `account-section` lo intercepta para abrir su aviso, así que no se leía; el día que se escape ya no es texto de desarrollo |
+| `no-session` | «No hay ninguna sesión abierta.» Correcto pero sin salida | añade qué hacer (cerrar y reabrir LockIn) |
+| `offline` | el mensaje de `auth.ts`… **solo si el fallo llegó a ser un `AccountError`** | copy propio, y el mismo para el fallo de red crudo (ver abajo) |
+| `unknown` | **el texto inglés del servidor**: «Invalid login credentials», «Email link is invalid or has expired»… Es la razón por defecto de `toAccountError`, o sea el caso más frecuente de todos | español siempre. `invalid_credentials` tiene el suyo (estaba en `sign-in-form`, ahora se comparte); el resto cae en un genérico. Se distinguen por el `cause`: los dos `unknown` que `auth.ts` sí escribió para la pantalla (los de `completeAuthLink`) van **sin** `cause`, y esos se respetan |
+
+### `offline` era peor de lo que parecía
+
+El aviso del usuario apuntaba a `'offline'` por ser el caso más probable en un móvil real y el que peor se distingue de «he puesto mal la contraseña». Y llegaba por dos caminos, no uno:
+
+- `signInWithEmail` sin red → `AuthRetryableFetchError` → `auth.ts` lo traduce → razón `offline`. Este iba bien.
+- La comprobación previa de «entrar aquí abandona un perfil» consulta **PostgREST** (`repositories.profiles.getCurrent()`), que no pasa por `toAccountError`: rechazaba con el `TypeError` crudo del runtime y la pantalla enseñaba **«Network request failed»**. En inglés, y justo en el momento en que la persona se está preguntando si ha escrito mal la contraseña. Y ocurre **antes** del login, así que era el camino normal, no el raro.
+
+Por eso `looksOffline()` mira también el `name` (`AuthRetryableFetchError`) y, como último recurso, el texto del `fetch` del runtime.
+
+### Cómo quedó
+
+**`src/features/profile/account-copy.ts`** (nuevo) es el único sitio donde se decide qué lee la persona ante un fallo de cuenta. Lo usan las tres pantallas —`register-form` y `account-section` a través de `use-account-actions`, `sign-in-form` directamente— y además `auth-callback`, que tenía el mismo agujero con lo que rebota del canje del `code`. `describeAccountError` sale de `use-account-actions.ts`, donde era un `cause.message` con otro nombre; el `describe()` local de `sign-in-form.tsx` desaparece.
+
+**El mapa ya no se puede quedar a medias otra vez.** `COPY` es un `Record<AccountErrorReason, string | null>`, no un `Partial`: si `datos` añade una razón a `auth.ts`, esto deja de compilar hasta que alguien decida qué se enseña. `null` significa «el mensaje de la capa de datos ya es copy de usuario», que es una respuesta, no un olvido.
+
+**Nada de `src/data/`.** El contrato de `reason` no se toca: se lee entero, se responde entero.
+
+**Verificación (2026-09-23).** `npm run typecheck` y `npm run lint` limpios; `npx prettier --check` limpio sobre los diez archivos tocados. `npx jest --coverage --ci --runInBand`: **948 pasados, 84 saltados, 0 rojos** (80 de 81 suites; la saltada es el contrato de Supabase, opt-in). Cobertura global 94.64 / 89.52 / 94.27 / 96.19, por encima del suelo de `jest.config.js` (94.36 / 89.09 / 93.94 / 95.96); `account-copy.ts` al 100 en los cuatro. Tests nuevos: `account-copy.test.ts`, con **un caso por razón** más los fallos que nunca llegaron a ser un `AccountError`. Tests ajustados porque su expectativa era justo el texto que ya no se enseña: `sign-in-form.test.tsx` (el `offline` del login, y uno nuevo para el `TypeError` de la consulta previa), `register-form.test.tsx`, `auth-callback.test.tsx` (más un caso para el inglés del canje) y `test/app/sign-in.test.tsx`.
+
+**Pendiente, y no es de este bloque.** La cobertura sube y `jest.config.js` dice que el suelo se sube cuando sube. No se ha tocado: el archivo es de `calidad` y este árbol tiene cambios sin commitear de otra sesión que pueden mover esos números. Que lo suba `calidad` cuando mida sobre el árbol limpio.
+
+**Lo que NO se ha verificado.** Que el texto se lea bien en un móvil de verdad con la red caída — todo va con dobles. Y en la variante sin credenciales de Supabase no hay capa de cuentas, así que estas pantallas ni se montan.
+
 ## Recuerda
 Nadie contrata a nadie: no metas campos de "salario" o "equity que ofrezco" — eso es Modo Talento, Fase 4, fuera de este MVP.

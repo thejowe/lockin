@@ -298,7 +298,7 @@ describe('RegisterForm', () => {
     });
 
     it('si no se puede leer la cuenta lo dice y deja reintentar, sin dejar pasar', async () => {
-      gateway.readAccountState.mockRejectedValue(new Error('Sin conexión.'));
+      gateway.readAccountState.mockRejectedValue(new TypeError('Network request failed'));
       await render(
         <DataProvider value={repositories}>
           <RegisterForm onDone={onDone} onSignIn={onSignIn} />
@@ -308,7 +308,8 @@ describe('RegisterForm', () => {
       await waitFor(() =>
         expect(screen.getByText('No hemos podido comprobar tu cuenta')).toBeTruthy()
       );
-      expect(screen.getByText('Sin conexión.')).toBeTruthy();
+      expect(screen.getByText(/No hay conexión con el servidor/)).toBeTruthy();
+      expect(screen.queryByText(/Network request failed/)).toBeNull();
 
       gateway.readAccountState.mockResolvedValue(ANONIMA);
       await press('Reintentar');

@@ -4,10 +4,12 @@
  *
  * Asegurar la cuenta es el mismo camino se llegue por donde se llegue —email
  * con `linkEmailToCurrentUser`, contraseña con `setAccountPassword` una vez
- * confirmado el correo—, así que vive aquí una sola vez: quién está ocupado,
- * qué aviso se enseña, y cómo se traduce un fallo. Dos copias de esto son dos
- * sitios que se desincronizan, y el alta y el ascenso desde Perfil tienen que
- * comportarse igual (ver `todo/perfil.md` → «Decisión de alta»).
+ * confirmado el correo—, así que vive aquí una sola vez: quién está ocupado y
+ * qué aviso se enseña. Dos copias de esto son dos sitios que se desincronizan,
+ * y el alta y el ascenso desde Perfil tienen que comportarse igual (ver
+ * `todo/perfil.md` → «Decisión de alta»). El texto de cada fallo lo pone
+ * `account-copy.ts`, que lo comparte además con `sign-in-form` y
+ * `auth-callback`, que no pasan por este hook.
  *
  * Lo que **no** vive aquí es el texto de cada pantalla ni qué hace cada una al
  * terminar: los métodos reciben un `done` que corre cuando la operación salió
@@ -18,6 +20,7 @@ import { useState } from 'react';
 
 import { useQuery } from '@/data';
 
+import { describeAccountError } from './account-copy';
 import {
   linkEmailToCurrentUser,
   readAccountState,
@@ -32,18 +35,6 @@ export type AccountBusy = 'asegurar' | 'reenviar' | 'contrasena' | 'recuperar' |
 export interface AccountNotice {
   text: string;
   tone: 'textSecondary' | 'danger';
-}
-
-/**
- * El mensaje que se le enseña a la persona.
- *
- * Los `AccountError` de `@/data` ya vienen escritos en español y para el
- * usuario, así que no hay nada que traducir aquí — y sobre todo no hay que
- * mirar el texto inglés del servidor, que cambia entre versiones de GoTrue.
- */
-export function describeAccountError(cause: unknown): string {
-  if (cause instanceof Error) return cause.message;
-  return 'No hemos podido completar la operación. Inténtalo otra vez.';
 }
 
 export function useAccountActions() {

@@ -31,6 +31,7 @@ import { StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 
+import { describeAccountError } from './account-copy';
 import { completeAuthLink } from './account-gateway';
 import { SecondaryButton } from './controls';
 
@@ -73,7 +74,11 @@ export function AuthCallback({
     completeAuthLink(url).then(
       () => onDone(),
       (cause: unknown) => {
-        setError(cause instanceof Error ? cause.message : 'Ese enlace no ha funcionado.');
+        // Por `account-copy` y no por `cause.message`: `completeAuthLink` sí
+        // escribe en español lo que sabe explicar (el enlace caducado, el que
+        // no trae código), pero lo que le rebota el canje del `code` es el
+        // texto inglés de GoTrue.
+        setError(describeAccountError(cause));
       }
     );
   }, [url, onDone]);

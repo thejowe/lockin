@@ -30,6 +30,14 @@
  * correo de recuperación no dice si el email existe, igual que
  * `sendPasswordReset` — responder distinto le contaría a cualquiera quién
  * tiene cuenta en LockIn.
+ *
+ * El texto de cada fallo lo pone `account-copy.ts`, compartido con el resto del
+ * bloque. Importa sobre todo aquí: quedarse sin red es el fallo más probable en
+ * un móvil de verdad, y es justo el que no puede leerse como «me he equivocado
+ * de contraseña». Ojo, porque llega por dos caminos distintos —el login, que sí
+ * pasa por `toAccountError`, y la consulta del perfil que se abandonaría, que
+ * rechaza con el `TypeError` crudo del runtime—, y los dos tienen que contarse
+ * igual.
  */
 
 import { useState } from 'react';
@@ -40,12 +48,8 @@ import { Radii, Spacing } from '@/constants/theme';
 import { useRepositories } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 
-import {
-  AccountError,
-  readAccountState,
-  sendPasswordReset,
-  signInWithEmail,
-} from './account-gateway';
+import { describeAccountError } from './account-copy';
+import { readAccountState, sendPasswordReset, signInWithEmail } from './account-gateway';
 import { Field, PrimaryButton, SecondaryButton, TextField } from './controls';
 
 /** Qué se le está pidiendo al servidor ahora mismo, si es que se le pide algo. */
@@ -55,30 +59,6 @@ type Busy = 'entrar' | 'recuperar' | null;
 interface Notice {
   text: string;
   tone: 'textSecondary' | 'danger';
-}
-
-function causeCode(cause: unknown): string | undefined {
-  if (typeof cause !== 'object' || cause === null) return undefined;
-  const code = (cause as { code?: unknown }).code;
-  return typeof code === 'string' ? code : undefined;
-}
-
-/**
- * El mensaje que se le enseña a la persona.
- *
- * Los `AccountError` ya vienen escritos en español, salvo uno: la capa de datos
- * no traduce `invalid_credentials` —es el error propio de este formulario— y lo
- * deja pasar con el texto inglés del servidor («Invalid login credentials»).
- * Se reconoce por el `code` de la causa, no por ese texto, que cambia entre
- * versiones de GoTrue. Y no distingue «no existe ese email» de «contraseña
- * errónea»: decirlo sería contar quién tiene cuenta en LockIn.
- */
-function describe(cause: unknown): string {
-  if (cause instanceof AccountError && causeCode(cause.cause) === 'invalid_credentials') {
-    return 'Email o contraseña incorrectos. Revísalos e inténtalo otra vez.';
-  }
-  if (cause instanceof Error) return cause.message;
-  return 'No hemos podido completar la operación. Inténtalo otra vez.';
 }
 
 export function SignInForm({
@@ -121,7 +101,7 @@ export function SignInForm({
       await signInWithEmail(address, password);
       onSignedIn();
     } catch (cause) {
-      setNotice({ text: describe(cause), tone: 'danger' });
+      setNotice({ text: describeAccountError(cause), tone: 'danger' });
     } finally {
       setBusy(null);
     }
@@ -148,7 +128,7 @@ export function SignInForm({
     } catch (cause) {
       // Sin poder comprobarlo no se entra: perder un perfil sin avisar es peor
       // que pedir que se reintente.
-      setNotice({ text: describe(cause), tone: 'danger' });
+      setNotice({ text: describeAccountError(cause), tone: 'danger' });
       setBusy(null);
       return;
     }
@@ -179,7 +159,7 @@ export function SignInForm({
         tone: 'textSecondary',
       });
     } catch (cause) {
-      setNotice({ text: describe(cause), tone: 'danger' });
+      setNotice({ text: describeAccountError(cause), tone: 'danger' });
     } finally {
       setBusy(null);
     }
