@@ -99,6 +99,22 @@ de decidir con el run delante: subir `org.gradle.jvmargs` con un
 `-XX:MaxMetaspaceSize` explícito, o saltarse `lintVitalRelease` en el build de
 E2E (lo que comprueba ese lint no es lo que este workflow viene a comprobar).
 
+### Veredicto en CI, ya con todo empujado
+
+- [x] **`Tests` verde con el suelo nuevo.** Run
+      [35905287372](https://github.com/thejowe/lockin/actions/runs/35905287372)
+      (`5fa139f`): `Tests`, `Lint`, `Formato`, `Tipos`, `Runner E2E`, `SQL
+      embebido` y `Export web` en verde. El `Formato` verde confirma otra vez que
+      el rojo local de `format:check` es solo el CRLF de Windows.
+- [ ] **`Contrato Supabase` sigue rojo por lo mismo**, en el mismo paso y con
+      `toomanyrequests` 25 veces en el log. Un dato útil para la opción (b): en
+      ese log **solo** aparecen imágenes `ghcr.io/supabase/…` —ninguna
+      `public.ecr.aws/…`—, así que con `SUPABASE_INTERNAL_IMAGE_REGISTRY=ghcr.io`
+      puesto por `setup-cli` la CLI ni llega a probar su registro por defecto,
+      pese a que el mensaje final diga «failed to pull docker image from all
+      registries». Quitar esa fijación sigue siendo la vía con más recorrido, y
+      la lleva Codex.
+
 ### Verificación de esta pasada
 
 - **`npm ci` sobre árbol limpio**: 1139 paquetes, sin `EUSAGE`.
