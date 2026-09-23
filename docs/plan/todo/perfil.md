@@ -212,7 +212,7 @@ Hueco detectado por el usuario al probar «Ya tengo cuenta» (`9818fbb`): la pan
   - Opción (b): `signUpWithEmail(email, password)` en el onboarding. Aún no hay perfil ni matches en la sesión anónima, así que cambiar de `auth.uid()` en este punto no pierde datos; pero con confirmación de email activa no hay sesión hasta confirmar y hay que decidir qué ve la persona mientras tanto.
   - Cualquiera de las dos debe reutilizar `AccountSection` o compartir su lógica, no duplicarla.
 - [x] **Decisión de producto, resuelta por el usuario el 2026-09-20: el registro es OBLIGATORIO.** Revoca «no metas una pantalla de login obligatoria» para el alta; anotado con fecha en `docs/plan/ordenes-arquitectura.md`. Pregunta original: ¿el alta con email es **obligatoria** o hay un «Ahora no»? El default recomendado es opcional y bien visible: `docs/plan/ordenes-arquitectura.md` ("Lo que NO hay que hacer") prohíbe el login obligatorio por decisión deliberada del 2026-09-17, y hacerla obligatoria la revoca. Si el usuario la quiere obligatoria, anotarlo allí con fecha
-- [ ] Verificar en un dispositivo real contra Supabase (alta con email → correo de confirmación → cuenta recuperable → entrar desde otro dispositivo con «Ya tengo cuenta»). **No lo puede cerrar un agente**
+- [x] Verificar en un dispositivo real contra Supabase (alta con email → correo de confirmación → cuenta recuperable → entrar desde otro dispositivo con «Ya tengo cuenta»). **No lo puede cerrar un agente**. **Hecho el 2026-09-23** en emulador Android con el APK `preview` de EAS contra el Supabase real, con buzón de Gmail real; evidencia en «Verificación en dispositivo (2026-09-23)» abajo
 
 ### Decisión de alta (2026-09-20)
 
@@ -240,12 +240,32 @@ Hueco detectado por el usuario al probar «Ya tengo cuenta» (`9818fbb`): la pan
 
 **Verificación (2026-09-20).** `npm run typecheck` y `npm run lint` limpios. `npm test -- --ci --runInBand --coverage`: 911 pasados, 84 saltados, 0 rojos; cobertura global 94.56 / 89.28 / 94.23 / 96.13 frente al suelo de `jest.config.js` (94.36 / 89.09 / 93.94 / 95.96), sin tocar umbrales. Verificado por mutación: quitar la redirección de `mode.tsx` tira 3 tests de `test/app/register.test.tsx`. Tests nuevos: `register-form.test.tsx` (20: los tres pasos, email en uso, sin «Ahora no», salida a «Ya tengo cuenta», error de lectura), `test/app/register.test.tsx` (10: la puerta en `mode`, la ruta y su recorrido), y casos nuevos en `account-gateway.test.ts`, `test/app/profile-form.test.tsx` y `test/app/auth-callback.test.tsx`.
 
-**Lo que NO se ha verificado** (y no lo puede cerrar un agente, es el último punto de la lista de arriba, que sigue **sin marcar**):
+**Lo que NO se ha verificado** (a 2026-09-20; los cuatro primeros puntos los cerró la «Verificación en dispositivo (2026-09-23)» de abajo):
 - El flujo real contra Supabase: que `updateUser({ email })` mande el correo de confirmación desde una sesión anónima, que el enlace vuelva a la app y `completeAuthLink` deje la cuenta recuperable, y que `setAccountPassword` la acepte justo después. Todo va con dobles y el mock en memoria.
 - Que la cuenta sea recuperable de verdad y se pueda entrar desde otro dispositivo con «Ya tengo cuenta».
 - Que expo-router monte `/register` y respete los `replace` (los tests usan un router de mentira), ni cómo se ve en un móvil.
 - Que el correo llegue: el proveedor de correo del proyecto Supabase no se ha tocado ni mirado.
 - `typecheck` local: `.expo/types/router.d.ts` (gitignored) puede no conocer `/register`; se comprobó sin él, como en CI.
+
+### Verificación en dispositivo (2026-09-23)
+
+**Entorno.** Emulador Android 16 (AVD `lockin`), APK universal del perfil `preview` de EAS (`app.lockin.mobile`, firmado con el keystore real, con el bloque `env` de `21418ee`), contra el proyecto Supabase real `grrzmzktrhksbttpbblg`, con la puerta de registro obligatorio encendida. El correo se abrió en la app Gmail del emulador; el alias `joeldetorres123+lockin3@gmail.com` llega al buzón real del usuario.
+
+**Camino de éxito, paso a paso** (horas en UTC; cada pantalla se leyó con `uiautomator dump`, no con capturas):
+
+1. **Alta.** «Crea tu cuenta» con el alias +lockin3 → `PUT /user` desde la sesión anónima (21:43:08, `user_modified`, `actor_username` vacío) → `mail.send` `email_change` a +lockin3 → la app pinta «Confirma tu email … Te hemos mandado un correo a joeldetorres123+lockin3@gmail.com».
+2. **Correo → app.** Botón «Confirm new email address» del mensaje de 9:43 PM → Chrome Custom Tab → `…/auth/v1/verify?token=pkce_…&type=email_change&redirect_to=lockin://auth/callback` (`/verify` 303, 21:46:46) → `START … dat=lockin://auth/… cmp=app.lockin.mobile/.MainActivity` → canje PKCE (`login`, `grant_type: pkce`, `provider_type: email_change`, 21:46:56) → pantalla «Elige tu contraseña» con «Email confirmado: joeldetorres123+lockin3@gmail.com». Es la ruta que `auth/callback.tsx` promete sin perfil (`/register`).
+3. **Contraseña.** «Guardar y continuar» → `PUT /user` (21:47:49) → la puerta se abre y aparece «Paso 1 de 2 · ¿Qué buscas?».
+4. **Estado en el servidor tras el paso 3.** `auth.users` del uid `a5fe4d5c-27e5-4cf0-8ead-33bb4740f499`: `created_at 21:04:11` (nació anónimo), `email_confirmed_at 21:46:46`, `is_anonymous=false`, contraseña puesta. **`auth.uid()` se conserva** del anónimo a la cuenta, como pide la «Decisión de alta».
+5. **Perfil.** Modo Lock-In → formulario → «Crear perfil» → Descubrir. `public.profiles` tiene la fila `Verif` con ese mismo `id` (21:50:39).
+6. **Otro dispositivo.** `adb shell pm clear app.lockin.mobile` (sesión, almacenamiento y caché borrados) → arranque con `[lockin] backend de datos: Supabase` → «Crea tu cuenta» (instalación limpia, la puerta vuelve a cerrar) → «Ya tengo cuenta» → email + contraseña → `login` `grant_type: password` del mismo uid (21:51:55) → **directo a Descubrir, sin pasar por registro, modo ni formulario**. La tab Perfil enseña el perfil de antes del borrado: «Verif · 30 · Barcelona», Compañero de Lock-In, Desarrollo, «10 h/semana · tarde», «una app de prueba para verificar el alta».
+
+**Límites de esta verificación, dichos tal cual.** (1) «Otro dispositivo» es el mismo emulador con los datos de la app borrados, no un segundo teléfono: prueba que nada local hace falta para volver, que es lo que importa, pero no cambia el hardware. (2) Es Android: iOS no se ha recorrido en esta cadena. (3) La cuenta de prueba (+lockin3, uid `a5fe4d5c…`, perfil «Verif») queda en la base de datos real; se puede borrar desde el dashboard.
+
+**Lo que se aprendió por el camino.**
+- **El límite de correo de GoTrue es de todo el proyecto, no de cada dirección.** Con el SMTP de Supabase que viene por defecto caben unos 2 correos por hora en total: tres envíos entre las 20:36 y las 20:40 dejaron el alta con +lockin3 en `over_email_send_rate_limit` (429) a las 21:05 y a las 21:20, aunque ese alias no había recibido nada. Cambiar de alias no sirve para esquivarlo. Para producción, o para probar más de un alta seguida, hace falta un SMTP propio (dashboard → Auth → SMTP); es cosa de `datos`/usuario, no de este bloque. La app lo traduce bien («Se han mandado demasiados correos…»).
+- Gmail agrupa todos los «Confirm your new email address» en un solo hilo y esconde el cuerpo de los repetidos tras «Show quoted text»: el enlace bueno es el del mensaje más reciente, no el primero que se ve. Con alias `+` es fácil pinchar el de otra prueba.
+- Al entrar con contraseña, Android ofrece guardarla en el gestor de contraseñas de Google (autofill funciona sobre los campos). Se cerró sin guardar.
 
 ## El mapa de `AccountError.reason` estaba a medias (2026-09-23)
 
