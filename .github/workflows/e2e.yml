@@ -7,6 +7,9 @@ on:
 
 permissions:
   contents: read
+  # Solo para que `docker login ghcr.io` (abajo) autentique el pull de las
+  # imágenes de Supabase. Son paquetes públicos: no da acceso a nada nuevo.
+  packages: read
 concurrency:
   group: e2e-${{ github.ref }}
   cancel-in-progress: true
@@ -89,6 +92,23 @@ jobs:
           unzip -q /tmp/maestro.zip -d "$HOME/.maestro"
           echo "$HOME/.maestro/maestro/bin" >> "$GITHUB_PATH"
       - run: npm ci
+      # Las imágenes del Supabase desechable (postgres, kong, gotrue, realtime,
+      # storage-api, postgres-meta, postgrest) salen de ghcr.io, y hasta hoy se
+      # bajaban ANÓNIMAMENTE: ahí el límite de descargas es por IP, y la IP la
+      # comparte todo el pool de runners de Actions. El run 35899273763 murió
+      # por eso en sus TRES trabajos, en `Supabase desechable con migraciones
+      # reales` y sin levantar un contenedor: `toomanyrequests: retry-after:
+      # …, allowed: 44000/minute`. Autenticado, el límite pasa a ser de la
+      # cuenta que autentica, así que deja de depender de lo que estén tirando
+      # los demás repos del pool.
+      #
+      # El `GITHUB_TOKEN` del propio trabajo basta para LEER paquetes públicos
+      # de otras organizaciones (`supabase/*`); no se necesita ningún secreto
+      # nuevo ni se gana acceso a nada que no fuera ya público.
+      - name: Autenticar en ghcr.io (el límite anónimo es por IP y la IP es compartida)
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
       - name: Preparar evidencias
         run: mkdir -p "$E2E_ARTIFACTS"
       - name: Supabase desechable con migraciones reales

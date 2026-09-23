@@ -6,6 +6,9 @@ on:
 
 permissions:
   contents: read
+  # Solo para autenticar el pull de las imágenes de Supabase desde ghcr.io
+  # (paso de abajo). Son paquetes públicos: no da acceso a nada nuevo.
+  packages: read
 
 concurrency:
   group: schema-drift-${{ github.ref }}
@@ -52,6 +55,15 @@ jobs:
           sudo apt-get install --yes postgresql-client
       - name: Verificar comparador
         run: node --test supabase/schema-compare.test.mjs
+      # Mismo motivo y mismo paso que en `e2e.yml`: las imágenes del Supabase
+      # desechable salen de ghcr.io y el límite de descargas anónimas es por IP,
+      # compartida por todo el pool de runners. El run 35899273763 de `E2E
+      # Android` murió por eso (`toomanyrequests`) sin levantar un contenedor, y
+      # este trabajo tira de las mismas imágenes.
+      - name: Autenticar en ghcr.io (el límite anónimo es por IP y la IP es compartida)
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
       - name: Supabase desechable y cotejo local
         run: node supabase/schema-ci.mjs local
       - name: Evidencia SQL y diffs (también si falla)

@@ -22,6 +22,9 @@ on:
 
 permissions:
   contents: read
+  # Solo para autenticar el pull de las imágenes de Supabase desde ghcr.io
+  # (paso de abajo). Son paquetes públicos: no da acceso a nada nuevo.
+  packages: read
 concurrency:
   group: contract-${{ github.ref }}
   cancel-in-progress: true
@@ -46,6 +49,15 @@ jobs:
           version: 2.116.0
       - run: npm ci
 
+      # Mismo motivo y mismo paso que en `e2e.yml`: las imágenes del Supabase
+      # desechable salen de ghcr.io y el límite de descargas anónimas es por IP,
+      # compartida por todo el pool de runners. El run 35899273763 de `E2E
+      # Android` murió por eso (`toomanyrequests`) sin levantar un contenedor, y
+      # este trabajo tira de las mismas imágenes.
+      - name: Autenticar en ghcr.io (el límite anónimo es por IP y la IP es compartida)
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
       - name: Supabase desechable con migraciones y seed del repo
         run: |
           set -euo pipefail
