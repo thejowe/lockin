@@ -49,7 +49,7 @@ function offer(from: string): VideoSignalMessage {
 }
 
 describe('createSupabaseVideoSignalAdapter', () => {
-  it('abre un canal por sesión y avisa de la conexión al suscribirse', () => {
+  it('configura el topic privado y registra el evento signal del SDK', () => {
     const realtime = fakeRealtime();
     const adapter = createSupabaseVideoSignalAdapter(() => realtime.client);
     const handlers = { onMessage: jest.fn(), onConnection: jest.fn() };
@@ -63,7 +63,11 @@ describe('createSupabaseVideoSignalAdapter', () => {
     expect(realtime.rawClient.channel).toHaveBeenCalledWith('lockin:video:s1', {
       config: { private: true },
     });
-    expect(handlers.onConnection).toHaveBeenCalledWith(true);
+    expect(realtime.channel.on).toHaveBeenCalledWith(
+      'broadcast',
+      { event: 'signal' },
+      expect.any(Function)
+    );
   });
 
   it.each(['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'])('%s se publica como sin conexión', (value) => {

@@ -1,5 +1,5 @@
 /**
- * La especificación ejecutable del contrato de `src/data/repositories.ts`.
+ * La especificación ejecutable de Repositories, presencia y señalización.
  *
  * Antes vivía dentro de `src/data/mock/index.test.ts` y solo se ejecutaba
  * contra el mock, así que "el backend de Supabase cumple el contrato" era una

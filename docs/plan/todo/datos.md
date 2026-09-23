@@ -1862,3 +1862,67 @@ logs de contenedores, y por eso la causa salió de la fuente y no de un log.
     `seeking_specialties`: un índice que nadie mide que necesite solo cuesta
     mantenimiento, y con el volumen de filas actual (single dígitos) no hay
     señal de que haga falta.
+
+
+## Contrato compartido de presencia y señalización (2026-09-23)
+
+- [x] **Cierra el hueco de C1 para Realtime.** `describeRepositoryContract`
+  incluye ahora presencia y señalización, declaradas una sola vez en
+  `src/data/repositories.contract.ts` y ejecutadas por `mockBackend` y
+  `supabaseBackend`. `ContractFixture.realtimeFor(profileId)` entrega los
+  adaptadores de cada actor; `closeRealtime()` cierra los clientes auxiliares
+  incluso si falla un caso. El arnés crea dos sesiones mediante los repositorios,
+  con miembros autorizados: Supabase usa clientes autenticados normales y
+  canales privados reales, sin `service_role` ni políticas simuladas. Una segunda
+  pantalla usa otro socket con la misma identidad, sin crear otra cuenta.
+- [x] **Casos que suben al contrato:** presencia propia y de la contraparte,
+  ausencia antes de entrar y tras salir, aislamiento entre sesiones, dejar de
+  recibir al salir, dos pantallas del mismo perfil contadas una sola vez hasta
+  cerrar la última; los cuatro mensajes de vídeo (`offer`, `answer`,
+  `ice-candidate`, `hangup`) íntegros y en ambas direcciones, sin eco del emisor
+  — tampoco en su segunda pantalla — ni entrega en otra sesión; salida y
+  reentrada, envío sin sala abierta, ausencia de reproducción de mensajes
+  anteriores, entrega a cada pantalla receptora, cierre independiente de salas
+  en un mismo adaptador y salida antes de conectar sin callbacks posteriores.
+- [x] **Tres estados de presencia, no dos.** El caso de pérdida y recuperación
+  de conexión exige `onConnection(false)` separado de una lista de presentes
+  sin contraparte. Reutiliza `dropRealtime`/`restoreRealtime`: solo se salta en
+  memoria, que entrega dentro del proceso y no tiene conexión que cortar. En
+  Supabase se ejecuta; no hay capacidades nuevas ni nuevos saltos en ese backend.
+  El contrato observa las señales que consume `use-counterpart-presence.ts`,
+  sin importar React ni duplicar el hook.
+- [x] **Lo que queda en las suites propias:** sincronía dentro del proceso y
+  aislamiento de instancias en memoria; topic, `private: true`, clave de
+  presencia, traducción de `presenceState` y del sobre `broadcast`, filtro de
+  `from` ante eventos inyectados del SDK, estados `CHANNEL_ERROR`/`TIMED_OUT`/
+  `CLOSED`, llamadas a `track`/`untrack`/`removeChannel`/`send` y eventos tardíos
+  del SDK. Son mecanismos de cada implementación; los escenarios entre actores
+  ya están en el contrato. La denegación RLS de intrusos sigue en el SQL embebido
+  de D1: el adaptador de memoria no tiene autenticación que pueda denegarla.
+- [x] **Divergencia encontrada y corregida:** los adaptadores de Supabase seguían
+  invocando callbacks después de salir, mientras que memoria retira al miembro
+  inmediatamente. `removeChannel()` devuelve una promesa y puede haber eventos
+  del SDK en vuelo; un `SUBSCRIBED` tardío incluso ejecutaba de nuevo `track()`
+  en presencia. Ambas implementaciones Supabase invalidan ahora el listener
+  antes de empezar el cierre. Las dos regresiones con eventos tardíos fallaron
+  antes del arreglo (dos avisos de conexión después del cleanup) y pasan con él.
+  Es un bug de ciclo de vida: una pantalla cerrada podía modificar el estado de
+  conexión/presencia de quien ya se había ido. No cambian políticas ni topics.
+- [x] **Verificación local:** `npx tsc --noEmit` y `npm run lint` limpios;
+  `npx jest --coverage --ci --runInBand`: **960 pasados, 80 suites, salida 0**,
+  cobertura **94.80 / 89.70 / 94.44 / 96.22**, sobre el suelo vigente
+  **94.64 / 89.52 / 94.27 / 96.19**, sin modificarlo ni excluir código.
+  CI sobre `d1bbd03` también verde, incluido **Formato**:
+  [run 35910701313](https://github.com/thejowe/lockin/actions/runs/35910701313).
+- [ ] **Verificación contra Supabase real pendiente de infraestructura.** El
+  workflow existente se lanzó sobre `310dd07`
+  ([run 35908570413](https://github.com/thejowe/lockin/actions/runs/35908570413),
+  dos intentos) y sobre `d1bbd03`
+  ([run 35910702023](https://github.com/thejowe/lockin/actions/runs/35910702023),
+  otros dos intentos).
+  Los cuatro intentos murieron en «Supabase desechable con migraciones y
+  seed del repo» por `toomanyrequests` de ghcr.io, después de autenticar, antes
+  de ejecutar la suite. No prueban ni refutan el contrato. No hay Docker local;
+  no se ha ejecutado contra el proyecto alojado ni se ha tocado el workflow.
+  Rama `codex/contrato-realtime` y worktree `../lockin-codex-contrato` conservados
+  hasta cerrar esta verificación; todavía no se han integrado en la rama compartida.

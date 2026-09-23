@@ -51,7 +51,7 @@ describe('createSupabasePresenceAdapter', () => {
 
     adapter.join('s1', 'ana', handlers);
     realtime.status('SUBSCRIBED');
-    realtime.state.ana = [{}];
+    realtime.state.ana = [{ profileId: 'valor-no-usado' }, {}];
     realtime.state.bea = [{}];
     realtime.sync();
 
@@ -60,7 +60,11 @@ describe('createSupabasePresenceAdapter', () => {
     expect(realtime.rawClient.channel).toHaveBeenCalledWith('lockin:presence:s1', {
       config: { presence: { key: 'ana' }, private: true },
     });
-    expect(handlers.onConnection).toHaveBeenCalledWith(true);
+    expect(realtime.channel.on).toHaveBeenCalledWith(
+      'presence',
+      { event: 'sync' },
+      expect.any(Function)
+    );
     expect(realtime.channel.track).toHaveBeenCalledWith({ profileId: 'ana' });
     expect(handlers.onPeers).toHaveBeenLastCalledWith(['ana', 'bea']);
   });
