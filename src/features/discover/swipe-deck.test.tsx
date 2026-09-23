@@ -14,12 +14,17 @@
  * el módulo nativo reviente, no permite emitir eventos.
  *
  * El mock de Reanimated resuelve `withTiming` al instante y llama a su callback,
- * así que la animación de salida termina dentro del mismo `act`.
+ * así que la animación de salida termina dentro del mismo `act`. Eso también
+ * quiere decir que el resultado de una decisión es idéntico con y sin animación:
+ * para distinguirlos hay que mirar si el deck LLEGÓ a animar, y por eso los
+ * espías de abajo envuelven `withTiming` y `withSpring`.
  */
 
 import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-handler/jest-utils';
 import { State } from 'react-native-gesture-handler';
 import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act } from 'react';
+import { AccessibilityInfo } from 'react-native';
 
 import { buildProfile } from '@/data/test-fixtures';
 
@@ -27,6 +32,29 @@ import { PAN_TEST_ID, SwipeDeck } from './swipe-deck';
 
 import type { PanGesture } from 'react-native-gesture-handler';
 import type { Profile } from '@/data';
+
+/** Se llama cada vez que el deck pide una animación. `mock*` por el izado de `jest.mock`. */
+const mockWithTiming = jest.fn();
+const mockWithSpring = jest.fn();
+
+// `jest.setup.js` ya cambia Reanimated por su mock oficial; esto lo envuelve sin
+// cambiar su comportamiento, solo para poder afirmar que con «reducir
+// movimiento» no se pide ni una sola animación.
+jest.mock('react-native-reanimated', () => {
+  const reanimated = jest.requireActual('react-native-reanimated/mock');
+
+  return {
+    ...reanimated,
+    withTiming: (...args: unknown[]) => {
+      mockWithTiming(...args);
+      return reanimated.withTiming(...args);
+    },
+    withSpring: (...args: unknown[]) => {
+      mockWithSpring(...args);
+      return reanimated.withSpring(...args);
+    },
+  };
+});
 
 /** Umbral de desplazamiento del componente. Duplicado a propósito: si cambia allí, el test debe caerse. */
 const THRESHOLD = 110;
@@ -44,7 +72,17 @@ let onDecide: jest.Mock;
 
 /** Monta el deck con los perfiles dados. */
 async function renderDeck(profiles: Profile[] = PROFILES) {
-  return render(<SwipeDeck profiles={profiles} onDecide={onDecide} />);
+  const view = await render(<SwipeDeck profiles={profiles} onDecide={onDecide} />);
+
+  // `useReduceMotion` pregunta al sistema en un efecto asíncrono: sin vaciar la
+  // microcola, el primer gesto llegaría antes que la respuesta.
+  await act(async () => {});
+  return view;
+}
+
+/** Deja el ajuste del sistema como diga `enabled`, antes de montar el deck. */
+function systemReduceMotion(enabled: boolean) {
+  jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(enabled);
 }
 
 /**
@@ -66,6 +104,13 @@ function swipe({ translationX, velocityX = 0 }: { translationX: number; velocity
 
 beforeEach(() => {
   onDecide = jest.fn();
+  mockWithTiming.mockClear();
+  mockWithSpring.mockClear();
+});
+
+afterEach(() => {
+  // `AccessibilityInfo` es un doble compartido con el resto de la suite.
+  jest.restoreAllMocks();
 });
 
 describe('SwipeDeck', () => {
@@ -168,5 +213,108 @@ describe('SwipeDeck', () => {
     // decisión y no deja el bloqueo puesto.
     expect(onDecide).toHaveBeenCalledTimes(2);
     expect(onDecide).toHaveBeenLastCalledWith(PROFILES[0], 'like');
+  });
+
+  it('sin el ajuste del sistema, la tarjeta sí recorre la pantalla al salir', async () => {
+    await renderDeck();
+
+    swipe({ translationX: THRESHOLD + 20 });
+
+    // Control del bloque de abajo: si esto dejara de animar por su cuenta, los
+    // tests de «reducir movimiento» pasarían sin probar nada.
+    expect(mockWithTiming).toHaveBeenCalled();
+  });
+
+  it('sin el ajuste del sistema, un arrastre corto vuelve al centro con rebote', async () => {
+    await renderDeck();
+
+    swipe({ translationX: THRESHOLD - 1 });
+
+    expect(mockWithSpring).toHaveBeenCalled();
+  });
+});
+
+/**
+ * El ajuste de accesibilidad del sistema apaga el RECORRIDO, no la decisión: el
+ * deck tiene que acabar exactamente donde acababa —mismo perfil, misma decisión,
+ * mismo `onDecide`, que es lo que aguas arriba dispara la lógica de match— sin
+ * que nada cruce la pantalla. Por eso cada caso afirma las dos mitades: el
+ * resultado igual y cero animaciones pedidas.
+ */
+describe('SwipeDeck con «reducir movimiento» activado', () => {
+  beforeEach(() => {
+    systemReduceMotion(true);
+  });
+
+  it('el botón Like decide igual, sin sacar la tarjeta animada', async () => {
+    await renderDeck();
+
+    await fireEvent.press(screen.getByLabelText('Like'));
+
+    expect(onDecide).toHaveBeenCalledWith(PROFILES[0], 'like');
+    expect(mockWithTiming).not.toHaveBeenCalled();
+  });
+
+  it('el botón Pasar decide igual, sin sacar la tarjeta animada', async () => {
+    await renderDeck();
+
+    await fireEvent.press(screen.getByLabelText('Pasar'));
+
+    expect(onDecide).toHaveBeenCalledWith(PROFILES[0], 'pass');
+    expect(mockWithTiming).not.toHaveBeenCalled();
+  });
+
+  it('arrastrar más allá del umbral sigue siendo un like', async () => {
+    await renderDeck();
+
+    swipe({ translationX: THRESHOLD + 20 });
+
+    expect(onDecide).toHaveBeenCalledWith(PROFILES[0], 'like');
+    expect(mockWithTiming).not.toHaveBeenCalled();
+  });
+
+  it('arrastrar más allá del umbral hacia la izquierda sigue siendo un pass', async () => {
+    await renderDeck();
+
+    swipe({ translationX: -(THRESHOLD + 20) });
+
+    expect(onDecide).toHaveBeenCalledWith(PROFILES[0], 'pass');
+    expect(mockWithTiming).not.toHaveBeenCalled();
+  });
+
+  it('el flick corto pero rápido también decide sin animar', async () => {
+    await renderDeck();
+
+    swipe({ translationX: 20, velocityX: FLICK + 1 });
+
+    expect(onDecide).toHaveBeenCalledWith(PROFILES[0], 'like');
+    expect(mockWithTiming).not.toHaveBeenCalled();
+  });
+
+  it('un arrastre corto vuelve al centro de golpe, y sigue sin decidir', async () => {
+    await renderDeck();
+
+    swipe({ translationX: THRESHOLD - 1 });
+
+    expect(onDecide).not.toHaveBeenCalled();
+    expect(mockWithSpring).not.toHaveBeenCalled();
+  });
+
+  it('con el deck agotado no pasa nada, como sin el ajuste', async () => {
+    await renderDeck([]);
+
+    await fireEvent.press(screen.getByLabelText('Like'));
+
+    expect(onDecide).not.toHaveBeenCalled();
+  });
+
+  it('la siguiente tarjeta queda colocada: la decisión no deja el deck bloqueado', async () => {
+    await renderDeck();
+
+    swipe({ translationX: THRESHOLD + 20 });
+    swipe({ translationX: -(THRESHOLD + 20) });
+
+    expect(onDecide).toHaveBeenCalledTimes(2);
+    expect(onDecide).toHaveBeenLastCalledWith(PROFILES[0], 'pass');
   });
 });

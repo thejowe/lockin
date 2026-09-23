@@ -9,6 +9,12 @@
  *
  * Solo la tarjeta superior escucha el gesto; las de detrás son decorado
  * estático — animarlas no aporta nada al MVP y multiplica el coste por frame.
+ *
+ * Con «reducir movimiento» activado en el sistema, la tarjeta llega al MISMO
+ * estado final sin el recorrido: misma decisión, mismo `onDecide`, misma lógica
+ * de match aguas arriba. Lo que se apaga es solo lo que se mueve solo —la salida
+ * de pantalla y el rebote de vuelta al centro—, nunca el seguimiento del dedo:
+ * eso es manipulación directa y quitarla dejaría el deck sin feedback.
  */
 
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
@@ -29,6 +35,7 @@ import { useTheme } from '@/hooks/use-theme';
 
 import { DeckActions } from './deck-actions';
 import { ProfileCard } from './profile-card';
+import { useReduceMotion } from './use-reduce-motion';
 
 import type { Decision, Profile, Specialty } from '@/data';
 
@@ -59,6 +66,7 @@ export function SwipeDeck({
 }) {
   const theme = useTheme();
   const { width } = useWindowDimensions();
+  const reduceMotion = useReduceMotion();
 
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
@@ -85,6 +93,12 @@ export function SwipeDeck({
     const profile = top;
 
     exiting.set(true);
+
+    if (reduceMotion) {
+      settle(profile, decision);
+      return;
+    }
+
     translateX.set(
       withTiming(
         decision === 'like' ? exitDistance : -exitDistance,
@@ -113,13 +127,20 @@ export function SwipeDeck({
       const passed = translateX.get() < -SWIPE_THRESHOLD || event.velocityX < -FLICK_VELOCITY;
 
       if (!liked && !passed) {
-        translateX.set(withSpring(0, SPRING));
-        translateY.set(withSpring(0, SPRING));
+        translateX.set(reduceMotion ? 0 : withSpring(0, SPRING));
+        translateY.set(reduceMotion ? 0 : withSpring(0, SPRING));
         return;
       }
 
       const decision: Decision = liked ? 'like' : 'pass';
       exiting.set(true);
+
+      if (reduceMotion) {
+        // `settle` deja la tarjeta en el centro y avisa al padre: el deck pasa a
+        // la siguiente sin que nada recorra la pantalla.
+        runOnJS(settle)(top, decision);
+        return;
+      }
 
       // La tarjeta mantiene el arco del gesto al salir: sube o baja según iba.
       translateY.set(
