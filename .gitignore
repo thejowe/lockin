@@ -47,3 +47,9 @@ example
 
 # Archivos temporales del CLI de Supabase.
 /supabase/.temp/
+
+# Descargas del toolchain nativo de Android para compilar en local
+# (`expo run:android`): son de la máquina de quien compila, no del repo, y
+# pesan decenas de MB. Las carpetas que generan ya están arriba (/android).
+/android-ndk-*.zip
+/commandlinetools-*.zip
