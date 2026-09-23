@@ -1813,3 +1813,52 @@ que la próxima vez se pueda **medir** en vez de deducir: guardar en el artefact
 `docker logs` de `supabase_rest_*` y `supabase_auth_*` con marcas de tiempo, y
 `date -u +%s` del runner al arrancar el recorrido. El artefacto de hoy no traía
 logs de contenedores, y por eso la causa salió de la fuente y no de un log.
+
+## Funciones de trigger expuestas como RPC (2026-09-23)
+
+- [x] **Hallazgo del Security Advisor de Supabase** (`get_advisors`, no de una
+  lectura del código): `touch_updated_at()` y `messages_touch_match()` son
+  funciones de trigger — nunca deben invocarse directamente — pero tenían
+  `EXECUTE` concedido explícitamente a `anon` y `authenticated` (`proacl`:
+  `anon=X/postgres, authenticated=X/postgres`, no el `PUBLIC` implícito de
+  Postgres), así que cualquiera podía llamarlas como
+  `/rest/v1/rpc/messages_touch_match` o `/rest/v1/rpc/touch_updated_at`.
+  `messages_touch_match()` además es `SECURITY DEFINER`, que es lo que subía
+  el aviso a `WARN`/`EXTERNAL`/`SECURITY` (`anon_security_definer_function_executable`)
+  en vez de quedarse en higiene.
+- [x] **Migración `supabase/migrations/20260923000100_revoke_trigger_function_execute.sql`**:
+  `revoke execute ... from anon, authenticated` en las dos funciones.
+  `service_role` se deja tal cual (rol administrativo, no el que expone
+  PostgREST a clientes). No rompe los triggers: disparar un trigger no
+  necesita privilegio de ejecución del rol de la conexión, solo el de quien
+  define la función.
+- [x] **Aplicada contra `grrzmzktrhksbttpbblg`** con `apply_migration` (MCP de
+  Supabase). El primer intento revocó de `public` (no-op: no había ACL para
+  `public`, solo entradas explícitas por rol) y no cambió nada — verificado
+  con `has_function_privilege('anon', …)` antes y después de cada intento. La
+  migración en el repo ya lleva la versión correcta (`from anon,
+  authenticated`), así que no hay deriva entre archivo y remoto.
+- [x] **Verificado con `get_advisors(type=security)` antes y después**: el
+  hallazgo de `messages_touch_match` desaparece de la lista de `anon` y el
+  conteo de `authenticated_security_definer_function_executable` baja de 14 a
+  13 (las 13 restantes son los RPC de producto, expuestos a propósito —
+  `record_decision`, `discovery_deck` vía sus wrappers, `propose_session`,
+  etc. — y ya documentados en este archivo función por función).
+- Avisos restantes del advisor, revisados y **no son trabajo pendiente**:
+  - Los 13 `SECURITY DEFINER` restantes: son la API pública intencional del
+    esquema, mismo patrón que `record_decision()` ("única puerta") descrito
+    arriba en este archivo.
+  - `auth_allow_anonymous_sign_ins` en las ocho tablas: esperado — la app usa
+    `signInAnonymously()` como vía principal (decisión de `datos`, ver
+    "Autenticación" arriba).
+  - `auth_leaked_password_protection` (WARN): activar "Leaked password
+    protection" es un interruptor del dashboard de Auth, no una migración SQL
+    — ninguna herramienta de este bloque puede tocarlo. Pendiente del usuario
+    si lo quiere activado (comprueba contra HaveIBeenPwned.org; no bloquea
+    nada del MVP).
+  - Performance (`INFO`): 4 foreign keys sin índice cubridor y 2 índices sin
+    uso (`profiles_looking_for_idx`, `profiles_specialties_idx`). No se tocan
+    — mismo criterio que la decisión ya escrita sobre el índice GIN de
+    `seeking_specialties`: un índice que nadie mide que necesite solo cuesta
+    mantenimiento, y con el volumen de filas actual (single dígitos) no hay
+    señal de que haga falta.
