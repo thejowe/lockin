@@ -133,7 +133,14 @@ function run(binary, args, options = {}) {
   return result.stdout?.trim();
 }
 function supabase(args, options) {
-  return run('supabase', ['--workdir', runtime, ...args], options);
+  const env = { ...process.env };
+  // setup-cli fija GHCR en Actions. El run 35899273763 cayó tres veces por
+  // throttling antes de compilar. Sin esa fijación, la CLI 2.116.0 ya prueba
+  // ECR, GHCR y origen, con las mismas etiquetas: no duplicar sus reintentos.
+  if (env.GITHUB_ACTIONS === 'true' && env.SUPABASE_INTERNAL_IMAGE_REGISTRY === 'ghcr.io') {
+    delete env.SUPABASE_INTERNAL_IMAGE_REGISTRY;
+  }
+  return run('supabase', ['--workdir', runtime, ...args], { env, ...options });
 }
 function localBackend() {
   const status = JSON.parse(

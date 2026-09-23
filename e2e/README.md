@@ -523,6 +523,7 @@ Recorrido supabase verde en attempt-01.
 Al primer intento y sin reintentos. El workflow completo sigue rojo: el control
 negativo se para en `¡Match!` porque la primera tarjeta del orden del mock no
 está en `SEED_RECIPROCAL_IDS` (`src/data/mock/seed.ts`).
+
 ## Entrada y recuperación de cuenta en `registro`
 
 La variante `registro` encadena el alta existente (`register.yaml` y
@@ -557,3 +558,8 @@ salto navegador → app: el runner resuelve el 303 y entrega el enlace por Andro
 igual que en el alta. El perfil previo es un fixture, no otra prueba del
 formulario de creación de ficha. `sign-in.test.mjs` fija las etiquetas contra
 producto y el orden de las fases; el veredicto del recorrido lo da Actions.
+
+El runner retira en Actions la fijación de GHCR que hereda de `setup-cli`: la
+CLI 2.116.0 usa así sus alternativas oficiales (ECR, GHCR y origen), conservando
+las versiones de las imágenes. El run 35899273763 falló tres veces al descargar
+de GHCR por `toomanyrequests`, antes de compilar ninguno de los tres APK.
