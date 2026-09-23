@@ -7,6 +7,8 @@
  * describen mecánica del mock y no tienen equivalente en un backend real.
  */
 
+import { createMemoryPresenceAdapter } from '../presence';
+import { createMemoryVideoSignalAdapter } from '../video-signal';
 import { describeRepositoryContract } from '../repositories.contract';
 import { buildProfile, buildProfileInput } from '../test-fixtures';
 import {
@@ -37,9 +39,17 @@ const mockBackend: ContractBackend = {
   async reset() {
     resetState();
     const repositories = createMockRepositories();
+    const realtime = {
+      presence: createMemoryPresenceAdapter(),
+      videoSignal: createMemoryVideoSignalAdapter(),
+    };
 
     return {
       repositories,
+      async realtimeFor() {
+        return realtime;
+      },
+      async closeRealtime() {},
       currentUserId: CURRENT_USER_ID,
       async setRankingCandidates(inputs) {
         return inputs.map((input, index) => {

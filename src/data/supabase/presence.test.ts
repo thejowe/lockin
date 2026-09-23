@@ -44,7 +44,7 @@ function fakeRealtime() {
 }
 
 describe('createSupabasePresenceAdapter', () => {
-  it('se anuncia con su perfil como clave al conectar y publica quién está', () => {
+  it('configura el topic privado y traduce presenceState a claves de perfil', () => {
     const realtime = fakeRealtime();
     const adapter = createSupabasePresenceAdapter(() => realtime.client);
     const handlers = { onPeers: jest.fn(), onConnection: jest.fn() };
