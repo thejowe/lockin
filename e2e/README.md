@@ -531,7 +531,8 @@ La variante `registro` encadena el alta existente (`register.yaml` y
 otra entrada en la matriz ni cambia `supabase` o el control negativo `mock`.
 
 El alta termina sin ficha, en la elección de modo. El runner prepara en Postgres
-un perfil con nombre único para ese mismo uid confirmado. `sign-in.yaml` borra
+un perfil con nombre único y su modo activo para ese mismo uid confirmado.
+`sign-in.yaml` borra
 el estado, pulsa «Ya tengo cuenta», entra con el email y la contraseña del alta
 y comprueba las tabs, la ficha única y el email de la cuenta recuperada.
 

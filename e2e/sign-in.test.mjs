@@ -122,6 +122,7 @@ describe('entrada y recuperación desde instalación limpia', () => {
       cursor = next + text.length;
     }
     assert.match(attempt, /assert.equal\(data.id, userId/);
+    assert.match(attempt, /assert.equal\(settings.data.active_mode, 'par'/);
     assert.match(attempt, /assert.equal\(messages.length, 1/);
     assert.match(attempt, /IDs: messages.map/);
   });

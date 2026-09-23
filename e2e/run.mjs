@@ -973,6 +973,11 @@ if (command === 'test') {
         prompts: [{ question: 'Busco a alguien que…', answer: 'Construya en equipo' }],
       });
       assert.ifError(profileError);
+      const { error: settingsError } = await admin.from('user_settings').upsert({
+        user_id: userId,
+        active_mode: 'par',
+      });
+      assert.ifError(settingsError);
       // El nombre que Maestro ve en Perfil pertenece SOLO al uid del registro.
       // Leerlo de nuevo tras cada entrada ata la evidencia de UI a Postgres.
       async function verifyRecoveredProfile(currentPassword) {
@@ -984,6 +989,13 @@ if (command === 'test') {
           .single();
         assert.ifError(error);
         assert.equal(data.id, userId, 'La ficha recuperada pertenece al uid registrado');
+        const settings = await admin
+          .from('user_settings')
+          .select('active_mode')
+          .eq('user_id', userId)
+          .single();
+        assert.ifError(settings.error);
+        assert.equal(settings.data.active_mode, 'par', 'El modo del onboarding sigue guardado');
       }
       const vars = { EMAIL: email, PASSWORD: password, PROFILE_NAME: profileName };
       const signInDir = join(dir, 'sign-in');
