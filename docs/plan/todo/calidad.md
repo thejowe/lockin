@@ -3755,7 +3755,6 @@ lo que mató el run 35899273763 en sus tres trabajos.
   `Login Succeeded` de los tres trabajos.
 
 
-=======
 ## Entrada y recuperación de contraseña en Android (2026-09-23)
 
 - [x] **Recuperar la cuenta del alta desde una instalación limpia.** La variante
