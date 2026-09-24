@@ -1997,9 +1997,12 @@ delante, no por detrás.
       471 objetos antes, 469 después. Tras la migración quedan solo
       `postgres EXECUTE` y `service_role EXECUTE`, que es exactamente lo que
       lista `remote.txt`.
-- [ ] **Pendiente: el verde de `Schema drift` sobre esta rama.** El diff local
-      predice `Sin diferencias.`, pero la predicción no es el run. Comprobar el
-      job remoto del push que lleve esta migración y anotarlo aquí.
+- [x] **`Schema drift` en verde sobre `93ce29d`**, run
+      [35981573615](https://github.com/thejowe/lockin/actions/runs/35981573615):
+      los **dos** trabajos en `success`, incluido
+      `Comparar grrzmzktrhksbttpbblg (solo lectura)`, que es el que llevaba rojo
+      desde el 2026-09-23. La deriva queda cerrada contra el proyecto real, no
+      solo contra PGlite.
 - [ ] **Pendiente: corregir el comentario de `ci.yml:107-110`**, que atribuye el
       rojo remoto a una migración sin aplicar por el usuario. No es eso, y
       mientras siga escrito invita a ignorar el siguiente rojo legítimo.
