@@ -11,6 +11,7 @@ import { createMemoryPresenceAdapter } from '../presence';
 import { createMemoryVideoSignalAdapter } from '../video-signal';
 import { describeRepositoryContract } from '../repositories.contract';
 import { buildProfile, buildProfileInput } from '../test-fixtures';
+import { createMockAgreementRepository } from './agreement';
 import {
   advanceMockClock,
   createMockRepositories,
@@ -79,6 +80,8 @@ const mockBackend: ContractBackend = {
       // Alba es recíproca, pero los casos de sesiones solo dan like a Núria:
       // no comparte match con el usuario del test.
       outsiderSessions: () => createMockSessionRepository(RECIPROCAL_ALBA),
+      counterpartAgreement: () => createMockAgreementRepository(RECIPROCAL_NURIA),
+      outsiderAgreement: () => createMockAgreementRepository(RECIPROCAL_ALBA),
       async elapse(ms) {
         advanceMockClock(ms);
       },

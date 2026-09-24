@@ -8,18 +8,9 @@
 
 import { AGREEMENT_CATALOG, UNDECIDED, isKnownAnswer, topicByKey } from './topics';
 
-// Se mueve a `@/data` en la Tarea 3; hasta entonces vive aquí con esta forma exacta.
-export interface AgreementAnswer {
-  topic: string;
-  option: string;
-  note: string | null;
-  updatedAt: string;
-}
-export interface AgreementTopicView {
-  topic: string;
-  mine: AgreementAnswer | null;
-  theirs: AgreementAnswer | 'hidden' | null;
-}
+import type { AgreementTopicView } from '@/data';
+
+export type { AgreementTopicView };
 
 export type TopicStatus = 'pendiente' | 'coincidis' | 'distinto' | 'por-hablar';
 

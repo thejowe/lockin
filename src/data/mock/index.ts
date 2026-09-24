@@ -6,6 +6,7 @@
  * `src/data/index.ts` elegirá entre las dos — las pantallas no se enteran.
  */
 
+import { createMockAgreementRepository } from './agreement';
 import {
   CURRENT_USER_ID,
   defaultMockStore,
@@ -50,6 +51,7 @@ export {
 } from './store';
 export type { MockStore } from './store';
 export { createMockSessionRepository, sessionsTopic } from './sessions';
+export { createMockAgreementRepository } from './agreement';
 
 const MATCHES_TOPIC = 'matches';
 const messagesTopic = (matchId: string) => `messages:${matchId}`;
@@ -333,5 +335,6 @@ export function createMockRepositories(store: MockStore = defaultMockStore): Rep
     matches,
     messages,
     sessions: createMockSessionRepository(CURRENT_USER_ID, store),
+    agreement: createMockAgreementRepository(CURRENT_USER_ID, store),
   };
 }
