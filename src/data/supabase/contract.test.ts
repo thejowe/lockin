@@ -359,7 +359,47 @@ const supabaseBackend: ContractBackend = {
     }
     const [parReciprocal, lockinReciprocal, bothReciprocal] = reciprocals;
 
+    const used = new Set<string>();
+    const extraClients: SupabaseClient<Database>[] = [];
     return {
+      async realtimeFor(profileId) {
+        const { createSupabasePresenceAdapter } =
+          require('./presence') as typeof import('./presence');
+        const { createSupabaseVideoSignalAdapter } =
+          require('./video-signal') as typeof import('./video-signal');
+        let client =
+          profileId === currentUserId
+            ? appClient
+            : reciprocals.find((actor) => actor.id === profileId)!.client;
+        if (used.has(profileId)) {
+          // Otra pantalla del mismo perfil: otro socket con la misma identidad,
+          // sin gastar un alta anónima ni compartir el canal del primer cliente.
+          const { data } = await client.auth.getSession();
+          client = createClient<Database>(url!, anonKey!, {
+            auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+          });
+          extraClients.push(client);
+          const { error } = await client.auth.setSession(data.session!);
+          if (error) throw error;
+        }
+        used.add(profileId);
+        return {
+          presence: createSupabasePresenceAdapter(() => client),
+          videoSignal: createSupabaseVideoSignalAdapter(() => client),
+        };
+      },
+      async closeRealtime() {
+        for (const client of [
+          appClient,
+          ...reciprocals.map((actor) => actor.client),
+          ...extraClients,
+        ]) {
+          await client.removeAllChannels();
+          await client.realtime.disconnect();
+        }
+        // No signOut: la pantalla extra comparte la sesión de la contraparte.
+        extraClients.length = 0;
+      },
       repositories,
       currentUserId,
       async setRankingCandidates(inputs) {

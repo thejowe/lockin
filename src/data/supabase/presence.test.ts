@@ -44,14 +44,14 @@ function fakeRealtime() {
 }
 
 describe('createSupabasePresenceAdapter', () => {
-  it('se anuncia con su perfil como clave al conectar y publica quién está', () => {
+  it('configura el topic privado y traduce presenceState a claves de perfil', () => {
     const realtime = fakeRealtime();
     const adapter = createSupabasePresenceAdapter(() => realtime.client);
     const handlers = { onPeers: jest.fn(), onConnection: jest.fn() };
 
     adapter.join('s1', 'ana', handlers);
     realtime.status('SUBSCRIBED');
-    realtime.state.ana = [{}];
+    realtime.state.ana = [{ profileId: 'valor-no-usado' }, {}];
     realtime.state.bea = [{}];
     realtime.sync();
 
@@ -60,7 +60,11 @@ describe('createSupabasePresenceAdapter', () => {
     expect(realtime.rawClient.channel).toHaveBeenCalledWith('lockin:presence:s1', {
       config: { presence: { key: 'ana' }, private: true },
     });
-    expect(handlers.onConnection).toHaveBeenCalledWith(true);
+    expect(realtime.channel.on).toHaveBeenCalledWith(
+      'presence',
+      { event: 'sync' },
+      expect.any(Function)
+    );
     expect(realtime.channel.track).toHaveBeenCalledWith({ profileId: 'ana' });
     expect(handlers.onPeers).toHaveBeenLastCalledWith(['ana', 'bea']);
   });
@@ -73,6 +77,19 @@ describe('createSupabasePresenceAdapter', () => {
     realtime.status(value);
 
     expect(handlers.onConnection).toHaveBeenLastCalledWith(false);
+  });
+
+  it('ignora eventos tardíos del SDK después del cleanup, incluido SUBSCRIBED', () => {
+    const realtime = fakeRealtime();
+    const handlers = { onPeers: jest.fn(), onConnection: jest.fn() };
+    const leave = createSupabasePresenceAdapter(() => realtime.client).join('s1', 'ana', handlers);
+    leave();
+    realtime.status('SUBSCRIBED');
+    realtime.status('CLOSED');
+    realtime.sync();
+    expect(handlers.onConnection).not.toHaveBeenCalled();
+    expect(handlers.onPeers).not.toHaveBeenCalled();
+    expect(realtime.channel.track).not.toHaveBeenCalled();
   });
 
   it('salir deja de anunciarse y cierra el canal', () => {

@@ -15,14 +15,18 @@ export function createSupabasePresenceAdapter(
 ): PresenceAdapter {
   return {
     join(sessionId, profileId, { onPeers, onConnection }) {
+      let active = true;
       const client = getClient();
       const channel = client.channel(`lockin:presence:${sessionId}`, {
         config: { presence: { key: profileId }, private: true },
       });
 
       channel
-        .on('presence', { event: 'sync' }, () => onPeers(Object.keys(channel.presenceState())))
+        .on('presence', { event: 'sync' }, () => {
+          if (active) onPeers(Object.keys(channel.presenceState()));
+        })
         .subscribe((status) => {
+          if (!active) return;
           if (status === 'SUBSCRIBED') {
             onConnection(true);
             void channel.track({ profileId });
@@ -32,6 +36,8 @@ export function createSupabasePresenceAdapter(
         });
 
       return () => {
+        // removeChannel es asíncrono: el SDK aún puede entregar eventos en vuelo.
+        active = false;
         void channel.untrack();
         void client.removeChannel(channel);
       };

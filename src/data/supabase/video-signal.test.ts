@@ -49,7 +49,7 @@ function offer(from: string): VideoSignalMessage {
 }
 
 describe('createSupabaseVideoSignalAdapter', () => {
-  it('abre un canal por sesión y avisa de la conexión al suscribirse', () => {
+  it('configura el topic privado y registra el evento signal del SDK', () => {
     const realtime = fakeRealtime();
     const adapter = createSupabaseVideoSignalAdapter(() => realtime.client);
     const handlers = { onMessage: jest.fn(), onConnection: jest.fn() };
@@ -63,7 +63,11 @@ describe('createSupabaseVideoSignalAdapter', () => {
     expect(realtime.rawClient.channel).toHaveBeenCalledWith('lockin:video:s1', {
       config: { private: true },
     });
-    expect(handlers.onConnection).toHaveBeenCalledWith(true);
+    expect(realtime.channel.on).toHaveBeenCalledWith(
+      'broadcast',
+      { event: 'signal' },
+      expect.any(Function)
+    );
   });
 
   it.each(['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'])('%s se publica como sin conexión', (value) => {
@@ -76,7 +80,7 @@ describe('createSupabaseVideoSignalAdapter', () => {
     expect(handlers.onConnection).toHaveBeenLastCalledWith(false);
   });
 
-  it('un mensaje de otro perfil llega a `onMessage`', () => {
+  it('desempaqueta payload del evento broadcast signal', () => {
     const realtime = fakeRealtime();
     const handlers = { onMessage: jest.fn(), onConnection: jest.fn() };
     createSupabaseVideoSignalAdapter(() => realtime.client).join('s1', 'bea', handlers);
@@ -86,7 +90,7 @@ describe('createSupabaseVideoSignalAdapter', () => {
     expect(handlers.onMessage).toHaveBeenCalledWith(offer('ana'));
   });
 
-  it('un mensaje propio no vuelve como eco', () => {
+  it('filtra from aunque el SDK entregue un broadcast del mismo perfil', () => {
     const realtime = fakeRealtime();
     const handlers = { onMessage: jest.fn(), onConnection: jest.fn() };
     createSupabaseVideoSignalAdapter(() => realtime.client).join('s1', 'ana', handlers);
@@ -110,12 +114,28 @@ describe('createSupabaseVideoSignalAdapter', () => {
     });
   });
 
-  it('enviar a una sesión sin unirse no revienta', () => {
+  it('sin canal abierto no llama a send del SDK', () => {
     const realtime = fakeRealtime();
     const adapter = createSupabaseVideoSignalAdapter(() => realtime.client);
 
-    expect(() => adapter.send('vacia', offer('ana'))).not.toThrow();
+    adapter.send('vacia', offer('ana'));
     expect(realtime.channel.send).not.toHaveBeenCalled();
+  });
+
+  it('ignora eventos tardíos del SDK después del cleanup, incluido SUBSCRIBED', () => {
+    const realtime = fakeRealtime();
+    const handlers = { onMessage: jest.fn(), onConnection: jest.fn() };
+    const leave = createSupabaseVideoSignalAdapter(() => realtime.client).join(
+      's1',
+      'ana',
+      handlers
+    );
+    leave();
+    realtime.status('SUBSCRIBED');
+    realtime.status('CLOSED');
+    realtime.broadcast(offer('bea'));
+    expect(handlers.onConnection).not.toHaveBeenCalled();
+    expect(handlers.onMessage).not.toHaveBeenCalled();
   });
 
   it('salir cierra el canal y deja de poder enviar', () => {
