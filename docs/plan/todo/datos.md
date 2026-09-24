@@ -2018,3 +2018,19 @@ delante, no por detrás.
       limpio, `npx jest` 960 pasados en 80 suites y `node --test e2e/*.test.mjs`
       87 de 88, con el único fallo en el caso CRLF conocido de
       `full-journey.test.mjs:118` (ruido de Windows).
+
+### Barrido: ¿había más funciones expuestas por el mismo descuido?
+
+- [x] **No, y queda medido.** Con las migraciones aplicadas en PGlite, las
+      únicas funciones que conservan EXECUTE para `PUBLIC` o `anon` son tres, y
+      las tres son `security invoker` y SQL puro sobre sus argumentos, sin
+      tocar ninguna tabla: `array_has_duplicates(anyarray)` e
+      `is_valid_prompts(jsonb)` (`20260905000100_enums_and_helpers.sql`) y
+      `resolve_match_mode(mode_preference, mode_preference)`
+      (`20260905000500_functions_and_realtime.sql`). Son ayudantes de `check`;
+      invocarlas por RPC no revela nada que quien llama no traiga ya en los
+      argumentos.
+- [x] **Las 15 funciones `SECURITY DEFINER` del esquema no tienen EXECUTE para
+      `PUBLIC` ni para `anon`.** Que es lo que había que comprobar después del
+      fallo de arriba: el descuido de `20260923000100` era un caso aislado, no
+      un patrón repetido por el esquema.
