@@ -106,7 +106,8 @@ E2E (lo que comprueba ese lint no es lo que este workflow viene a comprobar).
       (`5fa139f`): `Tests`, `Lint`, `Formato`, `Tipos`, `Runner E2E`, `SQL
       embebido` y `Export web` en verde. El `Formato` verde confirma otra vez que
       el rojo local de `format:check` es solo el CRLF de Windows.
-- [ ] **`Contrato Supabase` sigue rojo por lo mismo**, en el mismo paso y con
+- [x] **`Contrato Supabase` sigue rojo por lo mismo** *(cerrado el 2026-09-24,
+      ver más abajo)*, en el mismo paso y con
       `toomanyrequests` 25 veces en el log. Un dato útil para la opción (b): en
       ese log **solo** aparecen imágenes `ghcr.io/supabase/…` —ninguna
       `public.ecr.aws/…`—, así que con `SUPABASE_INTERNAL_IMAGE_REGISTRY=ghcr.io`
@@ -114,6 +115,13 @@ E2E (lo que comprueba ese lint no es lo que este workflow viene a comprobar).
       pese a que el mensaje final diga «failed to pull docker image from all
       registries». Quitar esa fijación sigue siendo la vía con más recorrido, y
       la lleva Codex.
+  - **2026-09-24: verde, y el mérito no es de aquí.** El trabajo pasó en el run
+    [35980647728](https://github.com/thejowe/lockin/actions/runs/35980647728)
+    (`8922091`) bajando las imágenes de `public.ecr.aws`, porque
+    `supabase/setup-cli` dejó esa madrugada de exportar la fijación para CLI
+    >= 2.108.0 (`45a513f`, tag `v3` movido). La de-fijación equivalente se
+    porta igualmente a `contract.yml` como guarda. Todo el detalle y la
+    evidencia, en la sección del 2026-09-24 al final de este archivo.
 
 ### Verificación de esta pasada
 
@@ -3551,17 +3559,29 @@ vuelve por el **esquema** `lockin://auth/callback`.
 
 ### 2. Lo que sigue sin recorrer nadie en un dispositivo
 
-- [ ] **Entrar con «Ya tengo cuenta»** (`src/app/(onboarding)/sign-in.tsx` +
-      `src/features/profile/sign-in-form.tsx`), **«He olvidado mi contraseña»**
-      (`sign-in-form.tsx:253`) y la rama de abandono del perfil irrecuperable
-      (`abandonsUnrecoverableProfile`, `sign-in-form.tsx:88`). Los cubre solo
-      Jest con dobles. **Lanzado a Codex en paralelo**: en este árbol ya hay
-      `e2e/sign-in.yaml`, `e2e/sign-in.test.mjs` y `e2e/password-reset.yaml` sin
-      commitear, y el run
-      [35899273763](https://github.com/thejowe/lockin/actions/runs/35899273763)
-      (`25aa014`, «recover registered accounts after clean install») es de esa
-      sesión. **No cerrar esta casilla desde aquí**: la cierra quien entregue ese
-      trabajo.
+- [x] **Entrar con «Ya tengo cuenta» y «He olvidado mi contraseña»: cubiertos
+      desde el 2026-09-23.** Lo entregó la sesión de Codex que se fusionó en
+      `d0cec6b` (`e2e/sign-in.yaml`, `e2e/password-reset.yaml`,
+      `e2e/sign-in.test.mjs` y el encadenado de `run.mjs:1000-1090`). Evidencia
+      leída, no supuesta: la variante `registro` del run
+      [35901538450](https://github.com/thejowe/lockin/actions/runs/35901538450)
+      (`3d0ed0b`) pasó en verde al primer intento, y `sign-in.yaml` entra desde
+      una instalación limpia (`launchApp: clearState: true` → «Ya tengo cuenta» →
+      email + contraseña → «Entrar» → tabs, ficha y email en Perfil) mientras
+      `password-reset.yaml` recorre «He olvidado mi contraseña» con el correo
+      real de GoTrue en dos fases (`request` / `confirm`, con el `am start` del
+      runner por medio). Detalle en «Entrada y recuperación de contraseña en
+      Android (2026-09-23)», al final de este archivo.
+- [ ] **La rama de abandono del perfil irrecuperable sigue sin recorrer nadie**
+      (`abandonsUnrecoverableProfile`, `sign-in-form.tsx:88`, y el panel «Entrar
+      aquí deja atrás el perfil de este teléfono» de `sign-in-form.tsx:210-237`).
+      Esta parte de la casilla **no la cierra el E2E nuevo**, y es por
+      construcción: los dos flujos arrancan con `clearState: true`, así que
+      `profiles.getCurrent()` devuelve `null` y la condición de la línea 93 no
+      se puede cumplir. `grep` sobre `e2e/` no encuentra «Entrar y dejar este
+      perfil» ni «Mejor no» en ningún `.yaml`. La cubre solo Jest con dobles
+      (`sign-in-form.test.tsx`). Para un E2E haría falta un caso que cree perfil
+      anónimo primero y entre después **sin** borrar el almacenamiento.
 - [x] **El rojo de hoy (35899273763) no es de ese trabajo ni de la fijación.**
       Los **tres** trabajos murieron en `Supabase desechable con migraciones
       reales`, sin levantar un solo contenedor (`containers/resumen.txt`: «no hay
@@ -3728,6 +3748,24 @@ lo que mató el run 35899273763 en sus tres trabajos.
       (run 35901538809, `3d0ed0b`, sin login ninguno). Es una ventana mala del
       registro, no algo que dependa de este repo: mientras dura, ni autenticado
       se baja una imagen.
+  - **Corrección del 2026-09-24: la segunda frase era falsa.** En el run
+    35901538809 el trabajo `Contrato Supabase` no pasó en verde: salió
+    **`skipped`** (`gh run view 35901538809 --json jobs` →
+    `{"concl":"skipped","name":"Contrato Supabase"}`), porque `ci.yml:92-94`
+    solo lo llama en `push` a la rama por defecto y ese run era de
+    `codex/e2e-account-recovery`. Nunca llegó a tocar ghcr.io. Con eso cae el
+    «ventana mala del registro, no algo que dependa de este repo»: no había tal
+    verde con el que comparar. Lo que sí se sostiene del punto es lo primero
+    —35904260740 murió con `toomanyrequests` después de su `Login Succeeded`—.
+    Y lo que hacía fatal esa ventana mala no era la hora sino la fijación de
+    registro, que dejaba a la CLI sin ningún otro sitio de donde bajar: ver la
+    sección del 2026-09-24 más abajo.
+- [x] **La opción (b) ya está aplicada en `contract.yml` (2026-09-24)**, aunque
+      para entonces el rojo ya se lo había llevado `supabase/setup-cli` por su
+      cuenta: desde `45a513f` (tag `v3`, 04:04Z de ese día) la acción no exporta
+      la fijación con CLI >= 2.108.0, y el trabajo pasó en verde sin tocar nada
+      (run 35980647728). El `unset` que se añade aquí queda como guarda. Sección
+      del 2026-09-24, al final de este archivo.
 - [ ] **Lo que queda por probar, en este orden.** (a) Pre-bajar las imágenes con
       `docker pull` y reintentos antes de `supabase start`, para que la CLI las
       encuentre en caché —tiene la ventaja de que el reintento es nuestro y se
@@ -3809,3 +3847,124 @@ La ficha y su modo son un fixture; este caso no prueba su creación por formular
   de `full-journey.test.mjs:118` en Windows; siete nuevos pasan. ESLint de
   `e2e/run.mjs` limpio. CI general verde: [run
   35901538809](https://github.com/thejowe/lockin/actions/runs/35901538809).
+  (En ese run el trabajo `Contrato Supabase` salió **`skipped`**, no verde:
+  `ci.yml:92-94` solo lo llama en `push` a la rama por defecto. Ver la
+  corrección del 2026-09-24 en la sección anterior.)
+
+## La de-fijación de GHCR se porta a `contract.yml` — y el rojo ya se había ido solo (2026-09-24)
+
+La pasada empezó para cerrar la opción (b) de ayer: `e2e/run.mjs` dejó de fijar el
+registro de imágenes en Actions, `contract.yml` no pasa por `run.mjs` —su paso
+«Supabase desechable con migraciones y seed del repo» llama a `supabase start`
+directo— y por eso seguía heredando el `SUPABASE_INTERNAL_IMAGE_REGISTRY=ghcr.io`
+de `supabase/setup-cli` y seguía muriendo en el pull. El cambio está hecho.
+
+**Pero el titular honesto de esta pasada es otro, y va primero para que no se lea
+como la enésima «esto lo arregla»: el rojo ya no existía cuando se aplicó, y no lo
+quitó este bloque.** Lo quitó `supabase/setup-cli` en su repo, esta madrugada.
+
+### Qué se ha cambiado
+
+- [x] **Una línea en el paso que arranca Supabase**: `unset
+      SUPABASE_INTERNAL_IMAGE_REGISTRY` justo después del `set -euo pipefail`,
+      más el comentario que explica por qué, apuntando a `e2e/run.mjs:137-141`.
+      Se hace en el shell del paso y no con un `env:` del job: la variable la
+      exporta `setup-cli` a todos los pasos (se ve en el bloque `env` de cada uno
+      en el log), y `unset` es exactamente lo que hace el precedente de
+      `run.mjs`, sin depender de cómo trate viper un valor vacío. Los demás pasos
+      que llaman a `supabase` (`status`, `stop`) no bajan imágenes, así que no
+      hace falta tocarlos.
+- [x] **El `docker login` se queda.** Mismo argumento de ayer: no cuesta nada y
+      autentica el intento de GHCR cuando ECR no traiga una etiqueta. `packages:
+      read` sigue igual.
+- [x] **`e2e.yml` no se toca, y no es un olvido.** Allí lo que está fijado es
+      **otra cosa**: la versión de PostgREST (`E2E_POSTGREST_VERSION=v16.3`) y la
+      de la CLI, porque la estable 2.117.0 todavía levanta PostgREST v16.2
+      (`apps/cli-go/pkg/config/templates/Dockerfile` de la CLI). Esa fijación
+      sigue abierta a propósito — ver «Fijación de PostgREST a v16.3» más arriba.
+      La de-fijación del **registro** ya la tiene ese workflow por `run.mjs`.
+
+### La causa, releída en el log de hoy y no de memoria
+
+El último rojo, [run
+35910702023](https://github.com/thejowe/lockin/actions/runs/35910702023)
+(`d1bbd03`, lanzado a mano ayer a las 19:38Z), murió en el mismo paso con
+**34 `toomanyrequests`**. Leído el log entero: **todas** las líneas de pull son
+`ghcr.io/supabase/…` (postgres, kong, gotrue, realtime, storage-api,
+postgres-meta) y **no aparece `public.ecr.aws` ni una vez**, pese al «failed to
+pull docker image from all registries» del final. Concuerda con el código de la
+CLI que usa el workflow: en `internal/utils/docker.go` de la `v2.116.0`,
+`GetRegistryImageUrls` devuelve un único registro si `HasRegistryOverride()`, y
+los tres (ECR, GHCR, origen, con la misma etiqueta) si no hay override. Y el
+`SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io` aparece en el bloque `env` de cada
+paso del log, incluido el que falla.
+
+### Quién quitó el rojo de verdad: `supabase/setup-cli`, a las 04:04Z de hoy
+
+- [x] **`Contrato Supabase` está VERDE desde hoy, y sin el cambio de esta
+      pasada.** [Run 35980647728](https://github.com/thejowe/lockin/actions/runs/35980647728)
+      (`8922091`, push a la rama principal, 09:20Z): el trabajo `Contrato
+      Supabase / Contrato de Repositories (Supabase local)` termina en `success`
+      en 3 min 46 s, con el `contract.yml` **de antes** de tocarlo. Es el primer
+      verde de ese trabajo desde el 2026-09-19.
+- [x] **Y el log dice por qué.** En ese run **no aparece
+      `SUPABASE_INTERNAL_IMAGE_REGISTRY` ni una vez** —ni en el bloque `env` de
+      ningún paso—, los pulls son **24 de `public.ecr.aws/supabase/…` y 0 de
+      `ghcr.io`**, y el `toomanyrequests: Rate exceeded` que sale al principio es
+      de ECR y lo absorben los reintentos de la propia CLI. Misma CLI 2.116.0,
+      mismo workflow, mismo repo: lo único que cambió está fuera.
+- [x] **La causa, en el repo de la acción.** `supabase/setup-cli` fusionó
+      `45a513f` («fix: allow registry fallback in supported CLI versions», #453)
+      el **2026-09-24T04:04:55Z** y movió el tag `v3` ahí. El cambio es en
+      `src/main.ts`: ahora `shouldUseGhcrRegistry` exige además
+      `version < 2.108.0` y solo exporta la variable `if (… && !process.env[…])`.
+      Con la 2.116.0 que fija este workflow, **ya no la exporta**. El run rojo de
+      ayer (35910702023, 19:44Z) descargó `supabase/setup-cli@v3` en el SHA
+      `46f7f98`; el verde de hoy, el nuevo.
+- [ ] **Entonces, ¿qué arregla el `unset` que se añade aquí? Hoy, nada.** Es una
+      guarda, y así está escrita en el comentario del workflow: cubre que se fije
+      en este repo una CLI anterior a la 2.108.0 (que volvería a activar la
+      fijación upstream) o que la acción recaiga. Se queda por eso y por
+      simetría con `run.mjs`, no porque haya devuelto ningún verde. Queda
+      **pendiente de verificar en CI con el cambio dentro**: no está empujado —lo
+      revisa el usuario—, y `gh workflow run --ref <rama>` ejecuta el archivo tal
+      como está en `origin`, así que el veredicto del archivo modificado no se
+      puede pedir hasta que la rama suba (`gh workflow run contract.yml --ref
+      claude/startup-cofounder-matching-app-tfeai1`). Lo que se espera es un
+      verde idéntico al de hoy; si sale rojo, se anota el rojo aquí.
+- [x] **El dispatch que se lanzó desde esta sesión, para que no se lea mal.**
+      [Run 35981233624](https://github.com/thejowe/lockin/actions/runs/35981233624)
+      (`8922091`, 09:26Z, también sin el cambio): sus **diez pasos terminaron en
+      `success`, incluida la `Suite de contrato`**, y aun así el run figura como
+      `cancelled` — lo canceló la `concurrency` `contract-${{ github.ref }}`
+      cuando el usuario empujó `93ce29d` a la misma rama tres minutos después.
+      Es decir: dos pasadas verdes hoy del trabajo, ninguna atribuible a esta
+      pasada.
+- [ ] **El verdadero examen sigue siendo el próximo día malo de un registro**, y
+      ahora con un matiz nuevo: hoy quien devolvió `toomanyrequests` fue **ECR**,
+      no GHCR. Sin fijación la CLI tiene a quién caer; con ella no tenía. Esa es
+      toda la tesis que sostiene el cambio, y no la sostiene ningún color de hoy.
+
+### Verificación de esta pasada
+
+- `npx prettier --config .prettierrc --check` sobre una copia con finales LF de
+  `.github/workflows/contract.yml` (`tr -d '\r'` a un temporal): limpia. Hay que
+  pasar `--config` a mano porque prettier resuelve la configuración desde la ruta
+  del archivo y el temporal cae fuera del repo; sin él, el único «fallo» son las
+  comillas. En el árbol de Windows `format:check` sigue siendo ruido CRLF.
+- YAML válido y estructura intacta, comprobado parseando el archivo con el
+  paquete `yaml` del repo: diez pasos, en el mismo orden, y el `unset` dentro del
+  `run` del paso de Supabase.
+- `npx tsc --noEmit` limpio (no se ha tocado TypeScript, pero el árbol venía de
+  dos merges).
+- `node --test e2e/sign-in.test.mjs`: **7 de 7**, con el `sign-in-form.tsx` de
+  hoy — las etiquetas que fija ese guarda siguen existiendo en producto después
+  del refactor de copy de `b567adc`, posterior al `3d0ed0b` con el que se probó
+  en el emulador.
+- Los logs de CI leídos enteros, no por el resumen: `gh run view <id> --log` de
+  35910702023 (el rojo de ayer) y del trabajo de contrato de 35980647728 (el
+  verde de hoy), contando pulls por registro y buscando
+  `SUPABASE_INTERNAL_IMAGE_REGISTRY` en los bloques `env`; `gh run view … --json
+  jobs` para el `skipped` de 35901538809 y para los pasos de 35981233624; y
+  `gh api repos/supabase/setup-cli/commits/45a513f` + `…/git/ref/tags/v3` para
+  datar el cambio de la acción y ver su diff.

@@ -58,9 +58,31 @@ jobs:
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+      # Sin fijar el registro de imágenes, igual que `e2e/run.mjs:137-141`.
+      # `setup-cli` exportaba `SUPABASE_INTERNAL_IMAGE_REGISTRY=ghcr.io` a todos
+      # los pasos, y con esa fijación puesta la CLI 2.116.0 prueba ghcr.io y solo
+      # ghcr.io: en el run 35910702023 los 34 `toomanyrequests` del log son todos
+      # de `ghcr.io/supabase/…` y no aparece `public.ecr.aws` ni una vez, pese a
+      # que el mensaje final diga «failed to pull docker image from all
+      # registries». Sin la fijación, `GetRegistryImageUrls`
+      # (`internal/utils/docker.go` de la v2.116.0) devuelve ECR, GHCR y origen
+      # con las mismas etiquetas: los mismos contenedores, tres registros en vez
+      # de uno.
+      #
+      # Honestidad sobre qué arregla esto HOY: nada, porque el 2026-09-24
+      # `supabase/setup-cli` dejó de poner esa variable para CLI >= 2.108.0
+      # (commit `45a513f`, al que apunta ya el tag `v3`), y desde entonces este
+      # trabajo baja de ECR él solo. Queda como guarda de lo que sí puede
+      # volver: fijar aquí una CLI anterior a la 2.108.0, o que la acción
+      # recaiga. Y va en el shell del paso porque este workflow llama a
+      # `supabase start` directamente, sin pasar por `run.mjs`.
+      #
+      # El `docker login` de arriba se queda: no cuesta nada y autentica el
+      # intento de GHCR cuando ECR no traiga una etiqueta.
       - name: Supabase desechable con migraciones y seed del repo
         run: |
           set -euo pipefail
+          unset SUPABASE_INTERNAL_IMAGE_REGISTRY
           mkdir -p "$RUNTIME"
           supabase --workdir "$RUNTIME" init
           config="$RUNTIME/supabase/config.toml"
