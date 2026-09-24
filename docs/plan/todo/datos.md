@@ -1914,7 +1914,10 @@ logs de contenedores, y por eso la causa salió de la fuente y no de un log.
   **94.64 / 89.52 / 94.27 / 96.19**, sin modificarlo ni excluir código.
   CI sobre `d1bbd03` también verde, incluido **Formato**:
   [run 35910701313](https://github.com/thejowe/lockin/actions/runs/35910701313).
-- [ ] **Verificación contra Supabase real pendiente de infraestructura.** El
+- [x] **CERRADO el 2026-09-24: verificado contra Supabase real.** Ver «El
+      contrato de realtime sí se ha ejecutado» al final del archivo. Lo de abajo
+      queda como estaba el 2026-09-23, cuando todavía no se podía.
+- [ ] ~~Verificación contra Supabase real pendiente de infraestructura.~~ El
   workflow existente se lanzó sobre `310dd07`
   ([run 35908570413](https://github.com/thejowe/lockin/actions/runs/35908570413),
   dos intentos) y sobre `d1bbd03`
@@ -2034,3 +2037,34 @@ delante, no por detrás.
       `PUBLIC` ni para `anon`.** Que es lo que había que comprobar después del
       fallo de arriba: el descuido de `20260923000100` era un caso aislado, no
       un patrón repetido por el esquema.
+
+## El contrato de realtime sí se ha ejecutado contra Supabase real (2026-09-24)
+
+La sección anterior dejaba la verificación del contrato de presencia y
+señalización «pendiente de infraestructura»: los cuatro intentos del 2026-09-23
+murieron por `toomanyrequests` de ghcr.io antes de llegar a la suite. Ya no.
+
+- [x] **`Contrato Supabase` en verde**, run
+      [35980647728](https://github.com/thejowe/lockin/actions/runs/35980647728)
+      (`8922091`), job `Contrato de Repositories (Supabase local)`: `success` en
+      3 min 46 s. Es el primer verde de ese job desde el 2026-09-19.
+- [x] **Y ejecutó los casos nuevos, que es lo que había que comprobar** — un
+      job verde no basta, porque la suite sabe degradarse a `skip` sin
+      credenciales. En el log salen los 13 casos de
+      `Realtime: presencia y señalización` uno a uno, todos `✓`: los tres de
+      presencia, los cuatro de `offer`/`answer`/`ice-candidate`/`hangup` en
+      ambas direcciones, el de salir y volver, el de silenciar callbacks al
+      salir antes de conectar, el de no reproducir lo enviado antes de entrar y
+      los dos de aislamiento entre sesiones del mismo adaptador.
+      `Test Suites: 1 passed, 1 total`; `Tests: 23 skipped, 77 passed, 100
+      total` (los 23 saltos son los `itWithTimeTravel`, que necesitan reloj
+      simulado y aquí no lo hay).
+- [x] **No hizo falta tocar el workflow.** El rojo se fue solo: `supabase/setup-cli`
+      fusionó `45a513f` el 2026-09-24T04:04Z y dejó de exportar
+      `SUPABASE_INTERNAL_IMAGE_REGISTRY=ghcr.io` para CLI ≥ 2.108.0, así que la
+      CLI 2.116.0 que fija el workflow vuelve a poder caer a `public.ecr.aws`.
+      El `unset` que `calidad` añadió en `contract.yml` (`6f66cc8`) es una
+      guarda por si se fija aquí una CLI anterior o la acción recae, no el
+      arreglo de hoy. Detalle en `todo/calidad.md`.
+
+Con esto, el bloque `datos` no tiene ninguna casilla abierta.
