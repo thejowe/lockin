@@ -392,7 +392,7 @@ descubra a mitad:
 | `supabase/schema-embedded.test.mjs`, `drift-check.mjs` (si no parsea la tabla nueva) | `datos`/`calidad` | Los tests en PGlite |
 | `src/app/chat/[matchId].tsx` | `chat` | Una línea: `<AgreementCard match={match} />` |
 | `src/app/_layout.tsx` | `arquitecto` | Un `Stack.Screen` para `agreement/[matchId]` |
-| `e2e/run.mjs`, `verify.mjs` | `calidad` | Dar de alta el flujo nuevo, solo en la variante `mock` |
+| `e2e/run.mjs`, `verify.mjs` | `calidad` | Dar de alta el flujo nuevo, encadenado en la variante `supabase` tras `session-streak.yaml`; la variante `mock` (control negativo) no se toca |
 
 - **No se lanza a la vez que `chat` ni que `datos`**, ni que ninguna sesión que
   esté tocando `src/data/types.ts` o `repositories.ts`. Va por turnos, no en
