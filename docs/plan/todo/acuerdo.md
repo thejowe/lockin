@@ -6,7 +6,7 @@ Plan: `docs/superpowers/plans/2026-09-24-acuerdo-socios.md`
 ## Tareas
 
 - [x] Tarea 1 — Catálogo y estado por tema (`src/features/agreement/topics.ts`, `status.ts`)
-- [ ] [Codex] Tarea 2 — Migración SQL y cobertura en PGlite
+- [x] Tarea 2 — Migración SQL y cobertura en PGlite
 - [ ] [Claude] Tarea 3 — Dominio, contrato y mock
 - [ ] [Codex] Tarea 4 — Repositorio de Supabase
 - [ ] [Codex] Tarea 5 — Hook `useAgreement` y `TopicRow`
