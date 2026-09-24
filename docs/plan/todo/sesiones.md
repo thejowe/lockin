@@ -209,10 +209,13 @@ en cada paso), `12-recientes-vacio.png`, `13-notif-llega.png`,
 + `ReactNativeJS`) y `logcat-completo.txt` (21:26:26.9 arranque del proceso
 por el broadcast).
 
-**Datos de prueba que se quedan en Supabase real:** las cuentas anónimas
-«Aviso Prueba» (`dd195de0-…`: match con Verif y sesión `b1e9be7b-…`,
-aceptada, 21:30 UTC) y «Recientes Prueba» (`0f4bb431-…`: al final no se usó,
-pero ha dado like a Verif y le aparecerá en el deck).
+**Datos de prueba:** las cuentas anónimas «Aviso Prueba» (`dd195de0-…`) y
+«Recientes Prueba» (`0f4bb431-…`) borraron su propio perfil y su
+`user_settings` con su sesión (RLS «borras el tuyo»). Por cascada se fueron
+también sus decisiones, el match con Verif y la sesión `b1e9be7b-…`. Solo
+quedan sus dos filas en `auth.users`, que la clave anon no puede borrar. Son
+usuarios anónimos sin perfil, invisibles para la app; si se quieren quitar,
+hay que hacerlo desde el dashboard (Authentication → Users).
 - [x] Contrato opt-in contra Supabase (`LOCKIN_SUPABASE_CONTRACT=1`) con los casos de sesiones en verde —
   **contra Supabase local desechable, no contra `grrzmzktrhksbttpbblg`**
   (2026-09-14, decisión del usuario: salida Docker local). No se ejecuta
