@@ -130,11 +130,89 @@ Plan: `docs/superpowers/plans/2026-09-13-sesiones-lockin.md`. Una casilla por ta
 > notificación local disparándose con la app cerrada, y `TODO.md` ya deja
 > escrito, a cuenta de otro episodio, que marcar una casilla no es haberla
 > verificado.
-- [ ] **[comprobador]** Volver a comprobar con evidencia el aviso de 5
+- [x] **[comprobador]** Volver a comprobar con evidencia el aviso de 5
   minutos antes con la app cerrada, en el emulador contra Supabase real
   (captura de la notificación + logcat), para que la casilla de arriba deje
   de descansar solo en la palabra del usuario. La presencia entre dos
-  clientes sigue necesitando dos dispositivos.
+  clientes sigue necesitando dos dispositivos. **Verificado el 2026-09-24**
+  con la app cerrada desde recientes y el proceso muerto: el aviso llegó
+  a las 21:26:28 para una sesión de las 21:30. **Pero** si se cierra con
+  `am force-stop` (lo que hace «Forzar detención» en Ajustes) y no se vuelve a
+  abrir, no llega; además puede llegar varios minutos tarde. Ver «Hallazgos del
+  comprobador» al final.
+
+## Hallazgos del comprobador
+
+### Aviso de 5 minutos con la app cerrada (2026-09-24)
+
+**Entorno.** Emulador Android 16 (AVD `lockin`), APK universal `preview` de
+EAS (`app.lockin.mobile`, construido desde `21418ee`; entre ese commit y
+`c81e124` no cambia nada de `src/features/session`, `src/app` ni `app.json`),
+**Supabase real** (`[lockin] backend de datos: Supabase` en logcat). En la app,
+la cuenta `+lockin3` / perfil «Verif». La otra parte es una cuenta anónima
+creada por API con la clave anon: «Aviso Prueba», `dd195de0-…`.
+
+**Pasos.**
+1. «Aviso Prueba» da like a Verif por `record_decision`. En la app, Verif le
+   da Like en el deck → «¡Match!» → chat → «Agendar sesión Lock-In» → hoy
+   21:30, 1 bloque → «Esperando a Aviso» (propuesta hecha a las 21:02:11 UTC).
+2. `am force-stop`. «Aviso Prueba» acepta por `respond_session` a las
+   21:02:35, **con la app cerrada** (`aceptar-api.txt`).
+3. Se reabre la app. `SessionReminderSync` corre, sale el diálogo de permiso
+   de notificaciones de Android (el APK no lo tenía concedido) → «Allow». En
+   `dumpsys alarm` aparece una alarma `RTC_WAKEUP` de
+   `expo.modules.notifications` para las **21:25:00**.
+4. **Cierre A, `am force-stop`:** la alarma **desaparece** de `dumpsys alarm`
+   (`alarm-antes-forcestop.txt` y `alarm-tras-forcestop.txt`).
+5. Al reabrir la app, la alarma de las 21:25 **vuelve a aparecer**
+   (`alarm-tras-reabrir.txt`).
+6. **Cierre B, el habitual:** Inicio → Recientes → se desliza la tarjeta de
+   LockIn → `am kill`. `pidof` vacío, `stopped=false`, la alarma sigue ahí
+   (`alarm-tras-cerrar.txt`, `12-recientes-vacio.png`).
+7. A las **21:26:26.9**, `ActivityManager: Start proc … app.lockin.mobile for
+   broadcast … NotificationsService`: el sistema arranca el proceso en frío. A
+   las **21:26:28.7** (`when=` de la notificación) se publica en el canal
+   `lockin-sessions`, con importancia 4, el aviso «Sesión Lock-In en 5
+   minutos» / «Con Aviso. Entra desde el chat.»
+   (`14-sombra-notificacion.png`, `notification-dump.txt`).
+
+**Veredicto.**
+- ✅ Con la app cerrada normalmente (quitada de recientes y sin proceso) y la
+  aceptación hecha mientras estaba cerrada, el aviso llega, con el título, el
+  texto y el canal previstos.
+- ⚠️ **Llega 88 s tarde, y el retraso puede ser mayor.** La alarma se programa
+  con **ventana inexacta**: `window=+16m36s` en `dumpsys alarm`, así que Android
+  puede entregarla en cualquier momento hasta ~16 min después de las 21:25,
+  es decir, pasada la hora de inicio de la sesión. La causa: expo-notifications
+  57.0.20 (`ExpoSchedulingDelegate.setupAlarm`) solo usa
+  `setExactAndAllowWhileIdle` si `canScheduleExactAlarms()`. El manifiesto
+  declara `SCHEDULE_EXACT_ALARM`, pero desde Android 14 ese permiso viene
+  **denegado por defecto** en instalaciones nuevas; el APK nunca lo pide, así
+  que se usa `setAndAllowWhileIdle` (inexacta). En un emulador enchufado y
+  despierto fueron 88 s. En un móvil en reposo o con Doze puede ser bastante
+  más. **Decisión para `sesiones`:** o se acepta ese margen, o se pide el
+  permiso de alarma exacta (`USE_EXACT_ALARM` no aplica, porque LockIn no es
+  una app de calendario ni de alarmas), o se adelanta el aviso para que el
+  retraso no lo pase del inicio.
+- ⚠️ **Con `am force-stop` / «Forzar detención» no llega mientras no se reabra
+  la app.** Es comportamiento de Android: la parada forzada cancela las
+  alarmas del paquete, y expo-notifications solo las reprograma con
+  `BOOT_COMPLETED` o `MY_PACKAGE_REPLACED`… o al volver a abrir la app, como se
+  ha visto en el paso 5. No es un bug de LockIn. Pero sí significa que la
+  receta de la casilla «cerrar la app del todo» solo vale si «del todo» quiere
+  decir quitarla de recientes, no forzar su detención.
+
+**Evidencia** (local, ignorada por git): `e2e/artifacts/local/2026-09-24-aviso-5min/`
+— `01`-`08` (match, propuesta, permiso), `alarm-*.txt` (estado de las alarmas
+en cada paso), `12-recientes-vacio.png`, `13-notif-llega.png`,
+`14-sombra-notificacion.png`, `notification-dump.txt`, `logcat.txt` (`*:E`
++ `ReactNativeJS`) y `logcat-completo.txt` (21:26:26.9 arranque del proceso
+por el broadcast).
+
+**Datos de prueba que se quedan en Supabase real:** las cuentas anónimas
+«Aviso Prueba» (`dd195de0-…`: match con Verif y sesión `b1e9be7b-…`,
+aceptada, 21:30 UTC) y «Recientes Prueba» (`0f4bb431-…`: al final no se usó,
+pero ha dado like a Verif y le aparecerá en el deck).
 - [x] Contrato opt-in contra Supabase (`LOCKIN_SUPABASE_CONTRACT=1`) con los casos de sesiones en verde —
   **contra Supabase local desechable, no contra `grrzmzktrhksbttpbblg`**
   (2026-09-14, decisión del usuario: salida Docker local). No se ejecuta
