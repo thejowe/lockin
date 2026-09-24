@@ -3968,3 +3968,28 @@ paso del log, incluido el que falla.
   jobs` para el `skipped` de 35901538809 y para los pasos de 35981233624; y
   `gh api repos/supabase/setup-cli/commits/45a513f` + `…/git/ref/tags/v3` para
   datar el cambio de la acción y ver su diff.
+
+## El estado fusionado, verificado entero (2026-09-24)
+
+Cierre de la pasada: las dos ramas de Codex que quedaban sin integrar
+(`codex/contrato-realtime` → `cf4b388`, `codex/e2e-account-recovery` → `d0cec6b`)
+están en la rama compartida, y el árbol resultante pasa **todo** el CI. Se anota
+aquí porque hasta hoy ninguna de las dos se había ejecutado junto a la otra.
+
+- [x] **`E2E Android` verde en las tres variantes, `attempt=1` las tres**, sobre
+      `d00e90c`: run
+      [35982815677](https://github.com/thejowe/lockin/actions/runs/35982815677).
+      `mock`, `supabase` y `registro`, sin un solo reintento — ni de emulador ni
+      de infraestructura, que es lo que no había pasado en los runs de los días
+      anteriores.
+- [x] **`CI` verde entero** sobre `710fbf5`, run
+      [35982283769](https://github.com/thejowe/lockin/actions/runs/35982283769):
+      los ocho trabajos, incluido `Contrato Supabase` ya con el `unset` de
+      `6f66cc8` aplicado de verdad (los runs anteriores probaban el archivo de
+      `origin`, sin el cambio).
+- [x] **`Schema drift` verde**, run
+      [35981573615](https://github.com/thejowe/lockin/actions/runs/35981573615)
+      y de nuevo sobre `710fbf5`, con el trabajo remoto incluido. Llevaba rojo
+      desde el 2026-09-23 por una deriva real: la migración `20260923000100` no
+      cerraba el acceso RPC que decía cerrar. Diagnóstico y arreglo en
+      `todo/datos.md` → «La deriva del esquema remoto era al revés».
