@@ -1926,3 +1926,92 @@ logs de contenedores, y por eso la causa salió de la fuente y no de un log.
   no se ha ejecutado contra el proyecto alojado ni se ha tocado el workflow.
   Rama `codex/contrato-realtime` y worktree `../lockin-codex-contrato` conservados
   hasta cerrar esta verificación; todavía no se han integrado en la rama compartida.
+
+## La deriva del esquema remoto era al revés: la migración del 2026-09-23 no cerraba nada (2026-09-24)
+
+El job `Comparar grrzmzktrhksbttpbblg (solo lectura)` de `Schema drift` llevaba
+rojo desde el 2026-09-23. `ci.yml:107-110` justificaba ese rojo diciendo que el
+trabajo remoto «está en rojo mientras el usuario no aplique la última
+migración». **Esa explicación es incorrecta, y al revés**: el remoto iba por
+delante, no por detrás.
+
+### Lo que dice la evidencia, leída del artefacto y no supuesta
+
+- [x] **El rojo es deriva real, no infraestructura.** Run
+      [35926151465](https://github.com/thejowe/lockin/actions/runs/35926151465)
+      (`0cf40da`), `AssertionError [ERR_ASSERTION]: DERIVA: ver remote.diff`.
+      El job local («Huella local y controles negativos») pasó; solo cayó el
+      remoto, en 23 s. Artefacto `schema-remote/` descargado con
+      `gh run download` y leído.
+- [x] **El `remote.diff` entero son dos líneas**, las dos en dirección
+      «esperado sí, observado no»:
+
+      - grantfn  public.messages_touch_match() PUBLIC EXECUTE
+      - grantfn  public.touch_updated_at() PUBLIC EXECUTE
+
+      O sea: las migraciones producen un grant a `PUBLIC` que el proyecto real
+      **no tiene**. El remoto está en el estado estricto; el repo no.
+- [x] **La causa: `20260923000100_revoke_trigger_function_execute.sql` es un
+      no-op.** Revoca `from anon, authenticated` partiendo de que esos roles
+      tenían EXECUTE concedido explícitamente. No lo tenían: ni `expected.txt`
+      ni `remote.txt` listan un solo `grantfn` de `anon` o `authenticated` para
+      esas dos funciones. Lo que hay es el grant que Postgres concede **por
+      defecto a PUBLIC** al crear cualquier función, del que todo rol hereda.
+      Revocar de un rol que no tiene grant propio no quita nada.
+- [x] **Consecuencia, y por qué importa.** En cualquier base levantada desde las
+      migraciones —el Supabase desechable de `Contrato Supabase`, el de `E2E
+      Android (supabase)`, el de cualquiera que clone el repo—
+      `/rest/v1/rpc/messages_touch_match` y `/rest/v1/rpc/touch_updated_at`
+      seguían siendo invocables por `anon` y `authenticated`.
+      `messages_touch_match()` es SECURITY DEFINER, que es justo lo que la
+      migración decía estar cerrando.
+- [x] **Era un outlier contra la convención del propio repo.** El resto de
+      migraciones ya revoca con la forma correcta —`from public, anon`— en
+      `20260905000500_functions_and_realtime.sql:206-208` y en
+      `20260913000100_lockin_sessions.sql:329-338`. Estas dos funciones eran el
+      único sitio donde se omitía `public`.
+
+### El arreglo
+
+- [x] **Migración nueva, no reescritura de la aplicada.**
+      `20260924000100_revoke_trigger_function_execute_from_public.sql` revoca
+      `from public, anon, authenticated`. Forward-only e idempotente: contra el
+      proyecto real, que ya está en ese estado, no hace nada. No se toca la
+      `20260923000100`, que ya consta aplicada.
+- [x] **`service_role` y `postgres` intactos a propósito.** Su EXECUTE es un
+      grant explícito (sale con línea propia en la huella remota), así que
+      revocar de `PUBLIC` no lo toca. `service_role` es el rol administrativo,
+      no uno que PostgREST exponga a clientes.
+
+### Verificación
+
+- [x] `npm run test:schema`: **21 casos, 21 pasados**, ahora con 15 migraciones.
+- [x] **La prueba de que cierra el agujero, que «los tests pasan» no da** (la
+      suite también pasaba con el agujero abierto): huella de PGlite calculada
+      con y sin la migración nueva, y diffeadas. Lo único que cambia son las dos
+      líneas del `remote.diff`, más el digest por construcción:
+
+      - grantfn  public.messages_touch_match() PUBLIC EXECUTE
+      - grantfn  public.touch_updated_at() PUBLIC EXECUTE
+
+      471 objetos antes, 469 después. Tras la migración quedan solo
+      `postgres EXECUTE` y `service_role EXECUTE`, que es exactamente lo que
+      lista `remote.txt`.
+- [ ] **Pendiente: el verde de `Schema drift` sobre esta rama.** El diff local
+      predice `Sin diferencias.`, pero la predicción no es el run. Comprobar el
+      job remoto del push que lleve esta migración y anotarlo aquí.
+- [ ] **Pendiente: corregir el comentario de `ci.yml:107-110`**, que atribuye el
+      rojo remoto a una migración sin aplicar por el usuario. No es eso, y
+      mientras siga escrito invita a ignorar el siguiente rojo legítimo.
+      `.github/workflows/` es alcance de `calidad`, no de `datos`.
+
+### Ramas de Codex integradas
+
+- [x] **`codex/contrato-realtime` fusionada** en la rama compartida (merge
+      `cf4b388`), junto con `codex/e2e-account-recovery` (merge `d0cec6b`).
+      Queda sin efecto la nota de la sección anterior sobre conservar la rama y
+      el worktree `../lockin-codex-contrato` sin integrar: `git worktree list`
+      ya solo lista el árbol principal. Tras el merge, `npx tsc --noEmit`
+      limpio, `npx jest` 960 pasados en 80 suites y `node --test e2e/*.test.mjs`
+      87 de 88, con el único fallo en el caso CRLF conocido de
+      `full-journey.test.mjs:118` (ruido de Windows).

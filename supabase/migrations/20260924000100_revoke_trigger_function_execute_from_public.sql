@@ -1,0 +1,28 @@
+-- Arregla `20260923000100_revoke_trigger_function_execute.sql`, que no cerraba
+-- el agujero que decía cerrar.
+--
+-- Aquella migración revoca EXECUTE `from anon, authenticated` partiendo de que
+-- esos dos roles tenían el privilegio concedido explícitamente. No lo tenían:
+-- la huella de esquema del 2026-09-23 (run 35926151465, `remote.diff`) no
+-- lista ningún `grantfn` para `anon` ni `authenticated` en estas dos
+-- funciones. Lo que hay es el grant que Postgres da **por defecto a PUBLIC**
+-- al crear cualquier función, y del que todo rol —`anon` y `authenticated`
+-- incluidos— hereda. Revocar de un rol que nunca tuvo el grant propio es un
+-- no-op: `/rest/v1/rpc/messages_touch_match` y `/rest/v1/rpc/touch_updated_at`
+-- seguían siendo invocables en cualquier base levantada desde las migraciones.
+--
+-- El proyecto real ya está en el estado estricto (allí PUBLIC no aparece en la
+-- huella), así que lo que arregla esto es la deriva al revés de lo que se
+-- suponía: no era el remoto que iba por detrás, eran las migraciones.
+--
+-- El resto del repo ya usaba la forma correcta —`from public, anon`— en
+-- `20260905000500_functions_and_realtime.sql:206-208` y en
+-- `20260913000100_lockin_sessions.sql:329-338`; estas dos funciones eran el
+-- único sitio donde se omitía `public`.
+--
+-- Revocar no rompe los triggers: disparar un trigger no comprueba EXECUTE
+-- sobre su función, solo el privilegio de quien lo creó (`postgres`).
+-- `service_role` se deja intacto, igual que en la migración anterior: es el rol
+-- administrativo, no uno que PostgREST exponga a clientes.
+revoke execute on function public.touch_updated_at() from public, anon, authenticated;
+revoke execute on function public.messages_touch_match() from public, anon, authenticated;
