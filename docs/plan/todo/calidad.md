@@ -3582,6 +3582,54 @@ vuelve por el **esquema** `lockin://auth/callback`.
       perfil» ni «Mejor no» en ningún `.yaml`. La cubre solo Jest con dobles
       (`sign-in-form.test.tsx`). Para un E2E haría falta un caso que cree perfil
       anónimo primero y entre después **sin** borrar el almacenamiento.
+
+      **[Codex] — Es alcanzable (comprobado contra el código el 2026-09-24), pero
+      no desde la interfaz.** Los dos botones que abren `/sign-in` están en el
+      onboarding (`mode.tsx:89`, `register.tsx:30`) y quien tiene perfil no pasa
+      por él (`index.tsx:43` → `/discover`). Pero expo-router expone toda ruta
+      como deep link (`scheme: "lockin"` en `app.json`), y `sign-in.tsx:25` solo
+      comprueba `accountsAvailable`: `lockin://sign-in` abre el formulario desde
+      cualquier sitio. La otra mitad de la condición —perfil en una cuenta no
+      recuperable— existe en dos casos: (a) una build con
+      `EXPO_PUBLIC_REQUIRE_ACCOUNT=false`, como el APK de la variante `supabase`
+      del E2E (`run.mjs:197`), donde `useRegistrationGate` responde `open` y el
+      perfil se crea anónimo; (b) en una build de usuario, perfiles anónimos o
+      de dispositivo creados antes de la puerta del 2026-09-20, que nadie obliga
+      a registrarse después. Con la puerta encendida no se crea ningún perfil
+      nuevo sin email confirmado, y un `new_email` pendiente no baja
+      `recoverable` (`describeUser`, `auth.ts:373`). Así que la rama es defensa
+      para deep link + perfil heredado, no código muerto.
+
+      Pasos del E2E (variante `supabase`, la de `full-journey.yaml`; la
+      variante `registro` no sirve porque su puerta impide el perfil anónimo):
+
+      1. En `run.mjs`, antes del flujo nuevo, crear con la `SERVICE_ROLE_KEY`
+         una cuenta con email confirmado (`admin.auth.admin.createUser({ email,
+         password, email_confirm: true })`) y su ficha en `profiles` con un
+         nombre propio (`'E2E-OTRA-' + runId`), igual que el fixture de
+         `run.mjs:954-975`. Pasar `EMAIL`, `PASSWORD`, `PROFILE_NAME`.
+      2. `e2e/sign-in-abandon.yaml`, encadenado **después** de
+         `full-journey.yaml` en la misma variante (hereda su perfil anónimo):
+         `launchApp: clearState: false` → esperar `'Descubrir'`.
+      3. `openLink: lockin://sign-in` (o `am start -a android.intent.action.VIEW
+         -d lockin://sign-in app.lockin.mobile` desde `run.mjs`, como hace
+         `register.yaml` con el callback) → esperar `'Vuelve a tu cuenta'`.
+      4. Escribir `${EMAIL}` y `${PASSWORD}` con los mismos `tapOn` +
+         `hideKeyboard` de `sign-in.yaml`, pulsar `'Entrar'` → afirmar
+         `'Entrar aquí deja atrás el perfil de este teléfono'`.
+      5. `'Mejor no'` → `assertNotVisible` del aviso y `assertVisible: 'Entrar'`
+         (sigue en el formulario, sin sesión nueva).
+      6. `'Entrar'` otra vez → vuelve el aviso → `'Entrar y dejar este perfil'`
+         → esperar `'Matches'` (60 s) → `tapOn: 'Perfil'` → afirmar
+         `${PROFILE_NAME}` y `assertNotVisible` del nombre del perfil anónimo de
+         `full-journey.yaml`.
+      7. `e2e/sign-in.test.mjs` (o uno nuevo) fija las tres etiquetas contra
+         `sign-in-form.tsx`, como ya hacen los demás `.test.mjs`.
+
+      Cierra la casilla un run de `e2e.yml` en verde con el flujo nuevo en el
+      volcado de Maestro. Si el usuario decide que el deep link a `/sign-in` no
+      debe existir para quien ya tiene perfil, esta casilla se replantea antes
+      de escribir el flujo.
 - [x] **El rojo de hoy (35899273763) no es de ese trabajo ni de la fijación.**
       Los **tres** trabajos murieron en `Supabase desechable con migraciones
       reales`, sin levantar un solo contenedor (`containers/resumen.txt`: «no hay
