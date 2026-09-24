@@ -104,10 +104,21 @@ jobs:
   # de margen. En Postgres embebido sí, porque ahí se insertan filas con fecha
   # pasada.
   #
-  # Va aquí y no en `schema-drift.yml` por dos razones: cuesta ~4 s sobre un
-  # `npm ci` que ya está cacheado, y el trabajo remoto de schema-drift está en
-  # rojo mientras el usuario no aplique la última migración —un rojo nuevo allí
-  # no se distinguiría del esperado—.
+  # Va aquí y no en `schema-drift.yml` porque cuesta ~4 s sobre un `npm ci` que
+  # ya está cacheado.
+  #
+  # Aquí decía además que el trabajo remoto de schema-drift estaba «en rojo
+  # mientras el usuario no aplique la última migración», y que por eso un rojo
+  # nuevo allí no se distinguiría del esperado. Era falso, y en la dirección
+  # peligrosa: el remoto iba por DELANTE del repo. El `remote.diff` del run
+  # 35926151465 eran dos líneas `PUBLIC EXECUTE` que las migraciones producían y
+  # el proyecto real no tenía, porque `20260923000100` revocaba de `anon,
+  # authenticated` en vez de `public` y no cerraba nada. Arreglado en
+  # `20260924000100`; `Schema drift` verde otra vez en el run 35981573615.
+  # Detalle en `docs/plan/todo/datos.md`.
+  #
+  # Un rojo del trabajo remoto es deriva real y hay que mirarlo. Mientras esta
+  # nota decía lo contrario, invitaba a ignorarlo.
   schema:
     name: SQL embebido
     runs-on: ubuntu-latest

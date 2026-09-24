@@ -2006,10 +2006,13 @@ delante, no por detrás.
       `Comparar grrzmzktrhksbttpbblg (solo lectura)`, que es el que llevaba rojo
       desde el 2026-09-23. La deriva queda cerrada contra el proyecto real, no
       solo contra PGlite.
-- [ ] **Pendiente: corregir el comentario de `ci.yml:107-110`**, que atribuye el
-      rojo remoto a una migración sin aplicar por el usuario. No es eso, y
-      mientras siga escrito invita a ignorar el siguiente rojo legítimo.
-      `.github/workflows/` es alcance de `calidad`, no de `datos`.
+- [x] **Corregido el comentario de `ci.yml`** que atribuía el
+      rojo remoto a una migración sin aplicar por el usuario. No era eso, y
+      mientras estuvo escrito invitaba a ignorar el siguiente rojo legítimo.
+      Ahora dice lo que pasó y deja claro que un rojo del trabajo remoto es
+      deriva real. Es el único toque de `datos` en `.github/workflows/`, que es
+      alcance de `calidad`: es la corrección de un comentario que describe mal
+      un hallazgo de este bloque, sin cambiar ni un paso del workflow.
 
 ### Ramas de Codex integradas
 
