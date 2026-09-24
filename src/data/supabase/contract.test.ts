@@ -87,7 +87,7 @@ import { toProfileInsert } from './mappers';
 import type { ContractBackend, ContractFixture } from '../repositories.contract';
 import type { Database } from './database.types';
 import type { ModePreference } from '../types';
-import type { LockInSessionRepository, Repositories } from '../repositories';
+import type { AgreementRepository, LockInSessionRepository, Repositories } from '../repositories';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Devuelve el `fetch` real antes de que `createClient` capture el stub de
@@ -301,6 +301,15 @@ function sessionRepositoryFor(actor: Reciprocal): LockInSessionRepository {
   });
 }
 
+function agreementRepositoryFor(actor: Reciprocal): AgreementRepository {
+  const { createSupabaseAgreementRepository } =
+    require('./agreement') as typeof import('./agreement');
+  return createSupabaseAgreementRepository({
+    getClient: () => actor.client,
+    getUserId: async () => actor.id,
+  });
+}
+
 /**
  * Espera a que todos los canales de realtime abiertos estén enganchados.
  *
@@ -436,6 +445,8 @@ const supabaseBackend: ContractBackend = {
       unknownProfileId: UNKNOWN_ID,
       counterpartSessions: () => sessionRepositoryFor(parReciprocal),
       outsiderSessions: () => sessionRepositoryFor(lockinReciprocal),
+      counterpartAgreement: () => agreementRepositoryFor(parReciprocal),
+      outsiderAgreement: () => agreementRepositoryFor(lockinReciprocal),
       elapse: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
     };
   },
