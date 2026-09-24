@@ -151,7 +151,59 @@ contra el mock y contra PGlite, que es donde llega el desarrollo.
       (no Expo Go) contra Supabase real: el OAuth necesita un navegador de
       verdad y un deep link de vuelta (`lockin://`). Evidencia: el sello en
       la tab Perfil y `github_*` rellenos en `profiles`. El usuario teclea su
-      login de GitHub cuando el agente se lo pida.
+      login de GitHub cuando el agente se lo pida. **Intentado el 2026-09-24:
+      ❌ bloqueado por configuración, no por código.** El Client ID guardado en
+      el dashboard es `Lockin`, no el de la OAuth App, y GitHub responde «Page
+      not found» tras el login. Esto contradice la primera casilla de esta
+      lista, que se marcó por palabra del usuario. Ver «Hallazgos del
+      comprobador» al final del archivo.
+
+## Hallazgos del comprobador
+
+### Verificar con GitHub contra Supabase real (2026-09-24) — ❌ Client ID mal puesto
+
+**Entorno.** Emulador Android 16 (AVD `lockin`), APK universal `preview` de
+EAS (`app.lockin.mobile`, construido desde `21418ee`; entre ese commit y
+`c81e124` no cambia `src/data/supabase/auth.ts` ni la tab Perfil). **Supabase
+real** (`[lockin] backend de datos: Supabase` en logcat). Cuenta `+lockin3` /
+perfil «Verif» (`a5fe4d5c-…`).
+
+**Pasos.**
+1. `profiles` de Verif antes de empezar: `link_github`, `github_handle` y
+   `github_verified_at` a `null` (`profiles-antes.txt`).
+2. Perfil → «Verificar con GitHub» → se abre una Custom Tab de Chrome en
+   `github.com` con «Sign in to GitHub» (`04-login.png`). Hasta aquí, bien:
+   `linkIdentity` responde, así que Enable Manual Linking está activo.
+3. El usuario inicia sesión en GitHub → **«Page not found · GitHub»**
+   (`05-vuelta.png`). No hay pantalla de «Authorize» ni vuelta a `lockin://`.
+4. Al cerrar la pestaña, la app dice «La verificación no se completó. No ha
+   cambiado nada.» (`06-tras-cerrar-tab.png`). `profiles` sigue igual, todo a
+   `null` (`profiles-despues.txt`). El fallo se maneja bien.
+
+**Causa.** `GET /auth/v1/authorize?provider=github` del proyecto redirige a
+`https://github.com/login/oauth/authorize?client_id=Lockin&…`. **`Lockin` no es
+un Client ID de GitHub**: los reales tienen la forma `Ov23li…` y se copian de
+Settings → Developer settings → OAuth Apps. Con un `client_id` que no existe,
+GitHub manda al login y, con la sesión ya iniciada, responde 404. Es
+configuración del dashboard: no es código ni SQL.
+
+**Qué hace falta (usuario).** En Authentication → Providers → GitHub,
+sustituir el Client ID por el de la OAuth App y volver a pegar su Client
+Secret, porque probablemente también esté mal. La Authorization callback URL
+de la OAuth App tiene que ser
+`https://grrzmzktrhksbttpbblg.supabase.co/auth/v1/callback`. Después, que el
+comprobador repita la casilla de arriba.
+
+**Visto de paso (para `verificacion`, menor):** al pulsar el botón, logcat
+dice `WebCrypto API is not supported. Code challenge method will default to
+use plain instead of sha256.` Es decir, el PKCE de `linkIdentity` va en
+`plain` en React Native. Funciona, pero sin la protección de S256.
+
+**Evidencia** (local, ignorada por git):
+`e2e/artifacts/local/2026-09-24-github-sello/` — `01-perfil-antes.*`,
+`02-verificacion.*`, `03-navegador.png`, `04-login.png`, `05-vuelta.*`,
+`06-tras-cerrar-tab.*`, `profiles-antes.txt`, `profiles-despues.txt`,
+`logcat.txt`.
 
 ## Runs de CI sobre el commit de cierre (`5170f64`)
 
