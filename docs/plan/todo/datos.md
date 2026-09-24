@@ -1917,7 +1917,8 @@ logs de contenedores, y por eso la causa salió de la fuente y no de un log.
 - [x] **CERRADO el 2026-09-24: verificado contra Supabase real.** Ver «El
       contrato de realtime sí se ha ejecutado» al final del archivo. Lo de abajo
       queda como estaba el 2026-09-23, cuando todavía no se podía.
-- [ ] ~~Verificación contra Supabase real pendiente de infraestructura.~~ El
+  (Texto original, ya superado, sin casilla para que no cuente como abierta:)
+  ~~Verificación contra Supabase real pendiente de infraestructura.~~ El
   workflow existente se lanzó sobre `310dd07`
   ([run 35908570413](https://github.com/thejowe/lockin/actions/runs/35908570413),
   dos intentos) y sobre `d1bbd03`
