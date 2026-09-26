@@ -18,6 +18,7 @@
  *   acción que acaba de hacer el usuario.
  */
 
+import { createSupabaseAgreementRepository } from './agreement';
 import { ensureUserId, linkGithubIdentity, unlinkGithubIdentity } from './auth';
 import { getSupabaseClient } from './client';
 import {
@@ -28,7 +29,6 @@ import {
   toProfile,
   toProfileInsert,
 } from './mappers';
-import { createSupabaseAgreementRepository } from './agreement';
 import { subscribeResyncingOnRejoin } from './realtime';
 import { createSupabaseSessionRepository } from './sessions';
 import { GITHUB_VERIFICATION_CANCELLED } from '../repositories';
