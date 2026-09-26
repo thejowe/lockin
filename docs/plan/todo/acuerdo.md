@@ -29,14 +29,12 @@ Plan: `docs/superpowers/plans/2026-09-24-acuerdo-socios.md`
 
 ## Pendiente del usuario
 
-- [ ] Aplicar `supabase/migrations/20260924000200_agreement_answers.sql` en
-      `grrzmzktrhksbttpbblg` por el SQL Editor. Hasta entonces, `Schema drift`
-      remoto está rojo **a propósito**: excepción vigente desde el 2026-09-26, con el
-      `remote.diff` limitado a `agreement_answers`, su política y las dos
-      funciones (ver Tarea 8). Se cierra cuando el usuario la aplica y el
-      siguiente run da «Sin diferencias.»; desde ahí, un rojo del job remoto
-      vuelve a ser deriva real. Anotada también en la memoria local
-      `schema-drift-remoto-rojo-esperado.md` (y su línea en `MEMORY.md`).
+- [x] Aplicar `supabase/migrations/20260924000200_agreement_answers.sql` en
+      `grrzmzktrhksbttpbblg` por el SQL Editor. Aplicada por el usuario el
+      2026-09-26: `Schema drift` verde en local y remoto sobre `2d8987b`
+      ([run 36254832954](https://github.com/thejowe/lockin/actions/runs/36254832954), `remote.diff` = «Sin diferencias.»). La excepción
+      queda cerrada, también en la memoria local `schema-drift-remoto-rojo-esperado.md`:
+      **desde aquí, un rojo del job remoto es deriva real**.
 - [ ] Decidir si se reinstala el toolchain de Android de esta máquina (SDK,
       AVD `lockin`, JDK 17), que desapareció el 2026-09-26 a mitad de un build
       del `comprobador`. Sin él no hay recorrido en emulador local.
