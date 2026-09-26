@@ -309,3 +309,33 @@ export interface MatchStreak {
   /** ISO. Fin de la última sesión que cuenta + 7 días. */
   aliveUntil: string;
 }
+
+/** Respuesta de una persona a un tema del acuerdo de socios (Fase 3). */
+export interface AgreementAnswer {
+  /** Clave del tema. El dominio no conoce el catálogo: vive en `features/agreement`. */
+  topic: string;
+  option: string;
+  /** Nota libre opcional, 1–280 caracteres. `null` si no hay. */
+  note: string | null;
+  updatedAt: string;
+}
+
+/** Un tema del acuerdo visto desde el usuario actual. */
+export interface AgreementTopicView {
+  topic: string;
+  mine: AgreementAnswer | null;
+  /**
+   * La respuesta de la otra persona. `'hidden'` = ya respondió pero tú aún no
+   * (el ciego); `null` = no ha respondido.
+   */
+  theirs: AgreementAnswer | 'hidden' | null;
+}
+
+/** Datos para responder un tema. El repositorio pone autor y fecha. */
+export interface AgreementAnswerInput {
+  matchId: string;
+  topic: string;
+  option: string;
+  /** Se recorta; vacía o solo espacios se guarda como `null`. */
+  note?: string | null;
+}

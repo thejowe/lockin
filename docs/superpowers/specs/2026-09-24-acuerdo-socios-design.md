@@ -201,13 +201,16 @@ export interface AgreementRepository {
 Colgado de `Repositories` como `agreement`, y expuesto en `src/data/active.ts`
 e `index.ts` igual que `sessions`.
 
-Errores (reutilizando la familia de `src/data/session-errors.ts`):
+Errores (`src/data/agreement.ts`, nuevo — no reutiliza
+`src/data/session-errors.ts` para no tocar un archivo de `sesiones`):
 
-- Match ajeno o inexistente → `LI004`, el mismo que ya existe.
-- Match Lock-In → **`LI005` (nuevo)**: «el acuerdo es solo para matches de
-  cofundador».
-- Nota > 280 o clave con formato inválido → violación de `check` (`23514`),
-  traducida a un mensaje de validación.
+- Match ajeno o inexistente → `AgreementForbiddenError` (`LI004`), el mismo
+  código que ya existe.
+- Match Lock-In → `AgreementModeError` (**`LI005` (nuevo)**): «el acuerdo es
+  solo para matches de cofundador».
+- Nota > 280 o clave con formato inválido → `AgreementInvalidError`
+  (violación de `check`, `23514`, o validación en cliente), traducida a un
+  mensaje de validación.
 
 ### Casos de contrato — `src/data/repositories.contract.ts`
 
@@ -220,7 +223,8 @@ Contra el mock y contra Supabase:
 4. Responder dos veces el mismo tema sustituye la respuesta (no duplica) y
    actualiza `updatedAt`.
 5. Responder en un match Lock-In rechaza con `LI005`.
-6. Leer o responder en un match ajeno rechaza con `LI004`.
+6. Leer o responder en un match ajeno rechaza con `LI004` (`match_agreement`
+   lo lanza directamente; ya no cero filas).
 
 La fixture del contrato necesita un match Par con respuestas de la contraparte
 sembradas. El mock la tiene de fábrica; Supabase la siembra con la misma
@@ -249,12 +253,14 @@ create table public.agreement_answers (
 
 alter table public.agreement_answers enable row level security;
 revoke all on table public.agreement_answers from anon;
+revoke insert, update, delete on table public.agreement_answers from authenticated;
 
 create policy "agreement_answers: solo lees las tuyas"
   on public.agreement_answers for select
   to authenticated
   using (profile_id = (select auth.uid()));
--- Sin políticas ni grants de insert/update/delete: se escribe por RPC.
+-- Sin política de insert/update/delete: solo se escribe por RPC (revocados
+-- explícitos arriba, aunque RLS ya los bloquearía).
 ```
 
 La nota vacía se normaliza a `null` en el cliente, no en SQL.
@@ -268,14 +274,15 @@ La nota vacía se normaliza a `null` en el cliente, no en SQL.
 3. `insert … on conflict (match_id, profile_id, topic) do update set option,
    note, updated_at = now()`.
 
-**`match_agreement(p_match_id uuid)`** — `sql`, `stable`, `security definer`,
-devuelve `table (topic text, mine_option text, mine_note text, mine_updated_at
-timestamptz, theirs_answered boolean, theirs_option text, theirs_note text,
-theirs_updated_at timestamptz)`:
+**`match_agreement(p_match_id uuid)`** — `plpgsql`, `stable`, `security
+definer`, devuelve `table (topic text, mine_option text, mine_note text,
+mine_updated_at timestamptz, theirs_answered boolean, theirs_option text,
+theirs_note text, theirs_updated_at timestamptz)`:
 
-- Cero filas si no eres miembro del match. No lanza error: lee como
-  `ratable_session`, que tampoco lo hace. El `LI004` de lectura lo pone el
-  repositorio cuando `matches.getById` no encuentra el match.
+- Si el match no existe o `auth.uid()` no es `profile_a`/`profile_b` →
+  `LI004`. Si `mode <> 'par'` → `LI005`. Igual que `answer_agreement_topic`,
+  en lugar de devolver cero filas: así los dos backends leen igual y el caso
+  de contrato «leer un match ajeno rechaza» tiene sentido también con el mock.
 - Una fila por tema con alguna respuesta de los dos (`full outer join` de la
   mía con la del otro sobre `topic`).
 - `theirs_option`, `theirs_note` y `theirs_updated_at` son `null` **salvo que
@@ -378,20 +385,21 @@ descubra a mitad:
 |---|---|---|
 | `src/data/types.ts` | `arquitecto` | `AgreementAnswer`, `AgreementTopicView`, `AgreementAnswerInput` |
 | `src/data/repositories.ts`, `repositories.contract.ts` | `arquitecto` | `AgreementRepository` y sus seis casos |
-| `src/data/session-errors.ts` | `sesiones` | El código `LI005` y su clase de error |
+| `src/data/mock/store.ts` | `arquitecto` | `MockState` gana dos campos |
 | `src/data/active.ts`, `src/data/index.ts` | `arquitecto` | Exponer `agreement` |
 | `src/data/mock/index.ts`, `seed.ts` | `arquitecto`/`perfil` | Registrar el repositorio y las tres respuestas semilla |
 | `src/data/supabase/index.ts`, `database.types.ts` | `datos` | Registrar el repositorio y los tipos de las dos RPC |
 | `supabase/schema-embedded.test.mjs`, `drift-check.mjs` (si no parsea la tabla nueva) | `datos`/`calidad` | Los tests en PGlite |
 | `src/app/chat/[matchId].tsx` | `chat` | Una línea: `<AgreementCard match={match} />` |
 | `src/app/_layout.tsx` | `arquitecto` | Un `Stack.Screen` para `agreement/[matchId]` |
-| `e2e/run.mjs`, `verify.mjs` | `calidad` | Dar de alta el flujo nuevo, solo en la variante `mock` |
+| `e2e/run.mjs`, `verify.mjs` | `calidad` | Dar de alta el flujo nuevo, encadenado en la variante `supabase` tras `session-streak.yaml`; la variante `mock` (control negativo) no se toca |
 
 - **No se lanza a la vez que `chat` ni que `datos`**, ni que ninguna sesión que
   esté tocando `src/data/types.ts` o `repositories.ts`. Va por turnos, no en
   paralelo.
 - **No toca Fase 2**: sesiones, rachas, valoración y vídeo quedan intactos.
-  Lo de `session-errors.ts` es añadir, no cambiar.
+  `src/data/agreement.ts` es un archivo nuevo del bloque; no toca
+  `session-errors.ts`.
 - **Cero dependencias nuevas y ninguna build nativa.**
 
 ## 4. Casos límite
@@ -399,7 +407,7 @@ descubra a mitad:
 | Caso | Qué pasa |
 |---|---|
 | Match Lock-In | No hay tarjeta en el chat. Por deep link, la pantalla dice que es solo para cofundadores. La RPC rechaza con `LI005` aunque se llame a mano |
-| Match ajeno | `match_agreement` devuelve cero filas y `answer_agreement_topic` rechaza con `LI004`. La pantalla pinta `MissingMatch` |
+| Match ajeno | `match_agreement` rechaza con `LI004` (ya no cero filas) y `answer_agreement_topic` también. La pantalla pinta `MissingMatch` |
 | Clave desconocida (catálogo viejo o cliente malicioso) | El cliente la trata como no respondida. Si es mía, el tema sale `pendiente` y puedo responderlo encima (misma clave de tema, se sustituye) |
 | Tema que desaparece del catálogo | Sus filas se quedan en la base, pero no se pintan ni cuentan en la tarjeta |
 | El otro cambia su respuesta después de revelada | Se ve el cambio en la siguiente lectura. Sin aviso ni historial en v1 |
@@ -427,11 +435,12 @@ descubra a mitad:
   en los cuatro estados, con sus etiquetas de accesibilidad.
 - **Pantalla** (`test/app/agreement.test.tsx`): el aviso legal siempre visible,
   responder un tema, y el estado de match Lock-In.
-- **E2E** (Maestro, solo variante `mock`): desde el chat de un match Par
-  semilla, abrir el acuerdo, responder el tema que la semilla ya respondió y
-  ver «Coincidís». La variante `supabase` queda fuera: haría falta una
-  segunda cuenta que responda, y el límite de altas anónimas ya da problemas
-  en ese job.
+- **E2E** (Maestro, variante `supabase`): la variante `mock` de `e2e/run.mjs`
+  es el control negativo que debe **romperse** al reiniciar sin credenciales;
+  meter ahí un flujo en verde le cambiaría el significado. El flujo va
+  encadenado después de `session-streak.yaml`: desde el chat de un match Par,
+  abrir el acuerdo, responder un tema y ver «Coincidís» tras sembrar la
+  respuesta de la contraparte con `service_role`, como `prepareSessionStreak`.
 
 ## Fuera de alcance de esta spec
 

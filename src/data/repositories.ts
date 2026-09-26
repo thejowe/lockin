@@ -11,6 +11,8 @@
  */
 
 import type {
+  AgreementAnswerInput,
+  AgreementTopicView,
   Decision,
   DecisionResult,
   LockInSession,
@@ -185,6 +187,21 @@ export interface LockInSessionRepository {
 }
 
 /**
+ * Acuerdo de socios de un match Par (Fase 3). A ciegas por tema: la respuesta
+ * de la otra persona en un tema solo se ve si tú ya respondiste ese tema.
+ *
+ * Errores: `AgreementForbiddenError` (match ajeno), `AgreementModeError` (match
+ * no Par), `AgreementInvalidError` (clave o nota inválidas). Ver
+ * `src/data/agreement.ts`.
+ */
+export interface AgreementRepository {
+  /** Un `AgreementTopicView` por tema con alguna respuesta de los dos, por orden de tema. */
+  get(matchId: string): Promise<AgreementTopicView[]>;
+  /** Crea o sustituye tu respuesta a un tema. Devuelve la vista ya actualizada de ese tema. */
+  answer(input: AgreementAnswerInput): Promise<AgreementTopicView>;
+}
+
+/**
  * Punto único de acceso a datos. Cualquier implementación (mock, Supabase)
  * debe devolver un objeto con esta forma exacta.
  */
@@ -195,6 +212,7 @@ export interface Repositories {
   matches: MatchRepository;
   messages: MessageRepository;
   sessions: LockInSessionRepository;
+  agreement: AgreementRepository;
 }
 
 /** Fábrica de una implementación completa. Lo que exporta cada backend. */

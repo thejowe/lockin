@@ -18,6 +18,7 @@
  *   acción que acaba de hacer el usuario.
  */
 
+import { createSupabaseAgreementRepository } from './agreement';
 import { ensureUserId, linkGithubIdentity, unlinkGithubIdentity } from './auth';
 import { getSupabaseClient } from './client';
 import {
@@ -651,5 +652,6 @@ export function createSupabaseRepositories(): Repositories {
     matches,
     messages,
     sessions: createSupabaseSessionRepository(),
+    agreement: createSupabaseAgreementRepository(),
   };
 }

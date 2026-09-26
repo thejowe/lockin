@@ -35,6 +35,7 @@
  * ha dado like" —, así que la pide el fixture y no cada test.
  */
 
+import { AgreementForbiddenError, AgreementInvalidError, AgreementModeError } from './agreement';
 import {
   SessionConflictError,
   SessionExpiredError,
@@ -43,8 +44,8 @@ import {
 } from './session-errors';
 import { buildProfileInput } from './test-fixtures';
 
-import type { LockInSessionRepository, Repositories } from './repositories';
-import type { ProfileInput } from './types';
+import type { AgreementRepository, LockInSessionRepository, Repositories } from './repositories';
+import type { AgreementTopicView, ProfileInput } from './types';
 import type { PresenceAdapter } from './presence';
 import type { VideoSignalChannel, VideoSignalMessage } from './video-signal';
 
@@ -92,6 +93,10 @@ export interface ContractFixture {
   counterpartSessions(): LockInSessionRepository;
   /** Sesiones actuando como `reciprocalBId`, que no está en ese match. */
   outsiderSessions(): LockInSessionRepository;
+  /** Acuerdo actuando como `reciprocalAId`: la otra persona del match Par de los casos. */
+  counterpartAgreement(): AgreementRepository;
+  /** Acuerdo actuando como `reciprocalBId`, que no está en ese match. */
+  outsiderAgreement(): AgreementRepository;
   /**
    * Deja pasar `ms` milisegundos. En el mock mueve el reloj simulado; en un backend
    * real espera de verdad, así que fuera de `canTimeTravel` solo se usa con segundos.
@@ -1582,6 +1587,113 @@ export function describeRepositoryContract(backend: ContractBackend): void {
             expect(await theirs.listStreaks()).toEqual(beforeTheirs);
           }
         );
+      });
+    });
+
+    describe('acuerdo de socios', () => {
+      let matchId: string;
+      let mine: AgreementRepository;
+      let theirs: AgreementRepository;
+      const topicOf = (views: AgreementTopicView[], topic: string) =>
+        views.find((view) => view.topic === topic);
+
+      // Los temas de estos casos son a propósito los que la semilla del mock NO
+      // responde (`SEED_AGREEMENT_ANSWERS`): así valen igual en los dos backends.
+      beforeEach(async () => {
+        await fixture.prepareSwiper();
+        const { match } = await repositories.discovery.recordDecision(
+          fixture.reciprocalAId,
+          'like'
+        );
+        expect(match?.mode).toBe('par');
+        matchId = match!.id;
+        mine = repositories.agreement;
+        theirs = fixture.counterpartAgreement();
+      });
+
+      it('respondo yo y el otro no: veo la mía, y la suya es null', async () => {
+        await mine.answer({ matchId, topic: 'horizonte', option: '1-ano', note: 'Y revisamos' });
+
+        const view = topicOf(await mine.get(matchId), 'horizonte');
+        expect(view?.mine).toMatchObject({ option: '1-ano', note: 'Y revisamos' });
+        expect(view?.theirs).toBeNull();
+      });
+
+      it('responde el otro y yo no: sé que ha respondido, no qué (el ciego)', async () => {
+        await theirs.answer({ matchId, topic: 'decisiones', option: 'consenso', note: 'secreto' });
+
+        const views = await mine.get(matchId);
+        expect(topicOf(views, 'decisiones')).toEqual({
+          topic: 'decisiones',
+          mine: null,
+          theirs: 'hidden',
+        });
+        expect(JSON.stringify(views)).not.toMatch(/consenso|secreto/);
+      });
+
+      it('respondemos los dos: los dos vemos las dos, notas incluidas', async () => {
+        await theirs.answer({ matchId, topic: 'lo-creado', option: 'del-proyecto', note: 'Todo' });
+        await mine.answer({ matchId, topic: 'lo-creado', option: 'de-quien-lo-hizo' });
+
+        const seen = topicOf(await mine.get(matchId), 'lo-creado');
+        expect(seen?.theirs).toMatchObject({ option: 'del-proyecto', note: 'Todo' });
+        const seenByThem = topicOf(await theirs.get(matchId), 'lo-creado');
+        expect(seenByThem?.theirs).toMatchObject({ option: 'de-quien-lo-hizo', note: null });
+      });
+
+      it('responder otra vez sustituye, no duplica', async () => {
+        const first = await mine.answer({ matchId, topic: 'horizonte', option: '1-ano' });
+        await fixture.elapse(1_000);
+        const second = await mine.answer({ matchId, topic: 'horizonte', option: '3-meses' });
+
+        const views = (await mine.get(matchId)).filter((view) => view.topic === 'horizonte');
+        expect(views).toHaveLength(1);
+        expect(views[0].mine?.option).toBe('3-meses');
+        expect(Date.parse(second.mine!.updatedAt)).toBeGreaterThanOrEqual(
+          Date.parse(first.mine!.updatedAt)
+        );
+      });
+
+      it('una nota de solo espacios se guarda como null', async () => {
+        const view = await mine.answer({
+          matchId,
+          topic: 'horizonte',
+          option: '1-ano',
+          note: '   ',
+        });
+        expect(view.mine?.note).toBeNull();
+      });
+
+      it('clave inválida o nota de más de 280 caracteres: AgreementInvalidError', async () => {
+        await expect(
+          mine.answer({ matchId, topic: 'Horizonte!', option: '1-ano' })
+        ).rejects.toBeInstanceOf(AgreementInvalidError);
+        await expect(
+          mine.answer({ matchId, topic: 'horizonte', option: '1-ano', note: 'x'.repeat(281) })
+        ).rejects.toBeInstanceOf(AgreementInvalidError);
+      });
+
+      it('en un match Lock-In: AgreementModeError al leer y al responder', async () => {
+        await repositories.session.setActiveMode('lockin');
+        const { match } = await repositories.discovery.recordDecision(
+          fixture.openToBothReciprocalId,
+          'like'
+        );
+        expect(match?.mode).toBe('lockin');
+
+        await expect(mine.get(match!.id)).rejects.toBeInstanceOf(AgreementModeError);
+        await expect(
+          mine.answer({ matchId: match!.id, topic: 'horizonte', option: '1-ano' })
+        ).rejects.toBeInstanceOf(AgreementModeError);
+      });
+
+      it('fuera del match: AgreementForbiddenError al leer y al responder', async () => {
+        const outsider = fixture.outsiderAgreement();
+
+        await expect(outsider.get(matchId)).rejects.toBeInstanceOf(AgreementForbiddenError);
+        await expect(
+          outsider.answer({ matchId, topic: 'horizonte', option: '1-ano' })
+        ).rejects.toBeInstanceOf(AgreementForbiddenError);
       });
     });
   });

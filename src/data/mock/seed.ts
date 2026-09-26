@@ -296,3 +296,21 @@ export const SEED_PROFILES: Profile[] = [
  * `e2e/incoming-likes.sql` lo garantiza del lado de Postgres.
  */
 export const SEED_RECIPROCAL_IDS: string[] = ['seed-nuria', 'seed-marc', 'seed-alba', 'seed-lucia'];
+
+/**
+ * Respuestas del acuerdo de socios que trae de fábrica un perfil semilla. Se
+ * vuelcan en cuanto el usuario abre el acuerdo de un match Par con él, para que
+ * la revelación se pueda ver sin Supabase: una que coincide con lo que el E2E y
+ * los tests responden (`dedicacion` → `completa`), una distinta y una
+ * `sin-decidir`. Núria es la única recíproca de Modo Par.
+ */
+export const SEED_AGREEMENT_ANSWERS: Record<
+  string,
+  readonly { topic: string; option: string; note: string | null }[]
+> = {
+  'seed-nuria': [
+    { topic: 'dedicacion', option: 'completa', note: 'Lo dejo todo por esto.' },
+    { topic: 'participacion', option: 'segun-aportacion', note: null },
+    { topic: 'si-uno-se-va', option: 'sin-decidir', note: 'Nunca lo había pensado.' },
+  ],
+};

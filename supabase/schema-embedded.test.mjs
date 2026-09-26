@@ -422,6 +422,154 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       }
     );
     await db.exec('rollback;');
+    // --- Acuerdo de socios ---------------------------------------------------
+    //
+    // El test central del bloque: `match_agreement` NO enseña la respuesta del
+    // otro en un tema si tú no has respondido ese tema, pero sí dice que la ha
+    // dado. Es el ciego, y lo impone Postgres: si se rompe aquí, la UI no tiene
+    // nada que tapar. Además: solo matches Par (LI005), solo miembros (LI004),
+    // solo por RPC (un insert directo de `authenticated` falla), y los `check`.
+    const cai = '00000000-0000-4000-8000-00000000000c';
+    const par = '00000000-0000-4000-8000-0000000acce0';
+    const lockin = '00000000-0000-4000-8000-0000000acce1';
+    await db.exec(`begin;
+      insert into auth.users (id, email) values
+        ('${ana}', 'ana@lockin.test'), ('${bea}', 'bea@lockin.test'), ('${cai}', 'cai@lockin.test');
+      insert into public.profiles (
+        id, name, age, location, timezone, avatar_initials, specialties,
+        looking_for, starting_point, availability_hours_per_week,
+        availability_bands, ambition
+      ) values
+        ('${ana}', 'Ana', 30, 'Madrid', 'Europe/Madrid', 'A',
+         array['dev']::public.specialty[], 'par', 'solo-ganas', 10,
+         array['tarde']::public.time_band[], 'equilibrado'),
+        ('${bea}', 'Bea', 31, 'Madrid', 'Europe/Madrid', 'B',
+         array['diseno']::public.specialty[], 'par', 'solo-ganas', 10,
+         array['tarde']::public.time_band[], 'equilibrado'),
+        ('${cai}', 'Cai', 32, 'Madrid', 'Europe/Madrid', 'C',
+         array['datos']::public.specialty[], 'lockin', 'solo-ganas', 10,
+         array['tarde']::public.time_band[], 'equilibrado');
+      insert into public.matches (id, profile_a, profile_b, mode) values
+        ('${par}', '${ana}', '${bea}', 'par'),
+        -- El check de orden del par exige profile_a < profile_b; el id de
+        -- Cai ordena antes que el de Ana, así que aquí va primero.
+        ('${lockin}', '${cai}', '${ana}', 'lockin');`);
+    // Sustituir `auth.uid()` exige ser el dueño, no `authenticated`: se sale
+    // del rol, se cambia el actor y se vuelve a entrar.
+    const actingAs = (id) =>
+      db.exec(`reset role;
+        create or replace function auth.uid() returns uuid language sql as $$ select '${id}'::uuid $$;
+        set local role authenticated;`);
+    const sonda = async (sql) => {
+      await db.exec('savepoint sonda;');
+      try {
+        await db.query(sql);
+        return 'sin error';
+      } catch (error) {
+        return error.code ?? error.message;
+      } finally {
+        await db.exec('rollback to savepoint sonda;');
+      }
+    };
+    const responde = (topic, option, note = null) =>
+      db.query(
+        `select * from public.answer_agreement_topic('${par}', '${topic}', '${option}', ${
+          note === null ? 'null' : `'${note}'`
+        })`
+      );
+    const vista = async () =>
+      (await db.query(`select * from public.match_agreement('${par}')`)).rows;
+
+    // Bea responde dos temas; Ana, solo uno de ellos.
+    await actingAs(bea);
+    await responde('dedicacion', 'completa', 'Lo dejo todo');
+    await responde('decisiones', 'consenso');
+    await actingAs(ana);
+    await responde('dedicacion', '10-25h');
+    await responde('horizonte', '1-ano');
+    // Responder otra vez sustituye, no duplica.
+    await responde('horizonte', '3-meses', 'Mejor corto');
+    const porTema = Object.fromEntries((await vista()).map((row) => [row.topic, row]));
+    assert.deepEqual(
+      {
+        temas: Object.keys(porTema).sort(),
+        dedicacion_suya: [porTema.dedicacion.theirs_option, porTema.dedicacion.theirs_note],
+        decisiones_oculta: [
+          porTema.decisiones.theirs_answered,
+          porTema.decisiones.theirs_option,
+          porTema.decisiones.theirs_note,
+          porTema.decisiones.theirs_updated_at,
+        ],
+        horizonte: [
+          porTema.horizonte.mine_option,
+          porTema.horizonte.mine_note,
+          porTema.horizonte.theirs_answered,
+        ],
+      },
+      {
+        temas: ['decisiones', 'dedicacion', 'horizonte'],
+        dedicacion_suya: ['completa', 'Lo dejo todo'],
+        decisiones_oculta: [true, null, null, null],
+        horizonte: ['3-meses', 'Mejor corto', false],
+      },
+      'el ciego: sin tu respuesta, sabes que la hay pero no cuál es'
+    );
+    assert.deepEqual(
+      {
+        lockin: await sonda(
+          `select public.answer_agreement_topic('${lockin}', 'dedicacion', 'completa', null)`
+        ),
+        lockin_lectura: await sonda(`select * from public.match_agreement('${lockin}')`),
+        clave_invalida: await sonda(
+          `select public.answer_agreement_topic('${par}', 'Dedicación!', 'completa', null)`
+        ),
+        nota_larga: await sonda(
+          `select public.answer_agreement_topic('${par}', 'dedicacion', 'completa', '${'x'.repeat(281)}')`
+        ),
+        nota_vacia: await sonda(
+          `select public.answer_agreement_topic('${par}', 'dedicacion', 'completa', '')`
+        ),
+        insert_directo: await sonda(
+          `insert into public.agreement_answers (match_id, profile_id, topic, option)
+           values ('${par}', '${ana}', 'dinero-propio', 'nada')`
+        ),
+        update_directo: await sonda(
+          `update public.agreement_answers set option = 'completa' where profile_id = '${bea}'`
+        ),
+      },
+      {
+        lockin: 'LI005',
+        lockin_lectura: 'LI005',
+        clave_invalida: '23514',
+        nota_larga: '23514',
+        nota_vacia: '23514',
+        insert_directo: '42501',
+        update_directo: '42501',
+      }
+    );
+    // Lectura directa de la tabla: solo las tuyas.
+    const directas = await db.query('select profile_id from public.agreement_answers');
+    assert.deepEqual([...new Set(directas.rows.map((row) => row.profile_id))], [ana]);
+    // Un tercero que no está en el match no lee ni escribe.
+    await actingAs(cai);
+    assert.deepEqual(
+      {
+        lee: await sonda(`select * from public.match_agreement('${par}')`),
+        escribe: await sonda(
+          `select public.answer_agreement_topic('${par}', 'dedicacion', 'completa', null)`
+        ),
+      },
+      { lee: 'LI004', escribe: 'LI004' }
+    );
+    await db.exec('reset role');
+    // Ni publicación en realtime, ni ejecución para anon.
+    assert.doesNotMatch(expected, /publish\s+supabase_realtime agreement_answers/);
+    const ejecutables = await db.query(`select
+        has_function_privilege('anon', 'public.match_agreement(uuid)', 'EXECUTE') as anon_lee,
+        has_function_privilege('anon', 'public.answer_agreement_topic(uuid, text, text, text)', 'EXECUTE') as anon_escribe,
+        has_function_privilege('authenticated', 'public.match_agreement(uuid)', 'EXECUTE') as auth_lee`);
+    assert.deepEqual(ejecutables.rows[0], { anon_lee: false, anon_escribe: false, auth_lee: true });
+    await db.exec('rollback;');
     // --- Verificación de GitHub ---------------------------------------------
     //
     // El test central del bloque, y no es que el sello se encienda: es que NO se

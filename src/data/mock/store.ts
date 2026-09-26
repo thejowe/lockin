@@ -13,6 +13,7 @@
 
 import { SEED_PROFILES, SEED_RECIPROCAL_IDS } from './seed';
 
+import type { StoredAgreementAnswer } from '../agreement';
 import type {
   Decision,
   LockInSession,
@@ -42,6 +43,10 @@ export interface MockState {
   attendance: SessionAttendance[];
   /** Valoraciones post-sesión. Cada una la lee solo quien la escribió. */
   ratings: SessionRatingEntry[];
+  /** Respuestas del acuerdo de socios. Cada una la ve entera solo quien la escribió. */
+  agreementAnswers: StoredAgreementAnswer[];
+  /** Matches en los que ya se volcaron las respuestas semilla de la contraparte. */
+  agreementSeeded: Set<string>;
 }
 
 function initialState(): MockState {
@@ -55,6 +60,8 @@ function initialState(): MockState {
     lockInSessions: [],
     attendance: [],
     ratings: [],
+    agreementAnswers: [],
+    agreementSeeded: new Set(),
   };
 }
 

@@ -179,6 +179,9 @@ export const repositories: Repositories = {
   get sessions() {
     return resolveActive().repositories.sessions;
   },
+  get agreement() {
+    return resolveActive().repositories.agreement;
+  },
 };
 
 /** Presencia en sesiones, con la misma regla. Sin credenciales, en memoria. */

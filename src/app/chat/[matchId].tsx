@@ -40,6 +40,7 @@ import {
   suggestIcebreakers,
   useConversation,
 } from '@/features/chat';
+import { AgreementCard } from '@/features/agreement';
 import { SessionCard } from '@/features/session';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -136,6 +137,7 @@ export default function ChatScreen() {
           <View style={styles.content}>
             <View style={styles.lockIn}>
               <SessionCard match={match} me={me} />
+              <AgreementCard match={match} />
             </View>
 
             <ScrollView
@@ -242,6 +244,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingTop: Spacing.two,
     paddingBottom: Spacing.one,
+    gap: Spacing.two,
   },
   thread: {
     gap: Spacing.two,

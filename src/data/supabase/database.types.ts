@@ -146,6 +146,31 @@ export type MatchStreakRow = {
   alive_until: string;
 };
 
+/** Fila de `public.agreement_answers`. Solo se leen las propias (RLS). */
+export type AgreementAnswerRow = {
+  match_id: string;
+  profile_id: string;
+  topic: string;
+  option: string;
+  note: string | null;
+  updated_at: string;
+};
+
+/**
+ * Fila de `match_agreement()`. Las `theirs_*` son null salvo que el actor haya
+ * respondido ese tema (el ciego); `theirs_answered` sale siempre.
+ */
+export type MatchAgreementRow = {
+  topic: string;
+  mine_option: string | null;
+  mine_note: string | null;
+  mine_updated_at: string | null;
+  theirs_answered: boolean;
+  theirs_option: string | null;
+  theirs_note: string | null;
+  theirs_updated_at: string | null;
+};
+
 /**
  * Forma del esquema que consume `createClient<Database>`.
  *
@@ -245,6 +270,14 @@ export type Database = {
         Update: Record<string, never>;
         Relationships: [];
       };
+      // La escribe `answer_agreement_topic` y nadie más; el select directo
+      // solo devuelve las propias. La vista de la pareja es `match_agreement`.
+      agreement_answers: {
+        Row: AgreementAnswerRow;
+        Insert: Record<string, never>;
+        Update: Record<string, never>;
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
@@ -294,6 +327,12 @@ export type Database = {
         Args: { p_session_id: string; p_rating: SessionRating };
         Returns: SessionRatingRow;
       };
+      answer_agreement_topic: {
+        Args: { p_match_id: string; p_topic: string; p_option: string; p_note: string | null };
+        Returns: AgreementAnswerRow;
+      };
+      /** `match_agreement(p_match_id)` → una fila por tema con alguna respuesta. */
+      match_agreement: { Args: { p_match_id: string }; Returns: MatchAgreementRow[] };
       /** `ratable_session(p_match_id)` → cero o una fila de `lockin_sessions`. */
       ratable_session: { Args: { p_match_id: string }; Returns: SessionRow[] };
       /**

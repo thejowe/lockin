@@ -203,8 +203,9 @@ permiso de escribir. Diseño en
 `docs/plan/todo/verificacion.md`.
 
 **Fase 3 son tres sub-proyectos** («salas grupales, verificación, plantillas de
-acuerdo entre cofundadores» en `CONCEPTO.md`) y este es el primero. Los otros
-dos no están empezados y no comparten nada con él.
+acuerdo entre cofundadores» en `CONCEPTO.md`) y este es el primero. Plantillas
+de acuerdo es el bloque 12; salas grupales no está empezado y no comparten
+nada con él.
 
 Este bloque **cruza cuatro bloques**, y el alcance se declara entero para que
 nadie lo descubra a mitad:
@@ -232,6 +233,47 @@ nadie lo descubra a mitad:
   Probar el flujo en un dispositivo lo hace el agente `comprobador` en el
   emulador; el usuario solo introduce su login de GitHub. Ver
   `todo/verificacion.md` → "Pendiente del usuario".
+
+### 12. `acuerdo` — Acuerdo de socios a ciegas (Fase 3)
+
+Entrega: conversación guiada, tema por tema y a ciegas, para que una pareja de
+cofundadores en un match Par sepa en qué coincide y en qué no —dedicación,
+reparto, salida—, sin que ninguno vea la respuesta del otro hasta dar la suya.
+El ciego lo impone Postgres: la lectura la da `match_agreement()` y la
+escritura `answer_agreement_topic()`, las dos `SECURITY DEFINER`. Diseño en
+`docs/superpowers/specs/2026-09-24-acuerdo-socios-design.md`; plan en
+`docs/superpowers/plans/2026-09-24-acuerdo-socios.md`; checklist con reparto
+`[Claude]`/`[Codex]` en `docs/plan/todo/acuerdo.md`.
+
+Es el segundo de los tres sub-proyectos de Fase 3 («salas grupales,
+verificación, plantillas de acuerdo entre cofundadores» en `CONCEPTO.md`);
+verificación (bloque 11) ya está hecho y salas grupales sigue sin empezar.
+
+Este bloque cruza cinco bloques, y el alcance se declara entero para que
+nadie lo descubra a mitad:
+
+| Archivo | Dueño original | Qué se toca |
+|---|---|---|
+| `src/data/types.ts` | `arquitecto` | `AgreementAnswer`, `AgreementTopicView`, `AgreementAnswerInput` |
+| `src/data/repositories.ts`, `repositories.contract.ts` | `arquitecto` | `AgreementRepository` y sus seis casos |
+| `src/data/active.ts`, `src/data/index.ts` | `arquitecto` | Exponer `agreement` |
+| `src/data/mock/index.ts`, `seed.ts` | `arquitecto`/`perfil` | Registrar el repositorio y las tres respuestas semilla |
+| `src/data/mock/store.ts` | `arquitecto` | `MockState` gana dos campos |
+| `src/data/supabase/index.ts`, `database.types.ts` | `datos` | Registrar el repositorio y los tipos de las dos RPC |
+| `supabase/schema-embedded.test.mjs`, `drift-check.mjs` (si no parsea la tabla nueva) | `datos`/`calidad` | Los tests en PGlite |
+| `src/app/chat/[matchId].tsx` | `chat` | Una línea: `<AgreementCard match={match} />` |
+| `src/app/_layout.tsx` | `arquitecto` | Un `Stack.Screen` para `agreement/[matchId]` |
+| `e2e/run.mjs`, `verify.mjs` | `calidad` | Dar de alta el flujo nuevo, encadenado en la variante `supabase` tras `session-streak.yaml`; la variante `mock` (control negativo) no se toca |
+
+- **Nunca se lanza a la vez que `chat` ni que `datos`**, ni que una sesión que
+  toque `src/data/types.ts` o `repositories.ts`: pisa archivos suyos.
+- **No toca Fase 2.** La tarjeta del acuerdo se monta junto a `SessionCard` sin
+  importarla.
+- **No es un contrato ni asesoría legal**; el copy no puede decir otra cosa.
+- **Solo en matches Par**, y nada sale del match.
+- Cero dependencias nuevas y ninguna build nativa.
+- Depende de: nada de Fase 2. **Del usuario**: aplicar
+  `20260924000200_agreement_answers.sql` en `grrzmzktrhksbttpbblg`.
 
 ## Orden recomendado de trabajo
 
