@@ -271,6 +271,78 @@ export async function prepareSessionStreak(status, profileName) {
 }
 
 /**
+ * Siembra la respuesta de la contraparte al tema `dedicacion` del acuerdo de
+ * socios del match del recorrido, con `service_role` (se salta la RPC: aquí se
+ * prepara el mundo, no se prueba la escritura). `agreement.yaml` responde lo
+ * mismo y espera «Coincidís».
+ *
+ * El recorrido tiene un solo match —el like a Núria Bosch, que es `par`—, así
+ * que `.single()` sobre `matches` basta. Si deja de ser `par`, el acuerdo no
+ * existe en ese match y falla aquí con un motivo claro, no en el emulador.
+ */
+export async function prepareAgreement(status, profileName) {
+  assert.equal(status.API_URL, 'http://127.0.0.1:54321');
+  const client = createClient(status.API_URL, status.SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  const { data: profile, error: profileError } = await client
+    .from('profiles')
+    .select('id')
+    .eq('name', profileName)
+    .single();
+  assert.ifError(profileError);
+
+  const { data: match, error: matchError } = await client
+    .from('matches')
+    .select('id, profile_a, profile_b, mode')
+    .or(`profile_a.eq.${profile.id},profile_b.eq.${profile.id}`)
+    .single();
+  assert.ifError(matchError);
+  assert.equal(match.mode, 'par', 'el acuerdo solo existe en matches Par');
+  const counterpartId = match.profile_a === profile.id ? match.profile_b : match.profile_a;
+
+  const { error } = await client.from('agreement_answers').insert({
+    match_id: match.id,
+    profile_id: counterpartId,
+    topic: 'dedicacion',
+    option: 'completa',
+    note: 'Lo dejo todo por esto.',
+  });
+  assert.ifError(error);
+
+  console.log('Postgres: respuesta de la contraparte al acuerdo sembrada (dedicacion).');
+}
+
+/**
+ * Oráculo de `agreement.yaml`: la respuesta del usuario llegó a Postgres.
+ *
+ * Solo una fila y solo la del tema tocado: la RPC no escribe nada más.
+ */
+export async function verifyAgreementAnswer(status, profileName) {
+  assert.equal(status.API_URL, 'http://127.0.0.1:54321');
+  const client = createClient(status.API_URL, status.SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  const { data: profile, error: profileError } = await client
+    .from('profiles')
+    .select('id')
+    .eq('name', profileName)
+    .single();
+  assert.ifError(profileError);
+
+  const { data, error } = await client
+    .from('agreement_answers')
+    .select('topic, option')
+    .eq('profile_id', profile.id);
+  assert.ifError(error);
+  assert.deepEqual(data, [{ topic: 'dedicacion', option: 'completa' }]);
+
+  console.log('Postgres: respuesta del acuerdo verificada.');
+}
+
+/**
  * Oráculo de `session-rate.yaml`: el toque en "Genial" llegó a Postgres.
  *
  * Solo debe haber una fila y solo la de quien valoró: la valoración es privada,

@@ -26,9 +26,11 @@ import {
   shouldRetry,
 } from './triage.mjs';
 import {
+  prepareAgreement,
   prepareSessionRating,
   prepareSessionStreak,
   verifyAbsence,
+  verifyAgreementAnswer,
   verifyPendingRegistration,
   verifyPersistence,
   verifyRegistration,
@@ -49,6 +51,9 @@ const ratingFile = join(root, 'e2e/session-rate.yaml');
 // Cuarto caso, encadenado al anterior: la racha de pareja en Matches y en el
 // chat, con la sesión anterior que siembra `prepareSessionStreak`.
 const streakFile = join(root, 'e2e/session-streak.yaml');
+// Quinto caso, encadenado al anterior: el acuerdo de socios del mismo match, con
+// la respuesta de la contraparte que siembra `prepareAgreement`.
+const agreementFile = join(root, 'e2e/agreement.yaml');
 // El alta con email, en dos mitades con el correo en medio: solo en `registro`.
 const registerFile = join(root, 'e2e/register.yaml');
 const registerConfirmFile = join(root, 'e2e/register-confirm.yaml');
@@ -829,6 +834,38 @@ if (command === 'test') {
         return { outcome: diagnosis.kind, why: 'session-streak.yaml: ' + diagnosis.why };
       }
 
+      // Después de la racha y en el mismo match: la contraparte ya ha respondido
+      // un tema, y el recorrido responde lo mismo para ver la revelación.
+      await prepareAgreement(status, profileName);
+
+      const agreementDir = join(dir, 'agreement');
+      mkdirSync(agreementDir, { recursive: true });
+      const agreementRun = spawnSync(
+        'maestro',
+        [
+          'test',
+          '--format',
+          'junit',
+          '--output',
+          join(agreementDir, 'maestro.xml'),
+          '--debug-output',
+          agreementDir,
+          '--test-output-dir',
+          agreementDir,
+          '--flatten-debug-output',
+          '-e',
+          'MESSAGE=' + message,
+          agreementFile,
+        ],
+        { cwd: root, stdio: 'inherit' }
+      );
+      if (agreementRun.error) throw agreementRun.error;
+      if (agreementRun.status !== 0) {
+        const diagnosis = diagnose(agreementDir);
+        return { outcome: diagnosis.kind, why: 'agreement.yaml: ' + diagnosis.why };
+      }
+      await verifyAgreementAnswer(status, profileName);
+
       writeFileSync(
         join(dir, 'postgres.json'),
         JSON.stringify(
@@ -839,12 +876,16 @@ if (command === 'test') {
             session: 'verified',
             rating: 'verified',
             streak: 'verified',
+            agreement: 'verified',
           },
           null,
           2
         )
       );
-      return { outcome: 'pass', why: 'recorrido, persistencia y sesión Lock-In verificados' };
+      return {
+        outcome: 'pass',
+        why: 'recorrido, persistencia, sesión Lock-In y acuerdo verificados',
+      };
     } catch (error) {
       // Un oráculo que falla es un fallo del caso, no del runner: no se reintenta.
       const setup = Boolean(error?.syscall) || error?.code === 'ENOENT';

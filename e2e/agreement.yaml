@@ -1,0 +1,45 @@
+# Acuerdo de socios: abre el acuerdo desde el chat del match del recorrido,
+# responde el tema que `prepareAgreement` ya dejó respondido por la contraparte
+# y espera la revelación, con la nota de ella. Lo lanza run.mjs DESPUÉS de
+# session-streak.yaml, sin borrar el estado. Solo en la variante con
+# credenciales: en la mock, el recorrido es un control negativo que tiene que
+# romperse al reiniciar. `e2e/agreement.test.mjs` fija las etiquetas contra el
+# código.
+#
+# Relanza la app por lo mismo que session-rate.yaml: la siembra ocurre en
+# Postgres con la app abierta, y volver a arrancar relee sin esperas.
+appId: app.lockin.mobile
+name: Acuerdo de socios a ciegas desde el chat
+---
+- assertTrue: ${MESSAGE}
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible: 'Descubrir'
+    timeout: 60000
+- tapOn: 'Matches'
+- extendedWaitUntil:
+    visible: 'Conversación con .*${MESSAGE}.*'
+    timeout: 30000
+- tapOn: 'Conversación con .*${MESSAGE}.*'
+- extendedWaitUntil:
+    visible: 'Acuerdo de socios.*'
+    timeout: 60000
+- tapOn: 'Acuerdo de socios.*'
+- extendedWaitUntil:
+    visible: '.*Esto no es un contrato ni asesoría legal.*'
+    timeout: 30000
+# El `?` del enunciado es sintaxis de regex: se escapa.
+- tapOn: '¿Cuánto tiempo le vas a dedicar los próximos 6 meses\?.*'
+- tapOn: 'Jornada completa'
+- scrollUntilVisible:
+    element: 'Guardar respuesta'
+    direction: DOWN
+- tapOn: 'Guardar respuesta'
+# La fila es un `Pressable` con etiqueta propia: según Android, «Coincidís» y la
+# nota salen como texto suelto o dentro de su `content-desc`. El `.*` vale para
+# los dos.
+- extendedWaitUntil:
+    visible: '.*Coincidís.*'
+    timeout: 30000
+- assertVisible: '.*Núria Bosch: «Lo dejo todo por esto\.».*'
