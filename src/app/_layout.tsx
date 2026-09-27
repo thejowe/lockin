@@ -98,6 +98,16 @@ export default function RootLayout() {
                   headerTitleStyle: { color: palette.text, fontFamily: FontFamily.display },
                 }}
               />
+              <Stack.Screen
+                name="agreement/[matchId]"
+                options={{
+                  headerShown: true,
+                  headerBackButtonDisplayMode: 'minimal',
+                  headerStyle: { backgroundColor: palette.background },
+                  headerTintColor: palette.brass,
+                  headerTitleStyle: { color: palette.text, fontFamily: FontFamily.display },
+                }}
+              />
             </Stack>
           </DataProvider>
         </ThemeProvider>
