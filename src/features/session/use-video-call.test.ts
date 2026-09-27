@@ -221,6 +221,201 @@ describe('useVideoCall', () => {
     }
   });
 
+  // Los diálogos de permisos del sistema pueden estar abiertos más de 30 s
+  // (comprobador, 2026-09-27: 32 s): ese tiempo no es de la conexión.
+  it('el tiempo de espera cuenta desde que hay cámara y micrófono, no mientras se piden los permisos', async () => {
+    let grant: (stream: unknown) => void = () => {};
+    const pending = new Promise((resolve) => {
+      grant = resolve;
+    });
+    const real = mediaDevices.getUserMedia;
+    jest
+      .spyOn(mediaDevices, 'getUserMedia')
+      .mockImplementationOnce(async (constraints: Parameters<typeof real>[0]) => {
+        await pending;
+        return real(constraints);
+      });
+    jest.useFakeTimers();
+    try {
+      const channel = createMemoryVideoSignalAdapter();
+      const { result } = await renderHook(() => useVideoCall('s1', 'ana', 'bea', true, channel));
+
+      await act(async () => {
+        jest.advanceTimersByTime(CONNECT_TIMEOUT_MS);
+      });
+      expect(result.current.status).toBe('conectando');
+
+      await act(async () => {
+        grant(null);
+      });
+      await flushMicrotasks();
+      await act(async () => {
+        jest.advanceTimersByTime(CONNECT_TIMEOUT_MS - 1);
+      });
+      expect(result.current.status).toBe('conectando');
+
+      await act(async () => {
+        jest.advanceTimersByTime(1);
+      });
+      expect(result.current.status).toBe('error');
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('tras el tiempo de espera, si la otra parte llega por fin, la llamada conecta igual', async () => {
+    const channel = createMemoryVideoSignalAdapter();
+    jest.useFakeTimers();
+    const ana = await renderHook(() => useVideoCall('s1', 'ana', 'bea', true, channel));
+    try {
+      await flushMicrotasks();
+      await act(async () => {
+        jest.advanceTimersByTime(CONNECT_TIMEOUT_MS);
+      });
+      expect(ana.result.current.status).toBe('error');
+    } finally {
+      jest.useRealTimers();
+    }
+
+    const bea = await renderHook(() => useVideoCall('s1', 'bea', 'ana', true, channel));
+
+    await waitFor(() => expect(ana.result.current.status).toBe('conectada'));
+    await waitFor(() => expect(bea.result.current.status).toBe('conectada'));
+    expect(ana.result.current.error).toBeNull();
+  });
+
+  // Spec §6: volver a entrar levanta una llamada nueva desde cero. Quien se
+  // queda tiene todavía la conexión vieja, que ya no lleva a ningún sitio.
+  it.each([
+    ['quien contesta', 'bea', 'ana'],
+    ['quien ofrece', 'ana', 'bea'],
+  ])(
+    'si %s sale y vuelve a entrar, las dos partes vuelven a conectar',
+    async (_, leaver, stayer) => {
+      const channel = createMemoryVideoSignalAdapter();
+      const staying = await renderHook(() => useVideoCall('s1', stayer, leaver, true, channel));
+      const leaving = await renderHook(
+        ({ active }: { active: boolean }) => useVideoCall('s1', leaver, stayer, active, channel),
+        { initialProps: { active: true } }
+      );
+      await waitFor(() => expect(staying.result.current.status).toBe('conectada'));
+      await waitFor(() => expect(leaving.result.current.status).toBe('conectada'));
+
+      await leaving.rerender({ active: false });
+      // Quien se queda se entera y espera, con su cámara, en vez de quedarse
+      // con la imagen congelada de la llamada que ya no existe.
+      await waitFor(() => expect(staying.result.current.remoteStream).toBeNull());
+      expect(staying.result.current.status).toBe('conectando');
+      expect(staying.result.current.localStream).not.toBeNull();
+
+      await leaving.rerender({ active: true });
+
+      await waitFor(() => expect(leaving.result.current.status).toBe('conectada'));
+      await waitFor(() => expect(staying.result.current.status).toBe('conectada'));
+      expect(staying.result.current.remoteStream).not.toBeNull();
+    }
+  );
+
+  it('si la otra parte desaparece sin avisar (app cerrada, sin red) y vuelve, se reconecta', async () => {
+    const channel = createMemoryVideoSignalAdapter();
+    // Su `hangup` nunca llega: es lo que pasa si el proceso muere.
+    const lossy = {
+      join: channel.join.bind(channel),
+      send: (sessionId: string, message: Parameters<typeof channel.send>[1]) => {
+        if (message.kind !== 'hangup') channel.send(sessionId, message);
+      },
+    };
+    const ana = await renderHook(() => useVideoCall('s1', 'ana', 'bea', true, channel));
+    const bea = await renderHook(
+      ({ active }: { active: boolean }) => useVideoCall('s1', 'bea', 'ana', active, lossy),
+      { initialProps: { active: true } }
+    );
+    await waitFor(() => expect(ana.result.current.status).toBe('conectada'));
+
+    await bea.rerender({ active: false });
+    await flushMicrotasks();
+    // Sin aviso, ana no sabe nada todavía.
+    expect(ana.result.current.status).toBe('conectada');
+
+    await bea.rerender({ active: true });
+
+    await waitFor(() => expect(bea.result.current.status).toBe('conectada'));
+    await waitFor(() => expect(ana.result.current.remoteStream).not.toBeNull());
+    expect(ana.result.current.status).toBe('conectada');
+  });
+
+  it('una conexión que falla pasa a error', async () => {
+    const addTrackSpy = jest.spyOn(RTCPeerConnection.prototype, 'addTrack');
+    const channel = createMemoryVideoSignalAdapter();
+    const { result } = await renderHook(() => useVideoCall('s1', 'ana', 'bea', true, channel));
+    await waitFor(() => expect(addTrackSpy).toHaveBeenCalled());
+    const pc = addTrackSpy.mock.instances[0] as InstanceType<typeof RTCPeerConnection>;
+
+    await act(async () => {
+      (pc as unknown as { connectionState: string }).connectionState = 'failed';
+      pc.onconnectionstatechange?.(new Event('connectionstatechange') as never);
+    });
+
+    expect(result.current.status).toBe('error');
+    expect(result.current.error).toBe('No se pudo conectar el vídeo.');
+  });
+
+  it('salir mientras se piden los permisos suelta la cámara que llegue después', async () => {
+    let grant: () => void = () => {};
+    const pending = new Promise<void>((resolve) => {
+      grant = resolve;
+    });
+    const real = mediaDevices.getUserMedia;
+    let stream: Awaited<ReturnType<typeof real>> | null = null;
+    jest
+      .spyOn(mediaDevices, 'getUserMedia')
+      .mockImplementationOnce(async (constraints: Parameters<typeof real>[0]) => {
+        await pending;
+        stream = await real(constraints);
+        return stream;
+      });
+    const channel = createMemoryVideoSignalAdapter();
+    const { result, rerender } = await renderHook(
+      ({ active }: { active: boolean }) => useVideoCall('s1', 'ana', 'bea', active, channel),
+      { initialProps: { active: true } }
+    );
+
+    await rerender({ active: false });
+    await act(async () => {
+      grant();
+    });
+    await flushMicrotasks();
+
+    expect(stream!.getTracks().every((track) => (track as { stopped?: boolean }).stopped)).toBe(
+      true
+    );
+    expect(result.current.localStream).toBeNull();
+  });
+
+  it('un ready repetido de la misma entrada no tira una llamada ya conectada', async () => {
+    const addTrackSpy = jest.spyOn(RTCPeerConnection.prototype, 'addTrack');
+    const channel = createMemoryVideoSignalAdapter();
+    const send = jest.spyOn(channel, 'send');
+    const { result } = await renderHook(() => ({
+      ana: useVideoCall('s1', 'ana', 'bea', true, channel),
+      bea: useVideoCall('s1', 'bea', 'ana', true, channel),
+    }));
+    await waitFor(() => expect(result.current.ana.status).toBe('conectada'));
+    await waitFor(() => expect(result.current.bea.status).toBe('conectada'));
+    const peers = addTrackSpy.mock.instances.length;
+
+    const beaReady = send.mock.calls
+      .map(([, message]) => message)
+      .find((message) => message.from === 'bea' && message.kind === 'ready');
+    await act(async () => {
+      channel.send('s1', beaReady!);
+    });
+    await flushMicrotasks();
+
+    expect(result.current.ana.status).toBe('conectada');
+    expect(addTrackSpy.mock.instances.length).toBe(peers);
+  });
+
   it('colgar sale del canal y cierra la conexión: un mensaje tardío no revive el estado', async () => {
     const addTrackSpy = jest.spyOn(RTCPeerConnection.prototype, 'addTrack');
     const channel = createMemoryVideoSignalAdapter();

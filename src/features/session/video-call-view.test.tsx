@@ -115,11 +115,13 @@ describe('VideoCallView', () => {
 
     await fireEvent.press(both.getAllByRole('button', { name: 'Colgar' })[0]);
 
-    // Colgar por un lado manda `hangup` por el canal: el otro lado también
-    // limpia su conexión, no se queda esperando a una llamada ya muerta.
-    expect(both.queryAllByTestId('video-call-local')).toHaveLength(0);
+    // Colgar por un lado manda `hangup` por el canal: el otro lado tira la
+    // conexión muerta —sin vídeo remoto congelado— pero se queda con su cámara
+    // esperando, para que volver a entrar levante la llamada otra vez (spec §6).
     expect(both.queryAllByTestId('video-call-remote')).toHaveLength(0);
-    expect(both.getAllByText('La videollamada empieza cuando entráis los dos.')).toHaveLength(2);
+    expect(both.getAllByTestId('video-call-local')).toHaveLength(1);
+    expect(both.getByText('La videollamada empieza cuando entráis los dos.')).toBeTruthy();
+    expect(both.getByText('Conectando…')).toBeTruthy();
   });
 
   it('permiso de cámara/micrófono denegado pinta el aviso de error sin crashear', async () => {

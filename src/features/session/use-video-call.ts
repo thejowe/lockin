@@ -141,36 +141,114 @@ export function useVideoCall(
     let cancelled = false;
     let closed = false;
     let leaveChannel = () => {};
-    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
     const amOfferer = myProfileId < counterpartId;
-    // Cámara y micrófono ya añadidos a `pc`: antes no se manda `ready` ni se
-    // responde a uno, así que ningún offer llega antes de tener medios.
+    // Identifica esta entrada en la llamada. Viaja en cada `ready`: uno con una
+    // entrada distinta a la ya negociada es que la otra parte salió y volvió.
+    const entry = Math.random().toString(36).slice(2);
+    let counterpartEntry: string | null = null;
+    // Cámara y micrófono ya añadidos: antes no se manda `ready` ni se responde
+    // a uno, así que ningún offer llega antes de tener medios.
     let mediaReady = false;
-    // El offer de este intento, creado una sola vez y reenviado tal cual si
-    // otro `ready` llega antes de la respuesta.
-    let offerPromise: Promise<SessionDescriptionPayload | null> | null = null;
-    // `setRemoteDescription` resuelto. `setLocalDescription` dispara candidatos
-    // antes de que su offer/answer salga por el canal, así que al otro lado
-    // llegan primero; sin descripción remota el nativo los rechaza, y se
-    // guardan aquí hasta tenerla.
-    let remoteApplied = false;
-    const pendingCandidates: IceCandidatePayload[] = [];
+    let connectTimeout: ReturnType<typeof setTimeout> | undefined;
+
+    /**
+     * Una negociación con una entrada concreta de la otra parte. Al volver a
+     * entrar ella, se tira entera y se levanta otra con los mismos medios.
+     */
+    interface Peer {
+      pc: InstanceType<typeof RTCPeerConnection>;
+      /** Ya llegó su offer/answer: uno repetido se ignora. */
+      described: boolean;
+      /**
+       * `setRemoteDescription` resuelto. `setLocalDescription` dispara
+       * candidatos antes de que su offer/answer salga por el canal, así que al
+       * otro lado llegan primero; sin descripción remota el nativo los
+       * rechaza, y se guardan en `pending` hasta tenerla.
+       */
+      remoteApplied: boolean;
+      pending: IceCandidatePayload[];
+      /** El offer, creado una vez y reenviado tal cual si llega otro `ready` antes de la respuesta. */
+      offer: Promise<SessionDescriptionPayload | null> | null;
+    }
 
     // Ver `CONNECT_TIMEOUT_MS`: sin esto, "nadie contesta" se queda en
     // 'conectando' para siempre en vez de convertirse en un error observable.
-    const connectTimeout = setTimeout(() => {
-      if (cancelled) return;
-      setOutcome('error');
-      setError('No se pudo conectar el vídeo.');
-    }, CONNECT_TIMEOUT_MS);
+    // Arranca con los medios, no antes: los diálogos de permisos del sistema
+    // pueden llevarse ellos solos los 30 s.
+    const startTimeout = () => {
+      clearTimeout(connectTimeout);
+      connectTimeout = setTimeout(() => {
+        if (cancelled) return;
+        setOutcome('error');
+        setError('No se pudo conectar el vídeo.');
+      }, CONNECT_TIMEOUT_MS);
+    };
+
+    const createPeer = (): Peer => {
+      const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+      const self: Peer = { pc, described: false, remoteApplied: false, pending: [], offer: null };
+      // Los eventos de una conexión ya sustituida no tocan el estado.
+      const current = () => !cancelled && peer === self;
+
+      const syncConnectionState = () => {
+        if (!current()) return;
+        if (pc.connectionState === 'connected') {
+          clearTimeout(connectTimeout);
+          setError(null);
+          setOutcome('conectada');
+        } else if (pc.connectionState === 'failed') {
+          clearTimeout(connectTimeout);
+          setOutcome('error');
+          setError('No se pudo conectar el vídeo.');
+        }
+      };
+      pc.onconnectionstatechange = syncConnectionState;
+      pc.oniceconnectionstatechange = syncConnectionState;
+
+      // El `.d.ts` de la librería tipa estos eventos como `Event<string>`
+      // genérico en vez de `RTCIceCandidateEvent`/`RTCTrackEvent` — hueco de sus
+      // propios tipos, no nuestro; de ahí derivar el tipo real del propio setter
+      // y castear el valor recibido a su forma real.
+      pc.onicecandidate = (event: Parameters<NonNullable<typeof pc.onicecandidate>>[0]) => {
+        if (!current()) return;
+        const candidate = (event as unknown as { candidate: IceCandidatePayload | null }).candidate;
+        if (candidate) {
+          channel.send(sessionId, { kind: 'ice-candidate', from: myProfileId, payload: candidate });
+        }
+      };
+
+      pc.ontrack = (event: Parameters<NonNullable<typeof pc.ontrack>>[0]) => {
+        if (!current()) return;
+        const streams = (event as unknown as { streams: MediaStream[] }).streams;
+        setRemoteStream(streams[0] ?? null);
+      };
+
+      const stream = localStreamRef.current;
+      stream?.getTracks().forEach((track) => pc.addTrack(track, stream));
+      return self;
+    };
+
+    let peer = createPeer();
+
+    /** La otra parte se fue o volvió a entrar: conexión nueva, mismos medios. */
+    const resetPeer = () => {
+      const old = peer;
+      peer = createPeer();
+      old.pc.close();
+      setRemoteStream(null);
+      setError(null);
+      setOutcome('idle');
+    };
 
     const cleanup = () => {
       if (closed) return;
       closed = true;
       cancelled = true;
       clearTimeout(connectTimeout);
+      // Quien se queda deja de esperar a esta conexión y vuelve a 'conectando'.
+      channel.send(sessionId, { kind: 'hangup', from: myProfileId, payload: null });
       leaveChannel();
-      pc.close();
+      peer.pc.close();
       localStreamRef.current?.getTracks().forEach((track) => track.stop());
       localStreamRef.current = null;
       setLocalStream(null);
@@ -179,64 +257,38 @@ export function useVideoCall(
     };
     cleanupRef.current = cleanup;
 
-    const syncConnectionState = () => {
-      if (cancelled) return;
-      if (pc.connectionState === 'connected') {
-        clearTimeout(connectTimeout);
-        setOutcome('conectada');
-      } else if (pc.connectionState === 'failed') {
-        clearTimeout(connectTimeout);
-        setOutcome('error');
-        setError('No se pudo conectar el vídeo.');
-      }
-    };
-    pc.onconnectionstatechange = syncConnectionState;
-    pc.oniceconnectionstatechange = syncConnectionState;
-
-    // El `.d.ts` de la librería tipa estos eventos como `Event<string>`
-    // genérico en vez de `RTCIceCandidateEvent`/`RTCTrackEvent` — hueco de sus
-    // propios tipos, no nuestro; de ahí derivar el tipo real del propio setter
-    // y castear el valor recibido a su forma real.
-    pc.onicecandidate = (event: Parameters<NonNullable<typeof pc.onicecandidate>>[0]) => {
-      const candidate = (event as unknown as { candidate: IceCandidatePayload | null }).candidate;
-      if (candidate) {
-        channel.send(sessionId, { kind: 'ice-candidate', from: myProfileId, payload: candidate });
-      }
-    };
-
-    pc.ontrack = (event: Parameters<NonNullable<typeof pc.ontrack>>[0]) => {
-      if (cancelled) return;
-      const streams = (event as unknown as { streams: MediaStream[] }).streams;
-      setRemoteStream(streams[0] ?? null);
-    };
-
-    const addCandidate = async (candidate: IceCandidatePayload) => {
+    const addCandidate = async (target: Peer, candidate: IceCandidatePayload) => {
       try {
-        await pc.addIceCandidate(candidate);
+        await target.pc.addIceCandidate(candidate);
       } catch {
         // Candidato tardío o ya descartado: no es un fallo de la llamada.
       }
     };
 
-    const applyRemote = async (description: SessionDescriptionPayload) => {
-      await pc.setRemoteDescription(description);
-      remoteApplied = true;
-      for (const candidate of pendingCandidates.splice(0)) await addCandidate(candidate);
+    /** `false` si la conexión se sustituyó o se colgó mientras tanto. */
+    const applyRemote = async (target: Peer, description: SessionDescriptionPayload) => {
+      target.described = true;
+      await target.pc.setRemoteDescription(description);
+      if (cancelled || peer !== target) return false;
+      target.remoteApplied = true;
+      for (const candidate of target.pending.splice(0)) await addCandidate(target, candidate);
+      return true;
     };
 
     const sendReady = () => {
-      channel.send(sessionId, { kind: 'ready', from: myProfileId, payload: null });
+      channel.send(sessionId, { kind: 'ready', from: myProfileId, payload: { entry } });
     };
 
     const sendOffer = async () => {
-      offerPromise ??= (async () => {
-        const offerDesc: SessionDescriptionPayload = await pc.createOffer();
-        if (cancelled) return null;
-        await pc.setLocalDescription(offerDesc);
+      const target = peer;
+      target.offer ??= (async () => {
+        const offerDesc: SessionDescriptionPayload = await target.pc.createOffer();
+        if (cancelled || peer !== target) return null;
+        await target.pc.setLocalDescription(offerDesc);
         return offerDesc;
       })();
-      const offerDesc = await offerPromise;
-      if (cancelled || !offerDesc) return;
+      const offerDesc = await target.offer;
+      if (cancelled || peer !== target || !offerDesc) return;
       channel.send(sessionId, { kind: 'offer', from: myProfileId, payload: offerDesc });
     };
 
@@ -244,27 +296,40 @@ export function useVideoCall(
       if (cancelled) return;
       if (message.kind === 'ready') {
         // Sin medios todavía no se hace nada: el `ready` propio saldrá al
-        // tenerlos. Con la respuesta ya aplicada, la negociación está hecha.
-        if (!mediaReady || remoteApplied) return;
+        // tenerlos.
+        if (!mediaReady) return;
+        const theirEntry = (message.payload as { entry?: string } | null)?.entry ?? null;
+        const reentered = theirEntry !== counterpartEntry;
+        counterpartEntry = theirEntry;
+        if (peer.described) {
+          // Repetido de la entrada ya negociada: nada que hacer.
+          if (!reentered) return;
+          resetPeer();
+          startTimeout();
+        }
         if (amOfferer) await sendOffer();
         else sendReady();
       } else if (message.kind === 'offer') {
-        // Un offer reenviado cuando ya se contestó al primero no se repite.
-        if (remoteApplied) return;
-        await applyRemote(message.payload as SessionDescriptionPayload);
-        const answerDesc: SessionDescriptionPayload = await pc.createAnswer();
-        if (cancelled) return;
-        await pc.setLocalDescription(answerDesc);
+        const target = peer;
+        if (target.described) return;
+        if (!(await applyRemote(target, message.payload as SessionDescriptionPayload))) return;
+        const answerDesc: SessionDescriptionPayload = await target.pc.createAnswer();
+        if (cancelled || peer !== target) return;
+        await target.pc.setLocalDescription(answerDesc);
         channel.send(sessionId, { kind: 'answer', from: myProfileId, payload: answerDesc });
       } else if (message.kind === 'answer') {
-        if (remoteApplied) return;
-        await applyRemote(message.payload as SessionDescriptionPayload);
+        if (peer.described) return;
+        await applyRemote(peer, message.payload as SessionDescriptionPayload);
       } else if (message.kind === 'ice-candidate') {
         const candidate = message.payload as IceCandidatePayload;
-        if (remoteApplied) await addCandidate(candidate);
-        else pendingCandidates.push(candidate);
+        if (peer.remoteApplied) await addCandidate(peer, candidate);
+        else peer.pending.push(candidate);
       } else if (message.kind === 'hangup') {
-        cleanup();
+        // Colgó o salió de la sesión: se tira su conexión y se la espera, sin
+        // tiempo de espera — no es que no conecte, es que no está.
+        clearTimeout(connectTimeout);
+        counterpartEntry = null;
+        resetPeer();
       }
     };
 
@@ -284,15 +349,13 @@ export function useVideoCall(
         }
         localStreamRef.current = stream;
         setLocalStream(stream);
-        stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+        stream.getTracks().forEach((track) => peer.pc.addTrack(track, stream));
 
         mediaReady = true;
+        startTimeout();
         sendReady();
       } catch {
         if (!cancelled) {
-          // Sin esto, un permiso denegado ahora quedaría pisado 30 s después
-          // por el timeout de conexión, con un mensaje que ya no aplica.
-          clearTimeout(connectTimeout);
           setOutcome('error');
           setError('No se pudo acceder a la cámara o al micrófono.');
         }
@@ -327,12 +390,11 @@ export function useVideoCall(
     });
   }, []);
 
+  // El `hangup` a la otra parte lo manda la propia limpieza: colgar y salir
+  // de la sesión le avisan igual.
   const hangUp = useCallback(() => {
-    if (sessionId && myProfileId) {
-      channel.send(sessionId, { kind: 'hangup', from: myProfileId, payload: null });
-    }
     cleanupRef.current();
-  }, [channel, sessionId, myProfileId]);
+  }, []);
 
   return {
     status,

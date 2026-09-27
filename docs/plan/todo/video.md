@@ -274,10 +274,7 @@ en verde (83 suites, 978 tests, 94.73/89.58/94.47/96.26 %), `npx tsc
 --noEmit` y `npm run lint` limpios. **Falta en dispositivo:** el APK del
 emulador es el de EAS del 23-sep, sin este arreglo. Hay que instalar una build
 nueva (otra firma: desinstalar el de EAS e iniciar sesión otra vez) y repetir
-la escucha de arriba contestando `ready`. Sigue sin cubrir volver a entrar
-con la llamada ya conectada: el que se queda conserva su `RTCPeerConnection`
-viejo e ignora el `ready` nuevo (hace falta ICE restart, fuera de alcance
-según la spec §6).
+la escucha de arriba contestando `ready`.
 
 **5. ⚠️ El timeout de 30 s cuenta desde antes del diálogo de permisos.**
 `RTCPeerConnection` se crea a las 20:25:08 y `getUserMedia` resuelve a las
@@ -285,6 +282,30 @@ según la spec §6).
 segundos de conceder ya se ve «No se pudo conectar el vídeo.» (`08-video.png`).
 Con el bug 3 arreglado seguiría pasando la primera vez que alguien tarde en
 leer el diálogo.
+
+**Arreglo de 5 y de volver a entrar (2026-09-27), solo contra mocks.**
+- El tiempo de espera arranca cuando `getUserMedia` resuelve, no al crear
+  la conexión. Un error por tiempo de espera ya no es definitivo: si la otra
+  parte llega después, la llamada conecta y el error se borra.
+- Volver a entrar (spec §6): cada `ready` lleva `{ entry }`, un id por
+  entrada. Si llega un `ready` de una entrada distinta a la ya negociada, es
+  que la otra parte salió y volvió: quien se queda tira su
+  `RTCPeerConnection` y levanta uno nuevo con los mismos medios. No hace
+  falta ICE restart, porque es una conexión nueva.
+- La limpieza (colgar o salir de la sesión) manda `hangup`. **Cambio de
+  comportamiento**: al recibirlo, el otro lado ya no cuelga del todo. Tira la
+  conexión muerta, sin vídeo remoto congelado, y espera con su cámara en
+  `'conectando'` y sin tiempo de espera, para que quien colgó pueda volver a
+  entrar. `video-call-view.test.tsx` («colgar deja de pintar el vídeo…») se
+  ajustó a esto.
+- Tests nuevos en `use-video-call.test.ts`: el tiempo de espera no cuenta
+  mientras se piden los permisos; tras el tiempo de espera, una llegada
+  tardía conecta igual; volver a entrar, tanto quien ofrece como quien
+  contesta; desaparecer sin `hangup` (app cerrada) y volver; un `ready`
+  repetido de la misma entrada no tira la llamada; `failed` pasa a error;
+  salir mientras se piden los permisos suelta la cámara.
+- `npm test -- --coverage` en verde (83 suites, 986 tests,
+  94.91/89.67/94.61/96.5 %); `npx tsc --noEmit` y `npm run lint` limpios.
 
 **Limpieza.** «Video Prueba» borró su perfil y su `user_settings`; por
 cascada se fueron el match `0e606c2e-…` y la sesión `efb0449a-…`
