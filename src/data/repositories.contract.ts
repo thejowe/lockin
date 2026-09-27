@@ -313,14 +313,15 @@ export function describeRepositoryContract(backend: ContractBackend): void {
         }
       );
 
-      it.each<VideoSignalMessage['kind']>(['offer', 'answer', 'ice-candidate', 'hangup'])(
+      it.each<VideoSignalMessage['kind']>(['ready', 'offer', 'answer', 'ice-candidate', 'hangup'])(
         'señalización entrega %s en ambas direcciones sin ecos ni cruces de sesión',
         async (kind) => {
           const a = signal(mine, fixture.currentUserId);
           const b = signal(theirs, fixture.reciprocalAId);
           const c = signal(other, fixture.reciprocalBId, otherSessionId);
           await connection(true, a, b, c);
-          const payload = kind === 'hangup' ? null : { value: kind, nested: { number: 1 } };
+          const payload =
+            kind === 'hangup' || kind === 'ready' ? null : { value: kind, nested: { number: 1 } };
           const fromA = { kind, from: fixture.currentUserId, payload };
           const fromB = { kind, from: fixture.reciprocalAId, payload };
           mine.videoSignal.send(sessionId, fromA);

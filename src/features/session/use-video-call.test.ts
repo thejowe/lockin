@@ -51,23 +51,77 @@ describe('useVideoCall', () => {
     expect(result.current.status).toBe('conectando');
   });
 
-  it('el profileId menor en orden lexicográfico ofrece; el mayor espera', async () => {
-    const channelAna = createMemoryVideoSignalAdapter();
-    const sendAna = jest.spyOn(channelAna, 'send');
-    await renderHook(() => useVideoCall('s1', 'ana', 'bea', true, channelAna));
-    await waitFor(() =>
-      expect(sendAna).toHaveBeenCalledWith(
-        's1',
-        expect.objectContaining({ kind: 'offer', from: 'ana' })
-      )
-    );
+  it('el profileId menor en orden lexicográfico ofrece; el mayor solo contesta', async () => {
+    const channel = createMemoryVideoSignalAdapter();
+    const send = jest.spyOn(channel, 'send');
 
-    const channelBea = createMemoryVideoSignalAdapter();
-    const sendBea = jest.spyOn(channelBea, 'send');
-    await renderHook(() => useVideoCall('s1', 'bea', 'ana', true, channelBea));
+    const { result } = await renderHook(() => ({
+      ana: useVideoCall('s1', 'ana', 'bea', true, channel),
+      bea: useVideoCall('s1', 'bea', 'ana', true, channel),
+    }));
+    await waitFor(() => expect(result.current.bea.status).toBe('conectada'));
+
+    const sent = send.mock.calls.map(([, message]) => `${message.from}:${message.kind}`);
+    expect(sent).toContain('ana:offer');
+    expect(sent).toContain('bea:answer');
+    expect(sent).not.toContain('bea:offer');
+  });
+
+  // El canal no guarda nada: un mensaje enviado a una sala donde la otra parte
+  // aún no está se pierde. Con la ventana de 5 minutos lo normal es llegar con
+  // minutos de diferencia, así que el orden de llegada no puede decidir si
+  // conecta (hallazgo del comprobador, 2026-09-27, `docs/plan/todo/video.md`).
+  it('conecta aunque quien ofrece entre primero y la otra parte llegue más tarde', async () => {
+    const channel = createMemoryVideoSignalAdapter();
+
+    const ana = await renderHook(() => useVideoCall('s1', 'ana', 'bea', true, channel));
+    await waitFor(() => expect(ana.result.current.localStream).not.toBeNull());
     await flushMicrotasks();
 
-    expect(sendBea).not.toHaveBeenCalledWith('s1', expect.objectContaining({ kind: 'offer' }));
+    const bea = await renderHook(() => useVideoCall('s1', 'bea', 'ana', true, channel));
+
+    await waitFor(() => expect(bea.result.current.status).toBe('conectada'));
+    await waitFor(() => expect(ana.result.current.status).toBe('conectada'));
+  });
+
+  it('conecta aunque quien contesta entre primero y quien ofrece llegue más tarde', async () => {
+    const channel = createMemoryVideoSignalAdapter();
+
+    const bea = await renderHook(() => useVideoCall('s1', 'bea', 'ana', true, channel));
+    await waitFor(() => expect(bea.result.current.localStream).not.toBeNull());
+    await flushMicrotasks();
+
+    const ana = await renderHook(() => useVideoCall('s1', 'ana', 'bea', true, channel));
+
+    await waitFor(() => expect(ana.result.current.status).toBe('conectada'));
+    await waitFor(() => expect(bea.result.current.status).toBe('conectada'));
+  });
+
+  // `setLocalDescription` dispara `onicecandidate` antes de que el offer salga
+  // por el canal, así que al otro lado los primeros candidatos llegan sin
+  // descripción remota, y `addIceCandidate` los rechaza en el nativo real.
+  it('los candidatos ICE que llegan antes que el offer se aplican al llegar este, no se pierden', async () => {
+    const addTrackSpy = jest.spyOn(RTCPeerConnection.prototype, 'addTrack');
+    const channel = createMemoryVideoSignalAdapter();
+    await renderHook(() => useVideoCall('s1', 'bea', 'ana', true, channel));
+
+    await waitFor(() => expect(addTrackSpy).toHaveBeenCalled());
+    const pc = addTrackSpy.mock.instances[0] as InstanceType<typeof RTCPeerConnection>;
+    const applied: unknown[] = [];
+    // Como el nativo: sin descripción remota, el candidato se rechaza.
+    jest.mocked(pc.addIceCandidate).mockImplementation(async (candidate) => {
+      if (!pc.remoteDescription) throw new Error('InvalidStateError: no remote description');
+      applied.push(candidate);
+    });
+
+    const early = { candidate: 'early-candidate', sdpMid: '0', sdpMLineIndex: 0 };
+    await act(async () => {
+      channel.send('s1', { kind: 'ice-candidate', from: 'ana', payload: early });
+      channel.send('s1', { kind: 'offer', from: 'ana', payload: { type: 'offer', sdp: 'x' } });
+    });
+    await flushMicrotasks();
+
+    expect(applied).toEqual([early]);
   });
 
   it('las dos partes acaban en conectada tras intercambiar offer/answer/ICE', async () => {

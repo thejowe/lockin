@@ -8,6 +8,14 @@
  * dos ofreciendo a la vez) sin un tercer mensaje de arbitraje. Solo STUN
  * público — ver la spec para el porqué de no pagar TURN gestionado.
  *
+ * El canal no guarda nada: un offer enviado cuando la otra parte aún no está
+ * se pierde, y con la ventana de 5 minutos lo normal es llegar con minutos de
+ * diferencia. Por eso el offer no sale al arrancar, sino al saber que la otra
+ * parte está: cada lado manda `ready` cuando tiene cámara y micrófono; quien
+ * contesta responde `ready` a un `ready` (así se entera quien llega después),
+ * y quien ofrece contesta a un `ready` con su offer. Da igual quién llegue
+ * antes.
+ *
  * `active` en `false` (fuera de ventana, sesión terminada, o web — lo decide
  * quien llama al hook) cierra y limpia sin que el resto de la pantalla tenga
  * que saberlo: por eso todo el ciclo de vida vive en un único efecto atado a
@@ -135,6 +143,18 @@ export function useVideoCall(
     let leaveChannel = () => {};
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
     const amOfferer = myProfileId < counterpartId;
+    // Cámara y micrófono ya añadidos a `pc`: antes no se manda `ready` ni se
+    // responde a uno, así que ningún offer llega antes de tener medios.
+    let mediaReady = false;
+    // El offer de este intento, creado una sola vez y reenviado tal cual si
+    // otro `ready` llega antes de la respuesta.
+    let offerPromise: Promise<SessionDescriptionPayload | null> | null = null;
+    // `setRemoteDescription` resuelto. `setLocalDescription` dispara candidatos
+    // antes de que su offer/answer salga por el canal, así que al otro lado
+    // llegan primero; sin descripción remota el nativo los rechaza, y se
+    // guardan aquí hasta tenerla.
+    let remoteApplied = false;
+    const pendingCandidates: IceCandidatePayload[] = [];
 
     // Ver `CONNECT_TIMEOUT_MS`: sin esto, "nadie contesta" se queda en
     // 'conectando' para siempre en vez de convertirse en un error observable.
@@ -190,22 +210,59 @@ export function useVideoCall(
       setRemoteStream(streams[0] ?? null);
     };
 
+    const addCandidate = async (candidate: IceCandidatePayload) => {
+      try {
+        await pc.addIceCandidate(candidate);
+      } catch {
+        // Candidato tardío o ya descartado: no es un fallo de la llamada.
+      }
+    };
+
+    const applyRemote = async (description: SessionDescriptionPayload) => {
+      await pc.setRemoteDescription(description);
+      remoteApplied = true;
+      for (const candidate of pendingCandidates.splice(0)) await addCandidate(candidate);
+    };
+
+    const sendReady = () => {
+      channel.send(sessionId, { kind: 'ready', from: myProfileId, payload: null });
+    };
+
+    const sendOffer = async () => {
+      offerPromise ??= (async () => {
+        const offerDesc: SessionDescriptionPayload = await pc.createOffer();
+        if (cancelled) return null;
+        await pc.setLocalDescription(offerDesc);
+        return offerDesc;
+      })();
+      const offerDesc = await offerPromise;
+      if (cancelled || !offerDesc) return;
+      channel.send(sessionId, { kind: 'offer', from: myProfileId, payload: offerDesc });
+    };
+
     const handleMessage = async (message: VideoSignalMessage) => {
       if (cancelled) return;
-      if (message.kind === 'offer') {
-        await pc.setRemoteDescription(message.payload as SessionDescriptionPayload);
+      if (message.kind === 'ready') {
+        // Sin medios todavía no se hace nada: el `ready` propio saldrá al
+        // tenerlos. Con la respuesta ya aplicada, la negociación está hecha.
+        if (!mediaReady || remoteApplied) return;
+        if (amOfferer) await sendOffer();
+        else sendReady();
+      } else if (message.kind === 'offer') {
+        // Un offer reenviado cuando ya se contestó al primero no se repite.
+        if (remoteApplied) return;
+        await applyRemote(message.payload as SessionDescriptionPayload);
         const answerDesc: SessionDescriptionPayload = await pc.createAnswer();
         if (cancelled) return;
         await pc.setLocalDescription(answerDesc);
         channel.send(sessionId, { kind: 'answer', from: myProfileId, payload: answerDesc });
       } else if (message.kind === 'answer') {
-        await pc.setRemoteDescription(message.payload as SessionDescriptionPayload);
+        if (remoteApplied) return;
+        await applyRemote(message.payload as SessionDescriptionPayload);
       } else if (message.kind === 'ice-candidate') {
-        try {
-          await pc.addIceCandidate(message.payload as IceCandidatePayload);
-        } catch {
-          // Candidato tardío o ya descartado: no es un fallo de la llamada.
-        }
+        const candidate = message.payload as IceCandidatePayload;
+        if (remoteApplied) await addCandidate(candidate);
+        else pendingCandidates.push(candidate);
       } else if (message.kind === 'hangup') {
         cleanup();
       }
@@ -229,12 +286,8 @@ export function useVideoCall(
         setLocalStream(stream);
         stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
-        if (amOfferer) {
-          const offerDesc: SessionDescriptionPayload = await pc.createOffer();
-          if (cancelled) return;
-          await pc.setLocalDescription(offerDesc);
-          channel.send(sessionId, { kind: 'offer', from: myProfileId, payload: offerDesc });
-        }
+        mediaReady = true;
+        sendReady();
       } catch {
         if (!cancelled) {
           // Sin esto, un permiso denegado ahora quedaría pisado 30 s después

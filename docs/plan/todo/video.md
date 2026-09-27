@@ -260,6 +260,25 @@ llegan antes que la oferta, o mientras `setRemoteDescription` sigue en
 vuelo, se pierden sin avisar. Aquí no llegó a conectar nada, así que no se
 sabe si rompe la llamada, pero merece una cola de candidatos pendientes.
 
+**Arreglo de 3 y 4 (2026-09-27), solo contra mocks.** Nuevo mensaje `ready`
+en `VideoSignalKind`. Cada lado lo manda al tener cámara y micrófono; quien
+contesta responde `ready` a un `ready`, y quien ofrece contesta a un `ready`
+con su offer (creado una vez y reenviado tal cual). Un offer o answer repetido
+tras aplicar la descripción remota se ignora. Los candidatos que llegan antes
+de la descripción remota se encolan y se aplican al tenerla. Tests nuevos en
+`use-video-call.test.ts`: conecta con quien ofrece llegando primero (fallaba
+antes del arreglo, se quedaba en `conectando`), conecta con quien contesta
+llegando primero, y un candidato anterior al offer se aplica (fallaba antes:
+se perdía). El contrato del canal cubre ya `ready`. `npm test -- --coverage`
+en verde (83 suites, 978 tests, 94.73/89.58/94.47/96.26 %), `npx tsc
+--noEmit` y `npm run lint` limpios. **Falta en dispositivo:** el APK del
+emulador es el de EAS del 23-sep, sin este arreglo. Hay que instalar una build
+nueva (otra firma: desinstalar el de EAS e iniciar sesión otra vez) y repetir
+la escucha de arriba contestando `ready`. Sigue sin cubrir volver a entrar
+con la llamada ya conectada: el que se queda conserva su `RTCPeerConnection`
+viejo e ignora el `ready` nuevo (hace falta ICE restart, fuera de alcance
+según la spec §6).
+
 **5. ⚠️ El timeout de 30 s cuenta desde antes del diálogo de permisos.**
 `RTCPeerConnection` se crea a las 20:25:08 y `getUserMedia` resuelve a las
 20:25:40, porque el diálogo de permisos estuvo abierto 32 s. A los pocos

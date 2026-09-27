@@ -7,13 +7,18 @@
  * persistencia, `src/data/active.ts` elige el adaptador con la misma regla.
  */
 
-export type VideoSignalKind = 'offer' | 'answer' | 'ice-candidate' | 'hangup';
+/**
+ * `ready`: "tengo cámara y micrófono y estoy escuchando". El canal no guarda
+ * nada, así que el offer solo sale cuando consta que la otra parte está —
+ * ver `use-video-call.ts`.
+ */
+export type VideoSignalKind = 'ready' | 'offer' | 'answer' | 'ice-candidate' | 'hangup';
 
 export interface VideoSignalMessage {
   kind: VideoSignalKind;
   /** profileId de quien envía — para que el receptor descarte sus propios ecos. */
   from: string;
-  /** SDP para offer/answer, candidato serializado para ice-candidate, `null` para hangup. */
+  /** SDP para offer/answer, candidato serializado para ice-candidate, `null` para ready y hangup. */
   payload: unknown;
 }
 
