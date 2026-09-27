@@ -164,10 +164,12 @@ qué puede solaparse).
 
 ## Pendiente del usuario
 
-- [ ] **[comprobador]** Android: compilar en local (`npx expo run:android`)
+- [x] **[comprobador]** Android: compilar en local (`npx expo run:android`)
       para confirmar que el plugin nativo de `react-native-webrtc` (Tarea 1)
       compila, y en el emulador que la pantalla de sesión carga el módulo
       real (no el aviso de `'no-disponible'`) y pide permisos de cámara/mic.
+      Hecho el 2026-09-27; detalle y un bug de señalización en «Hallazgos
+      del comprobador» abajo.
 - [ ] iOS (usuario): `eas build --profile development` para confirmar que
       el plugin compila también en iOS — el emulador no lo cubre.
 - [ ] (usuario — el emulador no sirve: su cámara es una escena de juguete)
@@ -193,3 +195,85 @@ qué puede solaparse).
       comprobar que arranca y que la pantalla de sesión muestra el aviso.
       Es iOS: sigue siendo del usuario. **[comprobador]** puede cubrir la
       mitad Android (Expo Go en el emulador + `npx expo start`).
+
+## Hallazgos del comprobador
+
+### 2026-09-27 — WebRTC nativo en Android: compila, carga y pide permisos
+
+Evidencia (local, ignorada por git): `e2e/artifacts/local/2026-09-27-webrtc/`.
+
+**1. El plugin compila ✅** (backend mock, commit `61c9eaa`). `npx expo
+prebuild --clean --platform android` + `npx expo run:android --variant
+release --no-bundler` con `EXPO_NO_DOTENV=1 EXPO_PUBLIC_LOCKIN_ALLOW_MOCK=1`
+→ `BUILD SUCCESSFUL in 28m 18s`; el APK lleva
+`lib/{arm64-v8a,armeabi-v7a,x86,x86_64}/libjingle_peerconnection_so.so`
+(`build.log`). No se instaló: el emulador tenía el APK preview de EAS del
+2026-09-23 (otra firma, `INSTALL_FAILED_UPDATE_INCOMPATIBLE`) con la sesión
+de Verif iniciada, y se usó ese para lo demás. Antes hubo que rehacer
+`node_modules` con `npm ci`: estaba a medias desde el 2026-09-24, sin `expo`
+ni `react-native` y sin `.package-lock.json`, y ninguna build nativa podía
+salir así.
+
+**2. Carga el módulo real y pide los permisos ✅** (APK de EAS del 23-sep,
+**Supabase real**: `[lockin] backend de datos: Supabase` en logcat).
+- Al arrancar: `Loading library: jingle_peerconnection_so … ok` y
+  `com.oney.WebRTCModule` crea sus fábricas de códec (`logcat-arranque.txt`).
+- Pasos: «Video Prueba» (cuenta anónima `e139c7ab-…`, que quedó del
+  2026-09-24) da like a Verif por `record_decision` → Like en la app →
+  «¡Match!» (`02-match.png`) → «Video Prueba» propone por
+  `propose_session` para las 20:29:51 UTC → «Aceptar sesión» en el chat
+  (`04-aceptada.*`) → «Entrar a la sesión» a las 20:25:07.
+- Sale el diálogo del sistema «Allow lockin to record audio?»
+  (`06-permiso.*`) y luego «…take pictures and record video?»
+  (`07-permiso2.xml`); tras conceder los dos, `getUserMedia(audio)` y
+  `getUserMedia(video)` en logcat, y la vista propia pinta la cámara del
+  emulador con «Silenciar micrófono / Apagar cámara / Colgar»
+  (`08-video.png`). No sale «La videollamada necesita la app de
+  desarrollo».
+- La llamada 1:1 en sí no se puede dar por comprobada con un solo emulador
+  (la otra parte era un script, sin medios).
+
+**3. ❌ Bug: la llamada solo conecta si quien ofrece entra el último.**
+`use-video-call.ts` manda el `offer` **una sola vez**, al arrancar, por un
+Broadcast que no guarda nada. Si la otra persona todavía no está en el canal,
+la oferta se pierde y nadie la repite: quien contesta nunca ofrece, así que la
+llamada no conecta nunca, y a los 30 s quien ofrece ve «No se pudo conectar
+el vídeo.» aunque la otra persona entre después. Aquí ofrece Verif
+(`a5fe4d5c… < e139c7ab…`).
+- Con la app ya dentro, «Video Prueba» se une a `lockin:video:<sesión>` y
+  escucha 25 s: **no recibe nada** (`escucha-1-app-ya-dentro.txt`).
+- Con «Video Prueba» ya escuchando, la app sale y vuelve a entrar: recibe
+  `offer` y 11 `ice-candidate` en el mismo segundo
+  (`escucha-2-app-entra-despues.txt`).
+
+Con la ventana de 5 minutos, lo normal es que las dos personas lleguen con
+minutos de diferencia, así que esto rompe más o menos la mitad de las
+llamadas, según quién tenga el id menor. Una salida posible: que quien
+contesta mande un `ready`/`hello` al unirse y quien ofrece (re)envíe la
+oferta al recibirlo; o volver a ofrecer cuando la presencia pase a «Está
+aquí».
+
+**4. ⚠️ Relacionado, visto en la misma captura.** En la escucha llegó un
+`ice-candidate` *antes* que el `offer`. `handleMessage` hace
+`addIceCandidate` sin cola y se traga el error, así que los candidatos que
+llegan antes que la oferta, o mientras `setRemoteDescription` sigue en
+vuelo, se pierden sin avisar. Aquí no llegó a conectar nada, así que no se
+sabe si rompe la llamada, pero merece una cola de candidatos pendientes.
+
+**5. ⚠️ El timeout de 30 s cuenta desde antes del diálogo de permisos.**
+`RTCPeerConnection` se crea a las 20:25:08 y `getUserMedia` resuelve a las
+20:25:40, porque el diálogo de permisos estuvo abierto 32 s. A los pocos
+segundos de conceder ya se ve «No se pudo conectar el vídeo.» (`08-video.png`).
+Con el bug 3 arreglado seguiría pasando la primera vez que alguien tarde en
+leer el diálogo.
+
+**Limpieza.** «Video Prueba» borró su perfil y su `user_settings`; por
+cascada se fueron el match `0e606c2e-…` y la sesión `efb0449a-…`
+(`limpieza.txt`: no queda nada). Su fila en `auth.users` sigue ahí, como las
+dos anteriores: solo se quita desde el dashboard. Los permisos de cámara y
+micrófono se revocaron con `pm revoke` para dejar la app como estaba.
+
+**Mitad Android del fallback en Expo Go: ⚠️ sin hacer.** El aviso sale en
+la misma pantalla de sesión; para llegar hace falta iniciar sesión en Expo Go
+con una cuenta real (la contraseña de `+lockin3`) y montar otra sesión
+aceptada como la de arriba.
