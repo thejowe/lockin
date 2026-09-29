@@ -273,3 +273,17 @@ hay que hacerlo desde el dashboard (Authentication → Users).
       vía para tener sesión viva en el mock — propuesta: que los perfiles de
       `SEED_RECIPROCAL_IDS` acepten al instante, como con los likes. Detalle
       en `video.md`, «Hallazgos del comprobador», 2.ª pasada del 2026-09-29.
+- [ ] [Claude] **Sesión viva en el mock** — lo que falta para cerrar la casilla
+      de arriba. Los perfiles de `SEED_RECIPROCAL_IDS` deben aceptar al instante
+      las propuestas de sesión en el mock (como ya devuelven el like), para que
+      el comprobador pueda proponer una sesión «ahora», entrar y ver
+      `VideoCallView` (hoy solo se monta con sesión `aceptada` dentro de la
+      ventana: `src/app/session/[sessionId].tsx:103-120`; el mock nunca responde:
+      `src/data/mock/sessions.ts:124-135`). Alcance: solo `src/data/mock/**` y
+      sus tests — el bloque `visual` trabaja en paralelo en `src/features/**` y
+      `src/app/**`. **Lanzada y parada el 2026-09-29 sin commit**: su worktree
+      `.claude/worktrees/agent-a3f6ea5f9e2f7abca` (rama
+      `worktree-agent-a3f6ea5f9e2f7abca`, en `3e14e14`) solo tiene un
+      `src/data/mock/sessions.test.ts` borrador sin seguimiento. Relanzar desde
+      cero; ese worktree se puede quitar (`git worktree remove --force` + `git
+      branch -D`). Después, `[comprobador]` repite la casilla de arriba.
