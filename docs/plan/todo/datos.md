@@ -2072,3 +2072,23 @@ murieron por `toomanyrequests` de ghcr.io antes de llegar a la suite. Ya no.
       arreglo de hoy. Detalle en `todo/calidad.md`.
 
 Con esto, el bloque `datos` no tiene ninguna casilla abierta.
+
+## Corrección: sobrecarga muerta de `discovery_deck` (2026-09-29)
+
+- [x] [Claude] `20260918000100` añadió `p_exclude_ids` con `CREATE OR REPLACE`
+      y dejó viva la firma de 3 argumentos (Postgres identifica por tipos). La
+      nueva `20260929000200_drop_discovery_deck_overload.sql` la retira
+      (`drop function if exists`). Test en `schema-embedded.test.mjs`: una sola
+      `discovery_deck` (4 args, SECURITY INVOKER, `search_path=""`, EXECUTE solo
+      `authenticated`) y guardia general «ninguna función de `public` con dos
+      firmas». Falló antes (dos filas), pasa después. Commit `66ac004`. Local:
+      `test:schema` 21/21. Ninguna otra función repite el patrón.
+
+### Pendiente del usuario
+
+- [ ] Aplicar en `grrzmzktrhksbttpbblg`, por el SQL Editor y en este orden:
+      `20260929000100_record_decision_deck_mode.sql` (ver `descubrir.md`) y
+      `20260929000200_drop_discovery_deck_overload.sql`. Desde la sesión con el
+      MCP de Supabase el modo automático lo denegó («Production Deploy»). Hasta
+      entonces el job remoto de `Schema drift` sale **rojo y es deriva real**
+      (`record_decision` cambia de firma; la huella esperada pasa a 507 objetos).
