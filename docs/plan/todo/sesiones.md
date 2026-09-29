@@ -265,3 +265,11 @@ hay que hacerlo desde el dashboard (Authentication → Users).
       onboarding y llega a tabs, chat y sesión, con el aviso «La videollamada
       necesita la app de desarrollo.» — es la casilla de «Fallback en Expo Go»
       de `video.md`.
+      *2026-09-29, comprobador (mock, `a7a1527`): a medias.* Onboarding →
+      tabs → match → chat → propuesta enviada, y la ruta de sesión carga, sin
+      un solo error JS: `56fec3a` arregla lo que bloqueaba. Pero la sesión
+      nunca pasa de «Esperando a Marc»: en el mock nadie acepta propuestas, así
+      que la vista de vídeo (y el aviso) no llega a montarse. Hace falta una
+      vía para tener sesión viva en el mock — propuesta: que los perfiles de
+      `SEED_RECIPROCAL_IDS` acepten al instante, como con los likes. Detalle
+      en `video.md`, «Hallazgos del comprobador», 2.ª pasada del 2026-09-29.

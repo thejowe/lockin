@@ -401,3 +401,49 @@ Evidencia (local, ignorada): `e2e/artifacts/local/2026-09-29-expo-go/`.
 - **iPhone**: no se ha comprobado. El mensaje habla solo de Android, así que
   en iOS podría no lanzar, pero eso sigue siendo cosa del usuario. La casilla
   de «Fallback en Expo Go» sigue sin marcar.
+
+### 2026-09-29 (2.ª pasada) — mitad Android del fallback en Expo Go: ⚠️ la app ya llega al chat, pero el mock no deja abrir una sesión aceptada
+
+Expo Go 57.0.9 en el AVD `lockin`, `HEAD` = `a7a1527` (incluye `56fec3a`).
+**Backend mock**: `EXPO_NO_DOTENV=1 EXPO_PUBLIC_LOCKIN_ALLOW_MOCK=1 npx expo
+start --go` (la primera vez con `--clear`), y Metro y logcat dicen
+`[lockin] backend de datos: mock en memoria`. Evidencia (local, ignorada):
+`e2e/artifacts/local/2026-09-29-expo-go-2/` — la pasada válida es la posterior
+al reinicio del emulador (`28-…` a `46-…`, `expo-start-2.log`, `logcat.txt`).
+
+- ✅ **Lo de `56fec3a` se sostiene.** El bundle carga sin el aviso rojo de
+  `expo-notifications`; onboarding → «Crear perfil» → tabs sin
+  `ErrorBoundary` (`35-…`, `36-…`); Descubrir, like a Marc → «¡Match!»
+  (`39-…`) → chat (`40-…`) → «Agendar sesión Lock-In» → propuesta enviada,
+  «Esperando a Marc · hoy 21:30 · 1 bloque» (`41-…`, `42-…`); tab Matches
+  (`46-…`). Un enlace directo a `/session/inexistente` pinta «Esta sesión no
+  está disponible» (`43-…`): el módulo de la ruta de sesión, que antes era
+  *«missing the required default export»*, ya se evalúa. En `logcat.txt`
+  (desde el reinicio) no hay ni un error de `ReactNativeJS`, ni
+  `ErrorBoundary`, ni *default export*, ni `expo-notifications`.
+- ⚠️ **No se ha visto «La videollamada necesita la app de desarrollo.», ni el
+  Pomodoro, ni la presencia.** La pantalla solo monta `VideoCallView` con la
+  sesión `aceptada` y dentro de la ventana de entrada
+  (`src/app/session/[sessionId].tsx:103-120`), y en el mock nadie acepta: la
+  otra parte no responde nunca (`src/data/mock/sessions.ts:124-135`, sin
+  autoaceptación ni sesión sembrada; `incomingLikes` sí existe para los
+  matches, pero no hay equivalente para las propuestas). Tampoco se puede
+  forzar desde fuera: el inspector de Expo Go solo expone el agente de host
+  (`Runtime.evaluate` → `-32601`), así que no hay forma de llamar a
+  `respond()` como Marc sin tocar código. **Lo que falta no es un fallo de
+  la app, es una vía para tener una sesión viva en el mock.** Propuesta para
+  **sesiones**/**datos**: que los perfiles de `SEED_RECIPROCAL_IDS` acepten
+  al instante las propuestas que reciben en el mock, como ya hacen con los
+  likes; con eso el recorrido entero se puede repetir aquí y en el E2E de
+  mock.
+- Entorno, para quien repita: el host (8 GB) iba justo de memoria y el
+  emulador acabó con ANR en Expo Go y en `com.google.android.tts`, `adb` que se
+  colgaba y un `app.lockin.mobile` de otra sesión atascado en primer plano.
+  La primera tanda (`01-…` a `27-…`, `logcat-1.txt`) se perdió por eso, y
+  además el Metro lanzado por WMI murió a las 08:37. Nada de eso es de la app:
+  en esa tanda no hay ningún error JS. Lo arregló `adb reboot`. Con el
+  emulador lento, `uiautomator dump` no termina (hay animación continua) y
+  `screencap` a veces tampoco: la consola del emulador (`screenrecord
+  screenshot <dir>`) sí responde.
+- **iPhone**: sigue sin comprobar; es del usuario. La casilla de «Fallback en
+  Expo Go» sigue abierta.
