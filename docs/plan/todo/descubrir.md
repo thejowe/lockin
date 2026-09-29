@@ -171,3 +171,37 @@ ignorada): `e2e/artifacts/local/2026-09-29-acuerdo/`.
   cofundador, con acuerdo de socios incluido. Salida posible: pasar el modo
   del chip a `record_decision`, o que un `looking_for` concreto de la otra
   parte gane a un `active_mode` distinto.
+
+## Corrección: el match nace en el modo del chip (2026-09-29)
+
+- [x] [Claude] El modo con el que se decide (el del chip del deck) viaja hasta
+      `recordDecision(profileId, decision, mode?)` en la interfaz, el mock y
+      Supabase; sin modo, el criterio de siempre (`active_mode ?? looking_for`).
+      Commit `9cfddac`. Tests que fallaban antes: contrato de `Repositories`
+      (sesión par + decisión lockin → lockin, y al revés), `use-deck.test.tsx`
+      (el caso de Alba del comprobador), `supabase/instances.test.ts` (argumentos
+      del RPC con y sin `p_mode`) y `schema-embedded.test.mjs` en PGlite.
+      Local: `tsc` 0 errores, jest `src/data` + `src/features/discover` 447
+      pasados, `test:schema` 21/21.
+- Migración nueva `supabase/migrations/20260929000100_record_decision_deck_mode.sql`:
+  DROP + CREATE (no OR REPLACE, que dejaría una sobrecarga ambigua), con
+  `p_mode public.mode_preference default null`. Los clientes ya instalados
+  llaman con dos argumentos y siguen funcionando; el cliente nuevo solo manda
+  `p_mode` cuando hay modo, así que también funciona contra un remoto sin la
+  migración (con el bug viejo).
+
+### Pendiente del usuario
+
+- [ ] Aplicar `20260929000100_record_decision_deck_mode.sql` en
+      `grrzmzktrhksbttpbblg` por el SQL Editor. Se intentó desde la sesión con
+      el MCP de Supabase y el modo automático de Claude Code lo denegó
+      («Production Deploy»). **Hasta aplicarla, el job remoto de `Schema drift`
+      sale rojo y es deriva real** (cambia la huella de `record_decision`).
+- [ ] [comprobador] Tras aplicarla: repetir el caso de Alba (onboarding
+      «Cofundador», chip LOCK-IN, like a Alba → «MODO COMPAÑERO DE LOCK-IN» y
+      sin tarjeta de acuerdo) contra **Supabase real**, y con mock sobre un APK
+      que incluya `9cfddac`.
+- Para `datos` (sin verificar en remoto): `20260918000100` añadió un argumento
+  a `discovery_deck` con `CREATE OR REPLACE` sin borrar la firma vieja, así que
+  probablemente conviven dos sobrecargas en la base. PostgREST las distingue por
+  nombre de argumentos; conviene revisarlo.
