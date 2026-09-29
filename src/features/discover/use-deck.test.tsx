@@ -97,6 +97,21 @@ describe('useDeck', () => {
     expect(result.current.match).toBeNull();
   });
 
+  it('el match nace en el modo del deck, no en el activo de la sesión', async () => {
+    // El caso del comprobador (2026-09-29): onboarding «Cofundador», chip
+    // Lock-In, like a Alba, que busca compañero de Lock-In. Antes salía Par.
+    await repositories.session.setActiveMode('par');
+    const { result } = await renderDeck('lockin');
+    const alba = cardWithId(result.current.cards, 'seed-alba');
+
+    await act(async () => {
+      result.current.decide(alba, 'like');
+    });
+
+    await waitFor(() => expect(result.current.match).not.toBeNull());
+    expect(result.current.match!.match.mode).toBe('lockin');
+  });
+
   it('un like sin reciprocidad no levanta el modal de match', async () => {
     const { result } = await renderDeck();
     const target = cardWithId(result.current.cards, 'seed-diego');

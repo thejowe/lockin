@@ -570,6 +570,78 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
         has_function_privilege('authenticated', 'public.match_agreement(uuid)', 'EXECUTE') as auth_lee`);
     assert.deepEqual(ejecutables.rows[0], { anon_lee: false, anon_escribe: false, auth_lee: true });
     await db.exec('rollback;');
+    // --- Modo del match: el del deck, no el de la sesión ---------------------
+    //
+    // Hallazgo del comprobador (2026-09-29): con la sesión en `par` y el chip
+    // del deck en Lock-In, un like a alguien que busca Lock-In creaba un match
+    // Par, porque `record_decision` resolvía con `coalesce(active_mode, …)` y el
+    // chip no le llegaba. `20260929000100` le añade `p_mode`, opcional: sin él,
+    // lo de siempre. Ana está en `par`; Bea (`ambos`) y Cai (`lockin`) ya le han
+    // dado like, así que cualquier like de Ana cierra match.
+    await db.exec(`begin;
+      insert into auth.users (id, email) values
+        ('${ana}', 'ana@lockin.test'), ('${bea}', 'bea@lockin.test'), ('${cai}', 'cai@lockin.test');
+      insert into public.profiles (
+        id, name, age, location, timezone, avatar_initials, specialties,
+        looking_for, starting_point, availability_hours_per_week,
+        availability_bands, ambition
+      )
+      select p.id::uuid, p.name, 30, 'Madrid', 'Europe/Madrid', left(p.name, 1),
+             array['dev']::public.specialty[], p.looking_for::public.mode_preference,
+             'solo-ganas', 10, array['tarde']::public.time_band[], 'equilibrado'
+      from (values
+        ('${ana}', 'Ana', 'ambos'), ('${bea}', 'Bea', 'ambos'), ('${cai}', 'Cai', 'lockin')
+      ) as p(id, name, looking_for);
+      insert into public.user_settings (user_id, active_mode) values ('${ana}', 'par');
+      insert into public.decisions (actor_id, target_id, decision) values
+        ('${bea}', '${ana}', 'like'), ('${cai}', '${ana}', 'like');`);
+    await actingAs(ana);
+    const modoDelMatch = async (sql) => (await db.query(sql)).rows[0].mode;
+    assert.deepEqual(
+      {
+        // Sin `p_mode`, la llamada de siempre: manda el activo de la sesión.
+        sin_modo: await modoDelMatch(`select (public.record_decision('${bea}', 'like')).mode`),
+        // El caso del hallazgo: chip Lock-In, perfil que busca Lock-In.
+        chip_lockin: await modoDelMatch(
+          `select (public.record_decision('${cai}', 'like', 'lockin')).mode`
+        ),
+      },
+      { sin_modo: 'par', chip_lockin: 'lockin' }
+    );
+    // Y con `p_mode` explícito a `ambos` vuelve a decidir el otro lado, no la
+    // sesión: es lo que pasa en el deck con el chip «Ambos».
+    await db.exec(`reset role;
+      delete from public.matches;
+      delete from public.decisions where actor_id = '${ana}';
+      set local role authenticated;`);
+    assert.equal(
+      await modoDelMatch(`select (public.record_decision('${cai}', 'like', 'ambos')).mode`),
+      'lockin'
+    );
+    await db.exec('reset role');
+    // Una sola firma: una sobrecarga vieja de dos argumentos junto a la nueva
+    // haría ambigua cualquier llamada sin `p_mode`. Y los permisos y el
+    // `search_path` de la original, que la nueva no puede perder al recrearse.
+    const decisionFn = await db.query(`select
+        (count(*) over ())::integer as firmas,
+        pg_get_function_identity_arguments(p.oid) as firma,
+        p.prosecdef as security_definer,
+        p.proconfig as config,
+        has_function_privilege('anon', p.oid, 'execute') as anon_ejecuta,
+        has_function_privilege('authenticated', p.oid, 'execute') as authenticated_ejecuta
+      from pg_proc p
+      where p.proname = 'record_decision' and p.pronamespace = 'public'::regnamespace`);
+    assert.deepEqual(decisionFn.rows, [
+      {
+        firmas: 1,
+        firma: 'p_target_id uuid, p_decision public.decision, p_mode public.mode_preference',
+        security_definer: true,
+        config: ['search_path=""'],
+        anon_ejecuta: false,
+        authenticated_ejecuta: true,
+      },
+    ]);
+    await db.exec('rollback;');
     // --- Verificación de GitHub ---------------------------------------------
     //
     // El test central del bloque, y no es que el sello se encienda: es que NO se

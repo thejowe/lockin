@@ -250,7 +250,11 @@ export function createMockRepositories(store: MockStore = defaultMockStore): Rep
       );
     },
 
-    async recordDecision(profileId: string, decision: Decision): Promise<DecisionResult> {
+    async recordDecision(
+      profileId: string,
+      decision: Decision,
+      mode?: ModePreference
+    ): Promise<DecisionResult> {
       const state = getState();
       state.decisions.set(profileId, decision);
 
@@ -261,7 +265,9 @@ export function createMockRepositories(store: MockStore = defaultMockStore): Rep
       const match: Match = {
         id: createId('match'),
         profileIds: [CURRENT_USER_ID, other.id],
-        mode: resolveMatchMode(effectiveMode() ?? 'ambos', other.lookingFor),
+        // El modo del deck manda; sin él, el de la sesión. Espejo del
+        // `coalesce(p_mode, active_mode, looking_for)` de `record_decision`.
+        mode: resolveMatchMode(mode ?? effectiveMode() ?? 'ambos', other.lookingFor),
         createdAt: nowIso(),
         lastMessageAt: null,
       };

@@ -66,7 +66,9 @@ export function useDeck(mode: ModePreference): DeckState {
           : { mode, ids: [profile.id] }
       );
 
-      repositories.discovery.recordDecision(profile.id, decision).then(
+      // El modo del deck viaja con la decisión: es el del chip, que puede no
+      // ser el activo de la sesión, y el match tiene que nacer en él.
+      repositories.discovery.recordDecision(profile.id, decision, mode).then(
         (result) => {
           if (result.match) setMatch({ match: result.match, profile });
         },

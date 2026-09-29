@@ -170,3 +170,26 @@ describe('dos juegos de repositorios de Supabase', () => {
     expect(avisos).toHaveBeenCalledTimes(avisosLocales);
   });
 });
+
+describe('recordDecision contra el RPC', () => {
+  // El contrato de Supabase solo corre en CI; esto fija en la suite por defecto
+  // qué argumentos viajan. Sin modo, la llamada de dos argumentos de siempre.
+  it('manda `p_mode` solo cuando la pantalla decide con un modo', async () => {
+    const { client } = fakeClient();
+    asMock.mockReturnValue(client);
+    const repositories = createSupabaseRepositories();
+
+    await repositories.discovery.recordDecision('user-b', 'like', 'lockin');
+    await repositories.discovery.recordDecision('user-c', 'pass');
+
+    expect(client.rpc).toHaveBeenNthCalledWith(1, 'record_decision', {
+      p_target_id: 'user-b',
+      p_decision: 'like',
+      p_mode: 'lockin',
+    });
+    expect(client.rpc).toHaveBeenNthCalledWith(2, 'record_decision', {
+      p_target_id: 'user-c',
+      p_decision: 'pass',
+    });
+  });
+});

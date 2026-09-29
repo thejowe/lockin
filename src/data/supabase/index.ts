@@ -49,6 +49,7 @@ import type {
   MatchWithProfile,
   Message,
   MessageInput,
+  ModePreference,
   ProfileFilter,
   ProfileInput,
   Session,
@@ -467,13 +468,21 @@ export function createSupabaseRepositories(): Repositories {
       return (data as ProfileRow[]).map(toProfile);
     },
 
-    async recordDecision(profileId: string, decision: Decision): Promise<DecisionResult> {
+    async recordDecision(
+      profileId: string,
+      decision: Decision,
+      mode?: ModePreference
+    ): Promise<DecisionResult> {
       const client = getSupabaseClient();
       const userId = await ensureUserId();
 
+      // `p_mode` solo viaja si hay modo: sin él, la llamada es la de dos
+      // argumentos de siempre, que también resuelve contra un despliegue que
+      // aún no tenga `20260929000100_record_decision_deck_mode.sql`.
       const { data, error } = await client.rpc('record_decision', {
         p_target_id: profileId,
         p_decision: decision,
+        ...(mode ? { p_mode: mode } : {}),
       });
 
       if (error) {

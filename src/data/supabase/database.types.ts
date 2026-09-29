@@ -305,11 +305,12 @@ export type Database = {
         Returns: MessageRow[];
       };
       /**
-       * `record_decision(p_target_id, p_decision)` → la fila de `matches`
-       * creada, o `null` si el like no fue recíproco o la decisión fue `pass`.
+       * `record_decision(p_target_id, p_decision, p_mode?)` → la fila de
+       * `matches` creada, o `null` si el like no fue recíproco o la decisión
+       * fue `pass`. `p_mode` es el modo del deck; sin él manda el de la sesión.
        */
       record_decision: {
-        Args: { p_target_id: string; p_decision: Decision };
+        Args: { p_target_id: string; p_decision: Decision; p_mode?: ModePreference };
         Returns: MatchRow | null;
       };
       propose_session: {

@@ -114,8 +114,19 @@ export interface DiscoveryRepository {
   /**
    * Registra un swipe. Si el like es recíproco, crea el match y lo devuelve
    * en `match`; en cualquier otro caso `match` es `null`.
+   *
+   * `mode` es el modo con el que se está decidiendo — el del filtro del deck —
+   * y es el que se usa para resolver el modo del match, por delante del activo
+   * de la sesión. Sin él, el de siempre: el activo de la sesión y, si no lo
+   * hay, el que declara el perfil. Si el deck deja cambiar de modo sin tocar
+   * la sesión, tiene que pasarlo: si no, un like hecho desde Lock-In con la
+   * sesión en Par crearía un match Par.
    */
-  recordDecision(profileId: string, decision: Decision): Promise<DecisionResult>;
+  recordDecision(
+    profileId: string,
+    decision: Decision,
+    mode?: ModePreference
+  ): Promise<DecisionResult>;
   /** Perfiles ya decididos, para excluirlos del deck. */
   listDecided(): Promise<string[]>;
 }

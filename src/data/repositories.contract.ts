@@ -753,6 +753,34 @@ export function describeRepositoryContract(backend: ContractBackend): void {
         expect(result.match?.mode).toBe('lockin');
       });
 
+      // El modo con el que se decide es el del filtro del deck, que la pantalla
+      // deja cambiar sin tocar el activo de la sesión. Si el match se resolviera
+      // con el de la sesión, un like hecho desde el chip Lock-In con onboarding
+      // «Cofundador» nacería Par (hallazgo del comprobador, 2026-09-29).
+      it('el modo con el que se decide manda sobre el activo de la sesión', async () => {
+        await repositories.session.setActiveMode('par');
+
+        const result = await repositories.discovery.recordDecision(
+          fixture.openToBothReciprocalId,
+          'like',
+          'lockin'
+        );
+
+        expect(result.match?.mode).toBe('lockin');
+      });
+
+      it('también al revés: decidir en Par con la sesión en Lock-In da match Par', async () => {
+        await repositories.session.setActiveMode('lockin');
+
+        const result = await repositories.discovery.recordDecision(
+          fixture.openToBothReciprocalId,
+          'like',
+          'par'
+        );
+
+        expect(result.match?.mode).toBe('par');
+      });
+
       it('registra la decisión en listDecided', async () => {
         await repositories.discovery.recordDecision(fixture.nonReciprocalId, 'pass');
 
