@@ -931,6 +931,50 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
     );
     assert.notEqual(compareFingerprints(expected, await fingerprint()), '');
     await db.exec('rollback;');
+    // --- Una sola discovery_deck ----------------------------------------------
+    //
+    // `20260918000100` añadió `p_exclude_ids` con CREATE OR REPLACE, y en
+    // Postgres una lista de argumentos distinta es OTRA función: la de 3
+    // argumentos (con el ranking de `20260907000200` y sin exclusión) quedó
+    // viva al lado, y cualquier llamada con ≤3 argumentos era ambigua. Aquí se
+    // exige que solo quede la de 4, con los permisos y la seguridad de siempre.
+    const decks = await db.query(`select
+        p.oid::regprocedure::text as firma,
+        p.prosecdef as security_definer,
+        p.proconfig as config,
+        has_function_privilege('anon', p.oid, 'execute') as anon_ejecuta,
+        has_function_privilege('authenticated', p.oid, 'execute') as authenticated_ejecuta,
+        exists (
+          select 1 from aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) g
+          where g.grantee = 0
+        ) as public_ejecuta
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'public' and p.proname = 'discovery_deck'`);
+    assert.deepEqual(decks.rows, [
+      {
+        firma: 'public.discovery_deck(public.mode_preference,public.specialty[],integer,uuid[])',
+        security_definer: false,
+        config: ['search_path=""'],
+        anon_ejecuta: false,
+        authenticated_ejecuta: true,
+        public_ejecuta: false,
+      },
+    ]);
+    // El mismo tropiezo en cualquier otra función: ninguna de `public` puede
+    // quedar con dos firmas por un CREATE OR REPLACE que cambió argumentos.
+    const overloads = await db.query(`select p.proname as nombre, count(*)::int as firmas
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'public'
+      group by p.proname
+      having count(*) > 1`);
+    assert.deepEqual(overloads.rows, []);
+    // Y una llamada sin `p_exclude_ids` (lo que manda el sondeo de
+    // `drift-check.mjs`) resuelve a esa única firma en vez de ser ambigua.
+    await db.query(
+      'select count(*) from public.discovery_deck(p_mode := null, p_specialties := null, p_limit := 1)'
+    );
     // --- Orden D3: excludeIds en discovery_deck, último mensaje por RPC, ------
     // --- sesión activa resuelta por el reloj de Postgres ----------------------
     //

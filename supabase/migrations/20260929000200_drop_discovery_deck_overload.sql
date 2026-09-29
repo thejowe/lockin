@@ -1,0 +1,26 @@
+-- Retira la sobrecarga de 3 argumentos de `discovery_deck` que dejó viva
+-- `20260918000100_deck_exclude_last_messages_active_session.sql`.
+--
+-- Aquella migración añadió `p_exclude_ids uuid[] default null` con CREATE OR
+-- REPLACE. En Postgres la identidad de una función es nombre + tipos de sus
+-- argumentos, así que cambiar la lista no reemplaza: crea OTRA función. Desde
+-- entonces convivían dos:
+--
+--   discovery_deck(mode_preference, specialty[], integer)          -- 20260907000200
+--   discovery_deck(mode_preference, specialty[], integer, uuid[])  -- 20260918000100
+--
+-- La de 3 es código muerto con la lógica desfasada (sin exclusión explícita),
+-- y como la de 4 tiene default en el último argumento, cualquier llamada con
+-- tres o menos argumentos coincide con las dos y Postgres la rechaza por
+-- ambigua («function is not unique»; en PostgREST, PGRST203). El cliente
+-- (`src/data/supabase/index.ts`, `getDeck`) siempre manda los cuatro por
+-- nombre, así que no dependía de ella; tampoco ninguna función SQL la llama.
+--
+-- La de 4 se queda tal cual: SECURITY INVOKER, `search_path = ''`, EXECUTE
+-- para `authenticated` y revocado de `public`/`anon`. Con la vieja fuera, una
+-- llamada sin `p_exclude_ids` —como el sondeo de `supabase/drift-check.mjs`—
+-- resuelve a ella sin ambigüedad.
+--
+-- Migración NUEVA: no reescribe ninguna de las ya aplicadas. `if exists` la
+-- deja idempotente en una base donde alguien ya la hubiera quitado a mano.
+drop function if exists public.discovery_deck(public.mode_preference, public.specialty[], integer);
