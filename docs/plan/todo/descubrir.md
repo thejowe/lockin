@@ -172,6 +172,24 @@ ignorada): `e2e/artifacts/local/2026-09-29-acuerdo/`.
   del chip a `record_decision`, o que un `looking_for` concreto de la otra
   parte gane a un `active_mode` distinto.
 
+### 2026-09-29 — ✅ (mock) tras `9cfddac` el match nace en el modo del chip
+
+Backend **mock** (logcat: «backend de datos: mock en memoria»), APK release
+local sobre `83b338a` (incluye `9cfddac`), bundle regenerado con
+`createBundleReleaseJsAndAssets --rerun` (no salió UP-TO-DATE). Evidencia
+(local, ignorada): `e2e/artifacts/local/2026-09-29-modo-chip/`.
+
+- Caso de Alba: onboarding «Cofundador» → Descubrir → chip **LOCK-IN** →
+  Alba Ferrer («QUIERE: COMPAÑERO DE LOCK-IN», `36-lockin-deck.*`) → Like →
+  «¡Match!» con **«MODO COMPAÑERO DE LOCK-IN»** (`37-match-alba.*`). Chat:
+  «MATCH DE LOCK-IN · HOY», solo «Agendar sesión Lock-In», **sin** tarjeta de
+  acuerdo de socios (`38-chat-alba.*`; «acuerdo» no aparece en el volcado).
+- Control, misma sesión: chip **COFUNDADOR** → Núria Bosch → Like → «MODO
+  COFUNDADOR» (`45-match-nuria.*`); chat «MATCH DE COFUNDADOR · HOY» con la
+  tarjeta «Acuerdo de socios» (`46-chat-nuria.*`).
+- `logcat.txt` sin errores de JS. La mitad Supabase sigue sin comprobar: el
+  remoto aún no tiene `20260929000100`.
+
 ## Corrección: el match nace en el modo del chip (2026-09-29)
 
 - [x] [Claude] El modo con el que se decide (el del chip del deck) viaja hasta
@@ -200,7 +218,8 @@ ignorada): `e2e/artifacts/local/2026-09-29-acuerdo/`.
 - [ ] [comprobador] Tras aplicarla: repetir el caso de Alba (onboarding
       «Cofundador», chip LOCK-IN, like a Alba → «MODO COMPAÑERO DE LOCK-IN» y
       sin tarjeta de acuerdo) contra **Supabase real**, y con mock sobre un APK
-      que incluya `9cfddac`.
+      que incluya `9cfddac`. **Mitad mock ✅** (2026-09-29, ver «Hallazgos del
+      comprobador»); sigue abierta por la mitad Supabase.
 - Para `datos` (sin verificar en remoto): `20260918000100` añadió un argumento
   a `discovery_deck` con `CREATE OR REPLACE` sin borrar la firma vieja, así que
   probablemente conviven dos sobrecargas en la base. PostgREST las distingue por
