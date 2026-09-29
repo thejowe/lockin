@@ -143,3 +143,31 @@ devuelven promesas. Sin `await`, React avisa de `overlapping act() calls` y
   árbol esté limpio.
 - [x] El veredicto de formato se lee del job «Formato» de CI: `format:check` en
   local da ~100 falsos por CRLF.
+
+## Hallazgos del comprobador
+
+### 2026-09-29 — ❌ el modo del match ignora el chip del deck
+
+Backend **mock**, APK release local sobre `b27481e`. Evidencia (local,
+ignorada): `e2e/artifacts/local/2026-09-29-acuerdo/`.
+
+- Pasos: onboarding «Cofundador» (`active_mode = par`) → Descubrir → chip
+  **LOCK-IN** → sale Alba Ferrer («QUIERE: COMPAÑERO DE LOCK-IN») → Like.
+- Esperado: match Lock-In (Alba solo busca Lock-In y yo la encontré en el
+  chip Lock-In).
+- Pasó: «¡Match!» con **«MODO COFUNDADOR»**; en el chat, «MATCH DE COFUNDADOR
+  · HOY» y la tarjeta del acuerdo de socios (`22-match-alba.*`,
+  `23-chat-lockin.*`). Editar el perfil a «Ambos» antes del like no cambia
+  nada: solo mueve `looking_for`, no `active_mode`.
+- Con onboarding «Ambos» el mismo like da «MODO COMPAÑERO DE LOCK-IN»
+  (`34-match-alba.*`), así que es la regla, no el gesto.
+- Causa (por código): `recordDecision` usa `resolveMatchMode(effectiveMode(),
+  other.lookingFor)`, y `effectiveMode()` es `session.activeMode ??
+  lookingFor` — el chip del deck (`override` en `discover.tsx`) no llega.
+  `record_decision` en SQL (`20260905000500_functions_and_realtime.sql`) hace
+  lo mismo con `coalesce(s.active_mode, p.looking_for)`: el fallo también
+  estará en Supabase (no comprobado en dispositivo contra Supabase).
+- Efecto: una persona que solo quiere Lock-In acaba en un match de
+  cofundador, con acuerdo de socios incluido. Salida posible: pasar el modo
+  del chip a `record_decision`, o que un `looking_for` concreto de la otra
+  parte gane a un `active_mode` distinto.

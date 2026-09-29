@@ -317,3 +317,49 @@ micrófono se revocaron con `pm revoke` para dejar la app como estaba.
 la misma pantalla de sesión; para llegar hace falta iniciar sesión en Expo Go
 con una cuenta real (la contraseña de `+lockin3`) y montar otra sesión
 aceptada como la de arriba.
+
+### 2026-09-29 — tras `fd3a2cd` y `b27481e`: carga, pide permisos y el offer ya llega
+
+APK release local sobre `b27481e`, **Supabase real** (`[lockin] backend de
+datos: Supabase` en logcat). Evidencia (local, ignorada):
+`e2e/artifacts/local/2026-09-29-webrtc/`. Ojo al compilar: al cambiar de mock
+a Supabase, Gradle dio `createBundleReleaseJsAndAssets UP-TO-DATE` y el primer
+APK seguía siendo mock; hubo que forzar `--rerun` (ver memoria local).
+
+- ✅ **Módulo nativo**: al arrancar, `Loading library: jingle_peerconnection_so
+  … ok` y `com.oney.WebRTCModule` crea sus fábricas (`logcat-arranque.txt`).
+- ✅ **Permisos**: cuenta nueva `+lockinvideo29` (perfil «Video Comprob»,
+  Lock-In) y cuenta anónima de apoyo «Comprob Apoyo» → match Lock-In
+  `42b4c98b-…` → el apoyo propone por `propose_session` para las 17:39:32 UTC
+  → «Aceptar sesión» → «Entrar a la sesión» a las 17:35:15. Salen «Allow lockin
+  to record audio?» (`20-permiso-mic.*`) y «…take pictures and record video?»
+  (`22-permiso-cam.*`); tras conceder, `getUserMedia(audio)` y
+  `getUserMedia(video)` a las 17:36:10 (`logcat-sesion.txt`) y la vista propia
+  pinta la cámara del emulador con «Silenciar micrófono / Apagar cámara /
+  Colgar» (`23-tras-permisos.png`). No sale «La videollamada necesita la app
+  de desarrollo».
+- ✅ **Hallazgo 5 arreglado en dispositivo**: el diálogo de micrófono estuvo
+  abierto 55 s a propósito (`21-permiso-mic-35s.*`). A las 17:36:37, 82 s
+  después de entrar, la vista sigue en «Conectando…» (`23-tras-permisos.png`);
+  el 2026-09-27 a esas alturas ya salía «No se pudo conectar el vídeo.». El
+  error llega después, a los ~30 s de `getUserMedia` (`24-tras-escucha.*`),
+  como toca sin nadie que conteste.
+- ✅ **Hallazgo 3 arreglado en dispositivo**: aquí ofrece la app
+  (`63f4f872… < f7955fda…`) y entra **primero**. El apoyo se une al canal 1 min
+  40 s después y manda `ready`: en el mismo segundo recibe `offer` (SDP 3736
+  chars) y 11 `ice-candidate` (`escucha-apoyo-entra-despues.txt`). El
+  2026-09-27, en esta misma situación, no recibía nada.
+- ⚠️ La conexión completa (answer, medios en los dos sentidos, volver a entrar,
+  tiempo de espera superado y llegada tardía) sigue sin comprobar: el apoyo
+  es un script sin medios y la cámara del emulador es de juguete. Sigue siendo
+  la casilla del usuario con dos móviles.
+
+**Limpieza.** «Comprob Apoyo» borró su perfil y su `user_settings`; por
+cascada se fueron el match y la sesión `16b8414c-…` (`limpieza.txt`). Permisos
+de cámara y micrófono revocados con `pm revoke`. **Queda** el perfil «Video
+Comprob» (`63f4f872-…`, cuenta `joeldetorres123+lockinvideo29@gmail.com`): la
+contraseña elegida en la app no sirvió para iniciar sesión desde un script
+(probablemente la tocó el autocompletado de Google al escribirla), y la app no
+tiene borrar cuenta. También siguen en el deck real dos restos de sesiones
+anteriores: «Comprob Video» y «Verif». Los tres solo se quitan desde el
+dashboard (perfil + `auth.users`).

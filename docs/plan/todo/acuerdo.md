@@ -25,7 +25,7 @@ Plan: `docs/superpowers/plans/2026-09-24-acuerdo-socios.md`
       «solo lees las tuyas», sus `grant`, y `answer_agreement_topic()` y `match_agreement()` con sus `EXECUTE`. Nada más.
       El paso del `comprobador` (Step 4) no se pudo lanzar desde esta sesión, que corría en un contenedor sin emulador ni KVM: queda como casilla abierta más abajo.
       La memoria `schema-drift-remoto-rojo-esperado.md` (Step 3) la escribió después la sesión local de la máquina del usuario, el mismo día
-- [ ] [comprobador] Recorrer el acuerdo en el emulador (mock; Supabase local no es viable en esta máquina: sin Docker). **Bloqueado**: el 2026-09-26, lanzado desde la sesión local, el SDK de Android, el AVD `lockin`, el JDK 17 y `~/.gradle` desaparecieron de la máquina a mitad del build (ver hallazgos). Hasta reinstalarlos, la evidencia en dispositivo es el E2E de Actions
+- [x] [comprobador] Recorrer el acuerdo en el emulador (mock; Supabase local no es viable en esta máquina: sin Docker). Hecho el 2026-09-29 sobre `b27481e`: pasos 1-5 ✅ (ver hallazgos). De paso salió un bug de `descubrir` (el modo del match ignora el chip del deck), anotado en `docs/plan/todo/descubrir.md`
 
 ## Pendiente del usuario
 
@@ -69,3 +69,35 @@ Lock-In no tenga tarjeta) con APK de release sin credenciales (mock), HEAD `936a
   `accessibilityLabel`; la regex `.*Coincidís.*` casa en cualquiera de los dos, y el
   run verde de CI lo respalda.
 - Logs: `%TEMP%/claude/.../scratchpad/build.log` y `build2.log` (fuera del repo).
+
+### 2026-09-29 — recorrido del acuerdo en emulador: ✅ pasos 1-5
+
+Backend **mock** (APK release local con `EXPO_NO_DOTENV=1
+EXPO_PUBLIC_LOCKIN_ALLOW_MOCK=1`; logcat: `[lockin] backend de datos: mock en
+memoria`), commit `b27481e`. Toolchain de Android reinstalado (AVD `lockin`).
+Evidencia (local, ignorada): `e2e/artifacts/local/2026-09-29-acuerdo/`.
+
+1. ✅ Onboarding «Cofundador» → perfil → Descubrir → like a Núria →
+   «¡Match!» con «MODO COFUNDADOR» (`10-match-nuria.*`).
+2. ✅ Chat con Núria: tarjeta «Acuerdo de socios · 8 temas difíciles… · Núria
+   Bosch ha respondido 3 que tú aún no» bajo «Agendar sesión Lock-In»
+   (`11-chat-nuria.*`).
+3. ✅ Pantalla con el aviso legal fijo arriba («Esto no es un contrato ni
+   asesoría legal…») y el tema de dedicación como «Falta tu respuesta · Núria
+   Bosch ya ha respondido» (`12-acuerdo.*`).
+4. ✅ «Jornada completa» + «Guardar respuesta» → «Coincidís · Jornada completa ·
+   Núria Bosch: «Lo dejo todo por esto.»» (`13-editor.*`, `14-revelado.*`).
+   Responde la pregunta del `.yaml`: «Coincidís» y la nota salen **en los dos
+   sitios**, como nodos de texto propios y dentro del `content-desc` de la fila.
+5. ✅ De vuelta en el chat, el contador: «1 de 8 comparados · 0 distintos ·
+   Núria Bosch ha respondido 2 que tú aún no» (`15-chat-contador.*`). Un match
+   **Lock-In** de verdad (onboarding «Ambos», chip LOCK-IN, like a Alba →
+   «MODO COMPAÑERO DE LOCK-IN», «MATCH DE LOCK-IN · HOY») no tiene tarjeta de
+   acuerdo (`34-match-alba.*`, `35-chat-lockin.*`).
+
+⚠️ Con onboarding «Cofundador», el mismo like a Alba desde el chip LOCK-IN da
+un match **Par** con tarjeta de acuerdo (`22-match-alba.*`, `23-chat-lockin.*`).
+La tarjeta hace lo correcto para el modo que recibe; el fallo está en cómo
+nace el modo del match — anotado en `docs/plan/todo/descubrir.md`.
+
+Logcat sin errores de la app (`logcat-parte1.txt`, `logcat-parte2.txt`).
