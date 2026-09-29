@@ -363,3 +363,41 @@ contraseña elegida en la app no sirvió para iniciar sesión desde un script
 tiene borrar cuenta. También siguen en el deck real dos restos de sesiones
 anteriores: «Comprob Video» y «Verif». Los tres solo se quitan desde el
 dashboard (perfil + `auth.users`).
+
+### 2026-09-29 — mitad Android del fallback en Expo Go: ❌ la app no llega a la sesión
+
+Expo Go 57.0.9 (`host.exp.exponent`, instalado por `npx expo start --go
+--android` en el AVD `lockin`) sobre `21bdd67` — lo que falla no cambia
+hasta `9cfddac`. **Backend mock**: `EXPO_NO_DOTENV=1
+EXPO_PUBLIC_LOCKIN_ALLOW_MOCK=1`, y el log dice `[lockin] backend de datos:
+mock en memoria`. El SDK es compatible: el proyecto es SDK 57, que es el
+`latest` de npm, y Expo Go carga el manifiesto (`SDK version: 57.0.0`).
+Evidencia (local, ignorada): `e2e/artifacts/local/2026-09-29-expo-go/`.
+
+- **Arranca, pero solo hasta el onboarding.** Al cargar el bundle,
+  `require('expo-notifications')` lanza en Expo Go Android: *«Android Push
+  notifications (remote notifications) functionality provided by
+  expo-notifications was removed from Expo Go with the release of SDK 53»*
+  (`03-app.png`, `expo-start.log`). El `require` se evalúa al importar el
+  módulo: `session-reminder-sync.tsx:22` llama a `createNotificationsPort()`
+  en el ámbito del módulo, `features/session/index.ts` lo reexporta y
+  `(tabs)/_layout.tsx` importa de ahí. Por eso Expo Router da `(tabs)/_layout`,
+  `(tabs)/matches`, `chat/[matchId]` y `session/[sessionId]` como *«missing
+  the required default export»*.
+- El onboarding sí se ve y se puede recorrer (`06-app.png`). Pero al pulsar
+  «Crear perfil», la navegación a `(tabs)` revienta con `TypeError: Cannot
+  read property 'ErrorBoundary' of undefined` (`src/app/_layout.tsx:73`,
+  `<Stack>`), y la app se queda en el splash de Expo Go
+  (`17-tras-descartar.png`, `18-15s-despues.png`, `logcat.txt`).
+- Así que **la pantalla de sesión no se puede abrir en Expo Go Android**: no
+  se ha podido ver «La videollamada necesita la app de desarrollo.», ni el
+  Pomodoro, ni la presencia. El fallback de WebRTC no se ha llegado a
+  ejercitar. Quien bloquea es `expo-notifications`, no `react-native-webrtc`.
+- Arreglo propuesto (es de **sesiones**, anotado también en
+  `docs/plan/todo/sesiones.md`): que `createNotificationsPort()` devuelva
+  `null` en Expo Go Android, igual que `loadWebRTC()` —con un `try` alrededor
+  del `require` o mirando `Constants.executionEnvironment === 'storeClient'`—,
+  o que el puerto se cree de forma perezosa y no al importar el módulo.
+- **iPhone**: no se ha comprobado. El mensaje habla solo de Android, así que
+  en iOS podría no lanzar, pero eso sigue siendo cosa del usuario. La casilla
+  de «Fallback en Expo Go» sigue sin marcar.

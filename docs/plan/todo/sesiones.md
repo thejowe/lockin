@@ -143,6 +143,18 @@ Plan: `docs/superpowers/plans/2026-09-13-sesiones-lockin.md`. Una casilla por ta
 
 ## Hallazgos del comprobador
 
+### Expo Go Android: `expo-notifications` lanza al importar (2026-09-29)
+
+En Expo Go 57 (Android, AVD `lockin`, backend mock, `21bdd67`),
+`require('expo-notifications')` en `notifications-port.ts:20` lanza
+(*«…removed from Expo Go with the release of SDK 53»*). Como
+`session-reminder-sync.tsx:22` crea el puerto al importar el módulo, se cae
+`(tabs)/_layout` y, tras el onboarding, la app muere con `Cannot read
+property 'ErrorBoundary' of undefined`. Por eso el fallback de vídeo en Expo
+Go no se puede verificar. Detalle, evidencia y arreglo propuesto: en
+`docs/plan/todo/video.md`, «Hallazgos del comprobador», 2026-09-29, en el
+apartado «mitad Android del fallback en Expo Go».
+
 ### Aviso de 5 minutos con la app cerrada (2026-09-24)
 
 **Entorno.** Emulador Android 16 (AVD `lockin`), APK universal `preview` de

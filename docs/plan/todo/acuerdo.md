@@ -35,9 +35,11 @@ Plan: `docs/superpowers/plans/2026-09-24-acuerdo-socios.md`
       ([run 36254832954](https://github.com/thejowe/lockin/actions/runs/36254832954), `remote.diff` = «Sin diferencias.»). La excepción
       queda cerrada, también en la memoria local `schema-drift-remoto-rojo-esperado.md`:
       **desde aquí, un rojo del job remoto es deriva real**.
-- [ ] Decidir si se reinstala el toolchain de Android de esta máquina (SDK,
+- [x] Decidir si se reinstala el toolchain de Android de esta máquina (SDK,
       AVD `lockin`, JDK 17), que desapareció el 2026-09-26 a mitad de un build
       del `comprobador`. Sin él no hay recorrido en emulador local.
+      Resuelto de hecho: el toolchain y el AVD `lockin` se reinstalaron y el
+      `comprobador` los usó el 2026-09-29 (acuerdo y WebRTC en emulador, Expo Go).
 
 ## Hallazgos del comprobador
 
