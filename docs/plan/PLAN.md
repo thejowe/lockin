@@ -275,6 +275,26 @@ nadie lo descubra a mitad:
 - Depende de: nada de Fase 2. **Del usuario**: aplicar
   `20260924000200_agreement_answers.sql` en `grrzmzktrhksbttpbblg`.
 
+### 13. `visual` — Pulido visual de la app
+
+Entrega: la app ya construida, bien vista y bien sentida — jerarquía,
+tipografía, espaciado, estados vacíos/carga/error, microinteracciones y
+movimiento (swipe, match, transiciones) — dentro de la paleta y las tipografías
+de `CONCEPTO.md`. No cambia lógica de producto ni datos. Agente
+`.claude/agents/visual.md`, que trabaja con las skills de frontend instaladas
+(`impeccable`, `redesign-existing-projects`, `emil-design-eng`, `apple-design`,
+`animate`, `find-animation-opportunities`, `improve-animations`…); checklist en
+`docs/plan/todo/visual.md`.
+
+- Alcance: `src/constants/theme.ts`, `fonts.ts`, `src/components/**` y la capa
+  de presentación de `src/features/**/*.tsx` y `src/app/**/*.tsx`. Nunca
+  `src/data/**` ni `supabase/**`.
+- **Cruza las pantallas de todos los bloques: nunca se lanza a la vez que un
+  bloque que toque `src/features/` o `src/app/`.** Trabaja en worktree propio.
+- Copy, `accessibilityLabel` y `testID` que usen `e2e/*.yaml` no se cambian sin
+  cambiar también el flujo.
+- Depende de: nada abierto (todos los bloques de producto cerrados el 2026-09-26).
+
 ## Orden recomendado de trabajo
 
 1. `arquitecto` primero y solo — es la base de todo lo demás.
