@@ -18,11 +18,20 @@ import { syncReminders } from './reminders';
 import type { NotificationsPort, ReminderStorage, ReminderTarget } from './reminders';
 import type { Unsubscribe } from '@/data';
 
-/** Una sola instancia por proceso: un objeto nuevo por render relanzaría el efecto. */
-const defaultNotifications = createNotificationsPort();
+/**
+ * Una sola instancia por proceso: un objeto nuevo por render relanzaría el
+ * efecto. Se crea al primer montaje y no al importar: importar la superficie de
+ * sesiones no debe cargar ningún módulo nativo.
+ */
+let defaultNotifications: NotificationsPort | null | undefined;
+
+function getDefaultNotifications(): NotificationsPort | null {
+  if (defaultNotifications === undefined) defaultNotifications = createNotificationsPort();
+  return defaultNotifications;
+}
 
 export function SessionReminderSync({
-  notifications = defaultNotifications,
+  notifications = getDefaultNotifications(),
   storage = AsyncStorage,
 }: {
   notifications?: NotificationsPort | null;
