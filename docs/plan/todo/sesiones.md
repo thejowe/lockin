@@ -249,3 +249,19 @@ hay que hacerlo desde el dashboard (Authentication → Users).
   salir, y el aviso por Realtime a las dos personas. La primera pasada
   (run 34897347871) dio el mismo 49/0/3 pero salió en rojo: la guardia exigía
   cero saltos.
+
+## Corrección: Expo Go Android no arranca por `expo-notifications` (2026-09-29)
+
+- [x] [Claude] `createNotificationsPort()` devuelve `null` en Android + Expo Go
+      (`isRunningInExpoGo()` de `expo`, no `executionEnvironment === 'storeClient'`,
+      que también vale para dev clients) y el `require` va en `try`, como
+      `loadWebRTC()`. `SessionReminderSync` crea el puerto por defecto en el
+      primer montaje, no al importar. Sin puerto, los recordatorios locales
+      quedan desactivados y el resto de la sesión sigue igual; iOS Expo Go y las
+      builds nativas no cambian. Commit `56fec3a`. Test nuevo
+      `notifications-unavailable.test.tsx` (fallaba al importar con la pila del
+      comprobador). Local: `tsc` 0, jest `src/features/session` 136/136.
+- [ ] [comprobador] Repetir en Expo Go Android (mock) que la app pasa del
+      onboarding y llega a tabs, chat y sesión, con el aviso «La videollamada
+      necesita la app de desarrollo.» — es la casilla de «Fallback en Expo Go»
+      de `video.md`.
