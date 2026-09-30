@@ -106,8 +106,21 @@ tocar lógica ni datos.
 
 ## Cierre
 
-- [ ] **[Claude]** `tsc`, lint, jest con cobertura sobre el suelo, export web, y
-  los `e2e/*.yaml` sin textos rotos. CI verde en Actions.
+- [x] **[Claude]** `tsc`, lint, jest con cobertura sobre el suelo, export web, y
+  los `e2e/*.yaml` sin textos rotos. CI verde en Actions. En local, sobre
+  `1931d64`: `tsc` y lint limpios, jest con 1067 pasados y 113 saltados en 95
+  suites, cobertura 95.21/90.22/94.82/96.75 (por encima del suelo), y
+  `expo export --platform web` sin errores. En Actions, sobre `daa18e5`: «CI»
+  ([run 36711286542](https://github.com/thejowe/lockin/actions/runs/36711286542))
+  y «Schema drift»
+  ([run 36711285999](https://github.com/thejowe/lockin/actions/runs/36711285999))
+  en verde. «E2E Android» en revisión: el job (registro) salió rojo en [run 36711286245](https://github.com/thejowe/lockin/actions/runs/36711286245); pendiente de diagnóstico. El job «Formato» venía rojo desde `d449df9`
+  por `e2e/run.mjs`; se arregla en `daa18e5` (solo formato).
+- [x] **[Claude]** Capturas «antes» (`42fa260`) y «después» en web a 390×844,
+  claro y oscuro, reiniciando `expo start` antes de cada tanda: dieciséis
+  pantallas del recorrido en mock, publicadas lado a lado en
+  <https://claude.ai/artifact/7JBDkaztck7XPv42xnph1v> (privado; hay que
+  compartirlo para que lo vea otra persona). No se commitean los PNG: son 6 MB.
 - [ ] **[comprobador]** Recorrido completo en el emulador (mock) con capturas
   antes/después de cada pantalla pulida. **Aparcada**: por decisión del
   usuario del 2026-09-26 esta máquina no usa el `comprobador` (ver
