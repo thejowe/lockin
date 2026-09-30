@@ -447,3 +447,27 @@ al reinicio del emulador (`28-…` a `46-…`, `expo-start-2.log`, `logcat.txt`)
   screenshot <dir>`) sí responde.
 - **iPhone**: sigue sin comprobar; es del usuario. La casilla de «Fallback en
   Expo Go» sigue abierta.
+
+### 2026-09-30 — mitad Android del fallback en Expo Go: ✅ la sesión monta la vista de vídeo con el aviso
+
+Expo Go 57.0.9 en el AVD `lockin`, `HEAD` = `4a698f1` (incluye `73ec64f`).
+**Backend mock**: `CI=1 EXPO_NO_DOTENV=1 EXPO_PUBLIC_LOCKIN_ALLOW_MOCK=1 npx
+expo start --go --android --clear`; Metro dice `[lockin] backend de datos:
+mock en memoria`. Evidencia (local, ignorada):
+`e2e/artifacts/local/2026-09-30-expo-go/`.
+
+- Onboarding «Compañero de Lock-In» → formulario → «Crear perfil» → tabs
+  (`12-tras-crear.*`) → like a Alba Ferrer (recíproca) → «¡Match!» «MODO
+  COMPAÑERO DE LOCK-IN» (`13-match.*`) → chat (`14-chat.*`) → «Agendar sesión
+  Lock-In», hoy 20:30, 1 bloque → **«Sesión acordada»** al instante
+  (`17-propuesta.*`): `73ec64f` hace que Alba acepte sola.
+- A las 20:25:33 (sala abierta) sale «Es la hora · Entrar a la sesión»
+  (`19-entrar.*`). Al entrar, la pantalla «Sesión Lock-In» monta la vista de
+  vídeo con **«La videollamada necesita la app de desarrollo.»**, Alba «Aún no
+  ha entrado», cuenta atrás «EMPIEZA EN 3:54» y «Salir» (`21-sesion.png`). El
+  resto de la sesión arranca normal. `uiautomator dump` no sirve en esa
+  pantalla (animación continua): la evidencia es la captura.
+- Tab Matches con Alba (`23-matches.*`). `logcat.txt` (`*:E ReactNativeJS:V`)
+  sin un solo error ni aviso de JS; Metro tampoco registra errores.
+- **iPhone** sigue sin comprobar (del usuario): la casilla de «Fallback en
+  Expo Go» queda abierta solo por esa mitad.

@@ -261,7 +261,7 @@ hay que hacerlo desde el dashboard (Authentication → Users).
       builds nativas no cambian. Commit `56fec3a`. Test nuevo
       `notifications-unavailable.test.tsx` (fallaba al importar con la pila del
       comprobador). Local: `tsc` 0, jest `src/features/session` 136/136.
-- [ ] [comprobador] Repetir en Expo Go Android (mock) que la app pasa del
+- [x] [comprobador] Repetir en Expo Go Android (mock) que la app pasa del
       onboarding y llega a tabs, chat y sesión, con el aviso «La videollamada
       necesita la app de desarrollo.» — es la casilla de «Fallback en Expo Go»
       de `video.md`.
@@ -273,6 +273,14 @@ hay que hacerlo desde el dashboard (Authentication → Users).
       vía para tener sesión viva en el mock — propuesta: que los perfiles de
       `SEED_RECIPROCAL_IDS` acepten al instante, como con los likes. Detalle
       en `video.md`, «Hallazgos del comprobador», 2.ª pasada del 2026-09-29.
+      *2026-09-30, comprobador (mock, Expo Go 57.0.9, `4a698f1`): ✅.*
+      Onboarding → tabs → like a Alba → match → chat → propuesta «hoy 20:30»
+      que pasa a «Sesión acordada» al momento (`73ec64f`) → «Entrar a la
+      sesión» → la vista de vídeo pinta «La videollamada necesita la app de
+      desarrollo.» con la cuenta atrás y la presencia de Alba. Sin errores de
+      JS en logcat ni Metro. Evidencia (local, ignorada):
+      `e2e/artifacts/local/2026-09-30-expo-go/` (`21-sesion.png`). Detalle en
+      `video.md`, «Hallazgos del comprobador», 2026-09-30.
 - [x] [Claude] **Sesión viva en el mock** — lo que falta para cerrar la casilla
       de arriba. Los perfiles de `SEED_RECIPROCAL_IDS` deben aceptar al instante
       las propuestas de sesión en el mock (como ya devuelven el like), para que
