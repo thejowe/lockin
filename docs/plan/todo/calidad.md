@@ -3572,7 +3572,7 @@ vuelve por el **esquema** `lockin://auth/callback`.
       real de GoTrue en dos fases (`request` / `confirm`, con el `am start` del
       runner por medio). Detalle en «Entrada y recuperación de contraseña en
       Android (2026-09-23)», al final de este archivo.
-- [ ] **La rama de abandono del perfil irrecuperable sigue sin recorrer nadie**
+- [x] **La rama de abandono del perfil irrecuperable sigue sin recorrer nadie**
       (`abandonsUnrecoverableProfile`, `sign-in-form.tsx:88`, y el panel «Entrar
       aquí deja atrás el perfil de este teléfono» de `sign-in-form.tsx:210-237`).
       Esta parte de la casilla **no la cierra el E2E nuevo**, y es por
@@ -3669,6 +3669,15 @@ vuelve por el **esquema** `lockin://auth/callback`.
       Descubrir al entrar, así que Perfil se lee de cero, pero si el volcado
       enseña `${ANON_PROFILE_NAME}` en Perfil es un bug de producto de
       `perfil`, no del flujo.
+
+      **Cerrada el 2026-09-30 con run verde.** `c5957f0` (cherry-pick de
+      `7ebbf78`): [run 36748017281](https://github.com/thejowe/lockin/actions/runs/36748017281),
+      los tres trabajos de «E2E Android» en verde; la variante `supabase` dice
+      «Veredicto de attempt-01: pass — recorrido, persistencia, sesión Lock-In,
+      acuerdo y abandono al entrar verificados» al primer intento. Ninguno de
+      los dos riesgos se materializó: `openLink` abrió `/sign-in` con la app en
+      las tabs, y Perfil enseñó la ficha de la otra cuenta. CI y Schema drift
+      del mismo push, también verdes.
 - [x] **El rojo de hoy (35899273763) no es de ese trabajo ni de la fijación.**
       Los **tres** trabajos murieron en `Supabase desechable con migraciones
       reales`, sin levantar un solo contenedor (`containers/resumen.txt`: «no hay
