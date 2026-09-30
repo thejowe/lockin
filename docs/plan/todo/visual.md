@@ -129,6 +129,94 @@ tocar lógica ni datos.
   Al retomarla, mirar en especial el relevo del deck: la tarjeta de detrás
   avanza con el arrastre, y en el frame en que la superior se reinicia podría
   verse un salto de un 4 %.
+  *2026-09-30, comprobador (mock, APK release sobre `4a698f1`): recorrido
+  hecho, ❌ por el relevo del deck* — no es un salto del 4 %, es peor: un
+  fotograma con la tarjeta equivocada. Dos arreglos visuales más. Detalle en
+  «Hallazgos del comprobador» abajo. Sigue abierta hasta que se arreglen y se
+  repita el relevo. En Android no hay «antes»: la comparación antes/después
+  sigue siendo la de las capturas web.
+
+## Hallazgos del comprobador
+
+### 2026-09-30 — recorrido completo en el emulador (mock)
+
+APK release local sobre `4a698f1`, x86_64, compilado con
+`EXPO_NO_DOTENV=1 EXPO_PUBLIC_LOCKIN_ALLOW_MOCK=1` y
+`createBundleReleaseJsAndAssets --rerun`. Logcat: `[lockin] backend de datos:
+mock en memoria`. AVD `lockin` (Pixel 7, 1080×2400, 412 dp de ancho).
+Evidencia (local, ignorada; los PNG no se commitean):
+`e2e/artifacts/local/2026-09-30-visual/`. Los vídeos del relevo se grabaron con
+`adb shell screenrecord` y se sacaron fotograma a fotograma con ffmpeg.
+
+**✅ Lo que se sostiene.** Onboarding: la tarjeta de modo se selecciona sin
+salto (bounds iguales antes y después, anillo interior; `01-`, `02-`), y los
+errores del formulario vacío salen en cada campo (`04-form-errores.png`).
+Descubrir con chips y tarjeta (`06-deck.png`), el modal «¡Match!» con Lucía
+(`08-match.png`), Matches (`09-matches.png`), el chat con un mensaje enviado
+(`12-chat-enviado.png`), el acuerdo con una respuesta guardada
+(`13-`, `15-acuerdo-guardado.png`), Perfil (`19-`, `20-`), el deck vacío
+(`21-deck-vacio.png`) y la confirmación de salir de la sesión
+(`26-tras-salir.png`). **Los arreglos de Fabric de `a72025f` se sostienen**:
+«Crear perfil», «Abrir chat», «Agendar sesión Lock-In», «Proponer», «Ver mis
+matches», «Verificar con GitHub» y «Editar perfil» se pintan con su fondo, y la
+fila de match conserva fondo y borde, también pulsada: escala y oscurece sin
+aplanarse (`10-fila-pulsada.png`, capturada con `input motionevent DOWN`). Sin
+errores de JS en `logcat.txt`. El estado de carga no se deja ver: en el mock la
+recarga es instantánea (`carga-sheet.png`), y el de error no lo pude provocar
+desde la UI.
+
+**❌ 1. El relevo del deck pinta un fotograma con la tarjeta equivocada.** Pasé
+tarjetas arrastrando (`input swipe … 700–900 ms`) y grabé la pantalla. En 3 de
+los 4 relevos grabados sale un fotograma suelto con una tarjeta que no toca,
+entre fotogramas buenos:
+- `relevo3.mp4`, f023 (t = 2,40 s): Alba ya está arriba y **Marc, al que acabo
+  de pasar, vuelve un fotograma al centro** con su sombra, y luego desaparece
+  (`relevo3-ghost1.png`). Lo mismo en f082 con Inés sobre Lucía
+  (`relevo3-ghost2.png`).
+- `relevo2.mp4`, f026 (t = 2,73 s): el caso contrario. Marc ya está arriba y
+  sale un fotograma con **Alba, la tarjeta de dos puestos atrás**, en el sitio
+  de la superior y a tamaño completo (`relevo2-tail.png`).
+
+La causa, por el código (`src/features/discover/swipe-deck.tsx:95-100`):
+`settle()` hace `translateX.set(0)` (se aplica en el hilo de UI) y luego
+`onDecide()` (setState en JS, que quita la tarjeta en el siguiente commit de
+Fabric). Nada ordena las dos cosas. Si la UI llega antes, la tarjeta decidida
+vuelve al centro un fotograma y la de detrás se encoge al 96 %. Si llega antes
+el commit, la nueva superior hereda el `translateX` de salida (queda fuera de
+pantalla) y la de detrás, con `progress` = 1, ocupa su sitio a escala 1. Es
+decir, el salto del 4 % que se temía existe, pero tapado por algo más visible.
+`settle()` es del bloque descubrir (`25f71c6`), no de `c435f84`.
+Salidas posibles: reiniciar `translateX`/`translateY` en un `useLayoutEffect`
+que dependa de `top.id` (después del commit que retira la tarjeta), o dar a
+cada tarjeta sus propios valores compartidos para que la nueva superior nazca
+en 0. Aparte, la grabación no muestra ni un fotograma de la salida de 220 ms,
+pero `screenrecord` en el emulador va a unos 13–20 fps, así que eso no prueba
+nada.
+
+**❌ 2. La hoja «Proponer sesión Lock-In» se monta bajo la barra de estado.** En
+el APK nativo el título queda en y = 63–142, debajo del reloj
+(`16-proponer.png`). En Expo Go el mismo título sale en y = 199–278
+(`../2026-09-30-expo-go/15-proponer.xml`). Es el `Modal`
+`presentationStyle="pageSheet"` de
+`src/features/session/propose-session-sheet.tsx:62-67` con Android
+edge-to-edge (`edgeToEdgeEnabled=true`): en Android, `pageSheet` ocupa toda la
+pantalla y la vista no reserva el inset de arriba. Pide un `SafeAreaView` o un
+`paddingTop` con `useSafeAreaInsets()`.
+
+**❌ 3. Los controles de la videollamada desbordan su caja.** Con la cámara
+concedida, la fila «Silenciar micrófono / Apagar cámara / Colgar» es más ancha
+que la vista remota: «Silenciar…» se corta por la izquierda y «Colgar» por la
+derecha, en claro y en oscuro (`24-sesion-video.png`, `25-sesion-oscuro.png`).
+`styles.controls` (`src/features/session/video-call-view.tsx:181-186`) es una
+fila absoluta sin `flexWrap`, sin `left`/`right` y sin ancho máximo, y cada
+botón lleva `paddingHorizontal: Spacing.three`. En la misma captura, el texto
+«No se pudo conectar el vídeo.» queda debajo de la miniatura propia (`local`,
+arriba a la derecha).
+
+**Observación, sin marcar como fallo.** Con este perfil (Ambos, Desarrollo)
+encabeza el deck Diego Salas, que no está en `SEED_RECIPROCAL_IDS`
+(`06-deck.png`). La regla de `seed.ts` solo la fija `seed.test.ts` para el
+perfil del E2E, así que puede ser lo esperado.
 
 ## Registro
 
