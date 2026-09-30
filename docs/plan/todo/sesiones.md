@@ -273,7 +273,7 @@ hay que hacerlo desde el dashboard (Authentication → Users).
       vía para tener sesión viva en el mock — propuesta: que los perfiles de
       `SEED_RECIPROCAL_IDS` acepten al instante, como con los likes. Detalle
       en `video.md`, «Hallazgos del comprobador», 2.ª pasada del 2026-09-29.
-- [ ] [Claude] **Sesión viva en el mock** — lo que falta para cerrar la casilla
+- [x] [Claude] **Sesión viva en el mock** — lo que falta para cerrar la casilla
       de arriba. Los perfiles de `SEED_RECIPROCAL_IDS` deben aceptar al instante
       las propuestas de sesión en el mock (como ya devuelven el like), para que
       el comprobador pueda proponer una sesión «ahora», entrar y ver
@@ -287,3 +287,20 @@ hay que hacerlo desde el dashboard (Authentication → Users).
       `src/data/mock/sessions.test.ts` borrador sin seguimiento. Relanzar desde
       cero; ese worktree se puede quitar (`git worktree remove --force` + `git
       branch -D`). Después, `[comprobador]` repite la casilla de arriba.
+      *2026-09-30, hecho en `73ec64f`.* `createMockSessionRepository` admite
+      `autoAcceptFrom`: si el actor propone a alguien de esa lista, la sesión
+      pasa a `aceptada` al momento, con `respondedAt` y aviso al canal del match
+      como una respuesta real (`propose` sigue devolviendo la propuesta).
+      `createMockRepositories(store, { autoAcceptSessions })` lo enciende con
+      `SEED_RECIPROCAL_IDS`; por defecto activo en la app y apagado bajo Jest
+      (`NODE_ENV === 'test'`), porque el contrato y los tests de sesión hacen
+      responder a Núria a mano. Lo que propone el recíproco, o una propuesta a
+      alguien no recíproco, sigue esperando. Ojo al comprobar: la propuesta más
+      temprana empieza en 5 min y la sala abre 5 min antes, así que se entra en
+      cuanto pasa ese margen de segundos. Test nuevo
+      `src/data/mock/sessions.test.ts` (6 casos). Local: `tsc` 0 (con el
+      `.expo/types/router.d.ts` local, obsoleto y fuera de git, apartado: da un
+      falso error en `agreement-card.tsx` que CI no ve), jest `src/data/mock` +
+      `src/features/session` 275/275 (2 omitidos), suite completa verde,
+      prettier y eslint limpios. Sin emulador: la casilla `[comprobador]` de
+      arriba sigue abierta.
