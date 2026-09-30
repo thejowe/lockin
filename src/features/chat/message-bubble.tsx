@@ -4,23 +4,40 @@
  * El lado se decide con `isMine`, que la pantalla deriva comparando el emisor
  * con el perfil del otro lado del match — nunca con un id de usuario cableado,
  * para que siga funcionando cuando los mensajes vengan del backend real.
+ *
+ * Un mensaje recién llegado (enviado hace menos de `FRESH_MS`) entra subiendo
+ * y fundiendo: es la confirmación de que ha salido o de que acaba de llegar. El
+ * historial que ya estaba al abrir el chat no se anima — veinte burbujas
+ * entrando a la vez son ruido, no información. Reanimated apaga la entrada con
+ * «reducir movimiento» (`ReduceMotion.System`, su valor por defecto).
  */
 
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import Animated, { Easing, FadeInDown } from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
-import { Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
+import { Curves, Duration, Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { formatClock } from './format';
 
 import type { Message } from '@/data';
 
+/** Antigüedad por debajo de la cual un mensaje cuenta como recién llegado. */
+const FRESH_MS = 3_000;
+
+const ENTERING = FadeInDown.duration(Duration.base).easing(Easing.bezier(...Curves.out));
+
 export function MessageBubble({ message, isMine }: { message: Message; isMine: boolean }) {
   const theme = useTheme();
+  // Se decide una vez, al montar: la burbuja no vuelve a entrar si se repinta.
+  const [fresh] = useState(() => Date.now() - Date.parse(message.sentAt) < FRESH_MS);
 
   return (
-    <View style={[styles.row, isMine ? styles.rowMine : styles.rowTheirs]}>
+    <Animated.View
+      entering={fresh ? ENTERING : undefined}
+      style={[styles.row, isMine ? styles.rowMine : styles.rowTheirs]}>
       <View
         style={[
           styles.bubble,
@@ -39,14 +56,13 @@ export function MessageBubble({ message, isMine }: { message: Message; isMine: b
         <ThemedText
           type="caption"
           themeColor={isMine ? undefined : 'textMuted'}
-          style={[
-            styles.clock,
-            isMine ? { color: theme.onAccent, opacity: Opacity.meta } : undefined,
-          ]}>
+          // Tinta plena y no atenuada: al 75 % sobre latón la hora bajaba a
+          // 3.7:1 con 12 px, por debajo de AA. La jerarquía ya la da el tamaño.
+          style={[styles.clock, isMine ? { color: theme.onAccent } : undefined]}>
           {formatClock(message.sentAt)}
         </ThemedText>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
