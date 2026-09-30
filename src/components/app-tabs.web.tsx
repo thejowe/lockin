@@ -10,17 +10,21 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from './themed-text';
 
-import { MaxContentWidth, Radii, Spacing } from '@/constants/theme';
+import { HitSlop, MaxContentWidth, Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 /**
  * Equivalente web de las tabs nativas. Misma estructura de rutas
  * (Descubrir / Matches / Perfil) con una barra propia en la parte superior.
+ *
+ * La barra va en el flujo, encima del slot, y no flotando con `position:
+ * absolute`: flotando tapaba la cabecera de cada pestaña (el «Quién está» de
+ * Descubrir quedaba cortado por la mitad), porque en web no hay safe area que
+ * empuje el contenido hacia abajo.
  */
 export default function AppTabs() {
   return (
     <Tabs>
-      <TabSlot style={styles.slot} />
       <TabList asChild>
         <TabBar>
           <TabTrigger name="discover" href="/discover" asChild>
@@ -34,6 +38,7 @@ export default function AppTabs() {
           </TabTrigger>
         </TabBar>
       </TabList>
+      <TabSlot style={styles.slot} />
     </Tabs>
   );
 }
@@ -46,7 +51,7 @@ function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
       {...props}
       // La pastilla mide 28 px de alto: el hitSlop la lleva a los 44 mínimos sin
       // engordar la barra superior.
-      hitSlop={{ top: 8, bottom: 8 }}
+      hitSlop={HitSlop.inline}
       style={({ pressed }) => pressed && styles.pressed}>
       <View
         style={[
@@ -78,10 +83,9 @@ function TabBar(props: TabListProps) {
 
 const styles = StyleSheet.create({
   slot: {
-    height: '100%',
+    flex: 1,
   },
   bar: {
-    position: 'absolute',
     width: '100%',
     alignItems: 'center',
     paddingHorizontal: Spacing.three,
@@ -93,13 +97,13 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: MaxContentWidth,
     paddingVertical: Spacing.two,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: Stroke.hairline,
   },
   brand: {
     marginRight: 'auto',
   },
   pressed: {
-    opacity: 0.7,
+    opacity: Opacity.pressed,
   },
   tabButton: {
     paddingVertical: Spacing.one,

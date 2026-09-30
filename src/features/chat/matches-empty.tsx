@@ -5,16 +5,13 @@
  * que no hay nada: explica de dónde salen los matches y ofrece el camino.
  */
 
-import { Link } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
+import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themed-text';
-import { Radii, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { Spacing } from '@/constants/theme';
 
 export function MatchesEmpty() {
-  const theme = useTheme();
-
   return (
     <View style={styles.root}>
       <ThemedText type="subtitle" style={styles.centered}>
@@ -26,18 +23,7 @@ export function MatchesEmpty() {
         en cuanto haya reciprocidad tendrás con quién hablar.
       </ThemedText>
 
-      <Link href="/discover" asChild>
-        <Pressable
-          accessibilityRole="button"
-          style={({ pressed }) => [
-            styles.action,
-            { backgroundColor: theme.brass, opacity: pressed ? 0.85 : 1 },
-          ]}>
-          <ThemedText type="bodyStrong" style={{ color: theme.onAccent }}>
-            Ir a Descubrir
-          </ThemedText>
-        </Pressable>
-      </Link>
+      <Button label="Ir a Descubrir" href="/discover" style={styles.action} />
     </View>
   );
 }
@@ -54,9 +40,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   action: {
+    alignSelf: 'stretch',
     marginTop: Spacing.two,
-    paddingVertical: Spacing.three,
-    paddingHorizontal: Spacing.four,
-    borderRadius: Radii.pill,
   },
 });

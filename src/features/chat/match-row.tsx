@@ -9,9 +9,11 @@
 
 import { Link } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing, Stroke } from '@/constants/theme';
+import { usePressScale } from '@/hooks/use-press-scale';
 import { useTheme } from '@/hooks/use-theme';
 
 import { formatRelative } from './format';
@@ -40,6 +42,7 @@ export function MatchRow({
   streak?: number | null;
 }) {
   const theme = useTheme();
+  const press = usePressScale();
   const { counterpart, lastMessage } = match;
 
   const isMine = lastMessage !== null && lastMessage.senderId !== counterpart.id;
@@ -52,48 +55,58 @@ export function MatchRow({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Conversación con ${counterpart.name}. ${streakPart}${preview}`}
-        style={({ pressed }) => [
-          styles.root,
-          {
-            backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement,
-            borderColor: theme.border,
-          },
-        ]}>
-        <ProfileAvatar avatar={counterpart.avatar} />
+        onPressIn={press.onPressIn}
+        onPressOut={press.onPressOut}>
+        {({ pressed }) => (
+          // La forma va aquí y no en el `style` del Pressable: `Link asChild`
+          // en web descarta el estilo-función, y la fila salía sin fondo y con
+          // el avatar apilado encima del nombre.
+          <Animated.View
+            style={[
+              styles.root,
+              {
+                backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement,
+                borderColor: theme.border,
+              },
+              press.style,
+            ]}>
+            <ProfileAvatar avatar={counterpart.avatar} />
 
-        <View style={styles.body}>
-          <View style={styles.topLine}>
-            <ThemedText type="heading" numberOfLines={1} style={styles.name}>
-              {counterpart.name}
-            </ThemedText>
-            <ThemedText type="mono" themeColor="textMuted">
-              {timestamp}
-            </ThemedText>
-          </View>
+            <View style={styles.body}>
+              <View style={styles.topLine}>
+                <ThemedText type="heading" numberOfLines={1} style={styles.name}>
+                  {counterpart.name}
+                </ThemedText>
+                <ThemedText type="mono" themeColor="textMuted">
+                  {timestamp}
+                </ThemedText>
+              </View>
 
-          <View style={styles.tags}>
-            <ThemedText type="label" themeColor="textMuted">
-              {MODE_LABELS[match.mode]}
-            </ThemedText>
-            {lastMessage === null && (
-              <ThemedText type="label" themeColor="brass">
-                · Nuevo
+              <View style={styles.tags}>
+                <ThemedText type="label" themeColor="textMuted">
+                  {MODE_LABELS[match.mode]}
+                </ThemedText>
+                {lastMessage === null && (
+                  <ThemedText type="label" themeColor="brass">
+                    · Nuevo
+                  </ThemedText>
+                )}
+                {streak !== null && (
+                  <ThemedText type="label" themeColor="brass">
+                    {streakTag(streak)}
+                  </ThemedText>
+                )}
+              </View>
+
+              <ThemedText
+                type="small"
+                themeColor={lastMessage ? 'textSecondary' : 'teal'}
+                numberOfLines={2}>
+                {preview}
               </ThemedText>
-            )}
-            {streak !== null && (
-              <ThemedText type="label" themeColor="brass">
-                {streakTag(streak)}
-              </ThemedText>
-            )}
-          </View>
-
-          <ThemedText
-            type="small"
-            themeColor={lastMessage ? 'textSecondary' : 'teal'}
-            numberOfLines={2}>
-            {preview}
-          </ThemedText>
-        </View>
+            </View>
+          </Animated.View>
+        )}
       </Pressable>
     </Link>
   );
@@ -106,7 +119,7 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     padding: Spacing.three,
     borderRadius: Radii.large,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: Stroke.hairline,
   },
   body: {
     flex: 1,
