@@ -15,6 +15,7 @@ import {
   nowIso,
   resolveMatchMode,
 } from './store';
+import { SEED_RECIPROCAL_IDS } from './seed';
 import { createMockSessionRepository } from './sessions';
 
 import type { MockStore } from './store';
@@ -51,7 +52,21 @@ export {
 } from './store';
 export type { MockStore } from './store';
 export { createMockSessionRepository, sessionsTopic } from './sessions';
+export type { MockSessionOptions } from './sessions';
 export { createMockAgreementRepository } from './agreement';
+
+export interface MockRepositoriesOptions {
+  /**
+   * Los perfiles de `SEED_RECIPROCAL_IDS` aceptan al instante las sesiones que
+   * se les proponen, igual que devuelven el like. Así se puede proponer una
+   * sesión «ahora», entrar y llegar a la videollamada sin nadie al otro lado.
+   *
+   * Por defecto, encendido en la app y apagado bajo Jest: la suite de contrato
+   * y los tests de sesión hacen responder a la contraparte a mano, y una
+   * propuesta que se acepta sola les quitaría el estado `propuesta`.
+   */
+  autoAcceptSessions?: boolean;
+}
 
 const MATCHES_TOPIC = 'matches';
 const messagesTopic = (matchId: string) => `messages:${matchId}`;
@@ -64,7 +79,10 @@ const messagesTopic = (matchId: string) => `messages:${matchId}`;
  * `createMockStore()` propio, dos juegos del mismo proceso no comparten ni
  * datos, ni reloj, ni suscriptores.
  */
-export function createMockRepositories(store: MockStore = defaultMockStore): Repositories {
+export function createMockRepositories(
+  store: MockStore = defaultMockStore,
+  { autoAcceptSessions = process.env.NODE_ENV !== 'test' }: MockRepositoriesOptions = {}
+): Repositories {
   const getState = () => store.state;
   const createId = (prefix: string) => store.createId(prefix);
   const notify = (topic: string) => store.notify(topic);
@@ -340,7 +358,9 @@ export function createMockRepositories(store: MockStore = defaultMockStore): Rep
     discovery,
     matches,
     messages,
-    sessions: createMockSessionRepository(CURRENT_USER_ID, store),
+    sessions: createMockSessionRepository(CURRENT_USER_ID, store, {
+      autoAcceptFrom: autoAcceptSessions ? SEED_RECIPROCAL_IDS : [],
+    }),
     agreement: createMockAgreementRepository(CURRENT_USER_ID, store),
   };
 }

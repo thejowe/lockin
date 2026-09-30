@@ -9,6 +9,12 @@
  * El store es el segundo argumento y por defecto es el compartido: los dos
  * actores de un test tienen que ver los mismos datos, así que pasarles el mismo
  * store es justo lo que los pone en el mismo match.
+ *
+ * `autoAcceptFrom` hace de la otra persona un bot: si el actor propone en un
+ * match con alguien de esa lista, la propuesta sale aceptada al momento, igual
+ * que los perfiles de `SEED_RECIPROCAL_IDS` devuelven el like. Es lo que deja
+ * vivir una sesión entera en el mock sin nadie al otro lado que acepte. Por
+ * defecto está vacía: la suite de contrato y los tests responden a mano.
  */
 
 import {
@@ -34,12 +40,19 @@ import type { LockInSession, SessionAttendance, SessionRatingEntry } from '../ty
 
 export const sessionsTopic = (matchId: string) => `sessions:${matchId}`;
 
+export interface MockSessionOptions {
+  /** Perfiles que aceptan al instante lo que el actor les propone. */
+  autoAcceptFrom?: Iterable<string>;
+}
+
 const iso = (ms: number) => new Date(ms).toISOString();
 
 export function createMockSessionRepository(
   actorId: string,
-  store: MockStore = defaultMockStore
+  store: MockStore = defaultMockStore,
+  options: MockSessionOptions = {}
 ): LockInSessionRepository {
+  const autoAcceptFrom = new Set(options.autoAcceptFrom ?? []);
   const getState = () => store.state;
   const createId = (prefix: string) => store.createId(prefix);
   const mockNowMs = () => store.nowMs();
@@ -118,7 +131,17 @@ export function createMockSessionRepository(
         respondedAt: null,
       };
       state.lockInSessions.push(session);
-      return changed(matchId, session);
+      const proposed = changed(matchId, session);
+      // La otra persona es un bot del mock: acepta ya, por el mismo camino que
+      // una respuesta real (estado, `respondedAt` y aviso al canal del match).
+      // Se devuelve la propuesta tal cual, como haría el backend real: la
+      // aceptación llega después, por la suscripción.
+      const counterpartId = membersOf(matchId).find((id) => id !== actorId);
+      if (counterpartId !== undefined && autoAcceptFrom.has(counterpartId)) {
+        Object.assign(session, { status: 'aceptada', respondedAt: iso(mockNowMs()) });
+        notify(sessionsTopic(matchId));
+      }
+      return proposed;
     },
 
     async respond(sessionId, answer) {
