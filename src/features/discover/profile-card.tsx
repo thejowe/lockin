@@ -18,7 +18,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing, Stroke } from '@/constants/theme';
 import {
   GithubSeal,
   ProfileAvatar,
@@ -37,6 +37,14 @@ import { complementWith } from './complement';
 import type { ChipTone } from './chip';
 
 import type { Profile, Specialty } from '@/data';
+
+/**
+ * Anchos de las columnas de etiqueta. Fijos a propósito: alinean los valores en
+ * una sola vertical, como una ficha. `DOMINA`/`BUSCA` caben en 64; la etiqueta
+ * de dato más larga en versales (`DISPONIBILIDAD`) pide 132.
+ */
+const ROW_LABEL_WIDTH = 64;
+const FACT_LABEL_WIDTH = 132;
 
 export function ProfileCard({
   profile,
@@ -201,7 +209,7 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     padding: Spacing.four,
     borderRadius: Radii.card,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: Stroke.hairline,
     overflow: 'hidden',
   },
   header: {
@@ -229,7 +237,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   rowLabel: {
-    width: 64,
+    width: ROW_LABEL_WIDTH,
   },
   rowContent: {
     flex: 1,
@@ -239,7 +247,7 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
   },
   divider: {
-    height: StyleSheet.hairlineWidth,
+    height: Stroke.hairline,
   },
   facts: {
     gap: Spacing.two,
@@ -250,7 +258,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   factLabel: {
-    width: 132,
+    width: FACT_LABEL_WIDTH,
   },
   factValue: {
     flex: 1,
@@ -259,6 +267,6 @@ const styles = StyleSheet.create({
     marginTop: 'auto',
     gap: Spacing.one,
     paddingTop: Spacing.three,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopWidth: Stroke.hairline,
   },
 });

@@ -7,8 +7,14 @@
  * `DeckActions` disparan exactamente la misma animación de salida para que
  * ambos caminos se sientan iguales.
  *
- * Solo la tarjeta superior escucha el gesto; las de detrás son decorado
- * estático — animarlas no aporta nada al MVP y multiplica el coste por frame.
+ * Solo la tarjeta superior escucha el gesto. La de justo detrás sube hacia
+ * delante a medida que la de arriba se aparta (escala y desplazamiento ligados
+ * al arrastre, no a un temporizador): cuando la superior sale, la siguiente ya
+ * está en su sitio y el relevo no pega un salto. La tercera es decorado
+ * estático — animarla no se ve y cuesta por frame.
+ *
+ * La superior lleva la sombra `raised`: es lo único del deck que se coge con
+ * la mano, y tiene que leerse por encima de las demás.
  *
  * Con «reducir movimiento» activado en el sistema, la tarjeta llega al MISMO
  * estado final sin el recorrido: misma decisión, mismo `onDecide`, misma lógica
@@ -20,6 +26,7 @@
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
+  Easing,
   Extrapolation,
   interpolate,
   runOnJS,
@@ -30,12 +37,12 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
-import { Duration, Radii, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { Curves, Duration, Elevation, Radii, Spacing, Springs, Stroke } from '@/constants/theme';
+import { useReduceMotion } from '@/hooks/use-reduce-motion';
+import { useTheme, useThemeName } from '@/hooks/use-theme';
 
 import { DeckActions } from './deck-actions';
 import { ProfileCard } from './profile-card';
-import { useReduceMotion } from '@/hooks/use-reduce-motion';
 
 import type { Decision, Profile, Specialty } from '@/data';
 
@@ -47,8 +54,12 @@ const FLICK_VELOCITY = 800;
 const MAX_ROTATION = 12;
 /** Cuántas tarjetas se pintan a la vez. Las demás no se ven. */
 const VISIBLE_CARDS = 3;
+/** Cuánto encoge y baja cada tarjeta por cada puesto que tiene delante. */
+const DEPTH_SCALE = 0.04;
+const DEPTH_OFFSET = 14;
 
-const SPRING = { damping: 18, stiffness: 220, mass: 0.6 } as const;
+/** Salida de pantalla: arranca con la velocidad del gesto y frena al final. */
+const EXIT_TIMING = { duration: Duration.base, easing: Easing.bezier(...Curves.out) };
 
 /** Identificador del gesto de la tarjeta superior. Lo usan los tests. */
 export const PAN_TEST_ID = 'swipe-deck-pan';
@@ -65,6 +76,7 @@ export function SwipeDeck({
   viewerSpecialties?: Specialty[];
 }) {
   const theme = useTheme();
+  const elevation = Elevation[useThemeName()];
   const { width } = useWindowDimensions();
   const reduceMotion = useReduceMotion();
 
@@ -100,13 +112,9 @@ export function SwipeDeck({
     }
 
     translateX.set(
-      withTiming(
-        decision === 'like' ? exitDistance : -exitDistance,
-        { duration: Duration.base },
-        (finished) => {
-          if (finished) runOnJS(settle)(profile, decision);
-        }
-      )
+      withTiming(decision === 'like' ? exitDistance : -exitDistance, EXIT_TIMING, (finished) => {
+        if (finished) runOnJS(settle)(profile, decision);
+      })
     );
   }
 
@@ -127,8 +135,8 @@ export function SwipeDeck({
       const passed = translateX.get() < -SWIPE_THRESHOLD || event.velocityX < -FLICK_VELOCITY;
 
       if (!liked && !passed) {
-        translateX.set(reduceMotion ? 0 : withSpring(0, SPRING));
-        translateY.set(reduceMotion ? 0 : withSpring(0, SPRING));
+        translateX.set(reduceMotion ? 0 : withSpring(0, Springs.settle));
+        translateY.set(reduceMotion ? 0 : withSpring(0, Springs.settle));
         return;
       }
 
@@ -143,17 +151,11 @@ export function SwipeDeck({
       }
 
       // La tarjeta mantiene el arco del gesto al salir: sube o baja según iba.
-      translateY.set(
-        withTiming(translateY.get() + event.velocityY * 0.1, { duration: Duration.base })
-      );
+      translateY.set(withTiming(translateY.get() + event.velocityY * 0.1, EXIT_TIMING));
       translateX.set(
-        withTiming(
-          liked ? exitDistance : -exitDistance,
-          { duration: Duration.base },
-          (finished) => {
-            if (finished) runOnJS(settle)(top, decision);
-          }
-        )
+        withTiming(liked ? exitDistance : -exitDistance, EXIT_TIMING, (finished) => {
+          if (finished) runOnJS(settle)(top, decision);
+        })
       );
     });
 
@@ -174,13 +176,50 @@ export function SwipeDeck({
     };
   });
 
-  const likeStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(translateX.get(), [0, SWIPE_THRESHOLD], [0, 1], Extrapolation.CLAMP),
-  }));
+  /** La de detrás avanza hasta el sitio de la superior según se aparta esta. */
+  const nextStyle = useAnimatedStyle(() => {
+    const progress = interpolate(
+      Math.abs(translateX.get()),
+      [0, SWIPE_THRESHOLD],
+      [0, 1],
+      Extrapolation.CLAMP
+    );
 
-  const passStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(translateX.get(), [-SWIPE_THRESHOLD, 0], [1, 0], Extrapolation.CLAMP),
-  }));
+    return {
+      transform: [
+        { scale: 1 - DEPTH_SCALE * (1 - progress) },
+        { translateY: DEPTH_OFFSET * (1 - progress) },
+      ],
+    };
+  });
+
+  // El sello crece un poco a la vez que aparece: se lee como un tampón que baja
+  // sobre la tarjeta, no como un texto que se enciende.
+  const likeStyle = useAnimatedStyle(() => {
+    const progress = interpolate(
+      translateX.get(),
+      [0, SWIPE_THRESHOLD],
+      [0, 1],
+      Extrapolation.CLAMP
+    );
+    return {
+      opacity: progress,
+      transform: [{ rotate: '-10deg' }, { scale: 0.85 + 0.15 * progress }],
+    };
+  });
+
+  const passStyle = useAnimatedStyle(() => {
+    const progress = interpolate(
+      translateX.get(),
+      [-SWIPE_THRESHOLD, 0],
+      [1, 0],
+      Extrapolation.CLAMP
+    );
+    return {
+      opacity: progress,
+      transform: [{ rotate: '10deg' }, { scale: 0.85 + 0.15 * progress }],
+    };
+  });
 
   // Se pintan del fondo hacia delante: la superior es la última y queda encima.
   const stack = profiles.slice(0, VISIBLE_CARDS).reverse();
@@ -193,7 +232,7 @@ export function SwipeDeck({
 
           if (depth > 0) {
             return (
-              <View
+              <Animated.View
                 key={profile.id}
                 // Se pintan detrás y no se pueden decidir todavía: para un
                 // lector de pantalla solo son ruido delante de la tarjeta real.
@@ -201,16 +240,24 @@ export function SwipeDeck({
                 style={[
                   styles.card,
                   styles.cardBehind,
-                  { transform: [{ scale: 1 - depth * 0.04 }, { translateY: depth * 14 }] },
+                  depth === 1
+                    ? nextStyle
+                    : {
+                        transform: [
+                          { scale: 1 - depth * DEPTH_SCALE },
+                          { translateY: depth * DEPTH_OFFSET },
+                        ],
+                      },
                 ]}>
                 <ProfileCard profile={profile} viewerSpecialties={viewerSpecialties} />
-              </View>
+              </Animated.View>
             );
           }
 
           return (
             <GestureDetector key={profile.id} gesture={pan}>
-              <Animated.View style={[styles.card, cardStyle]}>
+              <Animated.View
+                style={[styles.card, styles.cardTop, { boxShadow: elevation.raised }, cardStyle]}>
                 <ProfileCard profile={profile} viewerSpecialties={viewerSpecialties} />
 
                 <Animated.View
@@ -265,6 +312,9 @@ const styles = StyleSheet.create({
   cardBehind: {
     pointerEvents: 'none',
   },
+  cardTop: {
+    borderRadius: Radii.card,
+  },
   badge: {
     position: 'absolute',
     pointerEvents: 'none',
@@ -272,14 +322,12 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
     borderRadius: Radii.medium,
-    borderWidth: 2,
+    borderWidth: Stroke.strong,
   },
   badgeLike: {
     left: Spacing.four,
-    transform: [{ rotate: '-10deg' }],
   },
   badgePass: {
     right: Spacing.four,
-    transform: [{ rotate: '10deg' }],
   },
 });

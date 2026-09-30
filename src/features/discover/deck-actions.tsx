@@ -7,9 +7,11 @@
  */
 
 import { Pressable, StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radii, Spacing } from '@/constants/theme';
+import { Control, Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
+import { usePressScale } from '@/hooks/use-press-scale';
 import { useTheme } from '@/hooks/use-theme';
 
 import type { Decision } from '@/data';
@@ -55,26 +57,31 @@ function ActionButton({
   onPress: () => void;
 }) {
   const theme = useTheme();
+  const press = usePressScale();
   const background = tone === 'danger' ? theme.dangerSoft : theme.tealSoft;
   const color = tone === 'danger' ? theme.danger : theme.teal;
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityHint={hint}
-      accessibilityState={{ disabled }}
-      disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.button,
-        { backgroundColor: background, borderColor: color },
-        (pressed || disabled) && styles.buttonDimmed,
-      ]}>
-      <ThemedText type="label" style={{ color }}>
-        {label}
-      </ThemedText>
-    </Pressable>
+    <Animated.View style={[styles.slot, press.style]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityHint={hint}
+        accessibilityState={{ disabled }}
+        disabled={disabled}
+        onPress={onPress}
+        onPressIn={press.onPressIn}
+        onPressOut={press.onPressOut}
+        style={({ pressed }) => [
+          styles.button,
+          { backgroundColor: background, borderColor: color },
+          disabled ? styles.disabled : pressed && styles.pressed,
+        ]}>
+        <ThemedText type="label" style={{ color }}>
+          {label}
+        </ThemedText>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -83,14 +90,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.three,
   },
-  button: {
+  slot: {
     flex: 1,
-    alignItems: 'center',
-    paddingVertical: Spacing.three,
-    borderRadius: Radii.pill,
-    borderWidth: StyleSheet.hairlineWidth,
   },
-  buttonDimmed: {
-    opacity: 0.55,
+  button: {
+    minHeight: Control.button,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: Radii.pill,
+    borderWidth: Stroke.hairline,
+  },
+  pressed: {
+    opacity: Opacity.pressed,
+  },
+  disabled: {
+    opacity: Opacity.disabled,
   },
 });

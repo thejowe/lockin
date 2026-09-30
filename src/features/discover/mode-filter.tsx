@@ -9,7 +9,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radii, Spacing } from '@/constants/theme';
+import { HitSlop, Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
 import { modeLabel } from '@/features/profile';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -48,7 +48,7 @@ export function ModeFilter({
             accessibilityState={{ selected }}
             // El chip mide 32 px de alto: el hitSlop lo lleva a los 44 mínimos
             // sin cambiar cómo se ve la fila de filtros.
-            hitSlop={{ top: 6, bottom: 6 }}
+            hitSlop={HitSlop.chip}
             onPress={() => onChange(filter.value)}
             style={({ pressed }) => [
               styles.chip,
@@ -78,9 +78,9 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
     borderRadius: Radii.pill,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: Stroke.hairline,
   },
   chipPressed: {
-    opacity: 0.7,
+    opacity: Opacity.pressed,
   },
 });

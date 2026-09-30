@@ -11,14 +11,30 @@
  * hay, y llega justo cuando la persona decide si abre el chat o cierra el modal.
  * No cambia nada del match — ya está creado, y sigue siendo un like recíproco
  * (ver `complement.ts`).
+ *
+ * Entrada: el velo funde (`animationType="fade"` del propio Modal) y la tarjeta
+ * sube un poco y crece desde el 92 % con el muelle `pop` — un solo rebote
+ * corto, lo justo para que el match se sienta como un acontecimiento y no como
+ * un aviso. Con «reducir movimiento» la tarjeta aparece sin recorrido.
  */
 
 import { Modal, StyleSheet, View } from 'react-native';
+import Animated, { withSpring, withTiming } from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
-import { MaxContentWidth, Radii, Spacing } from '@/constants/theme';
+import {
+  Duration,
+  Elevation,
+  MaxContentWidth,
+  Radii,
+  ScrimAlpha,
+  Spacing,
+  Springs,
+  Stroke,
+} from '@/constants/theme';
 import { ProfileAvatar, modeLabel, specialtyLabel } from '@/features/profile';
-import { useTheme } from '@/hooks/use-theme';
+import { useReduceMotion } from '@/hooks/use-reduce-motion';
+import { useTheme, useThemeName } from '@/hooks/use-theme';
 
 import { ActionButton } from './action-button';
 import { complementWith } from './complement';
@@ -26,6 +42,21 @@ import { complementWith } from './complement';
 import type { MatchEvent } from './use-deck';
 
 import type { Specialty } from '@/data';
+
+/** Entrada de la tarjeta: sube 16 y crece desde 0.92, con el muelle `pop`. */
+function popIn() {
+  'worklet';
+  return {
+    initialValues: { opacity: 0, transform: [{ translateY: 16 }, { scale: 0.92 }] },
+    animations: {
+      opacity: withTiming(1, { duration: Duration.fast }),
+      transform: [
+        { translateY: withSpring(0, Springs.pop) },
+        { scale: withSpring(1, Springs.pop) },
+      ],
+    },
+  };
+}
 
 export function MatchModal({
   event,
@@ -41,6 +72,8 @@ export function MatchModal({
   viewerSpecialties?: Specialty[];
 }) {
   const theme = useTheme();
+  const elevation = Elevation[useThemeName()];
+  const reduceMotion = useReduceMotion();
   const complement = event ? complementWith(event.profile, viewerSpecialties) : [];
 
   return (
@@ -51,12 +84,17 @@ export function MatchModal({
       // Android: el botón atrás cierra el modal, no la pantalla de debajo.
       onRequestClose={onDismiss}>
       {event ? (
-        <View style={[styles.backdrop, { backgroundColor: theme.background + 'F2' }]}>
-          <View
+        <View style={[styles.backdrop, { backgroundColor: theme.background + ScrimAlpha }]}>
+          <Animated.View
             accessibilityViewIsModal
+            entering={reduceMotion ? undefined : popIn}
             style={[
               styles.card,
-              { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+              {
+                backgroundColor: theme.backgroundElement,
+                borderColor: theme.border,
+                boxShadow: elevation.overlay,
+              },
             ]}>
             <ThemedText type="label" themeColor="teal">
               Modo {modeLabel(event.match.mode)}
@@ -83,7 +121,7 @@ export function MatchModal({
               <ActionButton label="Abrir chat" onPress={() => onOpenChat(event.match.id)} />
               <ActionButton label="Seguir descubriendo" variant="secondary" onPress={onDismiss} />
             </View>
-          </View>
+          </Animated.View>
         </View>
       ) : null}
     </Modal>
@@ -110,7 +148,7 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     padding: Spacing.four,
     borderRadius: Radii.card,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: Stroke.hairline,
   },
   identity: {
     alignItems: 'center',

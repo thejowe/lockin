@@ -19,6 +19,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { LoadingState, MessageState } from '@/components/state-view';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useQuery, useRepositories } from '@/data';
@@ -72,21 +73,13 @@ export default function DiscoverScreen() {
 
           <View style={styles.deck}>
             {loading ? (
-              <Centered>
-                <ThemedText type="body" themeColor="textSecondary">
-                  Buscando perfiles…
-                </ThemedText>
-              </Centered>
+              <LoadingState label="Buscando perfiles…" />
             ) : error && !cards?.length ? (
-              <Centered>
-                <ThemedText type="subtitle" style={styles.centeredText}>
-                  No hemos podido cargar el deck
-                </ThemedText>
-                <ThemedText type="body" themeColor="textSecondary" style={styles.centeredText}>
-                  Inténtalo otra vez en un momento.
-                </ThemedText>
+              <MessageState
+                title="No hemos podido cargar el deck"
+                body="Inténtalo otra vez en un momento.">
                 <ActionButton label="Reintentar" onPress={refresh} />
-              </Centered>
+              </MessageState>
             ) : cards && cards.length > 0 ? (
               <SwipeDeck profiles={cards} onDecide={decide} viewerSpecialties={viewerSpecialties} />
             ) : (
@@ -116,10 +109,6 @@ export default function DiscoverScreen() {
   );
 }
 
-function Centered({ children }: { children: React.ReactNode }) {
-  return <View style={styles.centered}>{children}</View>;
-}
-
 const styles = StyleSheet.create({
   root: {
     flex: 1,
@@ -142,15 +131,5 @@ const styles = StyleSheet.create({
   },
   deck: {
     flex: 1,
-  },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.three,
-    paddingHorizontal: Spacing.four,
-  },
-  centeredText: {
-    textAlign: 'center',
   },
 });
