@@ -9,7 +9,7 @@
 
 import '@/global.css';
 
-import { Platform } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 
 /**
  * Paleta de marca. Los cinco tokens de `CONCEPTO.md` (fondo, tinta, latón,
@@ -162,12 +162,95 @@ export const Radii = {
   pill: 999,
 } as const;
 
+/** Grosores de trazo. `strong` solo para sellos que tienen que leerse de un vistazo. */
+export const Stroke = {
+  hairline: StyleSheet.hairlineWidth,
+  strong: 2,
+} as const;
+
+/**
+ * Medidas de control. 44 es el mínimo táctil (HIG / WCAG 2.5.8): nada que se
+ * pulse queda por debajo, aunque se dibuje más pequeño y lo complete `HitSlop`.
+ */
+export const Control = {
+  /** Mínimo táctil: botones de icono, chips con hitSlop, filas compactas. */
+  minTouch: 44,
+  /** Campo de texto de una línea. */
+  field: 48,
+  /** Botón de acción (píldora). */
+  button: 52,
+  /** Campo de texto multilínea: dos líneas y media de cuerpo, más relleno. */
+  textArea: 88,
+} as const;
+
+/** Ampliaciones del área táctil para controles que se dibujan por debajo de 44. */
+export const HitSlop = {
+  /** Chip de 36 de alto → 44 táctiles sin engordarlo. */
+  chip: { top: 6, bottom: 6 },
+  /** Texto-botón en línea (sugerencias, pestañas web). */
+  inline: { top: 8, bottom: 8 },
+} as const;
+
+/** Opacidades de estado. Una sola escala para que todo se apague igual. */
+export const Opacity = {
+  /** Mientras el dedo está encima. */
+  pressed: 0.85,
+  /** Control inactivo: se ve, se lee, no invita. */
+  disabled: 0.45,
+} as const;
+
+/**
+ * Elevación. La marca es plana y editorial: la sombra no decora, solo separa lo
+ * que flota (la tarjeta del deck, el modal de match) de lo que está debajo.
+ * Tinta de la paleta con alfa, nunca negro puro sobre el fondo claro.
+ */
+export const Elevation = {
+  light: {
+    raised: '0px 1px 2px rgba(27, 35, 30, 0.06), 0px 10px 24px rgba(27, 35, 30, 0.08)',
+    overlay: '0px 2px 4px rgba(27, 35, 30, 0.08), 0px 24px 48px rgba(27, 35, 30, 0.16)',
+  },
+  dark: {
+    raised: '0px 1px 2px rgba(0, 0, 0, 0.35), 0px 10px 24px rgba(0, 0, 0, 0.35)',
+    overlay: '0px 2px 4px rgba(0, 0, 0, 0.4), 0px 24px 48px rgba(0, 0, 0, 0.5)',
+  },
+} as const satisfies Record<ThemeName, Record<string, string>>;
+
+/** Alfa en hex que se añade a `background` para el velo detrás de un modal. */
+export const ScrimAlpha = 'F2';
+
 /** Duraciones de animación, en ms. */
 export const Duration = {
   fast: 140,
   base: 220,
   slow: 360,
 } as const;
+
+/**
+ * Curvas cúbicas (x1, y1, x2, y2) para `Easing.bezier`. Nada de `ease-in` para
+ * entrar: lo que aparece arranca rápido y frena (`out`); lo que ya está en
+ * pantalla y se desplaza, acelera y frena (`inOut`).
+ */
+export const Curves = {
+  out: [0.23, 1, 0.32, 1],
+  inOut: [0.77, 0, 0.175, 1],
+} as const;
+
+/**
+ * Muelles de Reanimated. Se usan donde el movimiento responde a la mano o tiene
+ * que poder interrumpirse a medias: un muelle hereda la velocidad que lleva, una
+ * duración fija no.
+ */
+export const Springs = {
+  /** Vuelta al sitio de una tarjeta soltada sin decidir: firme, sin bamboleo. */
+  settle: { damping: 18, stiffness: 220, mass: 0.6 },
+  /** Entrada con presencia (el match): un solo rebote corto. */
+  pop: { damping: 15, stiffness: 190, mass: 0.8 },
+  /** Respuesta al toque de un botón: inmediata al bajar, suave al soltar. */
+  press: { damping: 22, stiffness: 420, mass: 0.5 },
+} as const;
+
+/** Escala de un control mientras se pulsa. Sutil: se nota en el dedo, no a la vista. */
+export const PressScale = 0.97;
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;

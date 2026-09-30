@@ -35,7 +35,7 @@ import { useTheme } from '@/hooks/use-theme';
 
 import { DeckActions } from './deck-actions';
 import { ProfileCard } from './profile-card';
-import { useReduceMotion } from './use-reduce-motion';
+import { useReduceMotion } from '@/hooks/use-reduce-motion';
 
 import type { Decision, Profile, Specialty } from '@/data';
 

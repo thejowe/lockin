@@ -18,7 +18,7 @@ import { renderHook, waitFor } from '@testing-library/react-native';
 import { act } from 'react';
 import { AccessibilityInfo } from 'react-native';
 
-import { useReduceMotion } from './use-reduce-motion';
+import { useReduceMotion } from '@/hooks/use-reduce-motion';
 
 /** El handler que el hook dejó suscrito a `reduceMotionChanged`. */
 function subscribedHandler(): (enabled: boolean) => void {

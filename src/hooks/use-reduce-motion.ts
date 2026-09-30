@@ -6,8 +6,8 @@
  * de responder al dedo — arrastrar una tarjeta es manipulación directa, no
  * animación —, así que esto solo apaga los recorridos que la app se inventa.
  *
- * Vive aquí porque `swipe-deck` es hoy lo único animado de la app. En cuanto
- * haya una segunda pantalla con movimiento, su sitio es `src/hooks/`.
+ * Lo consumen el deck, los botones con press state y la entrada del match: todo
+ * lo que se mueve en la app pasa por aquí.
  *
  * Se consulta `AccessibilityInfo` de React Native y no `useReducedMotion()` de
  * Reanimated a propósito: el mock oficial de Reanimated que carga `jest.setup.js`
