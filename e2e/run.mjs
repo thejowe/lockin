@@ -112,16 +112,24 @@ assert(
 );
 // PostgREST >= v16.3 trae el arreglo de PostgREST/postgrest#5196, la causa del
 // `PGRST303` intermitente («JWT issued at future») que tumbó el E2E: tras un
-// rato sin tráfico su primera petición valida contra un reloj viejo. La CLI
-// 2.116.0 de CI levanta v16.1 y la 2.117.0 (la última estable) v16.2, así que
-// `supabase/setup-cli` no la trae y se fija la imagen desde aquí. Cuando una CLI
-// estable levante >= v16.3 por defecto, esta fijación sobra y se retira.
-// Vacía, no se fija nada y el Supabase local usa lo que traiga la CLI.
-const postgrestVersion = process.env.E2E_POSTGREST_VERSION ?? 'v16.3';
+// rato sin tráfico su primera petición valida contra un reloj viejo. Del
+// 2026-09-19 al 2026-09-26 se fijó aquí la imagen a v16.3 porque ninguna CLI
+// estable la traía; la 2.118.0 ya la levanta por defecto y la fijación se
+// retiró. Queda un suelo: sin E2E_POSTGREST_VERSION, `prepare` falla si la CLI
+// levanta algo anterior a v16.3, para que bajar de CLI no devuelva el bug en
+// silencio. Con una etiqueta (p. ej. `v16.2`) se fija esa imagen exacta y no
+// hay suelo: es la forma de ver actuar la repetición de `resilient-fetch.ts`.
+const postgrestVersion = process.env.E2E_POSTGREST_VERSION ?? '';
 assert(
   postgrestVersion === '' || /^v\d+\.\d+(\.\d+)?$/.test(postgrestVersion),
   'E2E_POSTGREST_VERSION debe ser una etiqueta tipo v16.3, o vacía para no fijar nada'
 );
+const postgrestFloor = [16, 3];
+/** `[16, 3, 0]` de `…/postgrest:v16.3`; `null` si la etiqueta no es una versión. */
+function postgrestTag(image) {
+  const match = /:v(\d+)\.(\d+)(?:\.(\d+))?$/.exec(image);
+  return match ? [Number(match[1]), Number(match[2]), Number(match[3] ?? 0)] : null;
+}
 // Nombres que la CLI da a los contenedores: `supabase_<servicio>_<project_id>`,
 // con el `project_id` que `prepare` escribe en el config.
 const restContainer = 'supabase_rest_lockin-e2e';
@@ -504,8 +512,8 @@ if (command === 'prepare') {
     stdio: ['ignore', 'pipe', 'inherit'],
   });
   console.log('PostgREST del Supabase local: ' + restImage);
-  // Sin esta guarda, que la CLI ignorase el archivo dejaría el E2E en la v16.1
-  // de siempre y nadie se enteraría de que la causa del PGRST303 sigue puesta.
+  // Sin estas guardas, que la CLI ignorase el archivo o que alguien bajase de
+  // CLI dejaría el E2E en un PostgREST con el bug y nadie se enteraría.
   if (postgrestVersion !== '') {
     assert(
       restImage.endsWith(':' + postgrestVersion),
@@ -513,6 +521,17 @@ if (command === 'prepare') {
         restImage +
         ' y se pidió ' +
         postgrestVersion
+    );
+  } else {
+    const tag = postgrestTag(restImage);
+    assert(
+      tag &&
+        (tag[0] > postgrestFloor[0] || (tag[0] === postgrestFloor[0] && tag[1] >= postgrestFloor[1])),
+      'PostgREST corre como ' +
+        restImage +
+        ', anterior a v' +
+        postgrestFloor.join('.') +
+        ' (PGRST303, PostgREST/postgrest#5196): sube la CLI o fija E2E_POSTGREST_VERSION'
     );
   }
   supabase(['db', 'reset', '--local']);

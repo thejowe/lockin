@@ -85,7 +85,9 @@ jobs:
       - uses: supabase/setup-cli@v3
         with:
           # v3 instala desde npm: fijar la versión evita autodetección o latest.
-          version: 2.116.0
+          # 2.118.0 es la primera estable que levanta PostgREST v16.3 (arreglo
+          # del PGRST303); `run.mjs prepare` falla si baja de ahí.
+          version: 2.118.0
       - name: Install Maestro
         run: |
           curl -fsSL https://github.com/mobile-dev-inc/Maestro/releases/download/cli-2.10.0/maestro.zip -o /tmp/maestro.zip

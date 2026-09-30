@@ -82,7 +82,7 @@ configurados en el mismo entorno). Requisitos:
 - Node 22.13 o posterior en la rama 22; `npm ci` en el checkout.
 - Java 17, Android SDK 36, herramientas de build y un emulador API 36 iniciado.
 - Docker operativo y puertos locales de Supabase libres (54321 y adyacentes).
-- Supabase CLI **2.116.0** y Maestro **2.10.0** en PATH.
+- Supabase CLI **2.118.0** (o posterior: `prepare` exige PostgREST ≥ v16.3) y Maestro **2.10.0** en PATH.
 - Un único Android dedicado visible en `adb devices`. Se instala
   `app.lockin.mobile` y se borran sus datos al inicio; no usar tu instalación personal.
 
@@ -185,14 +185,14 @@ aquí convertiría un intermitente conocido en un rojo permanente.
 | Rastro | Qué es | De quién |
 |---|---|---|
 | `System UI isn't responding` en `window.xml` | ANR de OTRO proceso tapando la pantalla: la aserción no llegó a mirar la app. `parseAnrDialog` lo detecta por `android:id/aerr_*` y lo manda a `runner` | del emulador |
-| `code: 'PGRST303'`, `JWT issued at future` | Bug de PostgREST (PostgREST/postgrest#5196): tras un rato sin tráfico, su **primera** petición valida el `iat` contra un reloj interno viejo y rechaza un token recién firmado; la siguiente con el mismo token pasa. **No** es desfase entre contenedores ni el `iat` al segundo (hacen falta 30 s). Arreglado en PostgREST v16.3 / v14.18; la CLI 2.116.0 de CI levanta v16.1 | de PostgREST |
+| `code: 'PGRST303'`, `JWT issued at future` | Bug de PostgREST (PostgREST/postgrest#5196): tras un rato sin tráfico, su **primera** petición valida el `iat` contra un reloj interno viejo y rechaza un token recién firmado; la siguiente con el mismo token pasa. **No** es desfase entre contenedores ni el `iat` al segundo (hacen falta 30 s). Arreglado en PostgREST v16.3 / v14.18, que es lo que levanta la CLI 2.118.0 de CI (la 2.116.0 levantaba v16.1) | de PostgREST |
 
 La app lo absorbe repitiendo la petición una vez (`src/data/supabase/resilient-fetch.ts`,
 que deja `[lockin] PostgREST rechazó el token con PGRST303; se repite la
-petición una vez` en el logcat). `prepare` fija la imagen de PostgREST a
-`E2E_POSTGREST_VERSION` (por defecto `v16.3`) escribiendo
-`supabase/.temp/rest-version` y **falla** si la CLI no la aplica, así que en CI
-ya no debería aparecer. Si aparece, o si aparece ese `warn`, es un dato:
+petición una vez` en el logcat). `prepare` **falla** si el PostgREST que
+levanta la CLI es anterior a v16.3, así que en CI ya no debería aparecer. Para
+verla actuar, `E2E_POSTGREST_VERSION=v16.2` fija esa imagen exacta (escribe
+`supabase/.temp/rest-version` y falla si la CLI no la aplica) y quita el suelo. Si aparece, o si aparece ese `warn`, es un dato:
 `containers/resumen.txt` dice qué imagen corría.
 
 ## Control negativo: el mismo caso con un APK sin credenciales
