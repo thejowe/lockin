@@ -81,4 +81,14 @@ describe('Button', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/matches');
     expect(shapeOf('Volver a Matches')).toMatchObject({ backgroundColor: Colors.light.brass });
   });
+
+  it('la píldora no se aplana y lleva opacidad explícita también en reposo', async () => {
+    // Si la opacidad solo existiera al pulsar, Fabric aplanaría la vista en
+    // reposo y revienta al reubicar el texto (E2E de registro, run 36711286245).
+    await render(<Button label="Guardar" onPress={() => {}} />);
+
+    const shape = screen.getByText('Guardar').parent;
+    expect(shape?.props.collapsable).toBe(false);
+    expect(shapeOf('Guardar').opacity).toBe(1);
+  });
 });

@@ -61,7 +61,10 @@ export function MatchRow({
           // La forma va aquí y no en el `style` del Pressable: `Link asChild`
           // en web descarta el estilo-función, y la fila salía sin fondo y con
           // el avatar apilado encima del nombre.
+          // `collapsable={false}`: que Fabric no la aplane al cambiar de estado
+          // (ver `src/components/button.tsx`).
           <Animated.View
+            collapsable={false}
             style={[
               styles.root,
               {

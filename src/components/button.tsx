@@ -15,6 +15,13 @@
  * botón va en una vista interna y no en el `style` del `Pressable`: `Link
  * asChild` en web descarta el estilo-función del hijo, y el botón se quedaba sin
  * fondo — texto blanco sobre el fondo claro, ilegible.
+ *
+ * Esa vista interna lleva `collapsable={false}` y una opacidad siempre
+ * explícita. Si la opacidad solo aparece al pulsar, Fabric (Android, nueva
+ * arquitectura) aplana la vista cuando no la tiene y la desaplana cuando sí, y
+ * al reubicar el texto entre una y otra revienta el montaje («addViewAt: …
+ * already has a parent») y la app se queda en blanco. Lo cazó el E2E de
+ * registro (run 36711286245) al pulsar «Guardar y continuar».
  */
 
 import { Link, type Href } from 'expo-router';
@@ -65,6 +72,7 @@ export function Button({
       onPressOut={press.onPressOut}>
       {({ pressed }) => (
         <View
+          collapsable={false}
           style={[
             styles.button,
             primary
@@ -73,7 +81,7 @@ export function Button({
                   borderWidth: Stroke.hairline,
                   borderColor: variant === 'danger' ? theme.danger : theme.border,
                 },
-            disabled ? styles.disabled : pressed && styles.pressed,
+            { opacity: disabled ? Opacity.disabled : pressed ? Opacity.pressed : 1 },
           ]}>
           <ThemedText
             type="bodyStrong"
@@ -105,11 +113,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: Spacing.four,
     borderRadius: Radii.pill,
-  },
-  pressed: {
-    opacity: Opacity.pressed,
-  },
-  disabled: {
-    opacity: Opacity.disabled,
   },
 });
