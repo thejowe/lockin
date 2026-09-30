@@ -114,7 +114,7 @@ tocar lógica ni datos.
   ([run 36711286542](https://github.com/thejowe/lockin/actions/runs/36711286542))
   y «Schema drift»
   ([run 36711285999](https://github.com/thejowe/lockin/actions/runs/36711285999))
-  en verde. «E2E Android» (registro) salió rojo en [run 36711286245](https://github.com/thejowe/lockin/actions/runs/36711286245) por un fallo real del pulido: Fabric aplanaba la vista interna de `Button` y la app se quedaba en blanco tras «Guardar y continuar». Arreglado en `a72025f`; E2E sobre ese commit: ver abajo. El job «Formato» venía rojo desde `d449df9`
+  en verde. «E2E Android» (registro) salió rojo en [run 36711286245](https://github.com/thejowe/lockin/actions/runs/36711286245) por un fallo real del pulido: Fabric aplanaba la vista interna de `Button` y la app se quedaba en blanco tras «Guardar y continuar». Arreglado en `a72025f`. Sobre `02bb9e3`, los tres en verde: «CI» ([run 36714020781](https://github.com/thejowe/lockin/actions/runs/36714020781), «Formato» incluido), «Schema drift» ([run 36714019745](https://github.com/thejowe/lockin/actions/runs/36714019745)) y «E2E Android» con registro, supabase y mock ([run 36714019899](https://github.com/thejowe/lockin/actions/runs/36714019899)). El job «Formato» venía rojo desde `d449df9`
   por `e2e/run.mjs`; se arregla en `daa18e5` (solo formato).
 - [x] **[Claude]** Capturas «antes» (`42fa260`) y «después» en web a 390×844,
   claro y oscuro, reiniciando `expo start` antes de cada tanda: dieciséis
