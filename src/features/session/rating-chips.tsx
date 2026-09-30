@@ -46,7 +46,7 @@ export function RatingChips({
               {
                 backgroundColor: checked ? theme.brass : theme.backgroundElement,
                 borderColor: theme.border,
-                opacity: disabled ? 0.6 : pressed ? Opacity.pressed : 1,
+                opacity: disabled ? Opacity.disabled : pressed ? Opacity.pressed : 1,
               },
             ]}>
             <ThemedText type="bodyStrong" style={{ color: checked ? theme.onAccent : theme.text }}>

@@ -197,8 +197,6 @@ export const Opacity = {
   pressed: 0.85,
   /** Control inactivo: se ve, se lee, no invita. */
   disabled: 0.45,
-  /** Metadato sobre relleno de acento (la hora en una burbuja propia). */
-  meta: 0.75,
 } as const;
 
 /**

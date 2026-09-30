@@ -16,7 +16,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
+import { Control, Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
 import { SessionConflictError, SessionExpiredError, useRepositories } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -273,7 +273,7 @@ function CardButton({
         {
           backgroundColor: tone === 'accent' ? theme.brass : 'transparent',
           borderColor: theme.teal,
-          opacity: disabled ? 0.6 : pressed ? Opacity.pressed : 1,
+          opacity: disabled ? Opacity.disabled : pressed ? Opacity.pressed : 1,
         },
       ]}>
       <ThemedText
@@ -296,7 +296,10 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: Spacing.two },
   hintText: { flexShrink: 1 },
   button: {
+    // Compacto para caber en la tarjeta, pero nunca por debajo del mínimo táctil.
+    minHeight: Control.minTouch,
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
     borderRadius: Radii.pill,

@@ -72,7 +72,10 @@ export function OptionCard<T extends string>({
         {
           backgroundColor: selected ? theme.brassSoft : theme.backgroundElement,
           borderColor: selected ? theme.brass : theme.border,
-          borderWidth: selected ? 1.5 : Stroke.hairline,
+          // El trazo no cambia de grosor al seleccionar: engordarlo desplazaba el
+          // contenido un píxel. El refuerzo es un anillo interior, que no ocupa.
+          borderWidth: Stroke.hairline,
+          boxShadow: selected ? `inset 0 0 0 1px ${theme.brass}` : undefined,
           opacity: pressed ? Opacity.pressed : 1,
         },
       ]}>
