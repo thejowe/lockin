@@ -15,10 +15,12 @@
 
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
+import { Button } from '@/components/button';
+import { LoadingState, MessageState } from '@/components/state-view';
 import { ThemedText } from '@/components/themed-text';
-import { MaxContentWidth, Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
+import { MaxContentWidth, Radii, Spacing, Stroke } from '@/constants/theme';
 import { isInJoinWindow } from '@/data';
 import { ProfileAvatar } from '@/features/chat';
 import {
@@ -83,12 +85,10 @@ export default function SessionScreen() {
 
   if (loading && !session) {
     return (
-      <Centered>
+      <View style={[styles.root, { backgroundColor: theme.background }]}>
         {screenOptions}
-        <ThemedText type="body" themeColor="textSecondary">
-          Cargando la sesión…
-        </ThemedText>
-      </Centered>
+        <LoadingState label="Cargando la sesión…" />
+      </View>
     );
   }
 
@@ -184,7 +184,7 @@ export default function SessionScreen() {
               </ThemedText>
             )}
 
-            <ActionButton label="Volver al chat" onPress={() => router.back()} />
+            <Button label="Volver al chat" onPress={() => router.back()} style={styles.stretch} />
           </View>
         ) : phase ? (
           <>
@@ -198,7 +198,9 @@ export default function SessionScreen() {
               <ThemedText type="label" themeColor="textSecondary">
                 {phaseTitle(phase, session.blocks)}
               </ThemedText>
-              <ThemedText type="display">{formatCountdown(phase.remainingMs)}</ThemedText>
+              <ThemedText type="display" style={styles.countdown}>
+                {formatCountdown(phase.remainingMs)}
+              </ThemedText>
               <View style={styles.blocks}>
                 {Array.from({ length: session.blocks }, (_, index) => (
                   <View
@@ -225,15 +227,15 @@ export default function SessionScreen() {
                 <ThemedText type="body" themeColor="danger">
                   Saldrás antes de acabar; contará como abandono.
                 </ThemedText>
-                <ActionButton label="Salir de la sesión" tone="danger" onPress={leave} />
-                <ActionButton
+                <Button label="Salir de la sesión" variant="danger" onPress={leave} />
+                <Button
                   label="Seguir"
-                  tone="quiet"
+                  variant="secondary"
                   onPress={() => setConfirmingLeave(false)}
                 />
               </View>
             ) : (
-              <ActionButton label="Salir" tone="quiet" onPress={() => setConfirmingLeave(true)} />
+              <Button label="Salir" variant="secondary" onPress={() => setConfirmingLeave(true)} />
             )}
           </>
         ) : null}
@@ -242,10 +244,7 @@ export default function SessionScreen() {
   );
 }
 
-function Centered({ children }: { children: React.ReactNode }) {
-  return <View style={styles.centered}>{children}</View>;
-}
-
+/** Aviso de pantalla completa: la sesión no existe, no está aceptada o aún no abre. */
 function Notice({
   title,
   detail,
@@ -257,53 +256,15 @@ function Notice({
   onBack: () => void;
   children?: React.ReactNode;
 }) {
-  return (
-    <Centered>
-      {children}
-      <ThemedText type="subtitle" style={styles.centeredText}>
-        {title}
-      </ThemedText>
-      {detail && (
-        <ThemedText type="body" themeColor="textSecondary" style={styles.centeredText}>
-          {detail}
-        </ThemedText>
-      )}
-      <ActionButton label="Volver al chat" onPress={onBack} />
-    </Centered>
-  );
-}
-
-function ActionButton({
-  label,
-  onPress,
-  tone = 'accent',
-}: {
-  label: string;
-  onPress: () => void;
-  tone?: 'accent' | 'danger' | 'quiet';
-}) {
   const theme = useTheme();
-  const background =
-    tone === 'accent' ? theme.brass : tone === 'danger' ? theme.danger : 'transparent';
-  const color = tone === 'quiet' ? theme.text : theme.onAccent;
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.action,
-        {
-          backgroundColor: background,
-          borderColor: theme.border,
-          opacity: pressed ? Opacity.pressed : 1,
-        },
-      ]}>
-      <ThemedText type="bodyStrong" style={{ color }}>
-        {label}
-      </ThemedText>
-    </Pressable>
+    <View style={[styles.root, { backgroundColor: theme.background }]}>
+      {children}
+      <MessageState eyebrow="Sesión Lock-In" eyebrowColor="teal" title={title} body={detail}>
+        <Button label="Volver al chat" onPress={onBack} />
+      </MessageState>
+    </View>
   );
 }
 
@@ -331,19 +292,7 @@ const styles = StyleSheet.create({
     borderWidth: Stroke.hairline,
   },
   confirm: { gap: Spacing.two },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.three,
-    paddingHorizontal: Spacing.four,
-  },
+  countdown: { fontVariant: ['tabular-nums'] },
+  stretch: { alignSelf: 'stretch' },
   centeredText: { textAlign: 'center' },
-  action: {
-    alignItems: 'center',
-    paddingVertical: Spacing.three,
-    paddingHorizontal: Spacing.four,
-    borderRadius: Radii.pill,
-    borderWidth: Stroke.hairline,
-  },
 });

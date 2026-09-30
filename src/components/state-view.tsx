@@ -26,10 +26,13 @@ import { useTheme } from '@/hooks/use-theme';
 
 export function LoadingState({
   label,
+  detail,
   style,
 }: {
   /** Qué se está cargando: «Buscando perfiles…», «Cargando la sesión…». */
   label: string;
+  /** Una línea más de contexto, si la espera la necesita. */
+  detail?: string;
   style?: StyleProp<ViewStyle>;
 }) {
   const theme = useTheme();
@@ -44,6 +47,11 @@ export function LoadingState({
       <ThemedText type="body" themeColor="textSecondary" style={styles.centered}>
         {label}
       </ThemedText>
+      {detail ? (
+        <ThemedText type="small" themeColor="textSecondary" style={styles.centered}>
+          {detail}
+        </ThemedText>
+      ) : null}
     </Animated.View>
   );
 }

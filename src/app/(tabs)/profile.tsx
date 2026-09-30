@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { LoadingState, MessageState } from '@/components/state-view';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useQuery, useRepositories, type ProfileInput } from '@/data';
@@ -73,20 +74,25 @@ export default function ProfileScreen() {
     refresh();
   }
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.root} edges={['top']}>
+        <LoadingState label="Cargando tu perfil…" />
+      </SafeAreaView>
+    );
+  }
 
   // Sin perfil no hay nada que enseñar. `index.tsx` ya redirige al onboarding,
   // así que esto solo se ve si alguien aterriza en la tab con la sesión a medias.
   if (!profile) {
     return (
       <SafeAreaView style={styles.root} edges={['top']}>
-        <View style={styles.empty}>
-          <ThemedText type="title">Todavía no tienes ficha</ThemedText>
-          <ThemedText type="body" themeColor="textSecondary">
-            Crea tu perfil para que la gente pueda encontrarte en el deck.
-          </ThemedText>
+        <MessageState
+          eyebrow="Perfil"
+          title="Todavía no tienes ficha"
+          body="Crea tu perfil para que la gente pueda encontrarte en el deck.">
           <PrimaryButton label="Crear perfil" onPress={() => router.replace('/mode')} />
-        </View>
+        </MessageState>
       </SafeAreaView>
     );
   }
@@ -150,11 +156,5 @@ const styles = StyleSheet.create({
   header: {
     gap: Spacing.two,
     paddingTop: Spacing.four,
-  },
-  empty: {
-    flex: 1,
-    justifyContent: 'center',
-    gap: Spacing.three,
-    paddingHorizontal: Spacing.four,
   },
 });

@@ -21,6 +21,13 @@ describe('LoadingState', () => {
   });
 });
 
+it('LoadingState añade la línea de contexto si la hay', async () => {
+  await render(<LoadingState label="Un momento…" detail="Aplicando el enlace." />);
+
+  expect(screen.getByText('Un momento…')).toBeVisible();
+  expect(screen.getByText('Aplicando el enlace.')).toBeVisible();
+});
+
 describe('MessageState', () => {
   it('pinta etiqueta, titular, cuerpo, detalle y acciones', async () => {
     await render(

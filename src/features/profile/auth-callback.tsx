@@ -26,10 +26,8 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { LoadingState, MessageState } from '@/components/state-view';
 
 import { describeAccountError } from './account-copy';
 import { completeAuthLink } from './account-gateway';
@@ -85,34 +83,15 @@ export function AuthCallback({
 
   if (error) {
     return (
-      <View style={styles.root}>
-        <ThemedText type="subtitle">Ese enlace no ha funcionado</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          {error}
-        </ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          Tu cuenta no ha cambiado. Puedes pedir otro correo desde tu perfil.
-        </ThemedText>
+      <MessageState
+        eyebrow="Cuenta"
+        title="Ese enlace no ha funcionado"
+        body={error}
+        detail="Tu cuenta no ha cambiado. Puedes pedir otro correo desde tu perfil.">
         <SecondaryButton label="Volver a mi perfil" onPress={onDone} />
-      </View>
+      </MessageState>
     );
   }
 
-  return (
-    <View style={styles.root}>
-      <ThemedText type="subtitle">Un momento…</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">
-        Estamos aplicando el enlace de tu correo.
-      </ThemedText>
-    </View>
-  );
+  return <LoadingState label="Un momento…" detail="Estamos aplicando el enlace de tu correo." />;
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    justifyContent: 'center',
-    gap: Spacing.three,
-    paddingHorizontal: Spacing.four,
-  },
-});

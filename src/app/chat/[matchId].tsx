@@ -11,23 +11,18 @@
  * suscribe a los cambios.
  */
 
-import { Link, Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { Fragment, useCallback, useMemo, useRef, useState } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  View,
-  type LayoutChangeEvent,
-} from 'react-native';
+import { ScrollView, StyleSheet, TextInput, View, type LayoutChangeEvent } from 'react-native';
 import {
   KeyboardAvoidingView,
   useWindowDimensions as useKeyboardWindowDimensions,
 } from 'react-native-keyboard-controller';
 
+import { Button } from '@/components/button';
+import { LoadingState, MessageState } from '@/components/state-view';
 import { ThemedText } from '@/components/themed-text';
-import { MaxContentWidth, Opacity, Radii, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 import {
   ConversationIntro,
   DayDivider,
@@ -126,11 +121,7 @@ export default function ChatScreen() {
         keyboardVerticalOffset={keyboardVerticalOffset(windowHeight, avoidingViewHeight)}
         onLayout={handleAvoidingViewLayout}>
         {loading && !match ? (
-          <Centered>
-            <ThemedText type="body" themeColor="textSecondary">
-              Cargando la conversación…
-            </ThemedText>
-          </Centered>
+          <LoadingState label="Cargando la conversación…" />
         ) : !match ? (
           <MissingMatch error={error} />
         ) : (
@@ -195,38 +186,18 @@ export default function ChatScreen() {
   );
 }
 
-function Centered({ children }: { children: React.ReactNode }) {
-  return <View style={styles.centered}>{children}</View>;
-}
-
 /** El id no resuelve: enlace roto, o el match ya no existe tras recargar el mock. */
 function MissingMatch({ error }: { error: Error | null }) {
-  const theme = useTheme();
-
   return (
-    <Centered>
-      <ThemedText type="subtitle" style={styles.centeredText}>
-        Esta conversación no está disponible
-      </ThemedText>
-      <ThemedText type="body" themeColor="textSecondary" style={styles.centeredText}>
-        {error
+    <MessageState
+      title="Esta conversación no está disponible"
+      body={
+        error
           ? 'Ha fallado la carga. Vuelve a tus matches y entra otra vez.'
-          : 'El match ya no existe. Los mensajes del MVP solo viven mientras la app está abierta.'}
-      </ThemedText>
-
-      <Link href="/matches" asChild>
-        <Pressable
-          accessibilityRole="button"
-          style={({ pressed }) => [
-            styles.backAction,
-            { backgroundColor: theme.brass, opacity: pressed ? Opacity.pressed : 1 },
-          ]}>
-          <ThemedText type="bodyStrong" style={{ color: theme.onAccent }}>
-            Volver a Matches
-          </ThemedText>
-        </Pressable>
-      </Link>
-    </Centered>
+          : 'El match ya no existe. Los mensajes del MVP solo viven mientras la app está abierta.'
+      }>
+      <Button label="Volver a Matches" href="/matches" />
+    </MessageState>
   );
 }
 
@@ -250,21 +221,6 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     paddingHorizontal: Spacing.three,
     paddingBottom: Spacing.three,
-  },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.three,
-    paddingHorizontal: Spacing.four,
-  },
-  centeredText: {
-    textAlign: 'center',
-  },
-  backAction: {
-    paddingVertical: Spacing.three,
-    paddingHorizontal: Spacing.four,
-    borderRadius: Radii.pill,
   },
   sendError: {
     paddingHorizontal: Spacing.three,

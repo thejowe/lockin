@@ -9,6 +9,8 @@
 import { Link, Stack, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { Button } from '@/components/button';
+import { LoadingState, MessageState } from '@/components/state-view';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Radii, Spacing } from '@/constants/theme';
 import { AgreementForbiddenError, AgreementModeError, useQuery, useRepositories } from '@/data';
@@ -39,18 +41,14 @@ export default function AgreementScreen() {
     <View style={[styles.root, { backgroundColor: theme.background }]}>
       <Stack.Screen options={{ title: 'Acuerdo de socios' }} />
       {matchQuery.loading || agreement.loading ? (
-        <Centered text="Cargando…" back={false} />
+        <LoadingState label="Cargando el acuerdo…" />
       ) : missing ? (
         <Centered title="Esta conversación no está disponible" text="El match ya no existe." />
       ) : blocked ? (
         <Centered text="El acuerdo es solo para matches de cofundador." />
       ) : agreement.error ? (
         <Centered text="No se ha podido cargar el acuerdo.">
-          <Pressable accessibilityRole="button" onPress={agreement.refresh}>
-            <ThemedText type="bodyStrong" style={{ color: theme.brass }}>
-              Reintentar
-            </ThemedText>
-          </Pressable>
+          <Button label="Reintentar" onPress={agreement.refresh} />
         </Centered>
       ) : (
         <ScrollView contentContainerStyle={styles.content}>
@@ -90,39 +88,25 @@ export default function AgreementScreen() {
   );
 }
 
+/** Aviso de pantalla completa. La salida por defecto es volver a Matches. */
 function Centered({
   title,
   text,
-  back = true,
   children,
 }: {
   title?: string;
   text: string;
-  back?: boolean;
   children?: React.ReactNode;
 }) {
-  const theme = useTheme();
   return (
-    <View style={styles.centered}>
-      {title && (
-        <ThemedText type="subtitle" style={styles.centeredText}>
-          {title}
-        </ThemedText>
-      )}
-      <ThemedText type="body" themeColor="textSecondary" style={styles.centeredText}>
-        {text}
-      </ThemedText>
+    <MessageState eyebrow="Acuerdo de socios" title={title} body={text}>
       {children}
-      {back && (
-        <Link href="/matches" asChild>
-          <Pressable accessibilityRole="link">
-            <ThemedText type="bodyStrong" style={{ color: theme.brass }}>
-              Volver a Matches
-            </ThemedText>
-          </Pressable>
-        </Link>
-      )}
-    </View>
+      <Button
+        label="Volver a Matches"
+        href="/matches"
+        variant={children ? 'secondary' : 'primary'}
+      />
+    </MessageState>
   );
 }
 
@@ -138,12 +122,4 @@ const styles = StyleSheet.create({
   notice: { borderRadius: Radii.medium, padding: Spacing.three },
   section: { gap: Spacing.two },
   back: { alignItems: 'center', paddingVertical: Spacing.three },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.two,
-    padding: Spacing.four,
-  },
-  centeredText: { textAlign: 'center' },
 });
