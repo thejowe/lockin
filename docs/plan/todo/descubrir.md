@@ -210,11 +210,11 @@ local sobre `83b338a` (incluye `9cfddac`), bundle regenerado con
 
 ### Pendiente del usuario
 
-- [ ] Aplicar `20260929000100_record_decision_deck_mode.sql` en
-      `grrzmzktrhksbttpbblg` por el SQL Editor. Se intentó desde la sesión con
-      el MCP de Supabase y el modo automático de Claude Code lo denegó
-      («Production Deploy»). **Hasta aplicarla, el job remoto de `Schema drift`
-      sale rojo y es deriva real** (cambia la huella de `record_decision`).
+- [x] Aplicar `20260929000100_record_decision_deck_mode.sql` en
+      `grrzmzktrhksbttpbblg`. **Aplicada el 2026-09-30 por el MCP de Supabase**
+      (a petición del usuario). Verificado en remoto: `record_decision(uuid,
+      decision, mode_preference)` es la única firma, SECURITY DEFINER,
+      `search_path=""`, EXECUTE solo `authenticated`.
 - [ ] [comprobador] Tras aplicarla: repetir el caso de Alba (onboarding
       «Cofundador», chip LOCK-IN, like a Alba → «MODO COMPAÑERO DE LOCK-IN» y
       sin tarjeta de acuerdo) contra **Supabase real**, y con mock sobre un APK

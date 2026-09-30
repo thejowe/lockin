@@ -2086,9 +2086,11 @@ Con esto, el bloque `datos` no tiene ninguna casilla abierta.
 
 ### Pendiente del usuario
 
-- [ ] Aplicar en `grrzmzktrhksbttpbblg`, por el SQL Editor y en este orden:
+- [x] Aplicar en `grrzmzktrhksbttpbblg`, en este orden:
       `20260929000100_record_decision_deck_mode.sql` (ver `descubrir.md`) y
-      `20260929000200_drop_discovery_deck_overload.sql`. Desde la sesión con el
-      MCP de Supabase el modo automático lo denegó («Production Deploy»). Hasta
-      entonces el job remoto de `Schema drift` sale **rojo y es deriva real**
-      (`record_decision` cambia de firma; la huella esperada pasa a 507 objetos).
+      `20260929000200_drop_discovery_deck_overload.sql`. **Aplicadas las dos el
+      2026-09-30 por el MCP de Supabase** (a petición del usuario). Verificado
+      en remoto: una sola `discovery_deck` (4 args, SECURITY INVOKER) y una sola
+      `record_decision` (3 args, SECURITY DEFINER), ambas con `search_path=""`
+      y EXECUTE solo `authenticated`. Schema drift remoto:
+      [run 36700031400](https://github.com/thejowe/lockin/actions/runs/36700031400).
