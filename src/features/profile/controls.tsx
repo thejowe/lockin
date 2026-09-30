@@ -7,8 +7,9 @@
 
 import { Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
+import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themed-text';
-import { Radii, Spacing } from '@/constants/theme';
+import { Control, HitSlop, Opacity, Radii, Spacing, Stroke, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import type { Option } from './catalog';
@@ -72,7 +73,7 @@ export function OptionCard<T extends string>({
           backgroundColor: selected ? theme.brassSoft : theme.backgroundElement,
           borderColor: selected ? theme.brass : theme.border,
           borderWidth: selected ? 1.5 : StyleSheet.hairlineWidth,
-          opacity: pressed ? 0.85 : 1,
+          opacity: pressed ? Opacity.pressed : 1,
         },
       ]}>
       <ThemedText type="bodyStrong" themeColor={selected ? 'brass' : 'text'}>
@@ -116,14 +117,14 @@ export function Chip({
       accessibilityLabel={accessibilityLabel}
       // El chip mide 36 px de alto: el hitSlop lo lleva a los 44 mínimos sin
       // engordarlo visualmente ni descuadrar la rejilla.
-      hitSlop={{ top: 6, bottom: 6 }}
+      hitSlop={HitSlop.chip}
       onPress={onPress}
       style={({ pressed }) => [
         styles.chip,
         {
           backgroundColor: selected ? theme.teal : theme.backgroundElement,
           borderColor: selected ? theme.teal : theme.border,
-          opacity: pressed ? 0.85 : 1,
+          opacity: pressed ? Opacity.pressed : 1,
         },
       ]}>
       <ThemedText type="smallBold" themeColor={selected ? 'onAccent' : 'textSecondary'}>
@@ -254,7 +255,7 @@ function StepperButton({
         styles.stepperButton,
         {
           backgroundColor: theme.backgroundSelected,
-          opacity: disabled ? 0.4 : pressed ? 0.7 : 1,
+          opacity: disabled ? Opacity.disabled : pressed ? Opacity.pressed : 1,
         },
       ]}>
       <ThemedText type="heading" themeColor="brass">
@@ -264,7 +265,7 @@ function StepperButton({
   );
 }
 
-/** Botón de acción principal. Latón sólido. */
+/** Botón de acción principal. Latón sólido. Es el `Button` compartido. */
 export function PrimaryButton({
   label,
   onPress,
@@ -274,23 +275,7 @@ export function PrimaryButton({
   onPress: () => void;
   disabled?: boolean;
 }) {
-  const theme = useTheme();
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ disabled }}
-      disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.button,
-        { backgroundColor: theme.brass, opacity: disabled ? 0.45 : pressed ? 0.85 : 1 },
-      ]}>
-      <ThemedText type="bodyStrong" themeColor="onAccent">
-        {label}
-      </ThemedText>
-    </Pressable>
-  );
+  return <Button label={label} onPress={onPress} disabled={disabled} />;
 }
 
 /** Botón secundario: mismo tamaño, sin peso visual. */
@@ -304,24 +289,8 @@ export function SecondaryButton({
   /** `danger` para acciones que descartan cambios. */
   tone?: 'text' | 'danger';
 }) {
-  const theme = useTheme();
-
   return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.button,
-        styles.buttonOutline,
-        {
-          borderColor: tone === 'danger' ? theme.danger : theme.border,
-          opacity: pressed ? 0.7 : 1,
-        },
-      ]}>
-      <ThemedText type="bodyStrong" themeColor={tone === 'danger' ? 'danger' : 'textSecondary'}>
-        {label}
-      </ThemedText>
-    </Pressable>
+    <Button label={label} onPress={onPress} variant={tone === 'danger' ? 'danger' : 'secondary'} />
   );
 }
 
@@ -343,18 +312,19 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
     borderRadius: Radii.pill,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: Stroke.hairline,
   },
   input: {
-    minHeight: 48,
+    minHeight: Control.field,
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
     borderRadius: Radii.medium,
-    borderWidth: StyleSheet.hairlineWidth,
-    fontSize: 16,
+    borderWidth: Stroke.hairline,
+    fontFamily: Typography.body.fontFamily,
+    fontSize: Typography.body.fontSize,
   },
   inputMultiline: {
-    minHeight: 88,
+    minHeight: Control.textArea,
     paddingTop: Spacing.three,
     textAlignVertical: 'top',
   },
@@ -368,11 +338,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: Spacing.one,
     borderRadius: Radii.medium,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: Stroke.hairline,
   },
   stepperButton: {
-    width: 44,
-    height: 44,
+    width: Control.minTouch,
+    height: Control.minTouch,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: Radii.small,
@@ -380,16 +350,5 @@ const styles = StyleSheet.create({
   stepperValue: {
     flex: 1,
     textAlign: 'center',
-  },
-  button: {
-    minHeight: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.four,
-    borderRadius: Radii.pill,
-  },
-  buttonOutline: {
-    borderWidth: StyleSheet.hairlineWidth,
-    backgroundColor: 'transparent',
   },
 });
