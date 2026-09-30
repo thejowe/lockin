@@ -59,7 +59,7 @@ Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>
 
 ## Pulido visual
 
-- [ ] Pulido visual de toda la app — bloque 13 `visual` en `PLAN.md`, abierto el 2026-09-29; auditoría, tokens, pantallas y movimiento en `todo/visual.md`.
+- [ ] Pulido visual de toda la app — bloque 13 `visual` en `PLAN.md`, abierto el 2026-09-29. Auditoría, tokens, pantallas, estados y movimiento hechos el 2026-09-30 (rama `claude/visual-pulido`); falta el cierre con CI en `todo/visual.md`. La casilla `[comprobador]` queda aparcada, como las del resto de bloques en esta máquina.
 
 ## Calidad
 - [x] ESLint/Prettier/TS estricto
