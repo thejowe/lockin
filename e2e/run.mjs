@@ -526,7 +526,8 @@ if (command === 'prepare') {
     const tag = postgrestTag(restImage);
     assert(
       tag &&
-        (tag[0] > postgrestFloor[0] || (tag[0] === postgrestFloor[0] && tag[1] >= postgrestFloor[1])),
+        (tag[0] > postgrestFloor[0] ||
+          (tag[0] === postgrestFloor[0] && tag[1] >= postgrestFloor[1])),
       'PostgREST corre como ' +
         restImage +
         ', anterior a v' +
