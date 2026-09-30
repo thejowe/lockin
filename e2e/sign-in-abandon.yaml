@@ -1,0 +1,67 @@
+# Entrar en otra cuenta desde un teléfono cuyo perfil no se puede recuperar:
+# el aviso «Entrar aquí deja atrás el perfil de este teléfono» de
+# `src/features/profile/sign-in-form.tsx` y sus dos salidas.
+#
+# Solo en la variante `supabase`, encadenado por run.mjs DESPUÉS de
+# agreement.yaml y SIN borrar el estado: hereda la cuenta anónima y el perfil
+# `${ANON_PROFILE_NAME}` que creó full-journey.yaml. Es la única forma de que
+# `abandonsUnrecoverableProfile()` responda que sí; `sign-in.yaml` arranca con
+# `clearState: true` y ahí no hay perfil que perder. La variante `registro` no
+# sirve: su puerta de cuenta impide el perfil anónimo.
+#
+# Quien ya tiene perfil no pasa por el onboarding, que es donde están los dos
+# botones a `/sign-in`; se llega por el deep link, que expo-router expone para
+# toda ruta (`scheme: "lockin"`). La otra cuenta —email confirmado y ficha
+# `${PROFILE_NAME}`— la crea run.mjs con la service_role antes de este flujo.
+# `e2e/sign-in.test.mjs` fija las etiquetas contra el formulario.
+appId: app.lockin.mobile
+name: Entrar en otra cuenta abandonando el perfil anónimo
+---
+- assertTrue: ${EMAIL && PASSWORD && PROFILE_NAME && ANON_PROFILE_NAME}
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible: 'Descubrir'
+    timeout: 60000
+- openLink: lockin://sign-in
+- extendedWaitUntil:
+    visible: 'Vuelve a tu cuenta'
+    timeout: 30000
+- tapOn: 'Email de tu cuenta|tu@email.com'
+- inputText: ${EMAIL}
+- hideKeyboard
+- tapOn: 'Contraseña de tu cuenta|Tu contraseña'
+- inputText: ${PASSWORD}
+- hideKeyboard
+- tapOn: 'Entrar'
+- extendedWaitUntil:
+    visible: 'Entrar aquí deja atrás el perfil de este teléfono'
+    timeout: 30000
+- assertVisible: 'Entrar y dejar este perfil'
+# «Mejor no»: el aviso se va y el formulario sigue igual, sin sesión nueva
+# (el login de verdad solo lo lanza «Entrar y dejar este perfil»).
+- tapOn: 'Mejor no'
+- extendedWaitUntil:
+    notVisible: 'Entrar aquí deja atrás el perfil de este teléfono'
+    timeout: 10000
+- assertVisible: 'Vuelve a tu cuenta'
+- assertVisible: 'Entrar'
+# Segundo intento: el aviso vuelve y esta vez se acepta.
+- tapOn: 'Entrar'
+- extendedWaitUntil:
+    visible: 'Entrar aquí deja atrás el perfil de este teléfono'
+    timeout: 30000
+- tapOn: 'Entrar y dejar este perfil'
+- extendedWaitUntil:
+    visible: 'Matches'
+    timeout: 60000
+- assertNotVisible: 'Vuelve a tu cuenta'
+- tapOn: 'Perfil'
+- extendedWaitUntil:
+    visible: ${PROFILE_NAME}
+    timeout: 30000
+- assertNotVisible: ${ANON_PROFILE_NAME}
+- scrollUntilVisible:
+    element: 'Email de tu cuenta: ${EMAIL}'
+    direction: DOWN
+- assertVisible: 'Email de tu cuenta: ${EMAIL}'

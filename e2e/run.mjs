@@ -58,6 +58,9 @@ const agreementFile = join(root, 'e2e/agreement.yaml');
 const registerFile = join(root, 'e2e/register.yaml');
 const registerConfirmFile = join(root, 'e2e/register-confirm.yaml');
 const signInFile = join(root, 'e2e/sign-in.yaml');
+// Sexto caso de la variante `supabase`, encadenado al acuerdo y sin borrar el
+// estado: entrar en otra cuenta con el perfil anónimo del recorrido delante.
+const signInAbandonFile = join(root, 'e2e/sign-in-abandon.yaml');
 const passwordResetFile = join(root, 'e2e/password-reset.yaml');
 // Nombre con el que Android llama a la app en sus propios diálogos. Se lee de
 // `app.json` para que no se quede atrás si el bloque `arquitecto` lo cambia: de
@@ -886,6 +889,77 @@ if (command === 'test') {
       }
       await verifyAgreementAnswer(status, profileName);
 
+      // Lo último del intento, porque cambia la sesión del teléfono: la otra
+      // cuenta —email confirmado y ficha propia— se crea aquí con la
+      // service_role, y el flujo entra en ella con el perfil anónimo del
+      // recorrido todavía en el dispositivo. Es la única forma de pintar el
+      // aviso de `abandonsUnrecoverableProfile` (`sign-in-form.tsx`).
+      assert.equal(status.API_URL, 'http://127.0.0.1:54321');
+      const admin = createClient(status.API_URL, status.SERVICE_ROLE_KEY, {
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+      const otherEmail = 'e2e-otra-' + runId + '@example.com';
+      const otherPassword = 'E2e-' + randomUUID();
+      const otherName = 'E2E-OTRA-' + runId;
+      const created = await admin.auth.admin.createUser({
+        email: otherEmail,
+        password: otherPassword,
+        email_confirm: true,
+      });
+      assert.ifError(created.error);
+      const otherId = created.data.user.id;
+      assert.equal(created.data.user.last_sign_in_at ?? null, null);
+      // Misma ficha que el fixture de `registrationAttempt`; solo cambia el nombre.
+      const { error: otherProfileError } = await admin.from('profiles').insert({
+        id: otherId,
+        name: otherName,
+        age: 28,
+        location: 'Barcelona',
+        timezone: 'Europe/Madrid',
+        avatar_initials: 'E2',
+        avatar_accent: 'teal',
+        specialties: ['dev'],
+        seeking_specialties: ['diseno'],
+        looking_for: 'ambos',
+        starting_point: 'solo-ganas',
+        availability_hours_per_week: 10,
+        availability_bands: ['tarde'],
+        ambition: 'equilibrado',
+        prompts: [{ question: 'Busco a alguien que…', answer: 'Construya en equipo' }],
+      });
+      assert.ifError(otherProfileError);
+      const { error: otherSettingsError } = await admin.from('user_settings').upsert({
+        user_id: otherId,
+        active_mode: 'par',
+      });
+      assert.ifError(otherSettingsError);
+
+      const abandonDir = join(dir, 'sign-in-abandon');
+      if (
+        maestroFlow(abandonDir, signInAbandonFile, {
+          EMAIL: otherEmail,
+          PASSWORD: otherPassword,
+          PROFILE_NAME: otherName,
+          ANON_PROFILE_NAME: profileName,
+        }) !== 0
+      ) {
+        const diagnosis = diagnose(abandonDir);
+        return { outcome: diagnosis.kind, why: 'sign-in-abandon.yaml: ' + diagnosis.why };
+      }
+      // La entrada fue de verdad contra GoTrue, no un estado de la pantalla...
+      const signedIn = await admin.auth.admin.getUserById(otherId);
+      assert.ifError(signedIn.error);
+      assert(
+        signedIn.data.user.last_sign_in_at,
+        'La otra cuenta no registra ningún inicio de sesión tras «Entrar y dejar este perfil»'
+      );
+      // ...y abandonar no borra: el perfil anónimo sigue en Postgres, solo que
+      // ya nadie puede volver a su `auth.uid()`.
+      const abandoned = await admin.from('profiles').select('id').eq('name', profileName);
+      assert.ifError(abandoned.error);
+      assert.equal(abandoned.data.length, 1, 'El perfil anónimo abandonado sigue en Postgres');
+      assert.notEqual(abandoned.data[0].id, otherId);
+
       writeFileSync(
         join(dir, 'postgres.json'),
         JSON.stringify(
@@ -897,6 +971,7 @@ if (command === 'test') {
             rating: 'verified',
             streak: 'verified',
             agreement: 'verified',
+            signInAbandon: 'verified',
           },
           null,
           2
@@ -904,7 +979,7 @@ if (command === 'test') {
       );
       return {
         outcome: 'pass',
-        why: 'recorrido, persistencia, sesión Lock-In y acuerdo verificados',
+        why: 'recorrido, persistencia, sesión Lock-In, acuerdo y abandono al entrar verificados',
       };
     } catch (error) {
       // Un oráculo que falla es un fallo del caso, no del runner: no se reintenta.

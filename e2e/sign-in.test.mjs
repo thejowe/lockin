@@ -127,3 +127,92 @@ describe('entrada y recuperación desde instalación limpia', () => {
     assert.match(attempt, /IDs: messages.map/);
   });
 });
+
+describe('entrar en otra cuenta dejando atrás el perfil anónimo', () => {
+  const abandon = read('sign-in-abandon.yaml');
+
+  it('las etiquetas del aviso y del formulario están en el producto', () => {
+    for (const text of [
+      'Vuelve a tu cuenta',
+      'Email de tu cuenta',
+      'tu@email.com',
+      'Entrar aquí deja atrás el perfil de este teléfono',
+      'Entrar y dejar este perfil',
+      'Mejor no',
+    ]) {
+      assert(abandon.includes(text), text);
+      assert(form.includes(text), text);
+    }
+    assert(form.includes(": 'Entrar'}"));
+    assert(abandon.includes("'Matches'"));
+    assert(tabs.includes('>Matches</NativeTabs.Trigger.Label>'));
+    assert(tabs.includes('>Perfil</NativeTabs.Trigger.Label>'));
+    assert(abandon.includes("assertVisible: 'Email de tu cuenta: ${EMAIL}'"));
+  });
+
+  it('hereda el perfil anónimo: sin clearState y por el deep link a /sign-in', () => {
+    assert.match(abandon, /launchApp:\r?\n\s+clearState: false/);
+    assert.doesNotMatch(abandon, /^\s+clearState: true/m);
+    assert(abandon.includes('- openLink: lockin://sign-in'));
+    assert.match(read('../app.json'), /"scheme": "lockin"/);
+    assert(read('../src/app/(onboarding)/sign-in.tsx').includes('<SignInForm'));
+  });
+
+  it('recorre «Mejor no» antes de aceptar, y afirma la ficha nueva y no la anónima', () => {
+    const at = (needle, from = 0) => {
+      const index = abandon.indexOf(needle, from);
+      assert(index >= from, 'Falta o está fuera de orden: ' + needle);
+      return index;
+    };
+    const warning = at("visible: 'Entrar aquí deja atrás el perfil de este teléfono'");
+    const cancel = at("tapOn: 'Mejor no'", warning);
+    const gone = at("notVisible: 'Entrar aquí deja atrás el perfil de este teléfono'", cancel);
+    const retry = at("tapOn: 'Entrar'", gone);
+    const again = at("visible: 'Entrar aquí deja atrás el perfil de este teléfono'", retry);
+    const accept = at("tapOn: 'Entrar y dejar este perfil'", again);
+    const tabsShown = at("visible: 'Matches'", accept);
+    const profile = at("tapOn: 'Perfil'", tabsShown);
+    const mine = at('visible: ${PROFILE_NAME}', profile);
+    at('assertNotVisible: ${ANON_PROFILE_NAME}', mine);
+  });
+
+  it('hideKeyboard solo tras teclear', () => {
+    const commands = abandon
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line.startsWith('- '));
+    commands.forEach((line, index) => {
+      if (line === '- hideKeyboard') assert.match(commands[index - 1], /^- inputText: /);
+    });
+  });
+
+  it('el runner lo encadena al final del intento supabase, con fixture y oráculo', () => {
+    const attempt = runner.slice(
+      runner.indexOf('async function attempt('),
+      runner.indexOf('function maestroFlow(')
+    );
+    const order = [
+      'await verifyAgreementAnswer(status, profileName)',
+      'admin.auth.admin.createUser(',
+      'email_confirm: true',
+      "admin.from('profiles').insert(",
+      "admin.from('user_settings').upsert(",
+      'maestroFlow(abandonDir, signInAbandonFile',
+      'ANON_PROFILE_NAME: profileName',
+      'admin.auth.admin.getUserById(otherId)',
+      'last_sign_in_at',
+      "signInAbandon: 'verified'",
+    ];
+    let cursor = 0;
+    for (const text of order) {
+      const next = attempt.indexOf(text, cursor);
+      assert(next >= cursor, 'Falta o está fuera de orden: ' + text);
+      cursor = next + text.length;
+    }
+    assert.match(runner, /e2e\/sign-in-abandon\.yaml/);
+    assert.doesNotMatch(
+      runner.slice(runner.indexOf('async function registrationAttempt(')),
+      /signInAbandonFile/
+    );
+  });
+});

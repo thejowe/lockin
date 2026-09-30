@@ -3634,6 +3634,41 @@ vuelve por el **esquema** `lockin://auth/callback`.
       volcado de Maestro. Si el usuario decide que el deep link a `/sign-in` no
       debe existir para quien ya tiene perfil, esta casilla se replantea antes
       de escribir el flujo.
+
+      **[Claude] 2026-09-30 — Flujo escrito, pendiente de run de «E2E Android».**
+      Sin emulador en esta máquina: nada de esto se ha visto en un dispositivo.
+      - `e2e/sign-in-abandon.yaml`: pasos 2-6 tal cual (`launchApp: clearState:
+        false` → `'Descubrir'` → `openLink: lockin://sign-in` → email y
+        contraseña → aviso → «Mejor no» → aviso fuera y `'Entrar'` de vuelta →
+        «Entrar» → aviso → «Entrar y dejar este perfil» → `'Matches'` →
+        Perfil con `${PROFILE_NAME}` y sin `${ANON_PROFILE_NAME}` → «Email de tu
+        cuenta: ${EMAIL}»).
+      - `run.mjs`, final de `attempt()` (solo `supabase`; el control `mock`
+        sale antes y `registrationAttempt` no lo toca): tras
+        `verifyAgreementAnswer`, `admin.auth.admin.createUser` con
+        `email_confirm: true`, ficha `E2E-OTRA-<runId>` + `user_settings`, el
+        flujo con `ANON_PROFILE_NAME` = el perfil del recorrido, y dos oráculos:
+        `last_sign_in_at` de la otra cuenta ya no es nulo (antes del flujo sí lo
+        era) y el perfil anónimo sigue en `profiles` (abandonar no borra).
+        `postgres.json` añade `signInAbandon: 'verified'`.
+      - `e2e/sign-in.test.mjs`: nuevo `describe` que fija las etiquetas del
+        aviso contra `sign-in-form.tsx`, el `openLink` + `scheme`, el orden
+        «Mejor no» → aceptar → ficha nueva, y el encadenado en el runner.
+      - Verificado en local: `node --check e2e/run.mjs`, `npm run test:e2e`
+        (97/98; el que falla es `full-journey.test.mjs` «relee la suya de
+        Postgres después del reinicio», preexistente y solo en Windows: busca
+        `'\n'` literal en un `.yaml` con checkout CRLF), prettier y
+        `npx tsc --noEmit`.
+
+      Qué mirar en el run: `e2e/artifacts/supabase/<intento>/sign-in-abandon/`.
+      Riesgos conocidos: (1) `openLink` con la app viva en las tabs — si
+      expo-router no empuja `/sign-in`, muere en `'Vuelve a tu cuenta'`, y la
+      alternativa es el `am start ... app.lockin.mobile` desde `run.mjs`;
+      (2) tras `router.replace('/')` las tabs que ya estaban montadas no
+      releen (`useQuery` no refresca al enfocar): el flujo solo tiene montada
+      Descubrir al entrar, así que Perfil se lee de cero, pero si el volcado
+      enseña `${ANON_PROFILE_NAME}` en Perfil es un bug de producto de
+      `perfil`, no del flujo.
 - [x] **El rojo de hoy (35899273763) no es de ese trabajo ni de la fijación.**
       Los **tres** trabajos murieron en `Supabase desechable con migraciones
       reales`, sin levantar un solo contenedor (`containers/resumen.txt`: «no hay
