@@ -9,7 +9,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radii, Spacing } from '@/constants/theme';
+import { Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { formatClock } from './format';
@@ -29,7 +29,7 @@ export function MessageBubble({ message, isMine }: { message: Message; isMine: b
             : {
                 backgroundColor: theme.backgroundElement,
                 borderColor: theme.border,
-                borderWidth: StyleSheet.hairlineWidth,
+                borderWidth: Stroke.hairline,
                 borderBottomLeftRadius: Radii.small,
               },
         ]}>
@@ -39,7 +39,10 @@ export function MessageBubble({ message, isMine }: { message: Message; isMine: b
         <ThemedText
           type="caption"
           themeColor={isMine ? undefined : 'textMuted'}
-          style={[styles.clock, isMine ? { color: theme.onAccent, opacity: 0.75 } : undefined]}>
+          style={[
+            styles.clock,
+            isMine ? { color: theme.onAccent, opacity: Opacity.meta } : undefined,
+          ]}>
           {formatClock(message.sentAt)}
         </ThemedText>
       </View>

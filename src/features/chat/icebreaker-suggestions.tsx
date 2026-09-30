@@ -9,7 +9,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radii, Spacing } from '@/constants/theme';
+import { HitSlop, Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export function IcebreakerSuggestions({
@@ -35,9 +35,9 @@ export function IcebreakerSuggestions({
           key={suggestion}
           accessibilityRole="button"
           accessibilityHint="Escribe esta frase en el campo de mensaje para que puedas editarla"
-          // Una sugerencia de una línea mide 36 px: el hitSlop la lleva a los 44
+          // Una sugerencia de una línea mide 36 px: el hitSlop la lleva por encima de los 44
           // mínimos sin separar las sugerencias entre sí.
-          hitSlop={{ top: 4, bottom: 4 }}
+          hitSlop={HitSlop.chip}
           onPress={() => onPick(suggestion)}
           style={({ pressed }) => [
             styles.chip,
@@ -62,6 +62,6 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
     borderRadius: Radii.large,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: Stroke.hairline,
   },
 });

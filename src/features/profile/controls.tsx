@@ -72,7 +72,7 @@ export function OptionCard<T extends string>({
         {
           backgroundColor: selected ? theme.brassSoft : theme.backgroundElement,
           borderColor: selected ? theme.brass : theme.border,
-          borderWidth: selected ? 1.5 : StyleSheet.hairlineWidth,
+          borderWidth: selected ? 1.5 : Stroke.hairline,
           opacity: pressed ? Opacity.pressed : 1,
         },
       ]}>

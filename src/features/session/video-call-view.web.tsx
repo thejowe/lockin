@@ -13,7 +13,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export function VideoCallView({ active }: { active: boolean }) {
@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 4 / 3,
     borderRadius: Radii.large,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: Stroke.hairline,
     alignItems: 'center',
     justifyContent: 'center',
     padding: Spacing.four,

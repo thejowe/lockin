@@ -39,7 +39,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { AccountError, signOut } from './account-gateway';
@@ -284,6 +284,6 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     padding: Spacing.three,
     borderRadius: Radii.medium,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: Stroke.hairline,
   },
 });

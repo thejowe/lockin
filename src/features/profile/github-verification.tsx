@@ -18,7 +18,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing, Stroke } from '@/constants/theme';
 import { GITHUB_VERIFICATION_CANCELLED, useRepositories } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -159,6 +159,6 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     padding: Spacing.three,
     borderRadius: Radii.medium,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: Stroke.hairline,
   },
 });

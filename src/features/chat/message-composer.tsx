@@ -11,7 +11,15 @@ import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
-import { FontFamily, Radii, Spacing, Typography } from '@/constants/theme';
+import {
+  Control,
+  FontFamily,
+  Opacity,
+  Radii,
+  Spacing,
+  Stroke,
+  Typography,
+} from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export interface MessageComposerProps {
@@ -77,7 +85,7 @@ export const MessageComposer = forwardRef<TextInput, MessageComposerProps>(funct
           styles.send,
           {
             backgroundColor: canSend ? theme.brass : theme.backgroundSelected,
-            opacity: pressed ? 0.85 : 1,
+            opacity: pressed ? Opacity.pressed : 1,
           },
         ]}>
         <ThemedText type="smallBold" style={{ color: canSend ? theme.onAccent : theme.textMuted }}>
@@ -96,23 +104,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingTop: Spacing.two,
     paddingBottom: Spacing.two,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopWidth: Stroke.hairline,
   },
   input: {
     flex: 1,
     // Crece con el texto, pero sin comerse la conversación.
-    minHeight: 44,
+    minHeight: Control.minTouch,
     maxHeight: 132,
     paddingHorizontal: Spacing.three,
     paddingTop: Spacing.two,
     paddingBottom: Spacing.two,
     borderRadius: Radii.large,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: Stroke.hairline,
     fontSize: Typography.body.fontSize,
     lineHeight: Typography.body.lineHeight,
   },
   send: {
-    height: 44,
+    height: Control.minTouch,
     justifyContent: 'center',
     paddingHorizontal: Spacing.three,
     borderRadius: Radii.pill,

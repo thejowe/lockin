@@ -9,7 +9,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radii, Spacing } from '@/constants/theme';
+import { Control, Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { RATING_OPTIONS, ratingLabel } from './rating';
@@ -46,7 +46,7 @@ export function RatingChips({
               {
                 backgroundColor: checked ? theme.brass : theme.backgroundElement,
                 borderColor: theme.border,
-                opacity: disabled ? 0.6 : pressed ? 0.85 : 1,
+                opacity: disabled ? 0.6 : pressed ? Opacity.pressed : 1,
               },
             ]}>
             <ThemedText type="bodyStrong" style={{ color: checked ? theme.onAccent : theme.text }}>
@@ -62,11 +62,11 @@ export function RatingChips({
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: Spacing.two },
   chip: {
-    minHeight: 44,
+    minHeight: Control.minTouch,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.four,
     borderRadius: Radii.pill,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: Stroke.hairline,
   },
 });

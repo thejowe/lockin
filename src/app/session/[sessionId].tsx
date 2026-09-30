@@ -18,7 +18,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { MaxContentWidth, Radii, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
 import { isInJoinWindow } from '@/data';
 import { ProfileAvatar } from '@/features/chat';
 import {
@@ -294,7 +294,11 @@ function ActionButton({
       onPress={onPress}
       style={({ pressed }) => [
         styles.action,
-        { backgroundColor: background, borderColor: theme.border, opacity: pressed ? 0.85 : 1 },
+        {
+          backgroundColor: background,
+          borderColor: theme.border,
+          opacity: pressed ? Opacity.pressed : 1,
+        },
       ]}>
       <ThemedText type="bodyStrong" style={{ color }}>
         {label}
@@ -302,6 +306,9 @@ function ActionButton({
     </Pressable>
   );
 }
+
+/** Marca de cada bloque del Pomodoro: una barra corta, no un punto. */
+const POMODORO_BLOCK = { width: 32, height: 8 } as const;
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
@@ -317,7 +324,12 @@ const styles = StyleSheet.create({
   counterpartText: { gap: Spacing.half },
   clock: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.three },
   blocks: { flexDirection: 'row', gap: Spacing.two },
-  block: { width: 32, height: 8, borderRadius: Radii.pill, borderWidth: StyleSheet.hairlineWidth },
+  block: {
+    width: POMODORO_BLOCK.width,
+    height: POMODORO_BLOCK.height,
+    borderRadius: Radii.pill,
+    borderWidth: Stroke.hairline,
+  },
   confirm: { gap: Spacing.two },
   centered: {
     flex: 1,
@@ -332,6 +344,6 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.three,
     paddingHorizontal: Spacing.four,
     borderRadius: Radii.pill,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: Stroke.hairline,
   },
 });

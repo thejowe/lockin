@@ -10,7 +10,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radii, Spacing } from '@/constants/theme';
+import { Control, Opacity, Radii, Spacing } from '@/constants/theme';
 import { AGREEMENT_NOTE_MAX } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -157,7 +157,10 @@ export function TopicRow({
             }}
             style={[
               styles.save,
-              { backgroundColor: theme.brass, opacity: option === null || saving ? 0.5 : 1 },
+              {
+                backgroundColor: theme.brass,
+                opacity: option === null || saving ? Opacity.disabled : 1,
+              },
             ]}>
             <ThemedText type="bodyStrong" style={{ color: theme.onAccent }}>
               Guardar
@@ -174,7 +177,7 @@ const styles = StyleSheet.create({
   editor: { gap: Spacing.two, marginTop: Spacing.two },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   chip: {
-    minHeight: 44,
+    minHeight: Control.minTouch,
     justifyContent: 'center',
     borderWidth: 1,
     borderRadius: Radii.medium,
@@ -182,7 +185,7 @@ const styles = StyleSheet.create({
   },
   note: { minHeight: 72, borderWidth: 1, borderRadius: Radii.medium, padding: Spacing.two },
   save: {
-    minHeight: 44,
+    minHeight: Control.minTouch,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: Radii.medium,

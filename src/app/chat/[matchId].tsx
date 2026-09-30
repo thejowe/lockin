@@ -27,7 +27,7 @@ import {
 } from 'react-native-keyboard-controller';
 
 import { ThemedText } from '@/components/themed-text';
-import { MaxContentWidth, Radii, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Opacity, Radii, Spacing } from '@/constants/theme';
 import {
   ConversationIntro,
   DayDivider,
@@ -219,7 +219,7 @@ function MissingMatch({ error }: { error: Error | null }) {
           accessibilityRole="button"
           style={({ pressed }) => [
             styles.backAction,
-            { backgroundColor: theme.brass, opacity: pressed ? 0.85 : 1 },
+            { backgroundColor: theme.brass, opacity: pressed ? Opacity.pressed : 1 },
           ]}>
           <ThemedText type="bodyStrong" style={{ color: theme.onAccent }}>
             Volver a Matches

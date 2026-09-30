@@ -20,7 +20,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radii, Spacing } from '@/constants/theme';
+import { Control, Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { useVideoCall, type VideoCallStatus } from './use-video-call';
@@ -145,7 +145,7 @@ function CallButton({
         styles.button,
         {
           backgroundColor: tone === 'danger' ? theme.danger : theme.backgroundSelected,
-          opacity: pressed ? 0.85 : 1,
+          opacity: pressed ? Opacity.pressed : 1,
         },
       ]}>
       <ThemedText type="small" style={{ color: tone === 'danger' ? theme.onAccent : theme.text }}>
@@ -155,12 +155,15 @@ function CallButton({
   );
 }
 
+/** Miniatura de la cámara propia: 3:4, como la de una videollamada de móvil. */
+const SELF_PREVIEW = { width: 96, height: 128 } as const;
+
 const styles = StyleSheet.create({
   remote: {
     width: '100%',
     aspectRatio: 4 / 3,
     borderRadius: Radii.large,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: Stroke.hairline,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
@@ -169,10 +172,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: Spacing.two,
     right: Spacing.two,
-    width: 96,
-    height: 128,
+    width: SELF_PREVIEW.width,
+    height: SELF_PREVIEW.height,
     borderRadius: Radii.medium,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: Stroke.hairline,
     overflow: 'hidden',
   },
   controls: {
@@ -183,7 +186,7 @@ const styles = StyleSheet.create({
   },
   centeredText: { textAlign: 'center', paddingHorizontal: Spacing.four },
   button: {
-    minHeight: 44,
+    minHeight: Control.minTouch,
     paddingHorizontal: Spacing.three,
     borderRadius: Radii.pill,
     alignItems: 'center',

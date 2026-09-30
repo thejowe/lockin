@@ -10,7 +10,7 @@ import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radii, Spacing } from '@/constants/theme';
+import { Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
 import { BLOCK_MINUTES, SESSION_BLOCK_OPTIONS } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -130,7 +130,7 @@ export function ProposeSessionSheet({
             onPress={() => onSubmit(new Date(slotMs).toISOString(), blocks)}
             style={[
               styles.primary,
-              { backgroundColor: theme.brass, opacity: submitting ? 0.6 : 1 },
+              { backgroundColor: theme.brass, opacity: submitting ? Opacity.disabled : 1 },
             ]}>
             <ThemedText type="bodyStrong" style={{ color: theme.onAccent }}>
               Proponer
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
     borderRadius: Radii.pill,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: Stroke.hairline,
   },
   actions: { marginTop: 'auto', gap: Spacing.two },
   primary: { alignItems: 'center', paddingVertical: Spacing.three, borderRadius: Radii.pill },

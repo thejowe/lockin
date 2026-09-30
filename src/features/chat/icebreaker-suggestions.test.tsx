@@ -13,6 +13,7 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import { IcebreakerSuggestions } from './icebreaker-suggestions';
+import { HitSlop } from '@/constants/theme';
 
 const SUGGESTIONS = ['¿Qué estás construyendo?', '¿Cuándo sueles trabajar?'];
 
@@ -66,7 +67,7 @@ describe('IcebreakerSuggestions', () => {
     await render(ui);
 
     for (const button of screen.getAllByRole('button')) {
-      expect(button.props.hitSlop).toEqual({ top: 4, bottom: 4 });
+      expect(button.props.hitSlop).toEqual(HitSlop.chip);
     }
   });
 });

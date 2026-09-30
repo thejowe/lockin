@@ -16,7 +16,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radii, Spacing } from '@/constants/theme';
+import { Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
 import { SessionConflictError, SessionExpiredError, useRepositories } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -273,7 +273,7 @@ function CardButton({
         {
           backgroundColor: tone === 'accent' ? theme.brass : 'transparent',
           borderColor: theme.teal,
-          opacity: disabled ? 0.6 : pressed ? 0.85 : 1,
+          opacity: disabled ? 0.6 : pressed ? Opacity.pressed : 1,
         },
       ]}>
       <ThemedText
@@ -288,7 +288,7 @@ function CardButton({
 const styles = StyleSheet.create({
   root: {
     borderRadius: Radii.large,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: Stroke.hairline,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     gap: Spacing.two,
@@ -300,6 +300,6 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
     borderRadius: Radii.pill,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: Stroke.hairline,
   },
 });

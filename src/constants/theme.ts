@@ -185,7 +185,7 @@ export const Control = {
 
 /** Ampliaciones del área táctil para controles que se dibujan por debajo de 44. */
 export const HitSlop = {
-  /** Chip de 36 de alto → 44 táctiles sin engordarlo. */
+  /** Chip o sugerencia de 36 de alto → 48 táctiles (≥ 44) sin engordarlo. */
   chip: { top: 6, bottom: 6 },
   /** Texto-botón en línea (sugerencias, pestañas web). */
   inline: { top: 8, bottom: 8 },
@@ -197,6 +197,8 @@ export const Opacity = {
   pressed: 0.85,
   /** Control inactivo: se ve, se lee, no invita. */
   disabled: 0.45,
+  /** Metadato sobre relleno de acento (la hora en una burbuja propia). */
+  meta: 0.75,
 } as const;
 
 /**

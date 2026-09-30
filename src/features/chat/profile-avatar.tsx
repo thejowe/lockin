@@ -9,7 +9,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radii } from '@/constants/theme';
+import { Radii, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import type { Avatar } from '@/data';
@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
   root: {
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: Stroke.hairline,
   },
   initials: {
     letterSpacing: 0.5,

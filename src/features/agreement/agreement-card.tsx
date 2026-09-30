@@ -10,7 +10,7 @@ import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radii, Spacing } from '@/constants/theme';
+import { Opacity, Radii, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { summarize } from './status';
@@ -50,7 +50,7 @@ function ParAgreementCard({ match }: { match: MatchWithProfile }) {
         {
           borderColor: theme.border,
           backgroundColor: theme.backgroundElement,
-          opacity: pressed ? 0.85 : 1,
+          opacity: pressed ? Opacity.pressed : 1,
         },
       ]}>
       <ThemedText type="bodyStrong">Acuerdo de socios</ThemedText>

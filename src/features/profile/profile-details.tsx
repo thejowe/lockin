@@ -10,7 +10,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { ExternalLink } from '@/components/external-link';
 import { ThemedText } from '@/components/themed-text';
-import { Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import {
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
   },
   complementSeeking: {
     paddingTop: Spacing.three,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopWidth: Stroke.hairline,
   },
   tags: {
     flexDirection: 'row',
@@ -219,12 +219,12 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.one,
     paddingHorizontal: Spacing.three,
     borderRadius: Radii.pill,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: Stroke.hairline,
   },
   promptCard: {
     gap: Spacing.two,
     padding: Spacing.three,
     borderRadius: Radii.large,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: Stroke.hairline,
   },
 });
