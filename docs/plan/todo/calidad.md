@@ -3583,7 +3583,11 @@ vuelve por el **esquema** `lockin://auth/callback`.
       (`sign-in-form.test.tsx`). Para un E2E haría falta un caso que cree perfil
       anónimo primero y entre después **sin** borrar el almacenamiento.
 
-      **[Codex] — Es alcanzable (comprobado contra el código el 2026-09-24), pero
+      *(Era `[Codex]`; reetiquetada a `[Claude]` el 2026-09-26 por decisión del
+      usuario: en esta máquina no se usa Codex. La prueba es el job «E2E
+      Android» de CI, no un emulador local.)*
+
+      **[Claude] — Es alcanzable (comprobado contra el código el 2026-09-24), pero
       no desde la interfaz.** Los dos botones que abren `/sign-in` están en el
       onboarding (`mode.tsx:89`, `register.tsx:30`) y quien tiene perfil no pasa
       por él (`index.tsx:43` → `/discover`). Pero expo-router expone toda ruta

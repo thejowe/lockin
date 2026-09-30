@@ -38,6 +38,11 @@ Plan: `docs/superpowers/plans/2026-09-24-acuerdo-socios.md`
 - [x] Decidir si se reinstala el toolchain de Android de esta máquina (SDK,
       AVD `lockin`, JDK 17), que desapareció el 2026-09-26 a mitad de un build
       del `comprobador`. Sin él no hay recorrido en emulador local.
+      **Decidido por el usuario el 2026-09-26: no.** En esta máquina no se usa
+      el `comprobador` ni Codex. Las casillas `[comprobador]` de acuerdo,
+      sesiones, verificación y vídeo quedan aparcadas hasta que haya otro
+      dispositivo con emulador; la evidencia en Android sigue siendo el job
+      «E2E Android» de Actions.
       Resuelto de hecho: el toolchain y el AVD `lockin` se reinstalaron y el
       `comprobador` los usó el 2026-09-29 (acuerdo y WebRTC en emulador, Expo Go).
 
