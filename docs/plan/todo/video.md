@@ -471,3 +471,12 @@ mock en memoria`. Evidencia (local, ignorada):
   sin un solo error ni aviso de JS; Metro tampoco registra errores.
 - **iPhone** sigue sin comprobar (del usuario): la casilla de «Fallback en
   Expo Go» queda abierta solo por esa mitad.
+
+### 2026-09-30 — controles de la videollamada desbordados (APK nativo, mock)
+
+En el Pixel 7 del emulador (412 dp), la fila «Silenciar micrófono / Apagar
+cámara / Colgar» es más ancha que la vista remota y se corta por los dos lados.
+Además, «No se pudo conectar el vídeo.» queda debajo de la miniatura propia.
+Causa y capturas en `docs/plan/todo/visual.md` → «Hallazgos del comprobador»,
+2026-09-30, punto 3 (`styles.controls` de `video-call-view.tsx`: fila absoluta
+sin `flexWrap` ni límites laterales).

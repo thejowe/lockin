@@ -190,6 +190,58 @@ local sobre `83b338a` (incluye `9cfddac`), bundle regenerado con
 - `logcat.txt` sin errores de JS. La mitad Supabase sigue sin comprobar: el
   remoto aún no tiene `20260929000100`.
 
+### 2026-09-30 — ✅ (Supabase real) el caso de Alba nace en Lock-In
+
+APK release local sobre `4a698f1`, compilado con las `EXPO_PUBLIC_SUPABASE_*`
+de `.env.local` y `EXPO_PUBLIC_REQUIRE_ACCOUNT=false` (alta anónima, sin gastar
+cupo de correo), con `createBundleReleaseJsAndAssets --rerun`. En logcat:
+`[lockin] backend de datos: Supabase`. Proyecto `grrzmzktrhksbttpbblg`.
+Evidencia (local, ignorada): `e2e/artifacts/local/2026-09-30-alba-supabase/`
+(la pasada válida es `intento3/`).
+
+- En el remoto no existe Alba Ferrer: el seed del mock no está en producción.
+  La hace un perfil de apoyo anónimo, «Alba Comprob» (`d19053ca-…`,
+  `looking_for = lockin`, creado por script con la clave anon), que da like
+  primero a la cuenta de la app por `record_decision`.
+- Pasos: onboarding «Cofundador» («Comprob AlbaSB3», `a1a876b3-…`, perfil
+  `looking_for = par`) → Descubrir → chip **LOCK-IN** → pasar adwa, Video
+  Comprob, Comprob Video y Verif → Alba Comprob («QUIERE: COMPAÑERO DE
+  LOCK-IN», `05-alba-deck.png`) → Like → «¡Match!» con **«MODO COMPAÑERO DE
+  LOCK-IN»** (`06-match.*`). Chat: «MATCH DE LOCK-IN · HOY», solo «Agendar
+  sesión Lock-In», **sin** tarjeta de acuerdo («acuerdo» no sale en
+  `07-chat.xml`).
+- En Postgres el match `f744436a-…` tiene **`mode = lockin`**
+  (`match-postgres.txt`, leído como la otra parte). Sin errores de JS en
+  `logcat.txt`.
+- Dos intentos anteriores se perdieron por el método, no por la app. Un
+  `uiautomator dump` desfasado me hizo pasar a Alba sin verla, así que en
+  `intento3` fui con captura antes de cada toque. En ese intento el orden del
+  deck en pantalla coincidió con `discovery_deck(p_mode => 'lockin')` llamado
+  desde un script.
+- Observación sin reproducir: en el primer intento, el primer toque en
+  «Pasar» justo después del onboarding abrió el teclado sobre Descubrir sin
+  ningún campo visible (`07-estado.png`), y los toques siguientes cayeron en
+  el teclado. Cerrándolo con BACK, el deck volvió a funcionar. No se repitió
+  en los otros dos intentos.
+
+**Limpieza.** «Alba Comprob» borró su perfil y su `user_settings`; por
+cascada se fue el match (`limpieza.txt`). **Quedan** en el remoto, y solo se
+quitan desde el dashboard (perfil + `auth.users`), tres perfiles anónimos de la
+app: «Comprob AlbaSB» (`fa877b9b-…`), «Comprob AlbaSB2» (`8fa0c009-…`) y
+«Comprob AlbaSB3» (`a1a876b3-…`). También quedan dos filas de `auth.users` sin
+perfil: `4864366f-…` y `14a05a19-…` (sondas de script). Las tres cuentas de la
+app dejaron decisiones «pasar» sobre perfiles reales del deck.
+
+### 2026-09-30 — relevo del deck: fotograma con la tarjeta equivocada
+
+Visto en el recorrido de `visual` (mock, APK nativo). `settle()` en
+`swipe-deck.tsx:95-100` (de `25f71c6`) reinicia `translateX` en el hilo de UI
+antes de que el commit de React retire la tarjeta decidida, y nada ordena las
+dos cosas. En 3 de 4 relevos grabados sale un fotograma con la tarjeta ya
+decidida de vuelta en el centro, o con la de dos puestos atrás en el sitio de
+la superior. Detalle, vídeos y salidas posibles en
+`docs/plan/todo/visual.md` → «Hallazgos del comprobador», 2026-09-30.
+
 ## Corrección: el match nace en el modo del chip (2026-09-29)
 
 - [x] [Claude] El modo con el que se decide (el del chip del deck) viaja hasta
@@ -215,11 +267,13 @@ local sobre `83b338a` (incluye `9cfddac`), bundle regenerado con
       (a petición del usuario). Verificado en remoto: `record_decision(uuid,
       decision, mode_preference)` es la única firma, SECURITY DEFINER,
       `search_path=""`, EXECUTE solo `authenticated`.
-- [ ] [comprobador] Tras aplicarla: repetir el caso de Alba (onboarding
+- [x] [comprobador] Tras aplicarla: repetir el caso de Alba (onboarding
       «Cofundador», chip LOCK-IN, like a Alba → «MODO COMPAÑERO DE LOCK-IN» y
       sin tarjeta de acuerdo) contra **Supabase real**, y con mock sobre un APK
       que incluya `9cfddac`. **Mitad mock ✅** (2026-09-29, ver «Hallazgos del
       comprobador»); sigue abierta por la mitad Supabase.
+      *2026-09-30: mitad Supabase ✅* (APK release sobre `4a698f1`, logcat
+      «backend de datos: Supabase»). Ver «Hallazgos del comprobador».
 - Para `datos` (sin verificar en remoto): `20260918000100` añadió un argumento
   a `discovery_deck` con `CREATE OR REPLACE` sin borrar la firma vieja, así que
   probablemente conviven dos sobrecargas en la base. PostgREST las distingue por

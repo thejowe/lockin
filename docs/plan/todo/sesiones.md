@@ -250,6 +250,15 @@ hay que hacerlo desde el dashboard (Authentication → Users).
   (run 34897347871) dio el mismo 49/0/3 pero salió en rojo: la guardia exigía
   cero saltos.
 
+### 2026-09-30 — la hoja «Proponer sesión Lock-In» queda bajo la barra de estado (APK nativo)
+
+APK release sobre `4a698f1`, mock. El título de la hoja sale en y = 63–142,
+debajo del reloj; en Expo Go sale en y = 199. Es el `Modal`
+`presentationStyle="pageSheet"` de `propose-session-sheet.tsx:62-67` con
+Android edge-to-edge: la vista no reserva el inset de arriba. Captura y detalle
+en `docs/plan/todo/visual.md` → «Hallazgos del comprobador», 2026-09-30,
+punto 2.
+
 ## Corrección: Expo Go Android no arranca por `expo-notifications` (2026-09-29)
 
 - [x] [Claude] `createNotificationsPort()` devuelve `null` en Android + Expo Go
