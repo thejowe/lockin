@@ -3384,11 +3384,18 @@ condiciones de *medirla* y evaluar quitarla en CI. Solo `e2e/**`,
       `e2e.yml` (hoy el workflow no lo pasa: `run.mjs` usa su valor por defecto
       `v16.3`, y `workflow_dispatch` no tiene input para cambiarlo) y esperar a
       que toque. Queda abierta a propósito.
-- [ ] **Retirar la fijación** cuando una CLI estable levante PostgREST ≥ v16.3 por
+- [x] **Retirar la fijación** cuando una CLI estable levante PostgREST ≥ v16.3 por
       defecto (`resumen.txt` lo dirá sin la fijación). *(Recomprobado el
       2026-09-23 y sigue sin tocar: `latest` es 2.117.0 —el mismo del
       2026-09-19— y su `templates/Dockerfile` trae `postgrest:v16.2`; solo
       `2.118.0-beta.72` trae v16.3. Detalle al final del archivo.)*
+      **Cerrada el 2026-10-01.** Retirada en `d449df9` (CLI 2.118.0) y la CLI
+      sube a 2.119.0 en `4e42059`. Run E2E
+      [36856879285](https://github.com/thejowe/lockin/actions/runs/36856879285)
+      (`51f8f63`): sin `E2E_POSTGREST_VERSION` en `e2e.yml` ni `rest-version` en
+      el log, los tres `resumen.txt` dicen
+      `public.ecr.aws/supabase/postgrest:v16.4 estado=running`. Sección del
+      2026-10-01, al final del archivo.
 
 ### 4. Casillas de este archivo que estaban obsoletas
 
@@ -3729,7 +3736,13 @@ los runs posteriores a `2c18854` (el commit que aplicó la fijación):
       limpia —el oráculo de `e2e/verify.mjs` también habla por PostgREST
       (`supabase-js`), así que en los reintentos hubo tráfico por medio—; eso deja
       **12 medidas limpias**, una por trabajo.
-- [ ] **La semana NO ha pasado, y este es el dato incómodo.** Los runs con la
+- [x] **La semana NO ha pasado, y este es el dato incómodo.** *(Cerrada el
+      2026-10-01: recontado con el mismo procedimiento sobre los 29 runs con
+      artefacto que quedan, del 2026-09-24T20:57Z al 2026-10-01T12:29Z — 41
+      trabajos con backend, 58 intentos, **0 `PGRST303`**, 0 `appErrors`,
+      PostgREST v16.3/v16.4 en todos, inactividad de 13,2–20,6 min (mediana
+      17,7) antes de la primera petición. Con los del 2026-09-19 al 09-22 son
+      casi doce días. Detalle al final del archivo.)* Los runs con la
       fijación van del **2026-09-19T17:15Z** al **2026-09-22T04:25Z**: **2 días y
       11 horas**, no siete. Hoy es 2026-09-23 y el único run del día
       (35899273763) no llegó a arrancar PostgREST. Con el listón que puso la
@@ -3741,7 +3754,9 @@ los runs posteriores a `2c18854` (el commit que aplicó la fijación):
       «1 de 3 intentos» de una sola tarde. Se deja abierta con fecha, no con
       impresión: **volver a contar a partir del 2026-09-26**, con el mismo
       procedimiento de esta sección.
-- [ ] **Retirar la fijación** sigue sin tocar, y hoy se ha vuelto a comprobar por
+- [x] **Retirar la fijación** *(cerrada el 2026-10-01, misma evidencia que la
+      casilla gemela de la sección del 2026-09-19: `d449df9` + `4e42059`, run
+      36856879285 con v16.4 sin fijar)* sigue sin tocar, y hoy se ha vuelto a comprobar por
       qué: `npm view supabase dist-tags` → `latest` **2.117.0** (el mismo del
       2026-09-19), `beta` 2.118.0-beta.72. Y en el propio repo de la CLI,
       `apps/cli-go/pkg/config/templates/Dockerfile`: la etiqueta `v2.117.0` trae
@@ -3815,7 +3830,12 @@ lo que mató el run 35899273763 en sus tres trabajos.
       workflows que levantan la misma Supabase local y tenían el mismo agujero:
       `contract.yml` y `schema-drift.yml`. Las imágenes ya eran públicas: el
       token no da acceso a nada nuevo.
-- [ ] **No ha servido, y esto es el resultado, no una excusa.** Run
+- [x] **No ha servido, y esto es el resultado, no una excusa.** *(Cerrada el
+      2026-10-01: lo que mataba el pull era la fijación de registro, no la
+      falta de login — ver «La opción (b)» abajo. Desde que `setup-cli` dejó de
+      exportarla, 2026-09-24T04:05Z, **0 de 112 runs** de `CI`, `Schema drift`
+      y `E2E Android` han caído en el pull; los 13 rojos que hay son de otra
+      cosa, leídos con `--log-failed`.)* Run
       [35904260226](https://github.com/thejowe/lockin/actions/runs/35904260226)
       (`949a071`): los **tres** trabajos muertos otra vez en `Supabase desechable
       con migraciones reales`, sin levantar un contenedor. El paso de login sí
@@ -3862,7 +3882,12 @@ lo que mató el run 35899273763 en sus tres trabajos.
       la fijación con CLI >= 2.108.0, y el trabajo pasó en verde sin tocar nada
       (run 35980647728). El `unset` que se añade aquí queda como guarda. Sección
       del 2026-09-24, al final de este archivo.
-- [ ] **Lo que queda por probar, en este orden.** (a) Pre-bajar las imágenes con
+- [x] **Lo que queda por probar, en este orden.** *(Cerrada el 2026-10-01: (b)
+      está hecha —`run.mjs` y el `unset` de `contract.yml`— y (a) se descarta
+      con datos: 0 pulls fallidos en 112 runs desde el 2026-09-24, y en los
+      artefactos E2E 34 de 168 contenedores `rest`/`auth` vinieron de
+      `ghcr.io` porque ECR los rechazó: el reintento y la alternativa de la
+      propia CLI ya hacen lo que (a) prometía. No se implementa.)* (a) Pre-bajar las imágenes con
       `docker pull` y reintentos antes de `supabase start`, para que la CLI las
       encuentre en caché —tiene la ventaja de que el reintento es nuestro y se
       puede alargar—; (b) dejar de fijar `SUPABASE_INTERNAL_IMAGE_REGISTRY` para
@@ -4017,7 +4042,14 @@ paso del log, incluido el que falla.
       Con la 2.116.0 que fija este workflow, **ya no la exporta**. El run rojo de
       ayer (35910702023, 19:44Z) descargó `supabase/setup-cli@v3` en el SHA
       `46f7f98`; el verde de hoy, el nuevo.
-- [ ] **Entonces, ¿qué arregla el `unset` que se añade aquí? Hoy, nada.** Es una
+- [x] **Entonces, ¿qué arregla el `unset` que se añade aquí? Hoy, nada.**
+      *(Verificada el 2026-10-01: ya la cubría el run de CI 35982283769 del
+      2026-09-24 —ver «El estado fusionado»—, y de nuevo el dispatch de
+      `contract.yml` [36856884041](https://github.com/thejowe/lockin/actions/runs/36856884041)
+      sobre `51f8f63`: el script del paso de Supabase en el log trae
+      `unset SUPABASE_INTERNAL_IMAGE_REGISTRY`, la variable no sale en ningún
+      bloque `env`, y la suite cierra `Test Suites: 1 passed` con 88 pasados.
+      Sigue sin arreglar nada por sí sola: es guarda.)* Es una
       guarda, y así está escrita en el comentario del workflow: cubre que se fije
       en este repo una CLI anterior a la 2.108.0 (que volvería a activar la
       fijación upstream) o que la acción recaiga. Se queda por eso y por
@@ -4036,7 +4068,15 @@ paso del log, incluido el que falla.
       cuando el usuario empujó `93ce29d` a la misma rama tres minutos después.
       Es decir: dos pasadas verdes hoy del trabajo, ninguna atribuible a esta
       pasada.
-- [ ] **El verdadero examen sigue siendo el próximo día malo de un registro**, y
+- [x] **El verdadero examen sigue siendo el próximo día malo de un registro**
+      *(cerrada el 2026-10-01 con lo que dicen los logs, no con un color: el
+      dispatch 36856884041 recibió tres `toomanyrequests: Rate exceeded` de ECR
+      para `mailpit:v1.31.3` (reintentos de 4 s y 8 s agotados) y la CLI la bajó
+      de `ghcr.io/supabase/mailpit:v1.31.3`; el E2E 36856879285 hizo lo mismo con
+      `postgres-meta:v0.99.0`. En los artefactos E2E del 2026-09-24 al 10-01, 34
+      de 168 contenedores `rest`/`auth` salieron de `ghcr.io` en 17 runs, y
+      ningún run cayó en el pull. Lo que nada de esto cubre —ni puede— es que
+      ECR y GHCR rechacen a la vez)*, y
       ahora con un matiz nuevo: hoy quien devolvió `toomanyrequests` fue **ECR**,
       no GHCR. Sin fijación la CLI tiene a quién caer; con ella no tenía. Esa es
       toda la tesis que sostiene el cambio, y no la sostiene ningún color de hoy.
@@ -4089,3 +4129,93 @@ aquí porque hasta hoy ninguna de las dos se había ejecutado junto a la otra.
       desde el 2026-09-23 por una deriva real: la migración `20260923000100` no
       cerraba el acceso RPC que decía cerrar. Diagnóstico y arreglo en
       `todo/datos.md` → «La deriva del esquema remoto era al revés».
+
+## Supabase CLI 2.119.0 en la rama principal, y las siete casillas de la fijación, releídas con runs (2026-10-01)
+
+### 1. Integración
+
+- [x] **`51f8f63` («ci(e2e,contrato): subir Supabase CLI a 2.119.0») entra como
+      `4e42059`** por `git cherry-pick`, sin conflictos: desde su base `8a6894c`
+      la rama principal solo había cambiado docs y producto, nada de
+      `.github/` ni de `e2e/`. `contract.yml` deja la 2.116.0 (PostgREST v16.1)
+      y se alinea con `e2e.yml`. Sus runs verdes sobre `51f8f63`: CI
+      [36856865869](https://github.com/thejowe/lockin/actions/runs/36856865869)
+      (siete trabajos en `success`; `Contrato Supabase` `skipped` por no ser la
+      rama principal), Schema drift
+      [36856865236](https://github.com/thejowe/lockin/actions/runs/36856865236)
+      (los dos trabajos, remoto incluido), Contrato Supabase
+      [36856884041](https://github.com/thejowe/lockin/actions/runs/36856884041)
+      y E2E Android
+      [36856879285](https://github.com/thejowe/lockin/actions/runs/36856879285)
+      (`mock`, `supabase` y `registro` en `pass`, los tres en el primer
+      intento). El árbol de `.github/` y `e2e/run.mjs` de `4e42059` es el de
+      `51f8f63`, así que esos runs valen para él; el CI del commit integrado en
+      sí se verá cuando se empuje.
+
+### 2. Las casillas, con lo que se leyó
+
+- **Retirar la fijación (las dos).** `gh run view 36856879285 --log`:
+  `PostgREST del Supabase local: public.ecr.aws/supabase/postgrest:v16.4` y, en el
+  volcado de `resumen.txt` de cada variante,
+  `supabase_rest_lockin-e2e: public.ecr.aws/supabase/postgrest:v16.4 estado=running`.
+  Ni `E2E_POSTGREST_VERSION` en `e2e.yml` ni `rest-version` en el log.
+- **La semana de `PGRST303`.** `gh run download` de todos los runs de `E2E
+  Android` desde el 2026-09-23T18Z: los anteriores al 2026-09-24T20:57Z ya no
+  tienen artefacto (caducados). Sobre los 29 que sí: 60 trabajos, **41 con
+  backend** (`supabase` + `registro`) y **58 intentos** en ellos; `grep -rl
+  PGRST303` → **0 archivos**; `appErrors` vacío en todos los `verdict.json`;
+  `resumen.txt` → 57 con `postgrest:v16.3` y 3 con `v16.4`. Inactividad de
+  PostgREST antes de la primera petición (`arranque` de `resumen.txt` contra
+  `recorridoIso` de `attempt-01/clock.json`): **45 medidas, 13,2–20,6 min,
+  mediana 17,7**, la misma condición en la que el bug salía. Sigue valiendo el
+  matiz de siempre —un verde no prueba una ausencia—, pero el listón que puso
+  la propia nota (una semana) está pasado de largo.
+- **`docker login` «no ha servido» y «lo que queda por probar».** `gh run list`
+  desde el 2026-09-24T04:05Z (cambio de `setup-cli`): 36 runs de CI, 39 de
+  Schema drift y 37 de E2E. Rojos: 1 de CI (`Formato`, 36700508350), 10 de
+  Schema drift (todos en `Comparar …` remoto) y 2 de E2E (36068464250, ANR del
+  emulador; 36858425355, ver el punto 3). `--log-failed` de los de CI y Schema
+  drift: **0 `toomanyrequests` y 0 `failed to pull`**. Pre-bajar imágenes
+  con `docker pull` propio **no se implementa**: lo que haría ya lo hace la CLI
+  sin fijación (reintento + ECR → GHCR → origen), y se ve actuar a diario.
+- **El `unset`.** `git show 51f8f63:.github/workflows/contract.yml` lo trae en
+  la línea 85, y el log de 36856884041 lo ejecuta (checkout de
+  `51f8f632…`, `version: 2.119.0` en `setup-cli`, `Test Suites: 1 passed, 1
+  total`, `Tests: 23 skipped, 88 passed`).
+- **El día malo de un registro.** Mismo log: tres `toomanyrequests: Rate
+  exceeded` de ECR para `mailpit:v1.31.3` y después `Status: Downloaded newer
+  image for ghcr.io/supabase/mailpit:v1.31.3`. En el E2E, `postgres-meta:v0.99.0`
+  desde `ghcr.io`. En los artefactos, 34 de 168 contenedores `rest`/`auth` en
+  17 runs vinieron de `ghcr.io`. Es la tesis de la casilla, vista actuar.
+
+### 3. Un rojo de E2E encontrado de paso, y arreglado en el runner
+
+- [x] **Run [36858425355](https://github.com/thejowe/lockin/actions/runs/36858425355)**
+      (`02b4d9a`, rama `claude/hallazgos-emulador-0930`, el mismo commit que la
+      rama principal antes de esta pasada): `supabase` en `caso` con
+      `El toque debe escribir una sola valoración — 2 !== 1`. Leído el
+      `verdict.json`: attempt-01 murió por `device offline`, attempt-02 llegó a
+      valorar y murió después en `sign-in-abandon.yaml`
+      (`DeviceServerDiedException`), attempt-03 valoró bien. El Supabase
+      desechable es el mismo para los tres intentos y `verifySessionRating`
+      contaba la tabla `session_ratings` entera. **No es un bug de producto**:
+      es el oráculo. Arreglado en `6d51299`: se acota a la `session_id` de la
+      asistencia del perfil del intento, con un guarda nuevo en
+      `e2e/session.test.mjs` que falla con el oráculo anterior (12/13) y pasa
+      con el nuevo (13/13).
+- [ ] **Verlo en CI** requiere empujar: `gh workflow run e2e.yml --ref <rama>`
+      ejecuta el archivo de `origin`. Hasta entonces es una corrección leída
+      contra el artefacto, no un verde. *(Abierta el 2026-10-01.)*
+
+### Verificación de esta pasada
+
+- `npx tsc --noEmit` limpio sobre `4e42059` + `6d51299`, con la caché de rutas
+  tipadas `.expo/types/router.d.ts` apartada: la de esta máquina es del
+  2026-09-20 y no conoce `/agreement/[matchId]`, así que da un TS2322 que en CI
+  (sin `.expo/`) no existe.
+- `npm run lint` limpio. `prettier --check --end-of-line auto .github e2e`
+  limpio (sin ese flag, todo es ruido CRLF de Windows).
+- `node --test e2e/*.test.mjs`: **99 casos, 98 pasan**; el fallo es el CRLF de
+  siempre en `full-journey.test.mjs:118` (`git ls-files --eol` →
+  `i/lf w/crlf`).
+- Sin emulador en esta máquina: nada lanzado en dispositivo.
