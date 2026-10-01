@@ -117,8 +117,8 @@ assert(
 // `PGRST303` intermitente («JWT issued at future») que tumbó el E2E: tras un
 // rato sin tráfico su primera petición valida contra un reloj viejo. Del
 // 2026-09-19 al 2026-09-26 se fijó aquí la imagen a v16.3 porque ninguna CLI
-// estable la traía; la 2.118.0 ya la levanta por defecto y la fijación se
-// retiró. Queda un suelo: sin E2E_POSTGREST_VERSION, `prepare` falla si la CLI
+// estable la traía; la 2.118.0 ya la levantaba por defecto y la fijación se
+// retiró (CI usa hoy la 2.119.0, con v16.4). Queda un suelo: sin E2E_POSTGREST_VERSION, `prepare` falla si la CLI
 // levanta algo anterior a v16.3, para que bajar de CLI no devuelva el bug en
 // silencio. Con una etiqueta (p. ej. `v16.2`) se fija esa imagen exacta y no
 // hay suelo: es la forma de ver actuar la repetición de `resilient-fetch.ts`.
@@ -151,7 +151,7 @@ function run(binary, args, options = {}) {
 function supabase(args, options) {
   const env = { ...process.env };
   // setup-cli fija GHCR en Actions. El run 35899273763 cayó tres veces por
-  // throttling antes de compilar. Sin esa fijación, la CLI 2.116.0 ya prueba
+  // throttling antes de compilar. Sin esa fijación, la CLI (>= 2.116.0) prueba
   // ECR, GHCR y origen, con las mismas etiquetas: no duplicar sus reintentos.
   if (env.GITHUB_ACTIONS === 'true' && env.SUPABASE_INTERNAL_IMAGE_REGISTRY === 'ghcr.io') {
     delete env.SUPABASE_INTERNAL_IMAGE_REGISTRY;

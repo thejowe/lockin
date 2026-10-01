@@ -82,7 +82,7 @@ configurados en el mismo entorno). Requisitos:
 - Node 22.13 o posterior en la rama 22; `npm ci` en el checkout.
 - Java 17, Android SDK 36, herramientas de build y un emulador API 36 iniciado.
 - Docker operativo y puertos locales de Supabase libres (54321 y adyacentes).
-- Supabase CLI **2.118.0** (o posterior: `prepare` exige PostgREST ≥ v16.3) y Maestro **2.10.0** en PATH.
+- Supabase CLI **2.119.0** (la de CI; vale desde la 2.118.0: `prepare` exige PostgREST ≥ v16.3) y Maestro **2.10.0** en PATH.
 - Un único Android dedicado visible en `adb devices`. Se instala
   `app.lockin.mobile` y se borran sus datos al inicio; no usar tu instalación personal.
 
@@ -185,7 +185,7 @@ aquí convertiría un intermitente conocido en un rojo permanente.
 | Rastro | Qué es | De quién |
 |---|---|---|
 | `System UI isn't responding` en `window.xml` | ANR de OTRO proceso tapando la pantalla: la aserción no llegó a mirar la app. `parseAnrDialog` lo detecta por `android:id/aerr_*` y lo manda a `runner` | del emulador |
-| `code: 'PGRST303'`, `JWT issued at future` | Bug de PostgREST (PostgREST/postgrest#5196): tras un rato sin tráfico, su **primera** petición valida el `iat` contra un reloj interno viejo y rechaza un token recién firmado; la siguiente con el mismo token pasa. **No** es desfase entre contenedores ni el `iat` al segundo (hacen falta 30 s). Arreglado en PostgREST v16.3 / v14.18, que es lo que levanta la CLI 2.118.0 de CI (la 2.116.0 levantaba v16.1) | de PostgREST |
+| `code: 'PGRST303'`, `JWT issued at future` | Bug de PostgREST (PostgREST/postgrest#5196): tras un rato sin tráfico, su **primera** petición valida el `iat` contra un reloj interno viejo y rechaza un token recién firmado; la siguiente con el mismo token pasa. **No** es desfase entre contenedores ni el `iat` al segundo (hacen falta 30 s). Arreglado en PostgREST v16.3 / v14.18, que es lo que levantaba la CLI 2.118.0 (la 2.119.0 de CI levanta v16.4; la 2.116.0 levantaba v16.1) | de PostgREST |
 
 La app lo absorbe repitiendo la petición una vez (`src/data/supabase/resilient-fetch.ts`,
 que deja `[lockin] PostgREST rechazó el token con PGRST303; se repite la
@@ -561,6 +561,6 @@ formulario de creación de ficha. `sign-in.test.mjs` fija las etiquetas contra
 producto y el orden de las fases; el veredicto del recorrido lo da Actions.
 
 El runner retira en Actions la fijación de GHCR que hereda de `setup-cli`: la
-CLI 2.116.0 usa así sus alternativas oficiales (ECR, GHCR y origen), conservando
+CLI (2.116.0 entonces, 2.119.0 hoy) usa así sus alternativas oficiales (ECR, GHCR y origen), conservando
 las versiones de las imágenes. El run 35899273763 falló tres veces al descargar
 de GHCR por `toomanyrequests`, antes de compilar ninguno de los tres APK.

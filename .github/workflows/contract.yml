@@ -45,8 +45,8 @@ jobs:
           cache: npm
       - uses: supabase/setup-cli@v3
         with:
-          # Misma versión que `e2e.yml`.
-          version: 2.116.0
+          # Misma versión que `e2e.yml` (PostgREST v16.4, sin el PGRST303).
+          version: 2.119.0
       - run: npm ci
 
       # Mismo motivo y mismo paso que en `e2e.yml`: las imágenes del Supabase
@@ -60,7 +60,7 @@ jobs:
         run: echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
       # Sin fijar el registro de imágenes, igual que `e2e/run.mjs:137-141`.
       # `setup-cli` exportaba `SUPABASE_INTERNAL_IMAGE_REGISTRY=ghcr.io` a todos
-      # los pasos, y con esa fijación puesta la CLI 2.116.0 prueba ghcr.io y solo
+      # los pasos, y con esa fijación puesta la CLI (2.116.0 entonces) prueba ghcr.io y solo
       # ghcr.io: en el run 35910702023 los 34 `toomanyrequests` del log son todos
       # de `ghcr.io/supabase/…` y no aparece `public.ecr.aws` ni una vez, pese a
       # que el mensaje final diga «failed to pull docker image from all
