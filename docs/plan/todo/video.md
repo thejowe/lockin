@@ -480,3 +480,11 @@ Además, «No se pudo conectar el vídeo.» queda debajo de la miniatura propia.
 Causa y capturas en `docs/plan/todo/visual.md` → «Hallazgos del comprobador»,
 2026-09-30, punto 3 (`styles.controls` de `video-call-view.tsx`: fila absoluta
 sin `flexWrap` ni límites laterales).
+
+*2026-10-01, arreglado en `dc29e08`:* la fila va de borde a borde
+(`left`/`right` = `Spacing.two`), centrada y con `flexWrap`; el botón del micro
+muestra «Silenciar» / «Activar mic» con la etiqueta de accesibilidad entera; y
+el aviso de estado se estrecha por los dos lados cuando está la miniatura
+propia, para no quedar debajo. Tests en `video-call-view.test.tsx`. Falta verlo
+en el emulador (412 dp, claro y oscuro): queda en la casilla `[comprobador]`
+de `visual.md`.

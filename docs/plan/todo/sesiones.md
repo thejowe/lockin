@@ -259,6 +259,11 @@ Android edge-to-edge: la vista no reserva el inset de arriba. Captura y detalle
 en `docs/plan/todo/visual.md` → «Hallazgos del comprobador», 2026-09-30,
 punto 2.
 
+*2026-10-01, arreglado en `2e47a68`:* la hoja suma el inset de arriba de
+`useSafeAreaInsets()` solo en Android (en iOS `pageSheet` ya deja el hueco) y
+el de abajo en los dos sistemas; tests en `propose-session-sheet.test.tsx`.
+Falta verlo en el emulador: queda en la casilla `[comprobador]` de `visual.md`.
+
 ## Corrección: Expo Go Android no arranca por `expo-notifications` (2026-09-29)
 
 - [x] [Claude] `createNotificationsPort()` devuelve `null` en Android + Expo Go

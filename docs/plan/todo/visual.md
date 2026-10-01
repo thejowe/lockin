@@ -135,6 +135,11 @@ tocar lógica ni datos.
   «Hallazgos del comprobador» abajo. Sigue abierta hasta que se arreglen y se
   repita el relevo. En Android no hay «antes»: la comparación antes/después
   sigue siendo la de las capturas web.
+  *2026-10-01: los tres ❌ arreglados en código (`c96c8a9`, `2e47a68`,
+  `dc29e08`; detalle en «Hallazgos del comprobador» abajo).* Sigue abierta: hay
+  que repetir en el emulador el relevo (grabando con `screenrecord`, varios
+  swipes y también con los botones), la hoja «Proponer sesión» y los controles
+  de la videollamada en claro y oscuro.
 
 ## Hallazgos del comprobador
 
@@ -212,6 +217,34 @@ fila absoluta sin `flexWrap`, sin `left`/`right` y sin ancho máximo, y cada
 botón lleva `paddingHorizontal: Spacing.three`. En la misma captura, el texto
 «No se pudo conectar el vídeo.» queda debajo de la miniatura propia (`local`,
 arriba a la derecha).
+
+**Arreglos (2026-10-01, sin probar todavía en el emulador).**
+- 1 → `c96c8a9` fix(descubrir). El arrastre ya no se devuelve al centro al
+  decidir. Pertenece a un *turno* (`owner`: la superior de ese render, con un
+  contador que sube cada vez que cambia la superior) y la decidida se queda
+  fuera marcada `exited`, que en el mismo fotograma del hilo de UI la oculta
+  (opacidad 0) y sube un puesto a las de detrás. Así los dos órdenes posibles
+  entre el hilo de UI y el commit de Fabric pintan lo mismo: la decidida no
+  vuelve al centro y la nueva superior no hereda la salida, porque no es su
+  turno. El arrastre se reinicia solo cuando el turno nuevo lo toma (al tocar o
+  con los botones), en un único `runOnUI`. La de detrás deja de seguir el
+  arrastre en cuanto la superior sale (antes, con `progress` = 1, ocupaba el
+  sitio de la superior a escala 1). Una tarjeta que vuelve arriba (guardado
+  fallido, cambio de modo) nace con turno nuevo, visible y centrada. Tests en
+  `swipe-deck.test.tsx` → «SwipeDeck en el relevo» (4), con `useSharedValue`
+  del mock hecho persistente entre renders en ese archivo.
+- 2 → `2e47a68` fix(sesiones). La hoja suma `useSafeAreaInsets().top` solo en
+  Android (en iOS `pageSheet` ya baja de la barra de estado) y el inset de
+  abajo en los dos. Tests de los dos sistemas en
+  `propose-session-sheet.test.tsx`.
+- 3 → `dc29e08` fix(video). La fila de controles va de `left` a `right`
+  (`Spacing.two`), centrada y con `flexWrap`; el botón del micro muestra
+  «Silenciar» / «Activar mic» (la etiqueta de accesibilidad sigue entera y
+  empieza igual que el texto visible). Con la miniatura propia en pantalla, el
+  aviso se estrecha por los dos lados (96 + 2·`Spacing.two`) para no quedar
+  debajo. Cuentas: «Activar mic» + «Activar cámara» + «Colgar» con su relleno
+  y huecos ≈ 310 dp, por debajo de los ~380 dp de la vista en 412 dp; sin
+  medir en dispositivo. Tests en `video-call-view.test.tsx`.
 
 **Observación, sin marcar como fallo.** Con este perfil (Ambos, Desarrollo)
 encabeza el deck Diego Salas, que no está en `SEED_RECIPROCAL_IDS`
