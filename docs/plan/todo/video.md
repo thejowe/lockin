@@ -491,3 +491,20 @@ de `visual.md`.
 *2026-10-01, comprobador: ⚠️ no comprobable* — el toolchain de Android ha
 vuelto a desaparecer de esta máquina; ver `visual.md` → «Hallazgos del
 comprobador», 2026-10-01.
+*2026-10-01 (tarde), comprobador (mock, APK release sobre `692561c` = `7415e7a`
+en código, Pixel 7 a 412 dp): ✅ el arreglo `dc29e08` se sostiene* en lo que
+toca a la maqueta. Medido sobre los píxeles de la captura (con la cámara en
+vivo `uiautomator dump` no llega a «idle»): la caja remota va de x = 64 a 1015;
+la fila «Silenciar / Apagar cámara / Colgar» ocupa x = 142–937 y la más ancha,
+«Activar mic / Activar cámara / Colgar», x = 123–957, en claro y en oscuro. El
+aviso «No se pudo conectar el vídeo.» acaba en x = 709 y la miniatura propia
+empieza en x = 743: ya no queda debajo. Capturas `23-sesion-video.png`,
+`24-sesion-video-oscuro.png`, `25-sesion-mic-cam-off-oscuro.png` y
+`26-salir-confirmar.png` en `e2e/artifacts/local/2026-10-01-relevo/` (local,
+ignorada). Lo que **no** demuestra: la videollamada 1:1 en sí (un solo
+emulador, Núria «aún no ha entrado», la cámara es la escena de juguete).
+Observación sin marcar como fallo: con «Activar cámara» (cámara apagada) la
+miniatura propia sigue mostrando la imagen; con la escena estática del emulador
+no se distingue un fotograma congelado de uno vivo. Si se espera que la
+miniatura se oculte o quede en negro al apagar la cámara, mirarlo en un
+dispositivo real.

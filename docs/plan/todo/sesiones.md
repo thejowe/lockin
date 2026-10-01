@@ -266,6 +266,12 @@ Falta verlo en el emulador: queda en la casilla `[comprobador]` de `visual.md`.
 *2026-10-01, comprobador: ⚠️ no comprobable* — el toolchain de Android ha
 vuelto a desaparecer de esta máquina; ver `visual.md` → «Hallazgos del
 comprobador», 2026-10-01.
+*2026-10-01 (tarde), comprobador (mock, APK release sobre `692561c` = `7415e7a`
+en código): ✅ el arreglo `2e47a68` se sostiene.* El título de la hoja sale en
+y = 199–278, como en Expo Go (antes 63–142, bajo el reloj), en claro y en
+oscuro; «Cancelar» queda en y = 2169–2232, por encima de la barra de gestos.
+Capturas `12-proponer.png` y `20-proponer-oscuro.png` en
+`e2e/artifacts/local/2026-10-01-relevo/` (local, ignorada).
 
 ## Corrección: Expo Go Android no arranca por `expo-notifications` (2026-09-29)
 

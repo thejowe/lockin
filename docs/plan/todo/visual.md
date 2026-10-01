@@ -121,12 +121,11 @@ tocar lógica ni datos.
   pantallas del recorrido en mock, publicadas lado a lado en
   <https://claude.ai/artifact/7JBDkaztck7XPv42xnph1v> (privado; hay que
   compartirlo para que lo vea otra persona). No se commitean los PNG: son 6 MB.
-- [ ] **[comprobador]** Recorrido completo en el emulador (mock) con capturas
-  antes/después de cada pantalla pulida. **Aparcada**: por decisión del
-  usuario del 2026-09-26 esta máquina no usa el `comprobador` (ver
-  `acuerdo.md`). Hasta que haya otro dispositivo con emulador, la evidencia en
-  Android es el job «E2E Android» de Actions, y la visual, las capturas web.
-  Al retomarla, mirar en especial el relevo del deck: la tarjeta de detrás
+- [x] **[comprobador]** Recorrido completo en el emulador (mock) con capturas
+  antes/después de cada pantalla pulida. ~~Aparcada: por decisión del
+  usuario del 2026-09-26 esta máquina no usa el `comprobador`.~~ **Revocado por
+  el usuario el 2026-10-01: en este dispositivo sí se usa el `comprobador`**
+  (anotado también en `acuerdo.md`). Al retomarla, mirar en especial el relevo del deck: la tarjeta de detrás
   avanza con el arrastre, y en el frame en que la superior se reinicia podría
   verse un salto de un 4 %.
   *2026-09-30, comprobador (mock, APK release sobre `4a698f1`): recorrido
@@ -143,6 +142,14 @@ tocar lógica ni datos.
   *2026-10-01, comprobador: ⚠️ no comprobable* — el toolchain de Android
   (SDK, AVD `lockin`, JDK, `~/.gradle`) y la evidencia del 2026-09-30 han
   vuelto a desaparecer de esta máquina. Detalle en «Hallazgos del comprobador».
+  *2026-10-01 (tarde), comprobador (mock, APK release sobre `692561c`, igual a
+  `7415e7a` en código): ✅, cerrada.* Toolchain reinstalado. Recorrido
+  completo de onboarding a deck vacío, en claro y en oscuro, y los tres
+  arreglos se sostienen en el emulador: relevo sin fotograma fantasma en 6 de 6
+  relevos grabados (arrastre, fling y botones), hoja «Proponer» fuera de la
+  barra de estado, y controles de la videollamada dentro de su caja. El «antes»
+  sigue siendo el de las capturas web. Detalle en «Hallazgos del comprobador»,
+  2026-10-01 (segunda entrada).
 
 ## Hallazgos del comprobador
 
@@ -276,6 +283,78 @@ Los tres puntos: **⚠️ no comprobables aquí**. La casilla sigue abierta; los
 arreglos `c96c8a9`, `2e47a68` y `dc29e08` solo están respaldados por los tests
 de Jest. Para cerrarla hace falta reinstalar SDK + AVD `lockin` + JDK 17 +
 ffmpeg (o otro dispositivo con emulador) y repetir este encargo.
+
+### 2026-10-01 (tarde) — los tres arreglos en el emulador: ✅ (mock)
+
+El usuario reinstaló SDK, AVD `lockin` y JDK 17.0.20 y revocó la decisión del
+2026-09-26: en este dispositivo sí se usa el `comprobador`. APK release x86_64
+sobre `692561c` (en `src/` igual a `7415e7a`; solo cambia `calidad.md`),
+compilado con `EXPO_NO_DOTENV=1 EXPO_PUBLIC_LOCKIN_ALLOW_MOCK=1` y
+`createBundleReleaseJsAndAssets --rerun` (la tarea se ejecutó, no salió
+`UP-TO-DATE`). Logcat: `[lockin] backend de datos: mock en memoria`. Pixel 7,
+1080×2400, 412 dp. Evidencia (local, ignorada):
+`e2e/artifacts/local/2026-10-01-relevo/`.
+
+**Cómo se grabó el relevo sin ffmpeg.** `adb exec-out screenrecord
+--output-format=frames --size 216x480 -` saca un fotograma RGB888 crudo (con
+cabecera de 20 bytes) por cada composición de la pantalla, sin pasar por
+H.264; un script de Python los pasa a PNG y a hojas de contacto. Ojo: en este
+modo `--time-limit` no corta; hay que parar con `adb shell pkill -INT
+screenrecord`.
+
+**✅ 1. Relevo del deck (`c96c8a9`).** Seis relevos, hojas de contacto en
+`r1/`…`r6/`:
+- `r1`: like a Marc arrastrando 800 ms (match). `relevo1-like-marc-f018-f021.png`:
+  en f020 Diego ya está arriba a tamaño completo y Marc sigue saliendo por el
+  borde derecho; no vuelve al centro.
+- `r2`: pasar a Diego arrastrando 750 ms a la izquierda.
+  `relevo2-pasar-diego-f021-f024.png`: Diego sale de forma continua y Lucía
+  no se mueve hasta quedar sola.
+- `r3`: botón Pasar sobre Lucía (Alba arriba en f003, limpio en f004).
+- `r4`: botón Like sobre Alba (match; Inés arriba).
+- `r5`: pasar a Inés arrastrando 900 ms (Núria arriba).
+- `r6`: fling de 250 ms a la derecha sobre Núria (match; Omar arriba).
+En ninguno sale la tarjeta decidida de vuelta en el centro ni la de dos puestos
+atrás en el sitio de la superior. Límite: es un emulador x86_64 con WHPX; el
+canal de fotogramas no garantiza los 60 fps (un arrastre de 800 ms dio unos 20
+fotogramas), así que «sin fantasma» vale para lo grabado, que ahora son 6 de 6
+relevos frente a los 3 de 4 con fantasma del 2026-09-30.
+
+**✅ 2. Hoja «Proponer sesión Lock-In» (`2e47a68`).** El título sale en
+y = 199–278 (antes 63–142, bajo el reloj), igual que en Expo Go; «Cancelar»
+en y = 2169–2232, por encima de la barra de gestos. Claro (`12-proponer.png`)
+y oscuro (`20-proponer-oscuro.png`).
+
+**✅ 3. Controles de la videollamada (`dc29e08`).** Sesión con Núria
+propuesta para dentro de 12 min y abierta al entrar en la ventana de 5 min;
+micro y cámara concedidos. `uiautomator dump` no funciona con la cámara en vivo
+(«could not get idle state»), así que medí sobre la captura: caja remota de
+x = 64 a 1015; «Silenciar / Apagar cámara / Colgar» en x = 142–937; la fila
+más ancha, «Activar mic / Activar cámara / Colgar», en x = 123–957; igual en
+claro y en oscuro. El aviso «No se pudo conectar el vídeo.» acaba en x = 709 y
+la miniatura propia empieza en 743. Capturas `23-sesion-video.png`,
+`24-sesion-video-oscuro.png`, `25-sesion-mic-cam-off-oscuro.png`,
+`26-salir-confirmar.png`. No demuestra la videollamada 1:1 (un solo
+emulador; la cámara es la escena de juguete).
+
+**✅ Resto del recorrido.** Onboarding (`00-`, `01-`, `02-`…`06-form*`), deck
+(`09-deck.xml`), match (`10-match.xml`), chat con mensaje enviado
+(`14-chat-enviado.png`), acuerdo con una respuesta guardada
+(`17-acuerdo-guardado.png`), Matches (`18-`), Perfil (`19-`), salir de la
+sesión → vuelta al chat (`27-tras-salir.xml`), deck vacío (`28-`), y en oscuro
+deck vacío, Matches, Perfil y chat (`oscuro-tira.png`). `logcat.txt`
+(`*:E ReactNativeJS:V`): sin errores de JS ni crash; solo `SoftException` no
+fatales de `react-native-keyboard-controller` («Fabric View [-1] does not have
+SurfaceId») al abrir cada `Modal`.
+
+**Observaciones, sin marcar como fallo.**
+- Con «Activar cámara» (cámara apagada) la miniatura propia sigue mostrando
+  imagen. La escena del emulador es estática, así que no distingo un fotograma
+  congelado de uno vivo; anotado en `video.md`.
+- En el formulario, «28», «Barcelona» y los demás valores de ejemplo son
+  placeholders: si no se escriben, «Crear perfil» no avanza y el error queda
+  arriba, fuera de la vista (no hay desplazamiento al primer error). Ya visto
+  en `04-form-errores.png` del 2026-09-30.
 
 ## Registro
 

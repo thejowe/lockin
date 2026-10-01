@@ -45,6 +45,8 @@ Plan: `docs/superpowers/plans/2026-09-24-acuerdo-socios.md`
       «E2E Android» de Actions.
       Resuelto de hecho: el toolchain y el AVD `lockin` se reinstalaron y el
       `comprobador` los usó el 2026-09-29 (acuerdo y WebRTC en emulador, Expo Go).
+      **Revocado por el usuario el 2026-10-01:** en este dispositivo sí se usa
+      el `comprobador` (SDK, AVD `lockin` y JDK 17 reinstalados ese día).
 
 ## Hallazgos del comprobador
 

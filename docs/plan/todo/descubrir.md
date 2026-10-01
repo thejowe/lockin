@@ -242,6 +242,16 @@ decidida de vuelta en el centro, o con la de dos puestos atrás en el sitio de
 la superior. Detalle, vídeos y salidas posibles en
 `docs/plan/todo/visual.md` → «Hallazgos del comprobador», 2026-09-30.
 
+*2026-10-01, comprobador (mock, APK release sobre `692561c` = `7415e7a` en
+código): ✅ el arreglo `c96c8a9` se sostiene.* Seis relevos grabados
+fotograma a fotograma con `screenrecord --output-format=frames` (cada
+composición de pantalla, sin pasar por H.264): like y pasar arrastrando
+(750–900 ms), un fling de 250 ms, y Pasar y Like con los botones. En ninguno
+vuelve la tarjeta decidida al centro ni aparece la de dos puestos atrás: la
+decidida sigue su salida hasta el borde y la nueva superior queda quieta y a
+tamaño completo. Detalle en `visual.md` → «Hallazgos del comprobador»,
+2026-10-01 (segunda entrada).
+
 ## Corrección: el match nace en el modo del chip (2026-09-29)
 
 - [x] [Claude] El modo con el que se decide (el del chip del deck) viaja hasta
