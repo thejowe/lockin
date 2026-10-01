@@ -4203,9 +4203,15 @@ aquí porque hasta hoy ninguna de las dos se había ejecutado junto a la otra.
       asistencia del perfil del intento, con un guarda nuevo en
       `e2e/session.test.mjs` que falla con el oráculo anterior (12/13) y pasa
       con el nuevo (13/13).
-- [ ] **Verlo en CI** requiere empujar: `gh workflow run e2e.yml --ref <rama>`
+- [x] **Verlo en CI** requiere empujar: `gh workflow run e2e.yml --ref <rama>`
       ejecuta el archivo de `origin`. Hasta entonces es una corrección leída
-      contra el artefacto, no un verde. *(Abierta el 2026-10-01.)*
+      contra el artefacto, no un verde. *(Abierta el 2026-10-01.)* **Cerrada el
+      2026-10-01**: el push de `7415e7a`, que contiene `6d51299`, dio
+      `E2E Android` verde en las tres variantes (`mock`, `supabase` y
+      `registro`) en [run 36904497316](https://github.com/thejowe/lockin/actions/runs/36904497316).
+      En el mismo push, `CI` ([36904498397](https://github.com/thejowe/lockin/actions/runs/36904498397))
+      y `Schema drift` ([36904497255](https://github.com/thejowe/lockin/actions/runs/36904497255))
+      salieron en verde.
 
 ### Verificación de esta pasada
 
