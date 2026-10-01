@@ -156,7 +156,12 @@ contra el mock y contra PGlite, que es donde llega el desarrollo.
       el dashboard es `Lockin`, no el de la OAuth App, y GitHub responde «Page
       not found» tras el login. Esto contradice la primera casilla de esta
       lista, que se marcó por palabra del usuario. Ver «Hallazgos del
-      comprobador» al final del archivo.
+      comprobador» al final del archivo. **Sigue igual el 2026-10-01:**
+      `GET /auth/v1/authorize?provider=github` contra `grrzmzktrhksbttpbblg`
+      responde `302` con `client_id=Lockin` en la redirección, así que no se
+      relanza el comprobador hasta que el usuario ponga en el dashboard el
+      Client ID real de la OAuth App (y su secret). Con este `curl` se
+      confirma sin abrir el emulador.
 
 ## Hallazgos del comprobador
 
