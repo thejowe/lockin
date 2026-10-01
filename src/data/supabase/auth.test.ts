@@ -157,7 +157,62 @@ describe('linkGithubIdentity', () => {
     auth.exchangeCodeForSession.mockResolvedValueOnce({ error });
     await expect(linkGithubIdentity()).rejects.toBe(error);
   });
+
+  // En Android la vuelta de GitHub también abre la ruta `auth/callback`, que
+  // pasa el mismo `code` a `completeAuthLink`. Canjearlo dos veces hacía que
+  // uno de los dos fallara y la pantalla dijera «Ese enlace no ha funcionado»
+  // con el sello ya puesto (comprobador, 2026-10-01).
+  it('la ruta de callback no vuelve a canjear el code de GitHub si llega después', async () => {
+    jest.mocked(WebBrowser.openAuthSessionAsync).mockResolvedValueOnce({
+      type: 'success',
+      url: 'lockin://auth/callback?code=github-despues',
+    });
+    signedInAs({ is_anonymous: true });
+    await expect(linkGithubIdentity()).resolves.toBe(true);
+
+    await expect(
+      completeAuthLink('lockin://auth/callback?code=github-despues')
+    ).resolves.toMatchObject({ kind: 'anonymous' });
+    expect(auth.exchangeCodeForSession).toHaveBeenCalledTimes(1);
+    expect(AsyncStorage.removeItem).not.toHaveBeenCalled();
+  });
+
+  it('la ruta de callback no canjea el code de GitHub si llega antes que el navegador', async () => {
+    let finishBrowser: (result: WebBrowser.WebBrowserAuthSessionResult) => void = () => {};
+    jest.mocked(WebBrowser.openAuthSessionAsync).mockReturnValueOnce(
+      new Promise((resolve) => {
+        finishBrowser = resolve;
+      })
+    );
+    signedInAs({ is_anonymous: true });
+    const linking = linkGithubIdentity();
+    await waitForBrowser();
+
+    await expect(
+      completeAuthLink('lockin://auth/callback?code=github-antes')
+    ).resolves.toMatchObject({ kind: 'anonymous' });
+    expect(auth.exchangeCodeForSession).not.toHaveBeenCalled();
+
+    finishBrowser({ type: 'success', url: 'lockin://auth/callback?code=github-antes' });
+    await expect(linking).resolves.toBe(true);
+    expect(auth.exchangeCodeForSession).toHaveBeenCalledTimes(1);
+    expect(auth.exchangeCodeForSession).toHaveBeenCalledWith('github-antes');
+  });
+
+  it('acabada la vinculación, un enlace de correo se sigue canjeando', async () => {
+    await linkGithubIdentity();
+    signedInAs({ email: 'ana@example.com', email_confirmed_at: '2026-09-17T10:00:00Z' });
+    await completeAuthLink('lockin://auth/callback?code=correo-nuevo');
+    expect(auth.exchangeCodeForSession).toHaveBeenLastCalledWith('correo-nuevo');
+  });
 });
+
+/** Espera a que `linkGithubIdentity` haya abierto el navegador. */
+async function waitForBrowser() {
+  for (let i = 0; i < 20 && !jest.mocked(WebBrowser.openAuthSessionAsync).mock.calls.length; i++) {
+    await Promise.resolve();
+  }
+}
 
 describe('unlinkGithubIdentity', () => {
   it('desvincula solo la identidad de GitHub', async () => {

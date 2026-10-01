@@ -516,6 +516,11 @@ export async function completeAuthLink(url: string): Promise<AccountState> {
   const tokenHash = params.get('token_hash');
   const type = params.get('type');
 
+  // La vuelta de GitHub comparte esta URL (ver `isGithubLinkCode`): ese code lo
+  // canjea `linkGithubIdentity`, y canjearlo aquí otra vez haría fallar a uno de
+  // los dos. No toca el dispositivo: vincular GitHub no hace la cuenta recuperable.
+  if (code && isGithubLinkCode(code)) return getAccountState();
+
   if (code) {
     const { error } = await client.auth.exchangeCodeForSession(code);
     if (error) throw toAccountError(error);
@@ -586,6 +591,22 @@ export async function signOut(options: { acceptDataLoss?: boolean } = {}): Promi
 /* -------------------------------------------------------------------------- */
 
 /**
+ * La vuelta de GitHub llega a `lockin://auth/callback`, la misma URL que los
+ * correos: GoTrue compara Redirect URLs de forma exacta, así que una propia
+ * obligaría a tocar el dashboard. En Android esa vuelta resuelve
+ * `openAuthSessionAsync` **y además** abre la ruta de callback, que pasa el
+ * mismo `code` —de un solo uso— a `completeAuthLink`. Puede llegar antes o
+ * después del navegador; estas dos marcas cubren los dos órdenes.
+ */
+let githubLinkInFlight = false;
+const githubLinkCodes = new Set<string>();
+
+/** Si ese code es la vuelta de una vinculación de GitHub (en curso o ya canjeada). */
+function isGithubLinkCode(code: string): boolean {
+  return githubLinkInFlight || githubLinkCodes.has(code);
+}
+
+/**
  * PKCE devuelve un code: con detectSessionInUrl: false el SDK no lo canjea
  * automáticamente (confirmado en la Tarea 1, commit 360d693).
  */
@@ -593,6 +614,7 @@ async function completeOAuthCallback(url: string): Promise<void> {
   const code = new URL(url).searchParams.get('code');
   if (!code) throw new Error('GitHub no devolvió el código de verificación.');
 
+  githubLinkCodes.add(code);
   const { error } = await getSupabaseClient().auth.exchangeCodeForSession(code);
   if (error) throw error;
 }
@@ -629,11 +651,16 @@ export async function linkGithubIdentity(): Promise<boolean> {
     throw error;
   }
 
-  const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-  if (result.type !== 'success') return false;
+  githubLinkInFlight = true;
+  try {
+    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+    if (result.type !== 'success') return false;
 
-  await completeOAuthCallback(result.url);
-  return true;
+    await completeOAuthCallback(result.url);
+    return true;
+  } finally {
+    githubLinkInFlight = false;
+  }
 }
 
 /** Desvincula la identidad de GitHub de la cuenta actual. */
