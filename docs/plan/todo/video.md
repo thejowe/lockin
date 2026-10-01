@@ -191,10 +191,15 @@ qué puede solaparse).
       videollamada necesita la app de desarrollo.»; el resto de la sesión
       arranca normal. Tests: `webrtc-unavailable.test.tsx`; `jest.setup.js`
       registra `NativeModules.WebRTCModule` para el doble.
+- [x] **[comprobador]** Mitad Android: Expo Go en el emulador + `npx expo
+      start`, la app arranca, llega a una sesión Lock-In activa y la vista de
+      vídeo pinta el aviso mientras Pomodoro, presencia y salir funcionan.
+      *2026-10-01, comprobador (mock, Expo Go 57.0.9, `e00cbce`): ✅* — ver
+      «Hallazgos del comprobador», 2026-10-01 (y antes 2026-09-30 sobre
+      `4a698f1`).
 - [ ] Sin verificar en dispositivo: abrir la app en Expo Go (iPhone) y
       comprobar que arranca y que la pantalla de sesión muestra el aviso.
-      Es iOS: sigue siendo del usuario. **[comprobador]** puede cubrir la
-      mitad Android (Expo Go en el emulador + `npx expo start`).
+      Es iOS: sigue siendo del usuario.
 
 ## Hallazgos del comprobador
 
@@ -471,6 +476,39 @@ mock en memoria`. Evidencia (local, ignorada):
   sin un solo error ni aviso de JS; Metro tampoco registra errores.
 - **iPhone** sigue sin comprobar (del usuario): la casilla de «Fallback en
   Expo Go» queda abierta solo por esa mitad.
+
+### 2026-10-01 — mitad Android del fallback en Expo Go: ✅ sigue valiendo en `e00cbce`, ahora con el Pomodoro corriendo y «Salir»
+
+Repetido porque desde `4a698f1` cambió `video-call-view.tsx` (`dc29e08`).
+Expo Go 57.0.9 en el AVD `lockin`, `HEAD` = `e00cbce`. **Backend mock**:
+`CI=1 EXPO_NO_DOTENV=1 EXPO_PUBLIC_LOCKIN_ALLOW_MOCK=1 npx expo start --go
+--clear` (Metro por WMI) y `exp://127.0.0.1:8081` con `adb reverse`; Metro y
+logcat dicen `[lockin] backend de datos: mock en memoria`. Expo Go limpio
+(`pm clear`). Evidencia (local, ignorada):
+`e2e/artifacts/local/2026-10-01-expo-go/`.
+
+- Arranca: onboarding «Compañero de Lock-In» → formulario → «Crear perfil» →
+  Descubrir (`13-tras-crear.*`) → Like → «¡Match!» con Alba Ferrer, «MODO
+  COMPAÑERO DE LOCK-IN» (`14-match.*`) → chat (`15-chat.*`) → proponer hoy
+  20:00, 1 bloque (`16-proponer.*`) → «Sesión acordada · empieza en 14 min» al
+  instante (`17-propuesta.*`).
+- A las 19:55 sale «Es la hora · Entrar a la sesión» (`18-entrar.*`). Dentro:
+  «La videollamada necesita la app de desarrollo.», Alba «Aún no ha entrado»,
+  «EMPIEZA EN 4:27» y «Salir»; ningún diálogo de permisos (`19-sesion.png`).
+- **Pomodoro**: a las 20:00:36 «TRABAJO · BLOQUE 1 DE 1 · 24:24» y 21 s
+  después 24:04 (`20-pomodoro.png`, `21-pomodoro-20s.png`), con el aviso
+  intacto.
+- **Salir**: «Salir» → «Saldrás antes de acabar; contará como abandono.» con
+  «Salir de la sesión» / «Seguir» (`22-salir.png`) → vuelve al chat con «Es la
+  hora · Entrar a la sesión» (`23-tras-salir.*`). Volver a entrar pinta otra
+  vez el aviso y el reloj sigue (23:10, `24-reentrar.png`).
+- **Presencia**: solo se ve el lado «Aún no ha entrado» — en el mock la otra
+  parte no entra nunca, así que el paso a «Está aquí» no se ejerce aquí.
+- `logcat.txt` (`*:E ReactNativeJS:V`): de `ReactNativeJS` solo el arranque y
+  la línea del backend; ningún error JS. Lo de `E` son `SoftException` de
+  `UIManagerHelper` del propio Expo Go, sin cierre. Metro sin errores
+  (`expo-start.log`).
+- **iPhone** sigue sin comprobar (del usuario): queda en su casilla aparte.
 
 ### 2026-09-30 — controles de la videollamada desbordados (APK nativo, mock)
 
