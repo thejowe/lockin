@@ -140,6 +140,9 @@ tocar lógica ni datos.
   que repetir en el emulador el relevo (grabando con `screenrecord`, varios
   swipes y también con los botones), la hoja «Proponer sesión» y los controles
   de la videollamada en claro y oscuro.
+  *2026-10-01, comprobador: ⚠️ no comprobable* — el toolchain de Android
+  (SDK, AVD `lockin`, JDK, `~/.gradle`) y la evidencia del 2026-09-30 han
+  vuelto a desaparecer de esta máquina. Detalle en «Hallazgos del comprobador».
 
 ## Hallazgos del comprobador
 
@@ -250,6 +253,29 @@ arriba a la derecha).
 encabeza el deck Diego Salas, que no está en `SEED_RECIPROCAL_IDS`
 (`06-deck.png`). La regla de `seed.ts` solo la fija `seed.test.ts` para el
 perfil del E2E, así que puede ser lo esperado.
+
+### 2026-10-01 — repetir los tres ❌ en el emulador: ⚠️ no comprobable (sin toolchain)
+
+Encargo: sobre `490ccfb`, backend mock, APK release (`EXPO_NO_DOTENV=1
+EXPO_PUBLIC_LOCKIN_ALLOW_MOCK=1`), repetir (1) el relevo del deck grabando con
+`screenrecord` swipes arrastrados de 700–900 ms y con los botones, (2) la hoja
+«Proponer sesión Lock-In» fuera de la barra de estado y (3) la fila de
+controles y el aviso «No se pudo conectar el vídeo.» en claro y oscuro.
+
+No se llegó a compilar ni a instalar nada: en `DESKTOP-R6TDDTP` **no existe**
+`%LOCALAPPDATA%\Android` (ni SDK, ni `adb`, ni `emulator`), ni `~/.android`
+(el AVD `lockin`), ni el JDK de `%LOCALAPPDATA%\Programs\Java` (`JAVA_HOME` y
+`ANDROID_HOME` vacíos, `java`/`adb`/`ffmpeg` fuera del PATH), ni `~/.gradle`,
+ni el `android/` generado del repo. Tampoco queda `e2e/artifacts/` (la
+evidencia del 2026-09-30 citada arriba ya no está en disco). Es la misma
+limpieza externa que el 2026-09-26 (`acuerdo.md` → «Hallazgos del
+comprobador»); disco con ~12 GB libres. No lo reinstalé: son varios GB y la
+decisión de reinstalar es del usuario.
+
+Los tres puntos: **⚠️ no comprobables aquí**. La casilla sigue abierta; los
+arreglos `c96c8a9`, `2e47a68` y `dc29e08` solo están respaldados por los tests
+de Jest. Para cerrarla hace falta reinstalar SDK + AVD `lockin` + JDK 17 +
+ffmpeg (o otro dispositivo con emulador) y repetir este encargo.
 
 ## Registro
 

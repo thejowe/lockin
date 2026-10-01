@@ -263,6 +263,9 @@ punto 2.
 `useSafeAreaInsets()` solo en Android (en iOS `pageSheet` ya deja el hueco) y
 el de abajo en los dos sistemas; tests en `propose-session-sheet.test.tsx`.
 Falta verlo en el emulador: queda en la casilla `[comprobador]` de `visual.md`.
+*2026-10-01, comprobador: ⚠️ no comprobable* — el toolchain de Android ha
+vuelto a desaparecer de esta máquina; ver `visual.md` → «Hallazgos del
+comprobador», 2026-10-01.
 
 ## Corrección: Expo Go Android no arranca por `expo-notifications` (2026-09-29)
 

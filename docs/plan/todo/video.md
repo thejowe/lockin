@@ -488,3 +488,6 @@ el aviso de estado se estrecha por los dos lados cuando está la miniatura
 propia, para no quedar debajo. Tests en `video-call-view.test.tsx`. Falta verlo
 en el emulador (412 dp, claro y oscuro): queda en la casilla `[comprobador]`
 de `visual.md`.
+*2026-10-01, comprobador: ⚠️ no comprobable* — el toolchain de Android ha
+vuelto a desaparecer de esta máquina; ver `visual.md` → «Hallazgos del
+comprobador», 2026-10-01.
