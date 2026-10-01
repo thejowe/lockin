@@ -23,12 +23,12 @@
 import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-handler/jest-utils';
 import { State } from 'react-native-gesture-handler';
 import { fireEvent, render, screen } from '@testing-library/react-native';
-import { act } from 'react';
-import { AccessibilityInfo } from 'react-native';
+import { act, useState } from 'react';
+import { AccessibilityInfo, StyleSheet } from 'react-native';
 
 import { buildProfile } from '@/data/test-fixtures';
 
-import { PAN_TEST_ID, SwipeDeck } from './swipe-deck';
+import { cardTestId, PAN_TEST_ID, SwipeDeck } from './swipe-deck';
 
 import type { PanGesture } from 'react-native-gesture-handler';
 import type { Profile } from '@/data';
@@ -43,8 +43,20 @@ const mockWithSpring = jest.fn();
 jest.mock('react-native-reanimated', () => {
   const reanimated = jest.requireActual('react-native-reanimated/mock');
 
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { useRef } = require('react');
+
   return {
     ...reanimated,
+    // El mock oficial crea un valor nuevo en cada render, así que un repintado
+    // olvida el arrastre. Aquí se conserva entre renders, como en la app: los
+    // tests del relevo repintan a mitad de decisión y miran dónde queda cada
+    // tarjeta.
+    useSharedValue: (init: unknown) => {
+      const ref = useRef(null);
+      if (ref.current === null) ref.current = reanimated.useSharedValue(init);
+      return ref.current;
+    },
     withTiming: (...args: unknown[]) => {
       mockWithTiming(...args);
       return reanimated.withTiming(...args);
@@ -316,5 +328,96 @@ describe('SwipeDeck con «reducir movimiento» activado', () => {
 
     expect(onDecide).toHaveBeenCalledTimes(2);
     expect(onDecide).toHaveBeenLastCalledWith(PROFILES[0], 'pass');
+  });
+});
+
+/**
+ * El relevo: lo que se ve entre que una tarjeta sale y la siguiente queda
+ * arriba. En el emulador salía un fotograma con la tarjeta equivocada porque el
+ * deck devolvía el arrastre al centro (hilo de UI) antes de que React retirase
+ * la decidida (commit), sin nada que ordenase las dos cosas. Bajo Jest no hay
+ * dos hilos, así que la carrera no se reproduce; lo que sí se fija son los dos
+ * estados intermedios posibles, que tienen que verse bien los dos: el padre
+ * todavía no ha retirado la tarjeta, o ya lo ha hecho.
+ */
+describe('SwipeDeck en el relevo', () => {
+  /** Transformación y opacidad efectivas de una tarjeta, aplanadas. */
+  function cardStyle(profileId: string): Record<string, number> {
+    const style = StyleSheet.flatten(
+      screen.getByTestId(cardTestId(profileId), { includeHiddenElements: true }).props.style
+    );
+    const transform = Object.assign({}, ...(style.transform ?? []));
+    return { opacity: style.opacity ?? 1, ...transform };
+  }
+
+  /** Padre que hace lo que `useDeck`: retira la tarjeta decidida, y puede devolverla. */
+  let restore: (profile: Profile) => void;
+  function Harness() {
+    const [profiles, setProfiles] = useState(PROFILES);
+    restore = (profile) => setProfiles((current) => [profile, ...current]);
+    return (
+      <SwipeDeck
+        profiles={profiles}
+        onDecide={(profile, decision) => {
+          onDecide(profile, decision);
+          setProfiles((current) => current.filter((p) => p.id !== profile.id));
+        }}
+      />
+    );
+  }
+
+  async function renderHarness() {
+    await render(<Harness />);
+    await act(async () => {});
+  }
+
+  it('la nueva superior nace en el centro aunque la anterior saliera arrastrada', async () => {
+    await renderHarness();
+
+    await act(async () => swipe({ translationX: THRESHOLD + 20 }));
+
+    expect(screen.queryByTestId(cardTestId('p1'))).toBeNull();
+    expect(cardStyle('p2')).toMatchObject({ opacity: 1, translateX: 0, translateY: 0, scale: 1 });
+    // La que sube a segundo puesto queda a un puesto de profundidad, no a la
+    // escala de la superior ni a la de dos puestos.
+    expect(cardStyle('p3')).toMatchObject({ translateY: 14, scale: 0.96 });
+    expect(cardStyle('p4')).toMatchObject({ translateY: 28, scale: 0.92 });
+  });
+
+  it('con los botones el relevo deja la nueva superior igual de colocada', async () => {
+    await renderHarness();
+
+    await fireEvent.press(screen.getByLabelText('Pasar'));
+
+    expect(onDecide).toHaveBeenCalledWith(PROFILES[0], 'pass');
+    expect(cardStyle('p2')).toMatchObject({ opacity: 1, translateX: 0, scale: 1 });
+  });
+
+  it('mientras el padre no la retira, la decidida no vuelve al centro', async () => {
+    const view = await renderDeck();
+
+    swipe({ translationX: THRESHOLD + 20 });
+    // Mismo deck: React aún no ha retirado la tarjeta, pero algo repinta. El
+    // compilador de React memoiza las tarjetas, así que hace falta una prop
+    // nueva para que el mock de Reanimated recalcule su estilo.
+    await view.rerender(
+      <SwipeDeck profiles={PROFILES} onDecide={onDecide} viewerSpecialties={[]} />
+    );
+
+    expect(cardStyle('p1').opacity).toBe(0);
+    expect(cardStyle('p1').translateX).toBeGreaterThan(THRESHOLD);
+    // La de detrás ya ocupa el sitio de la superior, sin esperar al commit.
+    expect(cardStyle('p2')).toMatchObject({ translateY: 0, scale: 1 });
+    expect(cardStyle('p3')).toMatchObject({ translateY: 14, scale: 0.96 });
+  });
+
+  it('una tarjeta que vuelve al deck (el guardado falló) aparece visible y en el centro', async () => {
+    await renderHarness();
+
+    await act(async () => swipe({ translationX: -(THRESHOLD + 20) }));
+    await act(async () => restore(PROFILES[0]));
+
+    expect(cardStyle('p1')).toMatchObject({ opacity: 1, translateX: 0, translateY: 0 });
+    expect(cardStyle('p2')).toMatchObject({ translateY: 14, scale: 0.96 });
   });
 });

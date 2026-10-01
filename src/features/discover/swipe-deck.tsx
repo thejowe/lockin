@@ -10,11 +10,24 @@
  * Solo la tarjeta superior escucha el gesto. La de justo detrás sube hacia
  * delante a medida que la de arriba se aparta (escala y desplazamiento ligados
  * al arrastre, no a un temporizador): cuando la superior sale, la siguiente ya
- * está en su sitio y el relevo no pega un salto. La tercera es decorado
- * estático — animarla no se ve y cuesta por frame.
+ * está en su sitio y el relevo no pega un salto. La tercera no sigue al
+ * arrastre: solo sube un puesto cuando la superior sale.
  *
  * La superior lleva la sombra `raised`: es lo único del deck que se coge con
  * la mano, y tiene que leerse por encima de las demás.
+ *
+ * El relevo no depende del orden entre hilos. El arrastre (`translateX`/`Y`)
+ * pertenece a un turno concreto —`owner`: la tarjeta que estaba arriba en ese
+ * render, contada aparte cada vez que la superior cambia— y no se devuelve al
+ * centro al decidir: la tarjeta decidida se queda fuera y se marca `exited`, que la
+ * oculta y adelanta un puesto a las de detrás en el MISMO fotograma del hilo de
+ * UI. Así da igual quién llegue antes, ese fotograma o el commit de React que la
+ * retira: la decidida no vuelve al centro, y la nueva superior no hereda un
+ * desplazamiento que no es suyo porque su turno es otro. El arrastre se reinicia
+ * solo cuando el turno nuevo lo toma (al tocar la tarjeta o con los botones),
+ * en un único paso en el hilo de UI. Que el turno no sea el id a secas importa
+ * cuando una tarjeta vuelve arriba (el guardado falló, o se cambia de modo y
+ * reaparece): nace con turno nuevo, visible y en el centro.
  *
  * Con «reducir movimiento» activado en el sistema, la tarjeta llega al MISMO
  * estado final sin el recorrido: misma decisión, mismo `onDecide`, misma lógica
@@ -23,6 +36,7 @@
  * eso es manipulación directa y quitarla dejaría el deck sin feedback.
  */
 
+import { useState } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -30,6 +44,7 @@ import Animated, {
   Extrapolation,
   interpolate,
   runOnJS,
+  runOnUI,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
@@ -44,6 +59,7 @@ import { useTheme, useThemeName } from '@/hooks/use-theme';
 import { DeckActions } from './deck-actions';
 import { ProfileCard } from './profile-card';
 
+import type { SharedValue } from 'react-native-reanimated';
 import type { Decision, Profile, Specialty } from '@/data';
 
 /** Desplazamiento a partir del cual soltar cuenta como decisión. */
@@ -64,6 +80,19 @@ const EXIT_TIMING = { duration: Duration.base, easing: Easing.bezier(...Curves.o
 /** Identificador del gesto de la tarjeta superior. Lo usan los tests. */
 export const PAN_TEST_ID = 'swipe-deck-pan';
 
+/** `testID` de la vista animada de cada tarjeta. Lo usan los tests. */
+export const cardTestId = (profileId: string) => `swipe-deck-card-${profileId}`;
+
+/** Estado del arrastre, compartido entre el hilo de UI y el de JS. */
+interface Drag {
+  translateX: SharedValue<number>;
+  translateY: SharedValue<number>;
+  /** Turno al que pertenece el arrastre (ver `turnKey`). `null` hasta el primero. */
+  owner: SharedValue<string | null>;
+  /** La dueña ya salió: se oculta y las de detrás suben un puesto. */
+  exited: SharedValue<boolean>;
+}
+
 export function SwipeDeck({
   profiles,
   onDecide,
@@ -75,26 +104,30 @@ export function SwipeDeck({
   /** Lo que domina quien swipea. Solo lo reenvía a la tarjeta, que lo resalta. */
   viewerSpecialties?: Specialty[];
 }) {
-  const theme = useTheme();
-  const elevation = Elevation[useThemeName()];
   const { width } = useWindowDimensions();
   const reduceMotion = useReduceMotion();
 
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
+  const owner = useSharedValue<string | null>(null);
+  const exited = useSharedValue(false);
+  const drag: Drag = { translateX, translateY, owner, exited };
   /** Bloquea nuevas decisiones mientras la tarjeta actual sale de pantalla. */
   const exiting = useSharedValue(false);
 
   const top = profiles.length > 0 ? profiles[0] : null;
+  const topId = top?.id ?? null;
   const exitDistance = width + 160;
 
-  /**
-   * Cierra la decisión: devuelve la tarjeta al centro ANTES de avisar al padre,
-   * para que la siguiente entre ya colocada y no aparezca fuera de pantalla.
-   */
+  // Cada vez que cambia la superior empieza un turno nuevo. Es estado derivado
+  // de las props, así que se ajusta durante el render (patrón de React para
+  // esto) y la nueva superior se pinta ya con su turno, en el mismo commit.
+  const [turn, setTurn] = useState({ topId, count: 0 });
+  if (turn.topId !== topId) setTurn({ topId, count: turn.count + 1 });
+  const turnKey = topId === null ? null : `${turn.count}:${topId}`;
+
+  /** Cierra la decisión. La tarjeta ya está oculta: aquí solo se avisa al padre. */
   function settle(profile: Profile, decision: Decision) {
-    translateX.set(0);
-    translateY.set(0);
     exiting.set(false);
     onDecide(profile, decision);
   }
@@ -103,19 +136,39 @@ export function SwipeDeck({
   function swipeAway(decision: Decision) {
     if (top === null || exiting.get()) return;
     const profile = top;
+    const key = turnKey;
+    const target = decision === 'like' ? exitDistance : -exitDistance;
 
     exiting.set(true);
 
     if (reduceMotion) {
+      runOnUI(() => {
+        'worklet';
+        owner.set(key);
+        exited.set(true);
+      })();
       settle(profile, decision);
       return;
     }
 
-    translateX.set(
-      withTiming(decision === 'like' ? exitDistance : -exitDistance, EXIT_TIMING, (finished) => {
-        if (finished) runOnJS(settle)(profile, decision);
-      })
-    );
+    // Tomar el arrastre y lanzar la salida van juntos en el hilo de UI: entre
+    // una cosa y otra no hay fotograma con la tarjeta en un sitio que no toca.
+    runOnUI(() => {
+      'worklet';
+      if (owner.get() !== key || exited.get()) {
+        owner.set(key);
+        exited.set(false);
+        translateX.set(0);
+        translateY.set(0);
+      }
+      translateX.set(
+        withTiming(target, EXIT_TIMING, (finished) => {
+          if (!finished) return;
+          exited.set(true);
+          runOnJS(settle)(profile, decision);
+        })
+      );
+    })();
   }
 
   const pan = Gesture.Pan()
@@ -123,13 +176,24 @@ export function SwipeDeck({
     // `getByGestureTestId` de `react-native-gesture-handler/jest-utils`.
     .withTestId(PAN_TEST_ID)
     .enabled(top !== null)
+    .onBegin(() => {
+      if (exiting.get() || turnKey === null) return;
+      // Al tocar una tarjeta que no era la dueña, el arrastre pasa a ser suyo
+      // desde cero. Si ya lo era (la coge otra vez a medio rebote), se respeta.
+      if (owner.get() !== turnKey || exited.get()) {
+        owner.set(turnKey);
+        exited.set(false);
+        translateX.set(0);
+        translateY.set(0);
+      }
+    })
     .onUpdate((event) => {
-      if (exiting.get()) return;
+      if (exiting.get() || owner.get() !== turnKey) return;
       translateX.set(event.translationX);
       translateY.set(event.translationY);
     })
     .onEnd((event) => {
-      if (exiting.get() || top === null) return;
+      if (exiting.get() || top === null || owner.get() !== turnKey) return;
 
       const liked = translateX.get() > SWIPE_THRESHOLD || event.velocityX > FLICK_VELOCITY;
       const passed = translateX.get() < -SWIPE_THRESHOLD || event.velocityX < -FLICK_VELOCITY;
@@ -144,8 +208,9 @@ export function SwipeDeck({
       exiting.set(true);
 
       if (reduceMotion) {
-        // `settle` deja la tarjeta en el centro y avisa al padre: el deck pasa a
-        // la siguiente sin que nada recorra la pantalla.
+        // La tarjeta se oculta donde la soltó el dedo y el padre la retira: el
+        // deck pasa a la siguiente sin que nada recorra la pantalla.
+        exited.set(true);
         runOnJS(settle)(top, decision);
         return;
       }
@@ -154,54 +219,94 @@ export function SwipeDeck({
       translateY.set(withTiming(translateY.get() + event.velocityY * 0.1, EXIT_TIMING));
       translateX.set(
         withTiming(liked ? exitDistance : -exitDistance, EXIT_TIMING, (finished) => {
-          if (finished) runOnJS(settle)(top, decision);
+          if (!finished) return;
+          exited.set(true);
+          runOnJS(settle)(top, decision);
         })
       );
     });
 
+  // Se pintan del fondo hacia delante: la superior es la última y queda encima.
+  const stack = profiles
+    .slice(0, VISIBLE_CARDS)
+    .map((profile, index) => ({ profile, index }))
+    .reverse();
+
+  return (
+    <View style={styles.root}>
+      <View style={styles.deck}>
+        {stack.map(({ profile, index }) =>
+          index > 0 ? (
+            <BehindCard
+              key={profile.id}
+              profile={profile}
+              index={index}
+              frontKey={turnKey}
+              drag={drag}
+              viewerSpecialties={viewerSpecialties}
+            />
+          ) : (
+            <GestureDetector key={profile.id} gesture={pan}>
+              <TopCard
+                profile={profile}
+                turnKey={turnKey}
+                drag={drag}
+                viewerSpecialties={viewerSpecialties}
+              />
+            </GestureDetector>
+          )
+        )}
+      </View>
+
+      <DeckActions onDecide={swipeAway} disabled={top === null} />
+    </View>
+  );
+}
+
+/**
+ * La superior: sigue al arrastre solo si es su dueña. Si no lo es —acaba de
+ * subir y nadie la ha tocado—, está quieta en el centro aunque el arrastre
+ * todavía guarde la salida de la anterior.
+ */
+function TopCard({
+  profile,
+  turnKey,
+  drag,
+  viewerSpecialties,
+}: {
+  profile: Profile;
+  turnKey: string | null;
+  drag: Drag;
+  viewerSpecialties?: Specialty[];
+}) {
+  const theme = useTheme();
+  const elevation = Elevation[useThemeName()];
+  const { width } = useWindowDimensions();
+  const id = profile.id;
+  const { translateX, translateY, owner, exited } = drag;
+
   const cardStyle = useAnimatedStyle(() => {
+    const mine = owner.get() === turnKey;
+    const x = mine ? translateX.get() : 0;
+    const y = mine ? translateY.get() : 0;
     const rotation = interpolate(
-      translateX.get(),
+      x,
       [-width, 0, width],
       [-MAX_ROTATION, 0, MAX_ROTATION],
       Extrapolation.CLAMP
     );
 
     return {
-      transform: [
-        { translateX: translateX.get() },
-        { translateY: translateY.get() },
-        { rotate: rotation + 'deg' },
-      ],
-    };
-  });
-
-  /** La de detrás avanza hasta el sitio de la superior según se aparta esta. */
-  const nextStyle = useAnimatedStyle(() => {
-    const progress = interpolate(
-      Math.abs(translateX.get()),
-      [0, SWIPE_THRESHOLD],
-      [0, 1],
-      Extrapolation.CLAMP
-    );
-
-    return {
-      transform: [
-        { scale: 1 - DEPTH_SCALE * (1 - progress) },
-        { translateY: DEPTH_OFFSET * (1 - progress) },
-      ],
+      opacity: mine && exited.get() ? 0 : 1,
+      transform: [{ translateX: x }, { translateY: y }, { rotate: rotation + 'deg' }, { scale: 1 }],
     };
   });
 
   // El sello crece un poco a la vez que aparece: se lee como un tampón que baja
   // sobre la tarjeta, no como un texto que se enciende.
   const likeStyle = useAnimatedStyle(() => {
-    const progress = interpolate(
-      translateX.get(),
-      [0, SWIPE_THRESHOLD],
-      [0, 1],
-      Extrapolation.CLAMP
-    );
+    const x = owner.get() === turnKey ? translateX.get() : 0;
+    const progress = interpolate(x, [0, SWIPE_THRESHOLD], [0, 1], Extrapolation.CLAMP);
     return {
       opacity: progress,
       transform: [{ rotate: '-10deg' }, { scale: 0.85 + 0.15 * progress }],
@@ -209,88 +314,99 @@ export function SwipeDeck({
   });
 
   const passStyle = useAnimatedStyle(() => {
-    const progress = interpolate(
-      translateX.get(),
-      [-SWIPE_THRESHOLD, 0],
-      [1, 0],
-      Extrapolation.CLAMP
-    );
+    const x = owner.get() === turnKey ? translateX.get() : 0;
+    const progress = interpolate(x, [-SWIPE_THRESHOLD, 0], [1, 0], Extrapolation.CLAMP);
     return {
       opacity: progress,
       transform: [{ rotate: '10deg' }, { scale: 0.85 + 0.15 * progress }],
     };
   });
 
-  // Se pintan del fondo hacia delante: la superior es la última y queda encima.
-  const stack = profiles.slice(0, VISIBLE_CARDS).reverse();
+  return (
+    <Animated.View
+      testID={cardTestId(id)}
+      style={[styles.card, styles.cardTop, { boxShadow: elevation.raised }, cardStyle]}>
+      <ProfileCard profile={profile} viewerSpecialties={viewerSpecialties} />
+
+      <Animated.View
+        style={[
+          styles.badge,
+          styles.badgeLike,
+          { backgroundColor: theme.tealSoft, borderColor: theme.teal },
+          likeStyle,
+        ]}>
+        <ThemedText type="label" style={{ color: theme.teal }}>
+          Like
+        </ThemedText>
+      </Animated.View>
+
+      <Animated.View
+        style={[
+          styles.badge,
+          styles.badgePass,
+          { backgroundColor: theme.dangerSoft, borderColor: theme.danger },
+          passStyle,
+        ]}>
+        <ThemedText type="label" style={{ color: theme.danger }}>
+          Pasar
+        </ThemedText>
+      </Animated.View>
+    </Animated.View>
+  );
+}
+
+/**
+ * Una de detrás. Su puesto sale del hilo de UI, no solo de su índice: si la de
+ * delante ya salió (`exited`), sube uno aunque React todavía no la haya
+ * retirado. La de justo detrás de la que se arrastra avanza con el arrastre.
+ */
+function BehindCard({
+  profile,
+  index,
+  frontKey,
+  drag,
+  viewerSpecialties,
+}: {
+  profile: Profile;
+  index: number;
+  /** Turno de la superior actual: si el arrastre es suyo, esta la sigue. */
+  frontKey: string | null;
+  drag: Drag;
+  viewerSpecialties?: Specialty[];
+}) {
+  const { translateX, owner, exited } = drag;
+
+  const style = useAnimatedStyle(() => {
+    const frontIsDragged = owner.get() !== null && owner.get() === frontKey;
+    const frontGone = frontIsDragged && exited.get();
+    const depth = frontGone ? index - 1 : index;
+    // Solo la de justo detrás sigue al arrastre, y solo mientras la superior
+    // sigue ahí: una vez fuera, su desplazamiento de salida ya no cuenta.
+    const progress =
+      index === 1 && frontIsDragged && !frontGone
+        ? interpolate(Math.abs(translateX.get()), [0, SWIPE_THRESHOLD], [0, 1], Extrapolation.CLAMP)
+        : 0;
+
+    return {
+      opacity: 1,
+      transform: [
+        { translateX: 0 },
+        { translateY: DEPTH_OFFSET * (depth - progress) },
+        { rotate: '0deg' },
+        { scale: 1 - DEPTH_SCALE * (depth - progress) },
+      ],
+    };
+  });
 
   return (
-    <View style={styles.root}>
-      <View style={styles.deck}>
-        {stack.map((profile, position) => {
-          const depth = stack.length - 1 - position;
-
-          if (depth > 0) {
-            return (
-              <Animated.View
-                key={profile.id}
-                // Se pintan detrás y no se pueden decidir todavía: para un
-                // lector de pantalla solo son ruido delante de la tarjeta real.
-                aria-hidden
-                style={[
-                  styles.card,
-                  styles.cardBehind,
-                  depth === 1
-                    ? nextStyle
-                    : {
-                        transform: [
-                          { scale: 1 - depth * DEPTH_SCALE },
-                          { translateY: depth * DEPTH_OFFSET },
-                        ],
-                      },
-                ]}>
-                <ProfileCard profile={profile} viewerSpecialties={viewerSpecialties} />
-              </Animated.View>
-            );
-          }
-
-          return (
-            <GestureDetector key={profile.id} gesture={pan}>
-              <Animated.View
-                style={[styles.card, styles.cardTop, { boxShadow: elevation.raised }, cardStyle]}>
-                <ProfileCard profile={profile} viewerSpecialties={viewerSpecialties} />
-
-                <Animated.View
-                  style={[
-                    styles.badge,
-                    styles.badgeLike,
-                    { backgroundColor: theme.tealSoft, borderColor: theme.teal },
-                    likeStyle,
-                  ]}>
-                  <ThemedText type="label" style={{ color: theme.teal }}>
-                    Like
-                  </ThemedText>
-                </Animated.View>
-
-                <Animated.View
-                  style={[
-                    styles.badge,
-                    styles.badgePass,
-                    { backgroundColor: theme.dangerSoft, borderColor: theme.danger },
-                    passStyle,
-                  ]}>
-                  <ThemedText type="label" style={{ color: theme.danger }}>
-                    Pasar
-                  </ThemedText>
-                </Animated.View>
-              </Animated.View>
-            </GestureDetector>
-          );
-        })}
-      </View>
-
-      <DeckActions onDecide={swipeAway} disabled={top === null} />
-    </View>
+    <Animated.View
+      testID={cardTestId(profile.id)}
+      // Se pintan detrás y no se pueden decidir todavía: para un lector de
+      // pantalla solo son ruido delante de la tarjeta real.
+      aria-hidden
+      style={[styles.card, styles.cardBehind, style]}>
+      <ProfileCard profile={profile} viewerSpecialties={viewerSpecialties} />
+    </Animated.View>
   );
 }
 
