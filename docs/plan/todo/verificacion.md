@@ -208,7 +208,9 @@ ejecutó, no salió UP-TO-DATE) e instalado como actualización
 **Detalles menores (no bloquean la casilla).**
 - La pantalla intermedia dice «Estamos aplicando el enlace de tu correo.»
   (`src/features/profile/auth-callback.tsx:96`) también en la vuelta de
-  GitHub. Dura un segundo, pero el texto no corresponde.
+  GitHub. Dura un segundo, pero el texto no corresponde. **Arreglado
+  después:** ahora dice «Estamos actualizando tu cuenta.», que vale para los
+  dos casos (solo copy; ningún test fijaba la frase).
 - logcat: `WebCrypto API is not supported. Code challenge method will default
   to use plain instead of sha256.` en cada `linkIdentity`: el PKCE va con
   `plain`, no con `S256`.

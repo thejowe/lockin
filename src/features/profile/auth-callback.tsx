@@ -93,5 +93,6 @@ export function AuthCallback({
     );
   }
 
-  return <LoadingState label="Un momento…" detail="Estamos aplicando el enlace de tu correo." />;
+  // Sin decir «de tu correo»: la vuelta de GitHub también pasa por aquí.
+  return <LoadingState label="Un momento…" detail="Estamos actualizando tu cuenta." />;
 }
