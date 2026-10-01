@@ -92,6 +92,20 @@ describe('session-rate.yaml', () => {
     assert.match(verify, /\.update\(\{ joined_at: joinedAt\.toISOString\(\)/);
     assert.match(verify, /starts_at: startsAt\.toISOString\(\)/);
   });
+
+  it('el oráculo cuenta las valoraciones de la sesión del intento, no la tabla entera', () => {
+    // Run 36858425355: el Supabase desechable se comparte entre intentos, el
+    // attempt-02 valoró antes de morir por el emulador y el attempt-03 vio
+    // `2 !== 1`. Sin el filtro por `session_id`, un reintento que valora bien
+    // sale como fallo del caso.
+    const body = verify.slice(verify.indexOf('export async function verifySessionRating('));
+    const oracle = body.slice(0, body.indexOf('\n}\n'));
+    assert.match(
+      oracle,
+      /\.from\('session_ratings'\)\s*\.select\('\*'\)\s*\.eq\('session_id', mine\.session_id\)/
+    );
+    assert.match(oracle, /\.from\('session_attendance'\)[\s\S]*\.eq\('profile_id', profile\.id\)/);
+  });
 });
 
 describe('session-streak.yaml', () => {

@@ -359,7 +359,22 @@ export async function verifySessionRating(status, profileName) {
     .eq('name', profileName)
     .single();
   assert.ifError(profileError);
-  const { data: rows, error } = await client.from('session_ratings').select('*');
+  // Acotado a la sesión de ESTE intento, no a la tabla entera: el Supabase
+  // desechable es el mismo para todos los intentos de un trabajo, y un intento
+  // anterior que llegó a valorar antes de morir por el emulador deja su fila.
+  // Run 36858425355 (`02b4d9a`, `supabase`): attempt-02 valoró y luego murió en
+  // `sign-in-abandon.yaml` (DeviceServerDiedException); attempt-03 valoró bien
+  // y este oráculo, contando la tabla entera, vio `2 !== 1` y lo dio por `caso`.
+  const { data: mine, error: mineError } = await client
+    .from('session_attendance')
+    .select('session_id')
+    .eq('profile_id', profile.id)
+    .single();
+  assert.ifError(mineError);
+  const { data: rows, error } = await client
+    .from('session_ratings')
+    .select('*')
+    .eq('session_id', mine.session_id);
   assert.ifError(error);
   assert.equal(rows.length, 1, 'El toque debe escribir una sola valoración');
   assert.equal(rows[0].profile_id, profile.id, 'La valoración es de quien la tocó');
