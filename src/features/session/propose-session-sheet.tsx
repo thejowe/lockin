@@ -7,7 +7,8 @@
  */
 
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
@@ -41,6 +42,7 @@ export function ProposeSessionSheet({
   onClose,
 }: ProposeSessionSheetProps) {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const [initialSlot] = useState(() => preselectSlot(me, counterpart, nowMs));
   const [slotMs, setSlotMs] = useState(initialSlot);
   const [dayMs, setDayMs] = useState(() => startOfDayMs(initialSlot));
@@ -64,7 +66,16 @@ export function ProposeSessionSheet({
       animationType="slide"
       presentationStyle="pageSheet"
       onRequestClose={onClose}>
-      <View style={[styles.root, { backgroundColor: theme.background }]}>
+      <View
+        testID="propose-session-sheet"
+        style={[
+          styles.root,
+          {
+            backgroundColor: theme.background,
+            paddingTop: Spacing.four + sheetTopInset(insets.top),
+            paddingBottom: Spacing.four + insets.bottom,
+          },
+        ]}>
         <ThemedText type="subtitle">Proponer sesión Lock-In</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
           {`A ${counterpart.name.split(' ')[0]} le llegará para aceptarla o rechazarla.`}
@@ -149,6 +160,19 @@ export function ProposeSessionSheet({
   );
 }
 
+/**
+ * Hueco de arriba que la hoja tiene que reservar ella misma.
+ *
+ * En iOS `pageSheet` ya se presenta por debajo de la barra de estado, con la
+ * pantalla de detrás asomando: sumar el inset dejaría un hueco de más. En
+ * Android `pageSheet` no existe: el `Modal` ocupa la pantalla entera y, con
+ * edge-to-edge, el título quedaba debajo del reloj. Abajo sí hace falta en los
+ * dos: la hoja llega hasta el borde inferior en ambos sistemas.
+ */
+function sheetTopInset(top: number): number {
+  return Platform.OS === 'android' ? top : 0;
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View style={styles.section}>
@@ -193,7 +217,7 @@ function Chip({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, padding: Spacing.four, gap: Spacing.four },
+  root: { flex: 1, paddingHorizontal: Spacing.four, gap: Spacing.four },
   section: { gap: Spacing.two },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   chip: {

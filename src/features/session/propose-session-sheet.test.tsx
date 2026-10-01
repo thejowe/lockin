@@ -5,7 +5,10 @@
  */
 
 import { fireEvent, render, screen } from '@testing-library/react-native';
+import { Platform, StyleSheet } from 'react-native';
+import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 
+import { Spacing } from '@/constants/theme';
 import { buildProfile } from '@/data/test-fixtures';
 
 import { ProposeSessionSheet } from './propose-session-sheet';
@@ -87,5 +90,50 @@ describe('ProposeSessionSheet', () => {
     await renderSheet({ submitting: true });
 
     expect(screen.getByLabelText('Proponer sesión')).toBeDisabled();
+  });
+});
+
+/**
+ * La hoja reserva ella misma los insets que el sistema no le da: en Android el
+ * `Modal` ocupa la pantalla entera con edge-to-edge y el título quedaba bajo el
+ * reloj; en iOS `pageSheet` ya baja de la barra de estado y no debe sumarlo.
+ */
+describe('ProposeSessionSheet y los insets', () => {
+  const INSETS = { top: 32, bottom: 24, left: 0, right: 0 };
+
+  async function renderOn(os: 'android' | 'ios') {
+    jest.replaceProperty(Platform, 'OS', os);
+    await render(
+      <SafeAreaInsetsContext.Provider value={INSETS}>
+        <ProposeSessionSheet
+          visible
+          me={me}
+          counterpart={nuria}
+          nowMs={NOW}
+          submitting={false}
+          onSubmit={jest.fn()}
+          onClose={jest.fn()}
+        />
+      </SafeAreaInsetsContext.Provider>
+    );
+    return StyleSheet.flatten(screen.getByTestId('propose-session-sheet').props.style);
+  }
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('en Android baja el contenido por debajo de la barra de estado', async () => {
+    const style = await renderOn('android');
+
+    expect(style.paddingTop).toBe(Spacing.four + INSETS.top);
+    expect(style.paddingBottom).toBe(Spacing.four + INSETS.bottom);
+  });
+
+  it('en iOS no suma el inset de arriba: pageSheet ya deja el hueco', async () => {
+    const style = await renderOn('ios');
+
+    expect(style.paddingTop).toBe(Spacing.four);
+    expect(style.paddingBottom).toBe(Spacing.four + INSETS.bottom);
   });
 });
