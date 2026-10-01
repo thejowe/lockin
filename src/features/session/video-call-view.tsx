@@ -87,7 +87,13 @@ export function VideoCallView({
           objectFit="cover"
         />
       ) : (
-        <ThemedText type="small" themeColor="textSecondary" style={styles.centeredText}>
+        <ThemedText
+          testID="video-call-status"
+          type="small"
+          themeColor="textSecondary"
+          // Con la miniatura propia arriba a la derecha, el aviso se estrecha
+          // por los dos lados lo mismo: sigue centrado y no se mete debajo.
+          style={[styles.centeredText, call.localStream && styles.clearOfPreview]}>
           {call.error ?? STATUS_TEXT[call.status]}
         </ThemedText>
       )}
@@ -105,9 +111,10 @@ export function VideoCallView({
         </View>
       )}
 
-      <View style={styles.controls}>
+      <View testID="video-call-controls" style={styles.controls}>
         <CallButton
           label={call.micOn ? 'Silenciar micrófono' : 'Activar micrófono'}
+          text={call.micOn ? 'Silenciar' : 'Activar mic'}
           selected={!call.micOn}
           onPress={call.toggleMic}
         />
@@ -122,13 +129,20 @@ export function VideoCallView({
   );
 }
 
+/**
+ * Botón de la llamada. `text` es lo que se lee en pantalla cuando la etiqueta
+ * completa no cabe en la fila: siempre un principio de `label`, para que quien
+ * maneja la app por voz pueda decir lo que ve.
+ */
 function CallButton({
   label,
+  text = label,
   onPress,
   tone = 'quiet',
   selected = false,
 }: {
   label: string;
+  text?: string;
   onPress: () => void;
   tone?: 'quiet' | 'danger';
   selected?: boolean;
@@ -148,8 +162,11 @@ function CallButton({
           opacity: pressed ? Opacity.pressed : 1,
         },
       ]}>
-      <ThemedText type="small" style={{ color: tone === 'danger' ? theme.onAccent : theme.text }}>
-        {label}
+      <ThemedText
+        type="small"
+        numberOfLines={1}
+        style={{ color: tone === 'danger' ? theme.onAccent : theme.text }}>
+        {text}
       </ThemedText>
     </Pressable>
   );
@@ -178,13 +195,20 @@ const styles = StyleSheet.create({
     borderWidth: Stroke.hairline,
     overflow: 'hidden',
   },
+  // La fila va de borde a borde de la vista remota y, si aun así no cabe (letra
+  // grande del sistema), pasa a una segunda línea en vez de salirse.
   controls: {
     position: 'absolute',
+    left: Spacing.two,
+    right: Spacing.two,
     bottom: Spacing.two,
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
     gap: Spacing.two,
   },
   centeredText: { textAlign: 'center', paddingHorizontal: Spacing.four },
+  clearOfPreview: { paddingHorizontal: SELF_PREVIEW.width + Spacing.two * 2 },
   button: {
     minHeight: Control.minTouch,
     paddingHorizontal: Spacing.three,
