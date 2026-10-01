@@ -171,6 +171,57 @@ contra el mock y contra PGlite, que es donde llega el desarrollo.
 
 ## Hallazgos del comprobador
 
+### Verificar con GitHub contra Supabase real (2026-10-01, tras 17e09f6) — ✅ sin pantalla de error
+
+Repetición de la casilla tras el arreglo del hallazgo de abajo. **El arreglo
+es `17e09f6`** (`fix(verificacion): la vuelta de GitHub ya no se canjea dos
+veces`, solo `src/data/supabase/auth.ts`).
+
+**Entorno.** Emulador Android 16 (AVD `lockin`), APK release local compilado
+desde HEAD `17e09f6` con el árbol limpio (`createBundleReleaseJsAndAssets` se
+ejecutó, no salió UP-TO-DATE) e instalado como actualización
+(`firstInstallTime` intacto, sesión conservada). **Supabase real**
+(`[lockin] backend de datos: Supabase` en logcat). Cuenta «Verif GH»
+(`+lockingh1001`, uid `44491308-…`).
+
+**Pasos (dos pasadas, mismo resultado).**
+1. Perfil → «Quitar verificación» (se quita sin diálogo) → `profiles` con
+   `link_github`, `github_handle` y `github_verified_at` a `null` y solo la
+   identidad `email` (`profiles-tras-quitar.txt`, `-2.txt`).
+2. «Verificar con GitHub» → Custom Tab de `github.com`. GitHub **no enseña la
+   pantalla «Authorize»**: la OAuth App ya estaba autorizada en la cuenta
+   `thejowe` desde la prueba anterior y GitHub redirige solo, en ~3 s.
+3. Vuelta: un único intent `VIEW lockin://auth/...` a `MainActivity`
+   (`START ... result code=2`, entregado a la actividad ya abierta), antes de
+   que se cierre la Custom Tab. No hay un evento aparte de «vuelta del
+   navegador»: `openAuthSessionAsync` y la ruta de callback salen de ese mismo
+   intent, y la app no registra en logcat cuál de los dos canjea primero.
+4. Ráfaga de capturas de la segunda pasada (`rafaga/`): Custom Tab → splash →
+   «Un momento… Estamos aplicando el enlace de tu correo.» (~1 s) → Perfil.
+   **Ningún fotograma con «Ese enlace no ha funcionado».**
+5. Perfil → «✓ @thejowe · verificado» en Enlaces y en Verificación
+   (`07-perfil-sello.*`). `profiles` con `github_handle = thejowe` y
+   `github_verified_at` relleno; identidad `github` nueva en cada pasada
+   (`profiles-tras-verificar.txt`, `-2.txt`).
+6. `am force-stop` + relanzar → el sello sigue (`09-perfil-frio.*`).
+
+**Detalles menores (no bloquean la casilla).**
+- La pantalla intermedia dice «Estamos aplicando el enlace de tu correo.»
+  (`src/features/profile/auth-callback.tsx:96`) también en la vuelta de
+  GitHub. Dura un segundo, pero el texto no corresponde.
+- logcat: `WebCrypto API is not supported. Code challenge method will default
+  to use plain instead of sha256.` en cada `linkIdentity`: el PKCE va con
+  `plain`, no con `S256`.
+- La pantalla de consentimiento de GitHub no se ha vuelto a ver en esta
+  pasada (ver paso 2). Para verla habría que revocar la app en
+  github.com/settings/applications.
+
+**Evidencia** (local, ignorada por git):
+`e2e/artifacts/local/2026-10-01-github-sello-17e09f6/` — `build.log`,
+`01-arranque.*` … `09-perfil-frio.*`, `rafaga/01…30-*.png`,
+`profiles-tras-quitar*.txt`, `profiles-tras-verificar*.txt`, `logcat.txt`,
+`logcat-full.txt`, `logcat-full-2.txt`.
+
 ### Verificar con GitHub contra Supabase real (2026-10-01) — ✅ sello, ❌ pantalla de error a la vuelta
 
 **Entorno.** Emulador Android 16 (AVD `lockin`), APK release local
@@ -222,7 +273,8 @@ ha cambiado» justo cuando acaba de cambiar, y tiene que volver a Perfil para
 descubrir el sello. Arreglo probable: un `redirectTo` propio para el OAuth
 (p. ej. `lockin://auth/github`) que la ruta de correos no intercepte, o que
 `AuthCallback` ignore la vuelta de `linkIdentity`. Repetir esta casilla
-después del arreglo.
+después del arreglo. **Arreglado en `17e09f6` y repetido el mismo día: ✅
+sin pantalla de error (ver el hallazgo «tras 17e09f6» arriba).**
 
 **Evidencia** (local, ignorada por git):
 `e2e/artifacts/local/2026-10-01-github-sello/` — `20-perfil-antes.*`,
