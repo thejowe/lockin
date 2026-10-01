@@ -147,7 +147,7 @@ contra el mock y contra PGlite, que es donde llega el desarrollo.
 - [x] Aplicar `20260916000100_github_verification.sql` en
       `grrzmzktrhksbttpbblg` por el SQL Editor — **hecho el 2026-09-17**,
       confirmado por el cotejo remoto (ver arriba).
-- [ ] **[comprobador]** Verificar el flujo en el emulador con un APK nativo
+- [x] **[comprobador]** Verificar el flujo en el emulador con un APK nativo
       (no Expo Go) contra Supabase real: el OAuth necesita un navegador de
       verdad y un deep link de vuelta (`lockin://`). Evidencia: el sello en
       la tab Perfil y `github_*` rellenos en `profiles`. El usuario teclea su
@@ -161,9 +161,75 @@ contra el mock y contra PGlite, que es donde llega el desarrollo.
       responde `302` con `client_id=Lockin` en la redirección, así que no se
       relanza el comprobador hasta que el usuario ponga en el dashboard el
       Client ID real de la OAuth App (y su secret). Con este `curl` se
-      confirma sin abrir el emulador.
+      confirma sin abrir el emulador. **Comprobado el 2026-10-01 tras
+      corregir el usuario el Client ID (`Ov23li…`): ✅ el sello sale en la
+      tab Perfil y `profiles` queda con `github_handle = thejowe` y
+      `github_verified_at` relleno, y sobrevive a un reinicio en frío.** Con
+      un fallo de pantalla a la vuelta del navegador («Ese enlace no ha
+      funcionado») que no impide el sello pero miente al usuario — ver el
+      hallazgo del 2026-10-01 abajo.
 
 ## Hallazgos del comprobador
+
+### Verificar con GitHub contra Supabase real (2026-10-01) — ✅ sello, ❌ pantalla de error a la vuelta
+
+**Entorno.** Emulador Android 16 (AVD `lockin`), APK release local
+(`android/app/build/outputs/apk/release/app-release.apk`, compilado el
+2026-10-01 21:14 UTC e instalado a las 21:17; posterior al último cambio de
+`src/data/supabase/auth.ts`, `src/app/auth/callback.tsx` y
+`src/features/profile/`, así que equivale a HEAD `4b9c1bf` en lo que toca
+aquí). **Supabase real** (`[lockin] backend de datos: Supabase` en logcat).
+El dashboard ya redirige con `client_id=Ov23liktGQvjwB1jS3qK`.
+
+**Cuenta.** La sesión de `+lockin3` ya no estaba en el emulador (los datos de
+la app se habían borrado) y su contraseña no consta en ningún sitio, así que
+se dio de alta una cuenta nueva: `joeldetorres123+lockingh1001@gmail.com`,
+perfil «Verif GH», uid `44491308-7cb4-458b-8789-d41b9a5a4411`. Gastó un
+correo de confirmación de GoTrue (abierto en el Gmail del emulador). Queda en
+la base de datos real; se puede borrar desde el dashboard.
+
+**Pasos.**
+1. `profiles` antes: `link_github`, `github_handle` y `github_verified_at` a
+   `null`; una sola identidad, `email` (`profiles-antes.txt`).
+2. Perfil → «Verificar con GitHub» → Custom Tab de Chrome con **«Authorize
+   LockIn» by thejowe**, «Authorizing will redirect to
+   https://grrzmzktrhksbttpbblg.supabase.co» (`22-navegador.png`). La sesión
+   de GitHub seguía iniciada: no hizo falta login. El Client ID ya es bueno.
+3. «Authorize thejowe» → GitHub → Supabase → `lockin://auth/...` abre
+   `MainActivity` (logcat 21:34:30). **La app enseña «CUENTA · Ese enlace no
+   ha funcionado · No hemos podido completar la operación. Inténtalo otra
+   vez. Tu cuenta no ha cambiado.»** (`23-tras-authorize.png`).
+4. Pero en el servidor sí cambió: identidad `github` (`thejowe`) creada a las
+   21:34:32 y `profiles` con `link_github = https://github.com/thejowe`,
+   `github_handle = thejowe`, `github_verified_at = 2026-10-01T21:34:33Z`
+   (`profiles-tras-authorize.txt`). Client Secret y callback URL, por tanto,
+   correctos.
+5. «Volver a mi perfil» → sello **«✓ @thejowe · verificado»** en Enlaces y en
+   Verificación, con «Quitar verificación» (`25-perfil-sello.png`).
+6. `am force-stop` + relanzar → el sello sigue (`26-perfil-frio.*`).
+
+**El fallo (para `verificacion`).** `linkIdentity` usa como `redirectTo`
+`lockin://auth/callback`, la misma ruta que los enlaces de los correos de
+cuenta. En Android la vuelta del navegador llega también como intent a
+`MainActivity`, expo-router monta `src/app/auth/callback.tsx` y `AuthCallback`
+trata el código como un enlace de correo. Leyendo el código: el mismo
+`code` PKCE, que es de un solo uso, se canjea dos veces —
+`completeOAuthCallback` (`src/data/supabase/auth.ts:596`, tras
+`openAuthSessionAsync`) y el canje de enlaces de correo (`auth.ts:520`, desde
+la ruta de callback)—; gana uno (el sello queda puesto) y el otro pinta el
+error. Qué canje gana no se ha medido. Resultado: quien verifica ve «Tu cuenta no
+ha cambiado» justo cuando acaba de cambiar, y tiene que volver a Perfil para
+descubrir el sello. Arreglo probable: un `redirectTo` propio para el OAuth
+(p. ej. `lockin://auth/github`) que la ruta de correos no intercepte, o que
+`AuthCallback` ignore la vuelta de `linkIdentity`. Repetir esta casilla
+después del arreglo.
+
+**Evidencia** (local, ignorada por git):
+`e2e/artifacts/local/2026-10-01-github-sello/` — `20-perfil-antes.*`,
+`21-verificacion.*`, `22-navegador.png`, `23-tras-authorize.*`,
+`24-perfil-tras-volver.*`, `25-perfil-sello.*`, `26-perfil-frio.*`,
+`profiles-antes.txt`, `profiles-tras-authorize.txt`, `logcat.txt`,
+`logcat-full.txt`.
 
 ### Verificar con GitHub contra Supabase real (2026-09-24) — ❌ Client ID mal puesto
 
