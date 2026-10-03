@@ -169,6 +169,69 @@ contra el mock y contra PGlite, que es donde llega el desarrollo.
       funcionado») que no impide el sello pero miente al usuario — ver el
       hallazgo del 2026-10-01 abajo.
 
+## Hallazgos de la revisión adversarial del 2026-10-02
+
+Revisión (Codex) del flujo de vuelta de GitHub tras `17e09f6` y `5b716e5`.
+1, 2, 4 y 5 los confirmó en código quien encargó el arreglo; 3 y 6 se
+verificaron antes de tocarlos. Arreglo en `3c029d6` (capa de datos:
+`src/data/supabase/auth.ts`, `index.ts`) y `5420ae5` (pantalla:
+`src/features/profile/auth-callback.tsx`), cada hallazgo con su test rojo
+primero. Evidencia local sobre `5420ae5`: `npx tsc --noEmit` y `npm run lint`
+limpios; `npx jest --coverage --ci` con 96 suites y 1100 tests en verde (113
+saltados, los del contrato opt-in) y cobertura 95.24/90.36/94.92/96.86, sobre
+el suelo. El veredicto de CI queda para cuando se empuje.
+
+- [x] **1. Vuelta en frío sin sello.** Si Android mataba el proceso con GitHub
+      abierto, la ruta canjeaba el code y nadie llamaba a
+      `sync_github_verification` (`refreshGithubVerification()` sale antes sin
+      sello). Ahora `linkGithubIdentity` apunta el intento en AsyncStorage
+      (`lockin.supabase.github-link-attempt`, vigente 10 min) **antes** de abrir
+      GitHub; en frío, `completeAuthLink` canjea y, si el servidor dice que la
+      cuenta tiene identidad `github`, pone el sello. El RPC se movió de
+      `verifyGithub` a `linkGithubIdentity` para que los dos caminos lo pongan,
+      y solo se llama con la identidad presente (sin ella vaciaría
+      `link_github`). Tests: «la vuelta de GitHub en frío» en `auth.test.ts`.
+- [x] **2. Deduplicación que no esperaba al canje.** Ahora hay una promesa
+      compartida por code (canje + sello) en `githubCompletions`: quien llega
+      segundo espera ese canje y ve su resultado, también si falla. Tests con
+      canje diferido y rechazado, ruta primero y navegador primero.
+- [x] **3. El mismo enlace reabierto tras reiniciar daba error. Se sostiene.**
+      `IntentModule.getInitialURL` de React Native devuelve el `data` de
+      `activity.intent` sin mirar `FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY`, así que
+      una app abierta en frío por el deep link vuelve a recibirlo al reabrirla
+      desde recientes tras morir el proceso. Ahora el último code de GitHub
+      canjeado se guarda (`lockin.supabase.github-link-consumed`) y no se vuelve
+      a canjear; y si el canje falla con un intento abierto pero la cuenta ya
+      tiene GitHub (lo canjeó el proceso muerto), se pone el sello en vez de
+      dar error.
+- [x] **4. Booleano global.** `githubLinkInFlight` desaparece. Con el navegador
+      abierto, la ruta espera a que vuelva y compara codes: solo el que
+      devolvió GitHub es de GitHub; un code de correo que llegue entretanto se
+      canjea como correo. En frío decide el servidor (identidad `github`), no
+      una marca local.
+- [x] **5. `?error=access_denied` hablaba de correos.** Con un intento de
+      GitHub abierto, `completeAuthLink` lanza un `AccountError` con
+      `github = true` y un texto sobre GitHub; la pantalla pinta «La
+      verificación con GitHub no se ha completado» y manda a mirar el perfil,
+      sin «Pide otro correo» ni «Tu cuenta no ha cambiado». Un error sin code
+      no trae nada que comparar: ahí sí decide el intento abierto, y solo
+      cambia el copy.
+- [x] **6. `handled.current` bloqueaba una segunda URL. Se sostiene.** El
+      `StackRouter` de expo-router, ante un `NAVIGATE` a la ruta que ya está
+      enfocada, reutiliza esa ruta y cambia sus parámetros: `AuthCallback` no
+      se desmonta, recibe la URL nueva y el booleano la ignoraba tras un
+      error. Ahora `handled` recuerda la URL; la deduplicación del code vive
+      en la capa de datos.
+- [ ] **[comprobador]** Recorrer en el emulador la vuelta en frío: «Verificar
+      con GitHub» → con la Custom Tab abierta, matar el proceso de la app
+      (`am kill` con la app en segundo plano, no `force-stop`) → autorizar en
+      GitHub. Esperado: la app arranca en `auth/callback`, pasa a Perfil sin
+      «Ese enlace no ha funcionado», y el sello sale en la tab Perfil y en
+      `profiles` (`github_handle`, `github_verified_at`). Después, reabrir la
+      app desde recientes tras matarla otra vez: sin pantalla de error. Para
+      ver la pantalla de consentimiento hay que revocar antes la OAuth App en
+      github.com/settings/applications.
+
 ## Hallazgos del comprobador
 
 ### Verificar con GitHub contra Supabase real (2026-10-01, tras 17e09f6) — ✅ sin pantalla de error
