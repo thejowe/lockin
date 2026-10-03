@@ -1,0 +1,43 @@
+# salas — Salas Lock-In grupales (Fase 3)
+
+Spec: `docs/superpowers/specs/2026-10-02-salas-grupales-design.md`
+Plan: `docs/superpowers/plans/2026-10-02-salas-grupales.md`
+Agente: `.claude/agents/salas.md`
+
+> **Diseñado sin el usuario delante (2026-10-02).** Antes de la Tarea 1, el
+> usuario revisa la tabla «Decisiones tomadas sin el usuario (revisar)» de la
+> spec. Si cambia alguna, se reabre la Tarea 0 y se corrigen spec, plan y este
+> archivo antes de escribir código.
+
+## Tareas
+
+Paralelo posible solo en dos parejas, cada una en su worktree: **1 ∥ 2** y **4 ∥ 5**.
+El resto, en orden.
+
+- [x] [Claude] Tarea 0 — Alta del bloque: spec, plan, sección 14 en `PLAN.md`, hito en `TODO.md`, este archivo y `.claude/agents/salas.md` (commit de diseño del 2026-10-02)
+- [ ] [Codex] Tarea 1 — Tipos de dominio (`src/data/types.ts`) y reglas puras (`src/data/rooms.ts` + test)
+- [ ] [Codex] Tarea 2 — Migración `20261002000100_lockin_rooms.sql` y cobertura en PGlite (`supabase/schema-embedded.test.mjs`), con el ciego de invitados como test central
+- [ ] [Claude] Tarea 3 — Contrato `RoomRepository`, sus doce casos, mock (`src/data/mock/rooms.ts`), store y registro
+- [ ] [Codex] Tarea 4 — Repositorio de Supabase (`src/data/supabase/rooms.ts`), tipos, registro y fixture del contrato; `contract.yml` en verde
+- [ ] [Codex] Tarea 5 — Presencia de sala: `topicPrefix` en `supabase/presence.ts`, `roomPresence` en `active.ts`, `useRoomPresence`
+- [ ] [Codex] Tarea 6 — `roomRowView`, `RoomRow` y `useLiveRooms`
+- [ ] [Claude] Tarea 7 — Pantalla «Convocar sala» (`/room/new`) e `InviteePicker`
+- [ ] [Claude] Tarea 8 — Pantalla de la sala (`/room/[roomId]`) y `RoomsSection` en Matches (cruce con `chat`)
+- [ ] [Codex] Tarea 9 — Avisos locales de salas (`room-reminders.ts`, `RoomReminderSync`; cruce de una línea con `sesiones` y con el layout de tabs)
+- [ ] [Claude] Tarea 10 — E2E `room.yaml` en la variante `supabase`, encadenado tras `agreement.yaml`
+- [ ] [Claude] Tarea 11 — Verificación final y cierre (CI, E2E, contrato, Schema drift con su excepción anotada)
+- [ ] [comprobador] Tarea 12 — Recorrer convocar, entrar y cancelar una sala en el emulador (mock)
+
+## Pendiente del usuario
+
+- [ ] Revisar las decisiones tomadas sin el usuario (spec, primera sección). Las
+      que más cuesta deshacer una vez empezada la Tarea 2: cómo se forma la sala
+      (desde matches) y el ciego de invitados.
+- [ ] Aplicar `supabase/migrations/20261002000100_lockin_rooms.sql` en
+      `grrzmzktrhksbttpbblg` por el SQL Editor al cerrar la Tarea 11. Hasta
+      entonces el job remoto de `Schema drift` suma esta migración a la
+      excepción vigente (memoria `schema-drift-remoto-rojo-esperado.md`).
+
+## Hallazgos del comprobador
+
+(ninguno todavía)

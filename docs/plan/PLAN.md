@@ -204,8 +204,8 @@ permiso de escribir. Diseño en
 
 **Fase 3 son tres sub-proyectos** («salas grupales, verificación, plantillas de
 acuerdo entre cofundadores» en `CONCEPTO.md`) y este es el primero. Plantillas
-de acuerdo es el bloque 12; salas grupales no está empezado y no comparten
-nada con él.
+de acuerdo es el bloque 12 y salas grupales el 14; ninguno comparte nada con
+este.
 
 Este bloque **cruza cuatro bloques**, y el alcance se declara entero para que
 nadie lo descubra a mitad:
@@ -247,7 +247,7 @@ escritura `answer_agreement_topic()`, las dos `SECURITY DEFINER`. Diseño en
 
 Es el segundo de los tres sub-proyectos de Fase 3 («salas grupales,
 verificación, plantillas de acuerdo entre cofundadores» en `CONCEPTO.md`);
-verificación (bloque 11) ya está hecho y salas grupales sigue sin empezar.
+verificación (bloque 11) ya está hecho y salas grupales es el bloque 14.
 
 Este bloque cruza cinco bloques, y el alcance se declara entero para que
 nadie lo descubra a mitad:
@@ -294,6 +294,80 @@ de `CONCEPTO.md`. No cambia lógica de producto ni datos. Agente
 - Copy, `accessibilityLabel` y `testID` que usen `e2e/*.yaml` no se cambian sin
   cambiar también el flujo.
 - Depende de: nada abierto (todos los bloques de producto cerrados el 2026-09-26).
+
+### 14. `salas` — Salas Lock-In grupales (Fase 3)
+
+Entrega: una persona convoca a 2–4 de sus matches (de cualquier modo) a una
+sesión Lock-In grupal agendada —Pomodoro 25+5 compartido, presencia «está
+aquí» por persona y aviso local 5 minutos antes—, cada invitado acepta o
+rechaza, y **nadie ve a quien no ha aceptado salvo quien convoca** (el ciego de
+invitados, impuesto por la RLS de `room_members`). Sin vídeo, sin chat de grupo
+y sin ningún texto libre. Diseño en
+`docs/superpowers/specs/2026-10-02-salas-grupales-design.md` — **escrito sin el
+usuario: empieza por su tabla «Decisiones tomadas sin el usuario (revisar)»**;
+plan en `docs/superpowers/plans/2026-10-02-salas-grupales.md`; checklist con
+reparto `[Claude]`/`[Codex]` en `docs/plan/todo/salas.md`.
+
+Es el tercer y último sub-proyecto de Fase 3 («salas grupales, verificación,
+plantillas de acuerdo entre cofundadores» en `CONCEPTO.md`). No rompe «match =
+2 personas»: una sala no es un match, ni un chat, ni una `lockin_sessions`, sino
+una entidad al lado que reutiliza de `sesiones` solo lo puro (reglas de tiempo,
+`phaseAt`, `serverNow`, presencia, notificaciones). Es el bloque 14 porque el 13
+ya es `visual`.
+
+Archivos propios, todos nuevos: `src/data/rooms.ts`, `src/data/mock/rooms.ts`,
+`src/data/supabase/rooms.ts`, `supabase/migrations/20261002000100_lockin_rooms.sql`,
+`src/features/room/`, `src/app/room/new.tsx`, `src/app/room/[roomId].tsx`,
+`test/app/room-new.test.tsx`, `test/app/roomId.test.tsx`, `e2e/room.yaml`, y sus
+tests. Este bloque **cruza seis bloques**, y el alcance se declara entero para
+que nadie lo descubra a mitad:
+
+| Archivo | Dueño original | Qué se toca |
+|---|---|---|
+| `src/data/types.ts` | `arquitecto` | `RoomMemberStatus`, `LockInRoom`, `RoomMember`, `RoomView`, `RoomInput` |
+| `src/data/repositories.ts`, `repositories.contract.ts` | `arquitecto` | `RoomRepository`, `Repositories.rooms`, `ContractFixture.roomsFor` y doce casos |
+| `src/data/active.ts`, `src/data/index.ts` | `arquitecto` | Exponer `rooms` y el adaptador `roomPresence` |
+| `src/data/mock/store.ts`, `mock/index.ts`, `mock/index.test.ts` | `arquitecto` | `MockState` gana `rooms` y `roomMembers`; registro; `roomsFor` |
+| `src/data/supabase/index.ts`, `database.types.ts`, `contract.test.ts` | `datos` | Registro, tipos de tablas y RPC, `roomsFor` |
+| `src/data/supabase/presence.ts` (+ test) | `sesiones`/`datos` | Un parámetro `topicPrefix` con el valor de hoy por defecto |
+| `supabase/schema-embedded.test.mjs`, `drift-check.mjs` (solo si no parsea las tablas nuevas) | `datos`/`calidad` | Los tests en PGlite |
+| `src/features/session/index.ts` | `sesiones` | Solo exportar `createNotificationsPort`, `REMINDER_LEAD_MS`, `SESSIONS_CHANNEL_ID`, `NotificationsPort`, `ReminderStorage` |
+| `src/app/(tabs)/matches.tsx` + `test/app/matches.test.tsx` | `chat` | Una línea: `<RoomsSection />` en la cabecera |
+| `src/app/_layout.tsx` | `arquitecto` | Dos `Stack.Screen`: `room/new` y `room/[roomId]` |
+| `src/app/(tabs)/_layout.tsx` | `arquitecto`/`sesiones` | Una línea: `<RoomReminderSync />` |
+| `e2e/run.mjs`, `verify.mjs` | `calidad` | `room.yaml` encadenado en la variante `supabase` tras `agreement.yaml`; la `mock` no se toca |
+
+Quién **no** puede ir en paralelo con este bloque (comparten archivos, así que
+van por turnos):
+
+| Bloque | Dónde chocan |
+|---|---|
+| `arquitecto` | `types.ts`, `repositories.ts`, `repositories.contract.ts`, `active.ts`, `index.ts`, `mock/store.ts`, los dos `_layout.tsx` |
+| `datos` | `supabase/index.ts`, `database.types.ts`, `contract.test.ts`, `schema-embedded.test.mjs`, `supabase/migrations/` |
+| `sesiones`, `valoracion`, `rachas`, `video` | `src/features/session/index.ts`, `supabase/presence.ts`, `(tabs)/_layout.tsx`, `repositories.contract.ts` |
+| `chat` | `(tabs)/matches.tsx` y su test |
+| `calidad` | `e2e/run.mjs`, `verify.mjs`, `schema-embedded.test.mjs` |
+| `visual` | toda la capa de presentación de `src/features/**` y `src/app/**` |
+| `acuerdo`, `verificacion` | `types.ts`, `repositories.ts`, `repositories.contract.ts`, `e2e/run.mjs` (los dos están cerrados; solo cuenta si se reabren) |
+
+Sí puede ir a la vez: el agente `comprobador` (no escribe código) y `descubrir`
+o `perfil` mientras no toquen `src/data/`. Dentro del bloque, solo dos parejas de
+tareas van en paralelo (Tarea 1 ∥ Tarea 2 y Tarea 4 ∥ Tarea 5; ver el plan).
+
+- **No toca Fase 2 por dentro**: `sessions.ts`, `session-errors.ts`,
+  `session/[sessionId].tsx`, rachas y valoración se importan, no se modifican.
+- **Sin vídeo** (WebRTC en malla para N>2 no cabe con solo STUN; un SFU es
+  proveedor de pago), **sin chat de grupo ni texto libre** (sin moderación en el
+  repo), y las salas **no cuentan para rachas ni se valoran**.
+- **Quien convoca no manda**: solo cancela antes de empezar. El copy dice
+  «Convoca {nombre}», nunca «anfitrión» ni «admin».
+- Errores `LI001`–`LI004` con las clases de `session-errors.ts`; **`LI006`
+  nuevo** (`RoomInviteError`, invitados inválidos).
+- Cero dependencias nuevas y ninguna build nativa: funciona en Expo Go, en web
+  y en el emulador del `comprobador` de punta a punta.
+- Depende de: `sesiones` entregado. **Del usuario**: revisar las decisiones de
+  la spec antes de la Tarea 1, y aplicar `20261002000100_lockin_rooms.sql` en
+  `grrzmzktrhksbttpbblg` al cerrar.
 
 ## Orden recomendado de trabajo
 
@@ -342,6 +416,6 @@ silenciosa de datos de usuario).
 
 ## Qué NO hacer
 
-- No adelantar trabajo de Fase 2+ (video real, salas grupales, Modo Talento, premium) — ver "Fuera de alcance" en `CONCEPTO.md`.
+- No adelantar trabajo de fases sin diseñar (Modo Talento, premium) — ver "Fuera de alcance" en `CONCEPTO.md`. Fase 2 y Fase 3 ya tienen sus bloques (7-12 y 14); lo que no esté en su spec sigue fuera.
 - No lanzar dos bloques que tocan los mismos archivos a la vez sin avisar del riesgo de conflicto.
 - No dejar que `datos` invente credenciales o las hardcodee si no existen — debe decirlo y limitarse al esquema.
