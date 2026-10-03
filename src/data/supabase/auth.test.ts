@@ -177,6 +177,13 @@ describe('linkGithubIdentity', () => {
     await expect(linkGithubIdentity()).rejects.toBe(error);
   });
 
+  it('un canje fallido no pasa por bueno aunque la cuenta ya tenga GitHub', async () => {
+    const error = gotrueError('flow_state_not_found', 'invalid flow state');
+    auth.exchangeCodeForSession.mockResolvedValueOnce({ error });
+    await expect(linkGithubIdentity()).rejects.toBe(error);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
   it('pone el sello en cuanto GitHub queda vinculado', async () => {
     await expect(linkGithubIdentity()).resolves.toBe(true);
     expect(rpc).toHaveBeenCalledWith('sync_github_verification');
@@ -356,18 +363,51 @@ describe('la vuelta de GitHub en frío', () => {
     expect(rpc).toHaveBeenCalledWith('sync_github_verification');
   });
 
-  it('si el proceso muerto ya lo canjeó, la ruta pone el sello en vez de dar error', async () => {
+  // Revisión del 2026-10-02 (codex review, P2): que la cuenta tenga GitHub no
+  // prueba que ESTE code lo vinculara. Un correo caducado con un intento
+  // abierto se aceptaba como éxito y se saltaba la confirmación en silencio.
+  it('un canje fallido con un intento abierto sigue siendo un error aunque haya GitHub', async () => {
     const forgetOldProcess = await githubOpenWhenProcessDies();
     await forgetOldProcess();
     jest.clearAllMocks();
     const fresh = restartProcess();
     signedInAs({ is_anonymous: true });
-    auth.exchangeCodeForSession.mockResolvedValueOnce({
-      error: gotrueError('flow_state_not_found', 'invalid flow state'),
+    auth.exchangeCodeForSession.mockResolvedValue({
+      error: gotrueError('otp_expired', 'Email link is invalid or has expired'),
     });
 
-    await expect(fresh.completeAuthLink(callback('g-frio-gastado'))).resolves.toBeDefined();
-    expect(rpc).toHaveBeenCalledWith('sync_github_verification');
+    await expect(fresh.completeAuthLink(callback('correo-caducado'))).rejects.toBeInstanceOf(
+      fresh.AccountError
+    );
+    expect(rpc).not.toHaveBeenCalled();
+
+    // Y no queda apuntado como gastado: reabrirlo sigue fallando, no pasa por bueno.
+    await expect(
+      restartProcess().completeAuthLink(callback('correo-caducado'))
+    ).rejects.toBeDefined();
+    expect(auth.exchangeCodeForSession).toHaveBeenCalledTimes(2);
+  });
+
+  // codex review, P2: el canje fue bien, pero si poner el sello falla, la
+  // pantalla no puede decir «Tu cuenta no ha cambiado»: GitHub ya está vinculado.
+  it.each([
+    [
+      'la consulta de identidades',
+      () => auth.getUserIdentities.mockResolvedValue({ data: null, error: new Error('Sin red') }),
+    ],
+    ['el RPC del sello', () => rpc.mockResolvedValue({ error: new Error('Sin red') })],
+  ])('en frío, si falla %s tras el canje, el error es de GitHub', async (_caso, breakIt) => {
+    const forgetOldProcess = await githubOpenWhenProcessDies();
+    await forgetOldProcess();
+    jest.clearAllMocks();
+    const fresh = restartProcess();
+    signedInAs({ is_anonymous: true });
+    breakIt();
+
+    await expect(fresh.completeAuthLink(callback('g-frio-sin-sello'))).rejects.toMatchObject({
+      name: 'AccountError',
+      github: true,
+    });
   });
 
   it('el mismo enlace reabierto tras otro reinicio no se canjea ni da error', async () => {

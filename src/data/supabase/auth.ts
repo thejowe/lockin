@@ -558,16 +558,23 @@ export async function completeAuthLink(url: string): Promise<AccountState> {
       return getAccountState();
     }
 
+    // Un canje fallido es un error, haya o no intento de GitHub abierto: que la
+    // cuenta tenga GitHub no prueba que ESTE code lo vinculara, y aceptarlo
+    // saltaría en silencio una confirmación de correo o una recuperación
+    // caducadas (codex review del 2026-10-02). El único code gastado que se
+    // perdona es el que se puede correlacionar: el apuntado arriba.
     const { error } = await client.auth.exchangeCodeForSession(code);
+    if (error) throw toAccountError(error);
+
     // Vuelta en frío: el proceso que abrió GitHub ya no existe, así que nadie
     // más va a poner el sello. Lo dice el servidor, no una marca local: solo si
     // la cuenta TIENE identidad de GitHub (el RPC sin ella vaciaría `link_github`).
-    // Si el canje falla porque el proceso muerto ya lo hizo, tampoco es un error.
-    if (error) {
-      if (githubPending && (await adoptGithubReturn(code))) return getAccountState();
-      throw toAccountError(error);
+    // Si eso falla, el canje ya está hecho: el error es de GitHub, no del correo.
+    if (githubPending) {
+      await adoptGithubReturn(code).catch((cause: unknown) => {
+        throw githubFailure(cause);
+      });
     }
-    if (githubPending) await adoptGithubReturn(code);
   } else if (tokenHash && type) {
     const { error } = await client.auth.verifyOtp({
       token_hash: tokenHash,
@@ -656,7 +663,10 @@ export async function signOut(options: { acceptDataLoss?: boolean } = {}): Promi
  *   al servidor si la cuenta tiene identidad de GitHub antes de poner el sello.
  * - **El enlace repetido no es un error.** El último code de GitHub ya
  *   canjeado queda en `GITHUB_CONSUMED_CODE_KEY`: si Android vuelve a entregar
- *   el mismo intent tras reiniciar el proceso, no se canjea otra vez.
+ *   el mismo intent tras reiniciar el proceso, no se canjea otra vez. Es la
+ *   única excepción: cualquier otro canje fallido sigue siendo un error, aunque
+ *   la cuenta tenga GitHub (si el proceso murió entre el canje y el sello, ese
+ *   code no se puede correlacionar y la persona reintenta desde su perfil).
  */
 const GITHUB_ATTEMPT_KEY = 'lockin.supabase.github-link-attempt';
 const GITHUB_CONSUMED_CODE_KEY = 'lockin.supabase.github-link-consumed';
@@ -724,8 +734,11 @@ async function adoptGithubReturn(code: string): Promise<boolean> {
  */
 async function settleGithubCode(code: string): Promise<void> {
   const { error } = await getSupabaseClient().auth.exchangeCodeForSession(code);
+  // Un canje fallido es un fallo aunque la cuenta ya tenga GitHub: eso no
+  // prueba que este code la vinculara (codex review del 2026-10-02).
+  if (error) throw error;
   if (await adoptGithubReturn(code)) return;
-  throw error ?? new Error('GitHub no ha quedado vinculado a tu cuenta. Vuelve a intentarlo.');
+  throw new Error('GitHub no ha quedado vinculado a tu cuenta. Vuelve a intentarlo.');
 }
 
 /** El canje compartido de ese code de GitHub; lo arranca quien llegue primero. */

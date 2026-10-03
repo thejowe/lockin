@@ -201,9 +201,10 @@ el suelo. El veredicto de CI queda para cuando se empuje.
       una app abierta en frío por el deep link vuelve a recibirlo al reabrirla
       desde recientes tras morir el proceso. Ahora el último code de GitHub
       canjeado se guarda (`lockin.supabase.github-link-consumed`) y no se vuelve
-      a canjear; y si el canje falla con un intento abierto pero la cuenta ya
-      tiene GitHub (lo canjeó el proceso muerto), se pone el sello en vez de
-      dar error.
+      a canjear. ~~Y si el canje falla con un intento abierto pero la cuenta ya
+      tiene GitHub, se pone el sello en vez de dar error~~ — **retirado tras el
+      `codex review` de abajo**: la identidad no prueba que ese code la
+      vinculara.
 - [x] **4. Booleano global.** `githubLinkInFlight` desaparece. Con el navegador
       abierto, la ruta espera a que vuelva y compara codes: solo el que
       devolvió GitHub es de GitHub; un code de correo que llegue entretanto se
@@ -222,6 +223,26 @@ el suelo. El veredicto de CI queda para cuando se empuje.
       se desmonta, recibe la URL nueva y el booleano la ignoraba tras un
       error. Ahora `handled` recuerda la URL; la deduplicación del code vive
       en la capa de datos.
+- [x] **`codex review --base 558a75f`, P2 1: un canje fallido se perdonaba
+      solo por tener GitHub.** Se sostiene: con un intento abierto y la cuenta
+      ya con identidad `github`, un enlace de correo caducado (confirmación o
+      recuperación) se daba por bueno y quedaba apuntado como gastado. Ahora un
+      canje fallido es siempre un error, también en `settleGithubCode` (vía del
+      navegador); el único code gastado que se perdona es el que se puede
+      correlacionar, el apuntado en `lockin.supabase.github-link-consumed`. Si
+      el proceso muere entre el canje y el sello, ese code no se puede
+      correlacionar: sale el error y la persona reintenta desde su perfil.
+- [x] **`codex review`, P2 2: en frío, un fallo al poner el sello salía como
+      error de correo.** Se sostiene: con el canje hecho, si fallaban
+      `getUserIdentities` o `sync_github_verification`, el error subía sin
+      `github` y la pantalla decía «Tu cuenta no ha cambiado» con GitHub ya
+      vinculado. Ahora sale con `github = true`. Tests: «un canje fallido con
+      un intento abierto sigue siendo un error aunque haya GitHub», «en frío,
+      si falla … tras el canje, el error es de GitHub» (dos casos) y «un canje
+      fallido no pasa por bueno aunque la cuenta ya tenga GitHub», los cuatro
+      en rojo antes del arreglo. Evidencia local: `tsc` y `lint` limpios;
+      `jest --coverage --ci` con 96 suites, 1103 pasan y 113 saltados;
+      cobertura 95.30/90.43/94.93/96.86, sobre el suelo.
 - [ ] **[comprobador]** Recorrer en el emulador la vuelta en frío: «Verificar
       con GitHub» → con la Custom Tab abierta, matar el proceso de la app
       (`am kill` con la app en segundo plano, no `force-stop`) → autorizar en
