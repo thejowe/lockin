@@ -2138,3 +2138,62 @@ Con esto, el bloque `datos` no tiene ninguna casilla abierta.
 **Pendiente del usuario:** aplicar
 `20261003000100_harden_grants_and_clock.sql` al proyecto
 `grrzmzktrhksbttpbblg` mediante el **SQL Editor**. No aplicada en remoto por esta tarea.
+
+## DELETE de `postgres_changes` sin RLS en matches y sesiones (2026-10-03)
+
+Hallazgo de salas (`76a3c02`, run 37124064814): Supabase Realtime **no aplica
+RLS ni `filter:` a los DELETE** de `postgres_changes`; los entrega a todo
+suscriptor de la tabla con la PK en `payload.old`. Barrido del mismo patrón en
+el resto de canales de `src/data/supabase/`.
+
+### Inventario y decisión por canal
+
+| Canal (archivo) | Tabla | Eventos antes | ¿DELETE en la app real? | Qué pierde la UI sin DELETE | Decisión |
+|---|---|---|---|---|---|
+| `lockin:matches` (`index.ts`, `matches.subscribe`) | `matches` | `'*'`, sin filtro | No. No hay deshacer match ni política DELETE. Solo `dev_reset_current_user()` (seed, desarrollo), `supabase/cleanup/borrado.sql` (admin) y la cascada de borrar un perfil (política «profiles: solo borras el tuyo», sin pantalla que la use) | Un match borrado por la baja de la otra persona sigue en la lista hasta la siguiente lectura (foco, reenganche o cualquier otro aviso) | Solo `INSERT` + `UPDATE` |
+| `lockin:matches` | `messages` | `INSERT` | — | Nada | Sin cambios (ya seguro) |
+| `lockin:messages:<id>` (`index.ts`, `messages.subscribe`) | `messages` | `INSERT` + `filter` | No (sin política DELETE; solo las mismas cascadas) | Nada | Sin cambios (ya seguro) |
+| `lockin:sessions:<id>` (`sessions.ts`) | `lockin_sessions` | `'*'` + `filter: match_id` (que no se aplica a DELETE) | No. Proponer/responder/cancelar son INSERT/UPDATE de RPC; sin grant de DELETE. Solo cascada desde `matches`/`profiles` | Nada: sin match no hay sesión que pintar | Solo `INSERT` + `UPDATE` |
+| `lockin:sessions:<id>` | `session_attendance` | `'*'`, sin filtro | No. `join` es INSERT/upsert y `leave` UPDATE de `left_at`. Solo cascada | Nada | Solo `INSERT` + `UPDATE` |
+| `lockin:rooms` (`rooms.ts`) | `lockin_rooms` | `UPDATE` | — | — | Ya arreglado en `76a3c02`; no se toca |
+
+`agreement*.ts` no abre canal; `presence.ts` y `video-signal.ts` son
+`broadcast`/`presence`, fuera de `postgres_changes`. Ninguna tabla necesitaba
+el DELETE para la UI: **sin migración**. Coste aceptado: si algún día la app
+deshace matches o borra cuentas, la otra persona no se entera en vivo con
+solo INSERT/UPDATE; ese día tiene que ser un UPDATE (p. ej. `ended_at`) o un
+aviso por canal, no un DELETE.
+
+### Evidencia
+
+- [x] Run instrumentado 37125586152 (canal de diagnóstico con `'*'` en las
+      cuatro tablas, cliente del usuario): al borrar el match ajeno llegan
+      `matches`, `messages`, `lockin_sessions` y dos `session_attendance`
+      DELETE de filas de otros, ~0,4 s después del borrado. Al crearlo
+      (INSERT de match, mensaje, sesión, UPDATE de aceptar, INSERT de
+      asistencia) no llega **nada**: RLS sí filtra INSERT/UPDATE.
+- [x] El mismo run explicó el primer rojo (37125208967, sin el arreglo): el
+      caso de matches cayó en la mitad de *creación* con 3 avisos, que eran los
+      DELETE de las filas propias que borra el `reset()` de ese caso, llegados
+      0,4 s después de enganchar. De ahí `foreignMatch(onReady)`: espera 1,5 s
+      tras el `join` y limpia el listener antes de crear.
+- [x] Contrato (`src/data/repositories.contract.ts`): tres casos
+      `itWithForeignRows` — «un tercero suscrito a sus matches / a su hilo / a
+      sus sesiones no se entera de un match ajeno, ni al borrarse». El backend
+      opcional `foreignMatch()` (`src/data/supabase/contract.test.ts`) crea un
+      match entre los dos perfiles de apoyo que no comparten match con el
+      usuario —mensaje, sesión aceptada, asistencia de los dos— y `wipe()` lo
+      borra en cascada con `dev_reset_current_user()` de uno de ellos.
+- [x] Rojo sin el arreglo (run 37126003123, `397ad18` = casos finales con
+      `44c290e` revertido): caen matches (1 aviso) y sesiones (2), los dos en
+      la mitad del **borrado**; el del hilo pasa, porque ya escuchaba solo
+      INSERT. Verde con el arreglo (run 37126001089, `a6ff82e`): 105 pasados,
+      24 saltos admitidos, 0 fallos; los tres casos nuevos y el de salas en
+      verde. Ramas desechables `claude/datos-diag-delete` y
+      `claude/datos-diag-delete-rojo` borradas.
+- [x] En el mock se **saltan** (no modela filas ajenas: `Match.profileIds`
+      siempre incluye al usuario). No van a la guarda 2 de `contract.yml`:
+      contra Supabase corren.
+- [x] Unitarias: `sessions.test.ts` e `instances.test.ts` fijan los eventos
+      registrados (ni `'*'` ni DELETE). `tsc`, `eslint src/data` y jest de
+      `src/data` en verde.
