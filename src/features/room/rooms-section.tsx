@@ -3,7 +3,8 @@
  *
  * No se pinta si no hay nada que enseñar: sin salas vivas y con menos de 2
  * matches no se puede ni convocar. Una invitación sí se ve aunque no tengas 2
- * matches: te la hizo otra persona.
+ * matches: te la hizo otra persona. Si las salas no cargan, lo dice con un
+ * «Reintentar»: el tirar-para-refrescar de Matches no relee las salas.
  */
 
 import { useRouter } from 'expo-router';
@@ -22,17 +23,26 @@ import { useLiveRooms } from './use-live-rooms';
 
 export function RoomsSection() {
   const router = useRouter();
-  const { rooms } = useLiveRooms();
+  const { rooms, error, refresh } = useLiveRooms();
   const matches = useMatches();
   const canConvene = (matches.data?.length ?? 0) >= ROOM_MIN_INVITEES;
 
-  if (rooms.length === 0 && !canConvene) return null;
+  // Un fallo se enseña siempre: callarlo diría «no tienes invitaciones» sin saberlo.
+  if (rooms.length === 0 && !canConvene && !error) return null;
 
   return (
     <View style={styles.root}>
       <ThemedText type="label" themeColor="teal">
         Salas Lock-In
       </ThemedText>
+      {error && (
+        <>
+          <ThemedText type="small" themeColor="danger">
+            No hemos podido cargar tus salas.
+          </ThemedText>
+          <Button label="Reintentar" variant="secondary" onPress={refresh} />
+        </>
+      )}
       {rooms.map((view, index) => (
         <Animated.View key={view.room.id} entering={enterUp(Math.min(index, 6))}>
           <RoomRow view={view} onPress={() => router.push(`/room/${view.room.id}`)} />

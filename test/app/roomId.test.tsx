@@ -322,6 +322,60 @@ describe('RoomScreen — ventana de entrada', () => {
     await waitFor(() => expect(screen.getByText('Cancelaste la sala')).toBeTruthy());
   });
 
+  /** `join` retenido hasta que el test lo suelta; luego hace la escritura de verdad. */
+  function holdJoin() {
+    const original = repositories.rooms.join;
+    let release!: () => void;
+    const gate = new Promise<void>((done) => {
+      release = done;
+    });
+    const join = jest
+      .spyOn(repositories.rooms, 'join')
+      .mockImplementation((id) => gate.then(() => original(id)));
+    return { join, release };
+  }
+
+  it('salir atrás con la entrada aún en vuelo registra la salida cuando la entrada llega', async () => {
+    const roomId = await seedAsHost();
+    jest.setSystemTime(STARTS_AT + MINUTE);
+    const { join, release } = holdJoin();
+    const leave = jest.spyOn(repositories.rooms, 'leave');
+
+    const { unmount } = await renderRoute(<RoomScreen />);
+    await waitFor(() => expect(join).toHaveBeenCalledTimes(1));
+    await unmount();
+    expect(leave).not.toHaveBeenCalled();
+
+    await act(async () => release());
+
+    await waitFor(() => expect(leave).toHaveBeenCalledTimes(1));
+    expect(leave).toHaveBeenCalledWith(roomId);
+    const view = await repositories.rooms.getById(roomId);
+    expect(view!.me.joinedAt).not.toBeNull();
+    expect(view!.me.leftAt).not.toBeNull();
+  });
+
+  it('«Salir» con la entrada aún en vuelo espera a la entrada y sale una vez', async () => {
+    const roomId = await seedAsHost();
+    jest.setSystemTime(STARTS_AT + MINUTE);
+    const { join, release } = holdJoin();
+    const leave = jest.spyOn(repositories.rooms, 'leave');
+
+    const { unmount } = await renderRoute(<RoomScreen />);
+    await waitFor(() => expect(join).toHaveBeenCalledTimes(1));
+    await fireEvent.press(button('Salir'));
+    const confirmed = fireEvent.press(button('Salir de la sala'));
+    release();
+    await confirmed;
+
+    await waitFor(() => expect(router.back).toHaveBeenCalled());
+    await unmount();
+    await act(async () => {});
+    expect(leave).toHaveBeenCalledTimes(1);
+    const view = await repositories.rooms.getById(roomId);
+    expect(view!.me.leftAt).not.toBeNull();
+  });
+
   it('salir pide confirmación, registra la salida y vuelve', async () => {
     const roomId = await seedAsHost();
     jest.setSystemTime(STARTS_AT + MINUTE);

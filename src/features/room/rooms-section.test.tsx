@@ -91,6 +91,21 @@ it('pinta una fila por sala viva que lleva a la sala', async () => {
   expect(mockPush).toHaveBeenCalledWith(`/room/${view.room.id}`);
 });
 
+it('si las salas no cargan lo dice, aunque no puedas convocar, y deja reintentar', async () => {
+  await seedMatches(1);
+  const listLive = jest
+    .spyOn(repositories.rooms, 'listLive')
+    .mockRejectedValueOnce(new Error('sin red'));
+
+  await renderSection();
+
+  await waitFor(() => expect(screen.getByText('No hemos podido cargar tus salas.')).toBeTruthy());
+  await fireEvent.press(screen.getByRole('button', { name: 'Reintentar' }));
+
+  await waitFor(() => expect(listLive).toHaveBeenCalledTimes(2));
+  await waitFor(() => expect(screen.toJSON()).toBeNull());
+});
+
 it('una invitación se ve aunque ya no queden 2 matches para convocar', async () => {
   await seedMatches(2);
   await repositories.rooms.create({

@@ -105,6 +105,10 @@ function useRoomEntry(
   const [attempt, setAttempt] = useState(0);
   const leftRef = useRef(false);
   const endedRef = useRef(ended);
+  // La última entrada pedida: `true` si llegó a registrarse. La salida va
+  // siempre detrás de ella, aunque la pantalla ya se haya desmontado: una
+  // entrada que llega tarde sin su salida dejaría `leftAt` nulo.
+  const entryRef = useRef<Promise<boolean> | null>(null);
 
   useEffect(() => {
     endedRef.current = ended;
@@ -115,13 +119,16 @@ function useRoomEntry(
     let cancelled = false;
     let retry: ReturnType<typeof setTimeout> | undefined;
 
-    join()
-      .then(() => {
-        if (!cancelled) setJoined(true);
-      })
-      .catch(() => {
-        if (!cancelled) retry = setTimeout(() => setAttempt((value) => value + 1), RETRY_MS);
-      });
+    const entry = join().then(
+      () => true,
+      () => false
+    );
+    entryRef.current = entry;
+    void entry.then((ok) => {
+      if (cancelled) return;
+      if (ok) setJoined(true);
+      else retry = setTimeout(() => setAttempt((value) => value + 1), RETRY_MS);
+    });
 
     return () => {
       cancelled = true;
@@ -129,15 +136,22 @@ function useRoomEntry(
     };
   }, [join, canJoin, joined, attempt]);
 
-  useEffect(() => {
-    if (!joined) return;
-    return () => {
-      if (!leftRef.current && !endedRef.current) void leave().catch(() => {});
-    };
-  }, [joined, leave]);
+  // Al desmontar antes del final (el gesto atrás), sale detrás de la entrada.
+  useEffect(
+    () => () => {
+      const entry = entryRef.current;
+      if (!entry || leftRef.current || endedRef.current) return;
+      leftRef.current = true;
+      void entry.then((ok) => (ok ? leave() : undefined)).catch(() => {});
+    },
+    [leave]
+  );
 
   return useCallback(async () => {
+    if (leftRef.current) return;
     leftRef.current = true;
+    const entered = entryRef.current ? await entryRef.current : false;
+    if (!entered) return;
     try {
       await leave();
     } catch {
