@@ -161,6 +161,34 @@ describe('NewRoomScreen', () => {
     expect(router.replace).toHaveBeenCalledWith(`/room/${live.room.id}`);
   });
 
+  it('si sale de la pantalla mientras convoca, la sala se crea pero no navega', async () => {
+    const [first, second] = await seedMatches(2);
+    const original = repositories.rooms.create;
+    let release!: () => void;
+    const gate = new Promise<void>((done) => {
+      release = done;
+    });
+    jest
+      .spyOn(repositories.rooms, 'create')
+      .mockImplementation((input) => gate.then(() => original(input)));
+
+    const { unmount } = await renderRoute(<NewRoomScreen />);
+    await waitFor(() => expect(screen.getByRole('checkbox', { name: first })).toBeTruthy());
+    await fireEvent.press(screen.getByRole('checkbox', { name: first }));
+    await fireEvent.press(screen.getByRole('checkbox', { name: second }));
+    const onPress = pressHandler(convocar());
+    const tap = act(async () => {
+      onPress();
+    });
+    await unmount();
+    release();
+    await tap;
+    await act(async () => {});
+
+    expect(router.replace).not.toHaveBeenCalled();
+    await expect(repositories.rooms.listLive()).resolves.toHaveLength(1);
+  });
+
   it('con menos de 2 matches no deja convocar y manda a Descubrir', async () => {
     await seedMatches(1);
 

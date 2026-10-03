@@ -10,32 +10,53 @@
  *   podré ir», salir): tras el éxito, todo sigue deshabilitado hasta desmontar.
  * - Si la tarea falla, se libera siempre y el error llega a quien llamó, para
  *   que se vea y se pueda reintentar.
+ * - La tarea recibe `isCurrent()`: `false` en cuanto la pantalla se desmonta
+ *   (atrás de la cabecera o del sistema). La escritura termina igual; lo que
+ *   va detrás —sobre todo navegar— se salta, porque un `replace` o un `back`
+ *   diferidos actuarían sobre la pantalla en la que esté ahora la persona.
+ *   Desmontar y no perder el foco: en esta pila nada se apila encima de estas
+ *   pantallas mientras escriben, y salir de ellas siempre las desmonta.
  */
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export interface SingleFlight {
   /** Hay una acción en curso (o una que se fue de la pantalla con `hold`). */
   busy: boolean;
   /** Lanza `task` si no hay otra en curso; si la hay, no hace nada. */
-  run(task: () => Promise<void>, options?: { hold?: boolean }): Promise<void>;
+  run(
+    task: (isCurrent: () => boolean) => Promise<void>,
+    options?: { hold?: boolean }
+  ): Promise<void>;
 }
 
 export function useSingleFlight(): SingleFlight {
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const run = useCallback(
-    async (task: () => Promise<void>, { hold = false }: { hold?: boolean } = {}) => {
+    async (
+      task: (isCurrent: () => boolean) => Promise<void>,
+      { hold = false }: { hold?: boolean } = {}
+    ) => {
       if (busyRef.current) return;
       busyRef.current = true;
       setBusy(true);
+      const isCurrent = () => mountedRef.current;
       const release = () => {
         busyRef.current = false;
-        setBusy(false);
+        if (isCurrent()) setBusy(false);
       };
       try {
-        await task();
+        await task(isCurrent);
       } catch (error) {
         release();
         throw error;

@@ -59,3 +59,24 @@ it('si la tarea falla, libera aunque haya hold y devuelve el error', async () =>
   });
   expect(task).toHaveBeenCalledTimes(1);
 });
+
+it('la tarea sabe si la pantalla sigue montada, y la escritura termina igual', async () => {
+  const { result, unmount } = await renderHook(() => useSingleFlight());
+  const gate = deferred();
+  const seen: boolean[] = [];
+  let running!: Promise<void>;
+  await act(async () => {
+    running = result.current.run(
+      async (isCurrent) => {
+        seen.push(isCurrent());
+        await gate.promise;
+        seen.push(isCurrent());
+      },
+      { hold: true }
+    );
+  });
+  await unmount();
+  gate.resolve();
+  await running;
+  expect(seen).toEqual([true, false]);
+});

@@ -334,6 +334,26 @@ describe('RoomScreen — antes de la ventana', () => {
     await expect(repositories.rooms.getById(roomId)).resolves.toBeNull();
   });
 
+  it('si sale de la pantalla mientras rechaza, el rechazo se guarda pero no navega', async () => {
+    const { roomId } = await seedAsInvitee();
+    const { spy, release } = holdRooms('respond');
+
+    const { unmount } = await renderRoute(<RoomScreen />);
+    await waitFor(() => expect(button('No puedo')).toBeTruthy());
+    const onPress = pressHandler(button('No puedo'));
+    const tap = act(async () => {
+      onPress();
+    });
+    await unmount();
+    release();
+    await tap;
+    await act(async () => {});
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(router.back).not.toHaveBeenCalled();
+    await expect(repositories.rooms.getById(roomId)).resolves.toBeNull();
+  });
+
   it('si «No podré ir» falla se queda, lo dice y deja reintentar', async () => {
     await seedAsInvitee({ meAccepts: true });
     jest.spyOn(repositories.rooms, 'respond').mockRejectedValueOnce(new Error('sin red'));
@@ -529,6 +549,37 @@ describe('RoomScreen — ventana de entrada', () => {
     await act(async () => {});
     expect(router.back).toHaveBeenCalledTimes(1);
     expect(leave).toHaveBeenCalledTimes(1);
+  });
+
+  it('si sale de la pantalla mientras registra la salida, la registra pero no navega', async () => {
+    const roomId = await seedAsHost();
+    jest.setSystemTime(STARTS_AT + MINUTE);
+    const join = jest.spyOn(repositories.rooms, 'join');
+    const original = repositories.rooms.leave;
+    let release!: () => void;
+    const gate = new Promise<void>((done) => {
+      release = done;
+    });
+    const leave = jest
+      .spyOn(repositories.rooms, 'leave')
+      .mockImplementation((id) => gate.then(() => original(id)));
+
+    const { unmount } = await renderRoute(<RoomScreen />);
+    await waitFor(() => expect(join).toHaveBeenCalled());
+    await fireEvent.press(button('Salir'));
+    const onPress = pressHandler(button('Salir de la sala'));
+    const tap = act(async () => {
+      onPress();
+    });
+    await unmount();
+    release();
+    await tap;
+    await act(async () => {});
+
+    expect(leave).toHaveBeenCalledTimes(1);
+    expect(router.back).not.toHaveBeenCalled();
+    const view = await repositories.rooms.getById(roomId);
+    expect(view!.me.leftAt).not.toBeNull();
   });
 
   it('una vez pulsada, la confirmación de salida queda deshabilitada', async () => {

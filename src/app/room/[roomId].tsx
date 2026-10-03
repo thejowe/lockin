@@ -256,11 +256,12 @@ export default function RoomScreen() {
   const decline = () =>
     flight
       .run(
-        async () => {
+        async (isCurrent) => {
           setActionError(null);
           setDeparting(true);
           await room.respond('rechazada');
-          router.back();
+          // Si ya salió de la pantalla, el rechazo queda guardado sin navegar.
+          if (isCurrent()) router.back();
         },
         { hold: true }
       )
@@ -285,9 +286,9 @@ export default function RoomScreen() {
   // `leaveRoom` no lanza: un `leave` fallido deja `leftAt` nulo y se sale igual.
   const exit = () =>
     flight.run(
-      async () => {
+      async (isCurrent) => {
         await leaveRoom();
-        router.back();
+        if (isCurrent()) router.back();
       },
       { hold: true }
     );

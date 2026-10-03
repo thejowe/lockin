@@ -93,14 +93,15 @@ export default function NewRoomScreen() {
   const submit = () =>
     flight
       .run(
-        async () => {
+        async (isCurrent) => {
           setError(null);
           const view = await repositories.rooms.create({
             inviteeIds: [...selected],
             startsAt: new Date(slotMs).toISOString(),
             blocks,
           });
-          router.replace(`/room/${view.room.id}`);
+          // Si ya salió, la sala queda creada y la verá en Matches.
+          if (isCurrent()) router.replace(`/room/${view.room.id}`);
         },
         { hold: true }
       )
