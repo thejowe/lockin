@@ -370,6 +370,73 @@ const supabaseBackend: ContractBackend = {
     appClient.realtime.connect();
   },
 
+  /**
+   * El match ajeno de los casos «un tercero suscrito…», con el camino de la
+   * app: `record_decision()` por los dos lados, un `insert` en `messages` y los
+   * RPC de sesiones. El borrado es `dev_reset_current_user()` de uno de los
+   * dos, que en cascada genera un DELETE en `matches`, `messages`,
+   * `lockin_sessions` y `session_attendance` — lo mismo que darse de baja.
+   */
+  async foreignMatch() {
+    // Los dos de apoyo que no comparten match con el usuario en ninguno de
+    // los casos que usan esto: esos casos solo le dan like a `reciprocalAId`.
+    const [, lockinReciprocal, bothReciprocal] = reciprocals;
+
+    // Primero, los canales del usuario enganchados: si no, los avisos que se
+    // trata de no recibir se perderían por llegar antes del `join`, y el caso
+    // pasaría sin demostrar nada.
+    await waitUntilChannelsJoined();
+
+    // Sin reponer el perfil después: nada del caso lo vuelve a leer, y el
+    // `reset()` del siguiente lo recrea.
+    let wiped = false;
+    const wipe = async () => {
+      if (wiped) return;
+      wiped = true;
+      const failure = await callDevReset(bothReciprocal.client);
+      if (failure) throw new Error(`dev_reset_current_user() falló: ${failure}`);
+    };
+
+    try {
+      const { error: likeError } = await lockinReciprocal.client.rpc('record_decision', {
+        p_target_id: bothReciprocal.id,
+        p_decision: 'like',
+      });
+      if (likeError) throw likeError;
+      const { data: match, error: matchError } = await bothReciprocal.client.rpc(
+        'record_decision',
+        { p_target_id: lockinReciprocal.id, p_decision: 'like' }
+      );
+      if (matchError) throw matchError;
+      if (!match) throw new Error('foreignMatch: el like recíproco no cerró match');
+
+      const { error: messageError } = await lockinReciprocal.client
+        .from('messages')
+        .insert({ match_id: match.id, sender_id: lockinReciprocal.id, body: 'ajeno' });
+      if (messageError) throw messageError;
+
+      const proposer = sessionRepositoryFor(lockinReciprocal);
+      const accepter = sessionRepositoryFor(bothReciprocal);
+      const now = Date.parse(await proposer.serverNow());
+      // Justo por encima del margen mínimo de 5 minutos: la ventana de entrada
+      // abre a los 2 s, y hace falta para que haya filas de asistencia.
+      const session = await proposer.propose({
+        matchId: match.id,
+        startsAt: new Date(now + 5 * 60_000 + 2_000).toISOString(),
+        blocks: 1,
+      });
+      await accepter.respond(session.id, 'aceptada');
+      await new Promise((resolve) => setTimeout(resolve, 3_000));
+      await proposer.join(session.id);
+      await accepter.join(session.id);
+
+      return { matchId: match.id, wipe };
+    } catch (error) {
+      await wipe();
+      throw error;
+    }
+  },
+
   async reset(): Promise<ContractFixture> {
     const currentUserId = await resetCurrentUser();
     for (const [index, actor] of reciprocals.entries()) {

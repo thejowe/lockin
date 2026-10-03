@@ -150,6 +150,25 @@ export interface ContractBackend {
   dropRealtime?(): Promise<void>;
   /** Devuelve la conexión que cortó `dropRealtime()`. */
   restoreRealtime?(): Promise<void>;
+  /**
+   * Un match AJENO —entre `reciprocalBId` y `openToBothReciprocalId`, sin el
+   * usuario del test— con algo en cada tabla que este backend publica por
+   * realtime: un mensaje, una sesión aceptada y la asistencia de los dos.
+   * `wipe()` lo borra todo en cascada, como lo borraría que uno de los dos se
+   * diera de baja; se puede llamar más de una vez.
+   *
+   * Existe para los casos «un tercero suscrito no recibe avisos de un match
+   * ajeno»: Supabase Realtime no aplica RLS ni `filter:` a los DELETE de
+   * `postgres_changes`, así que un canal que escuche `'*'` recibe el borrado de
+   * filas de cualquiera. Antes de volver, la implementación espera a que los
+   * canales del usuario estén enganchados: un cambio que nadie escucha no
+   * prueba nada.
+   *
+   * Opcional, como `dropRealtime`: el mock modela solo el mundo del usuario
+   * —`Match.profileIds` siempre lo incluye—, así que no tiene filas ajenas que
+   * crear ni que borrar, y esos casos se saltan ahí.
+   */
+  foreignMatch?(): Promise<{ matchId: string; wipe(): Promise<void> }>;
   /** Estado limpio para el test que viene. Se llama en cada `beforeEach`. */
   reset(): Promise<ContractFixture>;
   /** Cierre de lo que quede abierto (sesiones, canales de realtime). */
@@ -165,6 +184,32 @@ export function describeRepositoryContract(backend: ContractBackend): void {
   describe(`contrato de Repositories — ${backend.name}`, () => {
     let fixture: ContractFixture;
     let repositories: Repositories;
+
+    /** Casos con filas de otros: solo en backends con más de un usuario de verdad. */
+    const itWithForeignRows = backend.foreignMatch ? it : it.skip;
+
+    /**
+     * Comprueba que `listener`, ya suscrito por el caso, no se entera de nada de
+     * un match ajeno: ni al crearse con su mensaje, sesión y asistencia (lo
+     * filtra RLS en INSERT/UPDATE) ni al borrarse en cascada (los DELETE llegan
+     * sin RLS a quien escuche `'*'`). Se comprueba en dos tiempos para que un
+     * rojo diga cuál de los dos se coló.
+     */
+    async function expectDeafToForeignMatch(listener: jest.Mock): Promise<void> {
+      const foreign = await backend.foreignMatch!();
+      try {
+        await fixture.elapse(2_000);
+        expect(listener).not.toHaveBeenCalled();
+
+        await foreign.wipe();
+        // Más margen que en la creación: los DELETE en cascada tardan en
+        // llegar (run 37124064814, el del caso de salas).
+        await fixture.elapse(4_000);
+        expect(listener).not.toHaveBeenCalled();
+      } finally {
+        await foreign.wipe();
+      }
+    }
 
     beforeEach(async () => {
       fixture = await backend.reset();
@@ -842,6 +887,19 @@ export function describeRepositoryContract(backend: ContractBackend): void {
       it('getById devuelve null para un id desconocido', async () => {
         expect(await repositories.matches.getById(fixture.unknownProfileId)).toBeNull();
       });
+
+      itWithForeignRows(
+        'un tercero suscrito a sus matches no se entera de un match ajeno, ni al borrarse',
+        async () => {
+          const listener = jest.fn();
+          const unsubscribe = repositories.matches.subscribe(listener);
+          try {
+            await expectDeafToForeignMatch(listener);
+          } finally {
+            unsubscribe();
+          }
+        }
+      );
     });
 
     describe('messages', () => {
@@ -865,6 +923,23 @@ export function describeRepositoryContract(backend: ContractBackend): void {
         expect(updated?.lastMessageAt).toBe(sent.sentAt);
         expect(updated?.lastMessage?.id).toBe(sent.id);
       });
+
+      itWithForeignRows(
+        'un tercero suscrito a su hilo no se entera de un match ajeno, ni al borrarse',
+        async () => {
+          const { match } = await repositories.discovery.recordDecision(
+            fixture.reciprocalAId,
+            'like'
+          );
+          const listener = jest.fn();
+          const unsubscribe = repositories.messages.subscribe(match!.id, listener);
+          try {
+            await expectDeafToForeignMatch(listener);
+          } finally {
+            unsubscribe();
+          }
+        }
+      );
 
       it('el hilo de un match no se cuela en el de otro', async () => {
         const a = await repositories.discovery.recordDecision(fixture.reciprocalAId, 'like');
@@ -1193,6 +1268,19 @@ export function describeRepositoryContract(backend: ContractBackend): void {
           outsider.propose({ matchId, startsAt: await later(), blocks: 1 })
         ).rejects.toBeInstanceOf(SessionForbiddenError);
       });
+
+      itWithForeignRows(
+        'un tercero suscrito a sus sesiones no se entera de las de un match ajeno, ni al borrarse',
+        async () => {
+          const listener = jest.fn();
+          const unsubscribe = mine.subscribe(matchId, listener);
+          try {
+            await expectDeafToForeignMatch(listener);
+          } finally {
+            unsubscribe();
+          }
+        }
+      );
 
       it('no se entra a una propuesta sin aceptar', async () => {
         const session = await mine.propose({ matchId, startsAt: await soon(), blocks: 1 });
