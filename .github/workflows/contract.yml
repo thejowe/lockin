@@ -152,6 +152,8 @@ jobs:
           # reloj: se saltan por `canLinkIdentityWithoutBrowser: false`, porque
           # un OAuth de verdad necesita un navegador y una persona al otro lado.
           # Contra el mock corren enteros.
+          # El de salas se añadió el 2026-10-03: `itWithTimeTravel` como los de
+          # sesiones (necesita una sala ya empezada); su SQL lo cubre PGlite.
           jq -e '
             ([.testResults[].assertionResults[] | select(.status == "pending") | .title]
               - ["una propuesta caducada ya no está viva ni se puede aceptar",
@@ -176,7 +178,8 @@ jobs:
                  "desverificar apaga el sello y vacía el enlace",
                  "un sello ya encendido sobrevive a guardar el perfil",
                  "resincronizar mantiene el sello que ya estaba",
-                 "verificarse no reordena el deck de quien se verifica"]) as $unexpected
+                 "verificarse no reordena el deck de quien se verifica",
+                 "una sala empezada no se cancela; terminada sigue legible"]) as $unexpected
             | .numPassedTests > 0 and .numFailedTests == 0 and ($unexpected | length) == 0
           ' contract-result.json \
             || { echo 'La suite no corrió entera'; jq '{numPassedTests, numPendingTests, numFailedTests}' contract-result.json; exit 1; }
