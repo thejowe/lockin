@@ -84,6 +84,38 @@ Si detectas que un bloque se saltó su alcance de archivos (tocó algo de otro b
 
 Lo mismo con las ramas del paso 1. Antes de dar una por superada, compruébalo con `git cherry -v HEAD <rama>` en vez de por el título del commit; y antes de proponer borrar nada, mira si su worktree tiene trabajo sin commitear (`git -C <worktree> status --short`), que es lo que un `git branch --merged` no te va a decir.
 
+## Enrutado de tareas: Claude vs Codex
+
+Antes de ejecutar cada tarea, clasifícala y decide quién la hace.
+
+### Delegar a Codex cuando la tarea sea:
+- Acotada y bien definida: un bug concreto, un endpoint, un componente aislado, tests de un módulo.
+- Independiente de otras tareas en curso, así que se puede lanzar en paralelo.
+- Revisión de código o caza de bugs sobre cambios ya hechos (usar `codex review`).
+- Mecánica o repetitiva: renombrados, migraciones de sintaxis, arreglar lint o tipos.
+
+### Hacerla tú (Claude) o un subagente de Claude cuando la tarea sea:
+- De arquitectura o diseño: modelo de datos, estructura de carpetas, contratos entre servicios.
+- Transversal, tocando varias capas (frontend + backend + BD) o muchos archivos.
+- Ambigua, donde hay que preguntar al usuario o investigar antes de decidir.
+- Integración o depuración que requiere entender el sistema completo.
+- Documentación de decisiones técnicas.
+
+### Cómo delegar a Codex
+- Dale un prompt autocontenido: objetivo, archivos implicados, criterio de "hecho" y restricciones.
+  Codex no ve esta conversación.
+- Usa la herramienta MCP `codex` (o `codex exec --full-auto "<prompt>"` por Bash).
+- Usa sandbox de solo lectura (`-s read-only`) para análisis o revisión.
+
+### Al recibir el resultado
+- Revisa siempre el diff de Codex antes de darlo por bueno; tú eres responsable del resultado final.
+- Si falla dos veces en la misma tarea, hazla tú en vez de reintentar.
+- Cuando tú escribas una feature grande, pásala por `codex review` antes de cerrarla
+  (segundo par de ojos con otro modelo).
+
+### Registro
+- Al final de cada tarea, indica en una línea quién la hizo y por qué.
+
 ## Notas
 
 Esta skill es de solo lectura + orientación, no escribe código ni marca el TODO por sí misma. Si el usuario pide seguir trabajando ya mismo en el bloque que toca, en vez de generar una orden para otra sesión, hazlo tú directamente aquí (las órdenes son para cuando el usuario quiere paralelizar en sesiones separadas).
