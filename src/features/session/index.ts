@@ -5,6 +5,13 @@
  */
 
 export { cardView, type CardView } from './card-state';
+export { createNotificationsPort } from './notifications-port';
+export {
+  REMINDER_LEAD_MS,
+  SESSIONS_CHANNEL_ID,
+  type NotificationsPort,
+  type ReminderStorage,
+} from './reminders';
 export {
   blocksLabel,
   formatDayLabel,
