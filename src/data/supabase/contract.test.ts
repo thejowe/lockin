@@ -377,15 +377,19 @@ const supabaseBackend: ContractBackend = {
    * dos, que en cascada genera un DELETE en `matches`, `messages`,
    * `lockin_sessions` y `session_attendance` — lo mismo que darse de baja.
    */
-  async foreignMatch() {
+  async foreignMatch(onReady) {
     // Los dos de apoyo que no comparten match con el usuario en ninguno de
     // los casos que usan esto: esos casos solo le dan like a `reciprocalAId`.
     const [, lockinReciprocal, bothReciprocal] = reciprocals;
 
     // Primero, los canales del usuario enganchados: si no, los avisos que se
     // trata de no recibir se perderían por llegar antes del `join`, y el caso
-    // pasaría sin demostrar nada.
+    // pasaría sin demostrar nada. Luego, margen para los DELETE del `reset()`
+    // de este caso, que en el run 37125586152 llegaron 0,4 s después de
+    // enganchar; `onReady` los descuenta.
     await waitUntilChannelsJoined();
+    await new Promise((resolve) => setTimeout(resolve, 1_500));
+    onReady();
 
     // Sin reponer el perfil después: nada del caso lo vuelve a leer, y el
     // `reset()` del siguiente lo recrea.

@@ -160,15 +160,21 @@ export interface ContractBackend {
    * Existe para los casos «un tercero suscrito no recibe avisos de un match
    * ajeno»: Supabase Realtime no aplica RLS ni `filter:` a los DELETE de
    * `postgres_changes`, así que un canal que escuche `'*'` recibe el borrado de
-   * filas de cualquiera. Antes de volver, la implementación espera a que los
-   * canales del usuario estén enganchados: un cambio que nadie escucha no
-   * prueba nada.
+   * filas de cualquiera.
+   *
+   * Antes de crear nada, la implementación espera a que los canales del
+   * usuario estén enganchados —un cambio que nadie escucha no prueba nada— y a
+   * que lleguen los ecos del `reset()` de este caso, y entonces llama a
+   * `onReady`. Esos ecos son los DELETE de las filas PROPIAS del caso
+   * anterior: llegan ~0,4 s tarde (run 37125586152), ya con el canal abierto,
+   * y sin `onReady` un canal con `'*'` los contaba en la mitad de la creación
+   * y el rojo señalaba al sitio equivocado.
    *
    * Opcional, como `dropRealtime`: el mock modela solo el mundo del usuario
    * —`Match.profileIds` siempre lo incluye—, así que no tiene filas ajenas que
    * crear ni que borrar, y esos casos se saltan ahí.
    */
-  foreignMatch?(): Promise<{ matchId: string; wipe(): Promise<void> }>;
+  foreignMatch?(onReady: () => void): Promise<{ matchId: string; wipe(): Promise<void> }>;
   /** Estado limpio para el test que viene. Se llama en cada `beforeEach`. */
   reset(): Promise<ContractFixture>;
   /** Cierre de lo que quede abierto (sesiones, canales de realtime). */
@@ -196,14 +202,14 @@ export function describeRepositoryContract(backend: ContractBackend): void {
      * rojo diga cuál de los dos se coló.
      */
     async function expectDeafToForeignMatch(listener: jest.Mock): Promise<void> {
-      const foreign = await backend.foreignMatch!();
+      const foreign = await backend.foreignMatch!(() => listener.mockClear());
       try {
         await fixture.elapse(2_000);
         expect(listener).not.toHaveBeenCalled();
 
         await foreign.wipe();
-        // Más margen que en la creación: los DELETE en cascada tardan en
-        // llegar (run 37124064814, el del caso de salas).
+        // Los DELETE en cascada llegan ~0,4 s después (run 37125586152); el
+        // margen es holgado a propósito.
         await fixture.elapse(4_000);
         expect(listener).not.toHaveBeenCalled();
       } finally {
