@@ -8,6 +8,8 @@
 
 **Tech Stack:** Expo SDK 57 + Expo Router (rutas tipadas), `@supabase/supabase-js` v2, Postgres/Supabase, Jest + RNTL 14, PGlite para el SQL, Maestro para el E2E.
 
+**Revisión adversarial (2026-10-02):** Codex ejecutó la primera versión del SQL en PGlite y encontró nueve fallos, todos aceptados y corregidos aquí: `room_members` fuera de Realtime + trigger `touch_room` (invalidación por la sala), `revoke all` + `grant select`, `clock_timestamp()` tras el bloqueo, respuestas cerradas al abrir la ventana, `live_rooms()` sin tope y paginado, carrera cancelar/aceptar en los dos órdenes, fixture del contrato corregido para el mock, y la Tarea 2 reordenada para ir en rojo primero. Las secciones afectadas lo dicen en su texto.
+
 **Spec:** `docs/superpowers/specs/2026-10-02-salas-grupales-design.md`. Léela entera antes de la Tarea 1, **empezando por «Decisiones tomadas sin el usuario (revisar)»**: si el usuario ha cambiado alguna, el plan se corrige antes de escribir código.
 
 ## Global Constraints
@@ -23,6 +25,10 @@
 - Suelo de cobertura de `jest.config.js`: no bajarlo.
 - Paleta: invitación y «Entrar a la sala» en `brass`; «Está aquí» en `teal`; nada en `danger` salvo la confirmación de salir/cancelar. Sin colores nuevos.
 - Errores: `LI001`–`LI004` con las clases de `session-errors.ts`; **`LI006` (nuevo)** = invitados inválidos → `RoomInviteError`.
+- **`room_members` nunca va a la publicación de Realtime** ni a un `postgres_changes`: Supabase entrega los `DELETE` sin RLS y con la PK `(room_id, profile_id)`. Los avisos van por el `UPDATE` de `lockin_rooms` que provoca el trigger `touch_room`.
+- **Permisos de tabla: `revoke all` + `grant select`**, nunca solo `revoke insert, update, delete` (dejaría `TRUNCATE`).
+- **Dentro de las RPC, `clock_timestamp()` tomado después del bloqueo**, nunca `now()`.
+- **Las respuestas se cierran al abrir la ventana de entrada** (5 min antes del inicio), en SQL, en `src/data/rooms.ts` y en el mock. Es lo que hace innecesario expulsar a nadie de un canal de presencia ya autorizado.
 
 ### Cómo se verifica en esta máquina (Windows)
 
@@ -80,7 +86,7 @@ No los adivines ni inventes helpers: existen con exactamente estos nombres.
 Las tareas van en orden. Las únicas parejas que pueden correr a la vez (cada una en su worktree) son:
 
 - **Tarea 1 ∥ Tarea 2**: archivos disjuntos (`src/data/` frente a `supabase/`).
-- **Tarea 4 ∥ Tarea 5**: archivos disjuntos (`src/data/supabase/rooms.ts`, `index.ts`, `database.types.ts`, `contract.test.ts` frente a `src/data/supabase/presence.ts`, `active.ts`, `src/data/index.ts`, `src/features/room/use-room-presence.ts`). La Tarea 5 crea `src/features/room/index.ts`; la Tarea 4 no lo toca.
+- **Tarea 4 ∥ Tarea 5**: archivos disjuntos (`src/data/supabase/rooms.ts`, `pagination.ts`, `index.ts`, `database.types.ts`, `contract.test.ts` frente a `src/data/supabase/presence.ts`, `active.ts`, `src/data/index.ts`, `src/features/room/use-room-presence.ts`). La Tarea 5 crea `src/features/room/index.ts`; la Tarea 4 no lo toca.
 
 Todo lo demás, una detrás de otra.
 
@@ -88,7 +94,7 @@ Todo lo demás, una detrás de otra.
 
 Seis entradas que la spec implica y que ningún caso de su lista nombra. Cada una tiene su test en la tarea dueña:
 
-1. **Una invitada no puede deducir a los demás invitados por ningún camino**: ni por `getById`, ni por `listLive`, ni por `postgres_changes`, ni por el canal de presencia. RLS (Tarea 2), mock (Tarea 3) y la política de `realtime.messages` (Tarea 2) lo fijan cada uno con su test.
+1. **Una invitada —ni nadie de fuera— puede deducir a los demás invitados por ningún camino**: ni por `getById`, ni por `listLive`, ni por `postgres_changes` (tampoco por un `DELETE` en cascada), ni por el canal de presencia. RLS, publicación y política de `realtime.messages` (Tarea 2, tests 1, 11 y 13), mock (Tarea 3) y entrega real contra Supabase local (casos 11 y 15 del contrato, Tarea 4) lo fijan cada uno con su test.
 2. **Doble toque en «Convocar» o «Me apunto»**: una sola escritura y el botón deshabilitado mientras vuela. Tests en la Tarea 7 y la Tarea 8.
 3. **La sala se cancela con la pantalla abierta de una invitada**: al llegar el aviso de `subscribe`, la pantalla pasa a «{Nombre} canceló la sala» sin pantalla rota. Test en la Tarea 8.
 4. **Rechazar desde la pantalla de la sala**: tras «No podré ir» la sala deja de ser visible; la pantalla vuelve a Matches en vez de pintar «no disponible». Test en la Tarea 8.
@@ -127,7 +133,7 @@ Construye las salas con un helper local `room(overrides)` (`startsAt` fijo `2026
 - `roomEndsAtMs`: 2 bloques terminan 60 min después de `startsAt`.
 - `isRoomLive`: viva 1 ms antes del final; no viva en el ms exacto del final; no viva si `cancelledAt` no es `null` aunque falte una hora.
 - `isInRoomJoinWindow`: `aceptada` dentro desde `startsAt − 5 min` exacto (incluido) hasta `endsAt` (excluido); `invitada` nunca; `rechazada` nunca; cancelada nunca.
-- `canRespondToRoom`: `invitada` y `aceptada` sí antes de `startsAt`; en el ms exacto de `startsAt`, no; quien convoca nunca (`hostId === me.profileId`); `rechazada` nunca; cancelada nunca.
+- `canRespondToRoom`: `invitada` y `aceptada` sí 1 ms antes de `startsAt − 5 min`; en el ms exacto de `startsAt − 5 min` (abre la ventana), no; quien convoca nunca (`hostId === me.profileId`); `rechazada` nunca; cancelada nunca.
 - `canCancelRoom`: quien convoca antes de `startsAt` sí; en `startsAt`, no; otra persona nunca; ya cancelada, no.
 - `validateRoomInvitees`: `null` (válido) con 2 y con 4 matches; `RoomInviteError` con 1, con 5, con un repetido, con el propio id, y con uno que no está en `matchIds`. El mensaje no importa; la clase sí.
 
@@ -190,7 +196,12 @@ export function isInRoomJoinWindow(
   );
 }
 
-/** Responde quien está invitada o aceptada, sin convocar, antes de empezar. */
+/**
+ * Responde quien está invitada o aceptada, sin convocar, **antes de que abra
+ * la ventana de entrada**. Cerrar las respuestas al abrirla es lo que impide
+ * que alguien rechace con el canal de presencia ya autorizado (spec, «Presencia
+ * y revocación»).
+ */
 export function canRespondToRoom(
   room: RoomTiming & Pick<LockInRoom, 'hostId'>,
   me: Pick<RoomMember, 'status' | 'profileId'>,
@@ -200,7 +211,7 @@ export function canRespondToRoom(
     room.hostId !== me.profileId &&
     me.status !== 'rechazada' &&
     room.cancelledAt === null &&
-    nowMs < Date.parse(room.startsAt)
+    nowMs < Date.parse(room.startsAt) - JOIN_WINDOW_MINUTES * MINUTE
   );
 }
 
@@ -263,9 +274,38 @@ Mecánica: el SQL está aquí entero y la lista de pruebas es cerrada. Criterio:
 
 **Interfaces:**
 - Consumes: `public.matches`, `public.profiles`, `public.session_ends_at(timestamptz, smallint)`, el patrón de `20260917000100_realtime_authorization.sql`.
-- Produces: tablas `lockin_rooms`, `room_members`; RPC `create_room`, `respond_room`, `cancel_room`, `join_room`, `leave_room`, `live_rooms`; topic privado `lockin:room:<uuid>`. Códigos `LI001`–`LI004`, `LI006`.
+- Produces: tablas `lockin_rooms` (con `updated_at`), `room_members`; trigger `touch_room`; RPC `create_room`, `respond_room`, `cancel_room`, `join_room`, `leave_room`, `live_rooms`; topic privado `lockin:room:<uuid>`. Códigos `LI001`–`LI004`, `LI006`. **Solo `lockin_rooms` en la publicación de Realtime.**
 
-- [ ] **Step 1: Escribir la migración**
+**Orden TDD.** El harness de PGlite carga **todos** los `.sql` de `supabase/migrations/` (`schema-embedded.test.mjs:89`): mientras el archivo de la migración no exista, el bloque nuevo falla por «relation does not exist», que es el rojo que se busca. Por eso los tests van primero (Step 1) y la migración después (Step 3). No crees el archivo `.sql` vacío antes de tiempo.
+
+**Lo que PGlite no puede probar**: la entrega de eventos de Realtime (`postgres_changes`, `DELETE` sin RLS) y la caché de autorización de un canal ya unido. Aquí se fija la **configuración** que lo hace seguro (qué tablas están publicadas, qué toca el trigger, qué deja pasar la política del topic). La **entrega** se prueba en los casos 11 y 15 del contrato contra Supabase local (`contract.yml`, Tarea 4) y en el E2E (Tarea 10).
+
+- [ ] **Step 1: Escribir el bloque de PGlite que falla**
+
+En `supabase/schema-embedded.test.mjs`, un bloque nuevo con comentario de cabecera «Salas grupales», con el mismo estilo que el del acuerdo (`asActor`, `sonda` con savepoint que devuelve el `errcode`). Prepara: cuatro perfiles (Ana convoca; Bea y Carla, matches de Ana; Dani, sin match con Ana) y los dos matches `Ana–Bea` y `Ana–Carla` insertados como superusuario. Pruebas, cada una con su `assert`:
+
+1. **Ciego de invitados** (el test central del bloque): como Ana, `create_room([Bea, Carla], now()+1h, 2)`. Como Bea, `select profile_id, status from room_members` devuelve **solo** Ana (`aceptada`) y Bea (`invitada`), no Carla. Como Carla, `respond_room(sala, 'aceptada')`. Como Bea, ahora salen las tres. Como Ana, siempre las tres con su estado.
+2. Como Dani: `select` de `lockin_rooms` y de `room_members` devuelve cero filas; `respond_room` y `join_room` → `LI004`.
+3. `create_room` como Ana → `LI006` con: `[Bea]`, `[Bea, Carla, Dani]` (Dani no es match), `[Bea, Bea]`, `[Bea, Ana]`, `array[]::uuid[]`, `array[Bea, null]`, `null`; y cinco ids → `LI006`. Hora a 1 min → `LI003`.
+4. `respond_room` como Ana (convoca) → `LI004`; `cancel_room` como Bea → `LI004`; `join_room` como Bea mientras está `invitada` → `LI004`.
+5. Bea rechaza: como Bea, `select` de `lockin_rooms` devuelve cero filas y `respond_room(sala, 'aceptada')` → `LI004`; como Carla, Bea no aparece; como Ana, aparece `rechazada`.
+6. **Carrera cancelar/aceptar, los dos órdenes** (secuencial; el bloqueo real lo cubre el orden): (a) Ana cancela, después Carla acepta → `LI001`, y `live_rooms()` como Ana no la devuelve; (b) en otra sala, Carla acepta y después Ana cancela → las dos con éxito y `cancelled_at` no nulo.
+7. **Respuestas cerradas al abrir la ventana**: con `starts_at` puesta por superusuario a `now() + 4 min` (ventana ya abierta), `respond_room` como Bea → `LI002`, tanto `'aceptada'` como `'rechazada'`. Con `now() + 6 min`, sí responde.
+8. **`clock_timestamp()` tras el bloqueo**: con `starts_at` = `clock_timestamp() + 5 min + 1 s` y Bea `invitada`, abre una transacción explícita (`begin`), espera 1,5 s (`select pg_sleep(1.5)`; si PGlite no lo implementa, un bucle `plpgsql` que gire hasta que `clock_timestamp()` avance 1,5 s) y llama a `respond_room` como Bea **dentro de esa transacción** → `LI002`. Con `now()` (hora de inicio de la transacción) la respuesta habría pasado: este test es el que lo impide. `rollback` al acabar.
+9. Ventana: una sala de Ana con `starts_at` puesta a `now() + 2 min` por `update` de superusuario y Carla `aceptada`: `join_room` como Carla devuelve `joined_at` no nulo; segundo `join_room` conserva el mismo `joined_at`; `leave_room` pone `left_at`; `join_room` de nuevo lo pone a `null`. Con `starts_at` a `now() + 1 h`, `join_room` → `LI003`.
+10. **Permisos de tabla**: como `authenticated`, `insert into room_members …`, `update lockin_rooms set cancelled_at = now()`, `delete from room_members` y **`truncate public.room_members`** y **`truncate public.lockin_rooms`** fallan con `42501`. `has_table_privilege('authenticated', 'public.room_members', 'TRUNCATE')` es `false`; `'SELECT'` es `true`.
+11. **Publicación de Realtime**: `select tablename from pg_publication_tables where pubname = 'supabase_realtime' and tablename in ('lockin_rooms', 'room_members')` devuelve **solo** `lockin_rooms`. Este test es el que impide volver a publicar `room_members` (los `DELETE` llegan sin RLS y con la PK `(room_id, profile_id)`).
+12. **Trigger `touch_room`**: `updated_at` de la sala avanza al aceptar Carla, al rechazar Bea y al borrar (como superusuario) el perfil de un miembro. Borrar el perfil de Ana —con su sala y las filas de miembros en cascada— **no da error** (el trigger no puede tropezar con la sala que se está borrando).
+13. **Presencia**: con `set local "realtime.topic" = 'lockin:room:<sala>'` y rol `authenticated`, la política de `select` de `realtime.messages` deja pasar a Carla (`aceptada`) y no a Bea (`invitada`) ni a Dani. Un topic `lockin:room:no-es-uuid` se deniega sin error. Mismo patrón que el bloque de `lockin:presence:` (`:840-900`).
+14. `has_function_privilege('anon', 'public.create_room(uuid[], timestamptz, smallint)', 'EXECUTE')` es `false`; `authenticated` no tiene `EXECUTE` sobre `lock_room_for_member(uuid)` ni sobre `touch_room()`.
+15. `live_rooms()` como Ana, con 21 salas vivas sembradas, devuelve **21** (sin tope).
+
+- [ ] **Step 2: Ejecutar y ver que falla**
+
+Run: `npm run test:schema`
+Expected: FAIL en el bloque nuevo («relation "public.lockin_rooms" does not exist» o la función que falte). El resto del archivo sigue en verde.
+
+- [ ] **Step 3: Escribir la migración**
 
 Si ya existe otra migración con fecha `20261002`, toma el siguiente sufijo libre y cámbialo también en la spec, en `PLAN.md` y en `todo/salas.md`.
 
@@ -277,11 +317,16 @@ Si ya existe otra migración con fecha `20261002`, toma el siguiente sufijo libr
 -- `20260913000100_lockin_sessions.sql` (`session_ends_at`).
 --
 -- Nadie escribe estas tablas directamente: sin políticas de escritura y con
--- insert/update/delete revocados. Todo pasa por los RPC SECURITY DEFINER de
--- abajo, que validan con la sala bloqueada.
+-- todos los privilegios revocados salvo SELECT (TRUNCATE incluido: RLS no lo
+-- filtra). Todo pasa por los RPC SECURITY DEFINER de abajo, que validan con la
+-- sala bloqueada y con `clock_timestamp()` tomado DESPUÉS del bloqueo: `now()`
+-- es la hora de inicio de la transacción y se queda atrás si la RPC espera.
 --
 -- El ciego de invitados vive en la política de `room_members`: quien convoca
--- ve todas las filas; el resto, la suya y las `aceptada`.
+-- ve todas las filas; el resto, la suya y las `aceptada`. Por eso
+-- `room_members` NO va a la publicación de Realtime: Supabase no aplica RLS a
+-- los DELETE y entregaría la PK (room_id, profile_id) a cualquier suscriptor.
+-- Los cambios de miembros se avisan tocando `lockin_rooms.updated_at`.
 
 create type public.room_member_status as enum ('invitada', 'aceptada', 'rechazada');
 
@@ -292,6 +337,9 @@ create table public.lockin_rooms (
   blocks smallint not null,
   cancelled_at timestamptz,
   created_at timestamptz not null default now(),
+  -- Lo toca `touch_room()` en cada cambio de miembros: es la invalidación que
+  -- reciben, por la RLS de la sala, quienes participan.
+  updated_at timestamptz not null default now(),
   constraint lockin_rooms_blocks_valid check (blocks in (1, 2, 4))
 );
 
@@ -368,16 +416,44 @@ $fn$;
 
 
 -- ---------------------------------------------------------------------------
--- RLS
+-- Invalidación: cualquier cambio de miembros toca la sala.
+-- ---------------------------------------------------------------------------
+--
+-- En un borrado en cascada desde `lockin_rooms` la sala ya no existe cuando
+-- este trigger corre: el `update` afecta a cero filas y no falla.
+
+create or replace function public.touch_room()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $fn$
+begin
+  update public.lockin_rooms
+     set updated_at = clock_timestamp()
+   where id = coalesce(new.room_id, old.room_id);
+  return null;
+end;
+$fn$;
+
+create trigger room_members_touch_room
+  after insert or update or delete on public.room_members
+  for each row execute function public.touch_room();
+
+
+-- ---------------------------------------------------------------------------
+-- Permisos de tabla y RLS
 -- ---------------------------------------------------------------------------
 
 alter table public.lockin_rooms enable row level security;
 alter table public.room_members enable row level security;
 
-revoke all on table public.lockin_rooms from anon;
-revoke all on table public.room_members from anon;
-revoke insert, update, delete on table public.lockin_rooms from authenticated;
-revoke insert, update, delete on table public.room_members from authenticated;
+-- `revoke all` y no solo insert/update/delete: los privilegios por defecto de
+-- Supabase conceden ALL en `public`, y eso incluye TRUNCATE, que RLS no filtra.
+revoke all on table public.lockin_rooms from anon, authenticated;
+revoke all on table public.room_members from anon, authenticated;
+grant select on table public.lockin_rooms to authenticated;
+grant select on table public.room_members to authenticated;
 
 create policy "lockin_rooms: lees las salas en las que estás"
   on public.lockin_rooms for select
@@ -408,6 +484,7 @@ as $fn$
 declare
   v_actor uuid := (select auth.uid());
   v_count integer := coalesce(cardinality(p_invitee_ids), 0);
+  v_now timestamptz := clock_timestamp();
   v_room public.lockin_rooms;
 begin
   if v_actor is null then
@@ -431,8 +508,8 @@ begin
 
   if p_blocks is null or p_blocks not in (1, 2, 4)
      or p_starts_at is null
-     or p_starts_at < now() + interval '5 minutes'
-     or p_starts_at > now() + interval '30 days' then
+     or p_starts_at < v_now + interval '5 minutes'
+     or p_starts_at > v_now + interval '30 days' then
     raise exception 'create_room: hora o duración fuera de rango' using errcode = 'LI003';
   end if;
 
@@ -441,7 +518,7 @@ begin
   returning * into v_room;
 
   insert into public.room_members (room_id, profile_id, status, responded_at)
-  values (v_room.id, v_actor, 'aceptada', now());
+  values (v_room.id, v_actor, 'aceptada', v_now);
 
   insert into public.room_members (room_id, profile_id)
   select v_room.id, i from unnest(p_invitee_ids) as i;
@@ -451,6 +528,7 @@ end;
 $fn$;
 
 -- Bloquea la sala y exige que el actor tenga fila no rechazada. Uso interno.
+-- Quien la llama toma `clock_timestamp()` DESPUÉS, nunca antes.
 create or replace function public.lock_room_for_member(p_room_id uuid)
 returns public.lockin_rooms
 language plpgsql
@@ -487,25 +565,32 @@ security definer
 set search_path = ''
 as $fn$
 declare
-  v_room public.lockin_rooms := public.lock_room_for_member(p_room_id);
+  v_room public.lockin_rooms;
+  v_now timestamptz;
   v_row public.room_members;
 begin
   if p_answer is null or p_answer not in ('aceptada', 'rechazada') then
     raise exception 'respond_room: la respuesta es aceptada o rechazada' using errcode = '22023';
   end if;
+
+  v_room := public.lock_room_for_member(p_room_id);
+  v_now := clock_timestamp();
+
   if v_room.host_id = (select auth.uid()) then
     raise exception 'respond_room: quien convoca no responde' using errcode = 'LI004';
   end if;
   if v_room.cancelled_at is not null then
     raise exception 'respond_room: la sala se canceló' using errcode = 'LI001';
   end if;
-  if now() >= v_room.starts_at then
-    raise exception 'respond_room: la sala ya empezó' using errcode = 'LI002';
+  -- Las respuestas se cierran al abrir la ventana de entrada: así nadie pasa de
+  -- aceptada a rechazada con el canal de presencia ya autorizado.
+  if v_now >= v_room.starts_at - interval '5 minutes' then
+    raise exception 'respond_room: la ventana de entrada ya está abierta' using errcode = 'LI002';
   end if;
 
   update public.room_members
      set status = p_answer,
-         responded_at = case when status = p_answer then responded_at else now() end
+         responded_at = case when status = p_answer then responded_at else v_now end
    where room_id = p_room_id and profile_id = (select auth.uid())
   returning * into v_row;
 
@@ -521,6 +606,7 @@ set search_path = ''
 as $fn$
 declare
   v_room public.lockin_rooms := public.lock_room_for_member(p_room_id);
+  v_now timestamptz := clock_timestamp();
 begin
   if v_room.host_id <> (select auth.uid()) then
     raise exception 'cancel_room: solo cancela quien convoca' using errcode = 'LI004';
@@ -528,11 +614,11 @@ begin
   if v_room.cancelled_at is not null then
     raise exception 'cancel_room: ya estaba cancelada' using errcode = 'LI001';
   end if;
-  if now() >= v_room.starts_at then
+  if v_now >= v_room.starts_at then
     raise exception 'cancel_room: ya ha empezado' using errcode = 'LI002';
   end if;
 
-  update public.lockin_rooms set cancelled_at = now() where id = p_room_id
+  update public.lockin_rooms set cancelled_at = v_now, updated_at = v_now where id = p_room_id
   returning * into v_room;
 
   return v_room;
@@ -547,19 +633,20 @@ set search_path = ''
 as $fn$
 declare
   v_room public.lockin_rooms := public.lock_room_for_member(p_room_id);
+  v_now timestamptz := clock_timestamp();
   v_row public.room_members;
 begin
   if not public.is_room_attendee(p_room_id) then
     raise exception 'join_room: no has aceptado la invitación' using errcode = 'LI004';
   end if;
   if v_room.cancelled_at is not null
-     or now() < v_room.starts_at - interval '5 minutes'
-     or now() >= public.session_ends_at(v_room.starts_at, v_room.blocks) then
+     or v_now < v_room.starts_at - interval '5 minutes'
+     or v_now >= public.session_ends_at(v_room.starts_at, v_room.blocks) then
     raise exception 'join_room: fuera de la ventana de entrada' using errcode = 'LI003';
   end if;
 
   update public.room_members
-     set joined_at = coalesce(joined_at, now()), left_at = null
+     set joined_at = coalesce(joined_at, v_now), left_at = null
    where room_id = p_room_id and profile_id = (select auth.uid())
   returning * into v_row;
 
@@ -575,10 +662,11 @@ set search_path = ''
 as $fn$
 declare
   v_room public.lockin_rooms := public.lock_room_for_member(p_room_id);
+  v_now timestamptz := clock_timestamp();
   v_row public.room_members;
 begin
   update public.room_members
-     set left_at = now()
+     set left_at = v_now
    where room_id = v_room.id
      and profile_id = (select auth.uid())
      and joined_at is not null
@@ -593,7 +681,9 @@ end;
 $fn$;
 
 -- Salas vivas en las que estás, con el reloj de Postgres. SECURITY INVOKER:
--- la RLS de `lockin_rooms` ya limita a las tuyas no rechazadas.
+-- la RLS de `lockin_rooms` ya limita a las tuyas no rechazadas. Sin `limit`:
+-- el cliente pagina con `range()` (como `matches.list()`), y un tope aquí
+-- haría desaparecer salas de Matches y de los avisos en silencio.
 create or replace function public.live_rooms()
 returns setof public.lockin_rooms
 language sql
@@ -603,9 +693,8 @@ as $fn$
   select r.*
   from public.lockin_rooms r
   where r.cancelled_at is null
-    and now() < public.session_ends_at(r.starts_at, r.blocks)
-  order by r.starts_at, r.id
-  limit 20;
+    and clock_timestamp() < public.session_ends_at(r.starts_at, r.blocks)
+  order by r.starts_at, r.id;
 $fn$;
 
 
@@ -616,6 +705,7 @@ $fn$;
 revoke execute on function public.is_room_participant(uuid) from public, anon;
 revoke execute on function public.is_room_host(uuid) from public, anon;
 revoke execute on function public.is_room_attendee(uuid) from public, anon;
+revoke execute on function public.touch_room() from public, anon, authenticated;
 revoke execute on function public.create_room(uuid[], timestamptz, smallint) from public, anon;
 revoke execute on function public.lock_room_for_member(uuid) from public, anon, authenticated;
 revoke execute on function public.respond_room(uuid, public.room_member_status) from public, anon;
@@ -636,18 +726,20 @@ grant execute on function public.live_rooms() to authenticated;
 
 
 -- ---------------------------------------------------------------------------
--- Realtime — sostiene `RoomRepository.subscribe`. postgres_changes filtra por
--- RLS, así que el ciego de invitados también vale por aquí.
+-- Realtime — sostiene `RoomRepository.subscribe`.
 -- ---------------------------------------------------------------------------
-
-alter table public.lockin_rooms replica identity full;
-alter table public.room_members replica identity full;
+--
+-- SOLO `lockin_rooms`. Un UPDATE de la sala pasa por su RLS (lo reciben quienes
+-- participan) y no lleva ids de miembros; el trigger `touch_room` lo provoca en
+-- cada cambio de miembros. Un DELETE de la sala llega sin RLS con su `id`, un
+-- UUID que no abre nada. `room_members` NO se publica: sus DELETE (borrados en
+-- cascada de un perfil) entregarían (room_id, profile_id) a cualquiera.
+-- Replica identity por defecto: los suscriptores releen, no miran la fila.
 
 do $do$
 begin
   if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
     alter publication supabase_realtime add table public.lockin_rooms;
-    alter publication supabase_realtime add table public.room_members;
   end if;
 end;
 $do$;
@@ -657,6 +749,10 @@ $do$;
 -- Presencia — topic privado `lockin:room:<uuid>`, solo para quien ha aceptado.
 -- Mismo diseño que `20260917000100_realtime_authorization.sql`; su guarda de
 -- RLS en `realtime.messages` ya corrió allí.
+--
+-- Realtime evalúa estas políticas al unirse y no al recibir cada mensaje. No
+-- hace falta expulsar a nadie porque nadie puede dejar de estar `aceptada` con
+-- la ventana abierta: `respond_room` cierra las respuestas justo al abrirla.
 -- ---------------------------------------------------------------------------
 
 create or replace function public.is_room_topic_member(p_topic text)
@@ -700,29 +796,10 @@ create policy "lockin: envías a los canales de tus salas"
   );
 ```
 
-- [ ] **Step 2: Escribir el bloque de PGlite que falla**
-
-En `supabase/schema-embedded.test.mjs`, un bloque nuevo con comentario de cabecera «Salas grupales», con el mismo estilo que el del acuerdo (`asActor`, `sonda` con savepoint que devuelve el `errcode`). Prepara: cuatro perfiles (Ana convoca; Bea y Carla, matches de Ana; Dani, sin match con Ana) y los dos matches `Ana–Bea` y `Ana–Carla` insertados como superusuario. Pruebas, cada una con su `assert`:
-
-1. **Ciego de invitados** (el test central del bloque): como Ana, `create_room([Bea, Carla], now()+1h, 2)`. Como Bea, `select profile_id, status from room_members` devuelve **solo** Ana (`aceptada`) y Bea (`invitada`), no Carla. Como Carla, `respond_room(sala, 'aceptada')`. Como Bea, ahora salen las tres. Como Ana, siempre las tres con su estado.
-2. Como Dani: `select` de `lockin_rooms` y de `room_members` devuelve cero filas; `respond_room` y `join_room` → `LI004`.
-3. `create_room` como Ana → `LI006` con: `[Bea]`, `[Bea, Carla, Dani]` (Dani no es match), `[Bea, Bea]`, `[Bea, Ana]`, `array[]::uuid[]`, `array[Bea, null]`; y cinco ids → `LI006`. Hora a 1 min → `LI003`.
-4. `respond_room` como Ana (convoca) → `LI004`; `cancel_room` como Bea → `LI004`; `join_room` como Bea mientras está `invitada` → `LI004`.
-5. Bea rechaza: como Bea, `select` de `lockin_rooms` devuelve cero filas y `respond_room(sala, 'aceptada')` → `LI004`; como Carla, Bea no aparece; como Ana, aparece `rechazada`.
-6. `cancel_room` como Ana; después `respond_room` como Carla → `LI001`; `live_rooms()` como Ana no la devuelve.
-7. Ventana: una sala de Ana con `starts_at` puesta a `now() + 2 min` por `update` de superusuario y Carla `aceptada`: `join_room` como Carla devuelve `joined_at` no nulo; segundo `join_room` conserva el mismo `joined_at`; `leave_room` pone `left_at`; `join_room` de nuevo lo pone a `null`. Con `starts_at` a `now() + 1 h`, `join_room` → `LI003`.
-8. Escritura directa como `authenticated`: `insert into room_members …` y `update lockin_rooms set cancelled_at = now()` fallan por permisos (`42501`).
-9. **Presencia**: con `set local "realtime.topic" = 'lockin:room:<sala>'` y rol `authenticated`, la política de `select` de `realtime.messages` deja pasar a Carla (`aceptada`) y no a Bea (`invitada`) ni a Dani. Un topic `lockin:room:no-es-uuid` se deniega sin error. Mismo patrón que el bloque de `lockin:presence:` (`:840-900`).
-10. `has_function_privilege('anon', 'public.create_room(uuid[], timestamptz, smallint)', 'EXECUTE')` es `false`, y `authenticated` no tiene `EXECUTE` sobre `lock_room_for_member(uuid)`.
-
-- [ ] **Step 3: Ejecutar y ver que falla**
-
-Run: `npm run test:schema` → FAIL en el bloque nuevo antes de existir la migración (si lo escribiste primero), PASS el resto.
-
 - [ ] **Step 4: Ejecutar con la migración**
 
 Run: `npm run test:schema`
-Expected: PASS entero, incluida la comparación de huella. Si `drift-check.mjs` o la huella no reconocen las tablas nuevas, ajusta solo el parseo (mismo precedente que `seeking_specialties`) y dilo en el commit.
+Expected: PASS entero, incluida la comparación de huella. Si `drift-check.mjs` o la huella no reconocen las tablas nuevas o el trigger, ajusta solo el parseo (mismo precedente que `seeking_specialties`) y dilo en el commit.
 
 - [ ] **Step 5: Commit**
 
@@ -739,7 +816,7 @@ Cruza `arquitecto` (contrato, fachada, store) y decide la forma de los casos que
 
 **Files:**
 - Modify: `src/data/repositories.ts` (`RoomRepository`; `rooms` en `Repositories`)
-- Modify: `src/data/repositories.contract.ts` (`roomsFor` en `ContractFixture`; `describe('rooms', …)` con los doce casos)
+- Modify: `src/data/repositories.contract.ts` (`roomsFor` en `ContractFixture`; `describe('rooms', …)` con los quince casos)
 - Create: `src/data/mock/rooms.ts`, `src/data/mock/rooms.test.ts`
 - Modify: `src/data/mock/store.ts` (`rooms: LockInRoom[]`, `roomMembers: RoomMember[]` en `MockState` e `initialState()`)
 - Modify: `src/data/mock/index.ts` (registro y re-export de `createMockRoomRepository`)
@@ -768,7 +845,19 @@ En `repositories.contract.ts`, `ContractFixture` gana:
 roomsFor(profileId: string): RoomRepository;
 ```
 
-Y un `describe('rooms', …)` con los doce casos de la spec §1, en ese orden y con esos títulos en castellano. Preparación común en un `beforeEach` del `describe`: `prepareSwiper()` y `like` a `reciprocalAId` y `reciprocalBId` (quedan como matches); `openToBothReciprocalId` no recibe like y hace de tercero. Hora: copia en el `describe('rooms')` los helpers `startsIn`/`soon`/`later` del `describe('sessions')` (`repositories.contract.ts:1085`; están en su ámbito y no se pueden importar): `later()` = dentro de 1 h, `soon()` = dentro de 5 min + 2 s. El caso 9 entra en ventana con `soon()` + `fixture.elapse(3_000)`, como los casos de sesiones, y comprueba «fuera de ventana» con `later()`. El caso 12 va con `itWithTimeTravel`.
+Y un `describe('rooms', …)` **hermano** de `describe('sessions')` (no dentro) con los quince casos de la spec §1, en ese orden y con esos títulos en castellano.
+
+Lo que el `describe('sessions')` tiene en su propio ámbito y aquí hay que **redefinir**, porque no se puede reutilizar tal cual:
+
+- `itWithTimeTravel` (`repositories.contract.ts:1061`) se define dentro de `describe('sessions')`: declara uno igual en `describe('rooms')`.
+- `startsIn` (`:1081`) usa `mine.serverNow()`, y `mine` es un `LockInSessionRepository`; `RoomRepository` no tiene `serverNow`. Aquí: `async function startsIn(ms) { return new Date(Date.parse(await repositories.sessions.serverNow()) + ms).toISOString(); }`, con `later()` = 1 h, `soon()` = 5 min + 2 s (entrar en ventana) y `beforeWindow()` = 5 min + 10 s (responder y, tras `fixture.elapse(11_000)`, ver la ventana abierta).
+
+Preparación común en un `beforeEach` del `describe`:
+
+1. **`await repositories.profiles.saveCurrent(buildProfileInput())`** antes de nada. En el mock `prepareSwiper()` es un no-op (`src/data/mock/index.test.ts:72`) y el perfil `'me'` no existe hasta guardarlo (`mock/store.ts:55`, `mock/index.ts:283`): sin esto, A no encuentra el perfil de quien convoca y el caso 2 («A me ve `aceptada`») falla. En Supabase `prepareSwiper()` ya lo guarda; repetirlo es un upsert inocuo.
+2. `prepareSwiper()` y `like` a `reciprocalAId` y `reciprocalBId` (quedan como matches); `openToBothReciprocalId` no recibe like y hace de tercero.
+
+Casos con tiempo: el 9 entra en ventana con `soon()` + `fixture.elapse(3_000)` y comprueba «fuera de ventana» con `later()`; el 12 usa `beforeWindow()` + `fixture.elapse(11_000)` (11 s reales contra Supabase, como los casos de sesiones que esperan segundos); el 13 va con `itWithTimeTravel`. El 14 convoca 21 salas (con `later()` + `i` minutos). El 15 abre `roomsFor(openToBothReciprocalId).subscribe(contador)`, hace convocar/aceptar/rechazar/cancelar y espera 2 s con `fixture.elapse(2_000)` antes de afirmar `contador === 0`. El 11 espera el aviso sondeando hasta 5 s, con el mismo mecanismo que usen los casos de `subscribe` de sesiones (léelo ahí; no inventes un helper).
 
 - [ ] **Step 3: Ejecutar y ver que falla**
 
@@ -782,9 +871,9 @@ Run: `npx jest src/data/mock/index.test.ts -t rooms` → FAIL (`roomsFor is not 
 - `create`: `validateRoomInvitees(inviteeIds, actorId, matchesDelActor)` y `isValidStartsAt` (`SessionWindowError`); inserta sala y filas (convoca `aceptada` con `respondedAt`, invitados `invitada`). Con `autoAcceptFrom`, los invitados de ese conjunto pasan a `aceptada` en el acto.
 - `visibleTo(room, actorId)`: la fila del actor existe y no es `rechazada`.
 - `toView(room)`: `me` = fila del actor; `others` = las demás filas **filtradas con la regla de la política** (convoca → todas; si no → `aceptada`), ordenadas por `profileId`, con `profile` de `state.profiles` (las que no tengan perfil se omiten).
-- `listLive`: salas visibles con `isRoomLive(room, store.nowMs())`, por `startsAt` e `id`.
-- `respond`/`cancel`/`join`/`leave`: los mismos chequeos y en el mismo orden que la RPC de la Tarea 2, con las clases de `session-errors.ts`.
-- Cada escritura `notify('rooms')`; `subscribe` → `subscribeTo('rooms', listener)`.
+- `listLive`: **todas** las salas visibles con `isRoomLive(room, store.nowMs())`, por `startsAt` e `id`, sin tope (igual que `live_rooms()` paginado).
+- `respond`/`cancel`/`join`/`leave`: los mismos chequeos y en el mismo orden que la RPC de la Tarea 2 (`respond` usa `canRespondToRoom`: cerrado al abrir la ventana), con las clases de `session-errors.ts`.
+- Avisos: cada escritura notifica **solo a quien participa en esa sala** (no a todo el store): tópico `rooms:<profileId>` por cada fila no `rechazada` de la sala, más el del propio actor (así quien acaba de rechazar también relee). `subscribe` del actor → `subscribeTo(\`rooms:${actorId}\`, listener)`. Es la misma regla que el `UPDATE` de `lockin_rooms` filtrado por RLS en Supabase, y es lo que hace pasar el caso 15 (un tercero no recibe nada) también en el mock.
 
 Tests propios en `src/data/mock/rooms.test.ts` solo para lo que el contrato no ve: `autoAcceptFrom` acepta al instante; un perfil inexistente en `others` se omite sin romper.
 
@@ -818,7 +907,7 @@ git commit -m "feat(salas): contrato RoomRepository, casos y mock con el ciego d
 Mecánica con patrón que copiar (`src/data/supabase/sessions.ts`) contra una interfaz ya congelada por la Tarea 3. Criterio: unitarios en verde y `contract.yml` en verde.
 
 **Files:**
-- Create: `src/data/supabase/rooms.ts`, `src/data/supabase/rooms.test.ts`
+- Create: `src/data/supabase/rooms.ts`, `src/data/supabase/rooms.test.ts`, `src/data/supabase/pagination.ts` (solo `fetchAllPages` movido desde `index.ts`)
 - Modify: `src/data/supabase/database.types.ts` (`RoomRow`, `RoomMemberRow`, tablas y `Functions`)
 - Modify: `src/data/supabase/index.ts` (sustituir el stub de la Tarea 3 por `rooms: createSupabaseRoomRepository()`)
 - Modify: `src/data/supabase/contract.test.ts` (sustituir el stub de `roomsFor`)
@@ -840,6 +929,8 @@ export type RoomRow = {
   blocks: SessionBlocks;
   cancelled_at: string | null;
   created_at: string;
+  /** Lo toca el trigger `touch_room`; el dominio no lo expone. */
+  updated_at: string;
 };
 
 /** Fila de `public.room_members`. La RLS aplica el ciego de invitados. */
@@ -857,15 +948,15 @@ Tablas `lockin_rooms` y `room_members` con `Insert`/`Update: Record<string, neve
 
 - [ ] **Step 2: Tests unitarios que fallan — `rooms.test.ts`**
 
-Copia la forma de `src/data/supabase/sessions.test.ts` (cliente falso inyectado): mapeo de filas con `toIso`; `toRoomError` traduce `LI001`–`LI004` a las clases de `session-errors.ts` y `LI006` a `RoomInviteError`, y deja intacto cualquier otro código; `getById` arma `RoomView` con `me` y `others` con `toProfile`, y devuelve `null` si no hay fila de sala o no hay fila propia; `listLive` llama a `live_rooms` y hace **una** lectura de `room_members` (`.in('room_id', ids)`) y **una** de `profiles` (`.in('id', ids)`) para todas las salas, no una por sala.
+Copia la forma de `src/data/supabase/sessions.test.ts` (cliente falso inyectado): mapeo de filas con `toIso`; `toRoomError` traduce `LI001`–`LI004` a las clases de `session-errors.ts` y `LI006` a `RoomInviteError`, y deja intacto cualquier otro código; `getById` arma `RoomView` con `me` y `others` con `toProfile`, y devuelve `null` si no hay fila de sala o no hay fila propia; `listLive` llama a `live_rooms` y hace **una** lectura de `room_members` (`.in('room_id', ids)`) y **una** de `profiles` (`.in('id', ids)`) para todas las salas, no una por sala; con una primera página llena de `live_rooms`, pide la siguiente (no se queda con la primera); `subscribe` abre un único canal con **un solo** `.on('postgres_changes', { table: 'lockin_rooms' })` y ninguno sobre `room_members`.
 
 - [ ] **Step 3: Implementar `src/data/supabase/rooms.ts`**
 
 - Deps inyectables como `SessionRepositoryDeps` (`getClient`, `getUserId`).
-- Lecturas: `getById` → `from('lockin_rooms').select('*').eq('id', id).maybeSingle()`, luego `room_members` y `profiles` como arriba. `listLive` → `rpc('live_rooms')` y las mismas dos lecturas en lote. Sin `select` embebido (`Relationships: []` no lo tipa).
+- Lecturas: `getById` → `from('lockin_rooms').select('*').eq('id', id).maybeSingle()`, luego `room_members` y `profiles` como arriba. `listLive` → `rpc('live_rooms')` **paginado con `range()`** en vueltas de `fetchAllPages` (`src/data/supabase/index.ts:213`, el mismo que usa `matches.list()`). Hoy es privado de `index.ts`, e importarlo desde `rooms.ts` crearía un ciclo (`index.ts` importa `rooms.ts`): **muévelo tal cual, con `FETCH_PAGE_SIZE`, a `src/data/supabase/pagination.ts` (nuevo)** e impórtalo desde los dos; `matches.list()` no cambia de comportamiento y las mismas dos lecturas en lote (también paginadas si pasan de la página). Sin `select` embebido (`Relationships: []` no lo tipa).
 - Escrituras: `rpc('create_room' | 'respond_room' | 'cancel_room' | 'join_room' | 'leave_room')`, `toRoomError` en el `error`. `create` relee con `getById` para devolver `RoomView`.
-- Tras cada escritura propia, avisa a los listeners al momento (como `changed` en `sessions.ts`).
-- `subscribe`: un solo canal `lockin:rooms` con `postgres_changes` sobre `lockin_rooms` y `room_members` (sin filtro: RLS acota), envuelto en `subscribeResyncingOnRejoin`; se cierra al irse el último listener.
+- Tras cada escritura propia, avisa a los listeners al momento (como `changed` en `sessions.ts`): quien rechaza deja de recibir eventos de esa sala, y su propia pantalla tiene que enterarse igual.
+- `subscribe`: un solo canal `lockin:rooms` con `postgres_changes` **solo sobre `lockin_rooms`** (eventos `*`, sin filtro: la RLS de la sala acota los `UPDATE`/`INSERT`; los `DELETE` llegan a todos con el `id` y bastan para releer). **Nunca sobre `room_members`**: no está publicada a propósito (sus `DELETE` llevarían `(room_id, profile_id)` sin RLS) y el trigger `touch_room` ya convierte cada cambio de miembros en un `UPDATE` de la sala. Envuelto en `subscribeResyncingOnRejoin`; se cierra al irse el último listener.
 
 - [ ] **Step 4: Registro y fixture**
 
@@ -890,8 +981,8 @@ Run: `npx jest src/data/supabase` → PASS. `tsc`, lint limpios. Empuja la rama 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add -N -- src/data/supabase/rooms.ts src/data/supabase/rooms.test.ts
-git commit -m "feat(salas): repositorio de salas contra Supabase" -- src/data/supabase/rooms.ts src/data/supabase/rooms.test.ts src/data/supabase/database.types.ts src/data/supabase/index.ts src/data/supabase/contract.test.ts
+git add -N -- src/data/supabase/rooms.ts src/data/supabase/rooms.test.ts src/data/supabase/pagination.ts
+git commit -m "feat(salas): repositorio de salas contra Supabase" -- src/data/supabase/rooms.ts src/data/supabase/rooms.test.ts src/data/supabase/pagination.ts src/data/supabase/database.types.ts src/data/supabase/index.ts src/data/supabase/contract.test.ts
 ```
 
 ---
@@ -1024,6 +1115,8 @@ La pantalla con más estados del bloque y el cruce con `chat`: `[Claude]`.
   - Quien convoca: ve a todos con su estado; «Cancelar sala» pide confirmación en línea y cancela.
   - Aceptada, «No podré ir» con confirmación → rechaza y vuelve a Matches (`router.back()`), sin pintar «no disponible» (Review Focus 4).
   - Cancelada por `subscribe` con la pantalla abierta → «{Nombre} canceló la sala» (Review Focus 3).
+  - Con la pantalla de Bea abierta, Carla (aceptada) rechaza desde otro repositorio del mismo store → a Bea le llega el aviso y Carla desaparece de la lista.
+  - Invitada con la ventana ya abierta: «Ya no se puede responder a esta sala», sin «Me apunto» ni «No puedo»; una aceptada en la ventana no ve «No podré ir».
   - En ventana: llama a `join` al montar, pinta la fase y la cuenta atrás, y cada persona aceptada con «Está aquí» / «Aún no ha entrado» (con `createMemoryPresenceAdapter` inyectado); «Salir» con confirmación llama a `leave`.
   - Terminada: «Sala completada» y «Volver a Matches», sin valoración.
   - No visible: «Esta sala no está disponible».
@@ -1072,8 +1165,8 @@ Toca el orquestador de `calidad` y depende de leer el recorrido entero: `[Claude
 - Create: `e2e/room.yaml`
 - Modify: `e2e/verify.mjs` (`prepareRoom`, `verifyRoomAttendance`), `e2e/run.mjs` (encadenar tras `agreement.yaml`), y el test de `e2e/` que fija etiquetas contra el código si existe para el acuerdo (`agreement.test.mjs` → `room.test.mjs`, mismo patrón).
 
-- [ ] **Step 1: `prepareRoom(status, profileName)`** con `service_role` (patrón de `prepareAgreement`): busca el perfil y su match; inserta en `lockin_rooms` una sala con `host_id` = la contraparte, `starts_at = now() + 4 min` (la ventana de entrada ya está abierta: abre 5 min antes), `blocks = 1`; en `room_members`, la contraparte `aceptada`, otro perfil de `supabase/seed.sql` que no sea ninguno de los dos `aceptada`, y el usuario `invitada`. Inserta directo porque `create_room` exige 5 min de margen y match con todos; lo que se prueba es aceptar, entrar y salir.
-- [ ] **Step 2: `room.yaml`**: relanza sin borrar estado (como `session-streak.yaml`), Matches → toca «.* te invita.*» → «Me apunto» → espera la fase o «Empieza en» → «Salir» → «Salir de la sala».
+- [ ] **Step 1: `prepareRoom(status, profileName)`** con `service_role` (patrón de `prepareAgreement`): busca el perfil y su match; inserta en `lockin_rooms` una sala con `host_id` = la contraparte, `starts_at = now() + 7 min`, `blocks = 1`. Así quedan 2 min para responder antes de que abra la ventana (las respuestas se cierran al abrirla), y la ventana abre 2 min después de sembrar; en `room_members`, la contraparte `aceptada`, otro perfil de `supabase/seed.sql` que no sea ninguno de los dos `aceptada`, y el usuario `invitada`. Inserta directo porque `create_room` exige 5 min de margen y match con todos; lo que se prueba es aceptar, entrar y salir.
+- [ ] **Step 2: `room.yaml`**: relanza sin borrar estado (como `session-streak.yaml`), Matches → toca «.* te invita.*» → «Me apunto» → `extendedWaitUntil` de hasta 180 s a «Empieza en» (la pantalla entra sola al abrir la ventana) → «Salir» → «Salir de la sala». Si el relanzamiento y la navegación tardan más de 2 min, «Me apunto» llega tarde y da «Ya no se puede responder»: diagnostícalo con `gh run download` antes de subir el margen, y si hay que subirlo, sube los dos números a la vez (siembra y espera).
 - [ ] **Step 3: `verifyRoomAttendance`**: la fila del usuario es `aceptada`, `joined_at` y `left_at` no nulos. Veredicto con `room: 'verified'` junto a `agreement`.
 - [ ] **Step 4: Encadenar en `run.mjs`** tras `agreement.yaml`, con su carpeta de artefactos `room/`, en la variante `supabase` solo.
 - [ ] **Step 5: Verificar en Actions** (`E2E Android` verde en las variantes; en la `supabase`, `[Passed]` del flujo y `Postgres: asistencia a la sala verificada.`) **y commit**:
@@ -1088,7 +1181,7 @@ git commit -m "test(salas): E2E de aceptar, entrar y salir de una sala en la var
 ### Task 11: Verificación final y cierre [Claude]
 
 - [ ] `npx tsc --noEmit`, `npm run lint`, `npx jest --coverage` sobre el suelo, `npm run test:schema`, `npx expo export --platform web`, todo en verde en local.
-- [ ] En Actions sobre el commit de cierre: `CI` verde entera («Formato» incluido), `E2E Android` verde, `contract.yml` verde (lanzado a mano), y `Schema drift`: local verde, remoto **rojo a propósito** solo por esta migración más la excepción vigente. Su `remote.diff` tiene que listar exactamente las dos tablas, el enum, las once funciones (tres helpers de pertenencia, `lock_room_for_member`, cinco RPC de escritura, `live_rooms` e `is_room_topic_member`), las dos políticas de tabla y las dos de `realtime.messages`. Nada más.
+- [ ] En Actions sobre el commit de cierre: `CI` verde entera («Formato» incluido), `E2E Android` verde, `contract.yml` verde (lanzado a mano), y `Schema drift`: local verde, remoto **rojo a propósito** solo por esta migración más la excepción vigente. Su `remote.diff` tiene que listar exactamente las dos tablas (con `lockin_rooms.updated_at`), el enum, las doce funciones (tres helpers de pertenencia, `touch_room`, `lock_room_for_member`, cinco RPC de escritura, `live_rooms` e `is_room_topic_member`), el trigger `room_members_touch_room`, las dos políticas de tabla, las dos de `realtime.messages`, `grant select` como único privilegio de `authenticated` sobre las dos tablas, y `lockin_rooms` (no `room_members`) en la publicación. Nada más.
 - [ ] Actualiza la memoria `schema-drift-remoto-rojo-esperado.md` y `todo/salas.md` → «Pendiente del usuario».
 - [ ] Marca el hito en `docs/plan/TODO.md` con evidencia (runs), como el del acuerdo.
 

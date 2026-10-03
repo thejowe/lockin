@@ -325,10 +325,10 @@ que nadie lo descubra a mitad:
 | Archivo | Dueño original | Qué se toca |
 |---|---|---|
 | `src/data/types.ts` | `arquitecto` | `RoomMemberStatus`, `LockInRoom`, `RoomMember`, `RoomView`, `RoomInput` |
-| `src/data/repositories.ts`, `repositories.contract.ts` | `arquitecto` | `RoomRepository`, `Repositories.rooms`, `ContractFixture.roomsFor` y doce casos |
+| `src/data/repositories.ts`, `repositories.contract.ts` | `arquitecto` | `RoomRepository`, `Repositories.rooms`, `ContractFixture.roomsFor` y quince casos |
 | `src/data/active.ts`, `src/data/index.ts` | `arquitecto` | Exponer `rooms` y el adaptador `roomPresence` |
 | `src/data/mock/store.ts`, `mock/index.ts`, `mock/index.test.ts` | `arquitecto` | `MockState` gana `rooms` y `roomMembers`; registro; `roomsFor` |
-| `src/data/supabase/index.ts`, `database.types.ts`, `contract.test.ts` | `datos` | Registro, tipos de tablas y RPC, `roomsFor` |
+| `src/data/supabase/index.ts`, `database.types.ts`, `contract.test.ts` | `datos` | Registro, tipos de tablas y RPC, `roomsFor`; `fetchAllPages` sale de `index.ts` a `pagination.ts` (nuevo) sin cambiar `matches.list()` |
 | `src/data/supabase/presence.ts` (+ test) | `sesiones`/`datos` | Un parámetro `topicPrefix` con el valor de hoy por defecto |
 | `supabase/schema-embedded.test.mjs`, `drift-check.mjs` (solo si no parsea las tablas nuevas) | `datos`/`calidad` | Los tests en PGlite |
 | `src/features/session/index.ts` | `sesiones` | Solo exportar `createNotificationsPort`, `REMINDER_LEAD_MS`, `SESSIONS_CHANNEL_ID`, `NotificationsPort`, `ReminderStorage` |
@@ -363,6 +363,13 @@ tareas van en paralelo (Tarea 1 ∥ Tarea 2 y Tarea 4 ∥ Tarea 5; ver el plan).
   «Convoca {nombre}», nunca «anfitrión» ni «admin».
 - Errores `LI001`–`LI004` con las clases de `session-errors.ts`; **`LI006`
   nuevo** (`RoomInviteError`, invitados inválidos).
+- **Seguridad que no se negocia** (revisión adversarial del 2026-10-02):
+  `room_members` **no** se publica en Realtime (los `DELETE` llegan sin RLS
+  con su PK); los avisos van por un trigger que toca `lockin_rooms`. Permisos
+  de tabla `revoke all` + `grant select` (si no, queda `TRUNCATE`). Las RPC
+  validan con `clock_timestamp()` tras el bloqueo. Las respuestas se cierran al
+  abrir la ventana de entrada, para que nadie deje de estar `aceptada` con el
+  canal de presencia ya autorizado.
 - Cero dependencias nuevas y ninguna build nativa: funciona en Expo Go, en web
   y en el emulador del `comprobador` de punta a punta.
 - Depende de: `sesiones` entregado. **Del usuario**: revisar las decisiones de

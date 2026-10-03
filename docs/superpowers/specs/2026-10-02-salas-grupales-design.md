@@ -8,6 +8,13 @@
 > Bloque: `salas` (bloque 14 de `docs/plan/PLAN.md`; el 13 ya es `visual`).
 > Plan de implementación: `docs/superpowers/plans/2026-10-02-salas-grupales.md`.
 > Checklist: `docs/plan/todo/salas.md`.
+>
+> **Revisada el mismo día** tras una revisión adversarial de Codex que ejecutó
+> el SQL en PGlite (nueve hallazgos, todos aceptados): `room_members` fuera de
+> la publicación de Realtime, `revoke all` + `grant select`, `clock_timestamp()`
+> tras el bloqueo, respuestas cerradas al abrir la ventana (decisión 11
+> cambiada), invalidación por la sala, `live_rooms()` sin tope y los dos
+> órdenes de la carrera cancelar/aceptar.
 
 ## Decisiones tomadas sin el usuario (revisar)
 
@@ -26,7 +33,7 @@ más cuesta deshacer es la 1 (toca SQL, RLS y contrato).
 | 8 | **Las salas no cuentan para rachas ni se valoran.** | Valoración de un toque al acabar; que una sala con tu pareja sume a vuestra racha. | La racha es de la pareja (spec de rachas) y una sala no es «de» ninguna pareja. La valoración es privada y 1:1; en grupo se convertiría en reputación. Ninguna de las dos piezas se toca. |
 | 9 | **Quien convoca no manda una vez convocada.** Puede cancelar antes de empezar y nada más: ni añadir gente, ni reinvitar, ni expulsar. | Gestión de miembros por quien convoca. | Principio innegociable de `CONCEPTO.md`: los lados son pares. Que una persona pueda echar a otra de una sala la convierte en jefa. El copy dice «Convoca {nombre}», nunca «anfitrión», «organizador» ni «admin». |
 | 10 | **Rechazar es definitivo para esa sala**, y también el «no podré ir» de quien ya había aceptado. Quien rechaza deja de verla. | Poder volver a aceptar tras rechazar. | Volver tras rechazar necesitaría seguir viendo la sala sin estar en ella, que choca con la 6. Si cambias de idea, quien convoca crea otra. |
-| 11 | **Se acepta solo antes de la hora de inicio**, igual que una propuesta 1:1. | Aceptar hasta que la sala termine. | Mismas reglas de tiempo que las sesiones 1:1 (`src/data/sessions.ts`): menos casos que probar y un modelo mental único. |
+| 11 | **Se responde (aceptar o rechazar) solo hasta que abre la ventana de entrada**, 5 min antes del inicio. Dentro de la ventana ya no se cambia de respuesta: quien no quiera quedarse, sale. | Responder hasta la hora de inicio, como una propuesta 1:1 (lo que decía la primera versión de esta spec); o hasta que la sala termine. | Realtime autoriza el canal de presencia al unirse y no lo revisa hasta renovar el JWT: si se pudiera rechazar con la pantalla abierta, quien rechaza seguiría oyendo la presencia de la sala. Como solo se entra al canal dentro de la ventana, cerrar las respuestas al abrirla hace que **ninguna transición `aceptada → rechazada` pueda ocurrir con un canal autorizado**. Ver «Presencia y revocación». |
 | 12 | **Aviso local 5 min antes**, como en las sesiones 1:1. | Sin aviso en v1. | Una sesión agendada sin aviso se olvida, y reutiliza `NotificationsPort` sin dependencias nuevas. Es la última tarea de código y se puede recortar sola si hiciera falta. |
 | 13 | **Errores: se reutilizan las cuatro clases `Session*Error`** para `LI001`–`LI004`, con el mismo significado, y se añade `RoomInviteError` (**`LI006`**, nuevo). | Una familia `Room*Error` propia. | La UI decide por clase; una sala es una sesión Lock-In con más gente, y los cuatro significados (conflicto, caducada, fuera de ventana, no te corresponde) son exactamente los mismos. Importarlas no toca `session-errors.ts`. |
 | 14 | **Bloque 14**, no 13. | — | El 13 de `PLAN.md` ya es `visual` (2026-09-29). |
@@ -197,7 +204,8 @@ modifica).
 - `ROOM_MIN_INVITEES = 2`, `ROOM_MAX_INVITEES = 4`.
 - **Viva**: `cancelledAt === null` y `now < endsAt`.
 - **Se responde** solo si estás `invitada` o `aceptada`, no convocas, la sala
-  no está cancelada y `now < startsAt`.
+  no está cancelada y `now < startsAt − 5 min` (antes de que abra la ventana;
+  decisión 11).
 - **Se cancela** solo si convocas, no está cancelada y `now < startsAt`.
 - **Ventana de entrada**: estás `aceptada`, no cancelada y
   `startsAt − 5 min ≤ now < endsAt`.
@@ -209,7 +217,7 @@ Las demás violaciones usan las clases de `src/data/session-errors.ts`:
 | Error | Código | Cuándo |
 |---|---|---|
 | `SessionConflictError` | `LI001` | Responder o cancelar una sala ya cancelada |
-| `SessionExpiredError` | `LI002` | Responder o cancelar una sala que ya empezó |
+| `SessionExpiredError` | `LI002` | Responder con la ventana de entrada ya abierta; cancelar una sala que ya empezó |
 | `SessionWindowError` | `LI003` | `startsAt` fuera de rango al convocar; `join` fuera de ventana; `leave` sin haber entrado |
 | `SessionForbiddenError` | `LI004` | Sala que no ves (ajena o rechazada); quien convoca responde; quien no convoca cancela; `join` sin haber aceptado |
 | `RoomInviteError` | `LI006` | Invitados inválidos (arriba) |
@@ -220,7 +228,8 @@ Las demás violaciones usan las clases de `src/data/session-errors.ts`:
 export interface RoomRepository {
   /**
    * Salas vivas en las que estás (convocas, te han invitado o aceptaste), por
-   * `startsAt` ascendente. Sin canceladas, terminadas ni rechazadas.
+   * `startsAt` ascendente. Sin canceladas, terminadas ni rechazadas. **Todas**:
+   * sin tope ni página truncada (Supabase pagina por dentro, como `matches.list()`).
    */
   listLive(): Promise<RoomView[]>;
   /** `null` si no existe, no estás o la rechazaste. Sí devuelve canceladas y terminadas. */
@@ -246,6 +255,9 @@ Colgado de `Repositories` como `rooms`, y expuesto en `src/data/active.ts` e
 Contra el mock y contra Supabase. Reparto: el usuario del test convoca;
 `reciprocalAId` y `reciprocalBId` son sus matches (se les da like); el perfil
 `openToBothReciprocalId` **no** es match en estos casos y hace de tercero.
+**Antes de nada, el usuario del test guarda su perfil** (`profiles.saveCurrent`):
+en el mock `prepareSwiper()` no hace nada y el perfil `'me'` no existe hasta
+guardarlo, así que sin él nadie podría ver a quien convoca en `others`.
 
 1. Convocar con A y B devuelve la sala con `me` `aceptada` y a A y B
    `invitada`; sale en `listLive()`.
@@ -259,17 +271,32 @@ Contra el mock y contra Supabase. Reparto: el usuario del test convoca;
 6. El tercero: `getById` `null`; `respond` y `join` → `SessionForbiddenError`.
 7. Quien convoca no puede responder; una invitada no puede cancelar →
    `SessionForbiddenError`.
-8. Cancelar antes de empezar la saca de `listLive()`; responder después →
-   `SessionConflictError`.
+8. Cancelar antes de empezar la saca de `listLive()`. **Carrera
+   cancelar/aceptar, los dos órdenes**: cancelar y luego aceptar → el aceptar
+   da `SessionConflictError`; aceptar y luego cancelar → **los dos tienen
+   éxito** (quien convoca puede cancelar hasta el inicio aunque alguien acabe
+   de aceptar) y la sala queda cancelada para todos.
 9. `join` fuera de ventana → `SessionWindowError`; `join` estando `invitada`
    → `SessionForbiddenError`; `join` dos veces conserva `joinedAt`; `leave` y
    `join` de nuevo pone `leftAt = null`.
-10. Aceptar dos veces es idempotente; rechazar tras aceptar (antes de empezar)
-    funciona y la saca de mi `listLive()`.
-11. `subscribe` de quien convoca avisa cuando A acepta.
-12. Con reloj simulado (`itWithTimeTravel`): responder o cancelar una sala
-    empezada → `SessionExpiredError`; una sala terminada sale de `listLive()`
-    pero `getById` la sigue devolviendo.
+10. Aceptar dos veces es idempotente; rechazar tras aceptar (antes de la
+    ventana) funciona y la saca de mi `listLive()`.
+11. `subscribe` de quien convoca avisa cuando A acepta. **`subscribe` de A
+    avisa cuando B, que había aceptado, rechaza** (la fila de B deja de ser
+    legible para A, así que el aviso tiene que llegar por la sala, no por la
+    fila; ver «Realtime»).
+12. **Responder dentro de la ventana** (sala a `startsAt` = ahora + 5 min +
+    10 s, tras esperar 11 s) → `SessionExpiredError`, tanto aceptar como
+    rechazar. Corre contra los dos backends sin reloj simulado.
+13. Con reloj simulado (`itWithTimeTravel`): cancelar una sala empezada →
+    `SessionExpiredError`; una sala terminada sale de `listLive()` pero
+    `getById` la sigue devolviendo.
+14. `listLive()` devuelve **21** salas cuando estás en 21 (ninguna desaparece
+    por un tope de página).
+15. Un tercero suscrito con `subscribe` **no recibe ningún aviso** mientras se
+    convoca, se acepta, se rechaza y se cancela una sala en la que no está
+    (espera de 2 s, contador a 0). Contra Supabase es la única prueba de
+    entrega real de Realtime del bloque.
 
 ### Supabase — migración nueva
 
@@ -291,26 +318,80 @@ está en la Tarea 2 del plan; aquí, la forma:
   deparseen en una línea (la huella de esquema lo exige) y no recursen:
   `is_room_participant(room)` (tienes fila no `rechazada`), `is_room_host(room)`
   e `is_room_attendee(room)` (tienes fila `aceptada`).
-- **RLS, las dos tablas**, sin políticas de escritura y con `insert, update,
-  delete` revocados a `authenticated` (lección del acuerdo):
+- `lockin_rooms` lleva además `updated_at`, que un trigger `touch_room()`
+  (`after insert or update or delete on room_members`, `SECURITY DEFINER`)
+  pone a `clock_timestamp()` en cada cambio de miembros. Es la invalidación
+  autorizada de «Realtime», abajo.
+- **Permisos de tabla: `revoke all` a `anon` y a `authenticated`, y después
+  `grant select` a `authenticated`.** No basta con revocar `insert, update,
+  delete`: Supabase concede `ALL` por defecto en `public` (la fixture de PGlite
+  lo emula, `schema-embedded.test.mjs:62`), y eso incluye **`TRUNCATE`, que
+  RLS no filtra**. Con solo los tres revocados, cualquier cuenta autenticada
+  podría vaciar las dos tablas. (`agreement_answers` tiene hoy el mismo hueco;
+  ver el final de esta spec.)
+- **RLS, las dos tablas**, sin políticas de escritura:
   - `lockin_rooms`: lees las salas en las que participas.
   - `room_members`: lees **tu fila, todas si convocas, y las `aceptada` de las
     salas en las que participas**. Esta política es el ciego de invitados.
 - RPCs: `create_room(uuid[], timestamptz, smallint)`, `respond_room(uuid,
   room_member_status)`, `cancel_room(uuid)`, `join_room(uuid)`,
   `leave_room(uuid)` y `live_rooms()`. `live_rooms()` es `security invoker`
-  (RLS aplica) y existe para que «viva» la decida el `now()` de Postgres y no
-  el reloj del teléfono (hallazgo 6 de la auditoría de arquitectura). Un
-  helper interno `lock_room_for_member(uuid)` bloquea la sala y exige fila no
-  rechazada (`LI004`), con `execute` revocado también a `authenticated`.
-- **Realtime**: las dos tablas a la publicación con `replica identity full`.
-  `postgres_changes` filtra por RLS, así que el ciego también vale por ahí.
+  (RLS aplica), sin `limit` (el cliente pagina con `range()`), y existe para
+  que «viva» la decida el reloj de Postgres y no el del teléfono (hallazgo 6
+  de la auditoría de arquitectura). Un helper interno
+  `lock_room_for_member(uuid)` bloquea la sala y exige fila no rechazada
+  (`LI004`), con `execute` revocado también a `authenticated`.
+- **Reloj dentro de las RPC: `clock_timestamp()` después del bloqueo, nunca
+  `now()`.** `now()` es la hora de inicio de la transacción: si una RPC espera
+  en el `for update` a que otra suelte la sala, al despertar `now()` sigue
+  siendo la hora de antes de esperar y podría aceptar, cancelar o entrar con
+  la ventana ya cerrada. Cada RPC toma `v_now := clock_timestamp()` justo
+  después de `lock_room_for_member` y valida y fecha con él. (Las RPC de
+  sesiones 1:1 usan `now()`; no se tocan aquí, ver el final de esta spec.)
+- **Realtime: solo `lockin_rooms` va a la publicación; `room_members` no.**
+  Supabase **no aplica RLS a los eventos `DELETE`** y, con RLS activa, manda
+  la clave primaria de la fila borrada a todo suscriptor de la tabla. La PK de
+  `room_members` es `(room_id, profile_id)`: un borrado en cascada (un perfil
+  que se borra, o `dev_reset_current_user()` en `seed.sql`) le entregaría a un
+  tercero cualquiera quién estaba invitado a qué sala, pendientes incluidos.
+  Eso rompe el ciego por la puerta de atrás. En su lugar, el trigger
+  `touch_room()` toca `lockin_rooms.updated_at` en cada cambio de miembros, y
+  el `UPDATE` de `lockin_rooms` **sí** pasa por la RLS de la sala: lo reciben
+  quienes participan, y solo dice «esta sala ha cambiado, relee». Esto resuelve
+  también que, cuando Carla rechaza tras aceptar, su fila deja de ser legible
+  para Bea y un evento sobre la fila nunca le llegaría. Lo único que un `DELETE`
+  de `lockin_rooms` entrega a un tercero es el `id` de la sala (un UUID sin
+  miembros, que no abre el canal de presencia porque eso exige estar
+  `aceptada`). `lockin_rooms` va con la `replica identity` por defecto.
 - **Presencia**: topic privado `lockin:room:<uuid>`. Helper
   `is_room_topic_member(text)` (misma regex estricta de UUID que
   `is_session_topic_member`) sobre `is_room_attendee`, y dos políticas nuevas en
   `realtime.messages` cuyos nombres empiezan por `lockin` para que entren en la
   huella. **Solo quien ha aceptado** entra al canal: una invitada no sabe
   quién está dentro.
+
+#### Presencia y revocación
+
+Realtime evalúa las políticas de `realtime.messages` **al unirse** al canal y
+no las vuelve a mirar hasta que el cliente renueva su JWT. Una fila que deja
+de ser `aceptada` no expulsa a nadie que ya estuviera dentro, y
+`supabase/presence.ts` solo cierra el canal al desmontar.
+
+Se resuelve por construcción y no con una expulsión activa: al canal solo se
+entra dentro de la ventana de entrada, y la decisión 11 cierra las respuestas
+**justo cuando la ventana abre**. Así no existe ninguna transición `aceptada →
+rechazada` con el canal ya autorizado. Las otras salidas de la sala no
+necesitan revocación: `leave` deja la fila `aceptada` (sigue siendo de la
+sala), cancelar no revela nada que los miembros no supieran, y borrar el
+perfil invalida la sesión de auth.
+
+**Límite que queda, explícito**: si en el futuro alguien añade una forma de
+sacar a una persona de la sala con la ventana abierta (expulsar, rechazar
+tarde), esa persona seguiría oyendo la presencia hasta renovar su JWT (hasta
+1 h con la configuración por defecto). Lo que oiría son ids de perfil de
+personas que ya vio al aceptar, más las que entren después. Cualquier cambio
+en ese sentido tiene que rotar el topic (`lockin:room:<uuid>:<generación>`) o
+reabrir esta sección.
 
 ## 2. Pantallas
 
@@ -364,11 +445,14 @@ reloj con `serverNow()`.
   - En la ventana: cada persona aceptada con «Está aquí» / «Aún no ha
     entrado», y «Sin conexión» si el canal propio cae. El estado va en texto,
     no solo en color.
-- **Acciones** antes de empezar:
+- **Acciones** antes de que abra la ventana (5 min antes del inicio):
   - Invitada: «Me apunto» y «No puedo».
   - Aceptada (sin convocar): «No podré ir» (rechaza; deja de verla y vuelve a
     Matches).
-  - Quien convoca: «Cancelar sala».
+  - Quien convoca: «Cancelar sala» (sigue disponible hasta el inicio).
+  - Con la ventana abierta, una invitada que no respondió ve «Ya no se puede
+    responder a esta sala» y ninguna acción; una aceptada solo puede entrar o
+    salir.
   Sin diálogos del sistema (rompen la automatización del repo): «No podré ir»
   y «Cancelar sala» piden confirmación en línea, como el «Salir» de la sesión.
 - **En la ventana** (aceptada): al montar, `join`; reloj grande, fase
@@ -420,10 +504,10 @@ Archivos de otros bloques que toca, declarados enteros:
 | Archivo | Dueño original | Qué se toca |
 |---|---|---|
 | `src/data/types.ts` | `arquitecto` | `RoomMemberStatus`, `LockInRoom`, `RoomMember`, `RoomView`, `RoomInput` |
-| `src/data/repositories.ts`, `repositories.contract.ts` | `arquitecto` | `RoomRepository`, `Repositories.rooms`, `ContractFixture.roomsFor` y los doce casos |
+| `src/data/repositories.ts`, `repositories.contract.ts` | `arquitecto` | `RoomRepository`, `Repositories.rooms`, `ContractFixture.roomsFor` y los quince casos |
 | `src/data/active.ts`, `src/data/index.ts` | `arquitecto` | Exponer `rooms` y el adaptador `roomPresence` |
 | `src/data/mock/store.ts`, `mock/index.ts`, `mock/index.test.ts` | `arquitecto` | `MockState` gana `rooms` y `roomMembers`; registro; `roomsFor` del fixture |
-| `src/data/supabase/index.ts`, `database.types.ts`, `contract.test.ts` | `datos` | Registro, tipos de tablas y RPC, `roomsFor` del fixture |
+| `src/data/supabase/index.ts`, `database.types.ts`, `contract.test.ts` | `datos` | Registro, tipos de tablas y RPC, `roomsFor` del fixture; `fetchAllPages` sale de `index.ts` a `pagination.ts` (nuevo) para paginar `live_rooms()` sin ciclo de imports |
 | `src/data/supabase/presence.ts` (+ test) | `sesiones`/`datos` | Un parámetro `topicPrefix` con el valor de hoy por defecto |
 | `supabase/schema-embedded.test.mjs`, `drift-check.mjs` (solo si no parsea las tablas nuevas) | `datos`/`calidad` | Los tests en PGlite |
 | `src/features/session/index.ts` | `sesiones` | Exportar `createNotificationsPort`, `REMINDER_LEAD_MS`, `SESSIONS_CHANNEL_ID` y los tipos `NotificationsPort`/`ReminderStorage` |
@@ -448,9 +532,12 @@ Archivos de otros bloques que toca, declarados enteros:
 | Un miembro borra su perfil | Su fila cae; la sala sigue. |
 | El match entre quien convoca y un invitado desaparece | Solo se comprueba al convocar; la invitación sigue en pie. |
 | Rechazar y luego querer ir | No se puede (decisión 10): la sala ya no se ve. |
-| Responder y cancelar a la vez | Las RPC bloquean la fila de la sala (`for update`) y revalidan: la segunda recibe `SessionConflictError` y la pantalla relee. |
+| Responder y cancelar a la vez | Las RPC bloquean la fila de la sala (`for update`), toman `clock_timestamp()` tras el bloqueo y revalidan. **Si gana cancelar**, aceptar recibe `SessionConflictError` y la pantalla relee. **Si gana aceptar**, cancelar también tiene éxito: quien convoca puede cancelar hasta el inicio aunque alguien acabe de aceptar, y quien aceptó ve la sala cancelada al llegarle el aviso. Los dos órdenes tienen su caso de contrato. |
+| Una RPC espera el bloqueo y se le cierra la ventana mientras | Valida con `clock_timestamp()` tomado después del bloqueo, no con `now()`: rechaza con `LI002`/`LI003`. |
+| Carla rechaza tras aceptar con la pantalla de Bea abierta | El trigger toca la sala; a Bea le llega el `UPDATE` de `lockin_rooms`, relee y Carla desaparece. |
+| Estás en más de 20 salas vivas | Salen todas: `live_rooms()` no tiene tope y el cliente pagina. |
 | Deep link a una sala ajena | `getById` → `null`: «Esta sala no está disponible». |
-| Reloj del móvil desfasado | `serverNow()` corrige el reloj de la pantalla; `live_rooms()` usa `now()` de Postgres. |
+| Reloj del móvil desfasado | `serverNow()` corrige el reloj de la pantalla; `live_rooms()` usa el reloj de Postgres. |
 | Sin conexión en la sala | La cuenta atrás sigue en local; «Sin conexión» en la presencia. |
 | Permiso de avisos denegado | La sala funciona igual, sin aviso. |
 | Sin credenciales de Supabase | Va contra el mock, como todo lo demás. |
@@ -463,12 +550,21 @@ Archivos de otros bloques que toca, declarados enteros:
   `roomRowView` en sus cuatro estados; `room-reminders.ts` (programa, no
   programa con menos de 5 min, no programa si estás `invitada`, cancela al
   rechazar o cancelarse, **no toca claves `lockin:reminder:`**).
-- **Contrato** (`repositories.contract.ts`): los doce casos de arriba.
+- **Contrato** (`repositories.contract.ts`): los quince casos de arriba. Contra
+  Supabase local (`contract.yml`) son también la prueba de **entrega real de
+  Realtime** (casos 11 y 15), que PGlite no puede dar.
 - **SQL en PGlite** (`schema-embedded.test.mjs`). El test que más vale del
   bloque es **el ciego de invitados por RLS**: con la sala de Ana (convoca)
   invitando a Bea y Carla, Bea ve a Ana y no a Carla; cuando Carla acepta, sí;
   Ana ve a las dos con su estado; un tercero no ve ni la sala ni sus filas.
-  Además: `insert`/`update` directos de `authenticated` fallan por permisos;
+  Además: `insert`, `update`, `delete` **y `truncate`** directos de
+  `authenticated` fallan por permisos; `room_members` **no** está en la
+  publicación `supabase_realtime` y `lockin_rooms` sí; el trigger toca
+  `updated_at` al aceptar, al rechazar y al borrarse el perfil de un miembro, y
+  borrar el perfil de quien convoca (con sus filas en cascada) no da error;
+  una RPC que arranca su transacción antes del cierre de la ventana y llega al
+  bloqueo después rechaza (prueba de `clock_timestamp()`, ver el plan);
+  responder con la ventana abierta da `LI002`;
   `create_room` rechaza un no-match, un repetido, 1 y 5 invitados (`LI006`) y
   la hora fuera de rango (`LI003`); `respond_room` de quien convoca y de un
   tercero (`LI004`); `join_room` de una invitada (`LI004`); las políticas de
@@ -481,9 +577,11 @@ Archivos de otros bloques que toca, declarados enteros:
   no disponible).
 - **E2E** (Maestro, variante `supabase`, encadenado tras `agreement.yaml`):
   `prepareRoom` siembra con `service_role` una sala que convoca la contraparte
-  del match del recorrido, empieza en 4 minutos, con un tercer perfil semilla
+  del match del recorrido, empieza en 7 minutos (así quedan 2 min para
+  responder antes de que abra la ventana), con un tercer perfil semilla
   `aceptada` y el usuario `invitada`. La app abre Matches, toca la invitación,
-  «Me apunto», ve el reloj y «Salir» con confirmación; `verifyRoomAttendance`
+  «Me apunto», espera a que abra la ventana, ve el reloj y «Salir» con
+  confirmación; `verifyRoomAttendance`
   comprueba en Postgres su fila `aceptada` con `joined_at` y `left_at` no
   nulos. La variante `mock` sigue siendo el control negativo y no se toca.
 
@@ -497,6 +595,20 @@ Archivos de otros bloques que toca, declarados enteros:
 - Solapes entre salas y sesiones.
 - Notificación push de servidor al recibir una invitación (el aviso es local y
   solo para salas aceptadas; la invitación se ve al abrir Matches).
+
+## Hallazgos fuera de este bloque
+
+La revisión adversarial del 2026-10-02 sobre la primera versión de esta spec
+encontró dos patrones que este bloque corrige para sí y que **ya existen** en
+migraciones aplicadas. No se arreglan aquí (no son de este bloque); quedan
+anotados para `datos`:
+
+- `20260924000200_agreement_answers.sql` revoca a `authenticated` solo
+  `insert, update, delete`: `TRUNCATE` sigue concedido por los privilegios por
+  defecto de Supabase, y RLS no lo filtra.
+- Las RPC de `20260913000100_lockin_sessions.sql` validan la hora con `now()`
+  después de `for update`, con la misma carrera que la sección «Reloj dentro de
+  las RPC».
 
 ## Dependencias
 

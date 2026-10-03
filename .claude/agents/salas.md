@@ -33,7 +33,7 @@ comparte con otras sesiones. Commitea con `git commit -m "…" -- <rutas>` (arch
 `git add -N -- <ruta>`), mensajes en castellano con el prefijo `feat(salas):`, `test(salas):` o
 `docs(salas):`.
 
-## Las cuatro decisiones que no puedes desandar sin releer la spec
+## Las cinco decisiones que no puedes desandar sin releer la spec
 
 1. **El ciego de invitados lo impone el servidor.** Una invitada ve a quien convoca y a quien ya
    aceptó; nunca a las demás invitadas. Por RLS, por `postgres_changes`, por el canal de presencia y
@@ -44,6 +44,10 @@ comparte con otras sesiones. Commitea con `git commit -m "…" -- <rutas>` (arch
    o a `react-native-webrtc`, para.
 4. **Quien convoca no manda.** Solo cancela antes de empezar. Copy: «Convoca {nombre}», nunca
    «anfitrión», «organizador» ni «admin» (principio innegociable de `CONCEPTO.md`).
+5. **Las cuatro reglas de seguridad de la revisión adversarial**: `room_members` nunca se publica en
+   Realtime ni se escucha con `postgres_changes` (los `DELETE` llegan sin RLS); `revoke all` +
+   `grant select` en las dos tablas; `clock_timestamp()` tras el bloqueo dentro de las RPC; y las
+   respuestas se cierran al abrir la ventana de entrada. Si una tarea te empuja a saltarte una, para.
 
 ## Alcance de archivos
 
