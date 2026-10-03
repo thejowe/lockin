@@ -11,13 +11,14 @@ import type { LockInSupabaseClient } from './client';
 import type { PresenceAdapter } from '../presence';
 
 export function createSupabasePresenceAdapter(
-  getClient: () => LockInSupabaseClient = getSupabaseClient
+  getClient: () => LockInSupabaseClient = getSupabaseClient,
+  topicPrefix = 'lockin:presence:'
 ): PresenceAdapter {
   return {
     join(sessionId, profileId, { onPeers, onConnection }) {
       let active = true;
       const client = getClient();
-      const channel = client.channel(`lockin:presence:${sessionId}`, {
+      const channel = client.channel(`${topicPrefix}${sessionId}`, {
         config: { presence: { key: profileId }, private: true },
       });
 

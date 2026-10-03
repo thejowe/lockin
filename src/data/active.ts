@@ -95,6 +95,7 @@ interface Active {
   backend: Backend;
   repositories: Repositories;
   presence: PresenceAdapter;
+  roomPresence: PresenceAdapter;
   videoSignal: VideoSignalChannel;
 }
 
@@ -103,7 +104,7 @@ let active: Active | null = null;
 /**
  * Resuelve el backend la primera vez que alguien pide un dato, y lo recuerda.
  *
- * Todo lo que decide el backend pasa por aquí, de modo que los tres adaptadores
+ * Todo lo que decide el backend pasa por aquí, de modo que los adaptadores
  * de una ejecución vienen siempre del mismo lado: no puede haber repositorios
  * de Supabase con presencia en memoria.
  */
@@ -133,12 +134,14 @@ function resolveActive(): Active {
           backend,
           repositories: createSupabaseRepositories(),
           presence: createSupabasePresenceAdapter(),
+          roomPresence: createSupabasePresenceAdapter(undefined, 'lockin:room:'),
           videoSignal: createSupabaseVideoSignalAdapter(),
         }
       : {
           backend,
           repositories: createMockRepositories(),
           presence: createMemoryPresenceAdapter(),
+          roomPresence: createMemoryPresenceAdapter(),
           videoSignal: createMemoryVideoSignalAdapter(),
         };
 
@@ -191,6 +194,12 @@ export const repositories: Repositories = {
 export const presence: PresenceAdapter = {
   join: (sessionId, profileId, handlers) =>
     resolveActive().presence.join(sessionId, profileId, handlers),
+};
+
+/** Presencia en salas grupales, con la misma regla. Topic `lockin:room:<id>`. */
+export const roomPresence: PresenceAdapter = {
+  join: (roomId, profileId, handlers) =>
+    resolveActive().roomPresence.join(roomId, profileId, handlers),
 };
 
 /** Señalización de vídeo, con la misma regla. Sin credenciales, en memoria. */

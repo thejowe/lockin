@@ -44,6 +44,19 @@ function fakeRealtime() {
 }
 
 describe('createSupabasePresenceAdapter', () => {
+  it('usa el prefijo de sala en un canal privado con clave de perfil', () => {
+    const realtime = fakeRealtime();
+    const roomId = '11111111-1111-4111-8111-111111111111';
+    createSupabasePresenceAdapter(() => realtime.client, 'lockin:room:').join(roomId, 'ana', {
+      onPeers: jest.fn(),
+      onConnection: jest.fn(),
+    });
+
+    expect(realtime.rawClient.channel).toHaveBeenCalledWith(`lockin:room:${roomId}`, {
+      config: { presence: { key: 'ana' }, private: true },
+    });
+  });
+
   it('configura el topic privado y traduce presenceState a claves de perfil', () => {
     const realtime = fakeRealtime();
     const adapter = createSupabasePresenceAdapter(() => realtime.client);
