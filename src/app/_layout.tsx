@@ -34,7 +34,7 @@ function navigationTheme(scheme: 'light' | 'dark') {
 }
 
 /**
- * Cabecera de las pantallas apiladas (chat, sesión, acuerdo): grafito liso, sin
+ * Cabecera de las pantallas apiladas (chat, sesión, acuerdo, salas): grafito liso, sin
  * sombra, título en Inter semibold al tamaño de iOS. Opaca a propósito: el chat
  * calcula el desplazamiento del teclado contando con una cabecera que ocupa su
  * sitio (ver `keyboardVerticalOffset`), y una cabecera superpuesta lo rompería.
@@ -100,6 +100,7 @@ export default function RootLayout() {
               <Stack.Screen name="chat/[matchId]" options={stackHeader} />
               <Stack.Screen name="session/[sessionId]" options={stackHeader} />
               <Stack.Screen name="agreement/[matchId]" options={stackHeader} />
+              <Stack.Screen name="room/new" options={stackHeader} />
             </Stack>
           </DataProvider>
         </ThemeProvider>
