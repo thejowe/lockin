@@ -19,10 +19,14 @@
  */
 
 import { Modal, StyleSheet, View } from 'react-native';
-import Animated, { withSpring, withTiming } from 'react-native-reanimated';
+import { BlurView } from 'expo-blur';
+import Animated, { ZoomIn, withSpring, withTiming } from 'react-native-reanimated';
 
+import { Glow } from '@/components/glow';
+import { enterUp } from '@/components/motion';
 import { ThemedText } from '@/components/themed-text';
 import {
+  BlurIntensity,
   Duration,
   Elevation,
   MaxContentWidth,
@@ -75,6 +79,7 @@ export function MatchModal({
   const elevation = Elevation[useThemeName()];
   const reduceMotion = useReduceMotion();
   const complement = event ? complementWith(event.profile, viewerSpecialties) : [];
+  const accent = event?.profile.avatar.accent === 'teal' ? theme.teal : theme.brass;
 
   return (
     <Modal
@@ -85,27 +90,42 @@ export function MatchModal({
       onRequestClose={onDismiss}>
       {event ? (
         <View style={[styles.backdrop, { backgroundColor: theme.background + ScrimAlpha }]}>
+          {/* El deck queda detrás, esmerilado: sigue ahí, pero ya no compite. */}
+          <BlurView tint="dark" intensity={BlurIntensity.sheet} style={StyleSheet.absoluteFill} />
           <Animated.View
             accessibilityViewIsModal
             entering={reduceMotion ? undefined : popIn}
             style={[
               styles.card,
               {
-                backgroundColor: theme.backgroundElement,
+                backgroundColor: theme.surfaceOpaque,
                 borderColor: theme.border,
-                boxShadow: elevation.overlay,
+                boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}, ${elevation.overlay}`,
               },
             ]}>
-            <ThemedText type="label" themeColor="teal">
+            <Glow color={accent} opacity={0.6} style={styles.glow} />
+
+            <ThemedText type="label" themeColor="teal" style={styles.blurb}>
               Modo {modeLabel(event.match.mode)}
             </ThemedText>
 
-            <ThemedText type="display" themeColor="brass">
-              ¡Match!
-            </ThemedText>
+            <Animated.View entering={reduceMotion ? undefined : enterUp(2)}>
+              <ThemedText type="display" themeColor="brass" style={styles.blurb}>
+                ¡Match!
+              </ThemedText>
+            </Animated.View>
 
             <View style={styles.identity}>
-              <ProfileAvatar avatar={event.profile.avatar} size="large" />
+              {/* El avatar llega un instante después que la tarjeta: primero el
+                  «¡Match!», luego con quién. */}
+              <Animated.View
+                entering={
+                  reduceMotion
+                    ? undefined
+                    : ZoomIn.delay(Duration.base).springify().damping(14).stiffness(200)
+                }>
+                <ProfileAvatar avatar={event.profile.avatar} size="large" />
+              </Animated.View>
               <ThemedText type="body" themeColor="textSecondary" style={styles.blurb}>
                 {event.profile.name} ya te había dado like. Ahora os toca hablar.
               </ThemedText>
@@ -147,8 +167,15 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     gap: Spacing.three,
     padding: Spacing.four,
-    borderRadius: Radii.card,
+    borderRadius: Radii.sheet,
     borderWidth: Stroke.hairline,
+    overflow: 'hidden',
+  },
+  glow: {
+    width: 420,
+    height: 420,
+    top: -110,
+    alignSelf: 'center',
   },
   identity: {
     alignItems: 'center',

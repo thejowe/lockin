@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { Control, Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
 import { SessionConflictError, SessionExpiredError, useRepositories } from '@/data';
@@ -76,10 +77,21 @@ export function SessionCard({ match, me }: { match: MatchWithProfile; me: Profil
     `${formatSessionWhen(value.startsAt, nowMs)} · ${blocksLabel(value.blocks)}`;
 
   return (
-    <View style={[styles.root, { backgroundColor: theme.tealSoft, borderColor: theme.teal }]}>
-      <ThemedText type="label" themeColor="teal">
-        Sesión Lock-In
-      </ThemedText>
+    <View
+      style={[
+        styles.root,
+        {
+          backgroundColor: theme.backgroundElement,
+          borderColor: theme.border,
+          boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
+        },
+      ]}>
+      <View style={styles.header}>
+        <View style={[styles.badge, { backgroundColor: theme.brass }]}>
+          <Icon name="focus" size={18} color={theme.onAccent} strokeWidth={2} />
+        </View>
+        <ThemedText type="heading">Sesión Lock-In</ThemedText>
+      </View>
 
       {shown !== null && view.kind !== 'valorar' && (
         <>
@@ -271,8 +283,8 @@ function CardButton({
       style={({ pressed }) => [
         styles.button,
         {
-          backgroundColor: tone === 'accent' ? theme.brass : 'transparent',
-          borderColor: theme.teal,
+          backgroundColor: tone === 'accent' ? theme.brass : theme.backgroundElement,
+          borderColor: tone === 'accent' ? theme.brass : theme.border,
           opacity: disabled ? Opacity.disabled : pressed ? Opacity.pressed : 1,
         },
       ]}>
@@ -287,11 +299,22 @@ function CardButton({
 
 const styles = StyleSheet.create({
   root: {
-    borderRadius: Radii.large,
+    borderRadius: Radii.card,
     borderWidth: Stroke.hairline,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
+    padding: Spacing.three,
     gap: Spacing.two,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two + Spacing.half,
+  },
+  badge: {
+    width: 32,
+    height: 32,
+    borderRadius: Radii.small,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   row: { flexDirection: 'row', gap: Spacing.two },
   hintText: { flexShrink: 1 },

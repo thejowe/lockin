@@ -62,13 +62,16 @@ export default function DiscoverScreen() {
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
       <AmbientBackground variant="ember" />
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
         <View style={styles.content}>
           <View style={styles.header}>
             <ThemedText type="label" themeColor="brass">
               Descubrir
             </ThemedText>
-            <ThemedText type="title">Quién está construyendo</ThemedText>
+            {/* Una sola línea: cada píxel de alto que ahorra la cabecera es tarjeta. */}
+            <ThemedText type="subtitle" numberOfLines={1}>
+              Quién está construyendo
+            </ThemedText>
           </View>
 
           <ModeFilter value={mode} onChange={setOverride} />
@@ -126,7 +129,7 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     paddingHorizontal: Spacing.three,
     paddingTop: Spacing.two,
-    paddingBottom: BottomTabInset + Spacing.three,
+    paddingBottom: BottomTabInset + Spacing.two,
   },
   header: {
     gap: Spacing.half,

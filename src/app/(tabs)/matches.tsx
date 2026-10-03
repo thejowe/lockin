@@ -7,9 +7,11 @@
  */
 
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AmbientBackground } from '@/components/ambient-background';
+import { enterUp } from '@/components/motion';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { MatchRow, MatchesEmpty, useMatches } from '@/features/chat';
@@ -25,11 +27,16 @@ export default function MatchesScreen() {
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
       <AmbientBackground variant="teal" />
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
         <FlatList
           data={matches}
           keyExtractor={(match) => match.id}
-          renderItem={({ item }) => <MatchRow match={item} streak={streaks.streakFor(item.id)} />}
+          renderItem={({ item, index }) => (
+            // Escalera solo para las primeras: más abajo nadie la ve entrar.
+            <Animated.View entering={enterUp(Math.min(index, 6))}>
+              <MatchRow match={item} streak={streaks.streakFor(item.id)} />
+            </Animated.View>
+          )}
           // Sin `extraData` la lista no repinta las filas cuando las rachas llegan
           // después que los matches.
           extraData={streaks}

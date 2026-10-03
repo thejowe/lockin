@@ -1,9 +1,11 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/ambient-background';
+import { enterUp } from '@/components/motion';
 import { LoadingState, MessageState } from '@/components/state-view';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -78,7 +80,7 @@ export default function ProfileScreen() {
   if (loading) {
     return (
       <Screen ambient="plum">
-        <SafeAreaView style={styles.root} edges={['top']}>
+        <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
           <LoadingState label="Cargando tu perfil…" />
         </SafeAreaView>
       </Screen>
@@ -90,7 +92,7 @@ export default function ProfileScreen() {
   if (!profile) {
     return (
       <Screen ambient="plum">
-        <SafeAreaView style={styles.root} edges={['top']}>
+        <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
           <MessageState
             eyebrow="Perfil"
             title="Todavía no tienes ficha"
@@ -105,7 +107,7 @@ export default function ProfileScreen() {
   if (editing) {
     return (
       <Screen ambient="plum">
-        <SafeAreaView style={styles.root} edges={['top']}>
+        <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
           <ProfileForm
             initial={profile}
             submitLabel="Guardar cambios"
@@ -128,21 +130,29 @@ export default function ProfileScreen() {
 
   return (
     <Screen ambient="plum">
-      <SafeAreaView style={styles.root} edges={['top']}>
+      <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedText type="label" themeColor="brass">
             Perfil
           </ThemedText>
 
-          <ProfileDetails profile={profile} />
+          <Animated.View entering={enterUp(0)}>
+            <ProfileDetails profile={profile} />
+          </Animated.View>
 
-          <GithubVerification profile={profile} onChange={refresh} />
+          <Animated.View entering={enterUp(1)}>
+            <GithubVerification profile={profile} onChange={refresh} />
+          </Animated.View>
 
-          <SecondaryButton label="Editar perfil" onPress={() => setEditing(true)} />
+          <Animated.View entering={enterUp(2)}>
+            <SecondaryButton label="Editar perfil" onPress={() => setEditing(true)} />
+          </Animated.View>
 
           {/* La cuenta va al final: es lo que menos se visita y donde vive la
             salida destructiva. Arriba está lo que se viene a mirar. */}
-          <AccountSection />
+          <Animated.View entering={enterUp(3)}>
+            <AccountSection />
+          </Animated.View>
         </ScrollView>
       </SafeAreaView>
     </Screen>

@@ -1,15 +1,27 @@
 import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/ambient-background';
+import { Glass } from '@/components/glass';
+import { Icon, type IconName } from '@/components/icon';
+import { enterUp } from '@/components/motion';
 import { ThemedText } from '@/components/themed-text';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Radii, Spacing } from '@/constants/theme';
 import { useRepositories, type ModePreference } from '@/data';
 import { MODE_OPTIONS, useRegistrationGate } from '@/features/profile';
 import { accountsAvailable } from '@/features/profile/account-gateway';
 import { OptionCard, PrimaryButton, SecondaryButton } from '@/features/profile/controls';
+import { useTheme } from '@/hooks/use-theme';
+
+/** Icono de cada modo: dos personas, un reloj de enfoque, dos círculos que se cruzan. */
+const MODE_ICONS: Record<ModePreference, IconName> = {
+  par: 'pair',
+  lockin: 'focus',
+  ambos: 'both',
+};
 
 /**
  * Paso 1 del onboarding: qué busca la persona.
@@ -22,6 +34,7 @@ import { OptionCard, PrimaryButton, SecondaryButton } from '@/features/profile/c
  * pantallas del alta a las que se puede llegar sin pasar por la otra.
  */
 export default function ModeScreen() {
+  const theme = useTheme();
   const router = useRouter();
   const repositories = useRepositories();
   const gate = useRegistrationGate();
@@ -52,7 +65,10 @@ export default function ModeScreen() {
     <Screen ambient="ember">
       <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
         <ScrollView contentContainerStyle={styles.content}>
-          <View style={styles.header}>
+          <Animated.View entering={enterUp(0)} style={styles.header}>
+            <Glass radius={Radii.large} style={styles.badge}>
+              <Icon name="lock" size={32} color={theme.text} strokeWidth={1.6} />
+            </Glass>
             <ThemedText type="label" themeColor="brass">
               Paso 1 de 2
             </ThemedText>
@@ -61,16 +77,18 @@ export default function ModeScreen() {
               Cofundador en igualdad de condiciones, compañero de Lock-In, o ambos. Nadie contrata a
               nadie: los dos lados del match son pares.
             </ThemedText>
-          </View>
+          </Animated.View>
 
           <View style={styles.options}>
-            {MODE_OPTIONS.map((option) => (
-              <OptionCard
-                key={option.value}
-                option={option}
-                selected={selected === option.value}
-                onPress={() => setSelected(option.value)}
-              />
+            {MODE_OPTIONS.map((option, index) => (
+              <Animated.View key={option.value} entering={enterUp(index + 1)}>
+                <OptionCard
+                  option={option}
+                  icon={MODE_ICONS[option.value]}
+                  selected={selected === option.value}
+                  onPress={() => setSelected(option.value)}
+                />
+              </Animated.View>
             ))}
           </View>
 
@@ -112,6 +130,13 @@ const styles = StyleSheet.create({
   },
   header: {
     gap: Spacing.two,
+  },
+  badge: {
+    width: 64,
+    height: 64,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.two,
   },
   options: {
     gap: Spacing.two,

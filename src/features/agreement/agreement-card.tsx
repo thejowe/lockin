@@ -7,10 +7,11 @@
  */
 
 import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
+import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
-import { Opacity, Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { summarize } from './status';
@@ -49,11 +50,19 @@ function ParAgreementCard({ match }: { match: MatchWithProfile }) {
         styles.card,
         {
           borderColor: theme.border,
-          backgroundColor: theme.backgroundElement,
-          opacity: pressed ? Opacity.pressed : 1,
+          backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement,
+          boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
         },
       ]}>
-      <ThemedText type="bodyStrong">Acuerdo de socios</ThemedText>
+      <View style={styles.header}>
+        <View style={[styles.badge, { backgroundColor: theme.backgroundSelected }]}>
+          <Icon name="document" size={18} color={theme.brass} />
+        </View>
+        <ThemedText type="heading" style={styles.title}>
+          Acuerdo de socios
+        </ThemedText>
+        <Icon name="expand" size={14} color={theme.textSecondary} strokeWidth={2.2} />
+      </View>
       <ThemedText type="small" themeColor="textSecondary">
         {headline}
       </ThemedText>
@@ -67,5 +76,26 @@ function ParAgreementCard({ match }: { match: MatchWithProfile }) {
 }
 
 const styles = StyleSheet.create({
-  card: { borderWidth: 1, borderRadius: Radii.medium, padding: Spacing.three, gap: Spacing.one },
+  card: {
+    borderWidth: Stroke.hairline,
+    borderRadius: Radii.card,
+    padding: Spacing.three,
+    gap: Spacing.one,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two + Spacing.half,
+    marginBottom: Spacing.one,
+  },
+  badge: {
+    width: 32,
+    height: 32,
+    borderRadius: Radii.small,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: {
+    flex: 1,
+  },
 });

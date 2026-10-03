@@ -48,6 +48,7 @@ export function MessageBubble({ message, isMine }: { message: Message; isMine: b
                 borderColor: theme.border,
                 borderWidth: Stroke.hairline,
                 borderBottomLeftRadius: Radii.small,
+                boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
               },
         ]}>
         <ThemedText type="body" style={isMine ? { color: theme.onAccent } : undefined}>
@@ -70,7 +71,7 @@ export function MessageBubble({ message, isMine }: { message: Message; isMine: b
 export function DayDivider({ label }: { label: string }) {
   return (
     <View style={styles.divider}>
-      <ThemedText type="label" themeColor="textMuted">
+      <ThemedText type="caption" themeColor="textMuted">
         {label}
       </ThemedText>
     </View>

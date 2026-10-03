@@ -50,7 +50,7 @@ describe('Button', () => {
     expect(screen.getByText('Guardar')).toHaveStyle({ color: Colors.light.onAccent });
   });
 
-  it('secundario y danger son contorno, sin relleno', async () => {
+  it('secundario y danger son cristal con canto, no relleno de acento', async () => {
     await render(
       <>
         <Button label="Otra" variant="secondary" onPress={() => {}} />
@@ -58,10 +58,15 @@ describe('Button', () => {
       </>
     );
 
-    expect(shapeOf('Otra')).toMatchObject({ borderColor: Colors.light.border });
-    expect(shapeOf('Otra').backgroundColor).toBeUndefined();
-    expect(shapeOf('Descartar')).toMatchObject({ borderColor: Colors.light.danger });
-    expect(screen.getByText('Descartar')).toHaveStyle({ color: Colors.light.danger });
+    expect(shapeOf('Otra')).toMatchObject({
+      borderColor: Colors.dark.border,
+      backgroundColor: Colors.dark.backgroundElement,
+    });
+    expect(shapeOf('Descartar')).toMatchObject({
+      borderColor: Colors.dark.danger,
+      backgroundColor: Colors.dark.dangerSoft,
+    });
+    expect(screen.getByText('Descartar')).toHaveStyle({ color: Colors.dark.danger });
   });
 
   it('desactivado no responde y lo anuncia', async () => {

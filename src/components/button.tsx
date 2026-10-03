@@ -6,10 +6,10 @@
  * con su opacidad al pulsar. Ahora es uno: mismas medidas, mismo press state
  * (`usePressScale`) y la misma escala de `Opacity` en toda la app.
  *
- * - `primary`: latón sólido. Una por pantalla — es «lo siguiente que haces».
- * - `secondary`: contorno de trazo fino, tinta secundaria. Alternativa sin peso.
- * - `danger`: contorno de alerta. Descartar cambios, salir; nunca para juzgar a
- *   otra persona.
+ * - `primary`: brasa sólida con halo. Una por pantalla — es «lo siguiente que haces».
+ * - `secondary`: cristal con canto fino. Alternativa sin peso.
+ * - `danger`: cristal teñido de alerta. Descartar cambios, salir; nunca para
+ *   juzgar a otra persona.
  *
  * Con `href` navega con `Link` (en web es un enlace de verdad). La forma del
  * botón va en una vista interna y no en el `style` del `Pressable`: `Link
@@ -29,7 +29,7 @@ import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'rea
 import Animated from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
-import { Control, Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
+import { Control, Elevation, Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
 import { usePressScale } from '@/hooks/use-press-scale';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -76,16 +76,26 @@ export function Button({
           style={[
             styles.button,
             primary
-              ? { backgroundColor: theme.brass }
+              ? {
+                  backgroundColor: theme.brass,
+                  // Brillo en el canto y halo cálido: la única pieza de la
+                  // pantalla que emite luz es la que hay que pulsar.
+                  boxShadow: disabled
+                    ? undefined
+                    : `inset 0px 1px 0px #FFFFFF59, ${Elevation.dark.glow}`,
+                }
               : {
                   borderWidth: Stroke.hairline,
                   borderColor: variant === 'danger' ? theme.danger : theme.border,
+                  backgroundColor:
+                    variant === 'danger' ? theme.dangerSoft : theme.backgroundElement,
+                  boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
                 },
             { opacity: disabled ? Opacity.disabled : pressed ? Opacity.pressed : 1 },
           ]}>
           <ThemedText
             type="bodyStrong"
-            themeColor={primary ? 'onAccent' : variant === 'danger' ? 'danger' : 'textSecondary'}>
+            themeColor={primary ? 'onAccent' : variant === 'danger' ? 'danger' : 'text'}>
             {label}
           </ThemedText>
         </View>

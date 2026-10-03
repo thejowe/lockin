@@ -18,12 +18,15 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AmbientBackground } from '@/components/ambient-background';
+import { Glass } from '@/components/glass';
 import { Button } from '@/components/button';
 import { LoadingState, MessageState } from '@/components/state-view';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Radii, Spacing, Stroke } from '@/constants/theme';
 import { isInJoinWindow } from '@/data';
 import { ProfileAvatar } from '@/features/chat';
+import { PomodoroRing } from '@/features/session/pomodoro-ring';
+import { PresenceDot } from '@/features/session/presence-dot';
 import {
   endingView,
   formatCountdown,
@@ -135,17 +138,20 @@ export default function SessionScreen() {
       <AmbientBackground variant="ember" />
       {screenOptions}
       <View style={styles.content}>
-        <View style={styles.counterpart}>
-          <ProfileAvatar avatar={match.counterpart.avatar} size={56} />
+        <Glass radius={Radii.card} style={styles.counterpart}>
+          <ProfileAvatar avatar={match.counterpart.avatar} size={52} />
           <View style={styles.counterpartText}>
             <ThemedText type="heading">{match.counterpart.name}</ThemedText>
-            <ThemedText
-              type="small"
-              themeColor={counterpartPresence === 'aqui' ? 'teal' : 'textSecondary'}>
-              {PRESENCE_TEXT[counterpartPresence]}
-            </ThemedText>
+            <View style={styles.presence}>
+              <PresenceDot present={counterpartPresence === 'aqui'} />
+              <ThemedText
+                type="small"
+                themeColor={counterpartPresence === 'aqui' ? 'teal' : 'textSecondary'}>
+                {PRESENCE_TEXT[counterpartPresence]}
+              </ThemedText>
+            </View>
           </View>
-        </View>
+        </Glass>
 
         {phase && ended ? (
           <View style={styles.clock}>
@@ -198,12 +204,12 @@ export default function SessionScreen() {
                 counterpartId={match.counterpart.id}
                 active={canJoin && !ended}
               />
-              <ThemedText type="label" themeColor="textSecondary">
-                {phaseTitle(phase, session.blocks)}
-              </ThemedText>
-              <ThemedText type="display" style={styles.countdown}>
-                {formatCountdown(phase.remainingMs)}
-              </ThemedText>
+              <PomodoroRing phase={phase}>
+                <ThemedText type="timer">{formatCountdown(phase.remainingMs)}</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">
+                  {phaseTitle(phase, session.blocks)}
+                </ThemedText>
+              </PomodoroRing>
               <View style={styles.blocks}>
                 {Array.from({ length: session.blocks }, (_, index) => (
                   <View
@@ -211,13 +217,13 @@ export default function SessionScreen() {
                     style={[
                       styles.block,
                       {
-                        borderColor: theme.brass,
+                        borderColor: index + 1 <= phase.block ? theme.brass : theme.border,
                         backgroundColor:
                           index + 1 < phase.block
                             ? theme.brass
                             : index + 1 === phase.block
                               ? theme.brassSoft
-                              : 'transparent',
+                              : theme.backgroundElement,
                       },
                     ]}
                   />
@@ -285,8 +291,14 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
     gap: Spacing.five,
   },
-  counterpart: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
+  counterpart: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    padding: Spacing.three,
+  },
   counterpartText: { gap: Spacing.half },
+  presence: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   clock: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.three },
   blocks: { flexDirection: 'row', gap: Spacing.two },
   block: {
@@ -296,7 +308,6 @@ const styles = StyleSheet.create({
     borderWidth: Stroke.hairline,
   },
   confirm: { gap: Spacing.two },
-  countdown: { fontVariant: ['tabular-nums'] },
   stretch: { alignSelf: 'stretch' },
   centeredText: { textAlign: 'center' },
 });

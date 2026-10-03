@@ -10,9 +10,10 @@ import { forwardRef } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ThemedText } from '@/components/themed-text';
+import { Icon } from '@/components/icon';
 import {
   Control,
+  Elevation,
   FontFamily,
   Opacity,
   Radii,
@@ -44,8 +45,6 @@ export const MessageComposer = forwardRef<TextInput, MessageComposerProps>(funct
       style={[
         styles.root,
         {
-          borderTopColor: theme.border,
-          backgroundColor: theme.background,
           // Con edge-to-edge el compositor llega hasta el borde de la ventana, y
           // `KeyboardProvider` va con `navigationBarTranslucent`: la librería ya
           // no descuenta la barra de navegación de la altura del teclado, así
@@ -69,10 +68,13 @@ export const MessageComposer = forwardRef<TextInput, MessageComposerProps>(funct
           {
             backgroundColor: theme.backgroundElement,
             borderColor: theme.border,
+            boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
             color: theme.text,
             fontFamily: FontFamily.sans,
           },
         ]}
+        selectionColor={theme.brass}
+        cursorColor={theme.brass}
       />
 
       <Pressable
@@ -85,12 +87,16 @@ export const MessageComposer = forwardRef<TextInput, MessageComposerProps>(funct
           styles.send,
           {
             backgroundColor: canSend ? theme.brass : theme.backgroundSelected,
+            boxShadow: canSend ? Elevation.dark.glow : undefined,
             opacity: pressed ? Opacity.pressed : 1,
           },
         ]}>
-        <ThemedText type="smallBold" style={{ color: canSend ? theme.onAccent : theme.textMuted }}>
-          Enviar
-        </ThemedText>
+        <Icon
+          name="send"
+          size={20}
+          strokeWidth={2.4}
+          color={canSend ? theme.onAccent : theme.textMuted}
+        />
       </Pressable>
     </View>
   );
@@ -104,7 +110,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingTop: Spacing.two,
     paddingBottom: Spacing.two,
-    borderTopWidth: Stroke.hairline,
   },
   input: {
     flex: 1,
@@ -112,17 +117,18 @@ const styles = StyleSheet.create({
     minHeight: Control.minTouch,
     maxHeight: 132,
     paddingHorizontal: Spacing.three,
-    paddingTop: Spacing.two,
-    paddingBottom: Spacing.two,
+    paddingTop: Spacing.two + Spacing.half,
+    paddingBottom: Spacing.two + Spacing.half,
     borderRadius: Radii.large,
     borderWidth: Stroke.hairline,
     fontSize: Typography.body.fontSize,
     lineHeight: Typography.body.lineHeight,
   },
   send: {
+    width: Control.minTouch,
     height: Control.minTouch,
+    alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: Spacing.three,
     borderRadius: Radii.pill,
   },
 });

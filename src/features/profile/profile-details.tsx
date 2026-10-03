@@ -6,7 +6,7 @@
  * `descubrir` puede reutilizarla para el detalle de una tarjeta si le sirve.
  */
 
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { ExternalLink } from '@/components/external-link';
 import { ThemedText } from '@/components/themed-text';
@@ -53,7 +53,7 @@ export function ProfileDetails({ profile }: { profile: Profile }) {
       </View>
 
       <View style={[styles.banner, { backgroundColor: theme.brassSoft }]}>
-        <ThemedText type="label" themeColor="brass">
+        <ThemedText type="small" themeColor="brass">
           Quiere encontrar
         </ThemedText>
         <ThemedText type="bodyStrong">{modeLabel(profile.lookingFor)}</ThemedText>
@@ -64,7 +64,16 @@ export function ProfileDetails({ profile }: { profile: Profile }) {
         distintos: verde lo que aporta, latón lo que le falta. Separarlos así es
         lo único que evita leer una sola lista de tags y no saber cuál es cuál.
       */}
-      <View style={styles.complement}>
+      <View
+        style={[
+          styles.complement,
+          styles.tile,
+          {
+            backgroundColor: theme.backgroundElement,
+            borderColor: theme.border,
+            boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
+          },
+        ]}>
         <View style={styles.complementSide}>
           <ThemedText type="label" themeColor="teal">
             Lo que domina
@@ -99,24 +108,30 @@ export function ProfileDetails({ profile }: { profile: Profile }) {
         <ThemedText type="body">{startingPointSentence(profile.startingPoint)}</ThemedText>
       </Section>
 
-      <Section title="Disponibilidad">
-        <ThemedText type="mono">
-          {availabilitySummary(profile.availability.hoursPerWeek, profile.availability.bands)}
-        </ThemedText>
-      </Section>
+      <View style={styles.pair}>
+        <Section title="Disponibilidad" style={styles.half}>
+          <ThemedText type="bodyStrong">
+            {availabilitySummary(profile.availability.hoursPerWeek, profile.availability.bands)}
+          </ThemedText>
+        </Section>
 
-      <Section title="Ambición">
-        <ThemedText type="body">{ambitionLabel(profile.ambition)}</ThemedText>
-      </Section>
+        <Section title="Ambición" style={styles.half}>
+          <ThemedText type="bodyStrong">{ambitionLabel(profile.ambition)}</ThemedText>
+        </Section>
+      </View>
 
       {profile.prompts.map((prompt) => (
         <View
           key={prompt.question}
           style={[
             styles.promptCard,
-            { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+            {
+              backgroundColor: theme.backgroundElement,
+              borderColor: theme.border,
+              boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
+            },
           ]}>
-          <ThemedText type="label" themeColor="textMuted">
+          <ThemedText type="small" themeColor="textSecondary">
             {prompt.question}
           </ThemedText>
           <ThemedText type="subtitle">{prompt.answer}</ThemedText>
@@ -168,10 +183,30 @@ function SpecialtyTags({ values, tone }: { values: Specialty[]; tone: 'teal' | '
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+/** Baldosa de cristal con su título pequeño arriba, como los paneles de la referencia. */
+function Section({
+  title,
+  children,
+  style,
+}: {
+  title: string;
+  children: React.ReactNode;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const theme = useTheme();
   return (
-    <View style={styles.section}>
-      <ThemedText type="label" themeColor="brass">
+    <View
+      style={[
+        styles.section,
+        styles.tile,
+        {
+          backgroundColor: theme.backgroundElement,
+          borderColor: theme.border,
+          boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
+        },
+        style,
+      ]}>
+      <ThemedText type="small" themeColor="textSecondary">
         {title}
       </ThemedText>
       {children}
@@ -181,7 +216,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 const styles = StyleSheet.create({
   root: {
-    gap: Spacing.four,
+    gap: Spacing.two + Spacing.half,
   },
   identity: {
     flexDirection: 'row',
@@ -193,12 +228,24 @@ const styles = StyleSheet.create({
     gap: Spacing.half,
   },
   banner: {
-    gap: Spacing.one,
+    gap: Spacing.half,
     padding: Spacing.three,
-    borderRadius: Radii.medium,
+    borderRadius: Radii.large,
   },
   section: {
-    gap: Spacing.two,
+    gap: Spacing.one,
+  },
+  tile: {
+    padding: Spacing.three,
+    borderRadius: Radii.large,
+    borderWidth: Stroke.hairline,
+  },
+  pair: {
+    flexDirection: 'row',
+    gap: Spacing.two + Spacing.half,
+  },
+  half: {
+    flex: 1,
   },
   complement: {
     gap: Spacing.three,

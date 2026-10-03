@@ -319,7 +319,8 @@ export const PressScale = 0.97;
 
 /**
  * Hueco inferior que deja cada pestaña para la barra flotante: alto de la
- * píldora (56) más su separación del borde. El inset del sistema se suma aparte.
+ * píldora (56) más su separación del borde. El inset del sistema lo pone el
+ * `SafeAreaView` de cada pestaña, con el borde `bottom` en `edges`.
  */
 export const BottomTabInset = 56 + 24;
 export const MaxContentWidth = 800;

@@ -135,7 +135,7 @@ export function ProfileCard({
           <ThemedText type="caption" themeColor="textMuted">
             {prompt.question}
           </ThemedText>
-          <ThemedText type="bodyStrong" numberOfLines={3}>
+          <ThemedText type="bodyStrong" numberOfLines={2}>
             {prompt.answer}
           </ThemedText>
         </View>
@@ -211,7 +211,8 @@ function Fact({ label, value }: { label: string; value: string }) {
       <ThemedText type="caption" themeColor="textMuted" numberOfLines={1}>
         {label}
       </ThemedText>
-      <ThemedText type="smallBold" numberOfLines={2}>
+      {/* Una línea: la ficha larga está en el perfil; aquí manda que quepa la tarjeta. */}
+      <ThemedText type="smallBold" numberOfLines={1}>
         {value}
       </ThemedText>
     </View>
@@ -237,9 +238,9 @@ const styles = StyleSheet.create({
     right: -120,
   },
   hero: {
-    gap: Spacing.two + Spacing.one,
+    gap: Spacing.two + Spacing.half,
     padding: Spacing.two,
-    paddingBottom: Spacing.one,
+    paddingBottom: 0,
   },
   header: {
     flexDirection: 'row',
@@ -259,7 +260,8 @@ const styles = StyleSheet.create({
   tile: {
     borderRadius: Radii.large,
     borderWidth: Stroke.hairline,
-    padding: Spacing.two + Spacing.one,
+    paddingVertical: Spacing.two + Spacing.half,
+    paddingHorizontal: Spacing.two + Spacing.one,
   },
   complement: {
     gap: Spacing.two,

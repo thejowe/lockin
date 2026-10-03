@@ -5,11 +5,23 @@
  * en `profile-form.tsx`. Ningún color literal — todo sale de `@/constants/theme`.
  */
 
+import { useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
+import Animated, { ZoomIn, ZoomOut } from 'react-native-reanimated';
 
 import { Button } from '@/components/button';
+import { Icon, type IconName } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
-import { Control, HitSlop, Opacity, Radii, Spacing, Stroke, Typography } from '@/constants/theme';
+import {
+  Control,
+  Duration,
+  HitSlop,
+  Opacity,
+  Radii,
+  Spacing,
+  Stroke,
+  Typography,
+} from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import type { Option } from './catalog';
@@ -29,7 +41,7 @@ export function Field({
 }) {
   return (
     <View style={styles.field}>
-      <ThemedText type="label" themeColor="brass">
+      <ThemedText type="smallBold" themeColor="textSecondary">
         {label}
       </ThemedText>
 
@@ -48,15 +60,23 @@ export function Field({
   );
 }
 
-/** Fila seleccionable grande: para elecciones únicas que necesitan explicación. */
+/**
+ * Fila seleccionable grande: para elecciones únicas que necesitan explicación.
+ *
+ * Cristal; la elegida sube un nivel de vidrio, gana un canto de brasa y su
+ * marca redonda se rellena con un pequeño salto. Con `icon`, el icono va en su
+ * baldosa a la izquierda, como los ajustes de la referencia.
+ */
 export function OptionCard<T extends string>({
   option,
   selected,
   onPress,
+  icon,
 }: {
   option: Option<T>;
   selected: boolean;
   onPress: () => void;
+  icon?: IconName;
 }) {
   const theme = useTheme();
 
@@ -70,23 +90,43 @@ export function OptionCard<T extends string>({
       style={({ pressed }) => [
         styles.optionCard,
         {
-          backgroundColor: selected ? theme.brassSoft : theme.backgroundElement,
+          backgroundColor: selected ? theme.backgroundSelected : theme.backgroundElement,
           borderColor: selected ? theme.brass : theme.border,
-          // El trazo no cambia de grosor al seleccionar: engordarlo desplazaba el
-          // contenido un píxel. El refuerzo es un anillo interior, que no ocupa.
           borderWidth: Stroke.hairline,
-          boxShadow: selected ? `inset 0 0 0 1px ${theme.brass}` : undefined,
+          boxShadow: selected
+            ? `inset 0px 1px 0px ${theme.glassHighlight}, inset 0 0 0 1px ${theme.brass}`
+            : `inset 0px 1px 0px ${theme.glassHighlight}`,
           opacity: pressed ? Opacity.pressed : 1,
         },
       ]}>
-      <ThemedText type="bodyStrong" themeColor={selected ? 'brass' : 'text'}>
-        {option.label}
-      </ThemedText>
-      {option.description ? (
-        <ThemedText type="small" themeColor="textSecondary">
-          {option.description}
-        </ThemedText>
+      {icon ? (
+        <View
+          style={[
+            styles.optionIcon,
+            { backgroundColor: selected ? theme.brass : theme.backgroundSelected },
+          ]}>
+          <Icon name={icon} size={22} color={selected ? theme.onAccent : theme.text} />
+        </View>
       ) : null}
+
+      <View style={styles.optionText}>
+        <ThemedText type="heading">{option.label}</ThemedText>
+        {option.description ? (
+          <ThemedText type="small" themeColor="textSecondary">
+            {option.description}
+          </ThemedText>
+        ) : null}
+      </View>
+
+      <View style={[styles.radio, { borderColor: selected ? theme.brass : theme.textMuted }]}>
+        {selected ? (
+          <Animated.View
+            entering={ZoomIn.springify().damping(14).stiffness(260)}
+            exiting={ZoomOut.duration(Duration.fast)}
+            style={[styles.radioDot, { backgroundColor: theme.brass }]}
+          />
+        ) : null}
+      </View>
     </Pressable>
   );
 }
@@ -127,10 +167,11 @@ export function Chip({
         {
           backgroundColor: selected ? theme.teal : theme.backgroundElement,
           borderColor: selected ? theme.teal : theme.border,
+          boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
           opacity: pressed ? Opacity.pressed : 1,
         },
       ]}>
-      <ThemedText type="smallBold" themeColor={selected ? 'onAccent' : 'textSecondary'}>
+      <ThemedText type="smallBold" themeColor={selected ? 'onAccent' : 'text'}>
         {label}
       </ThemedText>
     </Pressable>
@@ -149,6 +190,8 @@ export function TextField({
   multiline,
   maxLength,
   showCount = false,
+  onFocus,
+  onBlur,
   ...rest
 }: TextInputProps & {
   value: string;
@@ -157,6 +200,8 @@ export function TextField({
   showCount?: boolean;
 }) {
   const theme = useTheme();
+  // El foco se ve: el canto del cristal pasa a brasa mientras se escribe.
+  const [focused, setFocused] = useState(false);
 
   return (
     <View>
@@ -166,12 +211,23 @@ export function TextField({
         multiline={multiline}
         maxLength={maxLength}
         placeholderTextColor={theme.textMuted}
+        selectionColor={theme.brass}
+        cursorColor={theme.brass}
+        onFocus={(event) => {
+          setFocused(true);
+          onFocus?.(event);
+        }}
+        onBlur={(event) => {
+          setFocused(false);
+          onBlur?.(event);
+        }}
         style={[
           styles.input,
           multiline && styles.inputMultiline,
           {
-            backgroundColor: theme.backgroundElement,
-            borderColor: theme.border,
+            backgroundColor: focused ? theme.backgroundSelected : theme.backgroundElement,
+            borderColor: focused ? theme.brass : theme.border,
+            boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
             color: theme.text,
           },
         ]}
@@ -302,9 +358,35 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   optionCard: {
-    gap: Spacing.one,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
     padding: Spacing.three,
+    borderRadius: Radii.large,
+  },
+  optionIcon: {
+    width: 46,
+    height: 46,
     borderRadius: Radii.medium,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  optionText: {
+    flex: 1,
+    gap: Spacing.half,
+  },
+  radio: {
+    width: 22,
+    height: 22,
+    borderRadius: Radii.pill,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioDot: {
+    width: 12,
+    height: 12,
+    borderRadius: Radii.pill,
   },
   chipRow: {
     flexDirection: 'row',
@@ -340,7 +422,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: Spacing.one,
-    borderRadius: Radii.medium,
+    borderRadius: Radii.pill,
     borderWidth: Stroke.hairline,
   },
   stepperButton: {
@@ -348,7 +430,7 @@ const styles = StyleSheet.create({
     height: Control.minTouch,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: Radii.small,
+    borderRadius: Radii.pill,
   },
   stepperValue: {
     flex: 1,

@@ -11,6 +11,7 @@ import { Link } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
+import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { Radii, Spacing, Stroke } from '@/constants/theme';
 import { usePressScale } from '@/hooks/use-press-scale';
@@ -70,6 +71,7 @@ export function MatchRow({
               {
                 backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement,
                 borderColor: theme.border,
+                boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
               },
               press.style,
             ]}>
@@ -95,9 +97,12 @@ export function MatchRow({
                   </ThemedText>
                 )}
                 {streak !== null && (
-                  <ThemedText type="label" themeColor="brass">
-                    {streakTag(streak)}
-                  </ThemedText>
+                  <View style={[styles.streak, { backgroundColor: theme.brassSoft }]}>
+                    <Icon name="flame" size={12} color={theme.brass} strokeWidth={2.2} />
+                    <ThemedText type="caption" themeColor="brass">
+                      {streakTag(streak)}
+                    </ThemedText>
+                  </View>
                 )}
               </View>
 
@@ -121,7 +126,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: Spacing.three,
     padding: Spacing.three,
-    borderRadius: Radii.large,
+    borderRadius: Radii.card,
     borderWidth: Stroke.hairline,
   },
   body: {
@@ -141,5 +146,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.one,
+  },
+  streak: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.half,
+    paddingVertical: Spacing.half,
+    paddingHorizontal: Spacing.two,
+    borderRadius: Radii.pill,
   },
 });
