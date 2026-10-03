@@ -3,6 +3,7 @@ import { useCallback, useMemo } from 'react';
 import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Screen } from '@/components/ambient-background';
 import { useRepositories } from '@/data';
 import { AuthCallback, authLinkFromParams } from '@/features/profile';
 
@@ -37,9 +38,11 @@ export default function AuthCallbackRoute() {
   }, [router, repositories]);
 
   return (
-    <SafeAreaView style={styles.root} edges={['top']}>
-      <AuthCallback url={url} onDone={goNext} />
-    </SafeAreaView>
+    <Screen ambient="plum">
+      <SafeAreaView style={styles.root} edges={['top']}>
+        <AuthCallback url={url} onDone={goNext} />
+      </SafeAreaView>
+    </Screen>
   );
 }
 

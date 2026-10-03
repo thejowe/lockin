@@ -1,96 +1,112 @@
 /**
- * Sistema de diseño de LockIn.
+ * Sistema de diseño de LockIn — dirección «cristal».
  *
- * Fuente de verdad de la paleta de marca (latón / grafito-salvia / verde-azulado),
- * la escala tipográfica y el espaciado. Ver `docs/plan/CONCEPTO.md`.
+ * Fuente de verdad de la paleta (grafito, cristal, brasa y verde-azulado), la
+ * escala tipográfica, el espaciado y el movimiento. Ver `docs/plan/CONCEPTO.md`.
  *
  * Ningún componente debería declarar un color literal: si falta un token, se añade aquí.
  */
 
 import '@/global.css';
 
-import { Platform, StyleSheet } from 'react-native';
+import { Platform, StyleSheet, type TextStyle } from 'react-native';
 
 /**
- * Paleta de marca. Los cinco tokens de `CONCEPTO.md` (fondo, tinta, latón,
- * verde-azulado, alerta) más los derivados que necesita la UI: superficies,
- * texto secundario, bordes y las variantes suaves de cada acento.
+ * Paleta. La app es solo oscura (decisión del 2026-10-03): fondo grafito con
+ * luz ambiental difusa detrás (`AmbientBackground`) y superficies de cristal
+ * translúcido encima.
+ *
+ * Las superficies (`backgroundElement`, `backgroundSelected`) y los rellenos
+ * suaves (`*Soft`) llevan alfa en hex de 8 dígitos: son vidrio, no pintura, y
+ * dejan pasar el brillo ambiental. `theme.test.ts` los compone sobre el fondo y
+ * sobre el punto más claro de la luz ambiental (`AmbientPeak`) antes de medir
+ * contraste.
  */
-export const Colors = {
-  light: {
-    /** Fondo de pantalla. */
-    background: '#EEF0EA',
-    /** Superficie elevada: tarjetas, filas, campos. */
-    backgroundElement: '#E4E7DE',
-    /** Superficie en estado activo/seleccionado. */
-    backgroundSelected: '#D8DCD0',
-    /** Tinta principal. */
-    text: '#1B231E',
-    /** Tinta secundaria (grafito-salvia). */
-    textSecondary: '#5A6459',
-    /**
-     * Tinta terciaria. En claro NO existe como nivel propio: vale lo mismo que
-     * `textSecondary`. La paleta clara no admite un tercer nivel por encima de
-     * 4.5:1 sin que colapse contra el segundo (a 4.5:1 quedaría a 1.17 de
-     * `textSecondary`, la misma tinta a ojo). El token se mantiene para que las
-     * pantallas no tengan que ramificar por tema; en oscuro sí es un nivel real.
-     */
-    textMuted: '#5A6459',
-    /** Trazo de separación. */
-    border: '#D2D7C9',
-    /** Acento latón: acción principal, marca. */
-    brass: '#8C5E10',
-    /** Latón como relleno suave (fondo de chip/badge). */
-    brassSoft: '#F2E5CB',
-    /** Acento verde-azulado: confirmación, match, modo Lock-In. */
-    teal: '#285F52',
-    /** Verde-azulado como relleno suave. */
-    tealSoft: '#D8E6E0',
-    /** Alerta/riesgo: descartar, destruir, error. */
-    danger: '#963C2C',
-    /** Alerta como relleno suave. */
-    dangerSoft: '#F4DED8',
-    /** Tinta sobre un relleno de acento sólido. */
-    onAccent: '#FBFCF8',
-  },
-  dark: {
-    background: '#14180F',
-    backgroundElement: '#1F2419',
-    backgroundSelected: '#2B3123',
-    text: '#E9ECE1',
-    textSecondary: '#A2AC98',
-    textMuted: '#828D79',
-    border: '#333A2B',
-    brass: '#E0B04E',
-    brassSoft: '#33280F',
-    teal: '#7FC3B0',
-    tealSoft: '#16302A',
-    danger: '#E28D74',
-    dangerSoft: '#331C15',
-    onAccent: '#14180F',
-  },
+const Dark = {
+  /** Fondo de pantalla, por debajo de la luz ambiental. */
+  background: '#0A0A0B',
+  /** Cristal: tarjetas, filas, campos. */
+  backgroundElement: '#FFFFFF14',
+  /** Cristal en estado activo/seleccionado, o más elevado. */
+  backgroundSelected: '#FFFFFF29',
+  /**
+   * Cristal opaco: el mismo tono que el cristal sobre el grafito, sin alfa. Para
+   * superficies que se apilan (las tarjetas del deck), donde la de detrás no
+   * debe transparentarse a través de la de delante.
+   */
+  surfaceOpaque: '#18181B',
+  /** Tinta principal. */
+  text: '#F5F5F7',
+  /** Tinta secundaria. */
+  textSecondary: '#BEBEC4',
+  /** Tinta terciaria: metadatos, marcas de tiempo, placeholders. */
+  textMuted: '#A8A8AE',
+  /** Canto del cristal: trazo fino que separa la superficie del fondo. */
+  border: '#FFFFFF2E',
+  /**
+   * Acento brasa: acción principal, marca, selección. El nombre `brass` se
+   * conserva del sistema anterior para no renombrar 35 pantallas; el color es
+   * el naranja de la dirección cristal.
+   */
+  brass: '#FF8645',
+  /** Brasa como relleno suave (fondo de chip/badge). */
+  brassSoft: '#FF86451F',
+  /** Acento verde-azulado: confirmación, presencia, modo Lock-In. */
+  teal: '#7FC3B0',
+  /** Verde-azulado como relleno suave. */
+  tealSoft: '#7FC3B029',
+  /** Alerta/riesgo: descartar, destruir, error. */
+  danger: '#FF9A80',
+  /** Alerta como relleno suave. */
+  dangerSoft: '#FF9A8029',
+  /** Tinta sobre un relleno de acento sólido. */
+  onAccent: '#1A0A02',
+  /** Brillo del canto superior del cristal (luz que entra por arriba). */
+  glassHighlight: '#FFFFFF24',
 } as const;
 
-export type ThemeName = keyof typeof Colors;
-export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
-export type ThemePalette = (typeof Colors)[ThemeName];
+/**
+ * `light` es un alias de `dark`: el esquema claro se retiró, pero el tipo
+ * `ThemeName` y los tests que recorren los dos esquemas siguen valiendo sin
+ * ramificar en cada pantalla.
+ */
+export const Colors = {
+  light: Dark,
+  dark: Dark,
+} as const;
 
 /**
- * Familias tipográficas de marca. Los valores son las claves con las que
- * `src/app/_layout.tsx` registra las fuentes en `expo-font` — deben coincidir.
+ * Color del punto más luminoso de las imágenes de luz ambiental
+ * (`assets/images/ambient-*.jpg`). Es el peor caso de contraste para la tinta
+ * clara: el test compone cada superficie también sobre él.
+ */
+export const AmbientPeak = '#462312';
+
+export type ThemeName = keyof typeof Colors;
+export type ThemeColor = keyof typeof Dark;
+export type ThemePalette = typeof Dark;
+
+/**
+ * Familias tipográficas. Inter es la neo-grotesca más cercana a SF Pro (la
+ * tipografía de la referencia), y se ve igual en iOS, Android y web. Los
+ * valores son las claves con las que `src/app/_layout.tsx` registra las fuentes
+ * en `expo-font` — deben coincidir con `BrandFonts`. Los alias `display` y
+ * `mono` se conservan del sistema anterior: hoy son pesos de Inter.
  */
 export const FontFamily = {
-  /** Fraunces — display y titulares. */
-  display: 'Fraunces_600SemiBold',
-  displayBold: 'Fraunces_700Bold',
-  /** IBM Plex Sans — texto de interfaz. */
-  sans: 'IBMPlexSans_400Regular',
-  sansMedium: 'IBMPlexSans_500Medium',
-  sansSemiBold: 'IBMPlexSans_600SemiBold',
-  sansBold: 'IBMPlexSans_700Bold',
-  /** IBM Plex Mono — etiquetas, datos y metadatos. */
-  mono: 'IBMPlexMono_400Regular',
-  monoMedium: 'IBMPlexMono_500Medium',
+  /** Titulares. */
+  display: 'Inter_600SemiBold',
+  displayBold: 'Inter_700Bold',
+  /** Cifras grandes (temporizador). */
+  light: 'Inter_300Light',
+  /** Texto de interfaz. */
+  sans: 'Inter_400Regular',
+  sansMedium: 'Inter_500Medium',
+  sansSemiBold: 'Inter_600SemiBold',
+  sansBold: 'Inter_700Bold',
+  /** Datos y metadatos (con cifras tabulares en `Typography.mono`). */
+  mono: 'Inter_400Regular',
+  monoMedium: 'Inter_500Medium',
 } as const;
 
 export type FontFamilyName = keyof typeof FontFamily;
@@ -106,39 +122,68 @@ export const SystemFonts = Platform.select({
 });
 
 /**
- * Escala tipográfica. Cada entrada es un estilo completo y cerrado — las
- * pantallas eligen un rol, no componen tamaños sueltos.
+ * Escala tipográfica, al modo de Apple: titulares apretados (tracking negativo
+ * que crece con el tamaño), cuerpo a 16 con interlineado corto. Cada entrada es
+ * un estilo completo y cerrado — las pantallas eligen un rol, no componen
+ * tamaños sueltos.
  */
 export const Typography = {
-  /** Fraunces grande: pantalla de bienvenida, "¡Match!". */
-  display: { fontFamily: FontFamily.displayBold, fontSize: 40, lineHeight: 46 },
-  /** Fraunces: título de pantalla. */
-  title: { fontFamily: FontFamily.display, fontSize: 30, lineHeight: 38 },
-  /** Fraunces: nombre en tarjeta de perfil, cabecera de sección. */
-  subtitle: { fontFamily: FontFamily.display, fontSize: 22, lineHeight: 30 },
-  /** Plex Sans: cabecera dentro de una tarjeta. */
-  heading: { fontFamily: FontFamily.sansSemiBold, fontSize: 18, lineHeight: 26 },
-  /** Plex Sans: cuerpo por defecto. */
-  body: { fontFamily: FontFamily.sans, fontSize: 16, lineHeight: 24 },
-  bodyStrong: { fontFamily: FontFamily.sansSemiBold, fontSize: 16, lineHeight: 24 },
-  /** Plex Sans: texto de apoyo, listas densas. */
-  small: { fontFamily: FontFamily.sans, fontSize: 14, lineHeight: 20 },
-  smallBold: { fontFamily: FontFamily.sansSemiBold, fontSize: 14, lineHeight: 20 },
-  /** Plex Sans: pie de foto, notas. */
-  caption: { fontFamily: FontFamily.sans, fontSize: 12, lineHeight: 16 },
-  /** Plex Mono en versales: etiquetas de sección, chips de dato. */
-  label: {
-    fontFamily: FontFamily.monoMedium,
-    fontSize: 12,
-    lineHeight: 16,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
+  /** Pantalla de bienvenida, «¡Match!». */
+  display: {
+    fontFamily: FontFamily.displayBold,
+    fontSize: 40,
+    lineHeight: 44,
+    letterSpacing: -1.2,
   },
-  /** Plex Mono: datos crudos (horas/semana, zona horaria, enlaces). */
-  mono: { fontFamily: FontFamily.mono, fontSize: 13, lineHeight: 20 },
+  /** Título de pantalla. */
+  title: { fontFamily: FontFamily.displayBold, fontSize: 32, lineHeight: 36, letterSpacing: -0.9 },
+  /** Nombre en tarjeta de perfil, cabecera de sección. */
+  subtitle: { fontFamily: FontFamily.display, fontSize: 22, lineHeight: 28, letterSpacing: -0.45 },
+  /** Cabecera dentro de una tarjeta. */
+  heading: {
+    fontFamily: FontFamily.sansSemiBold,
+    fontSize: 17,
+    lineHeight: 22,
+    letterSpacing: -0.25,
+  },
+  /** Cuerpo por defecto. */
+  body: { fontFamily: FontFamily.sans, fontSize: 16, lineHeight: 22, letterSpacing: -0.15 },
+  bodyStrong: {
+    fontFamily: FontFamily.sansSemiBold,
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.15,
+  },
+  /** Texto de apoyo, listas densas. */
+  small: { fontFamily: FontFamily.sans, fontSize: 14, lineHeight: 19, letterSpacing: -0.1 },
+  smallBold: {
+    fontFamily: FontFamily.sansSemiBold,
+    fontSize: 14,
+    lineHeight: 19,
+    letterSpacing: -0.1,
+  },
+  /** Pie de foto, notas. */
+  caption: { fontFamily: FontFamily.sans, fontSize: 12, lineHeight: 16 },
+  /** Etiqueta de sección o de dato: pequeña, en caja normal, sin versales. */
+  label: { fontFamily: FontFamily.sansMedium, fontSize: 13, lineHeight: 18 },
+  /** Datos crudos (horas/semana, zona horaria, horas): cifras tabulares. */
+  mono: {
+    fontFamily: FontFamily.monoMedium,
+    fontSize: 13,
+    lineHeight: 18,
+    fontVariant: ['tabular-nums'],
+  },
   /** Enlace en línea. */
-  link: { fontFamily: FontFamily.sansMedium, fontSize: 16, lineHeight: 24 },
-} as const;
+  link: { fontFamily: FontFamily.sansMedium, fontSize: 16, lineHeight: 22, letterSpacing: -0.15 },
+  /** Cifra grande y fina: el temporizador del Pomodoro. */
+  timer: {
+    fontFamily: FontFamily.light,
+    fontSize: 60,
+    lineHeight: 66,
+    letterSpacing: -2,
+    fontVariant: ['tabular-nums'],
+  },
+} satisfies Record<string, TextStyle>;
 
 export type TypographyRole = keyof typeof Typography;
 
@@ -153,12 +198,16 @@ export const Spacing = {
   six: 64,
 } as const;
 
-/** Radios de esquina. `pill` para chips y botones de acción redondos. */
+/**
+ * Radios de esquina. Grandes y continuos, como en la referencia: el cristal no
+ * tiene aristas. `pill` para chips, botones y la barra de pestañas.
+ */
 export const Radii = {
-  small: 8,
-  medium: 12,
-  large: 20,
-  card: 28,
+  small: 10,
+  medium: 16,
+  large: 22,
+  card: 30,
+  sheet: 34,
   pill: 999,
 } as const;
 
@@ -176,9 +225,9 @@ export const Control = {
   /** Mínimo táctil: botones de icono, chips con hitSlop, filas compactas. */
   minTouch: 44,
   /** Campo de texto de una línea. */
-  field: 48,
+  field: 50,
   /** Botón de acción (píldora). */
-  button: 52,
+  button: 56,
   /** Campo de texto multilínea: dos líneas y media de cuerpo, más relleno. */
   textArea: 88,
 } as const;
@@ -200,23 +249,34 @@ export const Opacity = {
 } as const;
 
 /**
- * Elevación. La marca es plana y editorial: la sombra no decora, solo separa lo
- * que flota (la tarjeta del deck, el modal de match) de lo que está debajo.
- * Tinta de la paleta con alfa, nunca negro puro sobre el fondo claro.
+ * Elevación. El cristal no proyecta sombra dura: una sombra amplia y suave
+ * despega lo que flota (la tarjeta del deck, la barra de pestañas, el modal),
+ * y `glow` es el halo cálido del botón principal.
  */
+const DarkElevation = {
+  raised: '0px 1px 0px rgba(255, 255, 255, 0.06), 0px 18px 40px rgba(0, 0, 0, 0.35)',
+  overlay: '0px 2px 6px rgba(0, 0, 0, 0.35), 0px 30px 60px rgba(0, 0, 0, 0.55)',
+  glow: '0px 10px 28px rgba(255, 134, 69, 0.35)',
+} as const;
+
 export const Elevation = {
-  light: {
-    raised: '0px 1px 2px rgba(27, 35, 30, 0.06), 0px 10px 24px rgba(27, 35, 30, 0.08)',
-    overlay: '0px 2px 4px rgba(27, 35, 30, 0.08), 0px 24px 48px rgba(27, 35, 30, 0.16)',
-  },
-  dark: {
-    raised: '0px 1px 2px rgba(0, 0, 0, 0.35), 0px 10px 24px rgba(0, 0, 0, 0.35)',
-    overlay: '0px 2px 4px rgba(0, 0, 0, 0.4), 0px 24px 48px rgba(0, 0, 0, 0.5)',
-  },
+  light: DarkElevation,
+  dark: DarkElevation,
 } as const satisfies Record<ThemeName, Record<string, string>>;
 
 /** Alfa en hex que se añade a `background` para el velo detrás de un modal. */
-export const ScrimAlpha = 'F2';
+export const ScrimAlpha = 'B8';
+
+/**
+ * Intensidad de `BlurView` (expo-blur) para el cristal que flota sobre
+ * contenido que se desplaza: barra de pestañas, cabeceras, hojas y modales.
+ * Las tarjetas no la llevan: debajo solo hay luz ambiental, ya difusa, y
+ * desenfocarla otra vez costaría GPU sin cambiar nada a la vista.
+ */
+export const BlurIntensity = {
+  bar: 40,
+  sheet: 60,
+} as const;
 
 /** Duraciones de animación, en ms. */
 export const Duration = {
@@ -224,6 +284,9 @@ export const Duration = {
   base: 220,
   slow: 360,
 } as const;
+
+/** Retardo entre elementos de una lista que entra escalonada, en ms. */
+export const Stagger = 40;
 
 /**
  * Curvas cúbicas (x1, y1, x2, y2) para `Easing.bezier`. Nada de `ease-in` para
@@ -247,10 +310,16 @@ export const Springs = {
   pop: { damping: 15, stiffness: 190, mass: 0.8 },
   /** Respuesta al toque de un botón: inmediata al bajar, suave al soltar. */
   press: { damping: 22, stiffness: 420, mass: 0.5 },
+  /** Deslizamiento de un indicador (pestaña activa, segmento, interruptor): sin rebote. */
+  glide: { damping: 28, stiffness: 300, mass: 0.8 },
 } as const;
 
 /** Escala de un control mientras se pulsa. Sutil: se nota en el dedo, no a la vista. */
 export const PressScale = 0.97;
 
-export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
+/**
+ * Hueco inferior que deja cada pestaña para la barra flotante: alto de la
+ * píldora (56) más su separación del borde. El inset del sistema se suma aparte.
+ */
+export const BottomTabInset = 56 + 24;
 export const MaxContentWidth = 800;

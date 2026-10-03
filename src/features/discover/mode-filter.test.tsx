@@ -84,12 +84,12 @@ describe('ModeFilter', () => {
     expect(onChange).toHaveBeenCalledWith('par');
   });
 
-  it('deja alcanzable el chip de 32 px con hitSlop vertical', async () => {
+  it('cada segmento mide los 44 px táctiles mínimos sin necesitar hitSlop', async () => {
     const { ui } = setup();
     await render(ui);
 
     for (const radio of screen.getAllByRole('radio')) {
-      expect(radio.props.hitSlop).toEqual({ top: 6, bottom: 6 });
+      expect(radio).toHaveStyle({ height: 44 });
     }
   });
 });

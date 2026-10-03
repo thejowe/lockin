@@ -17,6 +17,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { AmbientBackground } from '@/components/ambient-background';
 import { Button } from '@/components/button';
 import { LoadingState, MessageState } from '@/components/state-view';
 import { ThemedText } from '@/components/themed-text';
@@ -86,6 +87,7 @@ export default function SessionScreen() {
   if (loading && !session) {
     return (
       <View style={[styles.root, { backgroundColor: theme.background }]}>
+        <AmbientBackground variant="ember" />
         {screenOptions}
         <LoadingState label="Cargando la sesión…" />
       </View>
@@ -130,6 +132,7 @@ export default function SessionScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
+      <AmbientBackground variant="ember" />
       {screenOptions}
       <View style={styles.content}>
         <View style={styles.counterpart}>
@@ -260,6 +263,7 @@ function Notice({
 
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
+      <AmbientBackground variant="ember" />
       {children}
       <MessageState eyebrow="Sesión Lock-In" eyebrowColor="teal" title={title} body={detail}>
         <Button label="Volver al chat" onPress={onBack} />

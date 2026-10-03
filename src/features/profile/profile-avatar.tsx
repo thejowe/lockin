@@ -9,10 +9,13 @@
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radii } from '@/constants/theme';
+import { Radii, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import type { Avatar } from '@/data';
+
+/** Alfa del tinte del avatar: deja leer las iniciales claras encima (≥ 4.5:1). */
+const TINT_ALPHA = '8C';
 
 const SIZES = {
   small: { box: 40, type: 'smallBold' },
@@ -41,12 +44,15 @@ export function ProfileAvatar({
           width: box,
           height: box,
           borderRadius: Radii.pill,
-          backgroundColor: avatar.accent === 'teal' ? theme.teal : theme.brass,
+          // Vidrio teñido del color de la persona, con el canto de luz del
+          // cristal: el avatar es una pieza más del material, no una pegatina.
+          backgroundColor: (avatar.accent === 'teal' ? theme.teal : theme.brass) + TINT_ALPHA,
+          borderWidth: Stroke.hairline,
+          borderColor: theme.border,
+          boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
         },
       ]}>
-      <ThemedText type={type} themeColor="onAccent">
-        {avatar.initials}
-      </ThemedText>
+      <ThemedText type={type}>{avatar.initials}</ThemedText>
     </View>
   );
 }

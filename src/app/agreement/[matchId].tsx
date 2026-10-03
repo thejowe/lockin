@@ -9,6 +9,7 @@
 import { Link, Stack, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { AmbientBackground } from '@/components/ambient-background';
 import { Button } from '@/components/button';
 import { LoadingState, MessageState } from '@/components/state-view';
 import { ThemedText } from '@/components/themed-text';
@@ -39,6 +40,7 @@ export default function AgreementScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
+      <AmbientBackground variant="plum" />
       <Stack.Screen options={{ title: 'Acuerdo de socios' }} />
       {matchQuery.loading || agreement.loading ? (
         <LoadingState label="Cargando el acuerdo…" />

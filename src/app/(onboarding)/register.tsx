@@ -2,6 +2,7 @@ import { Redirect, useRouter } from 'expo-router';
 import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Screen } from '@/components/ambient-background';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { RegisterForm } from '@/features/profile';
 import { registrationRequired } from '@/features/profile/account-gateway';
@@ -23,14 +24,16 @@ export default function RegisterScreen() {
   if (!registrationRequired) return <Redirect href="/mode" />;
 
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <RegisterForm
-          onDone={() => router.replace('/mode')}
-          onSignIn={() => router.push('/sign-in')}
-        />
-      </ScrollView>
-    </SafeAreaView>
+    <Screen ambient="ember">
+      <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <RegisterForm
+            onDone={() => router.replace('/mode')}
+            onSignIn={() => router.push('/sign-in')}
+          />
+        </ScrollView>
+      </SafeAreaView>
+    </Screen>
   );
 }
 

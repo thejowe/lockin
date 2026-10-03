@@ -9,6 +9,7 @@
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AmbientBackground } from '@/components/ambient-background';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { MatchRow, MatchesEmpty, useMatches } from '@/features/chat';
@@ -23,6 +24,7 @@ export default function MatchesScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
+      <AmbientBackground variant="teal" />
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <FlatList
           data={matches}

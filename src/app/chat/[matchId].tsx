@@ -19,6 +19,7 @@ import {
   useWindowDimensions as useKeyboardWindowDimensions,
 } from 'react-native-keyboard-controller';
 
+import { AmbientBackground } from '@/components/ambient-background';
 import { Button } from '@/components/button';
 import { LoadingState, MessageState } from '@/components/state-view';
 import { ThemedText } from '@/components/themed-text';
@@ -83,6 +84,7 @@ export default function ChatScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
+      <AmbientBackground variant="teal" />
       <Stack.Screen options={{ title }} />
 
       {/*

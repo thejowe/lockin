@@ -33,6 +33,25 @@ function navigationTheme(scheme: 'light' | 'dark') {
   };
 }
 
+/**
+ * Cabecera de las pantallas apiladas (chat, sesión, acuerdo): grafito liso, sin
+ * sombra, título en Inter semibold al tamaño de iOS. Opaca a propósito: el chat
+ * calcula el desplazamiento del teclado contando con una cabecera que ocupa su
+ * sitio (ver `keyboardVerticalOffset`), y una cabecera superpuesta lo rompería.
+ */
+const stackHeader = {
+  headerShown: true,
+  headerBackButtonDisplayMode: 'minimal',
+  headerShadowVisible: false,
+  headerStyle: { backgroundColor: Colors.dark.background },
+  headerTintColor: Colors.dark.text,
+  headerTitleStyle: {
+    color: Colors.dark.text,
+    fontFamily: FontFamily.sansSemiBold,
+    fontSize: 17,
+  },
+} as const;
+
 export default function RootLayout() {
   const scheme = useThemeName();
   const palette = Colors[scheme];
@@ -69,7 +88,7 @@ export default function RootLayout() {
       <KeyboardProvider statusBarTranslucent navigationBarTranslucent>
         <ThemeProvider value={navigationTheme(scheme)}>
           <DataProvider>
-            <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+            <StatusBar style="light" />
             <Stack
               screenOptions={{
                 headerShown: false,
@@ -78,36 +97,9 @@ export default function RootLayout() {
               <Stack.Screen name="index" />
               <Stack.Screen name="(onboarding)" />
               <Stack.Screen name="(tabs)" />
-              <Stack.Screen
-                name="chat/[matchId]"
-                options={{
-                  headerShown: true,
-                  headerBackButtonDisplayMode: 'minimal',
-                  headerStyle: { backgroundColor: palette.background },
-                  headerTintColor: palette.brass,
-                  headerTitleStyle: { color: palette.text, fontFamily: FontFamily.display },
-                }}
-              />
-              <Stack.Screen
-                name="session/[sessionId]"
-                options={{
-                  headerShown: true,
-                  headerBackButtonDisplayMode: 'minimal',
-                  headerStyle: { backgroundColor: palette.background },
-                  headerTintColor: palette.brass,
-                  headerTitleStyle: { color: palette.text, fontFamily: FontFamily.display },
-                }}
-              />
-              <Stack.Screen
-                name="agreement/[matchId]"
-                options={{
-                  headerShown: true,
-                  headerBackButtonDisplayMode: 'minimal',
-                  headerStyle: { backgroundColor: palette.background },
-                  headerTintColor: palette.brass,
-                  headerTitleStyle: { color: palette.text, fontFamily: FontFamily.display },
-                }}
-              />
+              <Stack.Screen name="chat/[matchId]" options={stackHeader} />
+              <Stack.Screen name="session/[sessionId]" options={stackHeader} />
+              <Stack.Screen name="agreement/[matchId]" options={stackHeader} />
             </Stack>
           </DataProvider>
         </ThemeProvider>

@@ -19,6 +19,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AmbientBackground } from '@/components/ambient-background';
 import { LoadingState, MessageState } from '@/components/state-view';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -60,6 +61,7 @@ export default function DiscoverScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
+      <AmbientBackground variant="ember" />
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <View style={styles.content}>
           <View style={styles.header}>

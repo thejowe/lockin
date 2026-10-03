@@ -2,6 +2,7 @@ import { Redirect, useRouter } from 'expo-router';
 import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Screen } from '@/components/ambient-background';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { SignInForm } from '@/features/profile';
 import { accountsAvailable } from '@/features/profile/account-gateway';
@@ -25,11 +26,13 @@ export default function SignInScreen() {
   if (!accountsAvailable) return <Redirect href="/mode" />;
 
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <SignInForm onSignedIn={() => router.replace('/')} onCancel={() => router.back()} />
-      </ScrollView>
-    </SafeAreaView>
+    <Screen ambient="ember">
+      <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <SignInForm onSignedIn={() => router.replace('/')} onCancel={() => router.back()} />
+        </ScrollView>
+      </SafeAreaView>
+    </Screen>
   );
 }
 

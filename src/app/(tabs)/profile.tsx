@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Screen } from '@/components/ambient-background';
 import { LoadingState, MessageState } from '@/components/state-view';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -76,9 +77,11 @@ export default function ProfileScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.root} edges={['top']}>
-        <LoadingState label="Cargando tu perfil…" />
-      </SafeAreaView>
+      <Screen ambient="plum">
+        <SafeAreaView style={styles.root} edges={['top']}>
+          <LoadingState label="Cargando tu perfil…" />
+        </SafeAreaView>
+      </Screen>
     );
   }
 
@@ -86,57 +89,63 @@ export default function ProfileScreen() {
   // así que esto solo se ve si alguien aterriza en la tab con la sesión a medias.
   if (!profile) {
     return (
-      <SafeAreaView style={styles.root} edges={['top']}>
-        <MessageState
-          eyebrow="Perfil"
-          title="Todavía no tienes ficha"
-          body="Crea tu perfil para que la gente pueda encontrarte en el deck.">
-          <PrimaryButton label="Crear perfil" onPress={() => router.replace('/mode')} />
-        </MessageState>
-      </SafeAreaView>
+      <Screen ambient="plum">
+        <SafeAreaView style={styles.root} edges={['top']}>
+          <MessageState
+            eyebrow="Perfil"
+            title="Todavía no tienes ficha"
+            body="Crea tu perfil para que la gente pueda encontrarte en el deck.">
+            <PrimaryButton label="Crear perfil" onPress={() => router.replace('/mode')} />
+          </MessageState>
+        </SafeAreaView>
+      </Screen>
     );
   }
 
   if (editing) {
     return (
-      <SafeAreaView style={styles.root} edges={['top']}>
-        <ProfileForm
-          initial={profile}
-          submitLabel="Guardar cambios"
-          onSubmit={handleSubmit}
-          onCancel={() => setEditing(false)}
-          cancelLabel="Descartar cambios"
-          header={
-            <View style={styles.header}>
-              <ThemedText type="label" themeColor="brass">
-                Editar perfil
-              </ThemedText>
-              <ThemedText type="title">Tu ficha</ThemedText>
-            </View>
-          }
-        />
-      </SafeAreaView>
+      <Screen ambient="plum">
+        <SafeAreaView style={styles.root} edges={['top']}>
+          <ProfileForm
+            initial={profile}
+            submitLabel="Guardar cambios"
+            onSubmit={handleSubmit}
+            onCancel={() => setEditing(false)}
+            cancelLabel="Descartar cambios"
+            header={
+              <View style={styles.header}>
+                <ThemedText type="label" themeColor="brass">
+                  Editar perfil
+                </ThemedText>
+                <ThemedText type="title">Tu ficha</ThemedText>
+              </View>
+            }
+          />
+        </SafeAreaView>
+      </Screen>
     );
   }
 
   return (
-    <SafeAreaView style={styles.root} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <ThemedText type="label" themeColor="brass">
-          Perfil
-        </ThemedText>
+    <Screen ambient="plum">
+      <SafeAreaView style={styles.root} edges={['top']}>
+        <ScrollView contentContainerStyle={styles.content}>
+          <ThemedText type="label" themeColor="brass">
+            Perfil
+          </ThemedText>
 
-        <ProfileDetails profile={profile} />
+          <ProfileDetails profile={profile} />
 
-        <GithubVerification profile={profile} onChange={refresh} />
+          <GithubVerification profile={profile} onChange={refresh} />
 
-        <SecondaryButton label="Editar perfil" onPress={() => setEditing(true)} />
+          <SecondaryButton label="Editar perfil" onPress={() => setEditing(true)} />
 
-        {/* La cuenta va al final: es lo que menos se visita y donde vive la
+          {/* La cuenta va al final: es lo que menos se visita y donde vive la
             salida destructiva. Arriba está lo que se viene a mirar. */}
-        <AccountSection />
-      </ScrollView>
-    </SafeAreaView>
+          <AccountSection />
+        </ScrollView>
+      </SafeAreaView>
+    </Screen>
   );
 }
 

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Screen } from '@/components/ambient-background';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useRepositories, type ModePreference } from '@/data';
@@ -48,48 +49,50 @@ export default function ModeScreen() {
   if (gate === 'required') return <Redirect href="/register" />;
 
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <ThemedText type="label" themeColor="brass">
-            Paso 1 de 2
-          </ThemedText>
-          <ThemedText type="title">¿Qué buscas?</ThemedText>
-          <ThemedText type="body" themeColor="textSecondary">
-            Cofundador en igualdad de condiciones, compañero de Lock-In, o ambos. Nadie contrata a
-            nadie: los dos lados del match son pares.
-          </ThemedText>
-        </View>
+    <Screen ambient="ember">
+      <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+        <ScrollView contentContainerStyle={styles.content}>
+          <View style={styles.header}>
+            <ThemedText type="label" themeColor="brass">
+              Paso 1 de 2
+            </ThemedText>
+            <ThemedText type="title">¿Qué buscas?</ThemedText>
+            <ThemedText type="body" themeColor="textSecondary">
+              Cofundador en igualdad de condiciones, compañero de Lock-In, o ambos. Nadie contrata a
+              nadie: los dos lados del match son pares.
+            </ThemedText>
+          </View>
 
-        <View style={styles.options}>
-          {MODE_OPTIONS.map((option) => (
-            <OptionCard
-              key={option.value}
-              option={option}
-              selected={selected === option.value}
-              onPress={() => setSelected(option.value)}
-            />
-          ))}
-        </View>
+          <View style={styles.options}>
+            {MODE_OPTIONS.map((option) => (
+              <OptionCard
+                key={option.value}
+                option={option}
+                selected={selected === option.value}
+                onPress={() => setSelected(option.value)}
+              />
+            ))}
+          </View>
 
-        {error ? (
-          <ThemedText type="small" themeColor="danger">
-            {error}
-          </ThemedText>
-        ) : null}
+          {error ? (
+            <ThemedText type="small" themeColor="danger">
+              {error}
+            </ThemedText>
+          ) : null}
 
-        <PrimaryButton
-          label={saving ? 'Guardando…' : 'Continuar'}
-          disabled={!selected || saving}
-          onPress={handleContinue}
-        />
+          <PrimaryButton
+            label={saving ? 'Guardando…' : 'Continuar'}
+            disabled={!selected || saving}
+            onPress={handleContinue}
+          />
 
-        {/* Opcional y sin capa de cuentas ni existe: ver `sign-in.tsx`. */}
-        {accountsAvailable ? (
-          <SecondaryButton label="Ya tengo cuenta" onPress={() => router.push('/sign-in')} />
-        ) : null}
-      </ScrollView>
-    </SafeAreaView>
+          {/* Opcional y sin capa de cuentas ni existe: ver `sign-in.tsx`. */}
+          {accountsAvailable ? (
+            <SecondaryButton label="Ya tengo cuenta" onPress={() => router.push('/sign-in')} />
+          ) : null}
+        </ScrollView>
+      </SafeAreaView>
+    </Screen>
   );
 }
 

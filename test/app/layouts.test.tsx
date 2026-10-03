@@ -104,8 +104,10 @@ describe('RootLayout', () => {
     expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1);
   });
 
+  // La app es solo oscura desde la dirección «cristal»: el esquema del sistema
+  // ya no cambia el tema de navegación.
   it.each(['light', 'dark'] as const)(
-    'deriva el tema de navegación %s de la paleta de marca',
+    'con el sistema en %s, el tema de navegación es el oscuro de la paleta',
     async (scheme) => {
       mockUseColorScheme.mockReturnValue(scheme);
       mockUseFonts.mockReturnValue([true, null]);
@@ -113,11 +115,11 @@ describe('RootLayout', () => {
       await render(<RootLayout />);
 
       expect(mockTheme.value).toMatchObject({
-        dark: scheme === 'dark',
+        dark: true,
         colors: expect.objectContaining({
-          primary: Colors[scheme].brass,
-          background: Colors[scheme].background,
-          text: Colors[scheme].text,
+          primary: Colors.dark.brass,
+          background: Colors.dark.background,
+          text: Colors.dark.text,
         }),
       });
     }

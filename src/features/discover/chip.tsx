@@ -28,7 +28,7 @@ function palette(theme: ThemePalette, tone: ChipTone) {
     case 'match':
       return { background: theme.brass, color: theme.onAccent };
     default:
-      return { background: theme.backgroundSelected, color: theme.textSecondary };
+      return { background: theme.backgroundSelected, color: theme.text };
   }
 }
 
@@ -38,7 +38,7 @@ export function Chip({ label, tone = 'neutral' }: { label: string; tone?: ChipTo
 
   return (
     <View style={[styles.chip, { backgroundColor: background }]}>
-      <ThemedText type="label" style={{ color }}>
+      <ThemedText type="smallBold" style={{ color }}>
         {label}
       </ThemedText>
     </View>
@@ -48,7 +48,7 @@ export function Chip({ label, tone = 'neutral' }: { label: string; tone?: ChipTo
 const styles = StyleSheet.create({
   chip: {
     paddingVertical: Spacing.one,
-    paddingHorizontal: Spacing.two,
+    paddingHorizontal: Spacing.two + Spacing.half,
     borderRadius: Radii.pill,
   },
 });

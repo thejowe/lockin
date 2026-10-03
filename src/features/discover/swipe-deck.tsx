@@ -73,6 +73,8 @@ const VISIBLE_CARDS = 3;
 /** Cuánto encoge y baja cada tarjeta por cada puesto que tiene delante. */
 const DEPTH_SCALE = 0.04;
 const DEPTH_OFFSET = 14;
+/** Cuánto se apaga cada tarjeta de detrás por puesto de profundidad. */
+const DEPTH_DIM = 0.35;
 
 /** Salida de pantalla: arranca con la velocidad del gesto y frena al final. */
 const EXIT_TIMING = { duration: Duration.base, easing: Easing.bezier(...Curves.out) };
@@ -335,7 +337,7 @@ function TopCard({
           { backgroundColor: theme.tealSoft, borderColor: theme.teal },
           likeStyle,
         ]}>
-        <ThemedText type="label" style={{ color: theme.teal }}>
+        <ThemedText type="bodyStrong" style={{ color: theme.teal }}>
           Like
         </ThemedText>
       </Animated.View>
@@ -347,7 +349,7 @@ function TopCard({
           { backgroundColor: theme.dangerSoft, borderColor: theme.danger },
           passStyle,
         ]}>
-        <ThemedText type="label" style={{ color: theme.danger }}>
+        <ThemedText type="bodyStrong" style={{ color: theme.danger }}>
           Pasar
         </ThemedText>
       </Animated.View>
@@ -374,7 +376,22 @@ function BehindCard({
   drag: Drag;
   viewerSpecialties?: Specialty[];
 }) {
+  const theme = useTheme();
   const { translateX, owner, exited } = drag;
+
+  // El contenido de las de detrás no se lee: asomaría por debajo de la de
+  // delante como texto cortado. Solo la que sube recupera su contenido, a la
+  // par que el arrastre de la de delante.
+  const contentStyle = useAnimatedStyle(() => {
+    const frontIsDragged = owner.get() !== null && owner.get() === frontKey;
+    const frontGone = frontIsDragged && exited.get();
+    const depth = frontGone ? index - 1 : index;
+    const progress =
+      index === 1 && frontIsDragged && !frontGone
+        ? interpolate(Math.abs(translateX.get()), [0, SWIPE_THRESHOLD], [0, 1], Extrapolation.CLAMP)
+        : 0;
+    return { opacity: interpolate(depth - progress, [0, 1], [1, 0], Extrapolation.CLAMP) };
+  });
 
   const style = useAnimatedStyle(() => {
     const frontIsDragged = owner.get() !== null && owner.get() === frontKey;
@@ -388,7 +405,9 @@ function BehindCard({
         : 0;
 
     return {
-      opacity: 1,
+      // Las de detrás se apagan con la profundidad: el cristal de atrás recibe
+      // menos luz. Al avanzar, la que sube recupera el brillo con el arrastre.
+      opacity: 1 - DEPTH_DIM * (depth - progress),
       transform: [
         { translateX: 0 },
         { translateY: DEPTH_OFFSET * (depth - progress) },
@@ -404,8 +423,19 @@ function BehindCard({
       // Se pintan detrás y no se pueden decidir todavía: para un lector de
       // pantalla solo son ruido delante de la tarjeta real.
       aria-hidden
-      style={[styles.card, styles.cardBehind, style]}>
-      <ProfileCard profile={profile} viewerSpecialties={viewerSpecialties} />
+      style={[
+        styles.card,
+        styles.cardBehind,
+        {
+          backgroundColor: theme.surfaceOpaque,
+          borderColor: theme.border,
+          boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
+        },
+        style,
+      ]}>
+      <Animated.View style={[styles.behindContent, contentStyle]}>
+        <ProfileCard profile={profile} viewerSpecialties={viewerSpecialties} />
+      </Animated.View>
     </Animated.View>
   );
 }
@@ -427,6 +457,11 @@ const styles = StyleSheet.create({
   },
   cardBehind: {
     pointerEvents: 'none',
+    borderRadius: Radii.card,
+    borderWidth: Stroke.hairline,
+  },
+  behindContent: {
+    flex: 1,
   },
   cardTop: {
     borderRadius: Radii.card,
@@ -436,8 +471,8 @@ const styles = StyleSheet.create({
     pointerEvents: 'none',
     top: Spacing.four,
     paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Radii.medium,
+    paddingHorizontal: Spacing.three + Spacing.one,
+    borderRadius: Radii.pill,
     borderWidth: Stroke.strong,
   },
   badgeLike: {

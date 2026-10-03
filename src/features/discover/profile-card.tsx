@@ -17,8 +17,9 @@
 
 import { StyleSheet, View } from 'react-native';
 
+import { Glow } from '@/components/glow';
 import { ThemedText } from '@/components/themed-text';
-import { Radii, Spacing, Stroke } from '@/constants/theme';
+import { Radii, Spacing, Stroke, type ThemePalette } from '@/constants/theme';
 import {
   GithubSeal,
   ProfileAvatar,
@@ -38,14 +39,6 @@ import type { ChipTone } from './chip';
 
 import type { Profile, Specialty } from '@/data';
 
-/**
- * Anchos de las columnas de etiqueta. Fijos a propósito: alinean los valores en
- * una sola vertical, como una ficha. `DOMINA`/`BUSCA` caben en 64; la etiqueta
- * de dato más larga en versales (`DISPONIBILIDAD`) pide 132.
- */
-const ROW_LABEL_WIDTH = 64;
-const FACT_LABEL_WIDTH = 132;
-
 export function ProfileCard({
   profile,
   /**
@@ -61,41 +54,51 @@ export function ProfileCard({
   const theme = useTheme();
   const prompt = profile.prompts[0];
   const complement = complementWith(profile, viewerSpecialties);
+  const accent = profile.avatar.accent === 'teal' ? theme.teal : theme.brass;
 
   return (
     <View
       style={[
         styles.card,
-        { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+        {
+          backgroundColor: theme.surfaceOpaque,
+          borderColor: theme.border,
+          boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
+        },
       ]}>
-      <View style={styles.header}>
-        <ProfileAvatar avatar={profile.avatar} />
+      {/* El halo del color de la persona: la tarjeta es suya, no una ficha gris. */}
+      <Glow color={accent} opacity={0.5} style={styles.glow} />
 
-        <View style={styles.identity}>
-          <ThemedText type="subtitle" numberOfLines={1}>
-            {profile.name}
-          </ThemedText>
-          <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
-            {profile.age} · {profile.location}
-          </ThemedText>
+      <View style={styles.hero}>
+        <View style={styles.header}>
+          <ProfileAvatar avatar={profile.avatar} />
 
-          <View style={styles.headerChips}>
-            <Chip label={`Quiere: ${modeLabel(profile.lookingFor)}`} />
-            {complement.length > 0 ? <Chip label="✓ Encajas" tone="match" /> : null}
-            {/*
-              Aquí arriba porque es donde se decide el swipe. Sin sello no se
-              pinta nada: marcar lo no verificado castigaría a las nueve
-              especialidades que no tienen GitHub, y el sello es señal —no
-              filtra el deck, no lo ordena, no condiciona el match.
-            */}
-            {profile.githubVerification ? (
-              <GithubSeal handle={profile.githubVerification.handle} compact />
-            ) : null}
+          <View style={styles.identity}>
+            <ThemedText type="subtitle" numberOfLines={1}>
+              {profile.name}
+            </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+              {profile.age} · {profile.location}
+            </ThemedText>
           </View>
+        </View>
+
+        <View style={styles.headerChips}>
+          <Chip label={`Quiere: ${modeLabel(profile.lookingFor)}`} />
+          {complement.length > 0 ? <Chip label="✓ Encajas" tone="match" /> : null}
+          {/*
+            Aquí arriba porque es donde se decide el swipe. Sin sello no se
+            pinta nada: marcar lo no verificado castigaría a las nueve
+            especialidades que no tienen GitHub, y el sello es señal —no
+            filtra el deck, no lo ordena, no condiciona el match.
+          */}
+          {profile.githubVerification ? (
+            <GithubSeal handle={profile.githubVerification.handle} compact />
+          ) : null}
         </View>
       </View>
 
-      <View style={styles.complement}>
+      <View style={[styles.tile, styles.complement, tileColors(theme)]}>
         <SpecialtyRow label="Domina" values={profile.specialties} tone="teal" />
 
         {seeksComplement(profile.lookingFor) ? (
@@ -117,8 +120,6 @@ export function ProfileCard({
         ) : null}
       </View>
 
-      <View style={[styles.divider, { backgroundColor: theme.border }]} />
-
       <View style={styles.facts}>
         <Fact label="Punto de partida" value={startingPointLabel(profile.startingPoint)} />
         <Fact label="Ambición" value={ambitionLabel(profile.ambition)} />
@@ -126,21 +127,34 @@ export function ProfileCard({
           label="Disponibilidad"
           value={availabilitySummary(profile.availability.hoursPerWeek, profile.availability.bands)}
         />
-        <Fact label="Zona horaria" value={profile.timezone} />
+        <Fact label="Zona horaria" value={timezoneCity(profile.timezone)} />
       </View>
 
       {prompt ? (
-        <View style={[styles.prompt, { borderColor: theme.border }]}>
-          <ThemedText type="label" themeColor="brass">
+        <View style={[styles.tile, styles.prompt, tileColors(theme)]}>
+          <ThemedText type="caption" themeColor="textMuted">
             {prompt.question}
           </ThemedText>
-          <ThemedText type="body" numberOfLines={4}>
+          <ThemedText type="bodyStrong" numberOfLines={3}>
             {prompt.answer}
           </ThemedText>
         </View>
       ) : null}
     </View>
   );
+}
+
+/**
+ * La zona horaria como se lee: «America/Mexico_City» → «Mexico City». La región
+ * sobra en una baldosa estrecha, y el guion bajo partía la línea a media palabra.
+ */
+function timezoneCity(timezone: string): string {
+  return (timezone.split('/').pop() ?? timezone).replace(/_/g, ' ');
+}
+
+/** Cristal interior: una capa de vidrio sobre la tarjeta opaca. */
+function tileColors(theme: ThemePalette) {
+  return { backgroundColor: theme.backgroundElement, borderColor: theme.border };
 }
 
 /**
@@ -177,11 +191,11 @@ function SpecialtyRow({
   );
 }
 
-/** Etiqueta en versales a la izquierda y contenido que envuelve a la derecha. */
+/** Etiqueta pequeña a la izquierda y contenido que envuelve a la derecha. */
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <View style={styles.row}>
-      <ThemedText type="label" themeColor="textMuted" style={styles.rowLabel}>
+      <ThemedText type="caption" themeColor="textMuted" style={styles.rowLabel}>
         {label}
       </ThemedText>
       <View style={styles.rowContent}>{children}</View>
@@ -189,28 +203,43 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
-/** Fila de dato: etiqueta en versales y valor en mono. */
+/** Dato en su propia baldosa de cristal: etiqueta pequeña arriba, valor debajo. */
 function Fact({ label, value }: { label: string; value: string }) {
+  const theme = useTheme();
   return (
-    <View style={styles.fact}>
-      <ThemedText type="label" themeColor="textMuted" style={styles.factLabel}>
+    <View style={[styles.tile, styles.fact, tileColors(theme)]}>
+      <ThemedText type="caption" themeColor="textMuted" numberOfLines={1}>
         {label}
       </ThemedText>
-      <ThemedText type="mono" themeColor="textSecondary" style={styles.factValue} numberOfLines={2}>
+      <ThemedText type="smallBold" numberOfLines={2}>
         {value}
       </ThemedText>
     </View>
   );
 }
 
+/** Ancho de la etiqueta de fila: alinea los chips de «Domina» y «Busca». */
+const ROW_LABEL_WIDTH = 52;
+
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    gap: Spacing.three,
-    padding: Spacing.four,
+    gap: Spacing.two,
+    padding: Spacing.two + Spacing.one,
     borderRadius: Radii.card,
     borderWidth: Stroke.hairline,
     overflow: 'hidden',
+  },
+  glow: {
+    width: 340,
+    height: 340,
+    top: -190,
+    right: -120,
+  },
+  hero: {
+    gap: Spacing.two + Spacing.one,
+    padding: Spacing.two,
+    paddingBottom: Spacing.one,
   },
   header: {
     flexDirection: 'row',
@@ -225,8 +254,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    gap: Spacing.one,
-    marginTop: Spacing.half,
+    gap: Spacing.one + Spacing.half,
+  },
+  tile: {
+    borderRadius: Radii.large,
+    borderWidth: Stroke.hairline,
+    padding: Spacing.two + Spacing.one,
   },
   complement: {
     gap: Spacing.two,
@@ -246,27 +279,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.one,
   },
-  divider: {
-    height: Stroke.hairline,
-  },
   facts: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: Spacing.two,
   },
   fact: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: Spacing.two,
-  },
-  factLabel: {
-    width: FACT_LABEL_WIDTH,
-  },
-  factValue: {
-    flex: 1,
+    flexBasis: '47%',
+    flexGrow: 1,
+    gap: Spacing.half,
   },
   prompt: {
     marginTop: 'auto',
     gap: Spacing.one,
-    paddingTop: Spacing.three,
-    borderTopWidth: Stroke.hairline,
   },
 });

@@ -2,6 +2,7 @@ import { Redirect } from 'expo-router';
 import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AmbientBackground } from '@/components/ambient-background';
 import { Button } from '@/components/button';
 import { LoadingState, MessageState } from '@/components/state-view';
 import { useQuery, useRepositories } from '@/data';
@@ -26,6 +27,7 @@ export default function IndexRoute() {
   if (error) {
     return (
       <SafeAreaView style={[styles.error, { backgroundColor: theme.background }]}>
+        <AmbientBackground />
         {/*
           La causa, tal cual. No es decorado: esta pantalla es donde muere el
           arranque cuando algo va mal, y con el texto fijo a secas nadie podía

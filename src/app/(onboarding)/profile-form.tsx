@@ -2,6 +2,7 @@ import { Redirect, useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Screen } from '@/components/ambient-background';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useQuery, useRepositories, type ProfileInput } from '@/data';
@@ -36,25 +37,27 @@ export default function ProfileFormScreen() {
   if (gate === 'required') return <Redirect href="/register" />;
 
   return (
-    <SafeAreaView style={styles.root} edges={['top']}>
-      <ProfileForm
-        defaultLookingFor={session?.activeMode ?? null}
-        submitLabel="Crear perfil"
-        onSubmit={handleSubmit}
-        header={
-          <View style={styles.header}>
-            <ThemedText type="label" themeColor="brass">
-              Paso 2 de 2
-            </ThemedText>
-            <ThemedText type="title">Cuéntate</ThemedText>
-            <ThemedText type="body" themeColor="textSecondary">
-              Especialidades, punto de partida, disponibilidad, ambición y un par de respuestas
-              cortas. Esto es lo que verá la gente al deslizar tu tarjeta.
-            </ThemedText>
-          </View>
-        }
-      />
-    </SafeAreaView>
+    <Screen ambient="plum">
+      <SafeAreaView style={styles.root} edges={['top']}>
+        <ProfileForm
+          defaultLookingFor={session?.activeMode ?? null}
+          submitLabel="Crear perfil"
+          onSubmit={handleSubmit}
+          header={
+            <View style={styles.header}>
+              <ThemedText type="label" themeColor="brass">
+                Paso 2 de 2
+              </ThemedText>
+              <ThemedText type="title">Cuéntate</ThemedText>
+              <ThemedText type="body" themeColor="textSecondary">
+                Especialidades, punto de partida, disponibilidad, ambición y un par de respuestas
+                cortas. Esto es lo que verá la gente al deslizar tu tarjeta.
+              </ThemedText>
+            </View>
+          }
+        />
+      </SafeAreaView>
+    </Screen>
   );
 }
 

@@ -13,7 +13,7 @@
  * válidas.
  */
 
-import { Colors } from './theme';
+import { AmbientPeak, Colors } from './theme';
 
 import type { ThemeColor, ThemeName } from './theme';
 
@@ -23,10 +23,28 @@ function channel(value: number): number {
   return ratio <= 0.03928 ? ratio / 12.92 : ((ratio + 0.055) / 1.055) ** 2.4;
 }
 
+/** Canales de un `#rrggbb` o `#rrggbbaa` (alfa de 0 a 1). */
+function parse(hex: string): { rgb: number[]; alpha: number } {
+  const value = hex.replace('#', '');
+  const rgb = [0, 2, 4].map((offset) => parseInt(value.slice(offset, offset + 2), 16));
+  const alpha = value.length === 8 ? parseInt(value.slice(6, 8), 16) / 255 : 1;
+  return { rgb, alpha };
+}
+
+/**
+ * Color opaco que se ve al poner `top` (quizá translúcido) sobre `bottom`
+ * (opaco). Así se mide el cristal: lo que llega al ojo es la mezcla.
+ */
+export function composite(top: string, bottom: string): string {
+  const { rgb, alpha } = parse(top);
+  const under = parse(bottom).rgb;
+  const mixed = rgb.map((value, i) => Math.round(value * alpha + under[i] * (1 - alpha)));
+  return '#' + mixed.map((value) => value.toString(16).padStart(2, '0')).join('');
+}
+
 /** Luminancia relativa de un `#rrggbb`. */
 function luminance(hex: string): number {
-  const value = hex.replace('#', '');
-  const [r, g, b] = [0, 2, 4].map((offset) => parseInt(value.slice(offset, offset + 2), 16));
+  const [r, g, b] = parse(hex).rgb;
   return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
 }
 
@@ -79,6 +97,25 @@ const AA_PAIRS: Pair[] = [
     background: 'backgroundElement',
     min: 4.5,
     usage: 'placeholder y contador de campo',
+  },
+
+  {
+    foreground: 'text',
+    background: 'surfaceOpaque',
+    min: 4.5,
+    usage: 'cuerpo en tarjeta del deck',
+  },
+  {
+    foreground: 'textSecondary',
+    background: 'surfaceOpaque',
+    min: 4.5,
+    usage: 'apoyo en tarjeta del deck',
+  },
+  {
+    foreground: 'textMuted',
+    background: 'surfaceOpaque',
+    min: 4.5,
+    usage: 'etiquetas en tarjeta del deck',
   },
 
   // Acentos como texto: etiquetas de sección, badges, errores de validación.
@@ -134,27 +171,54 @@ const KNOWN_GAPS: Gap[] = [];
 
 const THEMES: ThemeName[] = ['light', 'dark'];
 
+/**
+ * Lo que hay detrás de cada superficie: el fondo liso y el punto más claro de la
+ * luz ambiental. El cristal tiene que leerse bien sobre los dos.
+ */
+const BACKDROPS = { fondo: 'background', 'luz ambiental': 'peak' } as const;
+
 describe.each(THEMES)('contraste del tema %s', (theme) => {
   const palette = Colors[theme];
 
-  it.each(AA_PAIRS)(
-    '$foreground sobre $background llega a AA ($usage)',
-    ({ foreground, background, min }) => {
-      expect(contrastRatio(palette[foreground], palette[background])).toBeGreaterThanOrEqual(min);
-    }
-  );
+  /** La superficie `token` tal como se ve sobre `backdrop`, ya opaca. */
+  function surface(token: ThemeColor, backdrop: 'background' | 'peak'): string {
+    const base = backdrop === 'peak' ? AmbientPeak : palette.background;
+    return token === 'background' ? base : composite(palette[token], base);
+  }
 
-  // `it.each` de Jest falla si recibe un array vacío, y hoy no queda ningún
-  // hueco. La guarda mantiene el bloque listo para cuando vuelva a haber uno.
-  const itGap = KNOWN_GAPS.length > 0 ? it.each(KNOWN_GAPS) : () => {};
-  itGap(
-    '$foreground sobre $background no empeora respecto a lo reportado ($usage)',
-    ({ foreground, background, current }) => {
-      expect(contrastRatio(palette[foreground], palette[background])).toBeGreaterThanOrEqual(
-        current[theme]
-      );
-    }
-  );
+  function ratio(foreground: ThemeColor, background: ThemeColor, backdrop: 'background' | 'peak') {
+    const under = surface(background, backdrop);
+    return contrastRatio(composite(palette[foreground], under), under);
+  }
+
+  describe.each(Object.entries(BACKDROPS))('sobre %s', (_name, backdrop) => {
+    it.each(AA_PAIRS)(
+      '$foreground sobre $background llega a AA ($usage)',
+      ({ foreground, background, min }) => {
+        expect(ratio(foreground, background, backdrop)).toBeGreaterThanOrEqual(min);
+      }
+    );
+
+    // `it.each` de Jest falla si recibe un array vacío, y hoy no queda ningún
+    // hueco. La guarda mantiene el bloque listo para cuando vuelva a haber uno.
+    const itGap = KNOWN_GAPS.length > 0 ? it.each(KNOWN_GAPS) : () => {};
+    itGap(
+      '$foreground sobre $background no empeora respecto a lo reportado ($usage)',
+      ({ foreground, background, current }) => {
+        expect(ratio(foreground, background, backdrop)).toBeGreaterThanOrEqual(current[theme]);
+      }
+    );
+  });
+});
+
+describe('composite', () => {
+  it('deja intacto un color opaco', () => {
+    expect(composite('#FF8645', '#000000')).toBe('#ff8645');
+  });
+
+  it('mezcla un cristal blanco al 50 % sobre negro', () => {
+    expect(composite('#FFFFFF80', '#000000')).toBe('#808080');
+  });
 });
 
 describe('contrastRatio', () => {
