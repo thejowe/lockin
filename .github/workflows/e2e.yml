@@ -238,6 +238,20 @@ jobs:
       - name: Logs de PostgREST y GoTrue con marcas de tiempo
         if: always()
         run: node e2e/run.mjs containers
+      # Run 37154154048: todos los flujos de UI pasaron, pero el oráculo acabó
+      # en «fetch failed» contra el Supabase local tras el último flujo. Para
+      # saber si murió un contenedor (y si fue el OOM del kernel en el runner
+      # de 7.8 GB), memoria, estado de cada contenedor y el final del log de
+      # Kong quedan en la evidencia.
+      - name: Memoria y contenedores al final
+        if: always()
+        run: |
+          {
+            free -h
+            docker ps -a --format '{{.Names}} {{.Status}}'
+            sudo dmesg | grep -iE 'out of memory|killed process' | tail -20 || true
+            docker logs --tail 40 supabase_kong_lockin-e2e 2>&1 || true
+          } | tee "$E2E_ARTIFACTS/memoria-contenedores.txt"
       - name: Evidencia (también si falla)
         if: always()
         uses: actions/upload-artifact@v7
