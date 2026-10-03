@@ -154,6 +154,18 @@ jobs:
         id: build
         shell: bash
         run: node e2e/run.mjs build 2>&1 | tee "$E2E_ARTIFACTS/build.log"
+      # Con el APK hecho, los daemons de Gradle y Kotlin ya no hacen nada pero
+      # retienen varios GB. En el runner de 7.8 GB de RAM el AVD se quedaba sin
+      # aire y el sistema del emulador entraba en ANR («System UI isn't
+      # responding» tapando la app en los 4 intentos de las 3 variantes, run
+      # 37147445250). Se paran antes de arrancar el emulador.
+      - name: Liberar memoria tras el build
+        if: always()
+        run: |
+          pkill -f GradleDaemon || true
+          pkill -f KotlinCompileDaemon || true
+          sleep 3
+          free -h
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
