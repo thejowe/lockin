@@ -419,11 +419,27 @@ usuario por el camino: **solo modo oscuro**. Rama `claude/visual-cristal`.
   de presencia que respira.
 - [x] Dependencias nuevas (todas en Expo Go): `expo-blur` (esmerilado de barra y
   modal), `@expo-google-fonts/inter` (tipografía), `react-native-svg` (iconos,
-  halos y anillo). Las de Fraunces/Plex quedan instaladas sin usar: retirarlas
-  es una tarea aparte.
+  halos y anillo). Fraunces e IBM Plex, retiradas (`d838ef6`).
 - [x] Verificado en local: `tsc`, lint, Jest con cobertura sobre el suelo y
   `expo export --platform web`; recorrido visual en web (390×844) con
   Playwright headless: modo, formulario, deck, match, chat, matches y perfil.
+- [x] E2E Android en Actions, con el rediseño (runs 37150674444 y
+  37154154048 sobre `claude/visual-cristal`): **pasan todos los flujos de UI**
+  en las tres variantes — alta → deck → match → mensaje, sesión, valoración,
+  racha, acuerdo, entrar en otra cuenta; registro con correo y entrada desde
+  instalación limpia; la `mock` en verde. Para llegar ahí hubo que arreglar el
+  runner, que desde el 2026-10-03 hacia las 13:20 UTC arranca con 14 GB libres
+  y 7.8 GB de RAM y fallaba en todas las ramas (`e2e.yml`: liberar ~28 GB,
+  swap de 4 GB, parar Gradle/Kotlin tras el build, `hide_error_dialogs` contra
+  el ANR de arranque del AVD).
+- [ ] Oráculo final de `supabase` y `registro`: «fetch failed» en la primera
+  llamada de administración a GoTrue tras el último flujo (~40 min después de
+  levantar el Supabase local). Sospecha: un contenedor muerto por OOM en el
+  runner de 7.8 GB. El paso «Memoria y contenedores al final» de `e2e.yml` lo
+  confirmará en el próximo run. **Bloqueado**: desde el 2026-10-03 22:00 UTC
+  Actions no arranca jobs en este repo privado («recent account payments have
+  failed or your spending limit needs to be increased»): lo resuelve el
+  usuario en Billing.
 - [ ] [comprobador] Recorrido en el emulador Android: el esmerilado nativo
   (`BlurTargetView`) de la barra, el swipe con la pila nueva y el anillo del
   Pomodoro en una sesión activa.
