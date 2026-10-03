@@ -58,6 +58,20 @@ jobs:
       E2E_REGISTRATION: ${{ matrix.registration || '0' }}
       E2E_ARTIFACTS: e2e/artifacts/${{ matrix.variant }}
     steps:
+      # El disco del runner (72 GB) se llenaba al 100 % a mitad del build del
+      # APK desde el 2026-10-03 (run 37125511915, dos intentos, `disk.txt` en
+      # el artefacto): build nativo + imágenes de Supabase + AVD ya iban justos,
+      # y `react-native-svg`/`expo-blur` del rediseño «cristal» lo pasaron del
+      # borde. Se borra lo preinstalado que este trabajo no usa (.NET, Haskell,
+      # Swift, CodeQL, Boost, PowerShell, Julia, Azure CLI). Nada del SDK de
+      # Android, Java, Node ni Docker: el build y el emulador los necesitan.
+      - name: Liberar disco del runner
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /usr/share/swift \
+            /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/local/share/powershell \
+            /usr/local/julia* /opt/az /opt/microsoft
+          df -h /
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
