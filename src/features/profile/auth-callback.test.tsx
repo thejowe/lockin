@@ -106,6 +106,42 @@ describe('AuthCallback', () => {
     expect(screen.queryByText(/invalid flow state/)).toBeNull();
     expect(screen.getByText(/No hemos podido completar la operación/)).toBeTruthy();
   });
+  // Revisión del 2026-10-02: GitHub también vuelve por aquí, y un `access_denied`
+  // suyo decía «Pide otro correo» y «Tu cuenta no ha cambiado» sin mirarlo.
+  it('un fallo de la vuelta de GitHub no habla de correos', async () => {
+    const fallo = new gateway.AccountError(
+      'unknown',
+      'GitHub no ha completado la verificación (access_denied). Puedes volver a intentarlo desde tu perfil.'
+    );
+    fallo.github = true;
+    gateway.completeAuthLink.mockRejectedValue(fallo);
+
+    await render(<AuthCallback url={ENLACE} onDone={onDone} />);
+
+    await waitFor(() =>
+      expect(screen.getByText('La verificación con GitHub no se ha completado')).toBeTruthy()
+    );
+    expect(screen.getByText(/access_denied/)).toBeTruthy();
+    expect(screen.queryByText(/correo/)).toBeNull();
+    expect(screen.queryByText(/no ha cambiado/)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Volver a mi perfil' })).toBeTruthy();
+  });
+
+  it('tras un error, un enlace distinto en la misma pantalla sí se procesa', async () => {
+    gateway.completeAuthLink.mockRejectedValueOnce(
+      new gateway.AccountError('unknown', 'El enlace ya no sirve. Pide otro correo.')
+    );
+    const { rerender } = await render(<AuthCallback url={ENLACE} onDone={onDone} />);
+    await waitFor(() => expect(screen.getByText('Ese enlace no ha funcionado')).toBeTruthy());
+
+    const OTRO = 'lockin://auth/callback?code=otro456';
+    await rerender(<AuthCallback url={OTRO} onDone={onDone} />);
+
+    await waitFor(() => expect(gateway.completeAuthLink).toHaveBeenCalledWith(OTRO));
+    await waitFor(() => expect(onDone).toHaveBeenCalled());
+    expect(gateway.completeAuthLink).toHaveBeenCalledTimes(2);
+  });
+
   it('llega en caliente: la URL puede aparecer después de montarse', async () => {
     const { rerender } = await render(<AuthCallback url={null} onDone={onDone} />);
     expect(gateway.completeAuthLink).not.toHaveBeenCalled();

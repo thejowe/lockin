@@ -1,5 +1,5 @@
 /**
- * La vuelta del enlace que Supabase manda por correo.
+ * La vuelta del enlace que Supabase manda por correo, y la de GitHub.
  *
  * Los dos correos de la cuenta —confirmar el email y cambiar la contraseña—
  * terminan en `lockin://auth/callback`. Sin nadie que recoja ese enlace, quien
@@ -9,9 +9,19 @@
  *
  * El trabajo de verdad lo hace `completeAuthLink`, que ya distingue las dos
  * formas del enlace (`?code=` de PKCE y `?token_hash=&type=`) y traduce los
- * enlaces caducados. Aquí solo se le pasa la URL una vez —`handled` evita que
- * un segundo render intente canjear un código de un solo uso ya gastado— y se
- * enseña el resultado.
+ * enlaces caducados. Aquí solo se le pasa cada URL una vez —`handled` evita que
+ * un segundo render de la misma URL intente canjear un código de un solo uso ya
+ * gastado— y se enseña el resultado.
+ *
+ * `handled` recuerda la URL y no un «ya está»: expo-router reutiliza esta
+ * pantalla cuando llega otro enlace mientras está abierta (mismo nombre de ruta,
+ * parámetros nuevos), y un booleano dejaba ese segundo enlace sin procesar tras
+ * un error (revisión del 2026-10-02). Lo de no canjear dos veces el mismo code
+ * entre la ruta y el navegador de GitHub vive en la capa de datos, no aquí.
+ *
+ * La vuelta de GitHub también pasa por aquí. Su fallo (`AccountError.github`)
+ * no puede mandar a «pedir otro correo», ni afirmar que la cuenta no ha
+ * cambiado: GitHub puede haber quedado vinculado igualmente.
  *
  * ## La URL llega por prop, no de `Linking.useURL()`
  *
@@ -30,7 +40,7 @@ import { useEffect, useRef, useState } from 'react';
 import { LoadingState, MessageState } from '@/components/state-view';
 
 import { describeAccountError } from './account-copy';
-import { completeAuthLink } from './account-gateway';
+import { AccountError, completeAuthLink } from './account-gateway';
 import { SecondaryButton } from './controls';
 
 /** Los parámetros que `completeAuthLink` sabe leer de un enlace de cuenta. */
@@ -62,31 +72,52 @@ export function AuthCallback({
   url: string | null;
   onDone: () => void;
 }) {
-  const [error, setError] = useState<string | null>(null);
-  const handled = useRef(false);
+  const [error, setError] = useState<{ message: string; github: boolean } | null>(null);
+  const handled = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!url || handled.current) return;
-    handled.current = true;
+    if (!url || handled.current === url) return;
+    handled.current = url;
+    setError(null);
 
+    // Si mientras tanto ha llegado otro enlace, este resultado ya no se pinta.
+    const current = () => handled.current === url;
     completeAuthLink(url).then(
-      () => onDone(),
+      () => {
+        if (current()) onDone();
+      },
       (cause: unknown) => {
+        if (!current()) return;
         // Por `account-copy` y no por `cause.message`: `completeAuthLink` sí
         // escribe en español lo que sabe explicar (el enlace caducado, el que
         // no trae código), pero lo que le rebota el canje del `code` es el
         // texto inglés de GoTrue.
-        setError(describeAccountError(cause));
+        setError({
+          message: describeAccountError(cause),
+          github: cause instanceof AccountError && cause.github,
+        });
       }
     );
   }, [url, onDone]);
+
+  if (error?.github) {
+    return (
+      <MessageState
+        eyebrow="Verificación"
+        title="La verificación con GitHub no se ha completado"
+        body={error.message}
+        detail="En tu perfil verás si GitHub ha quedado verificado y, si no, podrás volver a intentarlo.">
+        <SecondaryButton label="Volver a mi perfil" onPress={onDone} />
+      </MessageState>
+    );
+  }
 
   if (error) {
     return (
       <MessageState
         eyebrow="Cuenta"
         title="Ese enlace no ha funcionado"
-        body={error}
+        body={error.message}
         detail="Tu cuenta no ha cambiado. Puedes pedir otro correo desde tu perfil.">
         <SecondaryButton label="Volver a mi perfil" onPress={onDone} />
       </MessageState>
