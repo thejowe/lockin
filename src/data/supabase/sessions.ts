@@ -268,30 +268,37 @@ export function createSupabaseSessionRepository(
       listeners.set(matchId, set);
 
       if (!channels.has(matchId)) {
-        const channel = subscribeResyncingOnRejoin(
-          deps
-            .getClient()
-            .channel(`lockin:sessions:${matchId}`)
+        const onChange = () => notify(matchId);
+        // INSERT y UPDATE, y no '*', en las dos tablas: Realtime no aplica RLS
+        // ni `filter:` a los DELETE, así que con '*' cada canal recibía el
+        // borrado de cualquier sesión y asistencia de cualquiera (caso «un
+        // tercero suscrito a sus sesiones…» del contrato). Nada de la app borra
+        // aquí: proponer, responder, cancelar, entrar y salir son INSERT o
+        // UPDATE de los RPC. Solo borra la cascada de un match o una cuenta
+        // borrados, y entonces no queda sesión que pintar.
+        let channel = deps.getClient().channel(`lockin:sessions:${matchId}`);
+        for (const event of ['INSERT', 'UPDATE'] as const) {
+          channel = channel
             .on(
               'postgres_changes',
               {
-                event: '*',
+                event,
                 schema: 'public',
                 table: 'lockin_sessions',
                 filter: `match_id=eq.${matchId}`,
               },
-              () => notify(matchId)
+              onChange
             )
-            // La asistencia no lleva `match_id`: RLS ya limita el stream a sesiones
-            // de tus matches, así que como mucho avisa de más, nunca de menos.
+            // La asistencia no lleva `match_id`: RLS ya limita el stream a
+            // sesiones de tus matches, así que como mucho avisa de más.
             .on(
               'postgres_changes',
-              { event: '*', schema: 'public', table: 'session_attendance' },
-              () => notify(matchId)
-            ),
-          () => notify(matchId)
-        );
-        channels.set(matchId, channel);
+              { event, schema: 'public', table: 'session_attendance' },
+              onChange
+            );
+        }
+        const subscribed = subscribeResyncingOnRejoin(channel, onChange);
+        channels.set(matchId, subscribed);
       }
 
       return () => {

@@ -527,20 +527,37 @@ export function createSupabaseRepositories(): Repositories {
     },
 
     subscribe(listener): Unsubscribe {
+      const onMatchChange = (payload: { new: unknown }) => {
+        const row = payload.new as Partial<MatchRow> | undefined;
+        if (wasEmittedLocally(row?.id)) return;
+        notify(MATCHES_TOPIC);
+      };
+
       return subscribeTo(MATCHES_TOPIC, listener, () =>
         subscribeResyncingOnRejoin(
           getSupabaseClient()
             .channel('lockin:matches')
-            // RLS filtra también el stream de realtime, así que aquí solo llegan
-            // matches y mensajes del usuario: no hace falta filtro de servidor.
+            // RLS filtra el stream de realtime en INSERT y UPDATE, así que por
+            // estos dos solo llegan matches y mensajes del usuario.
+            //
+            // INSERT y UPDATE, y no '*': Realtime NO aplica RLS a los DELETE, y
+            // con '*' cada suscriptor recibía el borrado de cualquier match de
+            // cualquiera (caso «un tercero suscrito a sus matches…» del
+            // contrato). La app no borra matches —no hay deshacer match, y
+            // `cancel`/`leave` son UPDATE—: solo los borran
+            // `dev_reset_current_user()` (desarrollo), la limpieza de
+            // `supabase/cleanup/` y la cascada de una cuenta borrada. Un match
+            // así sigue en la lista de la otra persona hasta su siguiente
+            // lectura. Si algún día se deshacen matches, que sea un UPDATE.
             .on(
               'postgres_changes',
-              { event: '*', schema: 'public', table: 'matches' },
-              (payload) => {
-                const row = payload.new as Partial<MatchRow> | undefined;
-                if (wasEmittedLocally(row?.id)) return;
-                notify(MATCHES_TOPIC);
-              }
+              { event: 'INSERT', schema: 'public', table: 'matches' },
+              onMatchChange
+            )
+            .on(
+              'postgres_changes',
+              { event: 'UPDATE', schema: 'public', table: 'matches' },
+              onMatchChange
             )
             // Un mensaje nuevo mueve `last_message_at` y reordena la lista.
             .on(

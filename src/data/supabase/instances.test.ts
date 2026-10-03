@@ -44,6 +44,8 @@ type Handler = (payload: { new?: Partial<MatchRow> }) => void;
 interface FakeChannel {
   name: string;
   handlers: Handler[];
+  /** El segundo argumento de cada `on()`: evento, esquema, tabla y filtro. */
+  filters: unknown[];
 }
 
 function matchRow(id: string): MatchRow {
@@ -63,11 +65,12 @@ function fakeClient(decision: MatchRow | null = null) {
 
   const client = {
     channel: jest.fn((name: string) => {
-      const channel: FakeChannel = { name, handlers: [] };
+      const channel: FakeChannel = { name, handlers: [], filters: [] };
       channels.push(channel);
       const api = {
-        on: (_event: string, _filter: unknown, handler: Handler) => {
+        on: (_event: string, filter: unknown, handler: Handler) => {
           channel.handlers.push(handler);
+          channel.filters.push(filter);
           return api;
         },
         subscribe: () => api,
@@ -88,6 +91,21 @@ afterEach(() => {
 });
 
 describe('dos juegos de repositorios de Supabase', () => {
+  it('el canal de matches escucha INSERT y UPDATE, nunca DELETE', () => {
+    const { client, channels } = fakeClient();
+    asMock.mockReturnValue(client);
+
+    createSupabaseRepositories().matches.subscribe(jest.fn());
+
+    // Ni '*' ni DELETE: Realtime entrega los DELETE sin RLS a cualquier
+    // suscriptor de la tabla, también el de un match ajeno.
+    expect(channels[0].filters).toEqual([
+      { event: 'INSERT', schema: 'public', table: 'matches' },
+      { event: 'UPDATE', schema: 'public', table: 'matches' },
+      { event: 'INSERT', schema: 'public', table: 'messages' },
+    ]);
+  });
+
   it('no comparten ni listeners ni canales de realtime', () => {
     const { client, channels } = fakeClient();
     asMock.mockReturnValue(client);

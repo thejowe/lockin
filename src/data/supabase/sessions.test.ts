@@ -576,6 +576,30 @@ describe('createSupabaseSessionRepository', () => {
  * red de verdad la prueba la suite de contrato, que no se ejecuta en `npm test`.
  */
 describe('el canal de sesiones de un match', () => {
+  it('escucha INSERT y UPDATE de las dos tablas, nunca DELETE', () => {
+    const { channel, repository } = fakeClient();
+    repository.subscribe('match-1', jest.fn());
+
+    // Ni '*' ni DELETE: Realtime entrega los DELETE sin RLS ni `filter:` a
+    // cualquier suscriptor de la tabla.
+    expect(channel.channel.on.mock.calls.map(([, filter]) => filter)).toEqual([
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'lockin_sessions',
+        filter: 'match_id=eq.match-1',
+      },
+      { event: 'INSERT', schema: 'public', table: 'session_attendance' },
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'lockin_sessions',
+        filter: 'match_id=eq.match-1',
+      },
+      { event: 'UPDATE', schema: 'public', table: 'session_attendance' },
+    ]);
+  });
+
   it('avisa cuando llega un cambio de lockin_sessions', () => {
     const { channel, repository } = fakeClient();
     const listener = jest.fn();
