@@ -419,9 +419,11 @@ grant execute on function public.live_rooms() to authenticated;
 --
 -- SOLO `lockin_rooms`. Un UPDATE de la sala pasa por su RLS (lo reciben quienes
 -- participan) y no lleva ids de miembros; el trigger `touch_room` lo provoca en
--- cada cambio de miembros. Un DELETE de la sala llega sin RLS con su `id`, un
--- UUID que no abre nada. `room_members` NO se publica: sus DELETE (borrados en
--- cascada de un perfil) entregarían (room_id, profile_id) a cualquiera.
+-- cada cambio de miembros. Un DELETE de la sala llegaría sin RLS con su `id` a
+-- cualquier suscriptor, así que el cliente escucha solo `UPDATE` y Realtime
+-- filtra el evento en el servidor: el DELETE no sale hacia nadie.
+-- `room_members` NO se publica: sus DELETE (borrados en cascada de un perfil)
+-- entregarían (room_id, profile_id) a cualquiera.
 -- Replica identity por defecto: los suscriptores releen, no miran la fila.
 
 do $do$

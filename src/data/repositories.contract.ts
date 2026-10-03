@@ -1950,6 +1950,10 @@ export function describeRepositoryContract(backend: ContractBackend): void {
         expect(await liveIds(roomsOfA)).toEqual(created);
       });
 
+      // En Supabase este caso también vigila los DELETE, que Realtime entrega
+      // sin RLS: el `reset()` de su `beforeEach` borra en cascada las 21 salas
+      // del caso anterior justo antes de suscribirse, y esos avisos tardan en
+      // llegar. Escuchando '*' le llegaban los 21 (run 37124064814).
       it('un tercero suscrito no recibe nada de una sala en la que no está', async () => {
         const listener = jest.fn();
         const unsubscribe = third.subscribe(listener);

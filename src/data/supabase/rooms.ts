@@ -172,13 +172,23 @@ export function createSupabaseRoomRepository(
       if (!channel) {
         // room_members no se publica: sus DELETE revelarían invitados sin RLS.
         // touch_room convierte sus cambios en avisos de la sala.
+        //
+        // Solo UPDATE, y no '*': Realtime tampoco aplica RLS a los DELETE de
+        // lockin_rooms, y con '*' cada suscriptor recibía el id de toda sala
+        // borrada de cualquiera (run 37124064814: los 21 DELETE del borrado en
+        // cascada de otra persona, ninguno de una sala suya). El filtro de evento
+        // lo aplica el servidor, así que el DELETE ni sale. Crear también llega
+        // como UPDATE: create_room inserta a los miembros y touch_room toca la
+        // sala en la misma transacción. Lo único que deja de avisar es una sala
+        // borrada en cascada al borrarse la cuenta de quien convoca; la pantalla
+        // la deja de ver en su siguiente lectura.
         channel = subscribeResyncingOnRejoin(
           deps
             .getClient()
             .channel('lockin:rooms')
             .on(
               'postgres_changes',
-              { event: '*', schema: 'public', table: 'lockin_rooms' },
+              { event: 'UPDATE', schema: 'public', table: 'lockin_rooms' },
               notify
             ),
           notify

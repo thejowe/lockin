@@ -363,7 +363,8 @@ describe('salas Supabase', () => {
     expect(f.channel.on.mock.calls).toEqual([
       [
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'lockin_rooms' },
+        // Solo UPDATE: los DELETE llegan sin RLS a cualquier suscriptor.
+        { event: 'UPDATE', schema: 'public', table: 'lockin_rooms' },
         expect.any(Function),
       ],
     ]);
