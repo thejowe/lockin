@@ -104,7 +104,9 @@ Antes de ejecutar cada tarea, clasifícala y decide quién la hace.
 ### Cómo delegar a Codex
 - Dale un prompt autocontenido: objetivo, archivos implicados, criterio de "hecho" y restricciones.
   Codex no ve esta conversación.
-- Usa la herramienta MCP `codex` (o `codex exec --full-auto "<prompt>"` por Bash).
+- Usa el plugin de Codex (agente `codex:codex-rescue`; `codex:setup` comprueba que está listo),
+  o `codex exec --full-auto "<prompt>"` por Bash. **No el MCP**: `codex mcp-server` ya no
+  existe desde Codex 0.155, y el 2026-10-03 el usuario eligió el plugin con Codex 0.160.
 - Usa sandbox de solo lectura (`-s read-only`) para análisis o revisión.
 
 ### Al recibir el resultado
