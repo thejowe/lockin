@@ -120,6 +120,28 @@ export type SessionRow = {
   responded_at: string | null;
 };
 
+/** Fila de public.lockin_rooms. Solo se escribe por RPC. */
+export type RoomRow = {
+  id: string;
+  host_id: string;
+  starts_at: string;
+  blocks: SessionBlocks;
+  cancelled_at: string | null;
+  created_at: string;
+  /** Lo toca touch_room; el dominio no lo expone. */
+  updated_at: string;
+};
+
+/** Fila de public.room_members. La RLS aplica el ciego de invitados. */
+export type RoomMemberRow = {
+  room_id: string;
+  profile_id: string;
+  status: 'invitada' | 'aceptada' | 'rechazada';
+  responded_at: string | null;
+  joined_at: string | null;
+  left_at: string | null;
+};
+
 /** Fila de `public.session_attendance`. */
 export type SessionAttendanceRow = {
   session_id: string;
@@ -256,6 +278,18 @@ export type Database = {
         Update: Record<string, never>;
         Relationships: [];
       };
+      lockin_rooms: {
+        Row: RoomRow;
+        Insert: Record<string, never>;
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      room_members: {
+        Row: RoomMemberRow;
+        Insert: Record<string, never>;
+        Update: Record<string, never>;
+        Relationships: [];
+      };
       session_attendance: {
         Row: SessionAttendanceRow;
         Insert: Record<string, never>;
@@ -313,6 +347,18 @@ export type Database = {
         Args: { p_target_id: string; p_decision: Decision; p_mode?: ModePreference };
         Returns: MatchRow | null;
       };
+      create_room: {
+        Args: { p_invitee_ids: string[]; p_starts_at: string; p_blocks: SessionBlocks };
+        Returns: RoomRow;
+      };
+      respond_room: {
+        Args: { p_room_id: string; p_answer: 'aceptada' | 'rechazada' };
+        Returns: RoomMemberRow;
+      };
+      cancel_room: { Args: { p_room_id: string }; Returns: RoomRow };
+      join_room: { Args: { p_room_id: string }; Returns: RoomMemberRow };
+      leave_room: { Args: { p_room_id: string }; Returns: RoomMemberRow };
+      live_rooms: { Args: Record<string, never>; Returns: RoomRow[] };
       propose_session: {
         Args: { p_match_id: string; p_starts_at: string; p_blocks: SessionBlocks };
         Returns: SessionRow;
@@ -356,6 +402,7 @@ export type Database = {
       time_band: TimeBand;
       avatar_accent: Avatar['accent'];
       decision: Decision;
+      room_member_status: RoomMemberRow['status'];
       session_status: SessionStatus;
       session_rating: SessionRating;
     };

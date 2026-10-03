@@ -87,7 +87,12 @@ import { toProfileInsert } from './mappers';
 import type { ContractBackend, ContractFixture } from '../repositories.contract';
 import type { Database } from './database.types';
 import type { ModePreference } from '../types';
-import type { AgreementRepository, LockInSessionRepository, Repositories } from '../repositories';
+import type {
+  AgreementRepository,
+  LockInSessionRepository,
+  Repositories,
+  RoomRepository,
+} from '../repositories';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Devuelve el `fetch` real antes de que `createClient` capture el stub de
@@ -301,6 +306,14 @@ function sessionRepositoryFor(actor: Reciprocal): LockInSessionRepository {
   });
 }
 
+function roomRepositoryFor(actor: Reciprocal): RoomRepository {
+  const { createSupabaseRoomRepository } = require('./rooms') as typeof import('./rooms');
+  return createSupabaseRoomRepository({
+    getClient: () => actor.client,
+    getUserId: async () => actor.id,
+  });
+}
+
 function agreementRepositoryFor(actor: Reciprocal): AgreementRepository {
   const { createSupabaseAgreementRepository } =
     require('./agreement') as typeof import('./agreement');
@@ -447,9 +460,10 @@ const supabaseBackend: ContractBackend = {
       outsiderSessions: () => sessionRepositoryFor(lockinReciprocal),
       counterpartAgreement: () => agreementRepositoryFor(parReciprocal),
       outsiderAgreement: () => agreementRepositoryFor(lockinReciprocal),
-      // Provisional: la Tarea 4 de `salas` lo sustituye por el repositorio real.
-      roomsFor: () => {
-        throw new Error('rooms: Tarea 4');
+      roomsFor: (profileId) => {
+        const actor = reciprocals.find((candidate) => candidate.id === profileId);
+        if (!actor) throw new Error('roomsFor: perfil de apoyo desconocido: ' + profileId);
+        return roomRepositoryFor(actor);
       },
       elapse: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
     };
