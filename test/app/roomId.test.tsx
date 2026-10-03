@@ -82,6 +82,21 @@ async function seedAsInvitee({
 }
 
 const button = (name: string) => screen.getByRole('button', { name });
+
+/**
+ * El `onPress` del `Pressable` que pinta un botón, buscado como lo hace
+ * `fireEvent`: subiendo por las fibras hasta el primer `onPress`.
+ */
+function pressHandler(element: ReturnType<typeof button>): () => void {
+  type Fiber = { memoizedProps?: { onPress?: () => void } | null; return: Fiber | null };
+  let fiber = (element as unknown as { unstable_fiber: Fiber | null }).unstable_fiber;
+  while (fiber) {
+    const onPress = fiber.memoizedProps?.onPress;
+    if (onPress) return onPress;
+    fiber = fiber.return;
+  }
+  throw new Error('el botón no tiene onPress');
+}
 const noButton = (name: string) => screen.queryByRole('button', { name });
 
 beforeEach(() => {
@@ -374,6 +389,55 @@ describe('RoomScreen — ventana de entrada', () => {
     expect(leave).toHaveBeenCalledTimes(1);
     const view = await repositories.rooms.getById(roomId);
     expect(view!.me.leftAt).not.toBeNull();
+  });
+
+  it('dos toques en «Salir de la sala» con la salida en vuelo: una salida y un solo atrás', async () => {
+    await seedAsHost();
+    jest.setSystemTime(STARTS_AT + MINUTE);
+    const join = jest.spyOn(repositories.rooms, 'join');
+    const original = repositories.rooms.leave;
+    let release!: () => void;
+    const gate = new Promise<void>((done) => {
+      release = done;
+    });
+    const leave = jest
+      .spyOn(repositories.rooms, 'leave')
+      .mockImplementation((id) => gate.then(() => original(id)));
+
+    await renderRoute(<RoomScreen />);
+    await waitFor(() => expect(join).toHaveBeenCalled());
+    await fireEvent.press(button('Salir'));
+
+    // Los dos toques en el mismo instante, antes de que la pantalla repinte, y
+    // en un solo `act` (dos `fireEvent` solapados rompen el entorno de act).
+    const onPress = pressHandler(button('Salir de la sala'));
+    const taps = act(async () => {
+      onPress();
+      onPress();
+    });
+    expect(router.back).not.toHaveBeenCalled();
+    release();
+    await taps;
+
+    await waitFor(() => expect(router.back).toHaveBeenCalledTimes(1));
+    await act(async () => {});
+    expect(router.back).toHaveBeenCalledTimes(1);
+    expect(leave).toHaveBeenCalledTimes(1);
+  });
+
+  it('una vez pulsada, la confirmación de salida queda deshabilitada', async () => {
+    await seedAsHost();
+    jest.setSystemTime(STARTS_AT + MINUTE);
+    const join = jest.spyOn(repositories.rooms, 'join');
+
+    await renderRoute(<RoomScreen />);
+    await waitFor(() => expect(join).toHaveBeenCalled());
+    await fireEvent.press(button('Salir'));
+    await fireEvent.press(button('Salir de la sala'));
+
+    // El router de los tests no desmonta la pantalla: se ve el botón tras salir.
+    await waitFor(() => expect(router.back).toHaveBeenCalledTimes(1));
+    expect(button('Salir de la sala').props.accessibilityState).toMatchObject({ disabled: true });
   });
 
   it('salir pide confirmación, registra la salida y vuelve', async () => {

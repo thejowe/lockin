@@ -173,6 +173,10 @@ export default function RoomScreen() {
   const [confirming, setConfirming] = useState<Confirming>(null);
   const [departing, setDeparting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  // La salida entera —asistencia y navegación— es una sola: un segundo toque
+  // no puede hacer un segundo `router.back()` que saque otra pantalla.
+  const [exiting, setExiting] = useState(false);
+  const exitingRef = useRef(false);
 
   const view = room.view;
   const inWindow = view !== null && isInRoomJoinWindow(view.room, view.me, nowMs);
@@ -273,6 +277,9 @@ export default function RoomScreen() {
   };
 
   const exit = async () => {
+    if (exitingRef.current) return;
+    exitingRef.current = true;
+    setExiting(true);
     await leaveRoom();
     router.back();
   };
@@ -388,6 +395,7 @@ export default function RoomScreen() {
                 text="Saldrás antes de acabar."
                 confirmLabel="Salir de la sala"
                 backLabel="Seguir"
+                disabled={exiting}
                 onConfirm={exit}
                 onBack={() => setConfirming(null)}
               />
