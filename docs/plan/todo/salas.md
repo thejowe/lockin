@@ -9,6 +9,47 @@ Agente: `.claude/agents/salas.md`
 > spec. Si cambia alguna, se reabre la Tarea 0 y se corrigen spec, plan y este
 > archivo antes de escribir código.
 
+## Al retomar (estado del 2026-10-04)
+
+Código de las Tareas 1–10 integrado y subido en `claude/startup-cofounder-matching-app-tfeai1`
+(punta `b478f90`). Abiertas: **10** (falta un E2E verde), **11** (cierre) y **12** (comprobador).
+Nada está a medias en ningún worktree: todo lo útil ya está en la rama.
+
+Bloqueos del usuario, por orden:
+1. **GitHub Actions parado por facturación** («recent account payments have failed or your
+   spending limit needs to be increased»). Sin esto no corre ni CI, ni contrato, ni E2E.
+2. **Aplicar dos migraciones** en `grrzmzktrhksbttpbblg` por el SQL Editor:
+   `20261003000100_harden_grants_and_clock.sql` (seguridad de `datos`; se puede aplicar ya)
+   y `20261002000100_lockin_rooms.sql` (salas; su esquema ya no va a cambiar).
+3. **Revisar las decisiones tomadas sin el usuario** (spec, primera sección; las caras son la 1 y la 6).
+
+Qué lanzar al volver, en orden:
+1. Con Actions sano: leer el primer run de `E2E Android` sobre la punta. La variante
+   `supabase` tiene que dar `[Passed] Aceptar, entrar y salir de una sala Lock-In` y
+   «Postgres: asistencia a la sala verificada.». Además hay que leer la línea «Sala, tiempos»:
+   si «Me apunto» queda cerca de los 120 s, sube a la vez la siembra (7 min) y la espera (180 s).
+   Si falla, el que depura es el agente `salas`. Infra del runner (disco, swap, ANR) ya arreglada
+   en `bd3f9b2..2fd6685` por la sesión de diseño. **No lances `contract.yml` a mano sobre esta
+   rama**: CI ya lo incluye y comparten grupo de concurrencia, así que se cancelan entre sí.
+2. Tarea 12 con el `comprobador`, mock, sobre la punta. Un intento del 2026-10-04 se paró a
+   mitad al cerrar la sesión: hay capturas parciales en `e2e/artifacts/local/2026-10-04-salas/`,
+   sin veredicto. El emulador es compartido con la sesión del rediseño, que quiere pasar el suyo
+   (desenfoque, swipe, Pomodoro): coordina antes.
+3. Tarea 11, cuando 1 y 2 estén verdes y las migraciones aplicadas (Schema drift remoto verde).
+
+Deudas pequeñas anotadas, sin casilla: el tirar-para-refrescar de Matches no relee las salas
+(Tarea 8); `e2e/README.md` no menciona `room.yaml`; `test/app/layouts.test.tsx` no comprueba
+`room/new` ni `room/[roomId]`; un caso intermitente de mock en `full-journey.yaml` («Tarde · 12–20»
+no visible tras 4 min, probablemente lentitud del runner: la variante `supabase` lo pasó con el
+rediseño).
+
+Cómo se trabajó (para repetirlo): Codex hizo las tareas `[Codex]` (1, 2, 4, 5, 6 y 9) desde
+el plugin, en worktree aislado y sin commitear, porque su sandbox no escribe en `.git`. Claude
+revisó cada diff, hizo el commit con las dos líneas `Co-Authored-By` y lo integró con cherry-pick.
+El trabajo de Claude pasó por `codex review` antes de cerrarse: las Tareas 7–8 necesitaron cinco
+pasadas. Ver las memorias `codex-no-commitea-en-worktree`, `worktree-aislado-nace-de-origin`
+y `contrato-manual-cancela-ci`.
+
 ## Tareas
 
 Paralelo posible solo en dos parejas, cada una en su worktree: **1 ∥ 2** y **4 ∥ 5**.
@@ -44,4 +85,6 @@ El resto, en orden.
 
 ## Hallazgos del comprobador
 
-(ninguno todavía)
+- 2026-10-04: el recorrido de la Tarea 12 (mock, `b478f90`) se paró a mitad al cerrar la
+  sesión. No hay veredicto; las capturas parciales están en `e2e/artifacts/local/2026-10-04-salas/`.
+  El emulador `emulator-5554` quedó encendido y libre.
