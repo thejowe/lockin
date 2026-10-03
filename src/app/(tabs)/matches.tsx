@@ -15,6 +15,7 @@ import { enterUp } from '@/components/motion';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { MatchRow, MatchesEmpty, useMatches } from '@/features/chat';
+import { RoomsSection } from '@/features/room';
 import { useMatchStreaks } from '@/features/session';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -48,6 +49,7 @@ export default function MatchesScreen() {
                 Matches
               </ThemedText>
               <ThemedText type="title">Con quién has conectado</ThemedText>
+              <RoomsSection />
               {error && (
                 <ThemedText type="small" themeColor="danger">
                   No hemos podido cargar tus matches. Desliza hacia abajo para reintentar.

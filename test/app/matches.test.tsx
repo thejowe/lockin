@@ -105,6 +105,23 @@ describe('MatchesScreen', () => {
     expect(screen.queryByLabelText(new RegExp(`${withoutStreak!.name}\\. Racha`))).toBeNull();
   });
 
+  it('con 2 matches ofrece convocar una sala; con 1, no', async () => {
+    await repositories.profiles.saveCurrent(buildProfileInput());
+    await repositories.discovery.recordDecision(SEED_RECIPROCAL_IDS[0], 'like');
+    const counterpart = await repositories.profiles.getById(SEED_RECIPROCAL_IDS[0]);
+
+    const { unmount } = await renderRoute(<MatchesScreen />);
+    await waitFor(() => expect(screen.getByText(counterpart!.name)).toBeTruthy());
+    expect(screen.queryByRole('button', { name: 'Convocar sala Lock-In' })).toBeNull();
+    await unmount();
+
+    await repositories.discovery.recordDecision(SEED_RECIPROCAL_IDS[1], 'like');
+    await renderRoute(<MatchesScreen />);
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Convocar sala Lock-In' })).toBeTruthy()
+    );
+  });
+
   it('si la lectura falla avisa en vez de fingir que no hay matches', async () => {
     jest.spyOn(repositories.matches, 'list').mockRejectedValue(new Error('sin red'));
 
