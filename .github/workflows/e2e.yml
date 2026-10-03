@@ -58,20 +58,32 @@ jobs:
       E2E_REGISTRATION: ${{ matrix.registration || '0' }}
       E2E_ARTIFACTS: e2e/artifacts/${{ matrix.variant }}
     steps:
-      # El disco del runner (72 GB) se llenaba al 100 % a mitad del build del
-      # APK desde el 2026-10-03 (run 37125511915, dos intentos, `disk.txt` en
-      # el artefacto): build nativo + imágenes de Supabase + AVD ya iban justos,
-      # y `react-native-svg`/`expo-blur` del rediseño «cristal» lo pasaron del
-      # borde. Se borra lo preinstalado que este trabajo no usa (.NET, Haskell,
-      # Swift, CodeQL, Boost, PowerShell, Julia, Azure CLI). Nada del SDK de
-      # Android, Java, Node ni Docker: el build y el emulador los necesitan.
-      - name: Liberar disco del runner
+      # Desde el 2026-10-03 hacia las 13:20 UTC el disco del runner (72 GB) se
+      # llena al 100 % a mitad del trabajo en TODAS las ramas, también en las
+      # que no llevan ningún cambio de dependencias (run 37125989089: el propio
+      # agente del runner muere sin poder escribir su log). Es la imagen de
+      # GitHub, no el código. Se borra lo preinstalado que este trabajo no usa
+      # (.NET, Haskell, Swift, CodeQL, Boost, PowerShell, Julia, Azure CLI).
+      # Nada del SDK de Android, Java, Node ni Docker: el build y el emulador
+      # los necesitan.
+      #
+      # Con disco libre, el siguiente cuello fue la memoria: build de Gradle,
+      # Metro, contenedores de Supabase y AVD a la vez acabaron en `exit code
+      # 143` y en «The hosted runner lost communication» (run 37140026377). El
+      # swap extra en el disco recién liberado da margen sin tocar el trabajo.
+      - name: Liberar disco y añadir swap
         run: |
           df -h /
+          free -h
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /usr/share/swift \
             /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/local/share/powershell \
             /usr/local/julia* /opt/az /opt/microsoft
+          sudo fallocate -l 8G /swapfile-e2e
+          sudo chmod 600 /swapfile-e2e
+          sudo mkswap /swapfile-e2e
+          sudo swapon /swapfile-e2e
           df -h /
+          free -h
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
