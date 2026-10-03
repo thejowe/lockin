@@ -332,11 +332,10 @@ export function createSupabaseRepositories(): Repositories {
       const completed = await linkGithubIdentity();
       if (!completed) throw new Error(GITHUB_VERIFICATION_CANCELLED);
 
-      // La verdad la escribe Postgres leyendo auth.identities. Aquí no viaja
-      // ningún handle: si viajara, sería falsificable.
-      const { error } = await getSupabaseClient().rpc('sync_github_verification');
-      if (error) throw error;
-
+      // El sello ya lo ha puesto `linkGithubIdentity` (`sync_github_verification`,
+      // que lee auth.identities: aquí no viaja ningún handle). Vive allí y no
+      // aquí porque la vuelta en frío —Android mató el proceso con GitHub
+      // abierto— solo pasa por `completeAuthLink`, y tiene que poder ponerlo.
       const profile = await profiles.getCurrent();
       if (!profile) throw new Error('No hay perfil que verificar todavía.');
       return profile;

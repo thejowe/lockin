@@ -116,6 +116,13 @@ export type AccountErrorReason =
 export class AccountError extends Error {
   readonly reason: AccountErrorReason;
 
+  /**
+   * Si el fallo es de la vuelta de GitHub y no de un enlace de correo. Las dos
+   * llegan a `lockin://auth/callback`, y esa pantalla no puede mandar a «pedir
+   * otro correo» a quien venía de verificar GitHub (revisión del 2026-10-02).
+   */
+  github = false;
+
   constructor(reason: AccountErrorReason, message: string, cause?: unknown) {
     super(message);
     this.name = 'AccountError';
@@ -504,8 +511,25 @@ export async function completeAuthLink(url: string): Promise<AccountState> {
   const client = getSupabaseClient();
   const params = new URL(url).searchParams;
 
+  // Se mira antes de nada: el navegador puede cerrar su intento mientras esta
+  // función espera, y lo que cuenta es si había uno abierto cuando llegó el enlace.
+  const githubPending = browserReturn !== null || (await readGithubAttempt());
+
   const failure = params.get('error_description') ?? params.get('error');
   if (failure) {
+    if (githubPending) {
+      // Un error no trae code que comparar: con un intento abierto, lo más
+      // probable es GitHub (p. ej. `access_denied` al pulsar «Cancel»). El
+      // intento muere aquí; en caliente también lo cierra el navegador.
+      await AsyncStorage.removeItem(GITHUB_ATTEMPT_KEY);
+      throw githubFailure(
+        new AccountError(
+          'unknown',
+          `GitHub no ha completado la verificación (${failure}). Puedes volver a intentarlo ` +
+            'desde tu perfil.'
+        )
+      );
+    }
     throw new AccountError(
       'unknown',
       `El enlace ya no sirve (${failure}). Pide otro correo e inténtalo de nuevo.`
@@ -516,14 +540,34 @@ export async function completeAuthLink(url: string): Promise<AccountState> {
   const tokenHash = params.get('token_hash');
   const type = params.get('type');
 
-  // La vuelta de GitHub comparte esta URL (ver `isGithubLinkCode`): ese code lo
-  // canjea `linkGithubIdentity`, y canjearlo aquí otra vez haría fallar a uno de
-  // los dos. No toca el dispositivo: vincular GitHub no hace la cuenta recuperable.
-  if (code && isGithubLinkCode(code)) return getAccountState();
-
   if (code) {
+    // La vuelta de GitHub comparte esta URL (ver `githubCompletions`): ese code
+    // se canjea una sola vez, y aquí se espera ese mismo canje. No toca el
+    // dispositivo: vincular GitHub no hace la cuenta recuperable.
+    const github = await githubCompletionFor(code);
+    if (github) {
+      await github.completion.catch((cause: unknown) => {
+        throw githubFailure(cause);
+      });
+      return getAccountState();
+    }
+
+    // Android vuelve a entregar el intent con el que se abrió la app (p. ej. al
+    // reabrirla desde recientes tras matar el proceso): ese code ya está gastado.
+    if ((await AsyncStorage.getItem(GITHUB_CONSUMED_CODE_KEY)) === code) {
+      return getAccountState();
+    }
+
     const { error } = await client.auth.exchangeCodeForSession(code);
-    if (error) throw toAccountError(error);
+    // Vuelta en frío: el proceso que abrió GitHub ya no existe, así que nadie
+    // más va a poner el sello. Lo dice el servidor, no una marca local: solo si
+    // la cuenta TIENE identidad de GitHub (el RPC sin ella vaciaría `link_github`).
+    // Si el canje falla porque el proceso muerto ya lo hizo, tampoco es un error.
+    if (error) {
+      if (githubPending && (await adoptGithubReturn(code))) return getAccountState();
+      throw toAccountError(error);
+    }
+    if (githubPending) await adoptGithubReturn(code);
   } else if (tokenHash && type) {
     const { error } = await client.auth.verifyOtp({
       token_hash: tokenHash,
@@ -596,32 +640,143 @@ export async function signOut(options: { acceptDataLoss?: boolean } = {}): Promi
  * obligaría a tocar el dashboard. En Android esa vuelta resuelve
  * `openAuthSessionAsync` **y además** abre la ruta de callback, que pasa el
  * mismo `code` —de un solo uso— a `completeAuthLink`. Puede llegar antes o
- * después del navegador; estas dos marcas cubren los dos órdenes.
+ * después del navegador, y Android puede haber matado el proceso entretanto.
+ *
+ * Revisión del 2026-10-02, en lo que esto se apoya:
+ *
+ * - **Un canje por code, compartido.** `githubCompletions` guarda la promesa de
+ *   canje + sello de cada code de GitHub; quien llegue segundo espera esa misma
+ *   promesa y ve su mismo resultado, también si falla.
+ * - **El code se reconoce por el code.** Con el navegador abierto, la ruta
+ *   espera a que vuelva (`browserReturn`) y compara: solo el code que devolvió
+ *   GitHub es de GitHub. Un enlace de correo que llegue entretanto se canjea
+ *   como correo.
+ * - **En frío no hay navegador.** El intento se apunta en AsyncStorage antes
+ *   de abrir GitHub (`GITHUB_ATTEMPT_KEY`); con él, la ruta canjea y pregunta
+ *   al servidor si la cuenta tiene identidad de GitHub antes de poner el sello.
+ * - **El enlace repetido no es un error.** El último code de GitHub ya
+ *   canjeado queda en `GITHUB_CONSUMED_CODE_KEY`: si Android vuelve a entregar
+ *   el mismo intent tras reiniciar el proceso, no se canjea otra vez.
  */
-let githubLinkInFlight = false;
-const githubLinkCodes = new Set<string>();
+const GITHUB_ATTEMPT_KEY = 'lockin.supabase.github-link-attempt';
+const GITHUB_CONSUMED_CODE_KEY = 'lockin.supabase.github-link-consumed';
 
-/** Si ese code es la vuelta de una vinculación de GitHub (en curso o ya canjeada). */
-function isGithubLinkCode(code: string): boolean {
-  return githubLinkInFlight || githubLinkCodes.has(code);
+/**
+ * Cuánto vale un intento apuntado. El flow state PKCE de GoTrue caduca a los 5
+ * minutos; más allá, ese GitHub abierto ya no puede volver con un code válido.
+ */
+const GITHUB_ATTEMPT_TTL_MS = 10 * 60 * 1000;
+
+/** El intento de este proceso: resuelve con el code que devolvió GitHub, o `null`. */
+let browserReturn: Promise<string | null> | null = null;
+
+/** Canje + sello de cada code de GitHub, el mismo para el navegador y la ruta. */
+const githubCompletions = new Map<string, Promise<void>>();
+
+/** Si hay un intento de GitHub apuntado y todavía vigente (de este proceso o de uno muerto). */
+async function readGithubAttempt(): Promise<boolean> {
+  const raw = await AsyncStorage.getItem(GITHUB_ATTEMPT_KEY);
+  if (!raw) return false;
+
+  let startedAt = Number.NaN;
+  try {
+    startedAt = Number((JSON.parse(raw) as { startedAt?: unknown }).startedAt);
+  } catch {
+    // Ilegible: se trata como caducado.
+  }
+  if (Date.now() - startedAt <= GITHUB_ATTEMPT_TTL_MS) return true;
+
+  await AsyncStorage.removeItem(GITHUB_ATTEMPT_KEY);
+  return false;
+}
+
+/** Si la cuenta actual tiene identidad de GitHub, según el servidor. */
+async function hasGithubIdentity(): Promise<boolean> {
+  const { data, error } = await getSupabaseClient().auth.getUserIdentities();
+  if (error) throw error;
+  return data.identities.some((identity) => identity.provider === 'github');
+}
+
+/**
+ * Pone el sello tras una vuelta de GitHub, si de verdad dejó GitHub vinculado.
+ *
+ * La verdad la escribe Postgres leyendo `auth.identities`: aquí no viaja ningún
+ * handle. Y el RPC solo se llama con la identidad presente, porque su rama «no
+ * hay identidad de GitHub» vacía `link_github`, que sin sello es lo que la
+ * persona escribió a mano.
+ *
+ * @returns `false` si la cuenta no tiene GitHub: ese code no lo vinculó.
+ */
+async function adoptGithubReturn(code: string): Promise<boolean> {
+  if (!(await hasGithubIdentity())) return false;
+
+  const { error } = await getSupabaseClient().rpc('sync_github_verification');
+  if (error) throw error;
+
+  await AsyncStorage.setItem(GITHUB_CONSUMED_CODE_KEY, code);
+  await AsyncStorage.removeItem(GITHUB_ATTEMPT_KEY);
+  return true;
 }
 
 /**
  * PKCE devuelve un code: con detectSessionInUrl: false el SDK no lo canjea
  * automáticamente (confirmado en la Tarea 1, commit 360d693).
  */
-async function completeOAuthCallback(url: string): Promise<void> {
-  const code = new URL(url).searchParams.get('code');
-  if (!code) throw new Error('GitHub no devolvió el código de verificación.');
-
-  githubLinkCodes.add(code);
+async function settleGithubCode(code: string): Promise<void> {
   const { error } = await getSupabaseClient().auth.exchangeCodeForSession(code);
-  if (error) throw error;
+  if (await adoptGithubReturn(code)) return;
+  throw error ?? new Error('GitHub no ha quedado vinculado a tu cuenta. Vuelve a intentarlo.');
+}
+
+/** El canje compartido de ese code de GitHub; lo arranca quien llegue primero. */
+function githubCompletion(code: string): Promise<void> {
+  let completion = githubCompletions.get(code);
+  if (!completion) {
+    completion = settleGithubCode(code);
+    githubCompletions.set(code, completion);
+  }
+  return completion;
 }
 
 /**
- * Abre GitHub en el navegador del sistema y linka esa identidad a la cuenta
- * actual, conservando perfil, matches y mensajes: el `auth.uid()` no cambia.
+ * Si ese code es la vuelta de GitHub de este proceso, su canje compartido.
+ *
+ * Con el navegador todavía abierto se espera a que vuelva: es él quien dice qué
+ * code devolvió GitHub. `null` = no es de GitHub, o no en este proceso.
+ */
+async function githubCompletionFor(code: string): Promise<{ completion: Promise<void> } | null> {
+  // Envuelta: una función async que devolviera la promesa a secas la esperaría
+  // aquí dentro, y su fallo saldría sin pasar por `githubFailure`.
+  if (browserReturn && !githubCompletions.has(code)) await browserReturn;
+
+  const completion = githubCompletions.get(code);
+  return completion ? { completion } : null;
+}
+
+/** Marca el fallo como de la vuelta de GitHub, ya traducido. */
+function githubFailure(cause: unknown): AccountError {
+  const error = toAccountError(cause);
+  error.github = true;
+  return error;
+}
+
+/** El code de la vuelta del navegador; `null` si se canceló. */
+function githubCodeFrom(result: WebBrowser.WebBrowserAuthSessionResult): string | null {
+  if (result.type !== 'success') return null;
+
+  const code = new URL(result.url).searchParams.get('code');
+  if (!code) throw new Error('GitHub no devolvió el código de verificación.');
+
+  // Se registra aquí, antes de que nadie más vea resolverse el navegador: la
+  // ruta que lo esperaba encuentra el canje ya en marcha.
+  githubCompletion(code);
+  return code;
+}
+
+/**
+ * Abre GitHub en el navegador del sistema, linka esa identidad a la cuenta
+ * actual —conservando perfil, matches y mensajes: el `auth.uid()` no cambia— y
+ * pone el sello (`sync_github_verification`).
  *
  * Requiere "Enable Manual Linking" en Authentication → Settings del dashboard.
  * Está DESACTIVADO por defecto y sin él esto falla siempre, así que el error lo
@@ -651,15 +806,21 @@ export async function linkGithubIdentity(): Promise<boolean> {
     throw error;
   }
 
-  githubLinkInFlight = true;
-  try {
-    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-    if (result.type !== 'success') return false;
+  // Antes de abrir GitHub: si Android mata el proceso con GitHub delante, esto
+  // es lo único que le queda a la ruta de callback del proceso nuevo.
+  await AsyncStorage.setItem(GITHUB_ATTEMPT_KEY, JSON.stringify({ startedAt: Date.now() }));
 
-    await completeOAuthCallback(result.url);
+  const returned = WebBrowser.openAuthSessionAsync(data.url, redirectTo).then(githubCodeFrom);
+  browserReturn = returned.catch(() => null);
+  try {
+    const code = await returned;
+    if (!code) return false;
+
+    await githubCompletion(code);
     return true;
   } finally {
-    githubLinkInFlight = false;
+    browserReturn = null;
+    await AsyncStorage.removeItem(GITHUB_ATTEMPT_KEY);
   }
 }
 

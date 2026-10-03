@@ -33,6 +33,10 @@ const auth = {
   getUserIdentities: jest.fn(),
   unlinkIdentity: jest.fn(),
 };
+const rpc = jest.fn();
+
+/** Donde `auth.ts` deja abierto el intento de GitHub por si el proceso muere. */
+const GITHUB_ATTEMPT_KEY = 'lockin.supabase.github-link-attempt';
 
 /** La forma mínima de `auth.users` que mira `describeUser`. */
 function user(overrides: Record<string, unknown> = {}) {
@@ -52,7 +56,16 @@ function gotrueError(code: string, message = 'error del servidor') {
   return Object.assign(new Error(message), { code, status: 422 });
 }
 
-beforeEach(() => {
+/**
+ * El code que devuelve el navegador, distinto en cada test: `auth.ts` recuerda
+ * el canje de cada code de GitHub mientras vive el módulo, como en la app.
+ */
+let githubCode = '';
+let githubCodes = 0;
+
+beforeEach(async () => {
+  githubCode = `one-use-code-${++githubCodes}`;
+  await AsyncStorage.clear();
   jest.clearAllMocks();
   jest.mocked(Linking.createURL).mockReturnValue('lockin://auth/callback');
   auth.linkIdentity.mockResolvedValue({
@@ -60,13 +73,18 @@ beforeEach(() => {
     error: null,
   });
   auth.exchangeCodeForSession.mockResolvedValue({ error: null });
+  auth.getUserIdentities.mockResolvedValue({
+    data: { identities: [{ provider: 'email' }, { provider: 'github' }] },
+    error: null,
+  });
+  rpc.mockResolvedValue({ error: null });
   jest.mocked(WebBrowser.openAuthSessionAsync).mockResolvedValue({
     type: 'success',
-    url: 'lockin://auth/callback?code=one-use-code',
+    url: `lockin://auth/callback?code=${githubCode}`,
   });
   jest
     .mocked(getSupabaseClient)
-    .mockReturnValue({ auth } as unknown as ReturnType<typeof getSupabaseClient>);
+    .mockReturnValue({ auth, rpc } as unknown as ReturnType<typeof getSupabaseClient>);
 });
 it('reutiliza la identidad guardada al arrancar', async () => {
   auth.getSession.mockResolvedValue({
@@ -108,7 +126,7 @@ describe('linkGithubIdentity', () => {
       'https://github.com/login/oauth',
       'lockin://auth/callback'
     );
-    expect(auth.exchangeCodeForSession).toHaveBeenCalledWith('one-use-code');
+    expect(auth.exchangeCodeForSession).toHaveBeenCalledWith(githubCode);
     expect(auth.signInAnonymously).not.toHaveBeenCalled();
   });
 
@@ -155,63 +173,354 @@ describe('linkGithubIdentity', () => {
   it('propaga un canje PKCE fallido', async () => {
     const error = new Error('Código caducado');
     auth.exchangeCodeForSession.mockResolvedValueOnce({ error });
+    withoutGithubIdentity();
     await expect(linkGithubIdentity()).rejects.toBe(error);
   });
 
-  // En Android la vuelta de GitHub también abre la ruta `auth/callback`, que
-  // pasa el mismo `code` a `completeAuthLink`. Canjearlo dos veces hacía que
-  // uno de los dos fallara y la pantalla dijera «Ese enlace no ha funcionado»
-  // con el sello ya puesto (comprobador, 2026-10-01).
-  it('la ruta de callback no vuelve a canjear el code de GitHub si llega después', async () => {
-    jest.mocked(WebBrowser.openAuthSessionAsync).mockResolvedValueOnce({
-      type: 'success',
-      url: 'lockin://auth/callback?code=github-despues',
-    });
-    signedInAs({ is_anonymous: true });
+  it('pone el sello en cuanto GitHub queda vinculado', async () => {
     await expect(linkGithubIdentity()).resolves.toBe(true);
-
-    await expect(
-      completeAuthLink('lockin://auth/callback?code=github-despues')
-    ).resolves.toMatchObject({ kind: 'anonymous' });
-    expect(auth.exchangeCodeForSession).toHaveBeenCalledTimes(1);
-    expect(AsyncStorage.removeItem).not.toHaveBeenCalled();
+    expect(rpc).toHaveBeenCalledWith('sync_github_verification');
+    expect(rpc).toHaveBeenCalledTimes(1);
   });
 
-  it('la ruta de callback no canjea el code de GitHub si llega antes que el navegador', async () => {
-    let finishBrowser: (result: WebBrowser.WebBrowserAuthSessionResult) => void = () => {};
-    jest.mocked(WebBrowser.openAuthSessionAsync).mockReturnValueOnce(
-      new Promise((resolve) => {
-        finishBrowser = resolve;
-      })
-    );
+  it('si el canje no deja GitHub vinculado no pisa el enlace escrito a mano', async () => {
+    // El RPC sin identidad de GitHub vacía `link_github`: solo se llama con ella.
+    withoutGithubIdentity();
+    await expect(linkGithubIdentity()).rejects.toThrow('GitHub no ha quedado vinculado');
+    expect(rpc).not.toHaveBeenCalled();
+  });
+});
+
+/*
+ * En Android la vuelta de GitHub resuelve `openAuthSessionAsync` y ADEMÁS abre la
+ * ruta `auth/callback`, que pasa el mismo `code` —de un solo uso— a
+ * `completeAuthLink`. Canjearlo dos veces hacía que uno de los dos fallara y la
+ * pantalla dijera «Ese enlace no ha funcionado» con el sello ya puesto
+ * (comprobador, 2026-10-01). Revisión del 2026-10-02: los dos tienen que
+ * compartir el MISMO canje —y su resultado—, en los dos órdenes.
+ */
+describe('la vuelta de GitHub por la ruta de callback', () => {
+  it('navegador primero: la ruta espera al canje en curso y no canjea otra vez', async () => {
+    const exchange = deferred<{ error: Error | null }>();
+    auth.exchangeCodeForSession.mockReturnValueOnce(exchange.promise);
+    browserReturns('g-nav-diferido');
     signedInAs({ is_anonymous: true });
+
+    const linking = linkGithubIdentity();
+    await until(() => auth.exchangeCodeForSession.mock.calls.length > 0);
+    const route = track(completeAuthLink(callback('g-nav-diferido')));
+    await flush();
+    expect(route.settled).toBe(false);
+
+    exchange.resolve({ error: null });
+    await expect(linking).resolves.toBe(true);
+    await expect(route.promise).resolves.toMatchObject({ kind: 'anonymous' });
+    expect(auth.exchangeCodeForSession).toHaveBeenCalledTimes(1);
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(AsyncStorage.removeItem).not.toHaveBeenCalledWith('lockin.supabase.device-account');
+  });
+
+  it('navegador primero: si el canje falla, la ruta también lo dice', async () => {
+    const exchange = deferred<{ error: Error | null }>();
+    auth.exchangeCodeForSession.mockReturnValueOnce(exchange.promise);
+    browserReturns('g-nav-rechazado');
+    withoutGithubIdentity();
+
+    const linking = linkGithubIdentity();
+    linking.catch(() => {});
+    await until(() => auth.exchangeCodeForSession.mock.calls.length > 0);
+    const route = completeAuthLink(callback('g-nav-rechazado'));
+    route.catch(() => {});
+
+    const caducado = gotrueError('flow_state_not_found', 'invalid flow state');
+    exchange.resolve({ error: caducado });
+    await expect(linking).rejects.toBe(caducado);
+    await expect(route).rejects.toMatchObject({ name: 'AccountError', github: true });
+    expect(auth.exchangeCodeForSession).toHaveBeenCalledTimes(1);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('ruta primero: espera al navegador y comparte su canje', async () => {
+    const browser = pendingBrowser();
+    const exchange = deferred<{ error: Error | null }>();
+    auth.exchangeCodeForSession.mockReturnValueOnce(exchange.promise);
+    signedInAs({ is_anonymous: true });
+
     const linking = linkGithubIdentity();
     await waitForBrowser();
-
-    await expect(
-      completeAuthLink('lockin://auth/callback?code=github-antes')
-    ).resolves.toMatchObject({ kind: 'anonymous' });
+    const route = track(completeAuthLink(callback('g-ruta-diferido')));
+    await flush();
     expect(auth.exchangeCodeForSession).not.toHaveBeenCalled();
 
-    finishBrowser({ type: 'success', url: 'lockin://auth/callback?code=github-antes' });
+    browser.finish({ type: 'success', url: callback('g-ruta-diferido') });
+    await until(() => auth.exchangeCodeForSession.mock.calls.length > 0);
+    await flush();
+    expect(route.settled).toBe(false);
+
+    exchange.resolve({ error: null });
     await expect(linking).resolves.toBe(true);
+    await expect(route.promise).resolves.toMatchObject({ kind: 'anonymous' });
     expect(auth.exchangeCodeForSession).toHaveBeenCalledTimes(1);
-    expect(auth.exchangeCodeForSession).toHaveBeenCalledWith('github-antes');
+    expect(auth.exchangeCodeForSession).toHaveBeenCalledWith('g-ruta-diferido');
+    expect(rpc).toHaveBeenCalledTimes(1);
+  });
+
+  it('ruta primero: si el canje falla, los dos lo dicen y nadie lo repite', async () => {
+    const browser = pendingBrowser();
+    const exchange = deferred<{ error: Error | null }>();
+    auth.exchangeCodeForSession.mockReturnValueOnce(exchange.promise);
+    withoutGithubIdentity();
+
+    const linking = linkGithubIdentity();
+    linking.catch(() => {});
+    await waitForBrowser();
+    const route = completeAuthLink(callback('g-ruta-rechazado'));
+    route.catch(() => {});
+
+    browser.finish({ type: 'success', url: callback('g-ruta-rechazado') });
+    const caducado = gotrueError('flow_state_not_found', 'invalid flow state');
+    exchange.resolve({ error: caducado });
+    await expect(linking).rejects.toBe(caducado);
+    await expect(route).rejects.toMatchObject({ name: 'AccountError', github: true });
+    expect(auth.exchangeCodeForSession).toHaveBeenCalledTimes(1);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('con GitHub abierto, el code de un correo se sigue canjeando como correo', async () => {
+    const browser = pendingBrowser();
+    signedInAs({ email: 'ana@example.com', email_confirmed_at: '2026-09-17T10:00:00Z' });
+    withoutGithubIdentity();
+
+    const linking = linkGithubIdentity();
+    await waitForBrowser();
+    const route = completeAuthLink(callback('correo-con-github-abierto'));
+
+    browser.finish({ type: 'cancel' as WebBrowser.WebBrowserResultType.CANCEL });
+    await expect(linking).resolves.toBe(false);
+    await expect(route).resolves.toMatchObject({ kind: 'email', recoverable: true });
+    expect(auth.exchangeCodeForSession).toHaveBeenCalledWith('correo-con-github-abierto');
+    expect(AsyncStorage.removeItem).toHaveBeenCalledWith('lockin.supabase.device-account');
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   it('acabada la vinculación, un enlace de correo se sigue canjeando', async () => {
     await linkGithubIdentity();
     signedInAs({ email: 'ana@example.com', email_confirmed_at: '2026-09-17T10:00:00Z' });
-    await completeAuthLink('lockin://auth/callback?code=correo-nuevo');
+    await completeAuthLink(callback('correo-nuevo'));
     expect(auth.exchangeCodeForSession).toHaveBeenLastCalledWith('correo-nuevo');
+  });
+
+  it('sin intento de GitHub, un code de correo no toca el sello', async () => {
+    signedInAs({ email: 'ana@example.com', email_confirmed_at: '2026-09-17T10:00:00Z' });
+    await completeAuthLink(callback('correo-sin-github'));
+    expect(auth.getUserIdentities).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
+  });
+});
+
+/*
+ * Vuelta en frío: Android mata el proceso con GitHub delante, y la vuelta abre
+ * la app desde cero. Ya no hay navegador que espere a nadie: solo la ruta, con un
+ * code que canjea el verificador PKCE que supabase-js dejó en AsyncStorage.
+ */
+describe('la vuelta de GitHub en frío', () => {
+  /** Empieza la vinculación y deja GitHub abierto, como cuando Android mata el proceso. */
+  async function githubOpenWhenProcessDies() {
+    const browser = pendingBrowser();
+    const linking = linkGithubIdentity();
+    linking.catch(() => {});
+    await waitForBrowser();
+    await until(() => jest.mocked(AsyncStorage.setItem).mock.calls.length > 0);
+    // El proceso viejo no vuelve: se cierra su navegador para no dejar a este
+    // módulo con un intento abierto entre tests, pero ya sin AsyncStorage.
+    return async () => {
+      const storage = await AsyncStorage.getItem(GITHUB_ATTEMPT_KEY);
+      browser.finish({ type: 'dismiss' as WebBrowser.WebBrowserResultType.DISMISS });
+      await linking.catch(() => {});
+      if (storage) await AsyncStorage.setItem(GITHUB_ATTEMPT_KEY, storage);
+    };
+  }
+
+  it('la ruta canjea el code y pone el sello', async () => {
+    const forgetOldProcess = await githubOpenWhenProcessDies();
+    await forgetOldProcess();
+    jest.clearAllMocks();
+    const fresh = restartProcess();
+    signedInAs({ is_anonymous: true });
+
+    await expect(fresh.completeAuthLink(callback('g-frio'))).resolves.toMatchObject({
+      kind: 'anonymous',
+    });
+    expect(auth.exchangeCodeForSession).toHaveBeenCalledTimes(1);
+    expect(auth.exchangeCodeForSession).toHaveBeenCalledWith('g-frio');
+    expect(rpc).toHaveBeenCalledWith('sync_github_verification');
+  });
+
+  it('si el proceso muerto ya lo canjeó, la ruta pone el sello en vez de dar error', async () => {
+    const forgetOldProcess = await githubOpenWhenProcessDies();
+    await forgetOldProcess();
+    jest.clearAllMocks();
+    const fresh = restartProcess();
+    signedInAs({ is_anonymous: true });
+    auth.exchangeCodeForSession.mockResolvedValueOnce({
+      error: gotrueError('flow_state_not_found', 'invalid flow state'),
+    });
+
+    await expect(fresh.completeAuthLink(callback('g-frio-gastado'))).resolves.toBeDefined();
+    expect(rpc).toHaveBeenCalledWith('sync_github_verification');
+  });
+
+  it('el mismo enlace reabierto tras otro reinicio no se canjea ni da error', async () => {
+    const forgetOldProcess = await githubOpenWhenProcessDies();
+    await forgetOldProcess();
+    await restartProcess().completeAuthLink(callback('g-reabierto'));
+    jest.clearAllMocks();
+
+    // Android vuelve a entregar el intent con el que se abrió la app.
+    const again = restartProcess();
+    await expect(again.completeAuthLink(callback('g-reabierto'))).resolves.toBeDefined();
+    expect(auth.exchangeCodeForSession).not.toHaveBeenCalled();
+  });
+
+  it('un code de correo con un intento de GitHub viejo no toca el sello', async () => {
+    const forgetOldProcess = await githubOpenWhenProcessDies();
+    await forgetOldProcess();
+    jest.clearAllMocks();
+    withoutGithubIdentity();
+    signedInAs({ email: 'ana@example.com', email_confirmed_at: '2026-09-17T10:00:00Z' });
+
+    await restartProcess().completeAuthLink(callback('correo-en-frio'));
+    expect(auth.exchangeCodeForSession).toHaveBeenCalledWith('correo-en-frio');
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('un intento caducado ya no cuenta', async () => {
+    const now = Date.now();
+    const clock = jest.spyOn(Date, 'now').mockReturnValue(now);
+    const forgetOldProcess = await githubOpenWhenProcessDies();
+    await forgetOldProcess();
+    clock.mockReturnValue(now + 60 * 60 * 1000);
+    jest.clearAllMocks();
+
+    await restartProcess().completeAuthLink(callback('correo-tras-una-hora'));
+    expect(auth.getUserIdentities).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
+    clock.mockRestore();
+  });
+
+  it('un error de GitHub en frío habla de GitHub, no de pedir otro correo', async () => {
+    const forgetOldProcess = await githubOpenWhenProcessDies();
+    await forgetOldProcess();
+
+    const denied = restartProcess().completeAuthLink(
+      'lockin://auth/callback?error=access_denied&error_description=The+user+denied'
+    );
+    await expect(denied).rejects.toMatchObject({ github: true });
+    await expect(denied).rejects.toThrow(/GitHub/);
+    await expect(denied).rejects.not.toThrow(/correo/);
+  });
+});
+
+describe('un error de GitHub en caliente', () => {
+  it('se distingue del de un correo', async () => {
+    const browser = pendingBrowser();
+    const linking = linkGithubIdentity();
+    linking.catch(() => {});
+    await waitForBrowser();
+
+    const url = 'lockin://auth/callback?error=access_denied&error_description=The+user+denied';
+    const denied = completeAuthLink(url);
+    denied.catch(() => {});
+    browser.finish({ type: 'success', url });
+
+    await expect(denied).rejects.toMatchObject({ github: true });
+    await expect(denied).rejects.not.toThrow(/correo/);
+    await linking.catch(() => {});
   });
 });
 
 /** Espera a que `linkGithubIdentity` haya abierto el navegador. */
 async function waitForBrowser() {
-  for (let i = 0; i < 20 && !jest.mocked(WebBrowser.openAuthSessionAsync).mock.calls.length; i++) {
-    await Promise.resolve();
-  }
+  await until(() => jest.mocked(WebBrowser.openAuthSessionAsync).mock.calls.length > 0);
+}
+
+/** El enlace de vuelta con ese code. */
+function callback(code: string) {
+  return `lockin://auth/callback?code=${code}`;
+}
+
+/** Una promesa que el test resuelve cuando quiere. */
+function deferred<T>() {
+  let resolve: (value: T) => void = () => {};
+  const promise = new Promise<T>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
+/** Sigue si una promesa ya se ha resuelto, sin esperarla. */
+function track<T>(promise: Promise<T>) {
+  const tracked = { promise, settled: false };
+  promise.then(
+    () => (tracked.settled = true),
+    () => (tracked.settled = true)
+  );
+  return tracked;
+}
+
+/** Deja correr las microtareas pendientes. */
+async function flush() {
+  for (let i = 0; i < 20; i++) await Promise.resolve();
+}
+
+/** Espera, sin timers, a que se cumpla la condición. */
+async function until(condition: () => boolean) {
+  for (let i = 0; i < 200 && !condition(); i++) await Promise.resolve();
+  expect(condition()).toBe(true);
+}
+
+/** El navegador vuelve con ese code. */
+function browserReturns(code: string) {
+  jest.mocked(WebBrowser.openAuthSessionAsync).mockResolvedValueOnce({
+    type: 'success',
+    url: callback(code),
+  });
+}
+
+/** El navegador sigue abierto hasta que el test diga. */
+function pendingBrowser() {
+  const browser = deferred<WebBrowser.WebBrowserAuthSessionResult>();
+  jest.mocked(WebBrowser.openAuthSessionAsync).mockReturnValueOnce(browser.promise);
+  return { finish: browser.resolve };
+}
+
+/** La cuenta no tiene (o no ha llegado a tener) identidad de GitHub. */
+function withoutGithubIdentity() {
+  auth.getUserIdentities.mockResolvedValue({
+    data: { identities: [{ provider: 'email' }] },
+    error: null,
+  });
+}
+
+/**
+ * Carga `auth.ts` de nuevo, como al arrancar otro proceso: sin nada en memoria,
+ * pero con el mismo AsyncStorage y el mismo servidor.
+ */
+function restartProcess(): typeof import('./auth') {
+  const storage = jest.requireMock('@react-native-async-storage/async-storage');
+  const client = jest.requireMock('./client');
+  const linking = jest.requireMock('expo-linking');
+  const browser = jest.requireMock('expo-web-browser');
+  let fresh!: typeof import('./auth');
+  jest.isolateModules(() => {
+    jest.doMock('@react-native-async-storage/async-storage', () => storage);
+    jest.doMock('./client', () => client);
+    jest.doMock('expo-linking', () => linking);
+    jest.doMock('expo-web-browser', () => browser);
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- carga limpia, como `active.test.ts`
+    fresh = require('./auth') as typeof import('./auth');
+  });
+  return fresh;
 }
 
 describe('unlinkGithubIdentity', () => {
@@ -455,6 +764,7 @@ describe('completeAuthLink', () => {
     const caducado =
       'lockin://auth/callback?error=access_denied&error_description=Email+link+is+invalid';
     await expect(completeAuthLink(caducado)).rejects.toThrow('El enlace ya no sirve');
+    await expect(completeAuthLink(caducado)).rejects.toMatchObject({ github: false });
     expect(auth.exchangeCodeForSession).not.toHaveBeenCalled();
   });
 
