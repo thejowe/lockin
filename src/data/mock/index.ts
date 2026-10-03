@@ -16,6 +16,7 @@ import {
   resolveMatchMode,
 } from './store';
 import { SEED_RECIPROCAL_IDS } from './seed';
+import { createMockRoomRepository } from './rooms';
 import { createMockSessionRepository } from './sessions';
 
 import type { MockStore } from './store';
@@ -54,11 +55,14 @@ export type { MockStore } from './store';
 export { createMockSessionRepository, sessionsTopic } from './sessions';
 export type { MockSessionOptions } from './sessions';
 export { createMockAgreementRepository } from './agreement';
+export { createMockRoomRepository, roomsTopic } from './rooms';
+export type { MockRoomOptions } from './rooms';
 
 export interface MockRepositoriesOptions {
   /**
    * Los perfiles de `SEED_RECIPROCAL_IDS` aceptan al instante las sesiones que
-   * se les proponen, igual que devuelven el like. Así se puede proponer una
+   * se les proponen y las salas a las que se les convoca, igual que devuelven
+   * el like. Así se puede proponer una
    * sesión «ahora», entrar y llegar a la videollamada sin nadie al otro lado.
    *
    * Por defecto, encendido en la app y apagado bajo Jest: la suite de contrato
@@ -362,5 +366,8 @@ export function createMockRepositories(
       autoAcceptFrom: autoAcceptSessions ? SEED_RECIPROCAL_IDS : [],
     }),
     agreement: createMockAgreementRepository(CURRENT_USER_ID, store),
+    rooms: createMockRoomRepository(CURRENT_USER_ID, store, {
+      autoAcceptFrom: autoAcceptSessions ? SEED_RECIPROCAL_IDS : [],
+    }),
   };
 }

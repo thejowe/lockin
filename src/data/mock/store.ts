@@ -16,11 +16,13 @@ import { SEED_PROFILES, SEED_RECIPROCAL_IDS } from './seed';
 import type { StoredAgreementAnswer } from '../agreement';
 import type {
   Decision,
+  LockInRoom,
   LockInSession,
   Match,
   Message,
   ModePreference,
   Profile,
+  RoomMember,
   Session,
   SessionAttendance,
   SessionRatingEntry,
@@ -47,6 +49,10 @@ export interface MockState {
   agreementAnswers: StoredAgreementAnswer[];
   /** Matches en los que ya se volcaron las respuestas semilla de la contraparte. */
   agreementSeeded: Set<string>;
+  /** Salas Lock-In grupales. */
+  rooms: LockInRoom[];
+  /** Una fila por persona y sala. Quién ve cuál lo decide `./rooms.ts` (el ciego). */
+  roomMembers: RoomMember[];
 }
 
 function initialState(): MockState {
@@ -62,6 +68,8 @@ function initialState(): MockState {
     ratings: [],
     agreementAnswers: [],
     agreementSeeded: new Set(),
+    rooms: [],
+    roomMembers: [],
   };
 }
 

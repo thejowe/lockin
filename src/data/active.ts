@@ -182,6 +182,9 @@ export const repositories: Repositories = {
   get agreement() {
     return resolveActive().repositories.agreement;
   },
+  get rooms() {
+    return resolveActive().repositories.rooms;
+  },
 };
 
 /** Presencia en sesiones, con la misma regla. Sin credenciales, en memoria. */

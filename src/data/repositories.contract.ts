@@ -42,10 +42,16 @@ import {
   SessionForbiddenError,
   SessionWindowError,
 } from './session-errors';
+import { RoomInviteError } from './rooms';
 import { buildProfileInput } from './test-fixtures';
 
-import type { AgreementRepository, LockInSessionRepository, Repositories } from './repositories';
-import type { AgreementTopicView, ProfileInput } from './types';
+import type {
+  AgreementRepository,
+  LockInSessionRepository,
+  Repositories,
+  RoomRepository,
+} from './repositories';
+import type { AgreementTopicView, ProfileInput, RoomView } from './types';
 import type { PresenceAdapter } from './presence';
 import type { VideoSignalChannel, VideoSignalMessage } from './video-signal';
 
@@ -97,6 +103,12 @@ export interface ContractFixture {
   counterpartAgreement(): AgreementRepository;
   /** Acuerdo actuando como `reciprocalBId`, que no está en ese match. */
   outsiderAgreement(): AgreementRepository;
+  /**
+   * Salas actuando como cualquiera de los perfiles de apoyo (`reciprocalAId`,
+   * `reciprocalBId`, `openToBothReciprocalId`). El usuario del test usa
+   * `repositories.rooms`.
+   */
+  roomsFor(profileId: string): RoomRepository;
   /**
    * Deja pasar `ms` milisegundos. En el mock mueve el reloj simulado; en un backend
    * real espera de verdad, así que fuera de `canTimeTravel` solo se usa con segundos.
@@ -1616,6 +1628,343 @@ export function describeRepositoryContract(backend: ContractBackend): void {
             expect(await theirs.listStreaks()).toEqual(beforeTheirs);
           }
         );
+      });
+    });
+
+    /**
+     * Salas Lock-In grupales: los quince casos de la spec
+     * (`docs/superpowers/specs/2026-10-02-salas-grupales-design.md`, §1).
+     *
+     * Reparto: el usuario del test convoca; `reciprocalAId` y `reciprocalBId`
+     * son sus matches; `openToBothReciprocalId` no recibe like y hace de
+     * tercero. Hermano de `sessions` y no hijo: lo que allí vive en su ámbito
+     * (`itWithTimeTravel`, `startsIn`) se declara aquí otra vez.
+     */
+    describe('rooms', () => {
+      const MINUTE = 60_000;
+      /** Casos que saltan minutos: solo en backends con reloj simulado. */
+      const itWithTimeTravel = backend.canTimeTravel ? it : it.skip;
+
+      let mine: RoomRepository;
+      let roomsOfA: RoomRepository;
+      let roomsOfB: RoomRepository;
+      let third: RoomRepository;
+      let aId: string;
+      let bId: string;
+      let thirdId: string;
+
+      beforeEach(async () => {
+        // Antes que nada: en el mock `prepareSwiper()` no hace nada y el perfil
+        // propio no existe hasta guardarlo, así que nadie vería a quien
+        // convoca en `others`. En Supabase es un upsert inocuo.
+        await repositories.profiles.saveCurrent(buildProfileInput());
+        await fixture.prepareSwiper();
+        aId = fixture.reciprocalAId;
+        bId = fixture.reciprocalBId;
+        thirdId = fixture.openToBothReciprocalId;
+        await repositories.discovery.recordDecision(aId, 'like');
+        await repositories.discovery.recordDecision(bId, 'like');
+        mine = repositories.rooms;
+        roomsOfA = fixture.roomsFor(aId);
+        roomsOfB = fixture.roomsFor(bId);
+        third = fixture.roomsFor(thirdId);
+      });
+
+      /** Hora relativa al reloj del servidor, no al del proceso de tests. */
+      async function startsIn(ms: number): Promise<string> {
+        return new Date(Date.parse(await repositories.sessions.serverNow()) + ms).toISOString();
+      }
+      const later = () => startsIn(60 * MINUTE);
+      /** Justo por encima del margen mínimo: la ventana de entrada abre a los 2 s. */
+      const soon = () => startsIn(5 * MINUTE + 2_000);
+      /** Se puede responder 10 s; tras `elapse(11_000)` la ventana ya está abierta. */
+      const beforeWindow = () => startsIn(5 * MINUTE + 10_000);
+
+      /** Convoca a A y B, por defecto dentro de una hora. */
+      async function convene(startsAt?: string): Promise<RoomView> {
+        return mine.create({
+          inviteeIds: [aId, bId],
+          startsAt: startsAt ?? (await later()),
+          blocks: 1,
+        });
+      }
+
+      const statusOf = (view: RoomView | null | undefined, profileId: string) =>
+        view?.others.find((other) => other.member.profileId === profileId)?.member.status;
+      const othersOf = (view: RoomView | null | undefined) =>
+        view?.others.map((other) => other.member.profileId) ?? [];
+      const liveIds = async (repository: RoomRepository) =>
+        (await repository.listLive()).map((view) => view.room.id);
+
+      it('convocar crea la sala conmigo aceptada y a los invitados invitada', async () => {
+        const startsAt = await later();
+
+        const view = await mine.create({ inviteeIds: [aId, bId], startsAt, blocks: 2 });
+
+        expect(view.room).toMatchObject({
+          hostId: fixture.currentUserId,
+          blocks: 2,
+          cancelledAt: null,
+        });
+        expect(Date.parse(view.room.startsAt)).toBe(Date.parse(startsAt));
+        expect(view.me).toMatchObject({
+          profileId: fixture.currentUserId,
+          status: 'aceptada',
+          joinedAt: null,
+          leftAt: null,
+        });
+        expect(view.me.respondedAt).not.toBeNull();
+        expect(statusOf(view, aId)).toBe('invitada');
+        expect(statusOf(view, bId)).toBe('invitada');
+        expect(await liveIds(mine)).toEqual([view.room.id]);
+      });
+
+      it('el ciego de invitados: una invitada no ve a otra hasta que acepta', async () => {
+        const { room } = await convene();
+
+        const seenByA = await roomsOfA.getById(room.id);
+        expect(seenByA?.me).toMatchObject({ profileId: aId, status: 'invitada' });
+        expect(othersOf(seenByA)).toEqual([fixture.currentUserId]);
+        expect(statusOf(seenByA, fixture.currentUserId)).toBe('aceptada');
+        expect(othersOf((await roomsOfA.listLive())[0])).toEqual([fixture.currentUserId]);
+
+        await roomsOfB.respond(room.id, 'aceptada');
+
+        expect(statusOf(await roomsOfA.getById(room.id), bId)).toBe('aceptada');
+      });
+
+      it('quien rechaza desaparece para todos salvo para quien convoca', async () => {
+        const { room } = await convene();
+        await roomsOfA.respond(room.id, 'aceptada');
+
+        const rejected = await roomsOfB.respond(room.id, 'rechazada');
+
+        expect(rejected).toMatchObject({ profileId: bId, status: 'rechazada' });
+        expect(statusOf(await mine.getById(room.id), bId)).toBe('rechazada');
+        expect(othersOf(await roomsOfA.getById(room.id))).not.toContain(bId);
+        expect(await roomsOfB.getById(room.id)).toBeNull();
+        expect(await liveIds(roomsOfB)).toEqual([]);
+      });
+
+      it('invitados inválidos: RoomInviteError', async () => {
+        const startsAt = await later();
+        const invalid = [
+          [aId],
+          [aId, bId, thirdId, fixture.nonReciprocalId, fixture.excludableId],
+          [aId, aId],
+          [aId, fixture.currentUserId],
+          [aId, thirdId],
+        ];
+
+        for (const inviteeIds of invalid) {
+          await expect(mine.create({ inviteeIds, startsAt, blocks: 1 })).rejects.toBeInstanceOf(
+            RoomInviteError
+          );
+        }
+        expect(await mine.listLive()).toEqual([]);
+      });
+
+      it('una hora fuera de rango: SessionWindowError', async () => {
+        await expect(
+          mine.create({ inviteeIds: [aId, bId], startsAt: await startsIn(4 * MINUTE), blocks: 1 })
+        ).rejects.toBeInstanceOf(SessionWindowError);
+        await expect(
+          mine.create({
+            inviteeIds: [aId, bId],
+            startsAt: await startsIn(31 * 24 * 60 * MINUTE),
+            blocks: 1,
+          })
+        ).rejects.toBeInstanceOf(SessionWindowError);
+      });
+
+      it('un tercero no ve la sala ni la toca', async () => {
+        const { room } = await convene();
+
+        expect(await third.getById(room.id)).toBeNull();
+        expect(await third.listLive()).toEqual([]);
+        await expect(third.respond(room.id, 'aceptada')).rejects.toBeInstanceOf(
+          SessionForbiddenError
+        );
+        await expect(third.join(room.id)).rejects.toBeInstanceOf(SessionForbiddenError);
+      });
+
+      it('quien convoca no responde y una invitada no cancela', async () => {
+        const { room } = await convene();
+
+        await expect(mine.respond(room.id, 'aceptada')).rejects.toBeInstanceOf(
+          SessionForbiddenError
+        );
+        await expect(roomsOfA.cancel(room.id)).rejects.toBeInstanceOf(SessionForbiddenError);
+      });
+
+      it('cancelar la saca de las listas, y la carrera con aceptar en los dos órdenes', async () => {
+        // Cancelar y luego aceptar: el aceptar choca.
+        const first = await convene();
+        const cancelled = await mine.cancel(first.room.id);
+        expect(cancelled.cancelledAt).not.toBeNull();
+        expect(await liveIds(mine)).not.toContain(first.room.id);
+        expect(await liveIds(roomsOfA)).not.toContain(first.room.id);
+        await expect(roomsOfA.respond(first.room.id, 'aceptada')).rejects.toBeInstanceOf(
+          SessionConflictError
+        );
+
+        // Aceptar y luego cancelar: los dos tienen éxito, porque quien convoca
+        // puede cancelar hasta el inicio aunque alguien acabe de aceptar.
+        const second = await convene();
+        await expect(roomsOfA.respond(second.room.id, 'aceptada')).resolves.toMatchObject({
+          status: 'aceptada',
+        });
+        await expect(mine.cancel(second.room.id)).resolves.toMatchObject({
+          id: second.room.id,
+        });
+        expect((await roomsOfA.getById(second.room.id))?.room.cancelledAt).not.toBeNull();
+        expect((await roomsOfB.getById(second.room.id))?.room.cancelledAt).not.toBeNull();
+        expect(await liveIds(roomsOfA)).not.toContain(second.room.id);
+      });
+
+      it('entrar: con ventana, habiendo aceptado, idempotente y volver tras salir', async () => {
+        const far = await convene();
+        await expect(mine.join(far.room.id)).rejects.toBeInstanceOf(SessionWindowError);
+
+        const { room } = await convene(await soon());
+        await fixture.elapse(3_000);
+        await expect(roomsOfA.join(room.id)).rejects.toBeInstanceOf(SessionForbiddenError);
+
+        const first = await mine.join(room.id);
+        const again = await mine.join(room.id);
+        const left = await mine.leave(room.id);
+        const back = await mine.join(room.id);
+
+        expect(first).toMatchObject({ profileId: fixture.currentUserId, leftAt: null });
+        expect(first.joinedAt).not.toBeNull();
+        expect(Date.parse(again.joinedAt!)).toBe(Date.parse(first.joinedAt!));
+        expect(left.leftAt).not.toBeNull();
+        expect(back.leftAt).toBeNull();
+        expect(Date.parse(back.joinedAt!)).toBe(Date.parse(first.joinedAt!));
+      });
+
+      it('aceptar dos veces es idempotente y rechazar después la saca de mi lista', async () => {
+        const { room } = await convene();
+
+        const accepted = await roomsOfA.respond(room.id, 'aceptada');
+        await fixture.elapse(1_000);
+        const again = await roomsOfA.respond(room.id, 'aceptada');
+
+        expect(again.status).toBe('aceptada');
+        expect(Date.parse(again.respondedAt!)).toBe(Date.parse(accepted.respondedAt!));
+
+        await expect(roomsOfA.respond(room.id, 'rechazada')).resolves.toMatchObject({
+          status: 'rechazada',
+        });
+        expect(await liveIds(roomsOfA)).toEqual([]);
+      });
+
+      /**
+       * Mismo mecanismo que «avisa a las dos personas de un cambio en la
+       * sesión»: `subscribe()` vuelve antes de que el servidor registre la
+       * suscripción y `postgres_changes` no reemite, así que el cambio se
+       * REPITE, con una sala nueva cada vez, hasta que llega. Antes de cada
+       * cambio, `elapse(1_000)` deja llegar los avisos de la preparación y el
+       * contador se pone a cero: solo cuenta el aviso del cambio.
+       */
+      it('avisa a quien convoca cuando aceptan, y a A cuando B rechaza tras aceptar', async () => {
+        const hostListener = jest.fn();
+        const aListener = jest.fn();
+        const unsubscribeHost = mine.subscribe(hostListener);
+        const unsubscribeA = roomsOfA.subscribe(aListener);
+
+        async function untilNotified(
+          listener: jest.Mock,
+          prepare: () => Promise<string>,
+          change: (roomId: string) => Promise<unknown>
+        ): Promise<void> {
+          const deadline = Date.now() + 30_000;
+          for (;;) {
+            const roomId = await prepare();
+            await fixture.elapse(1_000);
+            listener.mockClear();
+            await change(roomId);
+            try {
+              await eventually(() => expect(listener).toHaveBeenCalled(), 5_000);
+              return;
+            } catch (error) {
+              if (Date.now() > deadline) throw error;
+            }
+          }
+        }
+
+        try {
+          await untilNotified(
+            hostListener,
+            async () => (await convene()).room.id,
+            (roomId) => roomsOfA.respond(roomId, 'aceptada')
+          );
+          // La fila de B deja de ser legible para A al rechazar: el aviso
+          // tiene que llegar por la sala, no por la fila.
+          await untilNotified(
+            aListener,
+            async () => {
+              const { room } = await convene();
+              await roomsOfB.respond(room.id, 'aceptada');
+              return room.id;
+            },
+            (roomId) => roomsOfB.respond(roomId, 'rechazada')
+          );
+        } finally {
+          unsubscribeHost();
+          unsubscribeA();
+        }
+      });
+
+      it('con la ventana abierta ya no se responde, ni aceptar ni rechazar', async () => {
+        const { room } = await convene(await beforeWindow());
+        await fixture.elapse(11_000);
+
+        await expect(roomsOfA.respond(room.id, 'aceptada')).rejects.toBeInstanceOf(
+          SessionExpiredError
+        );
+        await expect(roomsOfB.respond(room.id, 'rechazada')).rejects.toBeInstanceOf(
+          SessionExpiredError
+        );
+      });
+
+      itWithTimeTravel('una sala empezada no se cancela; terminada sigue legible', async () => {
+        const { room } = await convene(await soon());
+        await fixture.elapse(6 * MINUTE);
+
+        await expect(mine.cancel(room.id)).rejects.toBeInstanceOf(SessionExpiredError);
+
+        await fixture.elapse(30 * MINUTE);
+
+        expect(await liveIds(mine)).toEqual([]);
+        expect((await mine.getById(room.id))?.room.id).toBe(room.id);
+      });
+
+      it('listLive devuelve las 21 salas en las que estás, por orden de inicio', async () => {
+        const created: string[] = [];
+        for (let i = 0; i < 21; i += 1) {
+          created.push((await convene(await startsIn((60 + i) * MINUTE))).room.id);
+        }
+
+        expect(await liveIds(mine)).toEqual(created);
+        expect(await liveIds(roomsOfA)).toEqual(created);
+      });
+
+      it('un tercero suscrito no recibe nada de una sala en la que no está', async () => {
+        const listener = jest.fn();
+        const unsubscribe = third.subscribe(listener);
+
+        try {
+          const { room } = await convene();
+          await roomsOfA.respond(room.id, 'aceptada');
+          await roomsOfB.respond(room.id, 'rechazada');
+          await mine.cancel(room.id);
+          await fixture.elapse(2_000);
+
+          expect(listener).toHaveBeenCalledTimes(0);
+        } finally {
+          unsubscribe();
+        }
       });
     });
 

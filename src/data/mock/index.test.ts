@@ -15,6 +15,7 @@ import { createMockAgreementRepository } from './agreement';
 import {
   advanceMockClock,
   createMockRepositories,
+  createMockRoomRepository,
   createMockSessionRepository,
   CURRENT_USER_ID,
   resetState,
@@ -82,6 +83,7 @@ const mockBackend: ContractBackend = {
       outsiderSessions: () => createMockSessionRepository(RECIPROCAL_ALBA),
       counterpartAgreement: () => createMockAgreementRepository(RECIPROCAL_NURIA),
       outsiderAgreement: () => createMockAgreementRepository(RECIPROCAL_ALBA),
+      roomsFor: (profileId) => createMockRoomRepository(profileId),
       async elapse(ms) {
         advanceMockClock(ms);
       },

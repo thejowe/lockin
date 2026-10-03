@@ -15,6 +15,7 @@ import type {
   AgreementTopicView,
   Decision,
   DecisionResult,
+  LockInRoom,
   LockInSession,
   MatchStreak,
   MatchWithProfile,
@@ -24,6 +25,9 @@ import type {
   Profile,
   ProfileFilter,
   ProfileInput,
+  RoomInput,
+  RoomMember,
+  RoomView,
   Session,
   SessionAttendance,
   SessionProposalInput,
@@ -213,6 +217,43 @@ export interface AgreementRepository {
 }
 
 /**
+ * Salas Lock-In grupales (Fase 3): una sesión de bloques 25+5 para 3–5
+ * personas, convocada por una de ellas entre sus matches. No es un match.
+ *
+ * Reglas, iguales en los dos backends (ver `src/data/rooms.ts`): se convoca a
+ * 2–4 matches propios, sin repetir, con `startsAt` entre ahora + 5 min y ahora
+ * + 30 días; quien convoca nace `aceptada` y no responde; las demás responden
+ * solo antes de que abra la ventana de entrada (5 min antes del inicio); solo
+ * quien convoca cancela, antes de empezar; `join` solo si has aceptado y en la
+ * ventana, e idempotente. **Ciego de invitados**: una invitada ve a quien
+ * convoca y a quien ya aceptó, nunca a las demás invitadas; quien convoca ve a
+ * todo el mundo con su estado. Lo impone el servidor, no la pantalla.
+ *
+ * Errores: `RoomInviteError` (invitados inválidos) y las clases de
+ * `src/data/session-errors.ts`: `SessionConflictError`, `SessionExpiredError`,
+ * `SessionWindowError`, `SessionForbiddenError`.
+ */
+export interface RoomRepository {
+  /**
+   * Salas vivas en las que estás (convocas, te han invitado o aceptaste), por
+   * `startsAt` ascendente. Sin canceladas, terminadas ni rechazadas. **Todas**:
+   * sin tope ni página truncada (Supabase pagina por dentro, como `matches.list()`).
+   */
+  listLive(): Promise<RoomView[]>;
+  /** `null` si no existe, no estás o la rechazaste. Sí devuelve canceladas y terminadas. */
+  getById(roomId: string): Promise<RoomView | null>;
+  create(input: RoomInput): Promise<RoomView>;
+  /** Devuelve tu fila: tras rechazar ya no ves la sala. Aceptar dos veces es idempotente. */
+  respond(roomId: string, answer: 'aceptada' | 'rechazada'): Promise<RoomMember>;
+  cancel(roomId: string): Promise<LockInRoom>;
+  /** Idempotente: conserva `joinedAt` y pone `leftAt = null`. */
+  join(roomId: string): Promise<RoomMember>;
+  leave(roomId: string): Promise<RoomMember>;
+  /** Avisa de cualquier cambio en tus salas o en sus miembros. */
+  subscribe(listener: () => void): Unsubscribe;
+}
+
+/**
  * Punto único de acceso a datos. Cualquier implementación (mock, Supabase)
  * debe devolver un objeto con esta forma exacta.
  */
@@ -224,6 +265,7 @@ export interface Repositories {
   messages: MessageRepository;
   sessions: LockInSessionRepository;
   agreement: AgreementRepository;
+  rooms: RoomRepository;
 }
 
 /** Fábrica de una implementación completa. Lo que exporta cada backend. */

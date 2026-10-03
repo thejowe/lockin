@@ -447,6 +447,10 @@ const supabaseBackend: ContractBackend = {
       outsiderSessions: () => sessionRepositoryFor(lockinReciprocal),
       counterpartAgreement: () => agreementRepositoryFor(parReciprocal),
       outsiderAgreement: () => agreementRepositoryFor(lockinReciprocal),
+      // Provisional: la Tarea 4 de `salas` lo sustituye por el repositorio real.
+      roomsFor: () => {
+        throw new Error('rooms: Tarea 4');
+      },
       elapse: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
     };
   },

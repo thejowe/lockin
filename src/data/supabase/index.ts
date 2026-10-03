@@ -40,6 +40,7 @@ import type {
   MessageRepository,
   ProfileRepository,
   Repositories,
+  RoomRepository,
   SessionRepository,
   Unsubscribe,
 } from '../repositories';
@@ -261,6 +262,27 @@ async function resolveMatches(rows: MatchRow[], userId: string): Promise<MatchWi
 // ---------------------------------------------------------------------------
 // Repositorios
 // ---------------------------------------------------------------------------
+
+/**
+ * Provisional: el repositorio de salas contra Supabase llega en la Tarea 4 del
+ * bloque `salas` (`./rooms.ts`), que sustituye esto. Hasta entonces cada método
+ * falla con un error explícito en vez de devolver datos inventados.
+ */
+function pendingRoomRepository(): RoomRepository {
+  const pending = (): never => {
+    throw new Error('rooms: Tarea 4');
+  };
+  return {
+    listLive: async () => pending(),
+    getById: async () => pending(),
+    create: async () => pending(),
+    respond: async () => pending(),
+    cancel: async () => pending(),
+    join: async () => pending(),
+    leave: async () => pending(),
+    subscribe: () => pending(),
+  };
+}
 
 /**
  * La fábrica que consume `src/data/active.ts`. Misma forma que la del mock.
@@ -661,5 +683,6 @@ export function createSupabaseRepositories(): Repositories {
     messages,
     sessions: createSupabaseSessionRepository(),
     agreement: createSupabaseAgreementRepository(),
+    rooms: pendingRoomRepository(),
   };
 }
