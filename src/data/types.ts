@@ -339,3 +339,57 @@ export interface AgreementAnswerInput {
   /** Se recorta; vacía o solo espacios se guarda como `null`. */
   note?: string | null;
 }
+
+/** Estado de una persona en una sala. Quien convoca nace `aceptada`. */
+export type RoomMemberStatus = 'invitada' | 'aceptada' | 'rechazada';
+
+/**
+ * Sala Lock-In grupal (Fase 3): una sesión de bloques 25+5 para 3–5 personas,
+ * convocada por una de ellas entre sus matches. No es un match ni tiene chat.
+ * Ver `docs/superpowers/specs/2026-10-02-salas-grupales-design.md`.
+ */
+export interface LockInRoom {
+  id: string;
+  /** Quien la convocó. No tiene más poder que cancelarla antes de empezar. */
+  hostId: string;
+  /** ISO. Inicio del primer bloque. */
+  startsAt: string;
+  blocks: SessionBlocks;
+  /** ISO de la cancelación; `null` si sigue en pie. */
+  cancelledAt: string | null;
+  createdAt: string;
+}
+
+/** Una persona en una sala: su respuesta a la invitación y su asistencia. */
+export interface RoomMember {
+  roomId: string;
+  profileId: string;
+  status: RoomMemberStatus;
+  /** ISO de la última respuesta; `null` mientras está `invitada`. */
+  respondedAt: string | null;
+  /** ISO de la primera entrada; `null` si no ha entrado. */
+  joinedAt: string | null;
+  /** Misma semántica que `SessionAttendance.leftAt`. */
+  leftAt: string | null;
+}
+
+/** Una sala vista desde el usuario actual. */
+export interface RoomView {
+  room: LockInRoom;
+  /** Mi fila. Siempre está: si no la hay, no ves la sala. */
+  me: RoomMember;
+  /**
+   * Las demás personas que puedes ver, con su perfil, por orden de
+   * `profileId`. Quien convoca las ve todas; el resto, solo a quien ha
+   * aceptado (el ciego de invitados lo impone el servidor).
+   */
+  others: { member: RoomMember; profile: Profile }[];
+}
+
+/** Datos para convocar. El repositorio pone id, quien convoca y fechas. */
+export interface RoomInput {
+  /** 2–4 ids de perfil, sin repetir, todos matches tuyos. */
+  inviteeIds: string[];
+  startsAt: string;
+  blocks: SessionBlocks;
+}

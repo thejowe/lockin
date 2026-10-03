@@ -17,6 +17,7 @@ export * from './sessions';
 export * from './streaks';
 export * from './session-errors';
 export * from './agreement';
+export * from './rooms';
 export { createMemoryPresenceAdapter } from './presence';
 export type { PresenceAdapter, PresenceHandlers } from './presence';
 export { createMemoryVideoSignalAdapter } from './video-signal';
