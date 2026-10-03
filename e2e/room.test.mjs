@@ -56,8 +56,12 @@ describe('room.yaml', () => {
     assert.match(verify, /\{ host_id: hostId, starts_at: startsAt\.toISOString\(\), blocks: 1 \}/);
     assert.match(verify, /'11111111-1111-4111-8111-000000000002'/);
     assert.match(seed, /'11111111-1111-4111-8111-000000000002', 'Marc Oller'/);
-    // El usuario queda `invitada`: sin `status`, el valor por defecto.
-    assert.match(verify, /\{ room_id: room\.id, profile_id: profile\.id \}/);
+    // El usuario queda `invitada`, explícito: en un insert en lote PostgREST
+    // no aplica el `default` a la columna que falta (run 37154276244).
+    assert.match(
+      verify,
+      /\{ room_id: room\.id, profile_id: profile\.id, status: 'invitada', responded_at: null \}/
+    );
     assert.match(
       read('../supabase/migrations/20261002000100_lockin_rooms.sql'),
       /status public\.room_member_status not null default 'invitada'/

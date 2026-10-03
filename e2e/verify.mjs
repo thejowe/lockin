@@ -397,11 +397,14 @@ export async function prepareRoom(status, profileName) {
   assert.ifError(roomError);
 
   // `room_members_responded_iff_not_invited`: aceptada exige respuesta.
+  // Todas las filas con las mismas claves: en un insert en lote, PostgREST
+  // rellena con NULL (no con el `default`) la columna que le falta a una fila.
+  // Run 37154276244: `{ room_id, profile_id }` a secas dio `status` nulo.
   const respondedAt = new Date().toISOString();
   const { error: membersError } = await client.from('room_members').insert([
     { room_id: room.id, profile_id: hostId, status: 'aceptada', responded_at: respondedAt },
     { room_id: room.id, profile_id: thirdId, status: 'aceptada', responded_at: respondedAt },
-    { room_id: room.id, profile_id: profile.id },
+    { room_id: room.id, profile_id: profile.id, status: 'invitada', responded_at: null },
   ]);
   assert.ifError(membersError);
 
