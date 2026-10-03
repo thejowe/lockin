@@ -190,7 +190,15 @@ jobs:
           profile: pixel_6
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: node e2e/run.mjs test
+          # Sin diálogos de error del sistema: en el runner de 7.8 GB el AVD
+          # recién arrancado mete un ANR de Google Play Services o de la
+          # System UI que tapaba la app en casi todos los intentos (run
+          # 37150674444). Cuando no salía, los seis flujos de `supabase`
+          # pasaban enteros. Ocultarlo no oculta nada de la app: un cuelgue de
+          # LockIn sigue haciendo fallar la aserción.
+          script: |
+            adb shell settings put global hide_error_dialogs 1
+            node e2e/run.mjs test
       - name: ¿Se cayó el runner o falló el caso?
         id: triage
         if: always()
@@ -209,7 +217,15 @@ jobs:
           profile: pixel_6
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: node e2e/run.mjs test
+          # Sin diálogos de error del sistema: en el runner de 7.8 GB el AVD
+          # recién arrancado mete un ANR de Google Play Services o de la
+          # System UI que tapaba la app en casi todos los intentos (run
+          # 37150674444). Cuando no salía, los seis flujos de `supabase`
+          # pasaban enteros. Ocultarlo no oculta nada de la app: un cuelgue de
+          # LockIn sigue haciendo fallar la aserción.
+          script: |
+            adb shell settings put global hide_error_dialogs 1
+            node e2e/run.mjs test
       - name: Estado de las fases (también si no se alcanza Maestro)
         if: always()
         env:
