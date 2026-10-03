@@ -30,7 +30,7 @@ describe('agreement.yaml', () => {
   it('toca y espera etiquetas que existen en la tarjeta, la pantalla y la fila', () => {
     assert.match(flow, /visible: 'Acuerdo de socios\.\*'/);
     assert.match(flow, /tapOn: 'Acuerdo de socios\.\*'/);
-    assert.match(card, /<ThemedText type="bodyStrong">Acuerdo de socios<\/ThemedText>/);
+    assert.match(card, /<ThemedText type="heading"[^>]*>\s*Acuerdo de socios\s*<\/ThemedText>/);
 
     assert.match(flow, /visible: '\.\*Esto no es un contrato ni asesoría legal\.\*'/);
     assert.match(screen, /'Esto no es un contrato ni asesoría legal\./);

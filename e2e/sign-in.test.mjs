@@ -39,7 +39,7 @@ describe('entrada y recuperación desde instalación limpia', () => {
       assert(flow.includes("assertVisible: 'Email de tu cuenta: ${EMAIL}'"));
       assert(account.includes('accessibilityLabel={`Email de tu cuenta: ${account.email}`}'));
       assert(flow.includes("'Matches'"));
-      assert(tabs.includes('>Matches</NativeTabs.Trigger.Label>'));
+      assert(tabs.includes("label: 'Matches'"));
     });
 
     it(`${name}: hideKeyboard solo tras teclear`, () => {
@@ -59,7 +59,7 @@ describe('entrada y recuperación desde instalación limpia', () => {
     assert(signIn.includes("tapOn: 'Entrar'"));
     assert(form.includes(": 'Entrar'}"));
     assert(signIn.indexOf("visible: 'Matches'") < signIn.indexOf("tapOn: 'Perfil'"));
-    assert(tabs.includes('>Perfil</NativeTabs.Trigger.Label>'));
+    assert(tabs.includes("label: 'Perfil'"));
   });
 
   it('recuperación fija petición, campo, botón y éxito contra los formularios', () => {
@@ -145,8 +145,8 @@ describe('entrar en otra cuenta dejando atrás el perfil anónimo', () => {
     }
     assert(form.includes(": 'Entrar'}"));
     assert(abandon.includes("'Matches'"));
-    assert(tabs.includes('>Matches</NativeTabs.Trigger.Label>'));
-    assert(tabs.includes('>Perfil</NativeTabs.Trigger.Label>'));
+    assert(tabs.includes("label: 'Matches'"));
+    assert(tabs.includes("label: 'Perfil'"));
     assert(abandon.includes("assertVisible: 'Email de tu cuenta: ${EMAIL}'"));
   });
 
