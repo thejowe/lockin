@@ -44,7 +44,7 @@ import {
   type RoomView,
 } from '@/data';
 import { ProfileAvatar } from '@/features/chat';
-import { useRoom, useRoomPresence } from '@/features/room';
+import { useRoom, useRoomPresence, useSingleFlight } from '@/features/room';
 import {
   blocksLabel,
   formatCountdown,
@@ -173,10 +173,11 @@ export default function RoomScreen() {
   const [confirming, setConfirming] = useState<Confirming>(null);
   const [departing, setDeparting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-  // La salida entera —asistencia y navegación— es una sola: un segundo toque
-  // no puede hacer un segundo `router.back()` que saque otra pantalla.
-  const [exiting, setExiting] = useState(false);
-  const exitingRef = useRef(false);
+  // Una acción a la vez, entera (escritura y navegación): un segundo toque no
+  // repite la escritura ni hace un segundo `router.back()` que saque otra
+  // pantalla, y todos los botones de acción quedan deshabilitados mientras dura.
+  const flight = useSingleFlight();
+  const busy = flight.busy;
 
   const view = room.view;
   const inWindow = view !== null && isInRoomJoinWindow(view.room, view.me, nowMs);
@@ -243,46 +244,53 @@ export default function RoomScreen() {
   const title = isHost ? 'Convocas tú' : `Convoca ${hostName ?? 'otra persona'}`;
   const myAvatar = meQuery.data?.avatar ?? null;
 
-  const accept = async () => {
-    setActionError(null);
-    try {
-      await room.respond('aceptada');
-    } catch (error) {
-      setActionError(actionErrorText(error, 'respond'));
-    }
-  };
+  const accept = () =>
+    flight
+      .run(async () => {
+        setActionError(null);
+        await room.respond('aceptada');
+      })
+      .catch((error) => setActionError(actionErrorText(error, 'respond')));
 
-  const decline = async () => {
-    if (room.pending) return;
-    setActionError(null);
-    setDeparting(true);
-    try {
-      await room.respond('rechazada');
-      router.back();
-    } catch (error) {
-      setDeparting(false);
-      setConfirming(null);
-      setActionError(actionErrorText(error, 'respond'));
-    }
-  };
+  // Navega solo después de guardar el rechazo; si falla, se queda y lo dice.
+  const decline = () =>
+    flight
+      .run(
+        async () => {
+          setActionError(null);
+          setDeparting(true);
+          await room.respond('rechazada');
+          router.back();
+        },
+        { hold: true }
+      )
+      .catch((error) => {
+        setDeparting(false);
+        setConfirming(null);
+        setActionError(actionErrorText(error, 'respond'));
+      });
 
-  const cancel = async () => {
-    setActionError(null);
-    try {
-      await room.cancel();
-    } catch (error) {
-      setActionError(actionErrorText(error, 'cancel'));
-    }
-    setConfirming(null);
-  };
+  const cancel = () =>
+    flight
+      .run(async () => {
+        setActionError(null);
+        await room.cancel();
+        setConfirming(null);
+      })
+      .catch((error) => {
+        setConfirming(null);
+        setActionError(actionErrorText(error, 'cancel'));
+      });
 
-  const exit = async () => {
-    if (exitingRef.current) return;
-    exitingRef.current = true;
-    setExiting(true);
-    await leaveRoom();
-    router.back();
-  };
+  // `leaveRoom` no lanza: un `leave` fallido deja `leftAt` nulo y se sale igual.
+  const exit = () =>
+    flight.run(
+      async () => {
+        await leaveRoom();
+        router.back();
+      },
+      { hold: true }
+    );
 
   const cancelControls =
     confirming === 'cancel' ? (
@@ -290,7 +298,7 @@ export default function RoomScreen() {
         text="Se cancelará para todas las personas invitadas."
         confirmLabel="Sí, cancelar la sala"
         backLabel="No, mantenerla"
-        disabled={room.pending}
+        disabled={busy}
         onConfirm={cancel}
         onBack={() => setConfirming(null)}
       />
@@ -298,7 +306,7 @@ export default function RoomScreen() {
       <Button
         label="Cancelar sala"
         variant="secondary"
-        disabled={room.pending}
+        disabled={busy}
         onPress={() => setConfirming('cancel')}
       />
     );
@@ -395,7 +403,7 @@ export default function RoomScreen() {
                 text="Saldrás antes de acabar."
                 confirmLabel="Salir de la sala"
                 backLabel="Seguir"
-                disabled={exiting}
+                disabled={busy}
                 onConfirm={exit}
                 onBack={() => setConfirming(null)}
               />
@@ -453,13 +461,8 @@ export default function RoomScreen() {
           {view.me.status === 'invitada' &&
             (canRespond ? (
               <>
-                <Button label="Me apunto" disabled={room.pending} onPress={accept} />
-                <Button
-                  label="No puedo"
-                  variant="secondary"
-                  disabled={room.pending}
-                  onPress={decline}
-                />
+                <Button label="Me apunto" disabled={busy} onPress={accept} />
+                <Button label="No puedo" variant="secondary" disabled={busy} onPress={decline} />
               </>
             ) : (
               <ThemedText type="body" themeColor="textSecondary">
@@ -475,7 +478,7 @@ export default function RoomScreen() {
                 text="Dejarás de ver esta sala y no podrás volver a apuntarte."
                 confirmLabel="Sí, no podré ir"
                 backLabel="Seguir en la sala"
-                disabled={room.pending}
+                disabled={busy}
                 onConfirm={decline}
                 onBack={() => setConfirming(null)}
               />
@@ -483,7 +486,7 @@ export default function RoomScreen() {
               <Button
                 label="No podré ir"
                 variant="secondary"
-                disabled={room.pending}
+                disabled={busy}
                 onPress={() => setConfirming('decline')}
               />
             ))}

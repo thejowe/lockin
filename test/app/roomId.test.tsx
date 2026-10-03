@@ -99,6 +99,38 @@ function pressHandler(element: ReturnType<typeof button>): () => void {
 }
 const noButton = (name: string) => screen.queryByRole('button', { name });
 
+/**
+ * Retiene una escritura de las salas del usuario hasta que el test la suelta;
+ * luego hace la escritura de verdad.
+ */
+function holdRooms<K extends 'respond' | 'cancel'>(method: K) {
+  const rooms = repositories.rooms;
+  const original = rooms[method].bind(rooms) as (...args: unknown[]) => Promise<unknown>;
+  let release!: () => void;
+  const gate = new Promise<void>((done) => {
+    release = done;
+  });
+  const spy = jest
+    .spyOn(rooms, method)
+    .mockImplementation(((...args: unknown[]) => gate.then(() => original(...args))) as never);
+  return { spy, release };
+}
+
+/**
+ * Dos toques en el mismo instante, antes de que el botón se repinte, con la
+ * escritura retenida: se comprueba antes y después de soltarla.
+ */
+async function doubleTap(name: string, release: () => void, beforeRelease?: () => void) {
+  const onPress = pressHandler(button(name));
+  const taps = act(async () => {
+    onPress();
+    onPress();
+  });
+  beforeRelease?.();
+  release();
+  await taps;
+}
+
 beforeEach(() => {
   jest.useFakeTimers();
   jest.setSystemTime(BASE);
@@ -256,6 +288,80 @@ describe('RoomScreen — antes de la ventana', () => {
     await waitFor(() =>
       expect(screen.getByText('Ya no se puede responder a esta sala.')).toBeTruthy()
     );
+  });
+
+  it('dos toques en «Me apunto» son una sola respuesta', async () => {
+    const { roomId } = await seedAsInvitee();
+    const { spy, release } = holdRooms('respond');
+
+    await renderRoute(<RoomScreen />);
+    await waitFor(() => expect(button('Me apunto')).toBeTruthy());
+    await doubleTap('Me apunto', release);
+
+    await waitFor(() => expect(button('No podré ir')).toBeTruthy());
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy).toHaveBeenCalledWith(roomId, 'aceptada');
+  });
+
+  it('dos toques en «No puedo»: un rechazo y un solo atrás, después de guardarlo', async () => {
+    const { roomId } = await seedAsInvitee();
+    const { spy, release } = holdRooms('respond');
+
+    await renderRoute(<RoomScreen />);
+    await waitFor(() => expect(button('No puedo')).toBeTruthy());
+    await doubleTap('No puedo', release, () => expect(router.back).not.toHaveBeenCalled());
+
+    await waitFor(() => expect(router.back).toHaveBeenCalledTimes(1));
+    await act(async () => {});
+    expect(router.back).toHaveBeenCalledTimes(1);
+    expect(spy).toHaveBeenCalledTimes(1);
+    await expect(repositories.rooms.getById(roomId)).resolves.toBeNull();
+  });
+
+  it('dos toques en «Sí, no podré ir»: un rechazo y un solo atrás, después de guardarlo', async () => {
+    const { roomId } = await seedAsInvitee({ meAccepts: true });
+    const { spy, release } = holdRooms('respond');
+
+    await renderRoute(<RoomScreen />);
+    await waitFor(() => expect(button('No podré ir')).toBeTruthy());
+    await fireEvent.press(button('No podré ir'));
+    await doubleTap('Sí, no podré ir', release, () => expect(router.back).not.toHaveBeenCalled());
+
+    await waitFor(() => expect(router.back).toHaveBeenCalledTimes(1));
+    await act(async () => {});
+    expect(router.back).toHaveBeenCalledTimes(1);
+    expect(spy).toHaveBeenCalledTimes(1);
+    await expect(repositories.rooms.getById(roomId)).resolves.toBeNull();
+  });
+
+  it('si «No podré ir» falla se queda, lo dice y deja reintentar', async () => {
+    await seedAsInvitee({ meAccepts: true });
+    jest.spyOn(repositories.rooms, 'respond').mockRejectedValueOnce(new Error('sin red'));
+
+    await renderRoute(<RoomScreen />);
+    await waitFor(() => expect(button('No podré ir')).toBeTruthy());
+    await fireEvent.press(button('No podré ir'));
+    await fireEvent.press(button('Sí, no podré ir'));
+
+    await waitFor(() =>
+      expect(screen.getByText('No se ha podido guardar. Inténtalo de nuevo.')).toBeTruthy()
+    );
+    expect(router.back).not.toHaveBeenCalled();
+    expect(button('No podré ir').props.accessibilityState).toMatchObject({ disabled: false });
+  });
+
+  it('dos toques en «Sí, cancelar la sala» son una sola cancelación', async () => {
+    const roomId = await seedAsHost();
+    const { spy, release } = holdRooms('cancel');
+
+    await renderRoute(<RoomScreen />);
+    await waitFor(() => expect(button('Cancelar sala')).toBeTruthy());
+    await fireEvent.press(button('Cancelar sala'));
+    await doubleTap('Sí, cancelar la sala', release);
+
+    await waitFor(() => expect(screen.getByText('Cancelaste la sala')).toBeTruthy());
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy).toHaveBeenCalledWith(roomId);
   });
 
   it('un fallo cualquiera deja reintentar', async () => {

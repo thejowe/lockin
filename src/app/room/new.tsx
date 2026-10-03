@@ -13,7 +13,7 @@
  */
 
 import { Stack, useRouter } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -33,7 +33,7 @@ import {
   type SessionBlocks,
 } from '@/data';
 import { useMatches } from '@/features/chat';
-import { InviteePicker } from '@/features/room';
+import { InviteePicker, useSingleFlight } from '@/features/room';
 import {
   blocksLabel,
   dayOptions,
@@ -65,14 +65,13 @@ export default function NewRoomScreen() {
   const [slotMs, setSlotMs] = useState(() => slotsForDay(days[0], nowMs)[0]);
   const [blocks, setBlocks] = useState<SessionBlocks>(2);
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set());
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // El estado tarda un render en deshabilitar el botón: el ref corta el
-  // segundo toque del mismo instante.
-  const inFlight = useRef(false);
+  // Convocar y navegar es una sola acción: un segundo toque no escribe otra
+  // sala ni hace un segundo `replace`.
+  const flight = useSingleFlight();
 
   const slots = slotsForDay(dayMs, nowMs);
-  const canSubmit = selected.size >= ROOM_MIN_INVITEES && !submitting;
+  const canSubmit = selected.size >= ROOM_MIN_INVITEES && !flight.busy;
 
   const toggle = (profileId: string) => {
     setSelected((current) => {
@@ -91,24 +90,21 @@ export default function NewRoomScreen() {
     setSlotMs(daySlots.includes(sameTime.getTime()) ? sameTime.getTime() : daySlots[0]);
   };
 
-  const submit = async () => {
-    if (inFlight.current) return;
-    inFlight.current = true;
-    setSubmitting(true);
-    setError(null);
-    try {
-      const view = await repositories.rooms.create({
-        inviteeIds: [...selected],
-        startsAt: new Date(slotMs).toISOString(),
-        blocks,
-      });
-      router.replace(`/room/${view.room.id}`);
-    } catch (cause) {
-      setError(createErrorText(cause));
-      inFlight.current = false;
-      setSubmitting(false);
-    }
-  };
+  const submit = () =>
+    flight
+      .run(
+        async () => {
+          setError(null);
+          const view = await repositories.rooms.create({
+            inviteeIds: [...selected],
+            startsAt: new Date(slotMs).toISOString(),
+            blocks,
+          });
+          router.replace(`/room/${view.room.id}`);
+        },
+        { hold: true }
+      )
+      .catch((cause) => setError(createErrorText(cause)));
 
   const header = <Stack.Screen options={{ title: 'Convocar sala' }} />;
   const list = matches.data ?? [];

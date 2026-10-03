@@ -8,7 +8,7 @@
  * Ojo: en RNTL 14 `render` y `fireEvent` son asíncronos.
  */
 
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { RoomInviteError, SessionWindowError } from '@/data';
 import { SEED_RECIPROCAL_IDS } from '@/data/mock/seed';
@@ -34,6 +34,18 @@ async function seedMatches(count: number) {
 }
 
 const convocar = () => screen.getByRole('button', { name: 'Convocar' });
+
+/** El `onPress` del `Pressable` de un botón, buscado como lo hace `fireEvent`. */
+function pressHandler(element: ReturnType<typeof convocar>): () => void {
+  type Fiber = { memoizedProps?: { onPress?: () => void } | null; return: Fiber | null };
+  let fiber = (element as unknown as { unstable_fiber: Fiber | null }).unstable_fiber;
+  while (fiber) {
+    const onPress = fiber.memoizedProps?.onPress;
+    if (onPress) return onPress;
+    fiber = fiber.return;
+  }
+  throw new Error('el botón no tiene onPress');
+}
 
 beforeEach(() => {
   jest.useFakeTimers();
@@ -110,7 +122,15 @@ describe('NewRoomScreen', () => {
 
   it('convoca una sola vez aunque se toque dos veces, y sustituye la ruta por la sala', async () => {
     const [first, second] = await seedMatches(3);
-    const create = jest.spyOn(repositories.rooms, 'create');
+    // La escritura se retiene: los dos toques llegan con la primera en vuelo.
+    const original = repositories.rooms.create;
+    let release!: () => void;
+    const gate = new Promise<void>((done) => {
+      release = done;
+    });
+    const create = jest
+      .spyOn(repositories.rooms, 'create')
+      .mockImplementation((input) => gate.then(() => original(input)));
 
     await renderRoute(<NewRoomScreen />);
     await waitFor(() => expect(screen.getByRole('checkbox', { name: first })).toBeTruthy());
@@ -118,10 +138,19 @@ describe('NewRoomScreen', () => {
     await fireEvent.press(screen.getByRole('checkbox', { name: second }));
     await fireEvent.press(screen.getByRole('button', { name: '1 bloque, hasta 10:45' }));
 
-    await fireEvent.press(convocar());
-    await fireEvent.press(convocar());
+    // Dos toques en el mismo instante, en un solo `act`.
+    const onPress = pressHandler(convocar());
+    const taps = act(async () => {
+      onPress();
+      onPress();
+    });
+    expect(router.replace).not.toHaveBeenCalled();
+    release();
+    await taps;
 
     await waitFor(() => expect(router.replace).toHaveBeenCalledTimes(1));
+    await act(async () => {});
+    expect(router.replace).toHaveBeenCalledTimes(1);
     expect(create).toHaveBeenCalledTimes(1);
     expect(create).toHaveBeenCalledWith({
       inviteeIds: SEED_RECIPROCAL_IDS.slice(0, 2),
