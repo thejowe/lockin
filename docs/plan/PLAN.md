@@ -294,6 +294,9 @@ de `CONCEPTO.md`. No cambia lógica de producto ni datos. Agente
 - Copy, `accessibilityLabel` y `testID` que usen `e2e/*.yaml` no se cambian sin
   cambiar también el flujo.
 - Depende de: nada abierto (todos los bloques de producto cerrados el 2026-09-26).
+- Segunda pasada, 2026-10-03: rediseño «cristal» pedido por el usuario (solo
+  oscuro, luz ambiental, cristal, brasa, Inter, motion). Cambia la marca de
+  `CONCEPTO.md`; detalle en `docs/plan/todo/visual.md`.
 
 ### 14. `salas` — Salas Lock-In grupales (Fase 3)
 

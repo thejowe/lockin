@@ -10,16 +10,16 @@ Antes de nada, lee `docs/plan/CONCEPTO.md` (qué es el producto, **paleta de mar
 
 ## Qué entregas
 
-Una app que se vea y se sienta cuidada, pantalla por pantalla, **sobre lo que ya existe**: no es un rediseño de producto ni un cambio de marca.
+Una app que se vea y se sienta cuidada, pantalla por pantalla, **sobre lo que ya existe**: no es un rediseño de producto ni un cambio de marca. La marca vigente es la dirección «cristal» del 2026-10-03 (ver `CONCEPTO.md` → «Dirección visual»).
 
 1. Auditoría visual primero (qué falla y dónde, con `archivo:línea`), escrita en `docs/plan/todo/visual.md` antes de tocar código.
 2. Tokens del sistema de diseño afinados en `src/constants/theme.ts` (escala tipográfica, espaciado, radios, elevación, duraciones/curvas de movimiento) y consumidos desde las pantallas en vez de números sueltos.
 3. Pulido por pantalla, en este orden de impacto: Descubrir (deck y tarjeta, modal de match) → onboarding/perfil → Matches y chat → sesión/acuerdo.
-4. Movimiento con propósito: swipe con física creíble, feedback claro de like/pass, entrada del match, press states. Con `react-native-reanimated` y `react-native-gesture-handler`, que ya están.
+4. Movimiento con propósito: swipe con física creíble, feedback claro de like/pass, entrada del match, press states. Con `react-native-reanimated` y `react-native-gesture-handler`, que ya están. Las entradas compartidas viven en `src/components/motion.ts` (`enterUp`, `enterFade`).
 
 ## Skills de frontend — úsalas
 
-Tienes la herramienta `Skill`. Invoca la skill **antes** de la fase en la que aplica, no de memoria. Casi todas están escritas pensando en web/CSS: **traduce** sus principios a React Native (`StyleSheet`, Reanimated, `Pressable`) y descarta lo que solo existe en navegador (CSS, hover, scroll-driven, GSAP, `backdrop-filter`…).
+Tienes la herramienta `Skill`. Invoca la skill **antes** de la fase en la que aplica, no de memoria. Casi todas están escritas pensando en web/CSS: **traduce** sus principios a React Native (`StyleSheet`, Reanimated, `Pressable`) y descarta lo que solo existe en navegador (CSS, hover, scroll-driven, GSAP…). El equivalente de `backdrop-filter` es `Frosted` (`src/components/glass.tsx`, con `expo-blur`), y solo para lo que flota sobre contenido que se desplaza.
 
 | Fase | Skill | Para qué |
 |---|---|---|
@@ -31,7 +31,7 @@ Tienes la herramienta `Skill`. Invoca la skill **antes** de la fase en la que ap
 | Movimiento | `find-animation-opportunities` | Solo lectura: dónde falta movimiento y dónde sobraría. Antes de animar nada |
 | Movimiento | `animate` | Construir cada animación en el orden correcto (¿debe animarse? propósito, curva, duración, salida) |
 | Movimiento | `improve-animations` | Auditar la motion que ya hay (deck, match, Pomodoro) y priorizar arreglos |
-| Referencia puntual | `minimalist-ui` | Tono editorial cálido y contraste tipográfico — encaja con Fraunces + IBM Plex; tómalo como referencia, no como reglas |
+| Referencia puntual | `minimalist-ui` | Contención y contraste tipográfico; tómalo como referencia, no como reglas |
 | Referencia puntual | `animation-vocabulary` | Solo para nombrar un efecto con precisión en la auditoría |
 
 **No uses** (son de webs/landings, generan imágenes o necesitan `.planning/`): `gpt-taste`, `adrian-saenz-hostinger-premium-website`, `image-to-code`, `imagegen-frontend-web`, `imagegen-frontend-mobile`, `industrial-brutalist-ui`, `stitch-design-taste`, `high-end-visual-design`, `design-taste-frontend`, `gsd-ui-*`. Si una regla de una skill choca con la marca de `CONCEPTO.md`, gana la marca.
@@ -46,11 +46,11 @@ Puedes tocar:
 No toques:
 - `src/data/**`, `supabase/**`, hooks o funciones de lógica (`use-*.ts` con estado de dominio, repositorios, validaciones) — si una mejora visual pide un dato que la pantalla no tiene, anótalo en tu TODO y no lo inventes.
 - **Copy, `accessibilityLabel` y `testID` que usen los flujos de `e2e/*.yaml`** (Maestro busca por texto y etiqueta). Antes de cambiar un texto, `grep` en `e2e/`. Si un texto mejora de verdad, cámbialo también en el `.yaml` y dilo.
-- Dependencias nuevas sin anotarlo antes en el TODO con el motivo; nada que obligue a build nativa nueva (debe seguir corriendo en Expo Go). Nada de subida de imágenes: el avatar sigue siendo iniciales/color.
+- Dependencias nuevas sin anotarlo antes en el TODO con el motivo; nada que obligue a build nativa nueva (debe seguir corriendo en Expo Go: `expo-blur` y `react-native-svg` lo están). Nada de subida de imágenes: el avatar sigue siendo iniciales/color.
 
 ## Reglas que no se negocian
 
-- **Marca**: paleta de `CONCEPTO.md` (claro y oscuro) y Fraunces / IBM Plex Sans / IBM Plex Mono. Puedes derivar tonos intermedios como tokens, no introducir colores ajenos. Modo oscuro y claro los dos.
+- **Marca**: la dirección «cristal» de `CONCEPTO.md` — solo oscuro, luz ambiental, superficies de cristal (`glassStyle`/`Glass`/`Frosted`), acento brasa e Inter. Puedes derivar tonos intermedios como tokens, no introducir colores ajenos ni volver a un modo claro sin que lo decida el usuario.
 - **Contraste**: `src/constants/theme.test.ts` comprueba AA y `KNOWN_GAPS` está vacío — sigue vacío.
 - **Accesibilidad**: tamaño táctil ≥ 44, labels intactos, y todo movimiento respeta reduced-motion (`useReducedMotion` de Reanimated).
 - **Principio de producto**: nadie contrata a nadie; nada visual que jerarquice a una persona sobre otra. "Distinto" en el acuerdo nunca en rojo. Nada de Modo Talento.

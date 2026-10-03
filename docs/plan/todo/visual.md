@@ -387,3 +387,46 @@ textos que no usa ningún flujo: la carga del acuerdo («Cargando…» →
 «Cargando el acuerdo…») y la nueva carga del arranque y del perfil («Abriendo
 LockIn…», «Cargando tu perfil…»), que antes eran pantalla en blanco.
 Dependencias nuevas: ninguna. Todo sigue corriendo en Expo Go.
+
+## Segunda pasada — dirección «cristal» (2026-10-03)
+
+Pedida por el usuario: «que se parezca a la referencia (Hume), efecto cristal,
+su tipografía, elegante como Apple, con motion clean». Diseño previo en el canvas
+«LockIn — Rediseño» (claude.ai/artifact/8iVZPbM9CwEoq1Do7KFS4X). Decisión del
+usuario por el camino: **solo modo oscuro**. Rama `claude/visual-cristal`.
+
+- [x] Tokens: paleta única oscura con superficies de cristal en alfa, acento
+  brasa `#FF8645`, Inter (300–700) con tracking negativo, radios grandes,
+  `Springs.glide`, `Stagger`, `BlurIntensity`, `surfaceOpaque`, `AmbientPeak`.
+  `light` es alias de `dark`.
+- [x] Contraste: `theme.test.ts` compone el cristal sobre el fondo **y** sobre el
+  punto más claro de la luz ambiental. 0 huecos.
+- [x] Luz ambiental: `assets/images/ambient-{ember,teal,plum}.jpg` (~23 KB),
+  generadas con un script de PIL (manchas con desenfoque gaussiano + tramado
+  contra el banding). Si se regeneran, actualizar `AmbientPeak`.
+- [x] Componentes: `AmbientBackground`/`Screen`, `Glass`/`glassStyle`/`Frosted`,
+  `Icon` (juego propio sobre `react-native-svg`), `Glow`, `motion.ts`.
+- [x] Pestañas: una sola barra para las tres plataformas (sustituye a
+  `NativeTabs` y a la barra web): píldora de cristal flotante, resalte que se
+  desliza con muelle, la activa con nombre. Etiquetas accesibles intactas.
+- [x] Descubrir: tarjeta opaca con halo del color de la persona y baldosas de
+  cristal; las de detrás se apagan y esconden su texto; Pasar (cristal) / Like
+  (brasa con halo y galones); filtro segmentado con pastilla deslizante; modal
+  de match sobre el deck esmerilado.
+- [x] Onboarding, perfil, matches, chat, sesión: opciones con icono y radio que
+  salta, foco de campo en brasa, filas y baldosas de cristal en escalera, racha
+  con llama, compositor con botón redondo, anillo de Pomodoro continuo y punto
+  de presencia que respira.
+- [x] Dependencias nuevas (todas en Expo Go): `expo-blur` (esmerilado de barra y
+  modal), `@expo-google-fonts/inter` (tipografía), `react-native-svg` (iconos,
+  halos y anillo). Las de Fraunces/Plex quedan instaladas sin usar: retirarlas
+  es una tarea aparte.
+- [x] Verificado en local: `tsc`, lint, Jest con cobertura sobre el suelo y
+  `expo export --platform web`; recorrido visual en web (390×844) con
+  Playwright headless: modo, formulario, deck, match, chat, matches y perfil.
+- [ ] [comprobador] Recorrido en el emulador Android: el esmerilado nativo
+  (`BlurTargetView`) de la barra, el swipe con la pila nueva y el anillo del
+  Pomodoro en una sesión activa.
+
+Textos: ningún texto ni etiqueta que usen los `e2e/*.yaml` ha cambiado. Cambia
+la presentación de «Enviar» (ahora icono; su etiqueta «Enviar mensaje» sigue).

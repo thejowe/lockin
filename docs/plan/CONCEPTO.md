@@ -41,17 +41,32 @@ Una app estilo swipe para gente que **no tiene nada construido todavía** —ni 
 
 Las sesiones de Lock-In (co-working programado) son lo que evita que la gente abandone la app en cuanto encuentra su match — es la respuesta al "problema de graduación" que tienen apps como esta. El MVP no construye el video real, pero **el chat debe dejar hueco visible** para esa acción — no se puede omitir ni como placeholder, porque rediseñar el chat después para meterlo sería más caro que dejarle sitio ahora.
 
-## Paleta de marca
+## Dirección visual: «cristal» (desde el 2026-10-03)
 
-| Token | Claro | Oscuro |
+Decidida por el usuario a partir de una referencia (Hume, Phenomenon Studio) y
+del canvas «LockIn — Rediseño». Sustituye a la paleta latón/Fraunces anterior.
+
+- **Solo oscuro.** No hay modo claro: `useThemeName()` devuelve siempre `dark`.
+- **Luz ambiental + cristal.** Detrás de cada pantalla, manchas de color muy
+  difusas horneadas en `assets/images/ambient-*.jpg`; encima, superficies de
+  vidrio translúcido con canto fino y brillo de 1 px arriba. Lo que flota sobre
+  contenido que se desplaza (barra de pestañas, modal) lleva desenfoque real
+  (`expo-blur`).
+- **Tipografía: Inter**, la neo-grotesca más cercana a SF Pro (la de la
+  referencia), con tracking negativo en titulares. Sin serif ni mono.
+
+| Token | Valor | Uso |
 |---|---|---|
-| Fondo | `#EEF0EA` | `#14180F` |
-| Tinta | `#1B231E` | `#E9ECE1` |
-| Acento latón | `#8C5E10` | `#E0B04E` |
-| Acento verde-azulado | `#285F52` | `#7FC3B0` |
-| Alerta/riesgo | `#963C2C` | `#E28D74` |
+| Fondo | `#0A0A0B` | Grafito bajo la luz ambiental |
+| Cristal | `#FFFFFF14` / `#FFFFFF29` | Tarjeta / elevado o seleccionado |
+| Tinta | `#F5F5F7` · `#BEBEC4` · `#A8A8AE` | Principal · secundaria · terciaria |
+| Acento brasa | `#FF8645` | Acción principal, selección (token `brass` por compatibilidad) |
+| Verde-azulado | `#7FC3B0` | Lock-In, presencia, lo que domina |
+| Alerta | `#FF9A80` | Descartar, error |
 
-Tipografías: **Fraunces** (display/serif), **IBM Plex Sans** (texto), **IBM Plex Mono** (etiquetas/datos).
+Fuente de verdad: `src/constants/theme.ts`. El contraste AA lo comprueba
+`theme.test.ts` componiendo el cristal sobre el fondo y sobre el punto más claro
+de la luz ambiental (`AmbientPeak`).
 
 ## Fuera de alcance del MVP (explícito)
 

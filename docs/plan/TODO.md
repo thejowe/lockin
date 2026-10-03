@@ -63,6 +63,7 @@ Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>
 ## Pulido visual
 
 - [x] Pulido visual de toda la app — bloque 13 `visual` en `PLAN.md`, abierto el 2026-09-29 y cerrado el 2026-09-30: auditoría, tokens, pantallas, estados y movimiento, con CI, Schema drift y E2E Android en verde sobre `02bb9e3`. Detalle y capturas en `todo/visual.md`. La casilla `[comprobador]` queda aparcada, como las del resto de bloques en esta máquina.
+- [x] Rediseño «cristal» — 2026-10-03, pedido por el usuario sobre la referencia Hume: solo oscuro, luz ambiental, superficies de cristal, acento brasa, Inter, barra de pestañas flotante y motion en toda la app. Cambia la marca (`CONCEPTO.md` → «Dirección visual»). Detalle en `todo/visual.md` → «Segunda pasada».
 
 ## Calidad
 - [x] ESLint/Prettier/TS estricto
