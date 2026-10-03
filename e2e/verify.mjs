@@ -342,6 +342,125 @@ export async function verifyAgreementAnswer(status, profileName) {
   console.log('Postgres: respuesta del acuerdo verificada.');
 }
 
+/** Minutos entre la siembra de la sala y su inicio. Ver `prepareRoom`. */
+export const ROOM_SEED_STARTS_IN_MINUTES = 7;
+
+/**
+ * Siembra la sala de `room.yaml` con `service_role`: la convoca la contraparte
+ * del match del recorrido (Núria Bosch), ya aceptada; otro perfil del seed que
+ * no es ninguno de los dos (Marc Oller) también ha aceptado; y el usuario está
+ * `invitada`. Un bloque.
+ *
+ * **Por qué directo y no `create_room`.** La RPC exige 5 minutos de margen y
+ * match de quien convoca con todas las invitadas; Núria y Marc no lo tienen.
+ * Aquí se prepara el mundo: lo que se prueba es aceptar, entrar y salir.
+ *
+ * **Por qué 7 minutos.** Las respuestas se cierran al abrir la ventana de
+ * entrada, 5 minutos antes del inicio. Con 7, el flujo tiene 2 minutos para
+ * relanzar la app y tocar «Me apunto», y la ventana abre a los 2 minutos de
+ * sembrar: lo que espera `room.yaml` (hasta 180 s). Si se sube uno, se sube el
+ * otro.
+ *
+ * Devuelve la sala y el instante de la siembra según Postgres, que es con lo
+ * que `verifyRoomAttendance` mide el margen real de cada paso.
+ */
+export async function prepareRoom(status, profileName) {
+  const client = adminClient(status);
+
+  const { data: profile, error: profileError } = await client
+    .from('profiles')
+    .select('id')
+    .eq('name', profileName)
+    .single();
+  assert.ifError(profileError);
+
+  const { data: match, error: matchError } = await client
+    .from('matches')
+    .select('profile_a, profile_b')
+    .or(`profile_a.eq.${profile.id},profile_b.eq.${profile.id}`)
+    .single();
+  assert.ifError(matchError);
+  const hostId = match.profile_a === profile.id ? match.profile_b : match.profile_a;
+  // La tercera persona: del seed y distinta de las dos del match.
+  const thirdId = [
+    '11111111-1111-4111-8111-000000000001',
+    '11111111-1111-4111-8111-000000000002',
+  ].find((id) => id !== hostId);
+  assert(thirdId !== profile.id);
+
+  const startsAt = new Date(Date.now() + ROOM_SEED_STARTS_IN_MINUTES * 60_000);
+  const { data: room, error: roomError } = await client
+    .from('lockin_rooms')
+    .insert({ host_id: hostId, starts_at: startsAt.toISOString(), blocks: 1 })
+    .select('id, created_at, starts_at')
+    .single();
+  assert.ifError(roomError);
+
+  // `room_members_responded_iff_not_invited`: aceptada exige respuesta.
+  const respondedAt = new Date().toISOString();
+  const { error: membersError } = await client.from('room_members').insert([
+    { room_id: room.id, profile_id: hostId, status: 'aceptada', responded_at: respondedAt },
+    { room_id: room.id, profile_id: thirdId, status: 'aceptada', responded_at: respondedAt },
+    { room_id: room.id, profile_id: profile.id },
+  ]);
+  assert.ifError(membersError);
+
+  console.log(
+    'Postgres: sala sembrada a ' +
+      ROOM_SEED_STARTS_IN_MINUTES +
+      ' min, convocada por la contraparte y con el usuario invitado.'
+  );
+  return { id: room.id, seededAt: room.created_at, startsAt: room.starts_at };
+}
+
+/**
+ * Oráculo de `room.yaml`: el usuario aceptó, entró y salió confirmando. Mismo
+ * criterio que `verifySessionAttendance`: `left_at` no nulo es lo único que
+ * distingue «salió pulsando Salir» de «cerró la pantalla».
+ *
+ * Imprime además los tiempos de cada paso con el reloj de Postgres: cuánto
+ * margen le quedó a «Me apunto» antes de que se cerraran las respuestas, y
+ * cuánto tardó la pantalla en entrar sola al abrir la ventana. Son los números
+ * con los que se decide si la siembra a 7 minutos aguanta.
+ */
+export async function verifyRoomAttendance(status, profileName, room) {
+  const client = adminClient(status);
+
+  const { data: profile, error: profileError } = await client
+    .from('profiles')
+    .select('id')
+    .eq('name', profileName)
+    .single();
+  assert.ifError(profileError);
+
+  const { data: rows, error } = await client
+    .from('room_members')
+    .select('room_id, status, responded_at, joined_at, left_at')
+    .eq('profile_id', profile.id);
+  assert.ifError(error);
+  assert.equal(rows.length, 1, 'El usuario está en una sola sala: la sembrada');
+  const [mine] = rows;
+  assert.equal(mine.room_id, room.id);
+  assert.equal(mine.status, 'aceptada', '«Me apunto» debe dejar la fila aceptada');
+  assert(mine.joined_at, 'Entrar debe guardar joined_at');
+  assert(mine.left_at, 'Salir confirmando debe guardar left_at');
+
+  const seconds = (from, to) => ((Date.parse(to) - Date.parse(from)) / 1000).toFixed(1);
+  const windowOpens = new Date(Date.parse(room.startsAt) - 5 * 60_000).toISOString();
+  console.log(
+    'Sala, tiempos (reloj de Postgres): «Me apunto» a ' +
+      seconds(room.seededAt, mine.responded_at) +
+      ' s de sembrar (las respuestas se cierran a ' +
+      seconds(room.seededAt, windowOpens) +
+      ' s); entrada a ' +
+      seconds(windowOpens, mine.joined_at) +
+      ' s de abrir la ventana; salida a ' +
+      seconds(mine.joined_at, mine.left_at) +
+      ' s de entrar.'
+  );
+  console.log('Postgres: asistencia a la sala verificada.');
+}
+
 /**
  * Oráculo de `session-rate.yaml`: el toque en "Genial" llegó a Postgres.
  *

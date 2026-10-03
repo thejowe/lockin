@@ -1,0 +1,47 @@
+# Sala Lock-In grupal: aceptar la invitación que siembra `prepareRoom`, esperar
+# a que abra la ventana de entrada (la pantalla entra sola), salir confirmando y
+# volver a Matches. Lo lanza run.mjs DESPUÉS de agreement.yaml y de su oráculo,
+# sin borrar el estado. Solo en la variante con credenciales: en la mock, el
+# recorrido es un control negativo que tiene que romperse al reiniciar.
+# `e2e/room.test.mjs` fija las etiquetas contra el código.
+#
+# El reloj manda. `prepareRoom` siembra la sala a 7 minutos: las respuestas se
+# cierran al abrir la ventana (5 minutos antes), así que «Me apunto» tiene que
+# llegar en los 2 primeros minutos tras la siembra, y luego la espera a «Empieza
+# en» cubre lo que falte hasta que abra (180 s, de sobra para esos 2 minutos).
+# Si alguna vez sale «Ya no se puede responder», el relanzamiento y la
+# navegación han tardado más de 2 minutos: el oráculo imprime cuánto tardó cada
+# paso. Si hay que subir el margen, se suben los dos números a la vez (siembra
+# en `verify.mjs` y espera aquí).
+#
+# Relanza la app por lo mismo que session-rate.yaml: la siembra ocurre en
+# Postgres con la app abierta, y volver a arrancar relee sin esperas.
+appId: app.lockin.mobile
+name: Aceptar, entrar y salir de una sala Lock-In
+---
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible: 'Descubrir'
+    timeout: 60000
+- tapOn: 'Matches'
+# La fila es un `Pressable` con etiqueta propia («Núria te invita · …»).
+- extendedWaitUntil:
+    visible: '.*te invita.*'
+    timeout: 30000
+- tapOn: '.*te invita.*'
+- extendedWaitUntil:
+    visible: 'Me apunto'
+    timeout: 30000
+- tapOn: 'Me apunto'
+# Al abrir la ventana (5 minutos antes del inicio) la pantalla pasa sola a la
+# sala: reloj, «Empieza en» y la presencia de cada persona.
+- extendedWaitUntil:
+    visible: 'Empieza en'
+    timeout: 180000
+- tapOn: 'Salir'
+- tapOn: 'Salir de la sala'
+# De vuelta en Matches, con la sala en ventana: la fila invita a entrar.
+- extendedWaitUntil:
+    visible: 'Entrar a la sala.*'
+    timeout: 30000

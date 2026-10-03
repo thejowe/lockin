@@ -27,6 +27,7 @@ import {
 } from './triage.mjs';
 import {
   prepareAgreement,
+  prepareRoom,
   prepareSessionRating,
   prepareSessionStreak,
   verifyAbsence,
@@ -34,6 +35,7 @@ import {
   verifyPendingRegistration,
   verifyPersistence,
   verifyRegistration,
+  verifyRoomAttendance,
   verifySessionAttendance,
   verifySessionRating,
 } from './verify.mjs';
@@ -54,11 +56,14 @@ const streakFile = join(root, 'e2e/session-streak.yaml');
 // Quinto caso, encadenado al anterior: el acuerdo de socios del mismo match, con
 // la respuesta de la contraparte que siembra `prepareAgreement`.
 const agreementFile = join(root, 'e2e/agreement.yaml');
+// Sexto caso, encadenado al anterior: aceptar, entrar y salir de una sala
+// Lock-In grupal que siembra `prepareRoom`, convocada por la misma contraparte.
+const roomFile = join(root, 'e2e/room.yaml');
 // El alta con email, en dos mitades con el correo en medio: solo en `registro`.
 const registerFile = join(root, 'e2e/register.yaml');
 const registerConfirmFile = join(root, 'e2e/register-confirm.yaml');
 const signInFile = join(root, 'e2e/sign-in.yaml');
-// Sexto caso de la variante `supabase`, encadenado al acuerdo y sin borrar el
+// Séptimo caso de la variante `supabase`, encadenado a la sala y sin borrar el
 // estado: entrar en otra cuenta con el perfil anónimo del recorrido delante.
 const signInAbandonFile = join(root, 'e2e/sign-in-abandon.yaml');
 const passwordResetFile = join(root, 'e2e/password-reset.yaml');
@@ -889,6 +894,37 @@ if (command === 'test') {
       }
       await verifyAgreementAnswer(status, profileName);
 
+      // Después del acuerdo: la sala la convoca la misma contraparte y empieza
+      // a 7 minutos. El flujo tiene 2 para aceptar antes de que se cierren las
+      // respuestas; ver la cabecera de `room.yaml`.
+      const room = await prepareRoom(status, profileName);
+
+      const roomDir = join(dir, 'room');
+      mkdirSync(roomDir, { recursive: true });
+      const roomRun = spawnSync(
+        'maestro',
+        [
+          'test',
+          '--format',
+          'junit',
+          '--output',
+          join(roomDir, 'maestro.xml'),
+          '--debug-output',
+          roomDir,
+          '--test-output-dir',
+          roomDir,
+          '--flatten-debug-output',
+          roomFile,
+        ],
+        { cwd: root, stdio: 'inherit' }
+      );
+      if (roomRun.error) throw roomRun.error;
+      if (roomRun.status !== 0) {
+        const diagnosis = diagnose(roomDir);
+        return { outcome: diagnosis.kind, why: 'room.yaml: ' + diagnosis.why };
+      }
+      await verifyRoomAttendance(status, profileName, room);
+
       // Lo último del intento, porque cambia la sesión del teléfono: la otra
       // cuenta —email confirmado y ficha propia— se crea aquí con la
       // service_role, y el flujo entra en ella con el perfil anónimo del
@@ -971,6 +1007,7 @@ if (command === 'test') {
             rating: 'verified',
             streak: 'verified',
             agreement: 'verified',
+            room: 'verified',
             signInAbandon: 'verified',
           },
           null,
@@ -979,7 +1016,7 @@ if (command === 'test') {
       );
       return {
         outcome: 'pass',
-        why: 'recorrido, persistencia, sesión Lock-In, acuerdo y abandono al entrar verificados',
+        why: 'recorrido, persistencia, sesión Lock-In, acuerdo, sala y abandono al entrar verificados',
       };
     } catch (error) {
       // Un oráculo que falla es un fallo del caso, no del runner: no se reintenta.
