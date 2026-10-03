@@ -8,7 +8,7 @@
  *
  * - **Cargando**: indicador en latón y una frase que dice qué se está buscando.
  *   Nunca una pantalla en blanco: en blanco no se distingue «tarda» de «roto».
- * - **Mensaje**: etiqueta opcional en versales, titular en Fraunces, una línea
+ * - **Mensaje**: etiqueta opcional, titular, una línea
  *   de por qué, y las acciones debajo (botones de `Button`, la principal
  *   primero).
  *
