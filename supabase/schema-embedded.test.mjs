@@ -9,6 +9,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
 import { compareFingerprints } from './schema-compare.mjs';
+import { migrationSql, stripComments, parseMigrations } from './drift-check.mjs';
 
 // Ya no lleva `skip`: con el paquete fuera del árbol, saltarse el test era lo
 // razonable; ahora que viene con `npm ci`, que falte significa entorno a medio
@@ -914,7 +915,7 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
     // estas líneas, borrarlas allí saldría en verde.
     const rtPolicies = expected
       .split('\n')
-      .filter((line) => line.startsWith('rtpolicy'))
+      .filter((line) => line.startsWith('rtpolicy') && line.includes('de tus sesiones'))
       .sort();
     assert.equal(rtPolicies.length, 2, 'la huella debe traer las dos políticas de realtime');
     for (const line of rtPolicies) {
@@ -1203,6 +1204,412 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       assert.notEqual(compareFingerprints(expected, await fingerprint()), '');
       await db.exec('rollback;');
     }
+    // --- Salas grupales ------------------------------------------------------
+    // El ciego se comprueba con el rol real: una invitada no puede descubrir
+    // las otras invitaciones. PGlite cubre RLS y configuración, no entrega de
+    // eventos ni la caché de autorización de canales de Realtime.
+    const roomAna = person('f100');
+    const roomBea = person('f101');
+    const roomCarla = person('f102');
+    const roomDani = person('f103');
+    await db.exec(`begin;
+      insert into auth.users (id, email) values
+        ('${roomAna}', 'room-ana@lockin.test'), ('${roomBea}', 'room-bea@lockin.test'),
+        ('${roomCarla}', 'room-carla@lockin.test'), ('${roomDani}', 'room-dani@lockin.test');
+      insert into public.profiles (
+        id, name, age, location, timezone, avatar_initials, specialties,
+        looking_for, starting_point, availability_hours_per_week, availability_bands, ambition
+      )
+      select p.id::uuid, p.name, 30, 'Madrid', 'Europe/Madrid', left(p.name, 1),
+             array['dev']::public.specialty[], 'ambos', 'solo-ganas', 10,
+             array['tarde']::public.time_band[], 'equilibrado'
+      from (values ('${roomAna}', 'Ana'), ('${roomBea}', 'Bea'),
+                   ('${roomCarla}', 'Carla'), ('${roomDani}', 'Dani')) as p(id, name);
+      insert into public.matches (profile_a, profile_b, mode) values
+        ('${roomAna}', '${roomBea}', 'par'), ('${roomAna}', '${roomCarla}', 'lockin');`);
+    const createRoom = async () => {
+      await actingAs(roomAna);
+      return (
+        await db.query(`select * from public.create_room(
+          array['${roomBea}', '${roomCarla}']::uuid[], clock_timestamp() + interval '1 hour', 2::smallint)`)
+      ).rows[0];
+    };
+    const roomRows = async (id) =>
+      (
+        await db.query(`select profile_id, status from public.room_members
+        where room_id = '${id}' order by profile_id`)
+      ).rows;
+    const roomVisible = async (id) =>
+      (await db.query(`select id from public.lockin_rooms where id = '${id}'`)).rows;
+    const roomRespond = (id, answer) => `select * from public.respond_room('${id}', '${answer}')`;
+    const roomCall = async (rpc, id) =>
+      (await db.query(`select * from public.${rpc}('${id}')`)).rows[0];
+    // Leer como texto conserva los microsegundos que Date redondearía.
+    const roomUpdated = async (id) =>
+      (
+        await db.query(
+          `select updated_at::text as stamp from public.lockin_rooms where id = '${id}'`
+        )
+      ).rows[0].stamp;
+    const moveRoom = async (id, interval) => {
+      await db.exec(`reset role; update public.lockin_rooms
+        set starts_at = clock_timestamp() + interval '${interval}' where id = '${id}';`);
+    };
+    const room = await createRoom();
+    const initialMembers = [
+      { profile_id: roomAna, status: 'aceptada' },
+      { profile_id: roomBea, status: 'invitada' },
+      { profile_id: roomCarla, status: 'invitada' },
+    ];
+    assert.deepEqual(
+      await roomRows(room.id),
+      initialMembers,
+      'quien convoca ve todas las invitaciones'
+    );
+    await actingAs(roomBea);
+    assert.deepEqual(await roomVisible(room.id), [{ id: room.id }]);
+    assert.deepEqual(
+      await roomRows(room.id),
+      initialMembers.slice(0, 2),
+      'ciego: Bea no ve a Carla'
+    );
+    const beforeAccept = await roomUpdated(room.id);
+    await actingAs(roomCarla);
+    const acceptedCarla = (await db.query(roomRespond(room.id, 'aceptada'))).rows[0];
+    assert.equal(acceptedCarla.status, 'aceptada');
+    assert.ok((await roomUpdated(room.id)) > beforeAccept, 'aceptar toca updated_at');
+    assert.deepEqual(
+      (await db.query(roomRespond(room.id, 'aceptada'))).rows[0],
+      acceptedCarla,
+      'aceptar dos veces conserva responded_at'
+    );
+    const acceptedMembers = [
+      ...initialMembers.slice(0, 2),
+      { profile_id: roomCarla, status: 'aceptada' },
+    ];
+    await actingAs(roomBea);
+    assert.deepEqual(
+      await roomRows(room.id),
+      acceptedMembers,
+      'Carla consiente y pasa a ser visible'
+    );
+    await actingAs(roomAna);
+    assert.deepEqual(await roomRows(room.id), acceptedMembers);
+
+    await actingAs(roomDani);
+    assert.deepEqual(await roomVisible(room.id), [], 'un tercero no ve la sala');
+    assert.deepEqual(await roomRows(room.id), [], 'un tercero no ve sus miembros');
+    assert.equal(await sonda(roomRespond(room.id, 'aceptada')), 'LI004');
+    assert.equal(await sonda(`select public.join_room('${room.id}')`), 'LI004');
+
+    await actingAs(roomAna);
+    for (const invitees of [
+      `array['${roomBea}']`,
+      `array['${roomBea}', '${roomCarla}', '${roomDani}']`,
+      `array['${roomBea}', '${roomBea}']`,
+      `array['${roomBea}', '${roomAna}']`,
+      'array[]',
+      `array['${roomBea}', null]`,
+      'null',
+      `array['${roomBea}', '${roomCarla}', '${roomDani}', '${person('f104')}', '${person('f105')}']`,
+    ]) {
+      assert.equal(
+        await sonda(`select public.create_room(${invitees}::uuid[],
+        clock_timestamp() + interval '1 hour', 2::smallint)`),
+        'LI006',
+        invitees
+      );
+    }
+    for (const startsAt of [
+      "clock_timestamp() + interval '1 minute'",
+      "clock_timestamp() + interval '31 days'",
+      'null',
+    ]) {
+      assert.equal(
+        await sonda(`select public.create_room(
+        array['${roomBea}', '${roomCarla}']::uuid[], ${startsAt}, 2::smallint)`),
+        'LI003'
+      );
+    }
+    for (const blocks of ['3', 'null']) {
+      assert.equal(
+        await sonda(`select public.create_room(
+        array['${roomBea}', '${roomCarla}']::uuid[], clock_timestamp() + interval '1 hour', ${blocks}::smallint)`),
+        'LI003'
+      );
+    }
+    assert.equal(
+      await sonda(roomRespond(room.id, 'aceptada')),
+      'LI004',
+      'quien convoca no responde'
+    );
+    await actingAs(roomBea);
+    assert.equal(await sonda(`select public.cancel_room('${room.id}')`), 'LI004');
+    assert.equal(
+      await sonda(`select public.join_room('${room.id}')`),
+      'LI004',
+      'invitada no entra'
+    );
+    const beforeReject = await roomUpdated(room.id);
+    assert.equal((await db.query(roomRespond(room.id, 'rechazada'))).rows[0].status, 'rechazada');
+    assert.deepEqual(await roomVisible(room.id), []);
+    assert.equal(await sonda(roomRespond(room.id, 'aceptada')), 'LI004', 'rechazo definitivo');
+    await actingAs(roomCarla);
+    assert.deepEqual(await roomRows(room.id), [acceptedMembers[0], acceptedMembers[2]]);
+    assert.ok((await roomUpdated(room.id)) > beforeReject, 'rechazar toca updated_at');
+    await actingAs(roomAna);
+    assert.deepEqual(await roomRows(room.id), [
+      acceptedMembers[0],
+      { profile_id: roomBea, status: 'rechazada' },
+      acceptedMembers[2],
+    ]);
+
+    // Revocación antes de abrir la ventana: una aceptada vuelve a quedar
+    // oculta y el aviso debe salir por la sala, ya que su fila deja de verse.
+    const revokeRoom = await createRoom();
+    await actingAs(roomCarla);
+    await db.query(roomRespond(revokeRoom.id, 'aceptada'));
+    await actingAs(roomBea);
+    assert.deepEqual(await roomRows(revokeRoom.id), acceptedMembers);
+    const beforeRevoke = await roomUpdated(revokeRoom.id);
+    await actingAs(roomCarla);
+    assert.equal(
+      (await db.query(roomRespond(revokeRoom.id, 'rechazada'))).rows[0].status,
+      'rechazada'
+    );
+    assert.deepEqual(await roomVisible(revokeRoom.id), []);
+    await actingAs(roomBea);
+    assert.deepEqual(await roomRows(revokeRoom.id), initialMembers.slice(0, 2));
+    assert.ok((await roomUpdated(revokeRoom.id)) > beforeRevoke);
+
+    // Los dos órdenes de cancelar/aceptar: cancelar no pierde su derecho si
+    // otra persona acaba de aceptar. No simula dos conexiones concurrentes.
+    const cancelFirst = await createRoom();
+    assert.ok((await roomCall('cancel_room', cancelFirst.id)).cancelled_at);
+    assert.deepEqual(
+      (await db.query(`select id from public.live_rooms() where id = '${cancelFirst.id}'`)).rows,
+      []
+    );
+    await actingAs(roomCarla);
+    assert.equal(await sonda(roomRespond(cancelFirst.id, 'aceptada')), 'LI001');
+    const acceptFirst = await createRoom();
+    await actingAs(roomCarla);
+    assert.equal(
+      (await db.query(roomRespond(acceptFirst.id, 'aceptada'))).rows[0].status,
+      'aceptada'
+    );
+    await actingAs(roomAna);
+    assert.ok((await roomCall('cancel_room', acceptFirst.id)).cancelled_at);
+    await actingAs(roomCarla);
+    assert.ok(
+      (
+        await db.query(
+          `select cancelled_at from public.lockin_rooms where id = '${acceptFirst.id}'`
+        )
+      ).rows[0].cancelled_at
+    );
+
+    const windowRoom = await createRoom();
+    await moveRoom(windowRoom.id, '4 minutes');
+    await actingAs(roomBea);
+    for (const answer of ['aceptada', 'rechazada']) {
+      assert.equal(await sonda(roomRespond(windowRoom.id, answer)), 'LI002');
+    }
+    await moveRoom(windowRoom.id, '6 minutes');
+    await actingAs(roomBea);
+    assert.equal(
+      (await db.query(roomRespond(windowRoom.id, 'aceptada'))).rows[0].status,
+      'aceptada'
+    );
+    await moveRoom(windowRoom.id, '4 minutes');
+    await actingAs(roomBea);
+    assert.equal(
+      await sonda(roomRespond(windowRoom.id, 'rechazada')),
+      'LI002',
+      'no revocar presencia ya autorizable'
+    );
+
+    // Ventana e idempotencia de asistencia.
+    await actingAs(roomCarla);
+    assert.equal(await sonda(`select public.join_room('${room.id}')`), 'LI003');
+    assert.equal(await sonda(`select public.leave_room('${room.id}')`), 'LI003');
+    await moveRoom(room.id, '2 minutes');
+    await actingAs(roomCarla);
+    const joinedCarla = await roomCall('join_room', room.id);
+    assert.ok(joinedCarla.joined_at);
+    assert.deepEqual((await roomCall('join_room', room.id)).joined_at, joinedCarla.joined_at);
+    assert.ok((await roomCall('leave_room', room.id)).left_at);
+    const rejoinedCarla = await roomCall('join_room', room.id);
+    assert.equal(rejoinedCarla.left_at, null);
+    assert.deepEqual(rejoinedCarla.joined_at, joinedCarla.joined_at);
+
+    // Los privilegios por defecto del harness incluyen ALL: estos rechazos
+    // prueban el REVOKE, no una ausencia artificial de permisos en la fixture.
+    for (const sql of [
+      `insert into public.room_members (room_id, profile_id) values ('${room.id}', '${roomDani}')`,
+      'update public.lockin_rooms set cancelled_at = now()',
+      'delete from public.room_members',
+      'truncate public.room_members',
+      'truncate public.lockin_rooms',
+    ])
+      assert.equal(await sonda(sql), '42501', sql);
+    for (const table of ['lockin_rooms', 'room_members']) {
+      const privileges = await db.query(`select
+        has_table_privilege('authenticated', 'public.${table}', 'SELECT') as lectura,
+        has_table_privilege('authenticated', 'public.${table}', 'TRUNCATE') as vaciar,
+        has_table_privilege('anon', 'public.${table}', 'SELECT') as anon_lectura`);
+      assert.deepEqual(privileges.rows[0], { lectura: true, vaciar: false, anon_lectura: false });
+    }
+    assert.deepEqual(
+      (
+        await db.query(`select tablename from pg_publication_tables
+      where pubname = 'supabase_realtime' and tablename in ('lockin_rooms', 'room_members')`)
+      ).rows,
+      [{ tablename: 'lockin_rooms' }],
+      'nunca publicar las PK de invitados en DELETE'
+    );
+
+    // Presencia: Carla aceptada; Bea todavía invitada en una sala nueva.
+    const presenceRoom = await createRoom();
+    await actingAs(roomCarla);
+    await db.query(roomRespond(presenceRoom.id, 'aceptada'));
+    await moveRoom(presenceRoom.id, '2 minutes');
+    await db.exec(`insert into realtime.messages (topic, extension) values
+      ('lockin:room:${presenceRoom.id}', 'presence');`);
+    for (const [actor, allowed] of [
+      [roomCarla, true],
+      [roomBea, false],
+      [roomDani, false],
+    ]) {
+      await actingAs(actor);
+      await db.exec(`set local "realtime.topic" = 'lockin:room:${presenceRoom.id}';`);
+      assert.equal(
+        (await db.query('select count(*)::int as n from realtime.messages')).rows[0].n,
+        allowed ? 1 : 0,
+        'solo aceptadas reciben presencia'
+      );
+      assert.equal(
+        await sonda(`insert into realtime.messages (topic, extension)
+        values ('lockin:room:${presenceRoom.id}', 'presence')`),
+        allowed ? 'sin error' : '42501'
+      );
+    }
+    await actingAs(roomCarla);
+    await db.exec(`set local "realtime.topic" = 'lockin:room:no-es-uuid';`);
+    assert.equal((await db.query('select count(*)::int as n from realtime.messages')).rows[0].n, 0);
+
+    const roomFunctions = await db.query(`select p.proname, p.prosecdef, p.proconfig,
+        has_function_privilege('anon', p.oid, 'EXECUTE') as anon_exec,
+        has_function_privilege('authenticated', p.oid, 'EXECUTE') as authenticated_exec,
+        p.prosrc
+      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'public' and p.proname in (
+        'is_room_participant', 'is_room_host', 'is_room_attendee', 'touch_room',
+        'create_room', 'lock_room_for_member', 'respond_room', 'cancel_room',
+        'join_room', 'leave_room', 'live_rooms', 'is_room_topic_member')`);
+    assert.equal(roomFunctions.rows.length, 12);
+    for (const fn of roomFunctions.rows) {
+      assert.deepEqual(fn.proconfig, ['search_path=""'], fn.proname);
+      assert.equal(fn.anon_exec, false, fn.proname);
+      assert.equal(
+        fn.authenticated_exec,
+        !['touch_room', 'lock_room_for_member'].includes(fn.proname),
+        fn.proname
+      );
+      assert.equal(
+        fn.prosecdef,
+        !['live_rooms', 'is_room_topic_member'].includes(fn.proname),
+        fn.proname
+      );
+      if (['respond_room', 'cancel_room', 'join_room', 'leave_room'].includes(fn.proname)) {
+        assert.match(
+          fn.prosrc,
+          /public\.lock_room_for_member\(p_room_id\);\s*v_now(?:\s+timestamptz)?\s*:= clock_timestamp\(\);/,
+          `${fn.proname}: reloj inmediatamente después del bloqueo`
+        );
+      }
+    }
+    const roomPolicies = expected
+      .split('\n')
+      .filter((line) => line.startsWith('rtpolicy') && line.includes('de tus salas'));
+    assert.equal(roomPolicies.length, 2);
+    for (const line of roomPolicies)
+      assert.match(line, /roles=authenticated .*is_room_topic_member/);
+    assert.match(expected, /trigger\s+room_members\.room_members_touch_room/);
+    const parsedRooms = parseMigrations(stripComments(migrationSql()));
+    assert.deepEqual(parsedRooms.enums.get('room_member_status'), [
+      'invitada',
+      'aceptada',
+      'rechazada',
+    ]);
+    assert.deepEqual(
+      parsedRooms.tables.get('lockin_rooms').map((column) => column.name),
+      ['id', 'host_id', 'starts_at', 'blocks', 'cancelled_at', 'created_at', 'updated_at']
+    );
+    assert.deepEqual(
+      parsedRooms.tables.get('room_members').map((column) => column.name),
+      ['room_id', 'profile_id', 'status', 'responded_at', 'joined_at', 'left_at']
+    );
+    assert.equal(
+      parsedRooms.realtimePolicies.filter((name) => name.includes('de tus salas')).length,
+      2
+    );
+
+    // Cascadas: un miembro invalida la sala y quien convoca puede borrarse sin
+    // que touch_room tropiece con la sala que también está desapareciendo.
+    const beforeDelete = await roomUpdated(presenceRoom.id);
+    await db.exec(`reset role; delete from public.profiles where id = '${roomBea}';`);
+    assert.ok(
+      (await roomUpdated(presenceRoom.id)) > beforeDelete,
+      'borrar miembro toca updated_at'
+    );
+    await db.exec(`delete from public.profiles where id = '${roomAna}';`);
+    assert.deepEqual((await db.query('select id from public.lockin_rooms')).rows, []);
+    assert.deepEqual((await db.query('select room_id from public.room_members')).rows, []);
+    await db.exec('rollback;');
+
+    // Fixture pequeña e independiente para el reloj transaccional y las 21 salas.
+    await db.exec(`begin;
+      insert into auth.users (id) values ('${roomAna}'), ('${roomBea}');
+      insert into public.profiles (
+        id, name, age, location, timezone, avatar_initials, specialties,
+        looking_for, starting_point, availability_hours_per_week, availability_bands, ambition
+      ) select id, 'Sala', 30, 'Madrid', 'Europe/Madrid', 'S',
+        array['dev']::public.specialty[], 'ambos', 'solo-ganas', 10,
+        array['tarde']::public.time_band[], 'equilibrado' from auth.users;
+      insert into public.lockin_rooms (host_id, starts_at, blocks)
+        select '${roomAna}', clock_timestamp() + interval '1 hour', 1 from generate_series(1, 21);
+      insert into public.room_members (room_id, profile_id, status, responded_at)
+        select id, '${roomAna}', 'aceptada', clock_timestamp() from public.lockin_rooms;`);
+    await actingAs(roomAna);
+    const allRooms = (await db.query('select id from public.live_rooms()')).rows;
+    assert.equal(allRooms.length, 21, 'live_rooms no trunca a 20');
+    const clockRoom = allRooms[0].id;
+    await db.exec(`reset role;
+      insert into public.room_members (room_id, profile_id) values ('${clockRoom}', '${roomBea}');
+      update public.lockin_rooms set starts_at = clock_timestamp() + interval '5 minutes 1 second'
+        where id = '${clockRoom}';`);
+    // PGlite no ofrece espera de locks entre conexiones: el bucle garantiza que
+    // now() quede antes del cierre y clock_timestamp() después, sin pg_sleep.
+    await db.exec(`do $$ declare until_at timestamptz := clock_timestamp() + interval '1.5 seconds';
+      begin while clock_timestamp() < until_at loop end loop; end $$;`);
+    await actingAs(roomBea);
+    assert.deepEqual(
+      (
+        await db.query(`select now() < starts_at - interval '5 minutes' as old_clock,
+      clock_timestamp() >= starts_at - interval '5 minutes' as current_clock
+      from public.lockin_rooms where id = '${clockRoom}'`)
+      ).rows[0],
+      { old_clock: true, current_clock: true }
+    );
+    assert.equal(
+      await sonda(roomRespond(clockRoom, 'aceptada')),
+      'LI002',
+      'no validar con el now() obsoleto'
+    );
+    await db.exec('rollback;');
+    console.log('Salas grupales: 15 casos del plan, ciego, permisos, reloj y presencia: OK');
+
     // Ejecutar las definiciones reales de las dos funciones, sin sembrar cuentas.
     const seed = readFileSync(join(here, 'seed.sql'), 'utf8');
     const start = seed.search(/create or replace function public\.seed_incoming_likes/);

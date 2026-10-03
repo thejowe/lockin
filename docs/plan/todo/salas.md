@@ -16,7 +16,7 @@ El resto, en orden.
 
 - [x] [Claude] Tarea 0 — Alta del bloque: spec, plan, sección 14 en `PLAN.md`, hito en `TODO.md`, este archivo y `.claude/agents/salas.md` (commit de diseño del 2026-10-02)
 - [ ] [Codex] Tarea 1 — Tipos de dominio (`src/data/types.ts`) y reglas puras (`src/data/rooms.ts` + test)
-- [ ] [Codex] Tarea 2 — Migración `20261002000100_lockin_rooms.sql` y cobertura en PGlite (`supabase/schema-embedded.test.mjs`), con el ciego de invitados como test central
+- [x] [Codex] Tarea 2 — Migración `20261002000100_lockin_rooms.sql` y cobertura en PGlite (`supabase/schema-embedded.test.mjs`), con el ciego de invitados como test central. Verificada el 2026-10-02: 15 casos del plan; `npm run test:schema` 21/21, 19 migraciones y 609 objetos; parseo de drift sin cambios.
 - [x] [Claude] Tarea 0b — Revisión adversarial de Codex sobre `9b78e47` (nueve hallazgos, todos aceptados): spec, plan y este bloque corregidos el 2026-10-02
 - [ ] [Claude] Tarea 3 — Contrato `RoomRepository`, sus quince casos, mock (`src/data/mock/rooms.ts`), store y registro
 - [ ] [Codex] Tarea 4 — Repositorio de Supabase (`src/data/supabase/rooms.ts`), tipos, registro y fixture del contrato; `contract.yml` en verde
