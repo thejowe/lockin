@@ -2094,3 +2094,47 @@ Con esto, el bloque `datos` no tiene ninguna casilla abierta.
       `record_decision` (3 args, SECURITY DEFINER), ambas con `search_path=""`
       y EXECUTE solo `authenticated`. Schema drift remoto:
       [run 36700031400](https://github.com/thejowe/lockin/actions/runs/36700031400).
+
+
+## Hardening de permisos y reloj (2026-10-03)
+
+- [x] Nueva `20261003000100_harden_grants_and_clock.sql`, sin editar migraciones
+      aplicadas. Barridas las 11 tablas de `public`: `authenticated` conservaba
+      TRUNCATE/REFERENCES/TRIGGER en `profiles`, `user_settings`, `decisions`,
+      `matches`, `messages`, `lockin_sessions`, `session_attendance`,
+      `session_ratings` y `agreement_answers`. Revocados esos tres privilegios
+      para `anon` y `authenticated` en las nueve; `anon` ya estaba cerrado.
+      `lockin_rooms` y `room_members` ya estaban protegidas. Se mantienen los
+      permisos SELECT/INSERT/UPDATE/DELETE y de columna existentes.
+- [x] Recreadas desde su última definición `propose_session`, `respond_session`,
+      `cancel_session`, `join_session` y `rate_session`: las validaciones usan
+      `v_now := clock_timestamp()` capturado inmediatamente tras el bloqueo.
+      Mismas firmas, SECURITY DEFINER, `set search_path = ''` y timestamps de
+      escritura; sin cambios de permisos EXECUTE.
+- [x] TDD: antes de crear la migración fallaron los permisos de las nueve tablas
+      y las cinco RPC aceptaron fuera de plazo. Después, `npm run test:schema`:
+      **75/75**, sin saltos (21 existentes + 54 subtests nuevos: 44 de permisos
+      para las 11 tablas y ambos roles, 5 de reloj con control positivo y 5 de
+      orden de bloqueo/captura del reloj).
+      El intento de TRUNCATE exige 42501 sobre la tabla concreta, sin falsos
+      positivos por FK o permisos de tablas en cascada. Como en salas, PGlite
+      cruza el plazo en una transacción abierta; no simula dos conexiones
+      compitiendo por el lock. Parser de `supabase/drift-check.mjs` verificado:
+      cinco funciones en la nueva migración, 11 tablas en el conjunto.
+      Dependencias instaladas offline con `--legacy-peer-deps` por el peer de
+      React, sin cambiar el lockfile.
+- [x] Revisión posterior: en `respond_session`, `cancel_session`, `join_session`
+      y `rate_session`, `v_session` y `v_now` se declaran sin inicializador;
+      `BEGIN` llama a `lock_member_session` y captura `clock_timestamp()` en la
+      instrucción inmediatamente siguiente. `propose_session` conserva su
+      captura inmediatamente después del FOR UPDATE directo. Cinco pruebas con
+      `pg_get_functiondef` verifican las definiciones instaladas: ninguna captura
+      en DECLARE, orden explícito en BEGIN y, para las cuatro RPC que delegan,
+      FOR UPDATE de `lockin_sessions` antes del retorno del helper. Estas guardas
+      fallaron en las cuatro definiciones anteriores y pasan tras el cambio.
+      PGlite solo admite una conexión: no se ha ejecutado una prueba de contención
+      entre dos transacciones independientes.
+
+**Pendiente del usuario:** aplicar
+`20261003000100_harden_grants_and_clock.sql` al proyecto
+`grrzmzktrhksbttpbblg` mediante el **SQL Editor**. No aplicada en remoto por esta tarea.

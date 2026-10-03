@@ -19,7 +19,7 @@ const pgliteModule = process.env.PGLITE_MODULE
   ? pathToFileURL(process.env.PGLITE_MODULE).href
   : '@electric-sql/pglite';
 
-test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirada', async () => {
+test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirada', async (t) => {
   const { PGlite } = await import(pgliteModule);
   const db = new PGlite();
   const here = dirname(fileURLToPath(import.meta.url));
@@ -92,6 +92,98 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       .sort();
     for (const file of migrations) {
       await db.exec(readFileSync(join(here, 'migrations', file), 'utf8'));
+    }
+    // Barrido del catálogo después de TODAS las migraciones, incluidos los
+    // grants por defecto de Supabase. RLS no protege TRUNCATE.
+    const publicTables = (
+      await db.query(`select tablename from pg_tables
+      where schemaname = 'public' order by tablename`)
+    ).rows.map((row) => row.tablename);
+    assert.deepEqual(
+      publicTables,
+      [...parseMigrations(stripComments(migrationSql())).tables.keys()].sort()
+    );
+    for (const table of publicTables) {
+      for (const role of ['anon', 'authenticated']) {
+        await t.test(`${role}: public.${table} sin TRUNCATE/REFERENCES/TRIGGER`, async () => {
+          const privileges = (
+            await db.query(
+              `select
+            has_table_privilege($1, $2, 'TRUNCATE') as truncate,
+            has_table_privilege($1, $2, 'REFERENCES') as references,
+            has_table_privilege($1, $2, 'TRIGGER') as trigger`,
+              [role, `public.${table}`]
+            )
+          ).rows[0];
+          assert.deepEqual(privileges, { truncate: false, references: false, trigger: false });
+        });
+        await t.test(`${role}: TRUNCATE public.${table} denegado al ejecutarlo`, async () => {
+          await db.exec(`begin; set local role ${role};`);
+          try {
+            // CASCADE evita que una FK dé un falso positivo (2BP01).
+            // El rollback también protege la fixture si la regresión reaparece.
+            await assert.rejects(
+              db.exec(`truncate table public."${table}" cascade;`),
+              (error) =>
+                error.code === '42501' && error.message === `permission denied for table ${table}`
+            );
+          } finally {
+            await db.exec('rollback;');
+          }
+        });
+      }
+    }
+    // PGlite solo tiene una conexión (también con su worker multipestaña):
+    // no puede probar dos transacciones compitiendo por el mismo bloqueo.
+    // Inspeccionamos la definición instalada y, cuando se delega el FOR UPDATE,
+    // también el helper. Las pruebas temporales de abajo no prueban contención.
+    for (const signature of [
+      'public.propose_session(uuid,timestamp with time zone,smallint)',
+      'public.respond_session(uuid,public.session_status)',
+      'public.cancel_session(uuid)',
+      'public.join_session(uuid)',
+      'public.rate_session(uuid,public.session_rating)',
+    ]) {
+      await t.test(`${signature}: captura el reloj después del bloqueo en BEGIN`, async () => {
+        const definition = stripComments(
+          (await db.query('select pg_get_functiondef($1::regprocedure) as definition', [signature]))
+            .rows[0].definition
+        );
+        const begin = definition.search(/\bbegin\b/i);
+        assert(begin >= 0);
+        assert.match(definition.slice(0, begin), /\bv_now\s+timestamptz\s*;/i);
+        assert.doesNotMatch(definition.slice(0, begin), /clock_timestamp\s*\(/i);
+        const body = definition.slice(begin);
+        const capture = /v_now\s*:=\s*clock_timestamp\(\);/i;
+        assert.equal([...body.matchAll(/v_now\s*:=/gi)].length, 1);
+        if (signature.includes('propose_session')) {
+          assert.match(
+            body,
+            /select\s+\*\s+into\s+v_match\s+from\s+public\.matches\s+where\s+id\s*=\s*p_match_id\s+for update;\s*v_now\s*:=\s*clock_timestamp\(\);/i
+          );
+          assert(body.search(/for update/i) < body.search(capture));
+        } else {
+          assert.match(
+            body,
+            /begin\s+v_session\s*:=\s*public\.lock_member_session\(p_session_id\);\s*v_now\s*:=\s*clock_timestamp\(\);/i
+          );
+          const helper = stripComments(
+            (
+              await db.query(`select pg_get_functiondef(
+              'public.lock_member_session(uuid)'::regprocedure) as definition`)
+            ).rows[0].definition
+          );
+          assert.match(
+            helper,
+            /select\s+\*\s+into\s+v_session\s+from\s+public\.lockin_sessions\s+where\s+id\s*=\s*p_session_id\s+for update;/i
+          );
+          assert(helper.search(/for update/i) < helper.search(/return v_session;/i));
+          // Orden efectivo: el helper adquiere el lock antes de devolver la fila;
+          // la siguiente instrucción de la RPC captura el reloj.
+          const expanded = body.replace('public.lock_member_session(p_session_id)', helper);
+          assert(expanded.search(/for update/i) < expanded.search(capture));
+        }
+      });
     }
     const fingerprint = async () => {
       const results = await db.exec(readFileSync(join(here, 'schema-fingerprint.sql'), 'utf8'));
@@ -224,6 +316,83 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
         await db.exec('rollback to savepoint sonda;');
       }
     };
+    // PGlite tiene una sola conexión: como en salas, cruzamos el límite
+    // dentro de una transacción abierta. No simula contención entre conexiones.
+    for (const boundary of [
+      {
+        name: 'propose_session',
+        offset: '5 minutes',
+        status: 'propuesta',
+        code: 'LI003',
+        sql: `select public.propose_session('${match}',
+          (select starts_at from public.lockin_sessions where id = '${session(3)}'), 1::smallint)`,
+      },
+      {
+        name: 'respond_session',
+        offset: '0 seconds',
+        status: 'propuesta',
+        code: 'LI002',
+        sql: `select public.respond_session('${session(3)}', 'aceptada')`,
+      },
+      {
+        name: 'cancel_session',
+        offset: '0 seconds',
+        status: 'aceptada',
+        code: 'LI002',
+        sql: `select public.cancel_session('${session(3)}')`,
+      },
+      {
+        name: 'join_session',
+        offset: '-30 minutes',
+        status: 'aceptada',
+        code: 'LI003',
+        sql: `select public.join_session('${session(3)}')`,
+      },
+      {
+        name: 'rate_session',
+        offset: '-24 hours -30 minutes',
+        status: 'aceptada',
+        code: 'LI003',
+        sql: `select public.rate_session('${session(3)}', 'bien')`,
+      },
+    ]) {
+      await t.test(`${boundary.name}: rechaza tras el plazo con now() obsoleto`, async () => {
+        await db.exec('savepoint clock_case;');
+        try {
+          await db.exec(`delete from public.lockin_sessions where id <> '${session(3)}';
+            update public.lockin_sessions set status = '${boundary.status}',
+              responded_at = case when '${boundary.status}' = 'propuesta' then null else now() end,
+              starts_at = clock_timestamp() + interval '${boundary.offset}' + interval '1 second'
+              where id = '${session(3)}';
+            insert into public.session_attendance (session_id, profile_id, joined_at)
+              select lockin_sessions.id, p.id, starts_at from public.lockin_sessions
+              cross join (values ('${ana}'::uuid), ('${bea}'::uuid)) p(id);
+            create or replace function auth.uid() returns uuid language sql
+              as $$ select '${bea}'::uuid $$;
+            set local role authenticated;`);
+          // Control positivo antes del cierre; errcode revierte la mutación.
+          if (boundary.name === 'propose_session') {
+            await db.exec('reset role;');
+            await db.exec(
+              `update public.lockin_sessions set status = 'cancelada', responded_at = now(); set local role authenticated;`
+            );
+          }
+          assert.equal(await errcode(boundary.sql), 'sin error', 'la RPC funciona antes del plazo');
+          await db.exec(`do $$ declare until_at timestamptz := clock_timestamp() + interval '1.5 seconds';
+            begin while clock_timestamp() < until_at loop end loop; end $$;`);
+          const clocks = (
+            await db.query(`select
+            now() < starts_at - interval '${boundary.offset}' as old_clock,
+            clock_timestamp() >= starts_at - interval '${boundary.offset}' as current_clock
+            from public.lockin_sessions where id = '${session(3)}'`)
+          ).rows[0];
+          assert.deepEqual(clocks, { old_clock: true, current_clock: true });
+          assert.equal(await errcode(boundary.sql), boundary.code);
+        } finally {
+          await db.exec('rollback to savepoint clock_case;');
+        }
+      });
+    }
     const ratable = async () =>
       (await db.query(`select id from public.ratable_session('${match}')`)).rows.map((r) => r.id);
     const rate = (id, value) => db.query(`select * from public.rate_session('${id}', '${value}')`);
