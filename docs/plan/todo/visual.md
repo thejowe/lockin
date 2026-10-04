@@ -543,6 +543,12 @@ de la zona del sello (`*-zona.png`) siguen a la tarjeta y están ampliados ×2.
 - Reposo (`15-reposo-zona.png`): sin sello. `logcat.txt` (desde los arrastres):
   ningún error de JS.
 
+*Decisión (2026-10-04, Claude): se acepta el cruce de +60 px.* Cualquier fundido
+sobre el avatar lo tiene; lo que había que evitar era el sello ilegible durante el
+arrastre, y eso ya no pasa. La alternativa de verdad es sacar «Like» de encima del
+avatar, que cambia la composición de la tarjeta: queda para una pasada de diseño
+si alguna vez molesta, no como fallo abierto.
+
 ## Registro
 
 Rama `claude/visual-pulido` (worktree `../lockin-visual`), sobre `42fa260`.
