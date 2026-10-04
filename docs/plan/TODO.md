@@ -2,6 +2,66 @@
 
 Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>.md` — márcalo ahí, no aquí.
 
+## ▶ Al retomar — estado del 2026-10-04 (el más reciente; los «Al retomar» de más abajo son históricos)
+
+Último commit antes de este traspaso: `4b3da96` en `claude/startup-cofounder-matching-app-tfeai1` (encima solo va el commit `docs(pilar)` que deja estas notas). Todo subido, árbol limpio.
+**Todos los bloques están cerrados salvo `salas`**, al que le faltan las Tareas 10 y 11. Las
+casillas abiertas que quedan están bloqueadas: ninguna se puede lanzar ahora mismo sin el usuario.
+
+**Lo que bloquea, por orden de impacto:**
+1. **GitHub Actions no arranca jobs** desde el 2026-10-03 22:00 UTC: es la facturación de la cuenta
+   («recent account payments have failed or your spending limit needs to be increased»). Los runs
+   fallan en segundos y sin ningún paso. Lo arregla el usuario en GitHub → Billing. Mientras tanto
+   no corren CI, contrato, Schema drift ni E2E, y por eso siguen abiertas `salas` T10 y T11 y el
+   oráculo «fetch failed» de `visual`.
+2. **Revisar las decisiones de la spec de salas** (`docs/superpowers/specs/2026-10-02-salas-grupales-design.md`,
+   primera sección; las que más pesan son la 1, salas formadas desde matches, y la 6, el ciego de invitados).
+3. **Dispositivo iOS (usuario):** la barra con Liquid Glass en iOS 26 (`todo/visual.md`) y las
+   comprobaciones de vídeo en iOS (`todo/video.md`).
+
+**Qué lanzar en cuanto Actions vuelva, en este orden:**
+1. Leer CI, Schema drift y E2E Android sobre la punta (sin empujar nada nuevo: con un push basta,
+   y si no hay ninguno, `gh run rerun` del último). Esperado:
+   - **CI** en verde.
+   - **Schema drift** en verde en local **y en remoto**, ya sin excepción, porque las dos migraciones
+     se aplicaron el 2026-10-03. Un rojo remoto ahora es deriva real; ver la memoria
+     `schema-drift-remoto-rojo-esperado`.
+   - **E2E** con la variante `supabase` pasando `room.yaml`.
+2. Si el E2E de salas falla, lo depura el agente `salas` (`todo/salas.md` → «Al retomar»). Si está
+   verde, el agente `salas` cierra la Tarea 11.
+3. Relanzar el E2E de `visual`, porque el paso «Memoria y contenedores al final» de `e2e.yml` aclara
+   el «fetch failed» (`todo/visual.md`).
+
+**Hecho en la tanda del 2026-10-03/04, por si algo de ello sale rojo en Actions:**
+- **Migraciones:** `lockin_rooms` y `harden_grants_and_clock` aplicadas en remoto por MCP; los 17
+  cuerpos de función coinciden por md5 con los archivos.
+- **Salas:**
+  - el tirar-para-refrescar de Matches relee las salas (`b2651a5`);
+  - «Tu sala · k de n» solo con respuestas pendientes (`4a95c86`);
+  - Convocar se desplaza hasta la hora elegida al cambiar de día (`e5ab495`);
+  - Tarea 12 ✅ con el comprobador.
+- **Visual:**
+  - Liquid Glass nativo en iOS 26+ con `expo-glass-effect`, ahora dependencia directa (`5351a3f`);
+  - la luz ambiental llena la pantalla en Android (`90d1d7b`);
+  - sellos del swipe opacos (`5f698db`, `1f0b6be`);
+  - recorrido cristal ✅ con el comprobador.
+- **Verificación:** la vuelta en frío de GitHub ya no deja la cuenta vinculada sin sello (`100ba66`).
+  - Un **config plugin nuevo**, `plugins/with-new-intent-initial-url.js`, mete `setIntent` en
+    `MainActivity.onNewIntent`.
+  - Cualquier APK local tiene que salir de `expo prebuild --clean` para llevarlo.
+  - ✅ con el comprobador contra Supabase real, y la fila de `profiles` leída en el servidor.
+
+**Estado de la máquina:**
+- El AVD `lockin` sigue encendido. El último APK instalado es release contra **Supabase real**, no el
+  mock: para una pasada con mock, recompila con `--rerun` (memoria `gradle-no-rastrea-expo-public`).
+- La cuenta de prueba «Verif GH» (`+lockingh1001`) queda verificada y limpia.
+- Worktrees ajenos, sin nada que rescatar:
+  - `claude/visual-cristal` y `codex/contrato-realtime`: integrados.
+  - `claude/acuerdo-socios`: sus commits ya están en la rama con otros SHA (`0012907`, `bde8c24`), y
+    lo que tiene `../lockin-acuerdo` sin commitear es solo CRLF.
+  - `C:/lkw`: solo tiene logs sueltos.
+  - Se pueden quitar cuando el usuario quiera.
+
 ## Arquitectura
 - [x] Scaffold inicial de Expo + TypeScript + Expo Router
 - [x] Sistema de diseño con la paleta de marca
@@ -58,8 +118,12 @@ Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>
 - [x] Conversación guiada a ciegas en matches Par — spec y plan del 2026-09-24 (`docs/superpowers/specs/2026-09-24-acuerdo-socios-design.md`, `.../plans/2026-09-24-acuerdo-socios.md`), bloque 12 `acuerdo` en `PLAN.md`, detalle y evidencia en `todo/acuerdo.md`. Ocho temas difíciles que cada socio responde por separado; tema por tema se ve «Coincidís», «Distinto» o «Por hablar» solo cuando han respondido los dos. **El ciego lo impone el servidor**: el cliente solo lee sus propias filas de `agreement_answers`; se escribe con `answer_agreement_topic()` y se lee la vista de la pareja con `match_agreement()`, las dos `SECURITY DEFINER` y con `LI004` (match ajeno) y `LI005` (match no Par). Solo en matches Par, nada sale del match, y «distinto» nunca va en rojo. El aviso legal es fijo: **no es un contrato ni asesoría legal**. Las 8 tareas cerradas el 2026-09-26 (`707e0ea`…`936ae51`): tarjeta bajo `SessionCard` en el chat y pantalla `/agreement/[matchId]`. Verificado en local: `tsc`, lint, formato, 1036 tests con cobertura 95.09/90.14/94.75/96.49, `test:schema` 21/21, `test:e2e` 93/93 y export web. En Actions sobre `936ae51`: `CI` verde entera ([run 36250919284](https://github.com/thejowe/lockin/actions/runs/36250919284)); `E2E Android` verde en las tres variantes ([run 36250919159](https://github.com/thejowe/lockin/actions/runs/36250919159)), y en la `supabase` el flujo del acuerdo pasó y dejó su fila en Postgres. **Migración `20260924000200_agreement_answers.sql` aplicada por el usuario en `grrzmzktrhksbttpbblg` el 2026-09-26**: `Schema drift` verde en local y remoto sobre `2d8987b` ([run 36254832954](https://github.com/thejowe/lockin/actions/runs/36254832954), `remote.diff` = «Sin diferencias.»). Mientras estuvo sin aplicar, el job remoto salió rojo a propósito ([run 36250919107](https://github.com/thejowe/lockin/actions/runs/36250919107)); ya no, así que **vuelve a valer que un rojo del job remoto es deriva real**. También queda sin correr el recorrido del `comprobador` en el emulador local: se intentó el mismo día y el toolchain de Android de la máquina desapareció a mitad del build (`todo/acuerdo.md` → hallazgos).
 
 ## Fase 3 — Salas grupales
-- **Al retomar (2026-10-04):** el código de las Tareas 1–10 está en la rama (`b478f90`); quedan la 10 (E2E verde), la 11 y la 12. Las dos migraciones (`20261002000100_lockin_rooms.sql` y `20261003000100_harden_grants_and_clock.sql`) **ya están aplicadas en remoto** (2026-10-03, por MCP, cuerpos verificados por md5). Bloqueos del usuario: facturación de GitHub Actions y revisar las decisiones de la spec. El orden exacto para relanzar está en `todo/salas.md` → «Al retomar». En `todo/datos.md` está lo de esta tanda que no es de salas: migración de seguridad y canales de realtime que repartían los `DELETE` de filas ajenas, ya arreglado.
-- [ ] Salas Lock-In grupales — spec y plan del 2026-10-02 (`docs/superpowers/specs/2026-10-02-salas-grupales-design.md`, `.../plans/2026-10-02-salas-grupales.md`), bloque 14 `salas` en `PLAN.md`, checklist con reparto `[Claude]`/`[Codex]` en `todo/salas.md`, agente `.claude/agents/salas.md`. Tercer y último sub-proyecto de Fase 3. **Diseñado sin el usuario: antes de la Tarea 1 tiene que revisar la tabla «Decisiones tomadas sin el usuario (revisar)» de la spec.** Lo esencial: una persona convoca a 2–4 de sus matches (cualquier modo) a una sesión grupal agendada de bloques 25+5; cada invitado acepta o rechaza; **ciego de invitados** por RLS (una invitada ve a quien convoca y a quien ya aceptó, nunca a las demás invitadas); presencia por persona en un topic privado `lockin:room:<uuid>`; aviso local 5 min antes. **Sin vídeo, sin chat de grupo, sin texto libre**, y no cuenta para rachas ni se valora. No rompe «match = 2 personas»: es una entidad al lado que reutiliza lo puro de `sesiones`. Cero dependencias y ninguna build nativa. Pendiente del usuario: revisar las decisiones y, al cerrar, aplicar `20261002000100_lockin_rooms.sql`
+- **Al retomar (2026-10-04, al cierre de la tanda):** código de las Tareas 1–10 en la rama;
+  la Tarea 12 se cerró ✅ con el comprobador. Quedan la **10** (falta un E2E verde) y la **11**
+  (cierre), las dos bloqueadas por la facturación de GitHub Actions. Migraciones ya aplicadas en
+  remoto. Falta que el usuario revise las decisiones de la spec. Orden exacto en
+  `todo/salas.md` → «Al retomar».
+- [ ] Salas Lock-In grupales — spec y plan del 2026-10-02 (`docs/superpowers/specs/2026-10-02-salas-grupales-design.md`, `.../plans/2026-10-02-salas-grupales.md`), bloque 14 `salas` en `PLAN.md`, checklist con reparto `[Claude]`/`[Codex]` en `todo/salas.md`, agente `.claude/agents/salas.md`. Tercer y último sub-proyecto de Fase 3. **Diseñado sin el usuario: antes de la Tarea 1 tiene que revisar la tabla «Decisiones tomadas sin el usuario (revisar)» de la spec.** Lo esencial: una persona convoca a 2–4 de sus matches (cualquier modo) a una sesión grupal agendada de bloques 25+5; cada invitado acepta o rechaza; **ciego de invitados** por RLS (una invitada ve a quien convoca y a quien ya aceptó, nunca a las demás invitadas); presencia por persona en un topic privado `lockin:room:<uuid>`; aviso local 5 min antes. **Sin vídeo, sin chat de grupo, sin texto libre**, y no cuenta para rachas ni se valora. No rompe «match = 2 personas»: es una entidad al lado que reutiliza lo puro de `sesiones`. Cero dependencias y ninguna build nativa. Pendiente del usuario: revisar las decisiones (la migración `20261002000100_lockin_rooms.sql` ya se aplicó el 2026-10-03)
 
 ## Pulido visual
 

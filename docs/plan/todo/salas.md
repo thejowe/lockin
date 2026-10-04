@@ -9,35 +9,44 @@ Agente: `.claude/agents/salas.md`
 > spec. Si cambia alguna, se reabre la Tarea 0 y se corrigen spec, plan y este
 > archivo antes de escribir código.
 
-## Al retomar (estado del 2026-10-04)
+## Al retomar (estado del 2026-10-04, al cierre de la tanda)
 
-Código de las Tareas 1–10 integrado y subido en `claude/startup-cofounder-matching-app-tfeai1`
-(punta `b478f90`). Abiertas: **10** (falta un E2E verde), **11** (cierre) y **12** (comprobador).
-Nada está a medias en ningún worktree: todo lo útil ya está en la rama.
+Todo el código de las Tareas 1–10 está integrado y subido en
+`claude/startup-cofounder-matching-app-tfeai1`, con `4b3da96` como último commit antes del traspaso (encima solo el `docs(pilar)` de estas notas) y el árbol limpio. La
+**Tarea 12 está cerrada** (✅ en el emulador con mock, sobre `107541a`). Abiertas: **10** (falta un
+E2E verde) y **11** (cierre). No hay nada a medias en ningún worktree.
+
+Desde la Tarea 12, en la rama y con test:
+- La fila de quien convoca dice «Tu sala · k de n» solo con respuestas pendientes (`4a95c86`).
+- Convocar desplaza la fila de horas al cambiar de día (`e5ab495`).
+- El tirar-para-refrescar de Matches relee las salas (`b2651a5`).
+
+Los dos últimos están comprobados en el emulador.
 
 Bloqueos del usuario, por orden:
 1. **GitHub Actions parado por facturación** («recent account payments have failed or your
-   spending limit needs to be increased»). Sin esto no corre ni CI, ni contrato, ni E2E.
+   spending limit needs to be increased»). Sin esto no corren CI, contrato ni E2E. Seguía igual el
+   2026-10-04: los jobs fallan sin ejecutar ningún paso.
 2. ~~Aplicar dos migraciones~~ **Hecho el 2026-10-03** por orden del usuario, con
-   `apply_migration` del MCP de Supabase: `20261002000100_lockin_rooms.sql` y después
+   `apply_migration` del MCP de Supabase: primero `20261002000100_lockin_rooms.sql` y después
    `20261003000100_harden_grants_and_clock.sql`. Los 17 cuerpos de función coinciden por md5
    con los archivos; RLS, grants y publicación de Realtime verificados (ver `todo/datos.md`).
-3. **Revisar las decisiones tomadas sin el usuario** (spec, primera sección; las caras son la 1 y la 6).
+3. **Revisar las decisiones tomadas sin el usuario** (spec, primera sección; las que más pesan son
+   la 1 y la 6).
 
 Qué lanzar al volver, en orden:
-1. Con Actions sano: leer el primer run de `E2E Android` sobre la punta. La variante
-   `supabase` tiene que dar `[Passed] Aceptar, entrar y salir de una sala Lock-In` y
-   «Postgres: asistencia a la sala verificada.». Además hay que leer la línea «Sala, tiempos»:
-   si «Me apunto» queda cerca de los 120 s, sube a la vez la siembra (7 min) y la espera (180 s).
-   Si falla, el que depura es el agente `salas`. Infra del runner (disco, swap, ANR) ya arreglada
-   en `bd3f9b2..2fd6685` por la sesión de diseño. **No lances `contract.yml` a mano sobre esta
-   rama**: CI ya lo incluye y comparten grupo de concurrencia, así que se cancelan entre sí.
-2. ~~Tarea 12 con el `comprobador`~~ **Hecha el 2026-10-03 (✅ en mock, `107541a`).** Un intento del 2026-10-04 se paró a
-   mitad al cerrar la sesión: hay capturas parciales en `e2e/artifacts/local/2026-10-04-salas/`,
-   sin veredicto. El emulador es compartido con la sesión del rediseño, que quiere pasar el suyo
-   (desenfoque, swipe, Pomodoro): coordina antes.
-3. Tarea 11, cuando 1 esté verde (las migraciones ya están aplicadas: Schema drift remoto
-   tiene que salir verde sin excepción).
+1. Con Actions sano, leer el primer run de `E2E Android` sobre la punta. La variante `supabase`
+   tiene que dar `[Passed] Aceptar, entrar y salir de una sala Lock-In` y «Postgres: asistencia a
+   la sala verificada.».
+   - Lee también la línea «Sala, tiempos»: si «Me apunto» queda cerca de los 120 s, sube a la vez
+     la siembra (7 min) y la espera (180 s).
+   - Si falla, lo depura el agente `salas`.
+   - La infra del runner (disco, swap, ANR) ya se arregló en `bd3f9b2..2fd6685`.
+   - **No lances `contract.yml` a mano sobre esta rama**: CI ya lo incluye y comparten grupo de
+     concurrencia, así que se cancelan entre sí.
+2. Con eso en verde, **Tarea 11**: CI, E2E, contrato y Schema drift en verde en local y en remoto.
+   Ya no hay excepción que anotar, porque las migraciones están aplicadas: un rojo del job remoto
+   es deriva real. Marca la casilla de la Tarea 10 con el run verde.
 
 Deudas pequeñas anotadas, sin casilla. Cerradas el 2026-10-03: el tirar-para-refrescar de
 Matches ya relee las salas (`b2651a5`, `useRefreshQuery`); `e2e/README.md` explica la cadena
