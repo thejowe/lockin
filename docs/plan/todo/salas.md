@@ -18,9 +18,10 @@ Nada está a medias en ningún worktree: todo lo útil ya está en la rama.
 Bloqueos del usuario, por orden:
 1. **GitHub Actions parado por facturación** («recent account payments have failed or your
    spending limit needs to be increased»). Sin esto no corre ni CI, ni contrato, ni E2E.
-2. **Aplicar dos migraciones** en `grrzmzktrhksbttpbblg` por el SQL Editor:
-   `20261003000100_harden_grants_and_clock.sql` (seguridad de `datos`; se puede aplicar ya)
-   y `20261002000100_lockin_rooms.sql` (salas; su esquema ya no va a cambiar).
+2. ~~Aplicar dos migraciones~~ **Hecho el 2026-10-03** por orden del usuario, con
+   `apply_migration` del MCP de Supabase: `20261002000100_lockin_rooms.sql` y después
+   `20261003000100_harden_grants_and_clock.sql`. Los 17 cuerpos de función coinciden por md5
+   con los archivos; RLS, grants y publicación de Realtime verificados (ver `todo/datos.md`).
 3. **Revisar las decisiones tomadas sin el usuario** (spec, primera sección; las caras son la 1 y la 6).
 
 Qué lanzar al volver, en orden:
@@ -35,11 +36,13 @@ Qué lanzar al volver, en orden:
    mitad al cerrar la sesión: hay capturas parciales en `e2e/artifacts/local/2026-10-04-salas/`,
    sin veredicto. El emulador es compartido con la sesión del rediseño, que quiere pasar el suyo
    (desenfoque, swipe, Pomodoro): coordina antes.
-3. Tarea 11, cuando 1 y 2 estén verdes y las migraciones aplicadas (Schema drift remoto verde).
+3. Tarea 11, cuando 1 esté verde (las migraciones ya están aplicadas: Schema drift remoto
+   tiene que salir verde sin excepción).
 
-Deudas pequeñas anotadas, sin casilla: el tirar-para-refrescar de Matches no relee las salas
-(Tarea 8); `e2e/README.md` no menciona `room.yaml`; `test/app/layouts.test.tsx` no comprueba
-`room/new` ni `room/[roomId]`; un caso intermitente de mock en `full-journey.yaml` («Tarde · 12–20»
+Deudas pequeñas anotadas, sin casilla. Cerradas el 2026-10-03: el tirar-para-refrescar de
+Matches ya relee las salas (`b2651a5`, `useRefreshQuery`); `e2e/README.md` explica la cadena
+`supabase` hasta `room.yaml` y `test/app/layouts.test.tsx` declara `room/new`, `room/[roomId]` y
+`agreement/[matchId]` (`931be74`). Abierta: un caso intermitente de mock en `full-journey.yaml` («Tarde · 12–20»
 no visible tras 4 min, probablemente lentitud del runner: la variante `supabase` lo pasó con el
 rediseño).
 
@@ -82,10 +85,14 @@ El resto, en orden.
 - [ ] Revisar las decisiones tomadas sin el usuario (spec, primera sección). Las
       que más cuesta deshacer una vez empezada la Tarea 2: cómo se forma la sala
       (desde matches) y el ciego de invitados.
-- [ ] Aplicar `supabase/migrations/20261002000100_lockin_rooms.sql` en
-      `grrzmzktrhksbttpbblg` por el SQL Editor al cerrar la Tarea 11. Hasta
-      entonces el job remoto de `Schema drift` suma esta migración a la
-      excepción vigente (memoria `schema-drift-remoto-rojo-esperado.md`).
+- [x] Aplicar `supabase/migrations/20261002000100_lockin_rooms.sql` en
+      `grrzmzktrhksbttpbblg`. Aplicada el 2026-10-03 por orden del usuario
+      («aplica migraciones»), por MCP en vez de SQL Editor, antes de cerrar la
+      Tarea 11. Ya no hay excepción en `Schema drift` remoto.
+- [ ] Decidir el texto de la fila de quien convoca con todos aceptados (hallazgo
+      del comprobador abajo): la app dice «Tu sala · … · 2 de 2 han aceptado» y
+      la spec esperaba «Sala · … · 3 personas». O se cambia `roomRowView`, o se
+      aclara la spec.
 
 ## Hallazgos del comprobador
 
