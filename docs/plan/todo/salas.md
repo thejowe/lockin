@@ -9,44 +9,27 @@ Agente: `.claude/agents/salas.md`
 > spec. Si cambia alguna, se reabre la Tarea 0 y se corrigen spec, plan y este
 > archivo antes de escribir código.
 
-## Al retomar (estado del 2026-10-04, al cierre de la tanda)
+## Al retomar (estado del 2026-10-04, bloque cerrado)
 
-Todo el código de las Tareas 1–10 está integrado y subido en
-`claude/startup-cofounder-matching-app-tfeai1`, con `4b3da96` como último commit antes del traspaso (encima solo el `docs(pilar)` de estas notas) y el árbol limpio. La
-**Tarea 12 está cerrada** (✅ en el emulador con mock, sobre `107541a`). Abiertas: **10** (falta un
-E2E verde) y **11** (cierre). No hay nada a medias en ningún worktree.
+**Las Tareas 0–12 están cerradas.** Todo el código está en `claude/startup-cofounder-matching-app-tfeai1`.
+Sobre `22608a0` (Actions de vuelta, el repo pasó a público el 2026-10-04), las cuatro señales salen en verde:
+- **E2E Android**, [run 37226087232](https://github.com/thejowe/lockin/actions/runs/37226087232):
+  las tres variantes en verde. En la `supabase` sale `[Passed] Aceptar, entrar y salir de una sala
+  Lock-In (2m 11s)` y «Postgres: asistencia a la sala verificada.».
+- **CI**, [run 37226087427](https://github.com/thejowe/lockin/actions/runs/37226087427): verde entera,
+  con «Formato» y el contrato Supabase (105 verdes y 24 saltados a propósito).
+- **Schema drift**, [run 37226087236](https://github.com/thejowe/lockin/actions/runs/37226087236): verde en
+  local y en remoto, ya sin excepción.
 
-Desde la Tarea 12, en la rama y con test:
-- La fila de quien convoca dice «Tu sala · k de n» solo con respuestas pendientes (`4a95c86`).
-- Convocar desplaza la fila de horas al cambiar de día (`e5ab495`).
-- El tirar-para-refrescar de Matches relee las salas (`b2651a5`).
+No hay nada a medias en ningún worktree.
 
-Los dos últimos están comprobados en el emulador.
+Lo único abierto es del usuario: **revisar las decisiones tomadas sin él** (spec, primera sección;
+las que más pesan son la 1 y la 6). Si cambia alguna, se reabre la Tarea 0 y se corrigen spec, plan
+y este archivo antes de tocar código.
 
-Bloqueos del usuario, por orden:
-1. **GitHub Actions parado por facturación** («recent account payments have failed or your
-   spending limit needs to be increased»). Sin esto no corren CI, contrato ni E2E. Seguía igual el
-   2026-10-04: los jobs fallan sin ejecutar ningún paso.
-2. ~~Aplicar dos migraciones~~ **Hecho el 2026-10-03** por orden del usuario, con
-   `apply_migration` del MCP de Supabase: primero `20261002000100_lockin_rooms.sql` y después
-   `20261003000100_harden_grants_and_clock.sql`. Los 17 cuerpos de función coinciden por md5
-   con los archivos; RLS, grants y publicación de Realtime verificados (ver `todo/datos.md`).
-3. **Revisar las decisiones tomadas sin el usuario** (spec, primera sección; las que más pesan son
-   la 1 y la 6).
-
-Qué lanzar al volver, en orden:
-1. Con Actions sano, leer el primer run de `E2E Android` sobre la punta. La variante `supabase`
-   tiene que dar `[Passed] Aceptar, entrar y salir de una sala Lock-In` y «Postgres: asistencia a
-   la sala verificada.».
-   - Lee también la línea «Sala, tiempos»: si «Me apunto» queda cerca de los 120 s, sube a la vez
-     la siembra (7 min) y la espera (180 s).
-   - Si falla, lo depura el agente `salas`.
-   - La infra del runner (disco, swap, ANR) ya se arregló en `bd3f9b2..2fd6685`.
-   - **No lances `contract.yml` a mano sobre esta rama**: CI ya lo incluye y comparten grupo de
-     concurrencia, así que se cancelan entre sí.
-2. Con eso en verde, **Tarea 11**: CI, E2E, contrato y Schema drift en verde en local y en remoto.
-   Ya no hay excepción que anotar, porque las migraciones están aplicadas: un rojo del job remoto
-   es deriva real. Marca la casilla de la Tarea 10 con el run verde.
+Si algo de salas sale rojo más adelante, lo depura el agente `salas`. **No lances `contract.yml` a
+mano sobre esta rama**: CI ya lo incluye y comparten grupo de concurrencia, así que se cancelan
+entre sí.
 
 Deudas pequeñas anotadas, sin casilla. Cerradas el 2026-10-03: el tirar-para-refrescar de
 Matches ya relee las salas (`b2651a5`, `useRefreshQuery`); `e2e/README.md` explica la cadena
@@ -80,9 +63,20 @@ El resto, en orden.
 - [x] [Claude] Tarea 8 — Pantalla de la sala (`/room/[roomId]`) y `RoomsSection` en Matches (cruce con `chat`). Hecha el 2026-10-03 en `1352d8e`: `useRoom` (8 tests: lectura, suscripción, `serverNow`, `pending` y una sola escritura por doble toque), `RoomsSection` (5 tests) y la ruta (22 tests: «Convoca Núria»/«Convocas tú», la invitada no ve a la otra invitada, cancelar con confirmación en línea, «No podré ir» vuelve sin pintar «no disponible», cancelación con la pantalla abierta, retirada de una aceptada con la pantalla abierta, responder cerrado en la ventana, entrar/presencia/salir/gesto atrás/reintento, terminada sin valoración, no disponible). Matches: una línea (`<RoomsSection />`) más su import, y un test. Verificación: `tsc` y `lint` limpios; `jest --coverage --ci` 1336 verdes, cobertura 95.76/90.05/95.4/97.19 sobre el suelo (el único rojo, `swipe-deck` por un timeout del primer test bajo carga, pasa 26/26 solo); `expo export --platform web` en verde con `room/new` y `room/[roomId]`. Desviaciones: `useRoom` expone además `refresh()` (botón «Reintentar» tras un fallo de lectura); la presencia del test es el `roomPresence` en memoria de `@/data` en vez de un adaptador inyectado; el doble toque de «Me apunto» lo fija `use-room.test.tsx` (en la ruta, un `act` con la escritura retenida no termina).
   - 2026-10-03, revisión de Codex (`codex review --base b051070`, dos P2) arreglada en `edea990`: la salida va detrás de la última entrada pedida (una entrada que llega tras desmontar ya no deja `joinedAt` sin `leftAt`; «Salir» espera a la entrada en vuelo y sale una vez), y `RoomsSection` enseña el fallo de `listLive()` con «Reintentar». TDD: 3 rojos → verdes. **Pendiente, a propósito**: el tirar-para-refrescar de Matches no relee las salas; conectarlo exigiría montar `useLiveRooms` también en `matches.tsx` (más de una línea en el archivo de `chat`), así que queda en el botón.
 - [x] [Codex] Tarea 9 — Avisos locales de salas (`room-reminders.ts`, `RoomReminderSync`; cruce de una línea con `sesiones` y con el layout de tabs). Hecha el 2026-10-03: aviso 5 minutos antes para aceptadas (incluida quien convoca), reconciliación con `rooms.listLive()` al montar y por `rooms.subscribe`, retirada de avisos de salas canceladas/rechazadas/terminadas y claves independientes de las sesiones 1:1. Reutiliza el puerto y canal Android de sesiones; lecturas serializadas, reintento tras error y limpieza de la suscripción al desmontar. TDD rojo → verde: 16 tests nuevos; regresión de salas, sesiones y `test/app`: 47 suites, 362 tests verdes (un aviso de `act` en `sessionId.test.tsx`). TypeScript, lint, Prettier y export web limpios. Sin cambios de alcance; sin staging ni commit por instrucción del usuario.
-- [ ] [Claude] Tarea 10 — E2E `room.yaml` en la variante `supabase`, encadenado tras `agreement.yaml`
+- [x] [Claude] Tarea 10 — E2E `room.yaml` en la variante `supabase`, encadenado tras `agreement.yaml`
+  - 2026-10-04, **verde en Actions sobre `22608a0`** ([E2E Android, run 37226087232](https://github.com/thejowe/lockin/actions/runs/37226087232), las tres variantes en verde; `supabase`, job 111505907087). En el log: `[Passed] Aceptar, entrar y salir de una sala Lock-In (2m 11s)`, tras el acuerdo y antes de `sign-in-abandon.yaml`, y «Postgres: asistencia a la sala verificada.». La línea de tiempos: «Sala, tiempos (reloj de Postgres): «Me apunto» a 24.6 s de sembrar (las respuestas se cierran a 120.0 s); entrada a 0.5 s de abrir la ventana; salida a 7.2 s de entrar.». Hay casi 100 s de margen sobre el cierre de respuestas, así que no hace falta subir la siembra (7 min) ni la espera (180 s). El código es el de `85964c0` y `190bd36`.
   - 2026-10-03, **pendiente de E2E verde: Actions bloqueado por facturación; infra del runner ya arreglada en la rama principal (bd3f9b2..2fd6685)**. Código en `85964c0` y `190bd36`: `room.yaml` (relanza sin borrar estado → Matches → «.\* te invita.\*» → «Me apunto» → hasta 180 s a «Empieza en» → «Salir» → «Salir de la sala» → «Entrar a la sala.\*» de vuelta en Matches); `prepareRoom` siembra la sala a 7 min (convoca la contraparte, Marc Oller aceptado, el usuario invitado) y `verifyRoomAttendance` comprueba `aceptada`, `joined_at` y `left_at`, e imprime los tiempos de cada paso con el reloj de Postgres («Sala, tiempos: …»); encadenado tras el oráculo del acuerdo y antes de `sign-in-abandon.yaml`, con `room: 'verified'`; `e2e/room.test.mjs` (5 casos) fija etiquetas, siembra y los dos números (7 min y 180 s) contra el código. `node --test e2e/room.test.mjs` 5/5; `e2e/*.test.mjs` 103/104 (el rojo es el CRLF de `full-journey`, conocido). En Actions (rama desechable con los arreglos de `e2e.yml` de `claude/visual-cristal`): runs 37145155786, 37147988585 y 37151155639 murieron por la infra del runner (disco, ANR de System UI) en `full-journey.yaml`, también en mock; en el 37154276244 la variante `supabase` pasó recorrido, sesión, valoración, racha y acuerdo, y cayó en `prepareRoom`: un insert en lote de PostgREST pone NULL (no el `default`) en la columna que falta → `status` nulo. Arreglado en `190bd36`. **`room.yaml` no ha llegado a ejecutarse en el emulador: el tiempo de espera (siembra a 7 min, 180 s) sigue sin medir**; el primer run verde debe leer «Sala, tiempos» en el log (margen de «Me apunto» frente a los 120 s y entrada tras abrir la ventana). Ese mismo run, la variante mock cayó por un caso en `full-journey.yaml` («Tarde · 12–20» no visible tras 4 min), ajeno a salas.
-- [ ] [Claude] Tarea 11 — Verificación final y cierre (CI, E2E, contrato, Schema drift con su excepción anotada)
+- [x] [Claude] Tarea 11 — Verificación final y cierre (CI, E2E, contrato, Schema drift con su excepción anotada)
+  - 2026-10-04, **local sobre `021cf1e`** (encima de `22608a0` solo hay commits de ci y docs):
+    - `tsc --noEmit` y `lint`, limpios.
+    - `test:schema`, 75/75.
+    - `expo export --platform web`, en verde con `/room/new` y `/room/[roomId]`.
+    - `jest --coverage --ci`: 1392 verdes, cobertura 95.42/90.14/95.23/96.76 sobre el suelo. Hay un rojo, el timeout de 5 s de `account-section.test.tsx` bajo carga, ajeno a salas: solo pasa 23/23 y el job «Tests» de CI está en verde.
+  - **En Actions sobre `22608a0`:**
+    - `CI`, [run 37226087427](https://github.com/thejowe/lockin/actions/runs/37226087427): verde entera, con «Formato», «SQL embebido» y «Contrato Supabase». El contrato da 105 verdes y 24 saltados (los de viaje en el tiempo, entre ellos «una sala empezada no se cancela; terminada sigue legible»). No se lanzó `contract.yml` a mano porque CI ya lo incluye.
+    - `E2E Android`, [run 37226087232](https://github.com/thejowe/lockin/actions/runs/37226087232): verde (Tarea 10).
+    - `Schema drift`, [run 37226087236](https://github.com/thejowe/lockin/actions/runs/37226087236): «Huella local y controles negativos» y «Comparar grrzmzktrhksbttpbblg (solo lectura)» en verde. En el remoto: «huella SQL coincide con las migraciones de este commit».
+  - El plan esperaba el remoto en rojo a propósito por la migración. Ya no aplica: `lockin_rooms` y `harden_grants_and_clock` se aplicaron el 2026-10-03, y este es el primer run remoto verde con ellas. Memoria `schema-drift-remoto-rojo-esperado` actualizada.
 - [x] [comprobador] Tarea 12 — Recorrer convocar, entrar y cancelar una sala en el emulador (mock)
   - 2026-10-03, comprobador (mock, APK release sobre `107541a`): **✅ los pasos 1–6 del plan**,
     incluida la espera hasta la ventana (la sala de las 11:00 se abrió a las 10:55 y se trabajó a
