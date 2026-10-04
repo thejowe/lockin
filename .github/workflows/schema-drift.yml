@@ -1,7 +1,9 @@
 name: Schema drift
 
 on:
+  # Un commit que solo toca `docs/` no cambia código ni esquema: no gasta minutos.
   push:
+    paths-ignore: ['docs/**']
   workflow_dispatch:
 
 permissions:

@@ -5,9 +5,12 @@ name: CI
 # Uno de ellos, `Contrato Supabase`, solo corre en la rama principal; su motivo
 # está junto a su definición.
 on:
+  # Un commit que solo toca `docs/` no cambia código ni esquema: no gasta minutos.
   push:
     branches: ['**']
+    paths-ignore: ['docs/**']
   pull_request:
+    paths-ignore: ['docs/**']
 
 # Un push nuevo sobre la misma rama cancela la ejecución anterior: nadie espera
 # el resultado de un commit que ya ha sido reemplazado.

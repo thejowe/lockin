@@ -1,8 +1,11 @@
 name: E2E Android
 on:
+  # Un commit que solo toca `docs/` no cambia código ni esquema: no gasta minutos.
   push:
     branches: ['**']
+    paths-ignore: ['docs/**']
   pull_request:
+    paths-ignore: ['docs/**']
   workflow_dispatch:
 
 permissions:
