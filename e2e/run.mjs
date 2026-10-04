@@ -40,6 +40,11 @@ import {
   verifySessionRating,
 } from './verify.mjs';
 import { mailpitUrl, resolveVerifyLink, waitForVerifyLink } from './mail.mjs';
+import { installFetchDiagnostics } from './fetch-diagnostics.mjs';
+
+// Antes de crear ningún cliente: el «fetch failed» de los oráculos llega sin
+// causa (auth-js la descarta). Ver la cabecera de `fetch-diagnostics.mjs`.
+installFetchDiagnostics();
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const runtime = join(root, 'e2e/.runtime');
