@@ -632,7 +632,7 @@ usuario por el camino: **solo modo oscuro**. Rama `claude/visual-cristal`.
   e icono de expandir; etiquetas de cabecera en gris; radios contenidos (card
   30→22); el encaje del deck en tinta de brasa sobre relleno tenue; el prompt
   del perfil ocupa el hueco de la tarjeta en grande; «¡Match!» en blanco.
-- [x] Oráculo final de `supabase` y `registro`: «fetch failed» en la primera
+- [ ] Oráculo final de `supabase` y `registro`: «fetch failed» en la primera
   llamada de administración a GoTrue tras el último flujo (~40 min después de
   levantar el Supabase local). Sospecha: un contenedor muerto por OOM en el
   runner de 7.8 GB. El paso «Memoria y contenedores al final» de `e2e.yml` lo
@@ -645,6 +645,11 @@ usuario por el camino: **solo modo oscuro**. Rama `claude/visual-cristal`.
   failed». El bloqueo era la cuota de Actions; el repo pasó a público y su
   runner tiene ahora 15 GB de RAM. «Memoria y contenedores al final»: todos los
   contenedores siguen «Up», 13 GB disponibles, 36 MB de swap usados y ningún OOM.*
+  *Reabierta el mismo día: el cierre era prematuro. En `supabase` vuelve
+  «fetch failed» (`getUserById` tras `sign-in-abandon.yaml`) en los tres intentos
+  posteriores: attempt-02 de 37228331950, 37231590523 y su rerun. La petición no
+  llega a Kong y no hay OOM, así que la sospecha de memoria queda descartada. El
+  diagnóstico sigue en `todo/verificacion.md`.*
 - [x] [comprobador] Recorrido en el emulador Android: el esmerilado nativo
   (`BlurTargetView`) de la barra, el swipe con la pila nueva y el anillo del
   Pomodoro en una sesión activa.
