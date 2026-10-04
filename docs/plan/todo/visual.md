@@ -398,6 +398,8 @@ el color pasa de (43,23,14) a (10,10,11) entre x=1022 y x=1026. La barra de
 pestañas queda justo sobre el borde inferior de la imagen. Sugerencia sin
 probar: dar `width: '100%', height: '100%'` explícitos, o usar `expo-image` con
 `contentFit="cover"`.
+*2026-10-04: resuelto en `90d1d7b`, comprobado en el emulador (mock). Ver la
+entrada del 2026-10-04 abajo.*
 
 **Observaciones, sin marcar como fallo.**
 - El modal de «¡Match!» en Android **no esmerila** el deck, solo lo oscurece:
@@ -412,6 +414,65 @@ probar: dar `width: '100%', height: '100%'` explícitos, o usar `expo-image` con
   «could not get idle state» (animación continua: anillo y punto que respira).
   Maestro no espera a que la pantalla quede quieta, así que no debería afectarle, pero
   cualquier herramienta que use `waitForIdle` se quedará sin jerarquía ahí.
+
+### 2026-10-04 — luz ambiental, pasada de contención y barra (mock)
+
+APK release x86_64 con `prebuild --clean`, `EXPO_NO_DOTENV=1
+EXPO_PUBLIC_LOCKIN_ALLOW_MOCK=1` y `createBundleReleaseJsAndAssets --rerun`.
+En logcat sale `[lockin] backend de datos: mock en memoria`. **Árbol del bundle:**
+el código de `4a95c86` más una edición de `src/app/room/new.tsx` que otro agente
+tenía sin commitear (luego `e5ab495`, el scroll del selector de horas). Lo
+comprobé comparando el `sourcesContent` del source map con git. Nada de eso toca lo
+que se revisa aquí. Evidencia en `e2e/artifacts/local/2026-10-03-visual-90d1d7b/`.
+Recorrido: onboarding (Compañero de Lock-In) → formulario → deck → Like → «¡Match!»
+→ chat con mensaje → Matches → Perfil → sesión 1:1 propuesta a las 12:00, en
+espera y activa.
+
+**✅ La luz ambiental llena la pantalla (`90d1d7b`).** Ya no queda franja a la
+derecha. Medido por píxel en las filas de arriba, donde la luz es más intensa: el
+salto máximo entre columnas vecinas entre x=900 y 1079 es de 3 niveles en
+onboarding, Descubrir y Matches. Antes era de 78 en x=1023
+(`107541a/01-deck-reposo.png`). En Descubrir, a y=150, x=1040 vale (49,25,13);
+antes era negro (10,10,11). En Perfil, el único salto es la barra de
+desplazamiento del sistema, a x≈1068, que se desvanece. En chat y sesión, la
+columna derecha sigue el degradado sin cortes. Abajo no queda borde: en x=30 el
+salto entre y=1900 y 2399 es ≤6, que es el tramado. Antes era de 69 en y=2215 en
+Perfil. Ver `01-onboarding-modo.png`, `07-deck.png`, `10-chat-enviado.png`,
+`11-matches.png`, `12-perfil.png` y `18-sesion-anillo-3min.png`.
+
+**✅ Pasada de contención (`6145e93`), nada roto ni ilegible.**
+- Una sola luz tenue por pantalla: brasa arriba en onboarding, Descubrir, Perfil y
+  sesión; verde azulado arriba a la izquierda en Matches y chat. Se acabaron las tres
+  manchas: en `107541a/01-` había una verde a la izquierda.
+- Sin halos. «Crear perfil» (`06-`), Like (`07-`, sin galones »»» ni resplandor
+  a la derecha), la tarjeta del deck (sin el resplandor de color en la esquina),
+  «¡Match!» y «Abrir chat» (`08-`), enviar (`09-`) y anillo del Pomodoro
+  (`18-`). En la zona justo encima del arco, la media pasa de (31,28,25) a
+  (17,17,17).
+- Etiquetas de cabecera en gris: «Descubrir», «Matches», «Perfil», «Paso 1 de 2» y
+  las de sección del formulario. Dentro de las tarjetas siguen con color
+  «Quiere encontrar» (brasa) y «Lo que domina» (verde azulado) en Perfil (`12-`).
+  Encaja con «el acento queda para señales con significado».
+- Los radios se ven más contenidos: tarjeta del deck, filas y hoja de match.
+  «¡Match!» sale en blanco, con «Modo Compañero de Lock-In» en verde azulado
+  encima (`08-tras-like.png`).
+- El anillo avanza: «Empieza en 1:05» con el punto arriba (`17-`). A las 12:03
+  marca «21:45 · Trabajo · bloque 1 de 1» con el arco en ~13 % (`18-`). El vídeo
+  dice «No se pudo conectar el vídeo»: con mock y un solo emulador no hay par, así
+  que la videollamada sigue sin comprobar.
+- Sin errores de JS en `logcat.txt`.
+- No comprobado: el encaje del deck en tinta de brasa. Con el perfil en modo
+  Lock-In, ninguna tarjeta mostró «Encajas».
+
+**✅ La barra en Android, igual que antes de `5351a3f`.** `hasNativeGlass()` exige
+`Platform.OS === 'ios'`, así que en Android `Frosted` sigue por `BlurView`. En el
+dispositivo, con «Verificar con GitHub» entrando bajo la píldora, el canto del
+botón es nítido fuera y difuso dentro. Mismo relleno, borde y resalte de la
+pestaña activa que en `107541a` (`13-recorte-barra-antes-despues.png`: arriba
+`107541a`, abajo ahora).
+
+**Fila de sala de `4a95c86`:** no aparece. En este recorrido no se convocó
+ninguna sala y en Matches solo está Alba (`11-matches.png`).
 
 ## Registro
 
@@ -515,6 +576,9 @@ usuario por el camino: **solo modo oscuro**. Rama `claude/visual-cristal`.
   `e2e/artifacts/local/2026-10-03-visual-107541a/`. **Fallo aparte, en todas las
   pantallas:** la luz ambiental no llena la pantalla; queda una franja negra a la
   derecha y abajo (ver «Hallazgos del comprobador», 2026-10-03).
+  *2026-10-04, comprobador (mock, bundle con el código de `4a95c86`):* franja
+  resuelta por `90d1d7b`. La pasada de contención y la barra en Android, ✅
+  (ver «Hallazgos del comprobador», 2026-10-04).
 
 Textos: ningún texto ni etiqueta que usen los `e2e/*.yaml` ha cambiado. Cambia
 la presentación de «Enviar» (ahora icono; su etiqueta «Enviar mensaje» sigue).
