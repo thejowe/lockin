@@ -9,10 +9,13 @@
  *   sobre contenido que se desplaza (barra de pestañas, cabeceras, hojas). En
  *   Android el desenfoque nativo necesita un `BlurTargetView` con el contenido
  *   a desenfocar; sin él, `BlurView` pinta un velo translúcido, y el relleno
- *   oscuro de debajo garantiza que el texto encima se lea igual.
+ *   oscuro de debajo garantiza que el texto encima se lea igual. En iOS 26+ lo
+ *   pinta el sistema: Liquid Glass (`GlassView`), con su propio canto y su
+ *   reacción a lo que pasa por debajo.
  */
 
 import { BlurView } from 'expo-blur';
+import { GlassView, isGlassEffectAPIAvailable, isLiquidGlassAvailable } from 'expo-glass-effect';
 import type { RefObject } from 'react';
 import { Platform, StyleSheet, View, type ViewProps, type ViewStyle } from 'react-native';
 
@@ -57,6 +60,14 @@ export function Glass({
   return <View style={[glassStyle(theme, { elevated, floating, radius }), style]} {...rest} />;
 }
 
+/**
+ * Liquid Glass del sistema: iOS 26+, compilado con él y con el API presente en
+ * este dispositivo (algunas betas de iOS 26 no lo traen y `GlassView` se caería).
+ */
+export function hasNativeGlass(): boolean {
+  return Platform.OS === 'ios' && isLiquidGlassAvailable() && isGlassEffectAPIAvailable();
+}
+
 /** Relleno de seguridad bajo el esmerilado: grafito al 72 %. */
 const FROST_FILL = '#141416B8';
 
@@ -76,6 +87,21 @@ export function Frosted({
   floating?: boolean;
 }) {
   const theme = useTheme();
+
+  if (hasNativeGlass()) {
+    // Sin relleno, canto, brillo ni sombra propios: los pone el sistema, y el
+    // grafito de seguridad apagaría el cristal. Tampoco `overflow: hidden`, que
+    // recorta el efecto. Ojo: un `opacity: 0` aquí o en un padre lo deja sin pintar.
+    return (
+      <GlassView
+        glassEffectStyle="regular"
+        colorScheme="dark"
+        style={[{ borderRadius: radius }, style]}
+        {...rest}>
+        {children}
+      </GlassView>
+    );
+  }
 
   return (
     <View
