@@ -11,6 +11,9 @@
  * caduca por tiempo.
  */
 
+import { buildProfile } from '@/data/test-fixtures';
+
+import { adoptLinkedGithubIdentity, linkGithubIdentity } from './auth';
 import { createSupabaseRepositories } from './index';
 import { getSupabaseClient } from './client';
 
@@ -24,6 +27,7 @@ jest.mock('./client', () => ({
 
 jest.mock('./auth', () => ({
   ensureUserId: jest.fn(async () => 'user-a'),
+  adoptLinkedGithubIdentity: jest.fn(async () => false),
   linkGithubIdentity: jest.fn(),
   unlinkGithubIdentity: jest.fn(),
   AccountError: class extends Error {},
@@ -209,5 +213,32 @@ describe('recordDecision contra el RPC', () => {
       p_target_id: 'user-c',
       p_decision: 'pass',
     });
+  });
+});
+
+describe('verifyGithub', () => {
+  it('con GitHub ya vinculado sin sello, lo sella sin volver a abrir GitHub', async () => {
+    // Una vuelta en frío perdida: la identidad está en GoTrue y el sello no.
+    asMock.mockReturnValue(fakeClient().client);
+    jest.mocked(adoptLinkedGithubIdentity).mockResolvedValueOnce(true);
+    const repositories = createSupabaseRepositories();
+    const verified = buildProfile({ id: 'user-a' });
+    jest.spyOn(repositories.profiles, 'getCurrent').mockResolvedValue(verified);
+
+    await expect(repositories.profiles.verifyGithub()).resolves.toBe(verified);
+
+    expect(linkGithubIdentity).not.toHaveBeenCalled();
+  });
+
+  it('sin GitHub vinculado abre el flujo de siempre', async () => {
+    asMock.mockReturnValue(fakeClient().client);
+    jest.mocked(linkGithubIdentity).mockResolvedValueOnce(true);
+    const repositories = createSupabaseRepositories();
+    jest.spyOn(repositories.profiles, 'getCurrent').mockResolvedValue(buildProfile());
+
+    await repositories.profiles.verifyGithub();
+
+    expect(adoptLinkedGithubIdentity).toHaveBeenCalled();
+    expect(linkGithubIdentity).toHaveBeenCalledTimes(1);
   });
 });

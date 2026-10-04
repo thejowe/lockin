@@ -708,6 +708,29 @@ async function hasGithubIdentity(): Promise<boolean> {
 }
 
 /**
+ * Pone el sello si la cuenta ya tiene GitHub vinculado. Para «Verificar con
+ * GitHub» antes de abrir el navegador.
+ *
+ * GoTrue vincula la identidad en su propio callback, antes de devolver el code a
+ * la app. Si esa vuelta se pierde por el camino —Android mató el proceso con
+ * GitHub delante y el deep link entró por `onNewIntent` antes de que React
+ * existiera—, la cuenta queda vinculada y sin sello, y volver a vincular choca
+ * con «Identity is already linked». La identidad solo existe si alguien pasó por
+ * GitHub con esta cuenta: sellarla no abre un camino que se salte el navegador.
+ *
+ * @returns `false` si la cuenta no tiene GitHub vinculado.
+ */
+export async function adoptLinkedGithubIdentity(): Promise<boolean> {
+  if (!(await hasGithubIdentity())) return false;
+
+  const { error } = await getSupabaseClient().rpc('sync_github_verification');
+  if (error) throw error;
+
+  await AsyncStorage.removeItem(GITHUB_ATTEMPT_KEY);
+  return true;
+}
+
+/**
  * Pone el sello tras una vuelta de GitHub, si de verdad dejó GitHub vinculado.
  *
  * La verdad la escribe Postgres leyendo `auth.identities`: aquí no viaja ningún

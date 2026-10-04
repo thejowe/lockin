@@ -19,7 +19,12 @@
  */
 
 import { createSupabaseAgreementRepository } from './agreement';
-import { ensureUserId, linkGithubIdentity, unlinkGithubIdentity } from './auth';
+import {
+  adoptLinkedGithubIdentity,
+  ensureUserId,
+  linkGithubIdentity,
+  unlinkGithubIdentity,
+} from './auth';
 import { getSupabaseClient } from './client';
 import {
   byRecentActivity,
@@ -296,7 +301,10 @@ export function createSupabaseRepositories(): Repositories {
 
   const profiles: ProfileRepository = {
     async verifyGithub() {
-      const completed = await linkGithubIdentity();
+      // Una vuelta de GitHub perdida deja la identidad vinculada sin sello, y
+      // volver a vincular choca con «Identity is already linked»: si ya está,
+      // basta con sellarla (ver `adoptLinkedGithubIdentity`).
+      const completed = (await adoptLinkedGithubIdentity()) || (await linkGithubIdentity());
       if (!completed) throw new Error(GITHUB_VERIFICATION_CANCELLED);
 
       // El sello ya lo ha puesto `linkGithubIdentity` (`sync_github_verification`,

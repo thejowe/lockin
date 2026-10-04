@@ -4,6 +4,7 @@ import * as WebBrowser from 'expo-web-browser';
 
 import {
   AccountError,
+  adoptLinkedGithubIdentity,
   completeAuthLink,
   currentUserId,
   ensureUserId,
@@ -111,6 +112,35 @@ it('currentUserId distingue un fallo de una sesión ausente', async () => {
   await expect(currentUserId()).rejects.toBe(error);
   auth.getSession.mockResolvedValueOnce({ data: { session: null }, error: null });
   await expect(currentUserId()).resolves.toBeNull();
+});
+
+describe('adoptLinkedGithubIdentity', () => {
+  it('con GitHub ya vinculado y sin sello, lo pone sin abrir el navegador', async () => {
+    // Una vuelta en frío perdida deja la identidad en GoTrue y el sello sin poner.
+    await AsyncStorage.setItem(GITHUB_ATTEMPT_KEY, JSON.stringify({ startedAt: 1 }));
+
+    await expect(adoptLinkedGithubIdentity()).resolves.toBe(true);
+
+    expect(rpc).toHaveBeenCalledWith('sync_github_verification');
+    expect(auth.linkIdentity).not.toHaveBeenCalled();
+    expect(WebBrowser.openAuthSessionAsync).not.toHaveBeenCalled();
+    expect(await AsyncStorage.getItem(GITHUB_ATTEMPT_KEY)).toBeNull();
+  });
+
+  it('sin GitHub vinculado no llama al RPC, que vaciaría el enlace escrito a mano', async () => {
+    withoutGithubIdentity();
+
+    await expect(adoptLinkedGithubIdentity()).resolves.toBe(false);
+
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('propaga un fallo del RPC', async () => {
+    const error = new Error('sin red');
+    rpc.mockResolvedValueOnce({ error });
+
+    await expect(adoptLinkedGithubIdentity()).rejects.toBe(error);
+  });
 });
 
 describe('linkGithubIdentity', () => {
