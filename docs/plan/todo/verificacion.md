@@ -663,3 +663,12 @@ false`, porque un OAuth de verdad necesita un navegador y una persona al otro
 lado. Contra el mock corren enteros.
 
 Los once se declararon en `ad69754` y el job volvió a verde a la primera.
+
+### El E2E Android cayó con `100ba66` (2026-10-04)
+
+Los tres jobs de `E2E Android` (mock, registro, supabase) fallaron en «Build
+release del APK» con `PluginError: Failed to resolve plugin for module
+"./plugins/with-new-intent-initial-url"`. `e2e/run.mjs` copia a la app
+desechable una lista cerrada de entradas y `plugins/` no estaba: es el primer
+config plugin local, los anteriores venían de `node_modules`. Arreglado
+añadiendo `plugins` a esa lista.

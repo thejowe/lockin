@@ -554,6 +554,8 @@ if (command === 'build') {
   for (const entry of [
     'src',
     'assets',
+    // Config plugins locales que `app.json` registra: sin ellos, `prebuild` falla.
+    'plugins',
     'package.json',
     'package-lock.json',
     'app.json',
