@@ -632,7 +632,7 @@ usuario por el camino: **solo modo oscuro**. Rama `claude/visual-cristal`.
   e icono de expandir; etiquetas de cabecera en gris; radios contenidos (card
   30→22); el encaje del deck en tinta de brasa sobre relleno tenue; el prompt
   del perfil ocupa el hueco de la tarjeta en grande; «¡Match!» en blanco.
-- [ ] Oráculo final de `supabase` y `registro`: «fetch failed» en la primera
+- [x] Oráculo final de `supabase` y `registro`: «fetch failed» en la primera
   llamada de administración a GoTrue tras el último flujo (~40 min después de
   levantar el Supabase local). Sospecha: un contenedor muerto por OOM en el
   runner de 7.8 GB. El paso «Memoria y contenedores al final» de `e2e.yml` lo
@@ -640,6 +640,11 @@ usuario por el camino: **solo modo oscuro**. Rama `claude/visual-cristal`.
   Actions no arranca jobs en este repo privado («recent account payments have
   failed or your spending limit needs to be increased»): lo resuelve el
   usuario en Billing.
+  *2026-10-04: cerrada con el run 37226087232 de `E2E Android` sobre `22608a0`:
+  `supabase` y `registro` con su veredicto «pass» en attempt-01, sin «fetch
+  failed». El bloqueo era la cuota de Actions; el repo pasó a público y su
+  runner tiene ahora 15 GB de RAM. «Memoria y contenedores al final»: todos los
+  contenedores siguen «Up», 13 GB disponibles, 36 MB de swap usados y ningún OOM.*
 - [x] [comprobador] Recorrido en el emulador Android: el esmerilado nativo
   (`BlurTargetView`) de la barra, el swipe con la pila nueva y el anillo del
   Pomodoro en una sesión activa.
