@@ -13,8 +13,8 @@
  */
 
 import { Stack, useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { Screen } from '@/components/ambient-background';
@@ -66,6 +66,10 @@ export default function NewRoomScreen() {
   const [blocks, setBlocks] = useState<SessionBlocks>(2);
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set());
   const [error, setError] = useState<string | null>(null);
+  // Al cambiar de día la fila de horas es otra: hay que llevar la vista hasta
+  // el tramo elegido en cuanto se coloque, o queda fuera por la derecha.
+  const slotsScroll = useRef<ScrollView>(null);
+  const revealSlot = useRef(false);
   // Convocar y navegar es una sola acción: un segundo toque no escribe otra
   // sala ni hace un segundo `replace`.
   const flight = useSingleFlight();
@@ -86,8 +90,15 @@ export default function NewRoomScreen() {
     const sameTime = new Date(day);
     sameTime.setHours(current.getHours(), current.getMinutes(), 0, 0);
     const daySlots = slotsForDay(day, nowMs);
+    revealSlot.current = day !== dayMs;
     setDayMs(day);
     setSlotMs(daySlots.includes(sameTime.getTime()) ? sameTime.getTime() : daySlots[0]);
+  };
+
+  const onSlotLayout = (slot: number, x: number) => {
+    if (!revealSlot.current || slot !== slotMs) return;
+    revealSlot.current = false;
+    slotsScroll.current?.scrollTo({ x: Math.max(0, x - Spacing.four), animated: true });
   };
 
   const submit = () =>
@@ -186,6 +197,7 @@ export default function NewRoomScreen() {
               ))}
             </ScrollView>
             <ScrollView
+              ref={slotsScroll}
               horizontal
               contentContainerStyle={styles.row}
               showsHorizontalScrollIndicator={false}>
@@ -196,6 +208,7 @@ export default function NewRoomScreen() {
                   accessibilityLabel={`Hora ${formatTimeOfDay(slot)}`}
                   selected={slot === slotMs}
                   onPress={() => setSlotMs(slot)}
+                  onLayout={(event) => onSlotLayout(slot, event.nativeEvent.layout.x)}
                 />
               ))}
             </ScrollView>
@@ -255,11 +268,13 @@ function Chip({
   accessibilityLabel,
   selected,
   onPress,
+  onLayout,
 }: {
   label: string;
   accessibilityLabel: string;
   selected: boolean;
   onPress: () => void;
+  onLayout?: (event: LayoutChangeEvent) => void;
 }) {
   const theme = useTheme();
   return (
@@ -268,6 +283,7 @@ function Chip({
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ selected }}
       onPress={onPress}
+      onLayout={onLayout}
       style={[
         styles.chip,
         {

@@ -9,6 +9,7 @@
  */
 
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { ScrollView } from 'react-native';
 
 import { RoomInviteError, SessionWindowError } from '@/data';
 import { SEED_RECIPROCAL_IDS } from '@/data/mock/seed';
@@ -56,6 +57,8 @@ beforeEach(() => {
 
 afterEach(() => {
   jest.useRealTimers();
+  // El espía de `ScrollView.prototype.scrollTo` no debe sobrevivir a su test.
+  jest.restoreAllMocks();
 });
 
 describe('NewRoomScreen', () => {
@@ -267,6 +270,33 @@ describe('NewRoomScreen', () => {
       screen.getByRole('button', { name: 'Hora 10:30' }).props.accessibilityState
     ).toMatchObject({ selected: true });
     expect(screen.getByRole('button', { name: 'Hora 00:00' })).toBeTruthy();
+  });
+
+  it('al cambiar de día lleva la fila de horas hasta el tramo elegido', async () => {
+    const scrollTo = jest.spyOn(ScrollView.prototype, 'scrollTo');
+    await seedMatches(2);
+
+    await renderRoute(<NewRoomScreen />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Hora 10:30' })).toBeTruthy());
+    await fireEvent.press(screen.getByRole('button', { name: 'Hora 10:30' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Día Mañana' }));
+
+    // Las demás horas se colocan sin mover nada; la elegida trae la vista.
+    await fireEvent(screen.getByRole('button', { name: 'Hora 00:00' }), 'layout', {
+      nativeEvent: { layout: { x: 0, y: 0, width: 64, height: 40 } },
+    });
+    expect(scrollTo).not.toHaveBeenCalled();
+    await fireEvent(screen.getByRole('button', { name: 'Hora 10:30' }), 'layout', {
+      nativeEvent: { layout: { x: 2800, y: 0, width: 64, height: 40 } },
+    });
+    expect(scrollTo).toHaveBeenCalledTimes(1);
+    expect(scrollTo.mock.calls[0][0]).toMatchObject({ animated: true });
+
+    // Un segundo `layout` (rotar, reordenar) ya no vuelve a desplazar.
+    await fireEvent(screen.getByRole('button', { name: 'Hora 10:30' }), 'layout', {
+      nativeEvent: { layout: { x: 2800, y: 0, width: 64, height: 40 } },
+    });
+    expect(scrollTo).toHaveBeenCalledTimes(1);
   });
 
   it('si los matches no cargan lo dice', async () => {
