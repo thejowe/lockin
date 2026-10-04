@@ -26,6 +26,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { act, useState } from 'react';
 import { AccessibilityInfo, StyleSheet } from 'react-native';
 
+import { Colors } from '@/constants/theme';
 import { buildProfile } from '@/data/test-fixtures';
 
 import { cardTestId, PAN_TEST_ID, SwipeDeck } from './swipe-deck';
@@ -130,6 +131,22 @@ describe('SwipeDeck', () => {
     await renderDeck();
 
     expect(screen.getByText('Núria Bosch')).toBeOnTheScreen();
+  });
+
+  it('los sellos Like y Pasar tienen base opaca: caen encima del avatar', async () => {
+    await renderDeck();
+
+    for (const label of ['Like', 'Pasar']) {
+      const stamps = screen
+        .getAllByText(label, { includeHiddenElements: true })
+        .map((text) => StyleSheet.flatten(text.parent?.props.style ?? {}))
+        // Los sellos flotan sobre la tarjeta; los botones de acción, no.
+        .filter((style) => style.position === 'absolute');
+      expect(stamps.length).toBeGreaterThan(0);
+      for (const stamp of stamps) {
+        expect(stamp.backgroundColor).toBe(Colors.dark.surfaceOpaque);
+      }
+    }
   });
 
   it('no pinta más de tres tarjetas por muy largo que sea el deck', async () => {

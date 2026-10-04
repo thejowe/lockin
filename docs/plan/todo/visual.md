@@ -407,9 +407,17 @@ entrada del 2026-10-04 abajo.*
   comportamiento documentado de `BlurView` sin `blurTarget` (`glass.tsx`);
   `match-modal.tsx` no le pasa ninguno. En Android, la línea «modal de match sobre
   el deck esmerilado» de la segunda pasada es un velo, no un esmerilado.
+  *2026-10-04: se acepta el velo y se corrige la línea de la casilla. El modal
+  de RN es otra ventana en Android y no alcanza el `BlurTargetView` del deck;
+  esmerilar ahí exigiría sacar el modal a una capa propia, sin ganancia que
+  compense. En iOS y web sí esmerila.*
 - En el arrastre a la derecha, el sello «Like» queda en parte tapado por el
   avatar (se lee «Mike»; `02-deck-arrastre-derecha.png`). El de «Pasar», a la
   derecha del nombre, se ve entero.
+  *2026-10-04: resuelto. El sello era tinte translúcido y dejaba ver las
+  iniciales; ahora lleva base opaca (`surfaceOpaque`) con el tinte encima
+  (`stampFill` en `swipe-deck.tsx`, test en `swipe-deck.test.tsx`). Sin
+  verificar aún en el emulador.*
 - En la pantalla de sala y en la de sesión, `uiautomator dump` falla con
   «could not get idle state» (animación continua: anillo y punto que respira).
   Maestro no espera a que la pantalla quede quieta, así que no debería afectarle, pero
@@ -530,7 +538,8 @@ usuario por el camino: **solo modo oscuro**. Rama `claude/visual-cristal`.
 - [x] Descubrir: tarjeta opaca con halo del color de la persona y baldosas de
   cristal; las de detrás se apagan y esconden su texto; Pasar (cristal) / Like
   (brasa con halo y galones); filtro segmentado con pastilla deslizante; modal
-  de match sobre el deck esmerilado.
+  de match sobre el deck esmerilado en iOS y web (en Android, oscurecido: ver
+  «Hallazgos del comprobador», observaciones del 2026-10-03).
 - [x] Onboarding, perfil, matches, chat, sesión: opciones con icono y radio que
   salta, foco de campo en brasa, filas y baldosas de cristal en escalera, racha
   con llama, compositor con botón redondo, anillo de Pomodoro continuo y punto
@@ -579,6 +588,19 @@ usuario por el camino: **solo modo oscuro**. Rama `claude/visual-cristal`.
   *2026-10-04, comprobador (mock, bundle con el código de `4a95c86`):* franja
   resuelta por `90d1d7b`. La pasada de contención y la barra en Android, ✅
   (ver «Hallazgos del comprobador», 2026-10-04).
+
+- [x] Liquid Glass nativo en iOS 26+ (`5351a3f`, pedido por el usuario el
+  2026-10-03): `Frosted` —la barra de pestañas— usa `GlassView` de
+  `expo-glass-effect` cuando hay iOS, la app compilada con Liquid Glass y el API
+  en el dispositivo (`hasNativeGlass()`); sin relleno, canto, sombra ni
+  `overflow` propios. Si falta algo, el esmerilado de `BlurView` de siempre.
+  Android y web sin cambios (confirmado en el emulador el 2026-10-04).
+  `expo-glass-effect` pasa a dependencia directa. El modal de match no cambia:
+  su fondo es un desenfoque de pantalla, no una superficie de cristal.
+- [ ] (usuario — iPhone con iOS 26) Ver la barra en Expo Go o en un build de
+  desarrollo: que sea el cristal del sistema y que «Descubrir», «Matches» y
+  «Perfil» se lean bien encima de la luz ambiental. Ojo con cualquier
+  `opacity: 0` en un padre de `Frosted`: deja el cristal sin pintar.
 
 Textos: ningún texto ni etiqueta que usen los `e2e/*.yaml` ha cambiado. Cambia
 la presentación de «Enviar» (ahora icono; su etiqueta «Enviar mensaje» sigue).

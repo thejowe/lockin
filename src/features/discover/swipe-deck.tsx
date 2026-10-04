@@ -334,7 +334,8 @@ function TopCard({
         style={[
           styles.badge,
           styles.badgeLike,
-          { backgroundColor: theme.tealSoft, borderColor: theme.teal },
+          stampFill(theme.surfaceOpaque, theme.tealSoft),
+          { borderColor: theme.teal },
           likeStyle,
         ]}>
         <ThemedText type="bodyStrong" style={{ color: theme.teal }}>
@@ -346,7 +347,8 @@ function TopCard({
         style={[
           styles.badge,
           styles.badgePass,
-          { backgroundColor: theme.dangerSoft, borderColor: theme.danger },
+          stampFill(theme.surfaceOpaque, theme.dangerSoft),
+          { borderColor: theme.danger },
           passStyle,
         ]}>
         <ThemedText type="bodyStrong" style={{ color: theme.danger }}>
@@ -438,6 +440,15 @@ function BehindCard({
       </Animated.View>
     </Animated.View>
   );
+}
+
+/**
+ * Fondo de un sello: base opaca y el tinte encima. El tinte solo es
+ * translúcido y el sello cae sobre el avatar, arriba a la izquierda: sin base
+ * se leían a la vez las iniciales y el «Like», y no se entendía ninguno.
+ */
+function stampFill(base: string, tint: string) {
+  return { backgroundColor: base, boxShadow: `inset 0px 0px 0px 999px ${tint}` };
 }
 
 const styles = StyleSheet.create({
