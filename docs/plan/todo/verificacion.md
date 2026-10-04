@@ -268,6 +268,13 @@ el suelo. El veredicto de CI queda para cuando se empuje.
 
 ### Vuelta en frío de GitHub contra Supabase real (2026-10-04, sobre 100ba66) — ✅ defensa y origen
 
+**Fila de `profiles`, leída en el servidor** (Claude, por el MCP de Supabase,
+solo lectura, tras la pasada): `github_handle = thejowe`,
+`github_verified_at = 2026-10-04 17:48:55 UTC`, `link_github =
+https://github.com/thejowe` y una identidad `github` en `auth.identities` para
+el uid `44491308-…`. Cierra el matiz de abajo: el comprobador no pudo leerla por
+REST y lo había deducido de la app.
+
 **Entorno.** Emulador Android 16 (AVD `lockin`). APK release local desde HEAD
 `100ba66` (árbol limpio): `expo prebuild --clean` (tras él,
 `MainActivity.kt` tiene el `onNewIntent` con `setIntent(intent)` del plugin
