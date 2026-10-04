@@ -251,9 +251,99 @@ el suelo. El veredicto de CI queda para cuando se empuje.
       `profiles` (`github_handle`, `github_verified_at`). Después, reabrir la
       app desde recientes tras matarla otra vez: sin pantalla de error. Para
       ver la pantalla de consentimiento hay que revocar antes la OAuth App en
-      github.com/settings/applications.
+      github.com/settings/applications. **Recorrido el 2026-10-04 sobre
+      `70e4042` contra Supabase real: ❌ falla.** La app no pasa por
+      `auth/callback`: arranca en Descubrir, el code no se canjea y el sello
+      no se pone, aunque GoTrue sí vincula la identidad `github`. La cuenta
+      queda atascada («Verificar con GitHub» → «Identity is already linked»).
+      Reabrir desde recientes: sin pantalla de error. Ver el hallazgo del
+      2026-10-04 abajo.
 
 ## Hallazgos del comprobador
+
+### Vuelta en frío de GitHub contra Supabase real (2026-10-04, sobre 70e4042) — ❌ la app no ve el deep link
+
+**Entorno.** Emulador Android 16 (AVD `lockin`). APK release local compilado
+desde HEAD `70e4042` (árbol limpio) con `./gradlew
+app:createBundleReleaseJsAndAssets --rerun app:assembleRelease`, solo con las
+dos `EXPO_PUBLIC_SUPABASE_*` de `.env.local` y sin
+`EXPO_PUBLIC_LOCKIN_ALLOW_MOCK`; instalado con `adb install -r`. **Supabase
+real**: `[lockin] backend de datos: Supabase` en logcat en cada arranque. La
+sesión no había sobrevivido a las pasadas con mock, así que se entró con
+«Ya tengo cuenta» en la cuenta «Verif GH» (`+lockingh1001`, uid
+`44491308-…`). `profiles` se lee como el 2026-10-01 (login por contraseña
+con la anon key y `GET /rest/v1/profiles`).
+
+**Pasos.**
+1. Perfil → «Quitar verificación» → `profiles` con `link_github`,
+   `github_handle` y `github_verified_at` a `null`, solo la identidad `email`
+   (`profiles-tras-quitar.txt`).
+2. «Verificar con GitHub». GitHub autoriza solo en ~3 s (la OAuth App sigue
+   autorizada en `thejowe`), así que para tener la Custom Tab abierta sin que
+   vuelva se activó el modo avión en cuanto `CustomTabActivity` quedó arriba:
+   Custom Tab de `github.com` parada, cargando (`11-customtab.*`).
+3. Con la app en segundo plano detrás de la Custom Tab: `am kill
+   app.lockin.mobile` → logcat `Killing 14318:app.lockin.mobile/u0a218 (adj
+   700): kill background`, `pidof` vacío (`pid-tras-am-kill.txt`,
+   `logcat-hasta-kill.txt`).
+4. Fuera el modo avión: Chrome recarga solo, GitHub autoriza y Supabase
+   redirige a `lockin://auth/...`. logcat (`logcat-tras-red.txt`):
+   `START u0 {act=VIEW cat=[BROWSABLE] dat=lockin://auth/... flg=0x14000000
+   cmp=app.lockin.mobile/.MainActivity} with LAUNCH_SINGLE_TASK ... result
+   code=2`, `onActivityRestartAttempt: topActivity=...MainActivity`, y
+   `Start proc 15620:app.lockin.mobile ... for next-top-activity`.
+5. **La app arranca en Descubrir, no en `auth/callback`** (`14-app-tras-vuelta.*`).
+   Ninguna pantalla de «Un momento…» ni de error; logcat de JS solo dice
+   `Running "main"` y el backend. (Chrome se quedó colgado con un ANR encima;
+   se cerró con «Close app», que solo mata Chrome.)
+6. Tab Perfil: **sin sello**, sigue «Verificar con GitHub» (`19-perfil-tras-vuelta.*`).
+   En el servidor: identidad `github` (`thejowe`) **creada a las 13:47:36**,
+   pero `link_github`, `github_handle` y `github_verified_at` **a `null`**
+   (`profiles-tras-vuelta-fria.txt`, igual en `profiles-final.txt`).
+7. Segunda parte: HOME → `am kill` (pid vacío) → recientes → tarjeta de
+   LockIn: «Abriendo LockIn…» → Descubrir, **sin pantalla de error**
+   (`rafaga-recientes/`, `21-tras-recientes.*`). Pero como el code nunca se
+   llegó a canjear, esto no ejercita la guarda de «code ya gastado» del
+   hallazgo 3; solo dice que no sale error.
+8. Consecuencia: «Verificar con GitHub» en caliente ya no sirve. La primera
+   vez la Custom Tab no llegó a abrirse (Chrome recién matado; «La
+   verificación no se completó. No ha cambiado nada.»,
+   `rafaga-caliente-2/`); la segunda sí, y vuelve con **«La verificación con
+   GitHub no se ha completado · GitHub no ha completado la verificación
+   (Identity is already linked)»** (`26-tras-caliente-3.*`). Y sin sello no
+   aparece «Quitar verificación». **La cuenta se queda atascada:** GitHub
+   vinculado en GoTrue, sin sello en `profiles` y sin forma de salir desde la
+   app.
+
+**Lectura (para `verificacion`; causa probable, no medida en JS).**
+`result code=2` es `START_DELIVERED_TO_TOP`: con `launchMode="singleTask"` y
+la tarea de LockIn aún en recientes (solo había muerto el proceso), Android
+no lanza la actividad con el intent `VIEW`. Recrea `MainActivity` con su
+intent de origen (el `MAIN` del lanzador) y entrega el `lockin://` por
+`onNewIntent`. Entonces `Linking.getInitialURL()` / expo-router ven el `MAIN`
+y arrancan en `/`, y el evento `url` de `onNewIntent` llega antes de que JS
+escuche y se pierde. Por eso no se monta `AuthCallback`, no se llama a
+`completeAuthLink` y el arreglo del hallazgo 1 (`3c029d6`) nunca llega a
+ejecutarse. El test de `auth.test.ts` cubre `completeAuthLink` en frío, pero
+no que la URL llegue a la ruta. Hay que capturar el intent nuevo en el lado
+nativo, o sacar el deep link de `onNewIntent` cuando la app arranca. Y en
+cualquier caso conviene que la tab Perfil (o `refreshGithubVerification()`)
+ponga el sello si encuentra una identidad `github` sin sello, porque si no
+cualquier vuelta perdida deja la cuenta como en el paso 8. Para
+desatascar «Verif GH» antes de repetir: llamar a `sync_github_verification`
+con su sesión, o desvincular la identidad desde el dashboard. **No se ha
+tocado**: se deja así como evidencia.
+
+**Evidencia** (local, ignorada por git):
+`e2e/artifacts/local/2026-10-04-github-frio/` — `build.log`,
+`profiles-antes.txt`, `profiles-tras-quitar.txt`,
+`profiles-tras-vuelta-fria.txt`, `profiles-final.txt`,
+`pid-tras-am-kill.txt`, `01-arranque.*` … `26-tras-caliente-3.*`,
+`rafaga-recientes/`, `rafaga-caliente-2/`, `rafaga-caliente-3/`,
+`logcat-hasta-kill.txt`, `logcat-tras-red.txt`, `logcat-tras-vuelta.txt`,
+`logcat-vuelta-fria-completo.txt`, `logcat-recientes.txt`,
+`logcat-caliente*.txt`. (`rafaga-caliente/` está vacía o con un toque
+fallido en la tab Matches: no cuenta.)
 
 ### Verificar con GitHub contra Supabase real (2026-10-01, tras 17e09f6) — ✅ sin pantalla de error
 
