@@ -524,6 +524,31 @@ Al primer intento y sin reintentos. El workflow completo sigue rojo: el control
 negativo se para en `¡Match!` porque la primera tarjeta del orden del mock no
 está en `SEED_RECIPROCAL_IDS` (`src/data/mock/seed.ts`).
 
+## La cadena de la variante `supabase` tras `full-journey.yaml`
+
+Con el recorrido principal y su oráculo de persistencia en verde, `run.mjs`
+encadena en el mismo emulador, sin borrar el estado, un caso por fase del
+producto. Cada uno tiene su propia carpeta de evidencia Maestro y su oráculo en
+Postgres; el primero que falla corta la cadena y da nombre al veredicto
+(`<caso>.yaml: <diagnóstico>`):
+
+| Caso | Preparación (`verify.mjs`) | Oráculo |
+| --- | --- | --- |
+| `session.yaml` | — | `verifySessionAttendance` |
+| `session-rate.yaml` | `prepareSessionRating` | `verifySessionRating` |
+| `session-streak.yaml` | `prepareSessionStreak` | — |
+| `agreement.yaml` | `prepareAgreement` | `verifyAgreementAnswer` |
+| `room.yaml` | `prepareRoom` | `verifyRoomAttendance` |
+
+`room.yaml` es el último: acepta la invitación a una sala Lock-In que
+`prepareRoom` siembra a 7 minutos, espera a que abra la ventana de entrada, sale
+confirmando y vuelve a Matches. El margen es del reloj, no de la app: «Me
+apunto» tiene que llegar en los 2 primeros minutos tras la siembra, y el oráculo
+imprime una línea «Sala, tiempos» con lo que tardó cada paso. Si se acerca a los
+120 s, se suben a la vez la siembra (en `verify.mjs`) y la espera de 180 s (en
+el `.yaml`); la cabecera de `room.yaml` lo explica. `e2e/room.test.mjs` fija sus
+etiquetas contra el código. En la variante `mock` estos casos no corren.
+
 ## Entrada y recuperación de cuenta en `registro`
 
 La variante `registro` encadena el alta existente (`register.yaml` y
