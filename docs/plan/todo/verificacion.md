@@ -243,7 +243,7 @@ el suelo. El veredicto de CI queda para cuando se empuje.
       en rojo antes del arreglo. Evidencia local: `tsc` y `lint` limpios;
       `jest --coverage --ci` con 96 suites, 1103 pasan y 113 saltados;
       cobertura 95.30/90.43/94.93/96.86, sobre el suelo.
-- [ ] **[comprobador]** Recorrer en el emulador la vuelta en frío: «Verificar
+- [x] **[comprobador]** Recorrer en el emulador la vuelta en frío: «Verificar
       con GitHub» → con la Custom Tab abierta, matar el proceso de la app
       (`am kill` con la app en segundo plano, no `force-stop`) → autorizar en
       GitHub. Esperado: la app arranca en `auth/callback`, pasa a Perfil sin
@@ -257,9 +257,78 @@ el suelo. El veredicto de CI queda para cuando se empuje.
       no se pone, aunque GoTrue sí vincula la identidad `github`. La cuenta
       queda atascada («Verificar con GitHub» → «Identity is already linked»).
       Reabrir desde recientes: sin pantalla de error. Ver el hallazgo del
-      2026-10-04 abajo.
+      2026-10-04 abajo. **Repetido el 2026-10-04 sobre `100ba66` contra
+      Supabase real: ✅ pasa.** La defensa sella la cuenta atascada sin abrir
+      el navegador, y la vuelta en frío pasa por «Un momento…» y llega a
+      Perfil con el sello, sin error; reabrir desde recientes tras otro
+      `am kill`, sin error. Ver «Vuelta en frío de GitHub … sobre 100ba66»
+      abajo.
 
 ## Hallazgos del comprobador
+
+### Vuelta en frío de GitHub contra Supabase real (2026-10-04, sobre 100ba66) — ✅ defensa y origen
+
+**Entorno.** Emulador Android 16 (AVD `lockin`). APK release local desde HEAD
+`100ba66` (árbol limpio): `expo prebuild --clean` (tras él,
+`MainActivity.kt` tiene el `onNewIntent` con `setIntent(intent)` del plugin
+`with-new-intent-initial-url`, líneas 32-35 en `build.log`) y `./gradlew
+app:createBundleReleaseJsAndAssets --rerun app:assembleRelease`, solo con las
+dos `EXPO_PUBLIC_SUPABASE_*` de `.env.local`, sin
+`EXPO_PUBLIC_LOCKIN_ALLOW_MOCK`; `adb install -r` sin borrar datos (la sesión
+de «Verif GH», `+lockingh1001`, seguía viva). **Supabase real**: `[lockin]
+backend de datos: Supabase` en logcat en cada arranque.
+
+**1. Defensa (`adoptLinkedGithubIdentity`).** Cuenta atascada como la dejó la
+pasada sobre `70e4042` (identidad `github` vinculada, sello a `null`; la app
+mostraba «Verificar con GitHub» sin sello, `02-perfil-antes.*`). Pulsar
+«Verificar con GitHub»: **no se abre el navegador** (la actividad arriba
+sigue siendo `MainActivity` y no hay ningún `START` en
+`logcat-defensa.txt`), no sale «Identity is already linked», y Perfil pasa a
+«✓ @thejowe · verificado» con «Quitar verificación» (`03-tras-defensa.*`).
+Tras `force-stop` + relanzar, el sello sigue (`04-perfil-frio-defensa.*`).
+
+**2. Origen (`setIntent` en `onNewIntent`).** «Quitar verificación» → sin
+sello, también tras `force-stop` (`05-tras-quitar.*`,
+`06-perfil-frio-quitado.*`). «Verificar con GitHub» → en cuanto
+`CustomTabActivity` queda arriba, modo avión: Custom Tab de `github.com` sin
+red (`08-customtab.png`). `am kill app.lockin.mobile` con la app detrás →
+`Killing 18333:app.lockin.mobile/u0a218 (adj 700): kill background`, `pidof`
+vacío (`pid-tras-am-kill.txt`). Fuera el modo avión: GitHub autoriza solo y
+Supabase redirige; logcat: `START u0 {act=VIEW cat=[BROWSABLE]
+dat=lockin://auth/... cmp=app.lockin.mobile/.MainActivity} with
+LAUNCH_SINGLE_TASK ... result code=2` y `Start proc 18866:app.lockin.mobile
+... for next-top-activity` (`logcat-tras-red.txt`): el mismo
+`START_DELIVERED_TO_TOP` que el 2026-10-04 sobre `70e4042`, pero ahora **la
+app arranca en `auth/callback`**: «Un momento… Estamos actualizando tu
+cuenta.» (`rafaga-vuelta/16-18.png`) y pasa directa a Perfil con el sello
+(`rafaga-vuelta/19-30.png`, `09-perfil-tras-vuelta.*`), sin «Ese enlace no ha
+funcionado». En este logcat no sale «Tried to access onNewIntent while
+context is not ready» (no se registra al nivel que vuelca `adb logcat -d`, o
+no se dio); da igual, porque la app llegó a `auth/callback`. Después: HOME →
+`am kill` (`pidof` vacío) → recientes → tarjeta de LockIn: «Abriendo
+LockIn…» → Descubrir, **sin pantalla de error** y sin volver a pasar por
+`auth/callback` (`rafaga-recientes/`, `11-tras-recientes.*`); Perfil con el
+sello (`12-perfil-tras-recientes.*`) y también tras `force-stop` + relanzar
+(`13-perfil-frio-final.*`).
+
+**`profiles`.** No se ha leído por REST esta vez (no hay credencial de la
+cuenta a mano para hacerlo). Lo que hay: la app no guarda el perfil en local
+(solo sesión e intentos de GitHub en `AsyncStorage`), así que el sello que
+sale tras cada `force-stop` + relanzar viene de `profiles` en Supabase; y el
+handle `thejowe` es el de la identidad `github`. Si se quiere la fila,
+`select github_handle, github_verified_at from profiles where id =
+'44491308-7cb4-458b-8789-d41b9a5a4411'` desde el dashboard.
+
+**Estado final de la cuenta.** «Verif GH» queda **verificada** (identidad
+`github` vinculada + sello), no atascada.
+
+**Evidencia** (local, ignorada por git):
+`e2e/artifacts/local/2026-10-04-github-frio-100ba66/` — `head.txt`,
+`build.sh`, `build.log`, `01-arranque.*` … `13-perfil-frio-final.*`,
+`rafaga-vuelta/` (con `top.txt`), `rafaga-recientes/`, `pid-tras-am-kill.txt`,
+`logcat-arranque.txt`, `logcat-defensa.txt`, `logcat-hasta-kill.txt`,
+`logcat-tras-red.txt`, `logcat-vuelta-fria-completo.txt`,
+`logcat-recientes.txt`.
 
 ### Vuelta en frío de GitHub contra Supabase real (2026-10-04, sobre 70e4042) — ❌ la app no ve el deep link
 
