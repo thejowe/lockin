@@ -4,7 +4,7 @@
  * No se pinta si no hay nada que enseñar: sin salas vivas y con menos de 2
  * matches no se puede ni convocar. Una invitación sí se ve aunque no tengas 2
  * matches: te la hizo otra persona. Si las salas no cargan, lo dice con un
- * «Reintentar»: el tirar-para-refrescar de Matches no relee las salas.
+ * «Reintentar», además del tirar-para-refrescar de Matches.
  */
 
 import { useRouter } from 'expo-router';

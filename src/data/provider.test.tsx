@@ -18,7 +18,7 @@ import { render, renderHook, screen, waitFor } from '@testing-library/react-nati
 import { act } from 'react';
 import { Text } from 'react-native';
 
-import { DataProvider, useQuery } from '@/data';
+import { DataProvider, useQuery, useRefreshQuery } from '@/data';
 import { createMockRepositories } from '@/data/mock';
 
 import type { Repositories } from '@/data';
@@ -371,6 +371,42 @@ describe('useQuery — una petición por key', () => {
     const segundo = await renderHook(() => useQuery('profile:current', run), { wrapper });
     await waitFor(() => expect(segundo.result.current.data).toBe('un dato'));
     expect(run).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe('useRefreshQuery', () => {
+  it('relee para los lectores de su key sin leer por su cuenta', async () => {
+    let lecturas = 0;
+    const run = jest.fn(() => Promise.resolve(`lectura ${(lecturas += 1)}`));
+
+    const { result } = await renderHook(
+      () => ({
+        lector: useQuery('rooms:live', run),
+        refrescar: useRefreshQuery('rooms:live'),
+      }),
+      { wrapper }
+    );
+
+    await waitFor(() => expect(result.current.lector.data).toBe('lectura 1'));
+
+    await act(async () => {
+      result.current.refrescar();
+    });
+
+    await waitFor(() => expect(result.current.lector.data).toBe('lectura 2'));
+    expect(run).toHaveBeenCalledTimes(2);
+  });
+
+  it('sin lectores no hace nada: el primero que llegue lee una sola vez', async () => {
+    const refrescar = await renderHook(() => useRefreshQuery('rooms:live'), { wrapper });
+    await act(async () => {
+      refrescar.result.current();
+    });
+
+    const run = jest.fn(() => Promise.resolve('un dato'));
+    const lector = await renderHook(() => useQuery('rooms:live', run), { wrapper });
+    await waitFor(() => expect(lector.result.current.data).toBe('un dato'));
+    expect(run).toHaveBeenCalledTimes(1);
   });
 });
 

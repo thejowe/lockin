@@ -15,7 +15,7 @@ import { enterUp } from '@/components/motion';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { MatchRow, MatchesEmpty, useMatches } from '@/features/chat';
-import { RoomsSection } from '@/features/room';
+import { RoomsSection, useRefreshLiveRooms } from '@/features/room';
 import { useMatchStreaks } from '@/features/session';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -23,6 +23,7 @@ export default function MatchesScreen() {
   const theme = useTheme();
   const { data, loading, error, refresh } = useMatches();
   const streaks = useMatchStreaks();
+  const refreshRooms = useRefreshLiveRooms();
   const matches = data ?? [];
 
   return (
@@ -30,6 +31,7 @@ export default function MatchesScreen() {
       <AmbientBackground variant="teal" />
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
         <FlatList
+          testID="matches-list"
           data={matches}
           keyExtractor={(match) => match.id}
           renderItem={({ item, index }) => (
@@ -66,6 +68,7 @@ export default function MatchesScreen() {
               onRefresh={() => {
                 refresh();
                 streaks.refresh();
+                refreshRooms();
               }}
               tintColor={theme.brass}
             />

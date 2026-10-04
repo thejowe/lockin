@@ -11,7 +11,7 @@
 export { presence, repositories, roomPresence, videoSignal } from './active';
 export * from './types';
 export * from './repositories';
-export { DataProvider, useRepositories, useQuery } from './provider';
+export { DataProvider, useRepositories, useQuery, useRefreshQuery } from './provider';
 export type { QueryState } from './provider';
 export * from './sessions';
 export * from './streaks';

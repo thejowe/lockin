@@ -6,14 +6,16 @@
  * mentira — aún no se sabe. Ese matiz es el que se prueba aquí, junto con el
  * aviso de error, que es lo que queda en pantalla cuando la lectura no llega.
  *
- * El tirar-para-refrescar no se prueba desde aquí: el `RefreshControl` no es
- * alcanzable sin ponerle un `testID` a la lista, y `useMatches` ya cubre su
- * `refresh` en `use-matches.test.tsx`.
+ * Del tirar-para-refrescar solo se prueba que alcance a las salas, que viven
+ * en otra consulta; el `refresh` de `useMatches` ya lo cubre
+ * `use-matches.test.tsx`. La lista lleva `testID` para llegar a su
+ * `RefreshControl`.
  *
  * Ojo: en RNTL 14 `render` es asíncrono.
  */
 
 import { screen, waitFor } from '@testing-library/react-native';
+import { act } from 'react';
 
 import { buildProfileInput } from '@/data/test-fixtures';
 import { advanceMockClock, createMockSessionRepository, mockNowMs } from '@/data/mock';
@@ -120,6 +122,20 @@ describe('MatchesScreen', () => {
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Convocar sala Lock-In' })).toBeTruthy()
     );
+  });
+
+  it('tirar para refrescar relee también las salas, no solo los matches', async () => {
+    await repositories.profiles.saveCurrent(buildProfileInput());
+    const listLive = jest.spyOn(repositories.rooms, 'listLive');
+
+    await renderRoute(<MatchesScreen />);
+    await waitFor(() => expect(listLive).toHaveBeenCalledTimes(1));
+
+    await act(async () => {
+      screen.getByTestId('matches-list').props.refreshControl.props.onRefresh();
+    });
+
+    await waitFor(() => expect(listLive).toHaveBeenCalledTimes(2));
   });
 
   it('si la lectura falla avisa en vez de fingir que no hay matches', async () => {

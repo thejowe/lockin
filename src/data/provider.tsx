@@ -294,3 +294,17 @@ export function useQuery<T>(key: string, run: () => Promise<T>): QueryState<T> {
     refresh,
   };
 }
+
+/**
+ * Relee la consulta `key` en todos sus lectores sin montar uno más: para quien
+ * ofrece el gesto de refrescar pero no pinta el dato.
+ */
+export function useRefreshQuery(key: string): () => void {
+  const repositories = useRepositories();
+  const registry = useMemo(() => registryFor(repositories), [repositories]);
+  return useCallback(() => {
+    // Sin lectores no hay nada que releer, y crear la entrada la dejaría
+    // huérfana: nadie la limpiaría al desmontarse.
+    if (registry.has(key)) bumpNonce(registry, key);
+  }, [registry, key]);
+}
