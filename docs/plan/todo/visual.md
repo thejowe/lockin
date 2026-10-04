@@ -516,6 +516,33 @@ pasado el umbral).
   opaca.
 - `logcat.txt`: ningún error de JS.
 
+### 2026-10-04 — sello opaco en un tercio del umbral (`1f0b6be`): ✅ a medio arrastre (mock)
+
+APK release x86_64 sobre `1f0b6be` (`git rev-parse HEAD` igual antes y después del
+build), con `prebuild --clean`, `EXPO_NO_DOTENV=1 EXPO_PUBLIC_LOCKIN_ALLOW_MOCK=1` y
+`createBundleReleaseJsAndAssets --rerun` (`build.log`). En logcat sale `[lockin] backend
+de datos: mock en memoria`. `pm clear` antes de empezar. Evidencia en
+`e2e/artifacts/local/2026-10-04-sello-1f0b6be/`.
+
+Pasos: onboarding «Ambos» → deck (Diego Salas arriba, avatar «DS», `11-deck.png`).
+Tres arrastres sostenidos a la derecha con `input motionevent` (DOWN en 540,1250 → 8
+MOVE hasta +280, +60 y +30 px, captura y vuelta al centro sin soltar). Los recortes
+de la zona del sello (`*-zona.png`) siguen a la tarjeta y están ampliados ×2.
+
+- **✅ +280 px (el caso ❌ de `5f698db`).** En `12-recorte-280-zona.png` la base del
+  sello es opaca del todo: no se ve nada de «DS» y «Like» se lee limpio.
+  `16-comparativa-5f698db-vs-1f0b6be.png` lo pone al lado del recorte de `5f698db`,
+  donde se leía «DS» bajo el sello.
+- **+60 px (≈23 dp, opacidad ≈0,6): se mezcla.** En `13-recorte-60-zona.png` el sello
+  todavía está apareciendo. «DS» se ve claro y pisa la «L» de «Like» (se lee «DSike»).
+  Es el fundido de entrada, que ahora dura un tercio del recorrido de antes. Solo se
+  ve si el dedo se para ahí: no lo cuento como fallo, pero el cruce de las letras
+  sigue existiendo en ese tramo.
+- **+30 px (≈11 dp): casi nada.** En `14-recorte-30-zona.png` solo se adivina el
+  contorno del sello, muy tenue. «DS» se ve entero y nítido.
+- Reposo (`15-reposo-zona.png`): sin sello. `logcat.txt` (desde los arrastres):
+  ningún error de JS.
+
 ## Registro
 
 Rama `claude/visual-pulido` (worktree `../lockin-visual`), sobre `42fa260`.
