@@ -704,3 +704,25 @@ a un `tapOn` en `e2e/password-reset.yaml`. Con él Maestro 2.10 sigue
 desplazando hasta que el centro del elemento queda por encima de y≈1680 (o
 hasta el final de la lista). Guardia nueva `e2e/tab-bar-overlap.test.mjs`
 (`npm run test:e2e`), roja antes del cambio y verde después.
+
+**Resultado** (run 37231590523 de `E2E Android` sobre `a768426`): `registro` y
+`mock` en verde. En `password-reset-confirm` el campo sube de y=1891 a y=1324
+con un swipe más y el toque de «Guardar contraseña» cae en (539, 1549), lejos
+de la barra.
+
+**Aparte, sin relación con este arreglo:** `supabase` sigue rojo, y no por la
+app. Los siete flujos de UI pasan; lo que falla es el oráculo del runner justo
+después de `sign-in-abandon.yaml`, en `admin.auth.admin.getUserById` («fetch
+failed»). La petición no llega a Kong: su log de acceso, en
+`memoria-contenedores.txt`, no tiene ninguna petición `node` después de las
+de antes del flujo. Los contenedores siguen «Up» y quedan 13 GB libres, así
+que no es el OOM que sospechaba `visual.md`. Ha fallado en los tres intentos
+que llegaron ahí desde `22608a0`: el attempt-02 de 37228331950 y el
+attempt-01 de 37231590523 y de su relanzamiento. Con `22608a0` (run
+37226087232) pasó. Entre medias no cambió nada de `e2e/` ni de `supabase/`,
+solo `paths-ignore` en los workflows. Probé si era un socket keep-alive
+caducado mientras `spawnSync` bloquea el event loop, con un servidor aparte
+que cierra a los 3 s y un bloqueo de 6 s, pero undici no falla. Queda
+**abierto**. El siguiente paso es instrumentar el `fetch` del cliente `admin`
+(`global.fetch` envuelto) para guardar `error.cause`, que auth-js descarta al
+crear `AuthRetryableFetchError`.
