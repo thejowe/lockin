@@ -31,7 +31,10 @@ export function roomRowView(
   }
 
   const accepted = others.filter(({ member }) => member.status === 'aceptada').length;
-  if (me.profileId === room.hostId) {
+  const pending = others.some(({ member }) => member.status === 'invitada');
+  // Quien convoca ve el recuento mientras falten respuestas, y también si no va
+  // nadie más: «1 personas» escondería que la sala se ha quedado vacía.
+  if (me.profileId === room.hostId && (pending || accepted === 0)) {
     return {
       kind: 'convocas',
       title: 'Tu sala',

@@ -89,10 +89,12 @@ El resto, en orden.
       `grrzmzktrhksbttpbblg`. Aplicada el 2026-10-03 por orden del usuario
       («aplica migraciones»), por MCP en vez de SQL Editor, antes de cerrar la
       Tarea 11. Ya no hay excepción en `Schema drift` remoto.
-- [ ] Decidir el texto de la fila de quien convoca con todos aceptados (hallazgo
-      del comprobador abajo): la app dice «Tu sala · … · 2 de 2 han aceptado» y
-      la spec esperaba «Sala · … · 3 personas». O se cambia `roomRowView`, o se
-      aclara la spec.
+- [x] Texto de la fila de quien convoca con todos aceptados (hallazgo del
+      comprobador abajo). La spec ya lo decía (tabla de § Matches: «Tu sala · k
+      de n» solo «con pendientes»), así que el fallo era de `roomRowView`: sin
+      pendientes, quien convoca ve «Sala · … · k personas». Si todas rechazan
+      sigue viendo «0 de N han aceptado» (spec, «Nadie más acepta»), no
+      «1 personas». Tests en `row-view.test.ts`.
 
 ## Hallazgos del comprobador
 

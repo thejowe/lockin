@@ -53,6 +53,27 @@ it('convocas: conserva la sala aunque nadie más acepte', () => {
   expect(roomRowView(value, now).detail).toBe('hoy 13:00 · 0 de 3 han aceptado');
 });
 
+it('convocas sin pendientes: la fila es la de una sala aceptada, con quién va', () => {
+  // Spec § Matches: «Tu sala · k de n» es solo para quien convoca con pendientes.
+  const value = view(true);
+  value.others[1].member.status = 'aceptada';
+  expect(roomRowView(value, now)).toEqual({
+    kind: 'aceptada',
+    title: 'Sala',
+    detail: 'hoy 13:00 · 3 personas',
+    accent: null,
+  });
+});
+
+it('convocas y todas rechazan: sigue diciendo que no ha aceptado nadie', () => {
+  const value = view(true);
+  value.others.forEach(({ member }) => (member.status = 'rechazada'));
+  expect(roomRowView(value, now)).toMatchObject({
+    kind: 'convocas',
+    detail: 'hoy 13:00 · 0 de 3 han aceptado',
+  });
+});
+
 it('aceptada: cuenta a todas las que van, tú incluida', () => {
   const value = view();
   value.me.status = 'aceptada';
