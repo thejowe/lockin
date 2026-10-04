@@ -33,7 +33,7 @@ export function DeckEmpty({
         styles.root,
         { backgroundColor: theme.backgroundElement, borderColor: theme.border },
       ]}>
-      <ThemedText type="label" themeColor="brass">
+      <ThemedText type="label" themeColor="textSecondary">
         Deck vacío
       </ThemedText>
 

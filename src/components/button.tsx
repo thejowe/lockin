@@ -6,7 +6,7 @@
  * con su opacidad al pulsar. Ahora es uno: mismas medidas, mismo press state
  * (`usePressScale`) y la misma escala de `Opacity` en toda la app.
  *
- * - `primary`: brasa sólida con halo. Una por pantalla — es «lo siguiente que haces».
+ * - `primary`: brasa sólida y plana. Una por pantalla — es «lo siguiente que haces».
  * - `secondary`: cristal con canto fino. Alternativa sin peso.
  * - `danger`: cristal teñido de alerta. Descartar cambios, salir; nunca para
  *   juzgar a otra persona.
@@ -29,7 +29,7 @@ import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'rea
 import Animated from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
-import { Control, Elevation, Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
+import { Control, Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
 import { usePressScale } from '@/hooks/use-press-scale';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -78,11 +78,6 @@ export function Button({
             primary
               ? {
                   backgroundColor: theme.brass,
-                  // Brillo en el canto y halo cálido: la única pieza de la
-                  // pantalla que emite luz es la que hay que pulsar.
-                  boxShadow: disabled
-                    ? undefined
-                    : `inset 0px 1px 0px #FFFFFF59, ${Elevation.dark.glow}`,
                 }
               : {
                   borderWidth: Stroke.hairline,

@@ -22,7 +22,6 @@ import { Modal, StyleSheet, View } from 'react-native';
 import { BlurView } from 'expo-blur';
 import Animated, { ZoomIn, withSpring, withTiming } from 'react-native-reanimated';
 
-import { Glow } from '@/components/glow';
 import { enterUp } from '@/components/motion';
 import { ThemedText } from '@/components/themed-text';
 import {
@@ -79,7 +78,6 @@ export function MatchModal({
   const elevation = Elevation[useThemeName()];
   const reduceMotion = useReduceMotion();
   const complement = event ? complementWith(event.profile, viewerSpecialties) : [];
-  const accent = event?.profile.avatar.accent === 'teal' ? theme.teal : theme.brass;
 
   return (
     <Modal
@@ -103,14 +101,12 @@ export function MatchModal({
                 boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}, ${elevation.overlay}`,
               },
             ]}>
-            <Glow color={accent} opacity={0.6} style={styles.glow} />
-
             <ThemedText type="label" themeColor="teal" style={styles.blurb}>
               Modo {modeLabel(event.match.mode)}
             </ThemedText>
 
             <Animated.View entering={reduceMotion ? undefined : enterUp(2)}>
-              <ThemedText type="display" themeColor="brass" style={styles.blurb}>
+              <ThemedText type="display" style={styles.blurb}>
                 ¡Match!
               </ThemedText>
             </Animated.View>
@@ -170,12 +166,6 @@ const styles = StyleSheet.create({
     borderRadius: Radii.sheet,
     borderWidth: Stroke.hairline,
     overflow: 'hidden',
-  },
-  glow: {
-    width: 420,
-    height: 420,
-    top: -110,
-    alignSelf: 'center',
   },
   identity: {
     alignItems: 'center',

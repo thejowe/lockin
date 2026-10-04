@@ -116,7 +116,7 @@ export default function ProfileScreen() {
             cancelLabel="Descartar cambios"
             header={
               <View style={styles.header}>
-                <ThemedText type="label" themeColor="brass">
+                <ThemedText type="label" themeColor="textSecondary">
                   Editar perfil
                 </ThemedText>
                 <ThemedText type="title">Tu ficha</ThemedText>
@@ -132,7 +132,7 @@ export default function ProfileScreen() {
     <Screen ambient="plum">
       <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
         <ScrollView contentContainerStyle={styles.content}>
-          <ThemedText type="label" themeColor="brass">
+          <ThemedText type="label" themeColor="textSecondary">
             Perfil
           </ThemedText>
 

@@ -17,7 +17,6 @@
 
 import { StyleSheet, View } from 'react-native';
 
-import { Glow } from '@/components/glow';
 import { ThemedText } from '@/components/themed-text';
 import { Radii, Spacing, Stroke, type ThemePalette } from '@/constants/theme';
 import {
@@ -54,7 +53,6 @@ export function ProfileCard({
   const theme = useTheme();
   const prompt = profile.prompts[0];
   const complement = complementWith(profile, viewerSpecialties);
-  const accent = profile.avatar.accent === 'teal' ? theme.teal : theme.brass;
 
   return (
     <View
@@ -66,9 +64,6 @@ export function ProfileCard({
           boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
         },
       ]}>
-      {/* El halo del color de la persona: la tarjeta es suya, no una ficha gris. */}
-      <Glow color={accent} opacity={0.5} style={styles.glow} />
-
       <View style={styles.hero}>
         <View style={styles.header}>
           <ProfileAvatar avatar={profile.avatar} />
@@ -135,7 +130,9 @@ export function ProfileCard({
           <ThemedText type="caption" themeColor="textMuted">
             {prompt.question}
           </ThemedText>
-          <ThemedText type="bodyStrong" numberOfLines={2}>
+          {/* La respuesta es lo que hace que un perfil se lea: ocupa el hueco que
+              queda, en grande, como la cita de una ficha. */}
+          <ThemedText type="subtitle" numberOfLines={4}>
             {prompt.answer}
           </ThemedText>
         </View>
@@ -231,12 +228,6 @@ const styles = StyleSheet.create({
     borderWidth: Stroke.hairline,
     overflow: 'hidden',
   },
-  glow: {
-    width: 340,
-    height: 340,
-    top: -190,
-    right: -120,
-  },
   hero: {
     gap: Spacing.two + Spacing.half,
     padding: Spacing.two,
@@ -292,7 +283,8 @@ const styles = StyleSheet.create({
     gap: Spacing.half,
   },
   prompt: {
-    marginTop: 'auto',
-    gap: Spacing.one,
+    flex: 1,
+    gap: Spacing.two,
+    overflow: 'hidden',
   },
 });

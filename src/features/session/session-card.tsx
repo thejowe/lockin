@@ -87,8 +87,8 @@ export function SessionCard({ match, me }: { match: MatchWithProfile; me: Profil
         },
       ]}>
       <View style={styles.header}>
-        <View style={[styles.badge, { backgroundColor: theme.brass }]}>
-          <Icon name="focus" size={18} color={theme.onAccent} strokeWidth={2} />
+        <View style={[styles.badge, { backgroundColor: theme.backgroundSelected }]}>
+          <Icon name="focus" size={18} color={theme.teal} />
         </View>
         <ThemedText type="heading">Sesión Lock-In</ThemedText>
       </View>

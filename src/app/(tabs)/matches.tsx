@@ -45,7 +45,7 @@ export default function MatchesScreen() {
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           ListHeaderComponent={
             <View style={styles.header}>
-              <ThemedText type="label" themeColor="brass">
+              <ThemedText type="label" themeColor="textSecondary">
                 Matches
               </ThemedText>
               <ThemedText type="title">Con quién has conectado</ThemedText>

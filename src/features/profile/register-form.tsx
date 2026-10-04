@@ -95,7 +95,7 @@ export function RegisterForm({
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <ThemedText type="label" themeColor="brass">
+        <ThemedText type="label" themeColor="textSecondary">
           Antes de empezar
         </ThemedText>
 

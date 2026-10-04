@@ -90,7 +90,7 @@ export function GithubVerification({
 
   return (
     <View style={styles.root}>
-      <ThemedText type="label" themeColor="brass">
+      <ThemedText type="label" themeColor="textSecondary">
         Verificación
       </ThemedText>
 

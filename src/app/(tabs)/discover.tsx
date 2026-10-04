@@ -65,7 +65,7 @@ export default function DiscoverScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
         <View style={styles.content}>
           <View style={styles.header}>
-            <ThemedText type="label" themeColor="brass">
+            <ThemedText type="label" themeColor="textSecondary">
               Descubrir
             </ThemedText>
             {/* Una sola línea: cada píxel de alto que ahorra la cabecera es tarjeta. */}

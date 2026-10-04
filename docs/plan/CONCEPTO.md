@@ -47,11 +47,16 @@ Decidida por el usuario a partir de una referencia (Hume, Phenomenon Studio) y
 del canvas «LockIn — Rediseño». Sustituye a la paleta latón/Fraunces anterior.
 
 - **Solo oscuro.** No hay modo claro: `useThemeName()` devuelve siempre `dark`.
-- **Luz ambiental + cristal.** Detrás de cada pantalla, manchas de color muy
-  difusas horneadas en `assets/images/ambient-*.jpg`; encima, superficies de
-  vidrio translúcido con canto fino y brillo de 1 px arriba. Lo que flota sobre
-  contenido que se desplaza (barra de pestañas, modal) lleva desenfoque real
-  (`expo-blur`).
+- **Luz ambiental + cristal.** Detrás de cada pantalla, una sola fuente de luz
+  tenue que entra por arriba (`assets/images/ambient-*.jpg`); encima,
+  superficies de vidrio translúcido con canto fino y brillo de 1 px arriba. Lo
+  que flota sobre contenido que se desplaza (barra de pestañas, modal) lleva
+  desenfoque real (`expo-blur`).
+- **Contención (2026-10-04).** Nada de lo que delata una plantilla hecha por IA:
+  sin halos ni resplandores, sin manchas multicolor, sin etiquetas de cabecera
+  en acento, sin iconos decorativos, radios contenidos. La brasa sólida es solo
+  la acción principal de cada pantalla; el resto de señales van en tinta de
+  acento sobre su relleno tenue.
 - **Tipografía: Inter**, la neo-grotesca más cercana a SF Pro (la de la
   referencia), con tracking negativo en titulares. Sin serif ni mono.
 

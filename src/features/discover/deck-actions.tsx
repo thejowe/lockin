@@ -5,9 +5,8 @@
  * pantalla, movilidad reducida, ratón en web), así que toda decisión posible
  * con el dedo tiene que poder tomarse aquí también.
  *
- * Pasar es cristal, Like es brasa sólida con su halo: los dos dicen su nombre,
- * pero solo uno es «lo siguiente que haces» si la tarjeta te convence. Las
- * flechas del Like apuntan en la dirección del swipe que lo equivale.
+ * Pasar es cristal, Like es brasa sólida: los dos dicen su nombre, pero solo
+ * uno es «lo siguiente que haces» si la tarjeta te convence.
  */
 
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -16,7 +15,7 @@ import Animated from 'react-native-reanimated';
 import { glassStyle } from '@/components/glass';
 import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
-import { Control, Elevation, Opacity, Radii, Spacing } from '@/constants/theme';
+import { Control, Opacity, Radii, Spacing } from '@/constants/theme';
 import { usePressScale } from '@/hooks/use-press-scale';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -81,10 +80,7 @@ function ActionButton({
         style={({ pressed }) => [
           styles.button,
           like
-            ? {
-                backgroundColor: theme.brass,
-                boxShadow: `inset 0px 1px 0px #FFFFFF59, ${Elevation.dark.glow}`,
-              }
+            ? { backgroundColor: theme.brass }
             : glassStyle(theme, { elevated: true, radius: Radii.pill }),
           disabled ? styles.disabled : pressed && styles.pressed,
         ]}>
@@ -92,11 +88,6 @@ function ActionButton({
         <ThemedText type="bodyStrong" style={{ color }}>
           {label}
         </ThemedText>
-        {like ? (
-          <View style={styles.chevrons}>
-            <Icon name="chevrons" size={22} color={color} strokeWidth={2.2} />
-          </View>
-        ) : null}
       </Pressable>
     </Animated.View>
   );
@@ -120,10 +111,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.two,
     borderRadius: Radii.pill,
-  },
-  chevrons: {
-    position: 'absolute',
-    right: Spacing.three + Spacing.one,
   },
   pressed: {
     opacity: Opacity.pressed,

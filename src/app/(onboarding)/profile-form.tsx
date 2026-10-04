@@ -45,7 +45,7 @@ export default function ProfileFormScreen() {
           onSubmit={handleSubmit}
           header={
             <View style={styles.header}>
-              <ThemedText type="label" themeColor="brass">
+              <ThemedText type="label" themeColor="textSecondary">
                 Paso 2 de 2
               </ThemedText>
               <ThemedText type="title">Cuéntate</ThemedText>

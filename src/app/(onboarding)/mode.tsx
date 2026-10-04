@@ -5,16 +5,14 @@ import Animated from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/ambient-background';
-import { Glass } from '@/components/glass';
-import { Icon, type IconName } from '@/components/icon';
+import { type IconName } from '@/components/icon';
 import { enterUp } from '@/components/motion';
 import { ThemedText } from '@/components/themed-text';
-import { MaxContentWidth, Radii, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useRepositories, type ModePreference } from '@/data';
 import { MODE_OPTIONS, useRegistrationGate } from '@/features/profile';
 import { accountsAvailable } from '@/features/profile/account-gateway';
 import { OptionCard, PrimaryButton, SecondaryButton } from '@/features/profile/controls';
-import { useTheme } from '@/hooks/use-theme';
 
 /** Icono de cada modo: dos personas, un reloj de enfoque, dos círculos que se cruzan. */
 const MODE_ICONS: Record<ModePreference, IconName> = {
@@ -34,7 +32,6 @@ const MODE_ICONS: Record<ModePreference, IconName> = {
  * pantallas del alta a las que se puede llegar sin pasar por la otra.
  */
 export default function ModeScreen() {
-  const theme = useTheme();
   const router = useRouter();
   const repositories = useRepositories();
   const gate = useRegistrationGate();
@@ -66,10 +63,7 @@ export default function ModeScreen() {
       <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
         <ScrollView contentContainerStyle={styles.content}>
           <Animated.View entering={enterUp(0)} style={styles.header}>
-            <Glass radius={Radii.large} style={styles.badge}>
-              <Icon name="lock" size={32} color={theme.text} strokeWidth={1.6} />
-            </Glass>
-            <ThemedText type="label" themeColor="brass">
+            <ThemedText type="label" themeColor="textSecondary">
               Paso 1 de 2
             </ThemedText>
             <ThemedText type="title">¿Qué buscas?</ThemedText>
@@ -130,13 +124,6 @@ const styles = StyleSheet.create({
   },
   header: {
     gap: Spacing.two,
-  },
-  badge: {
-    width: 64,
-    height: 64,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.two,
   },
   options: {
     gap: Spacing.two,

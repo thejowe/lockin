@@ -128,7 +128,7 @@ export function AccountSection() {
 
   return (
     <View style={styles.root}>
-      <ThemedText type="label" themeColor="brass">
+      <ThemedText type="label" themeColor="textSecondary">
         Cuenta
       </ThemedText>
 

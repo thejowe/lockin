@@ -58,7 +58,7 @@ export function LoadingState({
 
 export function MessageState({
   eyebrow,
-  eyebrowColor = 'brass',
+  eyebrowColor = 'textSecondary',
   title,
   body,
   detail,

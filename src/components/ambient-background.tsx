@@ -1,11 +1,11 @@
 /**
  * Luz ambiental y lienzo de pantalla de la dirección «cristal».
  *
- * El cristal necesita algo detrás que refractar. En la referencia es una foto
- * oscurecida; aquí son tres manchas de color muy difusas (brasa, verde-azulado,
- * violeta) horneadas en una imagen. Pre-desenfocada a propósito: un desenfoque
- * en tiempo real sobre algo que ya es difuso costaría GPU en cada fotograma sin
- * cambiar nada a la vista, y la imagen pesa ~23 KB.
+ * El cristal necesita algo detrás que refractar. Aquí es una sola fuente de
+ * luz, tenue, que entra por arriba: la ventana de una habitación a oscuras.
+ * Una, no tres manchas de color: la luz difusa multicolor es la firma de la
+ * interfaz de plantilla. Pre-desenfocada a propósito: un desenfoque en tiempo
+ * real sobre algo que ya es difuso costaría GPU sin cambiar nada a la vista.
  *
  * Las imágenes salen de un script (ver `docs/plan/todo/visual.md`) y su punto
  * más claro es `AmbientPeak` en `theme.ts`: el test de contraste mide el cristal
@@ -17,11 +17,11 @@ import { Image, StyleSheet, View, type ViewProps } from 'react-native';
 import { useTheme } from '@/hooks/use-theme';
 
 const SOURCES = {
-  /** Brasa arriba a la derecha: Descubrir y la bienvenida. */
+  /** Luz cálida arriba a la derecha: Descubrir y la bienvenida. */
   ember: require('@/assets/images/ambient-ember.jpg'),
-  /** Verde-azulado arriba: Matches, chat. */
+  /** Luz fría arriba a la izquierda: Matches, chat. */
   teal: require('@/assets/images/ambient-teal.jpg'),
-  /** Violeta arriba: Perfil y formularios. */
+  /** Luz cálida y baja arriba al centro: Perfil y formularios. */
   plum: require('@/assets/images/ambient-plum.jpg'),
 } as const;
 

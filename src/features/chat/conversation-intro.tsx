@@ -39,7 +39,7 @@ export function ConversationIntro({ match }: { match: MatchWithProfile }) {
         {counterpart.availability.hoursPerWeek} h/semana · por la {bands}
       </ThemedText>
 
-      <ThemedText type="label" themeColor="brass" style={styles.centered}>
+      <ThemedText type="label" themeColor="textSecondary" style={styles.centered}>
         Match de {MODE_LABELS[match.mode]} · {formatDayHeading(match.createdAt)}
       </ThemedText>
     </View>

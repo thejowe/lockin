@@ -13,7 +13,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/icon';
 import {
   Control,
-  Elevation,
   FontFamily,
   Opacity,
   Radii,
@@ -87,7 +86,6 @@ export const MessageComposer = forwardRef<TextInput, MessageComposerProps>(funct
           styles.send,
           {
             backgroundColor: canSend ? theme.brass : theme.backgroundSelected,
-            boxShadow: canSend ? Elevation.dark.glow : undefined,
             opacity: pressed ? Opacity.pressed : 1,
           },
         ]}>

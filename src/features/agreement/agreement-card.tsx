@@ -61,7 +61,6 @@ function ParAgreementCard({ match }: { match: MatchWithProfile }) {
         <ThemedText type="heading" style={styles.title}>
           Acuerdo de socios
         </ThemedText>
-        <Icon name="expand" size={14} color={theme.textSecondary} strokeWidth={2.2} />
       </View>
       <ThemedText type="small" themeColor="textSecondary">
         {headline}

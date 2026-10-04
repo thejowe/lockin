@@ -100,12 +100,8 @@ export function OptionCard<T extends string>({
         },
       ]}>
       {icon ? (
-        <View
-          style={[
-            styles.optionIcon,
-            { backgroundColor: selected ? theme.brass : theme.backgroundSelected },
-          ]}>
-          <Icon name={icon} size={22} color={selected ? theme.onAccent : theme.text} />
+        <View style={[styles.optionIcon, { backgroundColor: theme.backgroundSelected }]}>
+          <Icon name={icon} size={22} color={selected ? theme.brass : theme.textSecondary} />
         </View>
       ) : null}
 

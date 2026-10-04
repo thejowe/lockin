@@ -22,7 +22,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 
-import { Glow } from '@/components/glow';
 import { Curves, Duration } from '@/constants/theme';
 import { BLOCK_MINUTES, WORK_MINUTES } from '@/data';
 import { useReduceMotion } from '@/hooks/use-reduce-motion';
@@ -92,11 +91,6 @@ export function PomodoroRing({
 
   return (
     <View style={[styles.root, { width: size, height: size }]}>
-      <Glow
-        color={color}
-        opacity={0.35}
-        style={{ width: size * 1.5, height: size * 1.5, left: -size * 0.25, top: -size * 0.25 }}
-      />
       <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
         <Circle
           cx={size / 2}

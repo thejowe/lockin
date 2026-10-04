@@ -432,6 +432,12 @@ usuario por el camino: **solo modo oscuro**. Rama `claude/visual-cristal`.
   y 7.8 GB de RAM y fallaba en todas las ramas (`e2e.yml`: liberar ~28 GB,
   swap de 4 GB, parar Gradle/Kotlin tras el build, `hide_error_dialogs` contra
   el ANR de arranque del AVD).
+- [x] Pasada de contención (2026-10-04, «que no parezca diseñado con IA»): una
+  sola luz ambiental tenue por pantalla en vez de tres manchas de color; fuera
+  halos (`Glow` retirado), galones del Like, candado decorativo del onboarding
+  e icono de expandir; etiquetas de cabecera en gris; radios contenidos (card
+  30→22); el encaje del deck en tinta de brasa sobre relleno tenue; el prompt
+  del perfil ocupa el hueco de la tarjeta en grande; «¡Match!» en blanco.
 - [ ] Oráculo final de `supabase` y `registro`: «fetch failed» en la primera
   llamada de administración a GoTrue tras el último flujo (~40 min después de
   levantar el Supabase local). Sospecha: un contenedor muerto por OOM en el

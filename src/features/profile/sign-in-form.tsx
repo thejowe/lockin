@@ -168,7 +168,7 @@ export function SignInForm({
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <ThemedText type="label" themeColor="brass">
+        <ThemedText type="label" themeColor="textSecondary">
           Ya tengo cuenta
         </ThemedText>
         <ThemedText type="title">Vuelve a tu cuenta</ThemedText>

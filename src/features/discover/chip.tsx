@@ -26,7 +26,9 @@ function palette(theme: ThemePalette, tone: ChipTone) {
     case 'teal':
       return { background: theme.tealSoft, color: theme.teal };
     case 'match':
-      return { background: theme.brass, color: theme.onAccent };
+      // Señal, no botón: tinta de brasa sobre su relleno tenue. El sólido se
+      // reserva para la acción principal de la pantalla.
+      return { background: theme.brassSoft, color: theme.brass };
     default:
       return { background: theme.backgroundSelected, color: theme.text };
   }

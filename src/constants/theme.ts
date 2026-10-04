@@ -80,7 +80,7 @@ export const Colors = {
  * (`assets/images/ambient-*.jpg`). Es el peor caso de contraste para la tinta
  * clara: el test compone cada superficie también sobre él.
  */
-export const AmbientPeak = '#462312';
+export const AmbientPeak = '#351C10';
 
 export type ThemeName = keyof typeof Colors;
 export type ThemeColor = keyof typeof Dark;
@@ -199,15 +199,16 @@ export const Spacing = {
 } as const;
 
 /**
- * Radios de esquina. Grandes y continuos, como en la referencia: el cristal no
- * tiene aristas. `pill` para chips, botones y la barra de pestañas.
+ * Radios de esquina. Suaves pero contenidos: el redondeo exagerado es lo
+ * primero que delata una interfaz de plantilla. `pill` solo para chips,
+ * botones y la barra de pestañas.
  */
 export const Radii = {
-  small: 10,
-  medium: 16,
-  large: 22,
-  card: 30,
-  sheet: 34,
+  small: 8,
+  medium: 12,
+  large: 16,
+  card: 22,
+  sheet: 26,
   pill: 999,
 } as const;
 
