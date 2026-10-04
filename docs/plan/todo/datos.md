@@ -2135,9 +2135,11 @@ Con esto, el bloque `datos` no tiene ninguna casilla abierta.
       PGlite solo admite una conexión: no se ha ejecutado una prueba de contención
       entre dos transacciones independientes.
 
-**Pendiente del usuario:** aplicar
-`20261003000100_harden_grants_and_clock.sql` al proyecto
-`grrzmzktrhksbttpbblg` mediante el **SQL Editor**. No aplicada en remoto por esta tarea.
+**Aplicada en remoto el 2026-10-03** (orden del usuario), por `apply_migration`
+del MCP de Supabase tras `20261002000100_lockin_rooms.sql`. Verificado: el md5 de
+`prosrc` de las 5 RPC coincide con el archivo, y `anon`/`authenticated` ya no
+tienen TRUNCATE, REFERENCES ni TRIGGER en ninguna tabla de `public`. Falta que
+el job remoto de `Schema drift` lo confirme cuando Actions vuelva a correr.
 
 ## DELETE de `postgres_changes` sin RLS en matches y sesiones (2026-10-03)
 
