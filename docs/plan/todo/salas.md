@@ -140,6 +140,7 @@ quien convoca una vez han aceptado todos. La app pinta «Tu sala · hoy 11:00 ·
 spec la reserva para «Convocas, con pendientes», y la forma «Sala · {día hora} · {k} personas» es la de
 «Aceptada, fuera de ventana». Con 0 pendientes, lo que la spec da a entender es «Sala · … · 3 personas».
 Toca decidir: o se cambia el código, o se aclara la tabla de la spec. No rompe nada.
+**Resuelto en `4a95c86`:** se cambió el código, que era lo que la spec ya decía.
 
 **Observaciones, sin marcar como fallo.**
 - En la pantalla de sala, `uiautomator dump` falla con «could not get idle state» (animación continua).
@@ -147,5 +148,8 @@ Toca decidir: o se cambia el código, o se aclara la tabla de la spec. No rompe 
 - Al cambiar de «Hoy» a «Mañana» en «Convocar», la fila de tramos vuelve a 00:00 y el tramo elegido
   (11:00, que se conserva) queda fuera de la vista. Solo se adivina por «1 bloque · hasta 11:30»
   (`13-convocar-2.png`). Además, el número de bloques preseleccionado esta vez era 2.
+  **Resuelto en `e5ab495`:** tras un cambio de día, la fila se desplaza al tramo elegido. Los 2
+  bloques por defecto no son un fallo: la spec no fija ninguno y es el mismo valor que la hoja de
+  sesión 1:1 (`propose-session-sheet.tsx`); el «1 bloque» de la primera sala lo eligió el comprobador.
 - La franja negra a la derecha y abajo de cada pantalla es de `visual` (luz ambiental a 390×844 dp):
-  anotada en `todo/visual.md`.
+  anotada en `todo/visual.md`, arreglada en `90d1d7b` (pendiente de que la confirme el comprobador).
