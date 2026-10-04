@@ -2,7 +2,39 @@
 
 Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>.md` — márcalo ahí, no aquí.
 
-## ▶ Al retomar — estado del 2026-10-04 (el más reciente; los «Al retomar» de más abajo son históricos)
+## ▶ Al retomar — estado del 2026-10-04, noche (el más reciente; lo de más abajo es histórico)
+
+Último commit de código: `33378bc`, en `claude/startup-cofounder-matching-app-tfeai1`. Encima solo
+va el `docs(pilar)` con estas notas. Todo subido y el árbol limpio. Actions funciona: el repo es
+público y no gasta cuota.
+
+**Todos los bloques están cerrados** (`salas` cerró sus Tareas 10 y 11 en `984aeff`). Solo hay una
+casilla abierta que no depende del usuario:
+
+1. **Oráculo final de `supabase`** (`todo/visual.md`, reabierta en `f39cfe5`).
+   - Causa encontrada: la conexión keep-alive que Kong ya había cerrado (`UND_ERR_SOCKET`).
+   - Arreglo: `33378bc`. Detalle en `todo/verificacion.md`, al final de la entrada de recuperar contraseña.
+   - **Primer paso al volver:** lee el run **37239076782** (`E2E Android` sobre `33378bc`), con
+     `gh run view 37239076782 --json jobs`.
+     - Si las tres variantes salen verdes, marca la casilla de `visual.md` con ese run. Es un cambio
+       solo de docs y no lanza workflows.
+     - Si `supabase` vuelve a dar «fetch failed», el log trae ya `error.cause` gracias a
+       `e2e/fetch-diagnostics.mjs`. Depúralo a partir de ahí.
+
+Resuelto en esta tanda:
+- `registro` rojo en «Recuperar contraseña» (`a768426`). Era el test: la barra de pestañas tapaba
+  «Guardar contraseña» y el toque caía en Matches. Con el arreglo pasa en Actions; la guardia es
+  `e2e/tab-bar-overlap.test.mjs`.
+- `src/features/profile/account-section.test.tsx` se pasa del límite de 5 s en local con la suite
+  entera, pero en CI está en verde. Es deuda menor, sin casilla.
+
+**Lo que es del usuario** (ningún agente puede hacerlo):
+1. Revisar las decisiones de la spec de salas (`docs/superpowers/specs/2026-10-02-salas-grupales-design.md`,
+   primera sección; sobre todo la 1 y la 6).
+2. En un iPhone con iOS 26: la barra con Liquid Glass (`todo/visual.md`) y el vídeo (`todo/video.md`).
+3. El vídeo con una cámara real (`todo/video.md`): la del emulador es una escena de prueba.
+
+## Al retomar — estado del 2026-10-04, mañana (histórico)
 
 Último commit antes de este traspaso: `4b3da96` en `claude/startup-cofounder-matching-app-tfeai1` (encima solo va el commit `docs(pilar)` que deja estas notas). Todo subido, árbol limpio.
 **Actualización del 2026-10-04, por la tarde.** Actions volvió a funcionar: el repo pasó a público. Sobre `22608a0`,

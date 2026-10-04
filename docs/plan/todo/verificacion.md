@@ -726,3 +726,14 @@ que cierra a los 3 s y un bloqueo de 6 s, pero undici no falla. Queda
 **abierto**. El siguiente paso es instrumentar el `fetch` del cliente `admin`
 (`global.fetch` envuelto) para guardar `error.cause`, que auth-js descarta al
 crear `AuthRetryableFetchError`.
+
+**Causa y arreglo (2026-10-04, noche).** `03e4556` instrumentó el `fetch` de
+los oráculos (`e2e/fetch-diagnostics.mjs`). El run 37236214636 lo identificó:
+`UND_ERR_SOCKET` «other side closed» en la primera petición tras un flujo
+largo, a los 3-12 ms. En ese mismo instante un `curl` a Kong daba 200, y la
+repetición también. Era la conexión keep-alive del pool, que Kong ya había
+cerrado. postgrest-js repite solo; auth-js no. `33378bc` repite una vez, solo
+ese error y solo en GET/HEAD. Guardia: `e2e/fetch-diagnostics.test.mjs`. CI y
+Schema drift de `33378bc` en verde. **El E2E de `33378bc` (run 37239076782)
+seguía en curso al cerrar la sesión.** Si `supabase` sale verde, marca el
+oráculo de `todo/visual.md` con ese run.
