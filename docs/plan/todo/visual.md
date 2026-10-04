@@ -418,6 +418,9 @@ entrada del 2026-10-04 abajo.*
   iniciales; ahora lleva base opaca (`surfaceOpaque`) con el tinte encima
   (`stampFill` en `swipe-deck.tsx`, test en `swipe-deck.test.tsx`). Sin
   verificar aún en el emulador.*
+  *2026-10-04, comprobador (mock, `5f698db`): ❌ a mitad de arrastre. La
+  base es opaca, pero la opacidad animada del sello deja ver «DS» debajo. Ver
+  la entrada del 2026-10-04 «sello Like con base opaca».*
 - En la pantalla de sala y en la de sesión, `uiautomator dump` falla con
   «could not get idle state» (animación continua: anillo y punto que respira).
   Maestro no espera a que la pantalla quede quieta, así que no debería afectarle, pero
@@ -481,6 +484,37 @@ pestaña activa que en `107541a` (`13-recorte-barra-antes-despues.png`: arriba
 
 **Fila de sala de `4a95c86`:** no aparece. En este recorrido no se convocó
 ninguna sala y en Matches solo está Alba (`11-matches.png`).
+
+### 2026-10-04 — sello «Like» con base opaca (`5f698db`): ❌ a mitad de arrastre (mock)
+
+APK release x86_64 sobre `5f698db` (HEAD no se movió durante el build), con
+`prebuild --clean`, `EXPO_NO_DOTENV=1 EXPO_PUBLIC_LOCKIN_ALLOW_MOCK=1` y
+`createBundleReleaseJsAndAssets --rerun` (`build.log`). En logcat sale
+`[lockin] backend de datos: mock en memoria`. `pm clear` antes de empezar.
+Evidencia en `e2e/artifacts/local/2026-10-04-arreglos-5f698db/`.
+
+Pasos: onboarding «Ambos» → deck (Diego Salas arriba, avatar «DS»). Arrastre
+sostenido con `input motionevent` (DOWN en 540,1250 → MOVE hasta x=820, ≈280 px,
+mismo recorrido que `107541a/02-`), captura y vuelta al centro sin soltar. Luego lo
+mismo hacia la izquierda (hasta x=260) y otro a la derecha más largo (hasta x=950,
+pasado el umbral).
+
+- **❌ «Like» a mitad de camino.** Se siguen viendo las iniciales bajo el sello:
+  en `09-recorte-like.png` (ampliado de `09-arrastre-derecha.png`) se lee «DS»
+  en gris detrás de «Like», como en `00-antes-107541a-arrastre-derecha.png`. Mejora
+  algo: «Like» ya se lee entero, cosa que antes no pasaba («Mike»). Pero el avatar sigue
+  asomando a través del relleno.
+- **Con el arrastre largo, ✅.** En `11-recorte-like-largo.png` la base es opaca
+  del todo y no asoma nada del avatar. Así que `stampFill` funciona. Lo que falla es
+  la opacidad del conjunto: `likeStyle` anima `opacity: progress` en la vista que
+  lleva la base opaca (`swipe-deck.tsx`, ~l. 313). A mitad de arrastre todo el sello,
+  base incluida, va a ~0,5–0,7 y deja pasar el avatar. Sugerencia sin probar: animar la
+  opacidad solo del tinte, el borde y el texto, y dejar la base a 1 en cuanto
+  `progress > 0`. O bien sacar el sello de encima del avatar.
+- **✅ «Pasar» a la izquierda.** Se ve entero y limpio (`10-recorte-pasar.png`).
+  Cae a la derecha del nombre, sin nada debajo, así que esto no demuestra la base
+  opaca.
+- `logcat.txt`: ningún error de JS.
 
 ## Registro
 

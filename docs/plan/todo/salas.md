@@ -153,3 +153,25 @@ Toca decidir: o se cambia el código, o se aclara la tabla de la spec. No rompe 
   sesión 1:1 (`propose-session-sheet.tsx`); el «1 bloque» de la primera sala lo eligió el comprobador.
 - La franja negra a la derecha y abajo de cada pantalla es de `visual` (luz ambiental a 390×844 dp):
   anotada en `todo/visual.md`, arreglada en `90d1d7b` (pendiente de que la confirme el comprobador).
+
+### 2026-10-04 — arreglos `e5ab495` y `4a95c86` en el emulador (mock, `5f698db`)
+
+APK release x86_64 sobre `5f698db` (HEAD no se movió durante el build), con `prebuild --clean`,
+`EXPO_NO_DOTENV=1 EXPO_PUBLIC_LOCKIN_ALLOW_MOCK=1` y `createBundleReleaseJsAndAssets --rerun`. En logcat
+sale `[lockin] backend de datos: mock en memoria`. `pm clear` antes de empezar. Reloj del AVD: domingo
+4 de octubre, 12:48–12:57. Carpeta: `e2e/artifacts/local/2026-10-04-arreglos-5f698db/`.
+Onboarding «Ambos», like a Marc Oller y a Alba Ferrer: los dos dan match (`13-`, `14-`).
+
+1. **✅ Convocar: la fila de horas sigue al tramo al cambiar de día (`e5ab495`).** En «Convocar sala
+   Lock-In», Alba y Marc («2 de 4»). En «Hoy» desplacé la fila y elegí 18:00 (`17-hoy-1800.xml`,
+   `Hora 18:00` con selected=true en x 531–712). Al pulsar «Mañana», la fila se desplaza sola: «Hora
+   18:00» queda seleccionada y visible en x 126–307, con 17:45 asomando a la izquierda
+   (`18-manana.png`, `18-manana.xml`). No vuelve a 00:00. Al volver a «Hoy» y otra vez a «Mañana»,
+   18:00 sigue seleccionada y a la vista (`19-vuelta-hoy.xml`, `20-manana-otra-vez.xml`).
+2. **✅ Fila de quien convoca con todas aceptadas (`4a95c86`).** Sala convocada con los dos para mañana
+   18:00, 2 bloques. En el mock aceptan solos: la sala muestra «Convocas tú · mañana 18:00 · 2
+   bloques» y los dos con «Ha aceptado» (`22-sala.xml`). En Matches, la fila dice **«Sala · mañana 18:00
+   · 3 personas»** (content-desc idéntico), sin «Tu sala» ni «2 de 2 han aceptado»
+   (`23-matches-con-sala.png`, `23-matches-con-sala.xml`). No se comprobó la forma «Tu sala · k de n»
+   con respuestas pendientes: el mock no deja ninguna.
+3. `logcat.txt` (`*:E ReactNativeJS:V`): ningún error de JS ni crash.
