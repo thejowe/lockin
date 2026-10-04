@@ -672,3 +672,35 @@ release del APK» con `PluginError: Failed to resolve plugin for module
 desechable una lista cerrada de entradas y `plugins/` no estaba: es el primer
 config plugin local, los anteriores venían de `node_modules`. Arreglado
 añadiendo `plugins` a esa lista.
+
+### «Recuperar contraseña por correo» cayó en `registro` sobre `46cd3e0` (2026-10-04) — no era `setIntent`
+
+Run 37228331950, fase `password-reset-confirm`: tras pulsar «Guardar
+contraseña» no aparece «Contraseña guardada…» y la app está en Matches. El
+mismo caso había pasado sobre `22608a0` (run 37226087232), el primer E2E con
+`plugins/with-new-intent-initial-url.js`, y se sospechó del `setIntent`.
+
+**Descartado.** El enlace se canjeó bien: el caso llegó a Perfil, encontró
+«Email de tu cuenta: …» y escribió la contraseña. Lo que cambió de pestaña
+fue el propio toque. `maestro.log` de los dos runs:
+
+| run | «Contraseña de tu cuenta» | «Guardar contraseña» | toque |
+| --- | --- | --- | --- |
+| 37226087232 (verde) | y=1809–1941 | y=2005–2063 | (539, 2034) |
+| 37228331950 (rojo) | y=1980–2112 | y=2176–2234 | (539, **2205**) |
+
+La barra de pestañas flotante (`app-tabs.tsx`, `position: absolute`) ocupa
+y=2171–2291 en el emulador de CI (`window.xml`). Maestro no la cuenta como
+tapa: `scrollUntilVisible` da el botón por visible al 100 % y deja de
+desplazar, y el toque cae en la barra. La jerarquía del fallo tiene Matches
+`selected`. Que unas veces pase y otras no es el recorrido del gesto de
+desplazar, que no es siempre igual (dos swipes en los dos runs, 171 px de
+diferencia al final).
+
+**Arreglo, solo en el caso** (la app sí deja el botón por encima de la barra
+si se desplaza: el `ScrollView` de Perfil lleva `BottomTabInset` de relleno
+inferior): `centerElement: true` en los dos `scrollUntilVisible` que preceden
+a un `tapOn` en `e2e/password-reset.yaml`. Con él Maestro 2.10 sigue
+desplazando hasta que el centro del elemento queda por encima de y≈1680 (o
+hasta el final de la lista). Guardia nueva `e2e/tab-bar-overlap.test.mjs`
+(`npm run test:e2e`), roja antes del cambio y verde después.
