@@ -27,18 +27,28 @@ const SOURCES = {
 
 export type AmbientVariant = keyof typeof SOURCES;
 
-/** La luz ambiental, a pantalla completa, detrás de todo. Decorativa. */
+/**
+ * La luz ambiental, a pantalla completa, detrás de todo. Decorativa.
+ *
+ * El `absoluteFill` va en un contenedor y la imagen lleva su 100 % explícito:
+ * en Android un `Image` con solo `absoluteFill` se pinta a su tamaño propio
+ * (390×844) y deja franjas negras a la derecha y abajo en pantallas mayores.
+ */
 export function AmbientBackground({ variant = 'ember' }: { variant?: AmbientVariant }) {
   return (
-    <Image
-      source={SOURCES[variant]}
+    <View
+      pointerEvents="none"
       style={StyleSheet.absoluteFill}
-      resizeMode="cover"
       accessible={false}
       accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants"
-      testID="ambient-background"
-    />
+      importantForAccessibility="no-hide-descendants">
+      <Image
+        source={SOURCES[variant]}
+        style={styles.fill}
+        resizeMode="cover"
+        testID="ambient-background"
+      />
+    </View>
   );
 }
 
@@ -65,5 +75,9 @@ export function Screen({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+  },
+  fill: {
+    width: '100%',
+    height: '100%',
   },
 });
