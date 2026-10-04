@@ -31,7 +31,7 @@ Qué lanzar al volver, en orden:
    Si falla, el que depura es el agente `salas`. Infra del runner (disco, swap, ANR) ya arreglada
    en `bd3f9b2..2fd6685` por la sesión de diseño. **No lances `contract.yml` a mano sobre esta
    rama**: CI ya lo incluye y comparten grupo de concurrencia, así que se cancelan entre sí.
-2. Tarea 12 con el `comprobador`, mock, sobre la punta. Un intento del 2026-10-04 se paró a
+2. ~~Tarea 12 con el `comprobador`~~ **Hecha el 2026-10-03 (✅ en mock, `107541a`).** Un intento del 2026-10-04 se paró a
    mitad al cerrar la sesión: hay capturas parciales en `e2e/artifacts/local/2026-10-04-salas/`,
    sin veredicto. El emulador es compartido con la sesión del rediseño, que quiere pasar el suyo
    (desenfoque, swipe, Pomodoro): coordina antes.
@@ -71,7 +71,11 @@ El resto, en orden.
 - [ ] [Claude] Tarea 10 — E2E `room.yaml` en la variante `supabase`, encadenado tras `agreement.yaml`
   - 2026-10-03, **pendiente de E2E verde: Actions bloqueado por facturación; infra del runner ya arreglada en la rama principal (bd3f9b2..2fd6685)**. Código en `85964c0` y `190bd36`: `room.yaml` (relanza sin borrar estado → Matches → «.\* te invita.\*» → «Me apunto» → hasta 180 s a «Empieza en» → «Salir» → «Salir de la sala» → «Entrar a la sala.\*» de vuelta en Matches); `prepareRoom` siembra la sala a 7 min (convoca la contraparte, Marc Oller aceptado, el usuario invitado) y `verifyRoomAttendance` comprueba `aceptada`, `joined_at` y `left_at`, e imprime los tiempos de cada paso con el reloj de Postgres («Sala, tiempos: …»); encadenado tras el oráculo del acuerdo y antes de `sign-in-abandon.yaml`, con `room: 'verified'`; `e2e/room.test.mjs` (5 casos) fija etiquetas, siembra y los dos números (7 min y 180 s) contra el código. `node --test e2e/room.test.mjs` 5/5; `e2e/*.test.mjs` 103/104 (el rojo es el CRLF de `full-journey`, conocido). En Actions (rama desechable con los arreglos de `e2e.yml` de `claude/visual-cristal`): runs 37145155786, 37147988585 y 37151155639 murieron por la infra del runner (disco, ANR de System UI) en `full-journey.yaml`, también en mock; en el 37154276244 la variante `supabase` pasó recorrido, sesión, valoración, racha y acuerdo, y cayó en `prepareRoom`: un insert en lote de PostgREST pone NULL (no el `default`) en la columna que falta → `status` nulo. Arreglado en `190bd36`. **`room.yaml` no ha llegado a ejecutarse en el emulador: el tiempo de espera (siembra a 7 min, 180 s) sigue sin medir**; el primer run verde debe leer «Sala, tiempos» en el log (margen de «Me apunto» frente a los 120 s y entrada tras abrir la ventana). Ese mismo run, la variante mock cayó por un caso en `full-journey.yaml` («Tarde · 12–20» no visible tras 4 min), ajeno a salas.
 - [ ] [Claude] Tarea 11 — Verificación final y cierre (CI, E2E, contrato, Schema drift con su excepción anotada)
-- [ ] [comprobador] Tarea 12 — Recorrer convocar, entrar y cancelar una sala en el emulador (mock)
+- [x] [comprobador] Tarea 12 — Recorrer convocar, entrar y cancelar una sala en el emulador (mock)
+  - 2026-10-03, comprobador (mock, APK release sobre `107541a`): **✅ los pasos 1–6 del plan**,
+    incluida la espera hasta la ventana (la sala de las 11:00 se abrió a las 10:55 y se trabajó a
+    las 11:00). Una desviación de texto menor en la fila de Matches, detallada en «Hallazgos del
+    comprobador». Evidencia en `e2e/artifacts/local/2026-10-03-salas-107541a/`.
 
 ## Pendiente del usuario
 
@@ -87,4 +91,52 @@ El resto, en orden.
 
 - 2026-10-04: el recorrido de la Tarea 12 (mock, `b478f90`) se paró a mitad al cerrar la
   sesión. No hay veredicto; las capturas parciales están en `e2e/artifacts/local/2026-10-04-salas/`.
-  El emulador `emulator-5554` quedó encendido y libre.
+  El emulador `emulator-5554` quedó encendido y libre. *(Sustituido por el recorrido del 2026-10-03,
+  abajo.)*
+
+### 2026-10-03 — Tarea 12, recorrido completo (mock, `107541a`)
+
+APK release x86_64, con `prebuild --clean`, `EXPO_NO_DOTENV=1 EXPO_PUBLIC_LOCKIN_ALLOW_MOCK=1` y
+`createBundleReleaseJsAndAssets --rerun` (`build.log`). En logcat sale `[lockin] backend de datos: mock en
+memoria`. `pm clear` antes de empezar. Reloj del AVD: domingo 4 de octubre, 10:37–11:20.
+Carpeta: `e2e/artifacts/local/2026-10-03-salas-107541a/`.
+
+1. **✅ Onboarding «Ambos» y matches.** Perfil creado (`01-`…`04-`). Like a Marc Oller y a Núria Bosch:
+   los dos dan match recíproco (`07-match-nuria.xml`). Núria lleva «Quiere: Cofundador»
+   (`06-nuria.xml`). Que no salga en el deck «Lock-In» **no lo comprobé**: le di like desde
+   «Todo».
+2. **✅ Convocar.** En Matches aparece «Salas Lock-In» y «Convocar sala Lock-In» (`08-matches.png`).
+   El formulario tiene chips «Núria»/«Marc» con contador «2 de 4», día y tramo de 15 min (preseleccionado
+   «Hoy 11:00», el siguiente válido) y bloques. Con menos de 2 personas dice «Elige al menos 2 personas.»
+   (`09-convocar.xml`, `10-convocar-relleno.png`). Al convocar, Android pide el permiso de notificaciones.
+3. **✅ La sala abre** con «Convocas tú · hoy 11:00 · 1 bloque», «Tú · Convocas» y los dos con
+   «Ha aceptado» (`11-sala-abierta.png`).
+4. **✅ Fila y entrada.** Antes de la ventana, la fila dice «Tu sala · hoy 11:00 · 2 de 2 han aceptado»
+   (`12-matches-con-sala.xml`). A las 10:55:05 pasa sola a «Entrar a la sala · hoy 11:00 · 1 bloque»
+   (`18-matches-entrar.xml`, gracias al tic de 30 s). Dentro, «Tú · Estás aquí», los otros dos
+   «Aún no ha entrado» (el mock no simula su presencia), «Empieza en 4:11» y «Salir» + «Cancelar sala»
+   (`19-sala-ventana.png`). A las 11:00, «24:47 · Trabajo · bloque 1 de 1»; «Cancelar sala» desaparece
+   (`20-sala-trabajo.png`) y el anillo avanza (`21-sala-anillo-1min.png`). «Salir» pide confirmación
+   («Saldrás antes de acabar.» + «Salir de la sala», `22-salir-confirmacion.png`) y vuelve a Matches
+   con «Entrar a la sala» (`23-tras-salir.png`).
+5. **✅ Cancelar.** Segunda sala con los dos, mañana 11:00 (`14-sala2.xml`). «Cancelar sala» pide
+   confirmación («Se cancelará para todas las personas invitadas.», «Sí, cancelar la sala» / «No,
+   mantenerla», `15-cancelar-confirmacion.xml`). Tras confirmar sale «Cancelaste la sala» con «Volver
+   a Matches» (`16-tras-cancelar.xml`). En Matches solo queda la sala de hoy (`17-matches-tras-cancelar.xml`).
+6. **Evidencia.** `logcat.txt` (`*:E ReactNativeJS:V`): ningún error de JS ni crash.
+
+**Desviación menor (texto).** El plan (Tarea 12, paso 4) esperaba «Sala · … · 3 personas» en la fila de
+quien convoca una vez han aceptado todos. La app pinta «Tu sala · hoy 11:00 · 2 de 2 han aceptado».
+`roomRowView` (`src/features/room/row-view.ts`) usa siempre la forma «Tu sala» para quien convoca. La
+spec la reserva para «Convocas, con pendientes», y la forma «Sala · {día hora} · {k} personas» es la de
+«Aceptada, fuera de ventana». Con 0 pendientes, lo que la spec da a entender es «Sala · … · 3 personas».
+Toca decidir: o se cambia el código, o se aclara la tabla de la spec. No rompe nada.
+
+**Observaciones, sin marcar como fallo.**
+- En la pantalla de sala, `uiautomator dump` falla con «could not get idle state» (animación continua).
+  `19-sala-ventana.png` es solo captura, sin XML.
+- Al cambiar de «Hoy» a «Mañana» en «Convocar», la fila de tramos vuelve a 00:00 y el tramo elegido
+  (11:00, que se conserva) queda fuera de la vista. Solo se adivina por «1 bloque · hasta 11:30»
+  (`13-convocar-2.png`). Además, el número de bloques preseleccionado esta vez era 2.
+- La franja negra a la derecha y abajo de cada pantalla es de `visual` (luz ambiental a 390×844 dp):
+  anotada en `todo/visual.md`.

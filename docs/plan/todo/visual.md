@@ -356,6 +356,63 @@ SurfaceId») al abrir cada `Modal`.
   arriba, fuera de la vista (no hay desplazamiento al primer error). Ya visto
   en `04-form-errores.png` del 2026-09-30.
 
+### 2026-10-03 — dirección «cristal» en el emulador (mock)
+
+APK release x86_64 sobre `107541a`, con `prebuild --clean`,
+`EXPO_NO_DOTENV=1 EXPO_PUBLIC_LOCKIN_ALLOW_MOCK=1` y
+`createBundleReleaseJsAndAssets --rerun`. En logcat sale `[lockin] backend de datos: mock
+en memoria`. AVD `lockin`, 1080×2400 a 420 dpi (411×914 dp). Evidencia en
+`e2e/artifacts/local/2026-10-03-visual-107541a/` (y en `…/2026-10-03-salas-107541a/`).
+
+**✅ Esmerilado de la barra (`BlurTargetView`).** En Perfil, a mitad del
+desplazamiento, el botón «Verificar con GitHub» pasa por debajo de la píldora.
+Fuera, el canto del botón es nítido. Dentro sale como un degradado suave y las
+letras no se distinguen. Es desenfoque de verdad, no un velo
+(`08-perfil-scroll-medio.png`, `08-recorte-barra.png`).
+
+**✅ Swipe con la pila nueva.** Arrastre sostenido con `input motionevent` a
+mitad de camino. Hacia la derecha, la tarjeta gira y aparece el sello «Like»
+(`02-deck-arrastre-derecha.png`); al soltar, sale «¡Match!»
+(`03-deck-tras-like.png`). Hacia la izquierda, sello «Pasar» y la tarjeta de detrás
+asoma con el texto oculto (`04-deck-arrastre-izquierda.png`, `05-deck-tras-pasar.png`).
+
+**✅ Anillo del Pomodoro en una sesión activa.** Sesión 1:1 con Marc a las 11:15, de
+1 bloque. Antes de empezar marca «Empieza en 4:13» con el punto arriba
+(`12-sesion-sala-espera.png`). A las 11:19 marca «20:56 · Trabajo · bloque 1 de 1» y el arco
+cubre ~16 % (`15-sesion-anillo-3min.png`), proporcional a lo que ha pasado del bloque. La sala usa
+el mismo `PomodoroRing` y avanza igual (`…/2026-10-03-salas-107541a/20-` y `21-`).
+El vídeo dice «No se pudo conectar el vídeo»: con el mock y un solo emulador no hay
+par. La videollamada no queda comprobada.
+
+**❌ La luz ambiental no llena la pantalla (todas las pantallas con `Screen`).**
+Queda una franja negra de unos 56 px a la derecha (la imagen termina en x≈1024) y otra
+abajo (termina en y≈2215). 1024×2215 px a 420 dpi son **390×844 dp**: el
+tamaño intrínseco de `assets/images/ambient-*.jpg`, el mismo viewport del
+Playwright web. En Android, el `<Image style={StyleSheet.absoluteFill}
+resizeMode="cover">` de `src/components/ambient-background.tsx` se pinta a su
+tamaño propio y no al del contenedor. En un dispositivo de 390×844 no se notaría;
+en el Pixel 7 se ve en cada captura: `01-deck-reposo.png` (franja vertical a
+la derecha de las tarjetas) y, en la carpeta de salas, `01-arranque.png`, `08-matches.png`,
+`10-convocar-relleno.png` y `11-sala-abierta.png`. Medido por píxel: en y=1500
+el color pasa de (43,23,14) a (10,10,11) entre x=1022 y x=1026. La barra de
+pestañas queda justo sobre el borde inferior de la imagen. Sugerencia sin
+probar: dar `width: '100%', height: '100%'` explícitos, o usar `expo-image` con
+`contentFit="cover"`.
+
+**Observaciones, sin marcar como fallo.**
+- El modal de «¡Match!» en Android **no esmerila** el deck, solo lo oscurece:
+  el texto de detrás se lee nítido (`03-recorte-fondo-modal.png`). Es el
+  comportamiento documentado de `BlurView` sin `blurTarget` (`glass.tsx`);
+  `match-modal.tsx` no le pasa ninguno. En Android, la línea «modal de match sobre
+  el deck esmerilado» de la segunda pasada es un velo, no un esmerilado.
+- En el arrastre a la derecha, el sello «Like» queda en parte tapado por el
+  avatar (se lee «Mike»; `02-deck-arrastre-derecha.png`). El de «Pasar», a la
+  derecha del nombre, se ve entero.
+- En la pantalla de sala y en la de sesión, `uiautomator dump` falla con
+  «could not get idle state» (animación continua: anillo y punto que respira).
+  Maestro no espera a que la pantalla quede quieta, así que no debería afectarle, pero
+  cualquier herramienta que use `waitForIdle` se quedará sin jerarquía ahí.
+
 ## Registro
 
 Rama `claude/visual-pulido` (worktree `../lockin-visual`), sobre `42fa260`.
@@ -446,9 +503,18 @@ usuario por el camino: **solo modo oscuro**. Rama `claude/visual-cristal`.
   Actions no arranca jobs en este repo privado («recent account payments have
   failed or your spending limit needs to be increased»): lo resuelve el
   usuario en Billing.
-- [ ] [comprobador] Recorrido en el emulador Android: el esmerilado nativo
+- [x] [comprobador] Recorrido en el emulador Android: el esmerilado nativo
   (`BlurTargetView`) de la barra, el swipe con la pila nueva y el anillo del
   Pomodoro en una sesión activa.
+  *2026-10-03, comprobador (mock, APK release sobre `107541a`): ✅ los tres.*
+  Barra: el borde del botón naranja que pasa por debajo sale desenfocado dentro
+  de la píldora (`08-recorte-barra.png`). Swipe: la tarjeta sigue al dedo con
+  giro y sello «Like»/«Pasar», la de detrás asoma y Like da el match
+  (`02-`…`05-deck*`). Anillo: avanza con el tiempo en la sesión 1:1 activa
+  (`13-`…`15-sesion-anillo*`) y en la sala. Capturas en
+  `e2e/artifacts/local/2026-10-03-visual-107541a/`. **Fallo aparte, en todas las
+  pantallas:** la luz ambiental no llena la pantalla; queda una franja negra a la
+  derecha y abajo (ver «Hallazgos del comprobador», 2026-10-03).
 
 Textos: ningún texto ni etiqueta que usen los `e2e/*.yaml` ha cambiado. Cambia
 la presentación de «Enviar» (ahora icono; su etiqueta «Enviar mensaje» sigue).
