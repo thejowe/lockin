@@ -1,22 +1,21 @@
 /**
- * Instrumentación del «fetch failed» de los oráculos contra el Supabase local.
+ * El `fetch` de los oráculos de `run.mjs` contra el Supabase local.
  *
- * El síntoma (ver `docs/plan/todo/verificacion.md` y `visual.md`): tras el
- * último flujo de Maestro, la primera llamada de administración a GoTrue falla
- * con «fetch failed» y la petición no llega a Kong. auth-js tira la causa al
- * crear `AuthRetryableFetchError`, así que el mensaje no dice nada.
+ * El síntoma (ver `docs/plan/todo/verificacion.md` y `visual.md`): tras un
+ * flujo de Maestro largo, la primera llamada del oráculo fallaba con «fetch
+ * failed» sin llegar a Kong. auth-js descarta la causa al crear
+ * `AuthRetryableFetchError`, así que primero se instrumentó (`03e4556`), y el
+ * run 37236214636 la dio: `UND_ERR_SOCKET` «other side closed», con Kong
+ * respondiendo a un `curl` en ese mismo instante y la repetición en 200. Era
+ * la conexión keep-alive que Node guardaba de antes del flujo, que Kong ya
+ * había cerrado por inactividad.
  *
- * Esto envuelve `globalThis.fetch` del proceso de `run.mjs`. Cuando un fetch
- * falla, antes de devolver el error, deja en la consola y en
- * `$E2E_ARTIFACTS/fetch-failures.log`:
- * - la cadena de `cause`, con code, errno, syscall, address y port;
- * - un `curl` a Kong en ese mismo momento (si Kong responde, el problema es la
- *   conexión de Node, no el backend);
- * - los sockets TCP hacia el puerto 54321 (`ss`), para ver si había conexiones
- *   en CLOSE-WAIT esperando a que alguien las reutilizara;
- * - cómo resuelven `localhost` y `127.0.0.1`;
- * - si es GET, el resultado de repetirla una vez, solo como dato: el error
- *   original se relanza igual, para no tapar el fallo.
+ * Ante cualquier fallo deja en la consola y en
+ * `$E2E_ARTIFACTS/fetch-failures.log` la cadena de `cause` (code, errno,
+ * syscall, address, port), un `curl` a Kong, los sockets hacia :54321 (`ss`) y
+ * cómo resuelven `localhost` y `127.0.0.1`. Solo ese fallo concreto, y solo en
+ * GET/HEAD, se repite una vez; el resto sube tal cual. Guardia en
+ * `fetch-diagnostics.test.mjs`.
  */
 import { spawnSync } from 'node:child_process';
 import { appendFileSync, mkdirSync } from 'node:fs';
@@ -68,57 +67,89 @@ async function resolveBoth() {
   return out;
 }
 
-export function installFetchDiagnostics({ artifacts = process.env.E2E_ARTIFACTS } = {}) {
-  const original = globalThis.fetch;
-  if (original.__lockinDiagnostics) return;
+/** Lo que hay alrededor del fallo, en el mismo instante. */
+async function probeBackend() {
+  return {
+    curlKong: run('curl', [
+      '-sS',
+      '-m',
+      '5',
+      '-o',
+      '/dev/null',
+      '-w',
+      'http=%{http_code} connect=%{time_connect}s total=%{time_total}s',
+      'http://127.0.0.1:54321/auth/v1/health',
+    ]),
+    sockets: run('ss', ['-tanp', '( dport = :54321 or sport = :54321 )']),
+    dns: await resolveBoth(),
+  };
+}
 
-  async function diagnosedFetch(input, init) {
+/**
+ * La conexión keep-alive del pool que el servidor ya había cerrado: undici
+ * escribe en ella y recibe el cierre. La petición no llegó a procesarse, así
+ * que repetirla en una conexión nueva es seguro si además no tiene efectos.
+ */
+function isStaleSocket(error) {
+  return error?.cause?.code === 'UND_ERR_SOCKET';
+}
+
+const REPEATABLE = new Set(['GET', 'HEAD']);
+
+/**
+ * Envuelve un `fetch`: ante un fallo deja el diagnóstico con `log`, y si es una
+ * conexión keep-alive caducada en un GET/HEAD lo repite una sola vez.
+ */
+export function wrapFetch(original, { log = console.error, probe = probeBackend } = {}) {
+  return async function oracleFetch(input, init) {
     const startedAt = new Date();
     try {
       return await original(input, init);
     } catch (error) {
       const url = typeof input === 'string' ? input : (input?.url ?? String(input));
+      const method = (init?.method ?? input?.method ?? 'GET').toUpperCase();
       const report = {
         at: startedAt.toISOString(),
         failedAfterMs: Date.now() - startedAt.getTime(),
-        method: init?.method ?? input?.method ?? 'GET',
+        method,
         url: url.replace(/apikey=[^&]+/, 'apikey=…'),
         cause: describeCause(error),
-        curlKong: run('curl', [
-          '-sS',
-          '-m',
-          '5',
-          '-o',
-          '/dev/null',
-          '-w',
-          'http=%{http_code} connect=%{time_connect}s total=%{time_total}s',
-          'http://127.0.0.1:54321/auth/v1/health',
-        ]),
-        sockets: run('ss', ['-tanp', '( dport = :54321 or sport = :54321 )']),
-        dns: await resolveBoth(),
+        ...(await probe()),
       };
-      // Solo lo idempotente: repetir un POST que sí llegó crearía filas dobles.
-      if (report.method === 'GET' || report.method === 'HEAD') {
-        try {
-          const retry = await original(input, init);
-          report.retry = 'responde ' + retry.status;
-        } catch (retryError) {
-          report.retry = { falla: describeCause(retryError) };
-        }
+      const dump = (title) =>
+        log(title + ' — diagnóstico:\n' + JSON.stringify(report, null, 2) + '\n');
+      if (!isStaleSocket(error) || !REPEATABLE.has(method)) {
+        dump('fetch failed');
+        throw error;
       }
-      const text = 'fetch failed — diagnóstico:\n' + JSON.stringify(report, null, 2) + '\n';
-      console.error(text);
-      if (artifacts) {
-        try {
-          mkdirSync(artifacts, { recursive: true });
-          appendFileSync(join(artifacts, 'fetch-failures.log'), text);
-        } catch {
-          // La evidencia es un extra: sin carpeta, queda la consola.
-        }
+      try {
+        const response = await original(input, init);
+        report.retry = 'responde ' + response.status;
+        dump('fetch failed y repetido');
+        return response;
+      } catch (retryError) {
+        report.retry = { falla: describeCause(retryError) };
+        dump('fetch failed');
+        throw retryError;
       }
-      throw error;
     }
-  }
-  diagnosedFetch.__lockinDiagnostics = true;
-  globalThis.fetch = diagnosedFetch;
+  };
+}
+
+/** Sustituye el `fetch` global del proceso de `run.mjs` por `wrapFetch`. */
+export function installFetchDiagnostics({ artifacts = process.env.E2E_ARTIFACTS } = {}) {
+  if (globalThis.fetch.__lockinDiagnostics) return;
+  const log = (text) => {
+    console.error(text);
+    if (!artifacts) return;
+    try {
+      mkdirSync(artifacts, { recursive: true });
+      appendFileSync(join(artifacts, 'fetch-failures.log'), text);
+    } catch {
+      // La evidencia es un extra: sin carpeta, queda la consola.
+    }
+  };
+  const wrapped = wrapFetch(globalThis.fetch, { log });
+  wrapped.__lockinDiagnostics = true;
+  globalThis.fetch = wrapped;
 }
