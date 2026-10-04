@@ -64,6 +64,12 @@ import type { Decision, Profile, Specialty } from '@/data';
 
 /** Desplazamiento a partir del cual soltar cuenta como decisión. */
 const SWIPE_THRESHOLD = 110;
+/**
+ * Recorrido en el que el sello pasa de invisible a opaco. Mucho antes que el
+ * umbral: el de Like cae sobre el avatar, y a medio aparecer se transparentaba
+ * su base y se leían las iniciales debajo.
+ */
+const STAMP_FADE = SWIPE_THRESHOLD / 3;
 /** Velocidad a la que un flick corto también decide. */
 const FLICK_VELOCITY = 800;
 /** Inclinación máxima de la tarjeta, en grados. */
@@ -310,7 +316,7 @@ function TopCard({
     const x = owner.get() === turnKey ? translateX.get() : 0;
     const progress = interpolate(x, [0, SWIPE_THRESHOLD], [0, 1], Extrapolation.CLAMP);
     return {
-      opacity: progress,
+      opacity: interpolate(x, [0, STAMP_FADE], [0, 1], Extrapolation.CLAMP),
       transform: [{ rotate: '-10deg' }, { scale: 0.85 + 0.15 * progress }],
     };
   });
@@ -319,7 +325,7 @@ function TopCard({
     const x = owner.get() === turnKey ? translateX.get() : 0;
     const progress = interpolate(x, [-SWIPE_THRESHOLD, 0], [1, 0], Extrapolation.CLAMP);
     return {
-      opacity: progress,
+      opacity: interpolate(x, [-STAMP_FADE, 0], [1, 0], Extrapolation.CLAMP),
       transform: [{ rotate: '10deg' }, { scale: 0.85 + 0.15 * progress }],
     };
   });
