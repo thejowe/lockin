@@ -27,6 +27,14 @@ Hecho hoy:
   al lanzarlo. Para delegarle algo, antes `npm install -g @openai/codex` y `/codex:setup`.
 - El `comprobador` no se puede usar en este equipo (no hay emulador).
 
+Después, el mismo día (sesión con `apple-hig` + `apple-design`, a petición del usuario):
+- **Tanda visual «menos genérico»** (`e434290`): la jornada de 24 h como firma, tarjeta del deck
+  sin baldosas, chips por forma, gesto del deck con inercia y listas agrupadas en Matches, sala y
+  perfil. El comprobador la cerró en el emulador Android (`fe95e3c`). Detalle en `todo/visual.md`.
+- **Nueva casilla del usuario: revisarla en un iPhone** (`todo/visual.md`, al final). El código
+  es el mismo en iOS y ya compila para iOS, pero nadie lo ha visto en un iPhone. Va junto a la
+  revisión de la barra con Liquid Glass: es una sola sesión con el iPhone.
+
 ## Al retomar — estado del 2026-10-04, noche (histórico)
 
 Último commit de código: `33378bc`, en `claude/startup-cofounder-matching-app-tfeai1`. Encima solo

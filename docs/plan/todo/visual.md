@@ -757,3 +757,16 @@ plantilla «casi negro con un acento», y la tarjeta del deck era sopa de cajas
   Deck: flick corto decide, y soltar más allá del umbral volviendo hacia el centro no.
   Matches con dos filas en una sola superficie y la sala con las personas agrupadas.
   Detalle y capturas en «Hallazgos del comprobador», 2026-10-05.
+- [ ] (usuario — iPhone) Revisar la tanda «menos genérico» en iOS. El código es
+  el mismo en las tres plataformas (ninguno de los 13 archivos tiene variante
+  `.ios`/`.android` ni ramas `Platform`; Jest resuelve como iOS y
+  `expo export --platform ios` compila con el código nuevo dentro), pero en esta
+  máquina Windows no hay simulador de iOS: nadie lo ha visto en un iPhone. Mirar
+  en Expo Go o en un build de desarrollo:
+  - el gesto del deck con el dedo real: un flick corto decide; soltar más allá
+    del umbral volviendo hacia el centro, no;
+  - que los trazos finos (separadores de Matches, de la sala y de la tarjeta, y
+    el contorno de los chips de «Busca») se vean en Retina;
+  - la jornada de 24 h: las marcas 00/06/12/20/24 sin solaparse y «Coincidís…»
+    en verde-azulado cuando compartes franja y zona horaria.
+  Se puede hacer en la misma sesión que la revisión de la barra con Liquid Glass.
