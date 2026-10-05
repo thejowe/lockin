@@ -2,13 +2,18 @@
  * Tarjeta de perfil del deck.
  *
  * Presentacional: no sabe nada del gesto ni de la capa de datos. El orden de
- * lectura es deliberado — primero quién es, luego qué aporta y qué le falta, y
- * el prompt al final: es lo que decide el swipe (ver `CONCEPTO.md`).
+ * lectura es deliberado — primero quién es, luego qué aporta y qué le falta,
+ * cuándo trabaja, y el prompt al final: es lo que decide el swipe (ver
+ * `CONCEPTO.md`).
  *
- * Lo que domina y lo que busca van en dos filas etiquetadas y con acentos
- * distintos (verde-azulado / latón, los mismos que `ProfileDetails`), porque en
- * una sola lista de chips no hay forma de saber cuál es cuál — y son datos
- * opuestos: confundirlos invierte la lectura del perfil entero.
+ * Una sola superficie, sin baldosas dentro: las secciones se separan con un
+ * trazo fino y con la tipografía, no con cajas de cristal anidadas. Cuando todo
+ * va en su propia caja, todo pesa igual y nada guía la lectura.
+ *
+ * Lo que domina y lo que busca van en dos filas etiquetadas y con formas
+ * distintas (relleno / hueco, ver `Chip`), porque en una sola lista de chips no
+ * hay forma de saber cuál es cuál — y son datos opuestos: confundirlos invierte
+ * la lectura del perfil entero.
  *
  * Es una versión compacta y de altura fija a propósito. La ficha larga
  * (`ProfileDetails` de `perfil`) se lee con scroll, y aquí el scroll pelearía
@@ -18,16 +23,17 @@
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radii, Spacing, Stroke, type ThemePalette } from '@/constants/theme';
+import { Radii, Spacing, Stroke } from '@/constants/theme';
 import {
+  DayStrip,
   GithubSeal,
   ProfileAvatar,
   ambitionLabel,
-  availabilitySummary,
   modeLabel,
   seeksComplement,
   specialtyLabel,
   startingPointLabel,
+  type DaySchedule,
 } from '@/features/profile';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -46,13 +52,17 @@ export function ProfileCard({
    * perfil propio se está cargando.
    */
   viewerSpecialties = [],
+  /** Jornada de quien swipea: marca en qué franjas coincidís. Igual de opcional. */
+  viewerSchedule,
 }: {
   profile: Profile;
   viewerSpecialties?: Specialty[];
+  viewerSchedule?: DaySchedule;
 }) {
   const theme = useTheme();
   const prompt = profile.prompts[0];
   const complement = complementWith(profile, viewerSpecialties);
+  const divider = [styles.divider, { backgroundColor: theme.border }];
 
   return (
     <View
@@ -93,15 +103,17 @@ export function ProfileCard({
         </View>
       </View>
 
-      <View style={[styles.tile, styles.complement, tileColors(theme)]}>
-        <SpecialtyRow label="Domina" values={profile.specialties} tone="teal" />
+      <View style={divider} />
+
+      <View style={styles.section}>
+        <SpecialtyRow label="Domina" values={profile.specialties} tone="have" />
 
         {seeksComplement(profile.lookingFor) ? (
           profile.seekingSpecialties.length > 0 ? (
             <SpecialtyRow
               label="Busca"
               values={profile.seekingSpecialties}
-              tone="brass"
+              tone="seek"
               highlight={complement}
             />
           ) : (
@@ -115,51 +127,45 @@ export function ProfileCard({
         ) : null}
       </View>
 
-      <View style={styles.facts}>
-        <Fact label="Punto de partida" value={startingPointLabel(profile.startingPoint)} />
-        <Fact label="Ambición" value={ambitionLabel(profile.ambition)} />
-        <Fact
-          label="Disponibilidad"
-          value={availabilitySummary(profile.availability.hoursPerWeek, profile.availability.bands)}
+      <View style={styles.section}>
+        <DayStrip
+          hoursPerWeek={profile.availability.hoursPerWeek}
+          bands={profile.availability.bands}
+          timezone={profile.timezone}
+          viewer={viewerSchedule}
         />
-        <Fact label="Zona horaria" value={timezoneCity(profile.timezone)} />
+
+        <View style={styles.facts}>
+          <Fact label="Punto de partida" value={startingPointLabel(profile.startingPoint)} />
+          <Fact label="Ambición" value={ambitionLabel(profile.ambition)} />
+        </View>
       </View>
 
       {prompt ? (
-        <View style={[styles.tile, styles.prompt, tileColors(theme)]}>
-          <ThemedText type="caption" themeColor="textMuted">
-            {prompt.question}
-          </ThemedText>
-          {/* La respuesta es lo que hace que un perfil se lea: ocupa el hueco que
-              queda, en grande, como la cita de una ficha. */}
-          <ThemedText type="subtitle" numberOfLines={4}>
-            {prompt.answer}
-          </ThemedText>
-        </View>
+        <>
+          <View style={divider} />
+          <View style={[styles.section, styles.prompt]}>
+            <ThemedText type="caption" themeColor="textMuted">
+              {prompt.question}
+            </ThemedText>
+            {/* La respuesta es lo que hace que un perfil se lea: ocupa el hueco
+                que queda, en grande, como la cita de una ficha. */}
+            <ThemedText type="subtitle" numberOfLines={4}>
+              {prompt.answer}
+            </ThemedText>
+          </View>
+        </>
       ) : null}
     </View>
   );
 }
 
 /**
- * La zona horaria como se lee: «America/Mexico_City» → «Mexico City». La región
- * sobra en una baldosa estrecha, y el guion bajo partía la línea a media palabra.
- */
-function timezoneCity(timezone: string): string {
-  return (timezone.split('/').pop() ?? timezone).replace(/_/g, ' ');
-}
-
-/** Cristal interior: una capa de vidrio sobre la tarjeta opaca. */
-function tileColors(theme: ThemePalette) {
-  return { backgroundColor: theme.backgroundElement, borderColor: theme.border };
-}
-
-/**
  * Fila de especialidades con su etiqueta al lado.
  *
- * Las de `highlight` salen en latón sólido y con "✓" delante: el color solo no
- * vale — ni para quien no distingue latón de latón suave, ni para un lector de
- * pantalla, que de un chip solo lee el texto.
+ * Las de `highlight` salen en brasa y con "✓" delante: el color solo no vale —
+ * ni para quien no lo distingue, ni para un lector de pantalla, que de un chip
+ * solo lee el texto.
  */
 function SpecialtyRow({
   label,
@@ -200,11 +206,10 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
-/** Dato en su propia baldosa de cristal: etiqueta pequeña arriba, valor debajo. */
+/** Dato suelto: etiqueta pequeña arriba, valor debajo. Sin caja. */
 function Fact({ label, value }: { label: string; value: string }) {
-  const theme = useTheme();
   return (
-    <View style={[styles.tile, styles.fact, tileColors(theme)]}>
+    <View style={styles.fact}>
       <ThemedText type="caption" themeColor="textMuted" numberOfLines={1}>
         {label}
       </ThemedText>
@@ -222,16 +227,14 @@ const ROW_LABEL_WIDTH = 52;
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    gap: Spacing.two,
-    padding: Spacing.two + Spacing.one,
+    gap: Spacing.three,
+    padding: Spacing.three + Spacing.one,
     borderRadius: Radii.card,
     borderWidth: Stroke.hairline,
     overflow: 'hidden',
   },
   hero: {
     gap: Spacing.two + Spacing.half,
-    padding: Spacing.two,
-    paddingBottom: 0,
   },
   header: {
     flexDirection: 'row',
@@ -248,14 +251,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.one + Spacing.half,
   },
-  tile: {
-    borderRadius: Radii.large,
-    borderWidth: Stroke.hairline,
-    paddingVertical: Spacing.two + Spacing.half,
-    paddingHorizontal: Spacing.two + Spacing.one,
+  divider: {
+    height: Stroke.hairline,
   },
-  complement: {
-    gap: Spacing.two,
+  section: {
+    gap: Spacing.two + Spacing.half,
   },
   row: {
     flexDirection: 'row',
@@ -274,12 +274,10 @@ const styles = StyleSheet.create({
   },
   facts: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
+    gap: Spacing.three,
   },
   fact: {
-    flexBasis: '47%',
-    flexGrow: 1,
+    flex: 1,
     gap: Spacing.half,
   },
   prompt: {

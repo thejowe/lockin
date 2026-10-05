@@ -687,3 +687,33 @@ usuario por el camino: **solo modo oscuro**. Rama `claude/visual-cristal`.
 
 Textos: ningún texto ni etiqueta que usen los `e2e/*.yaml` ha cambiado. Cambia
 la presentación de «Enviar» (ahora icono; su etiqueta «Enviar mensaje» sigue).
+
+## Tanda «menos genérico» (2026-10-05)
+
+Pedida por el usuario («que no se vea genérico»), con `apple-hig` y `apple-design`.
+Diagnóstico: grafito + un acento + Inter + píldoras de cristal es el look de
+plantilla «casi negro con un acento», y la tarjeta del deck era sopa de cajas
+(siete baldosas de cristal dentro de otra). Paleta e Inter no cambian.
+
+- [x] Firma: **la jornada** (`src/features/profile/day-strip.tsx`). Regla de 24 h
+  a escala con las franjas reales; en verde-azulado y en texto («Coincidís por la
+  tarde») las que comparte con quien mira, solo si los dos están en la misma zona
+  horaria. En la tarjeta del deck y en la ficha. Tests en `day-strip.test.tsx`.
+- [x] Tarjeta del deck sin baldosas: una superficie, trazos finos entre
+  secciones. La zona horaria pasa a la cabecera de la jornada.
+- [x] Chips por forma, no por color (`chip.tsx`, `profile-details.tsx`): relleno
+  lo que domina, contorno (`Stroke.thin`) lo que busca, brasa con «✓» lo que
+  encaja. La brasa queda para Like y el encaje.
+- [x] Gesto del deck (`apple-design` §5–6): la decisión usa el punto proyectado
+  por el impulso (`DECELERATION = 0.99`); el muelle de vuelta hereda la
+  velocidad del dedo; la salida arranca a esa velocidad (duración derivada,
+  entre `Duration.fast` y `Duration.slow`).
+- [x] Matches y personas de la sala como lista agrupada: un bloque de cristal,
+  separadores sangrados hasta el texto, entrada con fundido sin desplazamiento.
+- [x] Perfil: «Quiere» como píldora junto al nombre; punto de partida, jornada y
+  ambición en un solo bloque.
+- Verificado en web (mock): capturas y galería antes/después en
+  `e2e/artifacts/local/2026-10-05-rediseno/`. Tipos, lint y 758 tests en verde.
+- [ ] [comprobador] Recorrido en el emulador: deck (flick corto que decide,
+  soltar más allá del umbral volviendo hacia el centro que NO decide), Matches
+  con 2+ filas y la sala con sus personas agrupadas.

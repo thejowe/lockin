@@ -37,10 +37,20 @@ const streakLine = (count: number) => `Racha de ${count} sesiones seguidas`;
 export function MatchRow({
   match,
   streak = null,
+  first = true,
+  last = true,
 }: {
   match: MatchWithProfile;
   /** Racha visible de la pareja, ya filtrada por quien compone la lista. */
   streak?: number | null;
+  /**
+   * Posición dentro del grupo. La lista se pinta como un solo bloque de cristal
+   * (la lista agrupada de iOS): solo la primera redondea arriba, solo la última
+   * abajo, y entre filas hay un trazo fino en vez de un hueco. Sola, la fila es
+   * las dos cosas y se ve como una tarjeta.
+   */
+  first?: boolean;
+  last?: boolean;
 }) {
   const theme = useTheme();
   const press = usePressScale();
@@ -68,13 +78,17 @@ export function MatchRow({
             collapsable={false}
             style={[
               styles.root,
+              first && styles.first,
+              last && styles.last,
               {
                 backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement,
                 borderColor: theme.border,
-                boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
               },
+              // El brillo del canto es de la superficie entera, no de cada fila.
+              first && { boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}` },
               press.style,
             ]}>
+            {last ? null : <View style={[styles.divider, { backgroundColor: theme.border }]} />}
             <ProfileAvatar avatar={counterpart.avatar} />
 
             <View style={styles.body}>
@@ -120,14 +134,38 @@ export function MatchRow({
   );
 }
 
+/** Tamaño por defecto de `ProfileAvatar`: fija dónde empieza el separador. */
+const AVATAR_SIZE = 48;
+
 const styles = StyleSheet.create({
   root: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: Spacing.three,
     padding: Spacing.three,
-    borderRadius: Radii.card,
-    borderWidth: Stroke.hairline,
+    borderLeftWidth: Stroke.hairline,
+    borderRightWidth: Stroke.hairline,
+  },
+  first: {
+    borderTopWidth: Stroke.hairline,
+    borderTopLeftRadius: Radii.card,
+    borderTopRightRadius: Radii.card,
+  },
+  last: {
+    borderBottomWidth: Stroke.hairline,
+    borderBottomLeftRadius: Radii.card,
+    borderBottomRightRadius: Radii.card,
+  },
+  /**
+   * Separador entre filas, sangrado hasta el texto como en iOS: el avatar queda
+   * libre y la columna de nombres se lee como una sola.
+   */
+  divider: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    left: Spacing.three + AVATAR_SIZE + Spacing.three,
+    height: Stroke.hairline,
   },
   body: {
     flex: 1,

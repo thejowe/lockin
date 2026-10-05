@@ -8,6 +8,7 @@
 export * from './catalog';
 export { AccountSection } from './account-section';
 export { AuthCallback, authLinkFromParams } from './auth-callback';
+export { DayStrip, timezoneCity, type DaySchedule } from './day-strip';
 export { GithubSeal } from './github-seal';
 export { GithubVerification } from './github-verification';
 export { ProfileAvatar } from './profile-avatar';

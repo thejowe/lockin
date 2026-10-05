@@ -15,12 +15,12 @@ import { useTheme } from '@/hooks/use-theme';
 
 import {
   ambitionLabel,
-  availabilitySummary,
   modeLabel,
   seeksComplement,
   specialtyLabel,
   startingPointSentence,
 } from './catalog';
+import { DayStrip } from './day-strip';
 import { GithubSeal } from './github-seal';
 import { ProfileAvatar } from './profile-avatar';
 
@@ -46,23 +46,18 @@ export function ProfileDetails({ profile }: { profile: Profile }) {
           <ThemedText type="body" themeColor="textSecondary">
             {profile.age} · {profile.location}
           </ThemedText>
-          <ThemedText type="mono" themeColor="textMuted">
-            {profile.timezone}
-          </ThemedText>
+          {/* La zona horaria la nombra la jornada, más abajo: aquí sobraba. */}
+          <View style={[styles.mode, { backgroundColor: theme.backgroundSelected }]}>
+            <ThemedText type="smallBold">Quiere: {modeLabel(profile.lookingFor)}</ThemedText>
+          </View>
         </View>
       </View>
 
-      <View style={[styles.banner, { backgroundColor: theme.brassSoft }]}>
-        <ThemedText type="small" themeColor="brass">
-          Quiere encontrar
-        </ThemedText>
-        <ThemedText type="bodyStrong">{modeLabel(profile.lookingFor)}</ThemedText>
-      </View>
-
       {/*
-        Los dos lados de la complementariedad, uno encima del otro y en colores
-        distintos: verde lo que aporta, latón lo que le falta. Separarlos así es
-        lo único que evita leer una sola lista de tags y no saber cuál es cuál.
+        Los dos lados de la complementariedad, uno encima del otro y con
+        formas distintas: relleno lo que aporta, hueco lo que le falta.
+        Separarlos así es lo único que evita leer una sola lista de tags y no
+        saber cuál es cuál.
       */}
       <View
         style={[
@@ -75,10 +70,10 @@ export function ProfileDetails({ profile }: { profile: Profile }) {
           },
         ]}>
         <View style={styles.complementSide}>
-          <ThemedText type="label" themeColor="teal">
+          <ThemedText type="label" themeColor="textSecondary">
             Lo que domina
           </ThemedText>
-          <SpecialtyTags values={profile.specialties} tone="teal" />
+          <SpecialtyTags values={profile.specialties} tone="have" />
         </View>
 
         {seeksComplement(profile.lookingFor) ? (
@@ -88,12 +83,12 @@ export function ProfileDetails({ profile }: { profile: Profile }) {
               styles.complementSeeking,
               { borderTopColor: theme.border },
             ]}>
-            <ThemedText type="label" themeColor="brass">
+            <ThemedText type="label" themeColor="textSecondary">
               Lo que busca
             </ThemedText>
 
             {profile.seekingSpecialties.length > 0 ? (
-              <SpecialtyTags values={profile.seekingSpecialties} tone="brass" />
+              <SpecialtyTags values={profile.seekingSpecialties} tone="seek" />
             ) : (
               // Vacío no es un dato que falte: es «ábreme a cualquiera».
               <ThemedText type="small" themeColor="textSecondary">
@@ -104,18 +99,32 @@ export function ProfileDetails({ profile }: { profile: Profile }) {
         ) : null}
       </View>
 
-      <Section title="Punto de partida">
-        <ThemedText type="body">{startingPointSentence(profile.startingPoint)}</ThemedText>
-      </Section>
-
-      <View style={styles.pair}>
-        <Section title="Disponibilidad" style={styles.half}>
-          <ThemedText type="bodyStrong">
-            {availabilitySummary(profile.availability.hoursPerWeek, profile.availability.bands)}
-          </ThemedText>
+      {/*
+        Cómo trabaja, en un solo bloque con trazos entre datos (la lista
+        agrupada de iOS): tres baldosas seguidas pesaban lo mismo que todo lo
+        demás y partían la lectura.
+      */}
+      <View
+        style={[
+          styles.tile,
+          styles.group,
+          {
+            backgroundColor: theme.backgroundElement,
+            borderColor: theme.border,
+            boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
+          },
+        ]}>
+        <Section title="Punto de partida" bare>
+          <ThemedText type="body">{startingPointSentence(profile.startingPoint)}</ThemedText>
         </Section>
-
-        <Section title="Ambición" style={styles.half}>
+        <View style={[styles.divider, { backgroundColor: theme.border }]} />
+        <DayStrip
+          hoursPerWeek={profile.availability.hoursPerWeek}
+          bands={profile.availability.bands}
+          timezone={profile.timezone}
+        />
+        <View style={[styles.divider, { backgroundColor: theme.border }]} />
+        <Section title="Ambición" bare>
           <ThemedText type="bodyStrong">{ambitionLabel(profile.ambition)}</ThemedText>
         </Section>
       </View>
@@ -163,20 +172,26 @@ export function ProfileDetails({ profile }: { profile: Profile }) {
 }
 
 /**
- * Lista de especialidades en tags. El tono es lo que las separa de un vistazo:
- * `teal` para lo que la persona aporta, `brass` para lo que busca.
+ * Lista de especialidades en tags. La forma es lo que las separa de un vistazo,
+ * igual que en la tarjeta del deck: relleno (`have`) lo que la persona aporta,
+ * solo contorno (`seek`) el hueco que busca llenar.
  */
-function SpecialtyTags({ values, tone }: { values: Specialty[]; tone: 'teal' | 'brass' }) {
+function SpecialtyTags({ values, tone }: { values: Specialty[]; tone: 'have' | 'seek' }) {
   const theme = useTheme();
-  const backgroundColor = tone === 'teal' ? theme.tealSoft : theme.brassSoft;
+  const filled = tone === 'have';
 
   return (
     <View style={styles.tags}>
       {values.map((specialty) => (
-        <View key={specialty} style={[styles.tag, { backgroundColor, borderColor: theme.border }]}>
-          <ThemedText type="smallBold" themeColor={tone}>
-            {specialtyLabel(specialty)}
-          </ThemedText>
+        <View
+          key={specialty}
+          style={[
+            styles.tag,
+            filled
+              ? { backgroundColor: theme.backgroundSelected, borderColor: 'transparent' }
+              : { backgroundColor: 'transparent', borderColor: theme.border },
+          ]}>
+          <ThemedText type="smallBold">{specialtyLabel(specialty)}</ThemedText>
         </View>
       ))}
     </View>
@@ -188,18 +203,21 @@ function Section({
   title,
   children,
   style,
+  bare = false,
 }: {
   title: string;
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
+  /** Sin baldosa propia: va dentro de un bloque agrupado que ya la pone. */
+  bare?: boolean;
 }) {
   const theme = useTheme();
   return (
     <View
       style={[
         styles.section,
-        styles.tile,
-        {
+        !bare && styles.tile,
+        !bare && {
           backgroundColor: theme.backgroundElement,
           borderColor: theme.border,
           boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
@@ -227,10 +245,18 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: Spacing.half,
   },
-  banner: {
-    gap: Spacing.half,
-    padding: Spacing.three,
-    borderRadius: Radii.large,
+  mode: {
+    alignSelf: 'flex-start',
+    marginTop: Spacing.one,
+    paddingVertical: Spacing.one,
+    paddingHorizontal: Spacing.two + Spacing.half,
+    borderRadius: Radii.pill,
+  },
+  group: {
+    gap: Spacing.three,
+  },
+  divider: {
+    height: Stroke.hairline,
   },
   section: {
     gap: Spacing.one,
@@ -239,13 +265,6 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
     borderRadius: Radii.large,
     borderWidth: Stroke.hairline,
-  },
-  pair: {
-    flexDirection: 'row',
-    gap: Spacing.two + Spacing.half,
-  },
-  half: {
-    flex: 1,
   },
   complement: {
     gap: Spacing.three,
@@ -266,7 +285,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.one,
     paddingHorizontal: Spacing.three,
     borderRadius: Radii.pill,
-    borderWidth: Stroke.hairline,
+    borderWidth: Stroke.thin,
   },
   promptCard: {
     gap: Spacing.two,

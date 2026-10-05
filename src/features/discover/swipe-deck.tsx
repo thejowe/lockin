@@ -61,6 +61,7 @@ import { ProfileCard } from './profile-card';
 
 import type { SharedValue } from 'react-native-reanimated';
 import type { Decision, Profile, Specialty } from '@/data';
+import type { DaySchedule } from '@/features/profile';
 
 /** Desplazamiento a partir del cual soltar cuenta como decisión. */
 const SWIPE_THRESHOLD = 110;
@@ -85,6 +86,44 @@ const DEPTH_DIM = 0.35;
 /** Salida de pantalla: arranca con la velocidad del gesto y frena al final. */
 const EXIT_TIMING = { duration: Duration.base, easing: Easing.bezier(...Curves.out) };
 
+/**
+ * Ritmo al que se frena el impulso del dedo al proyectarlo: el de un scroll ágil
+ * de iOS. Con él, un flick de 800 px/s lleva la tarjeta unos 80 px más allá.
+ */
+const DECELERATION = 0.99;
+
+/**
+ * Dónde acabaría la tarjeta si se la dejara frenar sola (la función de
+ * proyección de Apple, la misma que decide dónde para un scroll). Se decide con
+ * este punto y no con el de suelta: así un flick corto lanza la tarjeta, y una
+ * soltada más allá del umbral pero volviendo hacia el centro vuelve.
+ */
+function projected(position: number, velocity: number): number {
+  'worklet';
+  return position + ((velocity / 1000) * DECELERATION) / (1 - DECELERATION);
+}
+
+/**
+ * Pendiente inicial de `Curves.out` (y1 / x1): cuántas veces la velocidad media
+ * lleva al arrancar.
+ */
+const EXIT_LAUNCH = Curves.out[1] / Curves.out[0];
+
+/**
+ * Salida que arranca a la velocidad con la que el dedo soltó la tarjeta: sin
+ * costura entre arrastre y animación. Un lanzamiento rápido sale rápido; uno
+ * lento, en el tope de `Duration.slow`.
+ */
+function exitTiming(remaining: number, velocity: number) {
+  'worklet';
+  const speed = Math.abs(velocity) / 1000;
+  const duration = speed > 0 ? (EXIT_LAUNCH * Math.abs(remaining)) / speed : Duration.slow;
+  return {
+    duration: Math.min(Duration.slow, Math.max(Duration.fast, duration)),
+    easing: EXIT_TIMING.easing,
+  };
+}
+
 /** Identificador del gesto de la tarjeta superior. Lo usan los tests. */
 export const PAN_TEST_ID = 'swipe-deck-pan';
 
@@ -105,12 +144,15 @@ export function SwipeDeck({
   profiles,
   onDecide,
   viewerSpecialties,
+  viewerSchedule,
 }: {
   profiles: Profile[];
   /** Se llama una vez por tarjeta, cuando la animación de salida termina. */
   onDecide: (profile: Profile, decision: Decision) => void;
   /** Lo que domina quien swipea. Solo lo reenvía a la tarjeta, que lo resalta. */
   viewerSpecialties?: Specialty[];
+  /** Jornada de quien swipea: la tarjeta marca en qué franjas coincidís. */
+  viewerSchedule?: DaySchedule;
 }) {
   const { width } = useWindowDimensions();
   const reduceMotion = useReduceMotion();
@@ -203,12 +245,20 @@ export function SwipeDeck({
     .onEnd((event) => {
       if (exiting.get() || top === null || owner.get() !== turnKey) return;
 
-      const liked = translateX.get() > SWIPE_THRESHOLD || event.velocityX > FLICK_VELOCITY;
-      const passed = translateX.get() < -SWIPE_THRESHOLD || event.velocityX < -FLICK_VELOCITY;
+      const landing = projected(translateX.get(), event.velocityX);
+      const liked = landing > SWIPE_THRESHOLD || event.velocityX > FLICK_VELOCITY;
+      const passed = landing < -SWIPE_THRESHOLD || event.velocityX < -FLICK_VELOCITY;
 
       if (!liked && !passed) {
-        translateX.set(reduceMotion ? 0 : withSpring(0, Springs.settle));
-        translateY.set(reduceMotion ? 0 : withSpring(0, Springs.settle));
+        // Vuelve al sitio con la velocidad que traía el dedo: si la iba
+        // devolviendo, el muelle sigue ese mismo movimiento en vez de arrancar
+        // de cero.
+        translateX.set(
+          reduceMotion ? 0 : withSpring(0, { ...Springs.settle, velocity: event.velocityX })
+        );
+        translateY.set(
+          reduceMotion ? 0 : withSpring(0, { ...Springs.settle, velocity: event.velocityY })
+        );
         return;
       }
 
@@ -224,9 +274,11 @@ export function SwipeDeck({
       }
 
       // La tarjeta mantiene el arco del gesto al salir: sube o baja según iba.
-      translateY.set(withTiming(translateY.get() + event.velocityY * 0.1, EXIT_TIMING));
+      const exitX = liked ? exitDistance : -exitDistance;
+      const timing = exitTiming(exitX - translateX.get(), event.velocityX);
+      translateY.set(withTiming(translateY.get() + event.velocityY * 0.1, timing));
       translateX.set(
-        withTiming(liked ? exitDistance : -exitDistance, EXIT_TIMING, (finished) => {
+        withTiming(exitX, timing, (finished) => {
           if (!finished) return;
           exited.set(true);
           runOnJS(settle)(top, decision);
@@ -252,6 +304,7 @@ export function SwipeDeck({
               frontKey={turnKey}
               drag={drag}
               viewerSpecialties={viewerSpecialties}
+              viewerSchedule={viewerSchedule}
             />
           ) : (
             <GestureDetector key={profile.id} gesture={pan}>
@@ -260,6 +313,7 @@ export function SwipeDeck({
                 turnKey={turnKey}
                 drag={drag}
                 viewerSpecialties={viewerSpecialties}
+                viewerSchedule={viewerSchedule}
               />
             </GestureDetector>
           )
@@ -281,11 +335,14 @@ function TopCard({
   turnKey,
   drag,
   viewerSpecialties,
+  viewerSchedule,
 }: {
   profile: Profile;
   turnKey: string | null;
   drag: Drag;
   viewerSpecialties?: Specialty[];
+  /** Jornada de quien swipea: la tarjeta marca en qué franjas coincidís. */
+  viewerSchedule?: DaySchedule;
 }) {
   const theme = useTheme();
   const elevation = Elevation[useThemeName()];
@@ -334,7 +391,11 @@ function TopCard({
     <Animated.View
       testID={cardTestId(id)}
       style={[styles.card, styles.cardTop, { boxShadow: elevation.raised }, cardStyle]}>
-      <ProfileCard profile={profile} viewerSpecialties={viewerSpecialties} />
+      <ProfileCard
+        profile={profile}
+        viewerSpecialties={viewerSpecialties}
+        viewerSchedule={viewerSchedule}
+      />
 
       <Animated.View
         style={[
@@ -376,6 +437,7 @@ function BehindCard({
   frontKey,
   drag,
   viewerSpecialties,
+  viewerSchedule,
 }: {
   profile: Profile;
   index: number;
@@ -383,6 +445,8 @@ function BehindCard({
   frontKey: string | null;
   drag: Drag;
   viewerSpecialties?: Specialty[];
+  /** Jornada de quien swipea: la tarjeta marca en qué franjas coincidís. */
+  viewerSchedule?: DaySchedule;
 }) {
   const theme = useTheme();
   const { translateX, owner, exited } = drag;
@@ -442,7 +506,11 @@ function BehindCard({
         style,
       ]}>
       <Animated.View style={[styles.behindContent, contentStyle]}>
-        <ProfileCard profile={profile} viewerSpecialties={viewerSpecialties} />
+        <ProfileCard
+          profile={profile}
+          viewerSpecialties={viewerSpecialties}
+          viewerSchedule={viewerSchedule}
+        />
       </Animated.View>
     </Animated.View>
   );

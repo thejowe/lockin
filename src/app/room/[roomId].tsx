@@ -26,7 +26,7 @@ import Animated from 'react-native-reanimated';
 import { Screen } from '@/components/ambient-background';
 import { Button } from '@/components/button';
 import { Glass } from '@/components/glass';
-import { enterUp } from '@/components/motion';
+import { enterFade, enterUp } from '@/components/motion';
 import { LoadingState, MessageState } from '@/components/state-view';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Radii, Spacing, Stroke, type ThemeColor } from '@/constants/theme';
@@ -342,7 +342,7 @@ export default function RoomScreen() {
         <ScrollView contentContainerStyle={styles.content}>
           {summary}
 
-          <View style={styles.people}>
+          <Glass radius={Radii.large} style={styles.group}>
             <PersonRow
               index={1}
               avatar={myAvatar}
@@ -367,7 +367,7 @@ export default function RoomScreen() {
                 />
               );
             })}
-          </View>
+          </Glass>
 
           <View style={styles.clock}>
             <PomodoroRing phase={phase}>
@@ -435,25 +435,27 @@ export default function RoomScreen() {
           <ThemedText type="label" themeColor="textSecondary">
             {isHost ? 'Personas' : 'Quién va'}
           </ThemedText>
-          <PersonRow
-            index={1}
-            avatar={myAvatar}
-            name="Tú"
-            status={isHost ? 'Convocas' : view.me.status === 'aceptada' ? 'Vas' : 'Sin responder'}
-            statusColor={view.me.status === 'aceptada' ? 'teal' : 'textSecondary'}
-          />
-          {view.others.map(({ member, profile }, index) => (
+          <Glass radius={Radii.large} style={styles.group}>
             <PersonRow
-              key={member.profileId}
-              index={index + 2}
-              avatar={profile.avatar}
-              name={profile.name}
-              status={
-                member.profileId === view.room.hostId ? 'Convoca' : STATUS_TEXT[member.status]
-              }
-              statusColor={member.status === 'aceptada' ? 'teal' : 'textSecondary'}
+              index={1}
+              avatar={myAvatar}
+              name="Tú"
+              status={isHost ? 'Convocas' : view.me.status === 'aceptada' ? 'Vas' : 'Sin responder'}
+              statusColor={view.me.status === 'aceptada' ? 'teal' : 'textSecondary'}
             />
-          ))}
+            {view.others.map(({ member, profile }, index) => (
+              <PersonRow
+                key={member.profileId}
+                index={index + 2}
+                avatar={profile.avatar}
+                name={profile.name}
+                status={
+                  member.profileId === view.room.hostId ? 'Convoca' : STATUS_TEXT[member.status]
+                }
+                statusColor={member.status === 'aceptada' ? 'teal' : 'textSecondary'}
+              />
+            ))}
+          </Glass>
         </View>
 
         <View style={styles.actions}>
@@ -515,10 +517,15 @@ function PersonRow({
   /** Solo en la ventana: el punto de presencia. */
   present?: boolean;
 }) {
+  const theme = useTheme();
+  // Las filas comparten un solo cristal (lista agrupada): entran con un fundido
+  // y sin desplazarse, y cada una salvo la primera lleva su trazo arriba,
+  // sangrado hasta el texto.
   return (
-    <Animated.View entering={enterUp(index)}>
-      <Glass radius={Radii.large} style={styles.person}>
-        {avatar && <ProfileAvatar avatar={avatar} size={40} />}
+    <Animated.View entering={enterFade(index)}>
+      <View style={styles.person}>
+        {index > 1 && <View style={[styles.personDivider, { backgroundColor: theme.border }]} />}
+        {avatar && <ProfileAvatar avatar={avatar} size={PERSON_AVATAR} />}
         <View style={styles.personText}>
           <ThemedText type="heading">{name}</ThemedText>
           <View style={styles.status}>
@@ -528,7 +535,7 @@ function PersonRow({
             </ThemedText>
           </View>
         </View>
-      </Glass>
+      </View>
     </Animated.View>
   );
 }
@@ -592,6 +599,9 @@ function Notice({
 /** Marca de cada bloque del Pomodoro: una barra corta, no un punto. */
 const POMODORO_BLOCK = { width: 32, height: 8 } as const;
 
+/** Avatar de las filas de personas: fija dónde empieza el separador. */
+const PERSON_AVATAR = 40;
+
 const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
@@ -603,6 +613,14 @@ const styles = StyleSheet.create({
   },
   summary: { gap: Spacing.one, padding: Spacing.three },
   people: { gap: Spacing.two },
+  group: { overflow: 'hidden' },
+  personDivider: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    left: Spacing.three + PERSON_AVATAR + Spacing.three,
+    height: Stroke.hairline,
+  },
   person: {
     flexDirection: 'row',
     alignItems: 'center',

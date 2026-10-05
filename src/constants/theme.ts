@@ -215,6 +215,8 @@ export const Radii = {
 /** Grosores de trazo. `strong` solo para sellos que tienen que leerse de un vistazo. */
 export const Stroke = {
   hairline: StyleSheet.hairlineWidth,
+  /** Contorno que tiene que verse en cualquier densidad: el chip hueco de «busca». */
+  thin: 1,
   strong: 2,
 } as const;
 

@@ -3,43 +3,43 @@
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import type { ThemePalette } from '@/constants/theme';
 
 /**
- * Neutro para datos; verde-azulado para lo que la persona domina; latón para lo
- * que busca; latón sólido (`match`) para lo que busca y quien mira ya domina.
+ * La forma dice qué es el dato, no el color:
+ * - `have`: lo que la persona domina — relleno, porque lo tiene.
+ * - `seek`: lo que busca — solo contorno, porque es un hueco por llenar.
+ * - `match`: lo que busca y quien mira ya domina — tinta de brasa sobre su
+ *   relleno tenue, con "✓" en el texto para no depender del color.
+ * - `neutral`: cualquier otro dato.
  *
- * El par domina/busca usa los mismos dos acentos que la ficha larga
- * (`ProfileDetails`): una tarjeta y una ficha del mismo perfil no pueden
- * enseñar el mismo dato en colores distintos.
+ * El par relleno/hueco es el mismo en la ficha larga (`ProfileDetails`): una
+ * tarjeta y una ficha del mismo perfil no pueden enseñar el mismo dato distinto.
  */
-export type ChipTone = 'neutral' | 'brass' | 'teal' | 'match';
+export type ChipTone = 'neutral' | 'have' | 'seek' | 'match';
 
-/** El tono relleno se distingue por color, así que el texto lleva además "✓". */
 function palette(theme: ThemePalette, tone: ChipTone) {
   switch (tone) {
-    case 'brass':
-      return { background: theme.brassSoft, color: theme.brass };
-    case 'teal':
-      return { background: theme.tealSoft, color: theme.teal };
+    case 'seek':
+      return { background: 'transparent', border: theme.border, color: theme.text };
     case 'match':
-      // Señal, no botón: tinta de brasa sobre su relleno tenue. El sólido se
-      // reserva para la acción principal de la pantalla.
-      return { background: theme.brassSoft, color: theme.brass };
+      // Señal, no botón: el sólido se reserva para la acción principal.
+      return { background: theme.brassSoft, border: 'transparent', color: theme.brass };
+    case 'have':
     default:
-      return { background: theme.backgroundSelected, color: theme.text };
+      return { background: theme.backgroundSelected, border: 'transparent', color: theme.text };
   }
 }
 
 export function Chip({ label, tone = 'neutral' }: { label: string; tone?: ChipTone }) {
   const theme = useTheme();
-  const { background, color } = palette(theme, tone);
+  const { background, border, color } = palette(theme, tone);
 
   return (
-    <View style={[styles.chip, { backgroundColor: background }]}>
+    <View style={[styles.chip, { backgroundColor: background, borderColor: border }]}>
       <ThemedText type="smallBold" style={{ color }}>
         {label}
       </ThemedText>
@@ -52,5 +52,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.one,
     paddingHorizontal: Spacing.two + Spacing.half,
     borderRadius: Radii.pill,
+    // Todos llevan el trazo (transparente si no toca) para medir igual.
+    borderWidth: Stroke.thin,
   },
 });

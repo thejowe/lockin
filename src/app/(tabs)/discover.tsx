@@ -48,6 +48,10 @@ export default function DiscoverScreen() {
   const { data: viewer } = useQuery('profile:discover', () => repositories.profiles.getCurrent());
   /** Vacío mientras el perfil carga: la tarjeta simplemente no resalta nada. */
   const viewerSpecialties = viewer?.specialties ?? EMPTY_SPECIALTIES;
+  /** Igual: sin perfil propio, la jornada no marca coincidencias. */
+  const viewerSchedule = viewer
+    ? { bands: viewer.availability.bands, timezone: viewer.timezone }
+    : undefined;
   /** Modo elegido en esta pantalla; `null` mientras mande el del onboarding. */
   const [override, setOverride] = useState<ModePreference | null>(null);
   const mode: ModePreference = override ?? session?.activeMode ?? 'ambos';
@@ -86,7 +90,12 @@ export default function DiscoverScreen() {
                 <ActionButton label="Reintentar" onPress={refresh} />
               </MessageState>
             ) : cards && cards.length > 0 ? (
-              <SwipeDeck profiles={cards} onDecide={decide} viewerSpecialties={viewerSpecialties} />
+              <SwipeDeck
+                profiles={cards}
+                onDecide={decide}
+                viewerSpecialties={viewerSpecialties}
+                viewerSchedule={viewerSchedule}
+              />
             ) : (
               <DeckEmpty
                 mode={mode}

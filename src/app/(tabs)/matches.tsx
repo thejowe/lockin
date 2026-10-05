@@ -11,7 +11,7 @@ import Animated from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AmbientBackground } from '@/components/ambient-background';
-import { enterUp } from '@/components/motion';
+import { enterFade } from '@/components/motion';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { MatchRow, MatchesEmpty, useMatches } from '@/features/chat';
@@ -35,16 +35,21 @@ export default function MatchesScreen() {
           data={matches}
           keyExtractor={(match) => match.id}
           renderItem={({ item, index }) => (
-            // Escalera solo para las primeras: más abajo nadie la ve entrar.
-            <Animated.View entering={enterUp(Math.min(index, 6))}>
-              <MatchRow match={item} streak={streaks.streakFor(item.id)} />
+            // Las filas forman un solo bloque: entran con un fundido escalonado y
+            // sin desplazarse, para que el bloque no se vea partido mientras llega.
+            <Animated.View entering={enterFade(Math.min(index, 6))}>
+              <MatchRow
+                match={item}
+                streak={streaks.streakFor(item.id)}
+                first={index === 0}
+                last={index === matches.length - 1}
+              />
             </Animated.View>
           )}
           // Sin `extraData` la lista no repinta las filas cuando las rachas llegan
           // después que los matches.
           extraData={streaks}
           contentContainerStyle={[styles.list, matches.length === 0 && styles.listEmpty]}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
           ListHeaderComponent={
             <View style={styles.header}>
               <ThemedText type="label" themeColor="textSecondary">
@@ -100,8 +105,5 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
     paddingTop: Spacing.three,
     paddingBottom: Spacing.four,
-  },
-  separator: {
-    height: Spacing.two,
   },
 });
