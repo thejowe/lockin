@@ -96,6 +96,9 @@ function isStaleSocket(error) {
 
 const REPEATABLE = new Set(['GET', 'HEAD']);
 
+/** GETs con efecto: el enlace del correo consume el token en GoTrue. */
+const CONSUMES_TOKEN = /\/auth\/v1\/verify/;
+
 /**
  * Envuelve un `fetch`: ante un fallo deja el diagnóstico con `log`, y si es una
  * conexión keep-alive caducada en un GET/HEAD lo repite una sola vez.
@@ -118,7 +121,7 @@ export function wrapFetch(original, { log = console.error, probe = probeBackend 
       };
       const dump = (title) =>
         log(title + ' — diagnóstico:\n' + JSON.stringify(report, null, 2) + '\n');
-      if (!isStaleSocket(error) || !REPEATABLE.has(method)) {
+      if (!isStaleSocket(error) || !REPEATABLE.has(method) || CONSUMES_TOKEN.test(url)) {
         dump('fetch failed');
         throw error;
       }

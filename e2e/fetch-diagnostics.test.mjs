@@ -64,6 +64,15 @@ describe('los oráculos sobreviven a la conexión keep-alive que Kong ya cerró'
     assert.equal(calls.length, 1);
   });
 
+  it('el GET del enlace de verificación no se repite: consume el token', async () => {
+    const { fetch, calls } = scripted(staleSocket(), ok);
+    await assert.rejects(
+      wrapFetch(fetch, quiet)('http://127.0.0.1:54321/auth/v1/verify?token=x&type=signup'),
+      /fetch failed/
+    );
+    assert.equal(calls.length, 1);
+  });
+
   it('otro fallo de red no se repite: el backend caído tiene que verse', async () => {
     const refused = new TypeError('fetch failed', {
       cause: Object.assign(new Error('connect ECONNREFUSED'), { code: 'ECONNREFUSED' }),
