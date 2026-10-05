@@ -632,7 +632,7 @@ usuario por el camino: **solo modo oscuro**. Rama `claude/visual-cristal`.
   e icono de expandir; etiquetas de cabecera en gris; radios contenidos (card
   30→22); el encaje del deck en tinta de brasa sobre relleno tenue; el prompt
   del perfil ocupa el hueco de la tarjeta en grande; «¡Match!» en blanco.
-- [ ] Oráculo final de `supabase` y `registro`: «fetch failed» en la primera
+- [x] Oráculo final de `supabase` y `registro`: «fetch failed» en la primera
   llamada de administración a GoTrue tras el último flujo (~40 min después de
   levantar el Supabase local). Sospecha: un contenedor muerto por OOM en el
   runner de 7.8 GB. El paso «Memoria y contenedores al final» de `e2e.yml` lo
@@ -650,6 +650,12 @@ usuario por el camino: **solo modo oscuro**. Rama `claude/visual-cristal`.
   posteriores: attempt-02 de 37228331950, 37231590523 y su rerun. La petición no
   llega a Kong y no hay OOM, así que la sospecha de memoria queda descartada. El
   diagnóstico sigue en `todo/verificacion.md`.*
+  *2026-10-05: cerrada con el run 37239076782 de `E2E Android` sobre `33378bc`,
+  las tres variantes en verde. `registro` pasa en attempt-01. `supabase` pierde
+  attempt-01 por el runner («adb ve el dispositivo offline», ajeno a la app) y
+  pasa en attempt-02. En ese intento la repetición del GET actúa dos veces:
+  `UND_ERR_SOCKET` («other side closed») y la segunda llamada responde 200. Es la
+  conexión keep-alive que Kong ya había cerrado, y el arreglo de `33378bc` la cubre.*
 - [x] [comprobador] Recorrido en el emulador Android: el esmerilado nativo
   (`BlurTargetView`) de la barra, el swipe con la pila nueva y el anillo del
   Pomodoro en una sesión activa.
