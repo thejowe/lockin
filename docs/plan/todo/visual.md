@@ -549,6 +549,42 @@ arrastre, y eso ya no pasa. La alternativa de verdad es sacar «Like» de encima
 avatar, que cambia la composición de la tarjeta: queda para una pasada de diseño
 si alguna vez molesta, no como fallo abierto.
 
+### 2026-10-05 — tanda «menos genérico» en el emulador: ✅ (mock)
+
+APK release x86_64 compilado sobre `e434290`
+(`EXPO_NO_DOTENV=1 EXPO_PUBLIC_LOCKIN_ALLOW_MOCK=1`, `createBundleReleaseJsAndAssets
+--rerun`; logcat: `[lockin] backend de datos: mock en memoria`). Pixel 7, 1080×2400,
+`pm clear` antes de empezar. Evidencia local (ignorada):
+`e2e/artifacts/local/2026-10-05-menos-generico/`.
+
+- **✅ Deck, flick corto que decide.** `adb shell input swipe 300 1000 450 1000 40`
+  (150 px = 57 dp, por debajo del umbral de 110 dp; unos 1400 dp/s): Diego sale y
+  entra Inés (`20-flick-corto.png`). Control, mismos 160 px despacio y soltando
+  quieto: no decide.
+- **✅ Deck, soltar más allá del umbral volviendo hacia el centro NO decide.**
+  Inyectado por evdev (`/dev/input/event2`, `adb root`; la consola del emulador no
+  llega a la pantalla): ida a x=1000 y vuelta a x=700 en pasos de 60 px cada ~30 ms,
+  suelta enseguida: Lucía sigue arriba (`24-vuelve-no-decide.png`, trazas en
+  `24-getevent-vuelve-no-decide.txt`). Control con el mismo recorrido y quieta 1 s
+  antes de soltar: decide Like y sale el match (`25-control-quieto.png`). Lo que
+  separa uno de otro es solo la velocidad de vuelta. Mitad de arrastre:
+  `15-drag-hold.png`, `22b-control-mitad.png` (sello «Like», tarjeta de detrás).
+- **✅ Matches con 2 filas** (Lucía y Marc): una sola superficie con separador
+  fino, sin baldosas (`26-matches.png`).
+- **✅ Sala con sus personas agrupadas:** «Tú / Lucía Pardo / Marc Oller» en una
+  sola superficie con separadores sangrados bajo el avatar, y «Ha aceptado» en
+  verde (`28-sala.png`). Convocar exige las dos personas con 2 matches
+  (`27-sala-convocar.png`).
+- Tarjeta del deck sin baldosas, con la jornada como barra de franjas
+  (`13.png`): se lee bien en Android.
+
+Observaciones, sin fallo nuevo: el `SoftException` de `UIManagerHelper` («Fabric View
+[-1] does not have SurfaceId», `react-native-keyboard-controller` al abrir el modal
+de match) sale en logcat dos veces, sin cierre ni efecto visible (ya anotado en
+`video.md`). Limitación: el gesto de vuelta se inyecta por evdev con ~30 ms por
+paso, así que no es un dedo real; la lógica del umbral y la proyección sí se
+ejercita.
+
 ## Registro
 
 Rama `claude/visual-pulido` (worktree `../lockin-visual`), sobre `42fa260`.
@@ -714,6 +750,10 @@ plantilla «casi negro con un acento», y la tarjeta del deck era sopa de cajas
   ambición en un solo bloque.
 - Verificado en web (mock): capturas y galería antes/después en
   `e2e/artifacts/local/2026-10-05-rediseno/`. Tipos, lint y 758 tests en verde.
-- [ ] [comprobador] Recorrido en el emulador: deck (flick corto que decide,
+- [x] [comprobador] Recorrido en el emulador: deck (flick corto que decide,
   soltar más allá del umbral volviendo hacia el centro que NO decide), Matches
   con 2+ filas y la sala con sus personas agrupadas.
+  *2026-10-05, comprobador (mock, APK release compilado sobre `e434290`): ✅ los tres.*
+  Deck: flick corto decide, y soltar más allá del umbral volviendo hacia el centro no.
+  Matches con dos filas en una sola superficie y la sala con las personas agrupadas.
+  Detalle y capturas en «Hallazgos del comprobador», 2026-10-05.
