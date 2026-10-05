@@ -2,7 +2,32 @@
 
 Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>.md` — márcalo ahí, no aquí.
 
-## ▶ Al retomar — estado del 2026-10-04, noche (el más reciente; lo de más abajo es histórico)
+## ▶ Al retomar — estado del 2026-10-05 (el más reciente; lo de más abajo es histórico)
+
+Último commit de código: `33378bc`. Encima solo van commits de docs. **El plan está agotado.** Las
+Fases 1–3 están cerradas y la Fase 4–5 (Modo Talento, premium) no tiene diseño, así que según
+`PLAN.md` → «Qué NO hacer» no se adelanta. No queda casilla para ningún agente: las 5 abiertas
+son del usuario (lista de abajo, sin cambios).
+
+Hecho hoy:
+- **Oráculo final de `supabase` cerrado** (`todo/visual.md`) con el run 37239076782 sobre
+  `33378bc`, las tres variantes en verde. La repetición del GET por keep-alive actuó dos veces en
+  `supabase` (`UND_ERR_SOCKET` → 200).
+- **Deuda del timeout de 5 s, rediagnosticada.** No es de `account-section.test.tsx`: con
+  `node_modules` estable, ese archivo corre entero en ~1 s y ningún test pasa de 100 ms. En la
+  suite completa en local (4 núcleos, 8 GB, 3 workers), el timeout salta a otro archivo
+  (`swipe-deck.test.tsx`, que solo pasa 27/27 y ningún test llega a 1 s). Es carga de la máquina
+  y no un test roto, y CI está en verde. En local, `npx jest --maxWorkers=2`.
+  Ojo: con `node_modules` desfasado faltaba `react-native-svg`. Si un test no encuentra un
+  módulo, haz antes `npm install` y descarta el cambio que deja en `package-lock.json` (solo
+  mueve marcas `"peer"`).
+- Borrados el worktree `agent-af648d8…` (integrado y limpio) y la rama local `claude/visual-pulido`
+  (integrada).
+- **Codex no está instalado en este equipo** (`codex` no está en el PATH), así que el plugin falla
+  al lanzarlo. Para delegarle algo, antes `npm install -g @openai/codex` y `/codex:setup`.
+- El `comprobador` no se puede usar en este equipo (no hay emulador).
+
+## Al retomar — estado del 2026-10-04, noche (histórico)
 
 Último commit de código: `33378bc`, en `claude/startup-cofounder-matching-app-tfeai1`. Encima solo
 va el `docs(pilar)` con estas notas. Todo subido y el árbol limpio. Actions funciona: el repo es
@@ -26,7 +51,8 @@ Resuelto en esta tanda:
   «Guardar contraseña» y el toque caía en Matches. Con el arreglo pasa en Actions; la guardia es
   `e2e/tab-bar-overlap.test.mjs`.
 - `src/features/profile/account-section.test.tsx` se pasa del límite de 5 s en local con la suite
-  entera, pero en CI está en verde. Es deuda menor, sin casilla.
+  entera, pero en CI está en verde. Es deuda menor, sin casilla. *(2026-10-05: es carga de la
+  máquina, no el test; ver la sección de arriba.)*
 
 **Lo que es del usuario** (ningún agente puede hacerlo):
 1. Revisar las decisiones de la spec de salas (`docs/superpowers/specs/2026-10-02-salas-grupales-design.md`,
