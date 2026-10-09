@@ -1833,7 +1833,9 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
     assert.equal(await countOf('public.messages'), 1, 'los mensajes del match de Ana caen con él');
     assert.equal(await countOf('public.lockin_rooms'), 0, 'la sala que convocó Ana cae con ella');
     await db.exec('rollback;');
-    console.log('Borrar mi cuenta: LI007 sin sesión, anon sin permiso y cascada sin tocar lo ajeno: OK');
+    console.log(
+      'Borrar mi cuenta: LI007 sin sesión, anon sin permiso y cascada sin tocar lo ajeno: OK'
+    );
 
     // Ejecutar las definiciones reales de las dos funciones, sin sembrar cuentas.
     const seed = readFileSync(join(here, 'seed.sql'), 'utf8');

@@ -636,7 +636,9 @@ export async function signOut(options: SignOutOptions = {}): Promise<void> {
   }
 
   const auth = getSupabaseClient().auth;
-  const { error } = options.scope ? await auth.signOut({ scope: options.scope }) : await auth.signOut();
+  const { error } = options.scope
+    ? await auth.signOut({ scope: options.scope })
+    : await auth.signOut();
   await AsyncStorage.removeItem(DEVICE_ACCOUNT_KEY);
   if (error) throw toAccountError(error);
 }
