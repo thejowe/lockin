@@ -42,11 +42,16 @@ import { ThemedText } from '@/components/themed-text';
 import { Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-import { AccountError, signOut } from './account-gateway';
+import { AccountError, deleteMyAccount, signOut } from './account-gateway';
 import { Field, PrimaryButton, SecondaryButton, TextField } from './controls';
 import { useAccountActions } from './use-account-actions';
 
-export function AccountSection() {
+export interface AccountSectionProps {
+  /** Corre cuando la cuenta ya está borrada: la pantalla vuelve al arranque. */
+  onDeleted?: () => void;
+}
+
+export function AccountSection({ onDeleted }: AccountSectionProps = {}) {
   const theme = useTheme();
   const {
     account,
@@ -66,6 +71,7 @@ export function AccountSection() {
   /** Cierto cuando se pide otro email estando ya a la espera de confirmar uno. */
   const [changingEmail, setChangingEmail] = useState(false);
   const [confirmingLeave, setConfirmingLeave] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   // Sin cuenta que enseñar no hay sección: o todavía está cargando, o esta
   // ejecución corre contra el mock en memoria, o no hay sesión abierta.
@@ -264,6 +270,47 @@ export function AccountSection() {
         <SecondaryButton
           label={busy === 'salir' ? 'Cerrando sesión…' : 'Cerrar sesión'}
           onPress={handleSignOut}
+        />
+      )}
+
+      {confirmingDelete ? (
+        <View
+          style={[
+            styles.confirm,
+            { backgroundColor: theme.dangerSoft, borderColor: theme.danger },
+          ]}>
+          <ThemedText type="bodyStrong" themeColor="danger">
+            Eliminar tu cuenta es para siempre
+          </ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            Se borran tu perfil, tus matches, tus conversaciones, tus sesiones y tus salas, también
+            para quienes hablaban contigo. No se puede deshacer ni recuperar.
+          </ThemedText>
+
+          <SecondaryButton
+            label={busy === 'borrar' ? 'Eliminando…' : 'Eliminar mi cuenta para siempre'}
+            tone="danger"
+            onPress={() =>
+              void run(
+                'borrar',
+                () => deleteMyAccount(),
+                () => {
+                  setConfirmingDelete(false);
+                  onDeleted?.();
+                }
+              )
+            }
+          />
+          <SecondaryButton label="Mejor no" onPress={() => setConfirmingDelete(false)} />
+        </View>
+      ) : (
+        <SecondaryButton
+          label="Eliminar mi cuenta"
+          tone="danger"
+          onPress={() => {
+            setConfirmingLeave(false);
+            setConfirmingDelete(true);
+          }}
         />
       )}
 

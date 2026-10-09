@@ -91,6 +91,8 @@ export interface MockStore {
   advanceClock(ms: number): void;
   /** Vuelve al estado semilla y avisa a todos los suscriptores. */
   reset(): void;
+  /** Elimina la cuenta propia en cascada, conservando los datos ajenos. */
+  deleteCurrentUser(): void;
   createId(prefix: string): string;
   subscribeTo(topic: string, listener: () => void): () => void;
   notify(topic: string): void;
@@ -131,6 +133,47 @@ export function createMockStore(): MockStore {
     reset() {
       state = initialState();
       clockOffsetMs = 0;
+      listeners.forEach((set) => set.forEach((listener) => listener()));
+    },
+
+    deleteCurrentUser() {
+      const userId = CURRENT_USER_ID;
+      const matchIds = new Set(
+        state.matches.filter((match) => match.profileIds.includes(userId)).map((match) => match.id)
+      );
+      const sessionIds = new Set(
+        state.lockInSessions
+          .filter((session) => matchIds.has(session.matchId) || session.proposedBy === userId)
+          .map((session) => session.id)
+      );
+      const roomIds = new Set(
+        state.rooms.filter((room) => room.hostId === userId).map((room) => room.id)
+      );
+
+      state.profiles.delete(userId);
+      // Estos dos índices contienen solo decisiones de/a la cuenta propia.
+      state.decisions.clear();
+      state.incomingLikes.clear();
+      state.matches = state.matches.filter((match) => !matchIds.has(match.id));
+      state.messages = state.messages.filter(
+        (message) => !matchIds.has(message.matchId) && message.senderId !== userId
+      );
+      state.lockInSessions = state.lockInSessions.filter((session) => !sessionIds.has(session.id));
+      state.attendance = state.attendance.filter(
+        (entry) => !sessionIds.has(entry.sessionId) && entry.profileId !== userId
+      );
+      state.ratings = state.ratings.filter(
+        (entry) => !sessionIds.has(entry.sessionId) && entry.profileId !== userId
+      );
+      state.agreementAnswers = state.agreementAnswers.filter(
+        (entry) => !matchIds.has(entry.matchId) && entry.profileId !== userId
+      );
+      for (const matchId of matchIds) state.agreementSeeded.delete(matchId);
+      state.rooms = state.rooms.filter((room) => !roomIds.has(room.id));
+      state.roomMembers = state.roomMembers.filter(
+        (member) => !roomIds.has(member.roomId) && member.profileId !== userId
+      );
+      state.session = { profileId: null, activeMode: null };
       listeners.forEach((set) => set.forEach((listener) => listener()));
     },
 

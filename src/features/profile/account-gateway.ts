@@ -26,6 +26,7 @@ import type { AccountState } from '@/data/supabase';
 export {
   AccountError,
   completeAuthLink,
+  deleteMyAccount,
   linkEmailToCurrentUser,
   sendPasswordReset,
   setAccountPassword,

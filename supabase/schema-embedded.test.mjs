@@ -1779,6 +1779,62 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
     await db.exec('rollback;');
     console.log('Salas grupales: 15 casos del plan, ciego, permisos, reloj y presencia: OK');
 
+    // Borrar mi cuenta: `delete_my_account()` borra a quien llama y a nadie más, y
+    // todo lo suyo cae en cascada sin tocar lo ajeno.
+    const delAna = person('f200');
+    const delBea = person('f201');
+    const delCarla = person('f202');
+    await db.exec(`begin;
+      insert into auth.users (id, email) values
+        ('${delAna}', 'ana@lockin.test'), ('${delBea}', 'bea@lockin.test'), ('${delCarla}', 'carla@lockin.test');
+      insert into public.profiles (
+        id, name, age, location, timezone, avatar_initials, specialties,
+        looking_for, starting_point, availability_hours_per_week, availability_bands, ambition
+      ) select id, 'Borrar', 30, 'Madrid', 'Europe/Madrid', 'B',
+        array['dev']::public.specialty[], 'ambos', 'solo-ganas', 10,
+        array['tarde']::public.time_band[], 'equilibrado'
+        from auth.users where id in ('${delAna}', '${delBea}', '${delCarla}');
+      insert into public.matches (profile_a, profile_b, mode) values
+        (least('${delAna}'::uuid, '${delBea}'::uuid), greatest('${delAna}'::uuid, '${delBea}'::uuid), 'lockin'),
+        (least('${delBea}'::uuid, '${delCarla}'::uuid), greatest('${delBea}'::uuid, '${delCarla}'::uuid), 'lockin');
+      insert into public.messages (match_id, sender_id, body)
+        select id, '${delBea}', 'hola' from public.matches;
+      insert into public.lockin_rooms (host_id, starts_at, blocks)
+        values ('${delAna}', clock_timestamp() + interval '1 hour', 1);`);
+    const countOf = async (table) =>
+      Number((await db.query(`select count(*)::int as n from ${table}`)).rows[0].n);
+
+    // Sin sesión: LI007, y no se borra nada.
+    await db.exec(`reset role;
+      create or replace function auth.uid() returns uuid language sql as $$ select null::uuid $$;
+      set local role authenticated;`);
+    assert.equal(await sonda('select public.delete_my_account()'), 'LI007');
+    await db.exec('reset role;');
+    assert.equal(await countOf('auth.users'), 3);
+
+    // `anon` no puede ni ejecutarla.
+    await db.exec('reset role; set local role anon;');
+    assert.equal(await sonda('select public.delete_my_account()'), '42501');
+
+    // Ana borra su cuenta: desaparece ella y lo que cuelga de ella.
+    await actingAs(delAna);
+    await db.query('select public.delete_my_account()');
+    await db.exec('reset role;');
+    const survivors = [delBea, delCarla].sort();
+    assert.deepEqual(
+      (await db.query('select id from auth.users order by id')).rows.map((row) => row.id),
+      survivors
+    );
+    assert.deepEqual(
+      (await db.query('select id from public.profiles order by id')).rows.map((row) => row.id),
+      survivors
+    );
+    assert.equal(await countOf('public.matches'), 1, 'solo sobrevive el match de Bea y Carla');
+    assert.equal(await countOf('public.messages'), 1, 'los mensajes del match de Ana caen con él');
+    assert.equal(await countOf('public.lockin_rooms'), 0, 'la sala que convocó Ana cae con ella');
+    await db.exec('rollback;');
+    console.log('Borrar mi cuenta: LI007 sin sesión, anon sin permiso y cascada sin tocar lo ajeno: OK');
+
     // Ejecutar las definiciones reales de las dos funciones, sin sembrar cuentas.
     const seed = readFileSync(join(here, 'seed.sql'), 'utf8');
     const start = seed.search(/create or replace function public\.seed_incoming_likes/);

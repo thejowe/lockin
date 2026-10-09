@@ -29,7 +29,7 @@ import {
 } from './account-gateway';
 
 /** Qué se le está pidiendo al servidor ahora mismo, si es que se le pide algo. */
-export type AccountBusy = 'asegurar' | 'reenviar' | 'contrasena' | 'recuperar' | 'salir' | null;
+export type AccountBusy = 'asegurar' | 'reenviar' | 'contrasena' | 'recuperar' | 'salir' | 'borrar' | null;
 
 /** Aviso bajo los controles: neutro para lo que salió bien, `danger` para lo que no. */
 export interface AccountNotice {

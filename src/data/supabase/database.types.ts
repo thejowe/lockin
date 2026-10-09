@@ -315,6 +315,10 @@ export type Database = {
     };
     Views: Record<never, never>;
     Functions: {
+      delete_my_account: {
+        Args: Record<string, never>;
+        Returns: undefined;
+      };
       sync_github_verification: {
         Args: Record<string, never>;
         Returns: undefined;

@@ -138,4 +138,24 @@ describe('mecánica del mock', () => {
     expect(await repositories.matches.list()).toHaveLength(0);
     expect(await repositories.discovery.listDecided()).toHaveLength(0);
   });
+
+  it('deleteMyAccount borra lo propio y deja el catálogo ajeno', async () => {
+    // Contra Supabase es el RPC `delete_my_account()`, que borra `auth.users` y
+    // deja caer lo demás en cascada; aquí el almacén hace lo mismo a mano.
+    await repositories.profiles.saveCurrent(buildProfileInput());
+    await repositories.session.setActiveMode('par');
+    await repositories.discovery.recordDecision(RECIPROCAL_NURIA, 'like');
+    const [match] = await repositories.matches.list();
+    await repositories.messages.send(match.id, 'hola');
+    expect(await repositories.session.isOnboarded()).toBe(true);
+
+    await repositories.session.deleteMyAccount();
+
+    expect(await repositories.session.isOnboarded()).toBe(false);
+    expect(await repositories.profiles.getCurrent()).toBeNull();
+    expect(await repositories.matches.list()).toHaveLength(0);
+    expect(await repositories.discovery.listDecided()).toHaveLength(0);
+    // Las demás personas siguen ahí.
+    expect(await repositories.profiles.getById(RECIPROCAL_NURIA)).not.toBeNull();
+  });
 });

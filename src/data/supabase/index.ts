@@ -21,6 +21,7 @@
 import { createSupabaseAgreementRepository } from './agreement';
 import {
   adoptLinkedGithubIdentity,
+  deleteMyAccount,
   ensureUserId,
   linkGithubIdentity,
   unlinkGithubIdentity,
@@ -67,6 +68,7 @@ export {
   AccountError,
   completeAuthLink,
   currentUserId,
+  deleteMyAccount,
   ensureUserId,
   getAccountState,
   linkEmailToCurrentUser,
@@ -297,6 +299,8 @@ export function createSupabaseRepositories(): Repositories {
       const current = await session.get();
       return current.profileId !== null && current.activeMode !== null;
     },
+
+    deleteMyAccount,
   };
 
   const profiles: ProfileRepository = {

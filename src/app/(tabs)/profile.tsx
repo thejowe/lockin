@@ -151,7 +151,7 @@ export default function ProfileScreen() {
           {/* La cuenta va al final: es lo que menos se visita y donde vive la
             salida destructiva. Arriba está lo que se viene a mirar. */}
           <Animated.View entering={enterUp(3)}>
-            <AccountSection />
+            <AccountSection onDeleted={() => router.replace('/')} />
           </Animated.View>
         </ScrollView>
       </SafeAreaView>
