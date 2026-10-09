@@ -65,6 +65,7 @@ import * as WebBrowser from 'expo-web-browser';
 
 import { getSupabaseClient } from './client';
 
+import type { SignOutOptions } from '../types';
 import type { EmailOtpType, User } from '@supabase/supabase-js';
 
 /** Credenciales de la cuenta de dispositivo del paso 3. */
@@ -148,6 +149,8 @@ function toAccountError(error: unknown): AccountError {
   if (error instanceof AccountError) return error;
 
   switch (errorField(error, 'code')) {
+    case 'LI007':
+      return new AccountError('no-session', 'No hay ninguna sesión abierta.', error);
     case 'email_exists':
     case 'user_already_exists':
       // Decisión de producto del 2026-09-17: aquí no se ofrece ninguna salida.
@@ -619,7 +622,7 @@ export async function signUpWithEmail(email: string, password: string): Promise<
  * y solo `acceptDataLoss: true` lo desbloquea — el flag existe para que la
  * pantalla tenga que haber avisado antes de pasarlo.
  */
-export async function signOut(options: { acceptDataLoss?: boolean } = {}): Promise<void> {
+export async function signOut(options: SignOutOptions = {}): Promise<void> {
   if (!options.acceptDataLoss) {
     const state = await getAccountState();
     if (state.kind !== 'none' && !state.recoverable) {
@@ -632,9 +635,20 @@ export async function signOut(options: { acceptDataLoss?: boolean } = {}): Promi
     }
   }
 
-  const { error } = await getSupabaseClient().auth.signOut();
+  const auth = getSupabaseClient().auth;
+  const { error } = options.scope ? await auth.signOut({ scope: options.scope }) : await auth.signOut();
   await AsyncStorage.removeItem(DEVICE_ACCOUNT_KEY);
   if (error) throw toAccountError(error);
+}
+
+/** Borra solo la cuenta de la sesión actual; nunca llama a ensureUserId(). */
+export async function deleteMyAccount(): Promise<void> {
+  const { error } = await getSupabaseClient().rpc('delete_my_account');
+  if (error) throw toAccountError(error);
+
+  // La cuenta ya no existe. No se exige email recuperable ni se consulta
+  // getUser(): se reutiliza la limpieza del cierre de sesión confirmado.
+  await signOut({ acceptDataLoss: true, scope: 'local' });
 }
 
 /* -------------------------------------------------------------------------- */

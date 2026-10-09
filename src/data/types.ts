@@ -231,6 +231,14 @@ export interface Session {
   activeMode: ModePreference | null;
 }
 
+/** Opciones del cierre de sesión; el borrado de cuenta usa el alcance local. */
+export interface SignOutOptions {
+  /** La persona ya ha confirmado que acepta perder una cuenta irrecuperable. */
+  acceptDataLoss?: boolean;
+  /** Sin indicarlo se conserva el cierre global habitual. */
+  scope?: 'global' | 'local';
+}
+
 /** Bloques de una sesión Lock-In: cada uno son 25 min de trabajo + 5 de descanso. */
 export type SessionBlocks = 1 | 2 | 4;
 

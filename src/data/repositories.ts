@@ -55,6 +55,12 @@ export interface SessionRepository {
   setProfileId(profileId: string | null): Promise<Session>;
   /** `true` cuando hay modo elegido y perfil creado. Decide el arranque de la app. */
   isOnboarded(): Promise<boolean>;
+  /**
+   * Elimina irreversiblemente la cuenta actual y todos sus datos en cascada.
+   * Exige confirmación previa de la persona. Tras el borrado cierra la sesión
+   * local; no abre una cuenta nueva para ejecutar la operación.
+   */
+  deleteMyAccount(): Promise<void>;
 }
 
 /** Fichas de persona: la propia y las de los demás. */

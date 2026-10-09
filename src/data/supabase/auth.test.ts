@@ -7,6 +7,7 @@ import {
   adoptLinkedGithubIdentity,
   completeAuthLink,
   currentUserId,
+  deleteMyAccount,
   ensureUserId,
   getAccountState,
   linkEmailToCurrentUser,
@@ -881,5 +882,28 @@ describe('signOut', () => {
     await expect(signOut({ acceptDataLoss: true })).resolves.toBeUndefined();
     expect(auth.getSession).not.toHaveBeenCalled();
     expect(auth.signOut).toHaveBeenCalled();
+  });
+});
+
+describe('deleteMyAccount', () => {
+  it('borra por RPC y cierra la sesión local sin exigir cuenta recuperable', async () => {
+    auth.signOut.mockResolvedValueOnce({ error: null });
+
+    await expect(deleteMyAccount()).resolves.toBeUndefined();
+
+    expect(rpc).toHaveBeenCalledWith('delete_my_account');
+    // Solo la sesión de este dispositivo: la cuenta ya no existe en el servidor.
+    expect(auth.signOut).toHaveBeenCalledWith({ scope: 'local' });
+    expect(auth.getSession).not.toHaveBeenCalled();
+    expect(AsyncStorage.removeItem).toHaveBeenCalledWith('lockin.supabase.device-account');
+  });
+
+  it('si el servidor falla no toca la sesión local', async () => {
+    rpc.mockResolvedValueOnce({ error: gotrueError('LI007', 'sin sesión') });
+
+    await expect(deleteMyAccount()).rejects.toMatchObject({ reason: 'no-session' });
+
+    expect(auth.signOut).not.toHaveBeenCalled();
+    expect(AsyncStorage.removeItem).not.toHaveBeenCalled();
   });
 });

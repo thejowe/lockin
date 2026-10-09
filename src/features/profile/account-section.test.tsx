@@ -37,6 +37,7 @@ jest.mock('./account-gateway', () => ({
   setAccountPassword: jest.fn(),
   sendPasswordReset: jest.fn(),
   signOut: jest.fn(),
+  deleteMyAccount: jest.fn(),
 }));
 
 const gateway = jest.requireMock('./account-gateway') as {
@@ -46,6 +47,7 @@ const gateway = jest.requireMock('./account-gateway') as {
   setAccountPassword: jest.Mock;
   sendPasswordReset: jest.Mock;
   signOut: jest.Mock;
+  deleteMyAccount: jest.Mock;
 };
 
 const { AccountError } = gateway;
@@ -87,6 +89,7 @@ beforeEach(() => {
   gateway.setAccountPassword.mockResolvedValue(undefined);
   gateway.sendPasswordReset.mockResolvedValue(undefined);
   gateway.signOut.mockResolvedValue(undefined);
+  gateway.deleteMyAccount.mockResolvedValue(undefined);
 });
 
 /** Monta la sección tal y como la monta la tab Perfil. */
@@ -314,6 +317,66 @@ describe('AccountSection', () => {
       await press('Borrarlo todo y cerrar sesión');
 
       await waitFor(() => expect(gateway.signOut).toHaveBeenCalledWith({ acceptDataLoss: true }));
+    });
+  });
+
+  describe('eliminar la cuenta', () => {
+    it('no borra nada al primer toque: avisa de que es para siempre', async () => {
+      await renderSection(ASEGURADA);
+      await waitFor(() => expect(screen.getByText('Eliminar mi cuenta')).toBeTruthy());
+
+      await press('Eliminar mi cuenta');
+
+      expect(screen.getByText('Eliminar tu cuenta es para siempre')).toBeTruthy();
+      expect(screen.getByText(/No se puede deshacer ni recuperar/i)).toBeTruthy();
+      expect(gateway.deleteMyAccount).not.toHaveBeenCalled();
+    });
+
+    it('«mejor no» la deja intacta', async () => {
+      await renderSection(ASEGURADA);
+      await waitFor(() => expect(screen.getByText('Eliminar mi cuenta')).toBeTruthy());
+      await press('Eliminar mi cuenta');
+
+      await press('Mejor no');
+
+      expect(screen.queryByText('Eliminar tu cuenta es para siempre')).toBeNull();
+      expect(gateway.deleteMyAccount).not.toHaveBeenCalled();
+    });
+
+    it('al confirmar la borra y avisa a la pantalla para volver al arranque', async () => {
+      const onDeleted = jest.fn();
+      gateway.readAccountState.mockResolvedValue(ANONIMA);
+      render(
+        <DataProvider value={repositories}>
+          <AccountSection onDeleted={onDeleted} />
+        </DataProvider>
+      );
+      await waitFor(() => expect(screen.getByText('Eliminar mi cuenta')).toBeTruthy());
+      await press('Eliminar mi cuenta');
+
+      await press('Eliminar mi cuenta para siempre');
+
+      await waitFor(() => expect(gateway.deleteMyAccount).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(onDeleted).toHaveBeenCalledTimes(1));
+    });
+
+    it('si el servidor falla, enseña el error y no vuelve al arranque', async () => {
+      const onDeleted = jest.fn();
+      gateway.deleteMyAccount.mockRejectedValue(
+        new AccountError('offline', 'No hemos podido conectar. Revisa tu conexión.')
+      );
+      render(
+        <DataProvider value={repositories}>
+          <AccountSection onDeleted={onDeleted} />
+        </DataProvider>
+      );
+      await waitFor(() => expect(screen.getByText('Eliminar mi cuenta')).toBeTruthy());
+      await press('Eliminar mi cuenta');
+
+      await press('Eliminar mi cuenta para siempre');
+
+      await waitFor(() => expect(gateway.deleteMyAccount).toHaveBeenCalledTimes(1));
+      expect(onDeleted).not.toHaveBeenCalled();
     });
   });
 

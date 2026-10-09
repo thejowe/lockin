@@ -138,6 +138,10 @@ export function createMockRepositories(
       const { session: current } = getState();
       return current.profileId !== null && current.activeMode !== null;
     },
+
+    async deleteMyAccount() {
+      store.deleteCurrentUser();
+    },
   };
 
   const profiles: ProfileRepository = {
