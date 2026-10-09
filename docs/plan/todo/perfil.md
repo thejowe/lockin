@@ -308,5 +308,17 @@ Por eso `looksOffline()` mira también el `name` (`AuthRetryableFetchError`) y, 
 
 **Lo que NO se ha verificado.** Que el texto se lea bien en un móvil de verdad con la red caída — todo va con dobles. Y en la variante sin credenciales de Supabase no hay capa de cuentas, así que estas pantallas ni se montan.
 
+## Eliminar mi cuenta (2026-10-09)
+
+Requisito de Apple 5.1.1(v) y de Google Play; no estaba en ninguna spec. Empezó Codex (orden 4) y lo terminó Claude: Codex dejó la migración vacía y sin UI ni tests.
+
+- [x] **[Claude]** RPC `delete_my_account()` (`20261009215240_delete_my_account.sql`): `SECURITY DEFINER`, sin parámetros, borra `auth.users` de `auth.uid()` y el resto cae en cascada (todas las FK cuelgan de `auth.users`). `LI007` sin sesión; `EXECUTE` solo para `authenticated`.
+- [x] **[Claude]** `SessionRepository.deleteMyAccount()` en mock y Supabase. En Supabase llama al RPC y cierra la sesión **local** (`scope: 'local'`) sin exigir cuenta recuperable. `SignOutOptions` pasa a `types.ts`.
+- [x] **[Claude]** `AccountSection`: botón «Eliminar mi cuenta» con confirmación en la propia pantalla («Eliminar tu cuenta es para siempre» / «Mejor no»). Al terminar, `onDeleted` lleva la tab Perfil a `/`, que reevalúa el arranque y manda al onboarding.
+- Verificado en local: `tsc`, `test:schema` 75/75 (caso nuevo: `LI007`, `anon` sin permiso, cascada sin tocar a Bea y Carla), jest de `features/profile`, `data/mock` y `auth.test.ts`.
+- [ ] **Migración sin aplicar al remoto** (la aplica el usuario en `grrzmzktrhksbttpbblg`). Hasta entonces el job remoto de Schema drift sale rojo a propósito, y el botón fallaría contra Supabase real.
+- [ ] **[comprobador]** Recorrido en el emulador contra Supabase real: borrar cuenta → vuelve al onboarding → la fila de `auth.users` ya no existe.
+- Sin cubrir: no hay caso en `repositories.contract.ts` porque borrar la cuenta acaba la sesión compartida de la suite; la cobertura es mock + `schema-embedded`.
+
 ## Recuerda
 Nadie contrata a nadie: no metas campos de "salario" o "equity que ofrezco" — eso es Modo Talento, Fase 4, fuera de este MVP.
