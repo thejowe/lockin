@@ -146,7 +146,7 @@ describe('mecánica del mock', () => {
     await repositories.session.setActiveMode('par');
     await repositories.discovery.recordDecision(RECIPROCAL_NURIA, 'like');
     const [match] = await repositories.matches.list();
-    await repositories.messages.send(match.id, 'hola');
+    await repositories.messages.send({ matchId: match.id, body: 'hola' });
     expect(await repositories.session.isOnboarded()).toBe(true);
 
     await repositories.session.deleteMyAccount();
