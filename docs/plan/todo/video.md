@@ -197,9 +197,11 @@ qué puede solaparse).
       *2026-10-01, comprobador (mock, Expo Go 57.0.9, `e00cbce`): ✅* — ver
       «Hallazgos del comprobador», 2026-10-01 (y antes 2026-09-30 sobre
       `4a698f1`).
-- [ ] Sin verificar en dispositivo: abrir la app en Expo Go (iPhone) y
-      comprobar que arranca y que la pantalla de sesión muestra el aviso.
-      Es iOS: sigue siendo del usuario.
+- [x] Abrir la app en Expo Go (iPhone) y comprobar que arranca y que la
+      pantalla de sesión muestra el aviso. *2026-10-09, usuario (iPhone, Expo
+      Go por tunnel, backend Supabase, `0cddbbb`): ✅* arranca sin problemas y
+      el aviso «La videollamada necesita la app de desarrollo» sale en la
+      sesión.
 
 ## Hallazgos del comprobador
 

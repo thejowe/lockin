@@ -737,3 +737,26 @@ ese error y solo en GET/HEAD. Guardia: `e2e/fetch-diagnostics.test.mjs`. CI y
 Schema drift de `33378bc` en verde. **El E2E de `33378bc` (run 37239076782)
 seguía en curso al cerrar la sesión.** Si `supabase` sale verde, marca el
 oráculo de `todo/visual.md` con ese run.
+
+
+## 2026-10-09 — el enlace de verificación abre `localhost` en Expo Go
+
+Hallado por el usuario con dos móviles (Expo Go por tunnel, backend Supabase).
+Al pulsar el enlace del correo de verificación se abre una página de
+`localhost` que no muestra nada; en la app, «He verificado» sí entra.
+
+**Causa:** no es un fallo de la app. `authRedirectUrl()` es
+`Linking.createURL('auth/callback')`, que en Expo Go por tunnel da
+`exp://<subdominio>.exp.direct/--/auth/callback`. Esa URL no está en
+**Redirect URLs** de Supabase, GoTrue compara exacto y manda el enlace a
+`site_url`, que sigue en el `http://localhost:3000` por defecto. En un build de
+desarrollo o release es `lockin://auth/callback`, que sí está permitida
+(`supabase/README.md`, confirmado el 2026-09-20) y que el E2E `registro` cubre.
+
+**Arreglo pendiente (usuario, dashboard de Supabase → Authentication → URL
+Configuration):**
+- [ ] Añadir `exp://*.exp.direct/--/auth/callback` a Redirect URLs (el
+      subdominio cambia en cada sesión, por eso el comodín). Solo hace falta
+      para probar con Expo Go.
+- [ ] Cambiar Site URL a algo real, o a `lockin://auth/callback`, para que un
+      fallo del redirect no deje en una página muerta.

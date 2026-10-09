@@ -720,6 +720,17 @@ usuario por el camino: **solo modo oscuro**. Rama `claude/visual-cristal`.
   desarrollo: que sea el cristal del sistema y que «Descubrir», «Matches» y
   «Perfil» se lean bien encima de la luz ambiental. Ojo con cualquier
   `opacity: 0` en un padre de `Frosted`: deja el cristal sin pintar.
+  *2026-10-09, usuario (iPhone con iOS 26, Expo Go por tunnel): **no
+  concluyente**.* La barra sale grafito liso, o sea el *fallback* de `Frosted`.
+  Hipótesis (sin medir): `isLiquidGlassAvailable()` lee
+  `UIDesignRequiresCompatibility` del `Info.plist` de la app anfitriona
+  (`expo-glass-effect/ios/GlassEffectModule.swift:18`), y en Expo Go la
+  anfitriona es Expo Go, no LockIn. Con Expo Go no se puede ver el cristal; la
+  casilla solo se cierra con un build de desarrollo
+  (`eas build --profile development --platform ios`, pide cuenta de Apple
+  Developer y el UDID del iPhone). Para confirmarlo antes sin build: un
+  `console.log` temporal de `isLiquidGlassAvailable()` e
+  `isGlassEffectAPIAvailable()` y leer Metro.
 
 Textos: ningún texto ni etiqueta que usen los `e2e/*.yaml` ha cambiado. Cambia
 la presentación de «Enviar» (ahora icono; su etiqueta «Enviar mensaje» sigue).
@@ -757,7 +768,7 @@ plantilla «casi negro con un acento», y la tarjeta del deck era sopa de cajas
   Deck: flick corto decide, y soltar más allá del umbral volviendo hacia el centro no.
   Matches con dos filas en una sola superficie y la sala con las personas agrupadas.
   Detalle y capturas en «Hallazgos del comprobador», 2026-10-05.
-- [ ] (usuario — iPhone) Revisar la tanda «menos genérico» en iOS. El código es
+- [x] (usuario — iPhone; *2026-10-09, Expo Go: «bien»*; la barra con cristal sigue abierta, arriba) Revisar la tanda «menos genérico» en iOS. El código es
   el mismo en las tres plataformas (ninguno de los 13 archivos tiene variante
   `.ios`/`.android` ni ramas `Platform`; Jest resuelve como iOS y
   `expo export --platform ios` compila con el código nuevo dentro), pero en esta
