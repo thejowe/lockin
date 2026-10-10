@@ -27,7 +27,9 @@ import { act, useState } from 'react';
 import { AccessibilityInfo, StyleSheet } from 'react-native';
 
 import { Colors } from '@/constants/theme';
-import { buildProfile } from '@/data/test-fixtures';
+import { DataProvider } from '@/data';
+import { createMockRepositories, createMockStore } from '@/data/mock';
+import { buildProfile, buildProfileInput } from '@/data/test-fixtures';
 
 import { cardTestId, PAN_TEST_ID, SwipeDeck } from './swipe-deck';
 
@@ -260,6 +262,60 @@ describe('SwipeDeck', () => {
     swipe({ translationX: THRESHOLD - 1 });
 
     expect(mockWithSpring).toHaveBeenCalled();
+  });
+});
+
+describe('SwipeDeck con el panel de seguridad abierto', () => {
+  async function renderWithRepositories() {
+    const repositories = createMockRepositories(createMockStore());
+    await repositories.profiles.saveCurrent(buildProfileInput());
+    const view = await render(
+      <DataProvider value={repositories}>
+        <SwipeDeck profiles={PROFILES} onDecide={onDecide} />
+      </DataProvider>
+    );
+    await act(async () => {});
+    return { ...view, repositories };
+  }
+
+  it('apaga Like y Pasar mientras el formulario está abierto, y los devuelve al cerrarlo', async () => {
+    await renderWithRepositories();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Opciones de Núria Bosch' }));
+
+    expect(screen.getByLabelText('Like')).toBeDisabled();
+    expect(screen.getByLabelText('Pasar')).toBeDisabled();
+    await fireEvent.press(screen.getByLabelText('Like'));
+    expect(onDecide).not.toHaveBeenCalled();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar opciones' }));
+
+    expect(screen.getByLabelText('Like')).not.toBeDisabled();
+    await fireEvent.press(screen.getByLabelText('Like'));
+    expect(onDecide).toHaveBeenCalledWith(PROFILES[0], 'like');
+  });
+
+  it('el gesto no decide con el formulario abierto', async () => {
+    await renderWithRepositories();
+    await fireEvent.press(screen.getByRole('button', { name: 'Opciones de Núria Bosch' }));
+
+    swipe({ translationX: THRESHOLD + 20 });
+
+    expect(onDecide).not.toHaveBeenCalled();
+  });
+
+  it('bloquear retira la tarjeta del deck como un pase', async () => {
+    const { repositories } = await renderWithRepositories();
+    // Los perfiles del deck de prueba no existen en el almacén del mock.
+    const block = jest.spyOn(repositories.profiles, 'block').mockResolvedValue(undefined);
+    await fireEvent.press(screen.getByRole('button', { name: 'Opciones de Núria Bosch' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Bloquear a Núria Bosch' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Confirmar bloqueo' }));
+
+    await act(async () => {});
+
+    expect(block).toHaveBeenCalledWith('p1');
+    expect(onDecide).toHaveBeenCalledWith(PROFILES[0], 'pass');
   });
 });
 

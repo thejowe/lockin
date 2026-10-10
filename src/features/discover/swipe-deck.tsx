@@ -172,8 +172,14 @@ export function SwipeDeck({
   // Cada vez que cambia la superior empieza un turno nuevo. Es estado derivado
   // de las props, así que se ajusta durante el render (patrón de React para
   // esto) y la nueva superior se pinta ya con su turno, en el mismo commit.
+  // El panel de seguridad de la superior (bloquear/reportar) está abierto: ni el
+  // gesto ni Like/Pass deciden mientras tanto.
+  const [safetyOpen, setSafetyOpen] = useState(false);
   const [turn, setTurn] = useState({ topId, count: 0 });
-  if (turn.topId !== topId) setTurn({ topId, count: turn.count + 1 });
+  if (turn.topId !== topId) {
+    setTurn({ topId, count: turn.count + 1 });
+    if (safetyOpen) setSafetyOpen(false);
+  }
   const turnKey = topId === null ? null : `${turn.count}:${topId}`;
 
   /** Cierra la decisión. La tarjeta ya está oculta: aquí solo se avisa al padre. */
@@ -225,7 +231,7 @@ export function SwipeDeck({
     // El id es la única forma de alcanzar el gesto desde un test:
     // `getByGestureTestId` de `react-native-gesture-handler/jest-utils`.
     .withTestId(PAN_TEST_ID)
-    .enabled(top !== null)
+    .enabled(top !== null && !safetyOpen)
     .onBegin(() => {
       if (exiting.get() || turnKey === null) return;
       // Al tocar una tarjeta que no era la dueña, el arrastre pasa a ser suyo
@@ -314,13 +320,17 @@ export function SwipeDeck({
                 drag={drag}
                 viewerSpecialties={viewerSpecialties}
                 viewerSchedule={viewerSchedule}
+                safetyOpen={safetyOpen}
+                onSafetyOpenChange={setSafetyOpen}
+                // Bloquear retira el perfil del deck: se cuenta como un pase.
+                onBlocked={() => swipeAway('pass')}
               />
             </GestureDetector>
           )
         )}
       </View>
 
-      <DeckActions onDecide={swipeAway} disabled={top === null} />
+      <DeckActions onDecide={swipeAway} disabled={top === null || safetyOpen} />
     </View>
   );
 }
@@ -336,6 +346,9 @@ function TopCard({
   drag,
   viewerSpecialties,
   viewerSchedule,
+  safetyOpen,
+  onSafetyOpenChange,
+  onBlocked,
 }: {
   profile: Profile;
   turnKey: string | null;
@@ -343,6 +356,9 @@ function TopCard({
   viewerSpecialties?: Specialty[];
   /** Jornada de quien swipea: la tarjeta marca en qué franjas coincidís. */
   viewerSchedule?: DaySchedule;
+  safetyOpen: boolean;
+  onSafetyOpenChange: (open: boolean) => void;
+  onBlocked: () => void;
 }) {
   const theme = useTheme();
   const elevation = Elevation[useThemeName()];
@@ -395,6 +411,9 @@ function TopCard({
         profile={profile}
         viewerSpecialties={viewerSpecialties}
         viewerSchedule={viewerSchedule}
+        safetyOpen={safetyOpen}
+        onSafetyOpenChange={onSafetyOpenChange}
+        onBlocked={onBlocked}
       />
 
       <Animated.View

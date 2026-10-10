@@ -63,7 +63,9 @@ describe('ChatScreen', () => {
       await waitFor(() =>
         expect(screen.getByText('Esta conversación no está disponible')).toBeTruthy()
       );
-      expect(screen.getByText(/El match ya no existe/)).toBeTruthy();
+      expect(
+        screen.getByText('Vuelve a tus matches para ver tus conversaciones disponibles.')
+      ).toBeTruthy();
       expect(screen.getByRole('button', { name: 'Volver a Matches' })).toBeTruthy();
     });
 
@@ -74,7 +76,7 @@ describe('ChatScreen', () => {
       await renderRoute(<ChatScreen />);
 
       await waitFor(() => expect(screen.getByText(/Ha fallado la carga/)).toBeTruthy());
-      expect(screen.queryByText(/El match ya no existe/)).toBeNull();
+      expect(screen.queryByText(/Vuelve a tus matches para ver/)).toBeNull();
     });
   });
 
