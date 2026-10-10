@@ -81,8 +81,7 @@ export function createMockSessionRepository(
   const isMember = (matchId: string) => {
     const members = membersOf(matchId);
     return (
-      members.includes(actorId) &&
-      !isBlockedPair(getState(), members[0], members[1] ?? members[0])
+      members.includes(actorId) && !isBlockedPair(getState(), members[0], members[1] ?? members[0])
     );
   };
 

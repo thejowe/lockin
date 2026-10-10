@@ -38,6 +38,7 @@ import {
   toSafetyError,
 } from './mappers';
 import { fetchAllPages } from './pagination';
+import { closeLiveChannels } from './live-channels';
 import { createSupabaseRoomRepository } from './rooms';
 import { subscribeResyncingOnRejoin } from './realtime';
 import { createSupabaseSessionRepository } from './sessions';
@@ -213,6 +214,40 @@ async function lastMessagesByMatch(
   return byMatch;
 }
 
+/**
+ * Ids de las sesiones y salas en las que este cliente comparte algo con `profileId`,
+ * para cerrar solo esos canales al bloquearlo. `null` si no se pudo averiguar: el
+ * llamador cierra entonces todos, que es lo conservador.
+ */
+async function liveScopesWith(
+  client: LockInSupabaseClient,
+  profileId: string
+): Promise<string[] | null> {
+  try {
+    const matchRows = await client
+      .from('matches')
+      .select('id')
+      .or('profile_a.eq.' + profileId + ',profile_b.eq.' + profileId);
+    if (matchRows.error) return null;
+    const matchIds = (matchRows.data ?? []).map((row) => row.id);
+    const [sessions, hosted, memberships] = await Promise.all([
+      matchIds.length > 0
+        ? client.from('lockin_sessions').select('id').in('match_id', matchIds)
+        : Promise.resolve({ data: [] as { id: string }[], error: null }),
+      client.from('lockin_rooms').select('id').eq('host_id', profileId),
+      client.from('room_members').select('room_id').eq('profile_id', profileId),
+    ]);
+    if (sessions.error || hosted.error || memberships.error) return null;
+    return [
+      ...(sessions.data ?? []).map((row) => row.id),
+      ...(hosted.data ?? []).map((row) => row.id),
+      ...(memberships.data ?? []).map((row) => row.room_id),
+    ];
+  } catch {
+    return null;
+  }
+}
+
 /** Añade a cada match el perfil del otro lado y su último mensaje. */
 async function resolveMatches(
   rows: MatchRow[],
@@ -270,6 +305,8 @@ export function createSupabaseRepositories({
   getUserId?: () => Promise<string>;
 } = {}): Repositories {
   const hub = createNotifier(getClient);
+  /** Lo rellena el repositorio de salas al crearse; hasta entonces no hay nadie a quien avisar. */
+  let notifyRoomListeners: () => void = () => {};
   const notify = (topic: string) => hub.notify(topic);
   const markEmitted = (id: string) => hub.markEmitted(id);
   const wasEmittedLocally = (id: string | undefined) => hub.wasEmittedLocally(id);
@@ -331,11 +368,22 @@ export function createSupabaseRepositories({
   const profiles: ProfileRepository = {
     async block(profileId) {
       await getUserId();
-      const { error } = await getClient().rpc('block_profile', { p_profile_id: profileId });
+      const client = getClient();
+      // Antes de bloquear, mientras la RLS todavía deja ver sus matches y salas:
+      // después no habría forma de saber qué canales eran de esta persona.
+      const scopes = await liveScopesWith(client, profileId);
+      const { error } = await client.rpc('block_profile', { p_profile_id: profileId });
       if (error) throw toSafetyError(error);
+      // El servidor no revoca un canal ya autorizado (Realtime cachea la decisión
+      // hasta reconectar): se cortan los de este cliente. La otra parte conserva
+      // el suyo hasta que reconecte; no hay aviso por diseño.
+      closeLiveChannels(client, scopes ?? undefined);
       notify(MATCHES_TOPIC);
       // Invalida también el chat abierto de este dispositivo; no hay aviso al otro usuario.
       hub.notifyMessageListeners();
+      // Las salas del bloqueado dejan de ser visibles: que se relean y que
+      // RoomReminderSync cancele el aviso local de las que ya no salen.
+      notifyRoomListeners();
     },
 
     async report(input) {
@@ -696,6 +744,12 @@ export function createSupabaseRepositories({
     messages,
     sessions: createSupabaseSessionRepository({ getClient, getUserId }),
     agreement: createSupabaseAgreementRepository({ getClient, getUserId }),
-    rooms: createSupabaseRoomRepository({ getClient, getUserId }),
+    rooms: createSupabaseRoomRepository({
+      getClient,
+      getUserId,
+      exposeNotify: (notifyRooms) => {
+        notifyRoomListeners = notifyRooms;
+      },
+    }),
   };
 }

@@ -45,6 +45,12 @@ export function toRoomError(error: { code?: string; message: string }): unknown 
 export interface RoomRepositoryDeps {
   getClient(): LockInSupabaseClient;
   getUserId(): Promise<string>;
+  /**
+   * Entrega a quien orquesta los repositorios la función que avisa a los
+   * suscriptores de salas: `block_profile` la usa para que se relean las salas y
+   * se cancele el aviso local de una que ya no es visible.
+   */
+  exposeNotify?(notify: () => void): void;
 }
 
 const defaultDeps: RoomRepositoryDeps = { getClient: getSupabaseClient, getUserId: ensureUserId };
@@ -55,6 +61,7 @@ export function createSupabaseRoomRepository(
   const listeners = new Set<() => void>();
   let channel: RealtimeChannel | undefined;
   const notify = () => listeners.forEach((listener) => listener());
+  deps.exposeNotify?.(notify);
 
   /** Dos lecturas en lote, paginadas y ordenadas por sus claves estables. */
   async function resolveRooms(rows: RoomRow[], userId: string): Promise<RoomView[]> {
