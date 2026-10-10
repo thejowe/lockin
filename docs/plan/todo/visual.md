@@ -781,3 +781,23 @@ plantilla «casi negro con un acento», y la tarjeta del deck era sopa de cajas
   - la jornada de 24 h: las marcas 00/06/12/20/24 sin solaparse y «Coincidís…»
     en verde-azulado cuando compartes franja y zona horaria.
   Se puede hacer en la misma sesión que la revisión de la barra con Liquid Glass.
+
+## Barra de tabs con «Reducir animaciones» (2026-10-10)
+
+- [x] **Bug (medido por el comprobador, APK release, escalas de animación a 0):** en Perfil la
+  barra de tabs quedaba pintada con el estado de Matches: píldora sobre «Matches» y el icono
+  de Perfil recortado en el borde derecho (`e2e/artifacts/local/2026-10-10-acciones-bajo-tabs/`
+  `53.png`, `54-tabbar-persist.png`).
+  - Causa: en `src/components/app-tabs.tsx` la rama `reduceMotion` solo saltaba el muelle del
+    resalte, pero cada botón conservaba `layout={LinearTransition…}` y el nombre
+    `entering/exiting`. Con las escalas de animación del sistema a 0 la transición de layout de
+    Reanimated se queda congelada a medio camino: la barra mantiene el ancho viejo, el botón
+    activo no llega a su medida y `onLayout` informa de posiciones intermedias.
+  - Arreglo: con `useReduceMotion()` los botones no llevan transición de layout ni
+    entrada/salida del nombre; saltan a la medida final y el resalte (que ya asignaba `x`/`width`
+    sin muelle) la recoge. Mismo resultado final con y sin animación.
+  - Test: `src/components/app-tabs.test.tsx` → «con reducir movimiento» (sin transición de
+    layout, y el resalte termina en la tab activa con su ancho).
+- [ ] `[comprobador]` Re-comprobar en el emulador con «Reducir animaciones» activado (escalas a
+  0) y release: navegar Descubrir → Matches → Perfil y volver; la píldora debe quedar bajo la
+  tab activa y el icono completo.

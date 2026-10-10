@@ -153,6 +153,7 @@ const TabButton = forwardRef<View, TabTriggerSlotProps & { icon: IconName }>(fun
 ) {
   const theme = useTheme();
   const report = useContext(IndicatorContext);
+  const reduceMotion = useReduceMotion();
   const layout = useRef<LayoutRectangle | null>(null);
   const label = typeof children === 'string' ? children : undefined;
 
@@ -163,9 +164,17 @@ const TabButton = forwardRef<View, TabTriggerSlotProps & { icon: IconName }>(fun
 
   return (
     <Animated.View
-      layout={LinearTransition.springify()
-        .damping(Springs.glide.damping)
-        .stiffness(Springs.glide.stiffness)}
+      // Con «reducir movimiento» no hay transición de layout: con las escalas de
+      // animación del sistema a 0 Reanimated deja el botón congelado a medio
+      // camino (barra con el ancho viejo, icono recortado, resalte en otra tab).
+      // Sin transición, el botón salta a su medida final y `onLayout` la reporta.
+      layout={
+        reduceMotion
+          ? undefined
+          : LinearTransition.springify()
+              .damping(Springs.glide.damping)
+              .stiffness(Springs.glide.stiffness)
+      }
       onLayout={(event) => {
         layout.current = event.nativeEvent.layout;
         if (isFocused) report(event.nativeEvent.layout);
@@ -184,8 +193,8 @@ const TabButton = forwardRef<View, TabTriggerSlotProps & { icon: IconName }>(fun
         <Icon name={icon} size={21} color={isFocused ? theme.text : theme.textSecondary} />
         {isFocused ? (
           <Animated.View
-            entering={FadeIn.duration(Duration.base)}
-            exiting={FadeOut.duration(Duration.fast)}>
+            entering={reduceMotion ? undefined : FadeIn.duration(Duration.base)}
+            exiting={reduceMotion ? undefined : FadeOut.duration(Duration.fast)}>
             <ThemedText type="smallBold">{children}</ThemedText>
           </Animated.View>
         ) : null}
