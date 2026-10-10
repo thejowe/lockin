@@ -34,6 +34,7 @@ test('link_github NO está cerrado: sin sello es un campo del formulario', () =>
 test('ve las constraints de `alter table … add constraint`', () => {
   const names = real.constraints.map((c) => `${c.table}.${c.name} ${c.kind}`).sort();
   assert.deepEqual(names, [
+    'lockin_rooms.lockin_rooms_host_id_fkey foreign',
     'profiles.profiles_github_link_matches_handle check',
     'profiles.profiles_github_verification_complete check',
   ]);
@@ -90,6 +91,19 @@ test('un `alter table` con forma desconocida revienta en vez de pasar de largo',
     alter table public.cosas drop column nombre;
   `;
   assert.throws(() => parseMigrations(sql), /forma desconocida/i);
+});
+
+test('`alter column … drop not null` y `drop constraint` no cambian las columnas', () => {
+  const sql = `
+    create table public.cosas (id uuid, dueno uuid not null);
+    alter table public.cosas alter column dueno drop not null;
+    alter table public.cosas drop constraint cosas_dueno_fkey;
+  `;
+  const parsed = parseMigrations(sql);
+  assert.deepEqual(
+    parsed.tables.get('cosas').map((c) => c.name),
+    ['id', 'dueno']
+  );
 });
 
 test('las formas de `alter table` que ya usábamos siguen pasando', () => {

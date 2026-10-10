@@ -347,6 +347,10 @@ begin
   delete from public.decisions
    where actor_id = v_user or target_id = v_user;
 
+  -- Las salas que convocó caían con el perfil por la FK; ahora `host_id` es
+  -- `on delete set null` (20261010000100) y sobrevivirían, con sus invitadas,
+  -- entre test y test. Se borran a mano; `room_members` cae en cascada.
+  delete from public.lockin_rooms where host_id = v_user;
   delete from public.user_settings where user_id = v_user;
   delete from public.profiles where id = v_user;
 end;

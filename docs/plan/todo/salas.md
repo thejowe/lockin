@@ -99,6 +99,56 @@ El resto, en orden.
       sigue viendo «0 de N han aceptado» (spec, «Nadie más acepta»), no
       «1 personas». Tests en `row-view.test.ts`.
 
+## Las salas sobreviven al borrado del convocante
+
+Migración `20261010000100_rooms_survive_host_deletion.sql` (rama
+`claude/rooms-survive-host-deletion`). Antes, borrar la cuenta de quien convoca
+hacía caer la sala y sus `room_members` en cascada: quienes habían aceptado veían
+desaparecer una sesión agendada sin saber por qué.
+
+- [x] `lockin_rooms.host_id` anulable, `on delete set null`; `cancel_room` con
+      `is distinct from` (con `<>` el nulo dejaba cancelar a cualquiera).
+- [x] `delete_my_account()` cancela las salas futuras antes de borrar; las
+      empezadas o terminadas se conservan con `host_id` nulo. Test en
+      `schema-embedded.test.mjs` (futura cancelada, empezada intacta, ajena
+      intacta, `LI004` a quien intenta cancelar una sala sin convocante).
+- [x] Hallazgo codex 1 (carrera con el lock de la sala): cada sala que convoca
+      se bloquea `for update`, por orden de id, ANTES de capturar
+      `clock_timestamp()` (patrón de reloj de PLAN.md).
+- [x] Hallazgo codex 2 (carrera con `create_room` de la misma cuenta): la fila
+      del perfil se bloquea `for update` al principio; la FK de `create_room`
+      toma KEY SHARE sobre ella y se serializan.
+- [x] Test del orden de bloqueo sobre el cuerpo real de la función. Honesto:
+      PGlite es una sola conexión y no reproduce la espera de un bloqueo
+      ajeno; las dos carreras NO se ejercitan en vivo, solo se fija el orden
+      que las cierra.
+- [x] Hallazgo codex 3 (mock): `MockStore.deleteCurrentUser()` aplica las mismas
+      reglas (`hostId` a null, futuras canceladas, empezadas conservadas, solo
+      cae la fila de miembro propia). Tests en `src/data/mock/rooms.test.ts`.
+- [x] `LockInRoom.hostId` es `string | null`: ningún consumidor asumía string
+      (todas las comparaciones son `===`/`!==`). La pantalla de sala tiene texto
+      neutro: «Se canceló la sala: quien la convocó ya no está» y «Convoca
+      alguien que ya no está». Tests en `test/app/roomId.test.tsx`.
+- [x] Segunda pasada de codex review (P2): un cliente autenticado puede borrar
+      su propio perfil por el DELETE de `profiles`, y con `set null` sus salas
+      futuras quedaban sin convocante y sin cancelar. El barrido de
+      cancelación vive ahora en un trigger `BEFORE DELETE` sobre `profiles`
+      (`profiles_cancel_hosted_rooms`, SECURITY DEFINER, sin EXECUTE para
+      clientes), con el mismo orden de bloqueo: perfil, salas, reloj.
+      `delete_my_account()` solo bloquea el perfil y borra `auth.users`. Tests:
+      borrado directo como `authenticated` y cascada desde `auth.users`.
+- [ ] Riesgo conocido y raro, sin resolver: si quien convoca y una invitada de
+      la misma sala borran su cuenta a la vez, una de las dos bajas puede
+      fallar con `40P01` (interbloqueo) y se reintenta sin más. Causa: orden de
+      bloqueo cruzado, la cascada de cada baja toca `decisions`/`matches` y
+      `room_members`/`touch_room` en distinto orden. No se rediseña por ello.
+- [ ] Migración sin aplicar al remoto (la aplica el usuario) en
+      `grrzmzktrhksbttpbblg`. Hasta entonces, `Schema drift` remoto saldrá
+      rojo por esta migración (esperado, no regresión).
+- [ ] Sin comprobación en dispositivo: el recorrido de «Eliminar mi cuenta» no
+      es posible en mock (ver `perfil`), y la rama Supabase no se ha ejercido
+      contra el proyecto real.
+
 ## Hallazgos del comprobador
 
 - 2026-10-04: el recorrido de la Tarea 12 (mock, `b478f90`) se paró a mitad al cerrar la

@@ -219,12 +219,20 @@ export default function RoomScreen() {
 
   const isHost = view.room.hostId === view.me.profileId;
   const hostName = hostFirstName(view);
+  // `hostId` nulo: quien convocó borró su cuenta (las salas sobreviven a eso).
+  const hostGone = view.room.hostId === null;
 
   if (view.room.cancelledAt !== null) {
     return (
       <Notice
         header={header}
-        title={isHost ? 'Cancelaste la sala' : `${hostName ?? 'Quien convocó'} canceló la sala`}
+        title={
+          isHost
+            ? 'Cancelaste la sala'
+            : hostGone
+              ? 'Se canceló la sala: quien la convocó ya no está'
+              : `${hostName ?? 'Quien convocó'} canceló la sala`
+        }
       />
     );
   }
@@ -241,7 +249,9 @@ export default function RoomScreen() {
   const canRespond = canRespondToRoom(view.room, view.me, nowMs);
   const canCancel = canCancelRoom(view.room, view.me.profileId, nowMs);
   const when = `${formatSessionWhen(view.room.startsAt, nowMs)} · ${blocksLabel(view.room.blocks)}`;
-  const title = isHost ? 'Convocas tú' : `Convoca ${hostName ?? 'otra persona'}`;
+  const title = isHost
+    ? 'Convocas tú'
+    : `Convoca ${hostName ?? (hostGone ? 'alguien que ya no está' : 'otra persona')}`;
   const myAvatar = meQuery.data?.avatar ?? null;
 
   const accept = () =>

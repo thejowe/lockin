@@ -66,7 +66,9 @@ export function createMockRoomRepository(
     const row = rowOf(roomId, actorId);
     if (!row || row.status === 'rechazada') return null;
     const room = getState().rooms.find((candidate) => candidate.id === roomId);
-    if (room && isBlockedPair(getState(), actorId, room.hostId)) return null;
+    // Sin convocante (borró su cuenta) no hay bloqueo posible.
+    if (room && room.hostId !== null && isBlockedPair(getState(), actorId, room.hostId))
+      return null;
     return row;
   };
 

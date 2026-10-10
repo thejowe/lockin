@@ -248,6 +248,30 @@ describe('RoomScreen — antes de la ventana', () => {
     expect(noButton('No podré ir')).toBeNull();
   });
 
+  it('si quien convocó borró su cuenta, la sala cancelada lo dice sin nombre ni crashear', async () => {
+    const { roomId } = await seedAsInvitee({ meAccepts: true });
+    const room = defaultMockStore.state.rooms.find((candidate) => candidate.id === roomId)!;
+    room.hostId = null;
+    room.cancelledAt = new Date(BASE).toISOString();
+
+    await renderRoute(<RoomScreen />);
+
+    await waitFor(() =>
+      expect(screen.getByText('Se canceló la sala: quien la convocó ya no está')).toBeTruthy()
+    );
+    expect(noButton('No podré ir')).toBeNull();
+  });
+
+  it('sin convocante y sin cancelar, el título es neutro y nadie ve «Cancelar»', async () => {
+    const { roomId } = await seedAsInvitee({ meAccepts: true });
+    defaultMockStore.state.rooms.find((candidate) => candidate.id === roomId)!.hostId = null;
+
+    await renderRoute(<RoomScreen />);
+
+    await waitFor(() => expect(screen.getByText('Convoca alguien que ya no está')).toBeTruthy());
+    expect(noButton('Cancelar sala')).toBeNull();
+  });
+
   it('con la pantalla abierta, quien rechaza tras aceptar desaparece', async () => {
     const { roomId, alba } = await seedAsInvitee({ meAccepts: true, albaAccepts: true });
 

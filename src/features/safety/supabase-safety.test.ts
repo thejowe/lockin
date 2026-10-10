@@ -33,7 +33,7 @@ function setup() {
 function tables(rows: Record<string, unknown[]>) {
   return jest.fn((table: string) => {
     const query: Record<string, unknown> = {};
-    for (const method of ['select', 'or', 'in', 'eq']) query[method] = () => query;
+    for (const method of ['select', 'or', 'in', 'eq', 'order', 'range']) query[method] = () => query;
     query.then = (resolve: (value: unknown) => void) =>
       resolve({ data: rows[table] ?? [], error: null });
     return query;
