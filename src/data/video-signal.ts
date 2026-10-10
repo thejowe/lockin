@@ -25,6 +25,11 @@ export interface VideoSignalMessage {
 export interface VideoSignalHandlers {
   onMessage(message: VideoSignalMessage): void;
   onConnection(online: boolean): void;
+  /**
+   * El cliente cerró el canal a propósito (bloqueó a la otra persona): hay que
+   * colgar la llamada, no esperar a reconectar. Opcional.
+   */
+  onRevoked?(): void;
 }
 
 export interface VideoSignalChannel {

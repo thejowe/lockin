@@ -6,6 +6,7 @@
  */
 
 import { getSupabaseClient } from './client';
+import { trackLiveChannel } from './live-channels';
 
 import type { LockInSupabaseClient } from './client';
 import type { VideoSignalChannel, VideoSignalMessage } from '../video-signal';
@@ -19,7 +20,7 @@ export function createSupabaseVideoSignalAdapter(
   const channels = new Map<string, RealtimeChannel>();
 
   return {
-    join(sessionId, profileId, { onMessage, onConnection }) {
+    join(sessionId, profileId, { onMessage, onConnection, onRevoked }) {
       let active = true;
       const client = getClient();
       const channel = client.channel(`lockin:video:${sessionId}`, { config: { private: true } });
@@ -39,12 +40,25 @@ export function createSupabaseVideoSignalAdapter(
 
       channels.set(sessionId, channel);
 
-      return () => {
+      const leave = () => {
         // removeChannel es asíncrono: el SDK aún puede entregar eventos en vuelo.
+        if (!active) return;
         active = false;
-        channels.delete(sessionId);
+        untrack();
+        // Solo si el canal sigue siendo el de esta unión: otra pudo reemplazarlo.
+        if (channels.get(sessionId) === channel) channels.delete(sessionId);
         void client.removeChannel(channel);
       };
+      // Bloquear a la otra persona cierra el canal y cuelga la llamada.
+      const untrack = trackLiveChannel(client, sessionId, () => {
+        const wasActive = active;
+        leave();
+        if (!wasActive) return;
+        onConnection(false);
+        onRevoked?.();
+      });
+
+      return leave;
     },
 
     send(sessionId, message) {

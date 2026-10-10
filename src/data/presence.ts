@@ -10,6 +10,11 @@ export interface PresenceHandlers {
   onPeers(profileIds: string[]): void;
   /** Estado de la conexión propia con la sala. */
   onConnection(online: boolean): void;
+  /**
+   * El cliente cerró el canal a propósito (bloqueó a alguien de la sala). No es
+   * una caída: no se reintenta. Opcional, para los adaptadores en memoria.
+   */
+  onRevoked?(): void;
 }
 
 export interface PresenceAdapter {

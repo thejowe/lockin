@@ -416,6 +416,31 @@ describe('useVideoCall', () => {
     expect(addTrackSpy.mock.instances.length).toBe(peers);
   });
 
+  it('si el cliente cierra el canal por un bloqueo (onRevoked), la llamada en curso se corta', async () => {
+    const addTrackSpy = jest.spyOn(RTCPeerConnection.prototype, 'addTrack');
+    const channel = createMemoryVideoSignalAdapter();
+    let revoke: (() => void) | undefined;
+    const spied = {
+      join: (...args: Parameters<typeof channel.join>) => {
+        revoke = args[2].onRevoked;
+        return channel.join(...args);
+      },
+      send: channel.send.bind(channel),
+    };
+    const { result } = await renderHook(() => useVideoCall('s1', 'ana', 'bea', true, spied));
+    await waitFor(() => expect(addTrackSpy).toHaveBeenCalled());
+    const pc = addTrackSpy.mock.instances[0] as InstanceType<typeof RTCPeerConnection>;
+    expect(revoke).toBeDefined();
+
+    await act(async () => {
+      revoke?.();
+    });
+
+    expect(pc.close).toHaveBeenCalledTimes(1);
+    expect(result.current.status).toBe('inactiva');
+    expect(result.current.localStream).toBeNull();
+  });
+
   it('colgar sale del canal y cierra la conexión: un mensaje tardío no revive el estado', async () => {
     const addTrackSpy = jest.spyOn(RTCPeerConnection.prototype, 'addTrack');
     const channel = createMemoryVideoSignalAdapter();

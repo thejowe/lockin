@@ -373,6 +373,15 @@ tareas van en paralelo (Tarea 1 ∥ Tarea 2 y Tarea 4 ∥ Tarea 5; ver el plan).
   validan con `clock_timestamp()` tras el bloqueo. Las respuestas se cierran al
   abrir la ventana de entrada, para que nadie deje de estar `aceptada` con el
   canal de presencia ya autorizado.
+- **Bloquear no revoca un canal ya autorizado.** Realtime evalúa la política de
+  un canal privado al unirse y cachea la decisión hasta reconectar o renovar el
+  JWT, y el servidor no puede revocarla. Mismo criterio que la regla anterior,
+  aceptado: el cliente de **quien bloquea** cierra sus canales de presencia y
+  vídeo (y cuelga la llamada en curso) con las sesiones y salas compartidas al
+  completarse `block_profile`; el lado bloqueado conserva el suyo hasta
+  reconectar —el bloqueo no le avisa por diseño—, y al reconectar la política
+  (`is_session_member`/`is_room_topic_member`) ya lo rechaza. No hay revocación
+  en el servidor.
 - Cero dependencias nuevas y ninguna build nativa: funciona en Expo Go, en web
   y en el emulador del `comprobador` de punta a punta.
 - Depende de: `sesiones` entregado. **Del usuario**: revisar las decisiones de

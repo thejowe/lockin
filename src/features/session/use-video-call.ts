@@ -338,6 +338,8 @@ export function useVideoCall(
         void handleMessage(message);
       },
       onConnection: () => {},
+      // El usuario bloqueó a la otra persona: la llamada en curso se corta.
+      onRevoked: () => cleanup(),
     });
 
     const start = async () => {
