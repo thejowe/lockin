@@ -243,18 +243,20 @@ export function AccountSection({ onDeleted }: AccountSectionProps = {}) {
             { backgroundColor: theme.dangerSoft, borderColor: theme.danger },
           ]}>
           <ThemedText type="bodyStrong" themeColor="danger">
-            Cerrar sesión aquí borra tus datos
+            Cerrar sesión aquí te deja sin acceso a tu cuenta
           </ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            Esta cuenta solo existe en este teléfono. Si cierras sesión, tu perfil, tus matches y
-            tus conversaciones desaparecen para siempre.
+            Esta cuenta solo existe en este teléfono. Si cierras sesión, perderás el acceso a tu
+            perfil, tus matches y tus conversaciones desde este dispositivo y no podrás
+            recuperarlo.
           </ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            Si lo que quieres es no perderlos, asegura antes la cuenta con un email.
+            Cerrar sesión no borra tus datos del servidor; para eso está «Eliminar mi cuenta». Si
+            no quieres perder el acceso, asegura antes la cuenta con un email.
           </ThemedText>
 
           <SecondaryButton
-            label={busy === 'salir' ? 'Borrando…' : 'Borrarlo todo y cerrar sesión'}
+            label={busy === 'salir' ? 'Cerrando sesión…' : 'Cerrar sesión y perder el acceso'}
             tone="danger"
             onPress={() =>
               void run(
