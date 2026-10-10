@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useRef, useState, type ReactElement } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themed-text';
@@ -32,12 +32,15 @@ export function SafetyPanel({
   matchId,
   onClose,
   onBlocked,
+  anchorReportActions = false,
 }: {
   profileId: string;
   name: string;
   matchId?: string;
   onClose: () => void;
   onBlocked: () => void;
+  /** Ver `ReportForm.anchorActions`: el padre no debe envolver el panel en un `ScrollView`. */
+  anchorReportActions?: boolean;
 }) {
   const repositories = useRepositories();
   const [stage, setStage] = useState<'menu' | 'block' | 'report' | 'reported'>('menu');
@@ -75,14 +78,24 @@ export function SafetyPanel({
     return (
       <ReportForm
         name={name}
+        anchorActions={anchorReportActions}
         onSubmit={(reason, details) => repositories.profiles.report({ profileId, reason, details })}
         onCancel={() => setStage('menu')}
         onSubmitted={() => setStage('reported')}
       />
     );
 
+  // Con las acciones del reporte ancladas el panel ocupa el alto del contenedor
+  // y no hay un `ScrollView` por encima: las etapas cortas se envuelven aquí.
+  const scrollable = (node: ReactElement) =>
+    anchorReportActions ? (
+      <ScrollView keyboardShouldPersistTaps="handled">{node}</ScrollView>
+    ) : (
+      node
+    );
+
   if (stage === 'reported')
-    return (
+    return scrollable(
       <View style={styles.panel}>
         <ThemedText type="subtitle" accessibilityRole="alert">
           Reporte enviado.
@@ -100,7 +113,7 @@ export function SafetyPanel({
     );
 
   if (stage === 'block')
-    return (
+    return scrollable(
       <View style={styles.panel}>
         <ThemedText type="subtitle">¿Bloquear a {name}?</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
@@ -132,7 +145,7 @@ export function SafetyPanel({
       </View>
     );
 
-  return (
+  return scrollable(
     <View style={styles.panel}>
       <ThemedText type="subtitle">Opciones de {name}</ThemedText>
       <Button

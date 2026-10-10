@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themed-text';
@@ -20,11 +20,20 @@ export function ReportForm({
   onSubmit,
   onCancel,
   onSubmitted,
+  anchorActions = false,
 }: {
   name: string;
   onSubmit: (reason: ReportReason, details: string) => Promise<void>;
   onCancel: () => void;
   onSubmitted: () => void;
+  /**
+   * Saca «Enviar reporte» y «Cancelar» del scroll: los campos se desplazan en
+   * su propia zona y las acciones quedan fijas al pie. Hace falta cuando el
+   * formulario vive en un contenedor de alto acotado (la tarjeta del deck, que
+   * termina sobre la barra de tabs flotante) y el padre NO lo envuelve en un
+   * `ScrollView`: el formulario ocupa todo el alto disponible (`flex: 1`).
+   */
+  anchorActions?: boolean;
 }) {
   const theme = useTheme();
   const [reason, setReason] = useState<ReportReason | null>(null);
@@ -51,8 +60,8 @@ export function ReportForm({
     }
   }
 
-  return (
-    <View style={styles.root}>
+  const fields = (
+    <>
       <ThemedText type="subtitle">Reportar a {name}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">
         El reporte es privado. Esta persona no recibirá ningún aviso.
@@ -106,6 +115,10 @@ export function ReportForm({
         themeColor={valid || length <= REPORT_MAX_LENGTH ? 'textMuted' : 'danger'}>
         {length}/{REPORT_MAX_LENGTH} caracteres
       </ThemedText>
+    </>
+  );
+  const actions = (
+    <>
       {error ? (
         <ThemedText accessibilityRole="alert" type="small" themeColor="danger">
           No se ha podido enviar el reporte. Inténtalo otra vez.
@@ -124,12 +137,38 @@ export function ReportForm({
         disabled={busy}
         onPress={onCancel}
       />
+    </>
+  );
+
+  if (anchorActions)
+    return (
+      <View style={styles.anchoredRoot}>
+        <ScrollView
+          testID="report-fields"
+          style={styles.anchoredScroll}
+          contentContainerStyle={styles.root}
+          keyboardShouldPersistTaps="handled">
+          {fields}
+        </ScrollView>
+        <View testID="report-actions" style={styles.actions}>
+          {actions}
+        </View>
+      </View>
+    );
+
+  return (
+    <View style={styles.root}>
+      {fields}
+      {actions}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { gap: Spacing.two },
+  anchoredRoot: { flex: 1, gap: Spacing.two },
+  anchoredScroll: { flex: 1 },
+  actions: { gap: Spacing.two },
   reason: {
     minHeight: 44,
     justifyContent: 'center',

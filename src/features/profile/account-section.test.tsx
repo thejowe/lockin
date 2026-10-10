@@ -333,6 +333,23 @@ describe('AccountSection', () => {
       expect(gateway.deleteMyAccount).not.toHaveBeenCalled();
     });
 
+    it('avisa a la pantalla cuando la confirmación ya está pintada, para que la desplace sobre la barra', async () => {
+      const onConfirmationShown = jest.fn();
+      gateway.readAccountState.mockResolvedValue(ANONIMA);
+      render(
+        <DataProvider value={repositories}>
+          <AccountSection onConfirmationShown={onConfirmationShown} />
+        </DataProvider>
+      );
+      await waitFor(() => expect(screen.getByText('Eliminar mi cuenta')).toBeTruthy());
+      expect(onConfirmationShown).not.toHaveBeenCalled();
+      await press('Eliminar mi cuenta');
+
+      await fireEvent(screen.getByText('Eliminar tu cuenta es para siempre'), 'layout');
+
+      expect(onConfirmationShown).toHaveBeenCalledTimes(1);
+    });
+
     it('«mejor no» la deja intacta', async () => {
       await renderSection(ASEGURADA);
       await waitFor(() => expect(screen.getByText('Eliminar mi cuenta')).toBeTruthy());

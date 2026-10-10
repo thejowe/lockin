@@ -21,7 +21,7 @@
  */
 
 import { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Radii, Spacing, Stroke } from '@/constants/theme';
@@ -98,18 +98,17 @@ export function ProfileCard({
     return (
       <View
         style={[styles.card, { backgroundColor: theme.surfaceOpaque, borderColor: theme.border }]}>
-        <ScrollView keyboardShouldPersistTaps="handled">
-          <SafetyPanel
-            profileId={profile.id}
-            name={profile.name}
-            onClose={() => setSafetyOpen(false)}
-            onBlocked={() => {
-              setBlocked(true);
-              setSafetyOpen(false);
-              onBlocked?.();
-            }}
-          />
-        </ScrollView>
+        <SafetyPanel
+          profileId={profile.id}
+          name={profile.name}
+          anchorReportActions
+          onClose={() => setSafetyOpen(false)}
+          onBlocked={() => {
+            setBlocked(true);
+            setSafetyOpen(false);
+            onBlocked?.();
+          }}
+        />
       </View>
     );
 

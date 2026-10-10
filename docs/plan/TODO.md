@@ -20,7 +20,7 @@ pasa por ahí; solo `comprobador` se libra).
 3. ~~Decisiones D01–D12 de `docs/tiendas/`~~ — **cerradas el 2026-10-10**; textos rellenos y web pública en `https://thejowe.github.io/lockin/`. Soporte: cofounder.soporte@gmail.com.
 4. Lo de iPhone y cámara real, sin cambios (`todo/visual.md`, `todo/video.md`).
 
-**Después de aplicar:** `comprobador` contra Supabase real para «Eliminar mi cuenta» y para bloquear/reportar.
+**Hecho el 2026-10-10 (sesión autónoma):** migraciones aplicadas y Schema drift verde; `user_reports` sobrevive al borrado (12 meses, `pg_cron`); bloqueo corta salas y rachas; comprobador confirmó borrar cuenta y bloquear contra Supabase real; botones destructivos ya no quedan bajo la barra de tabs. **Sigue abierto:** (1) fila de `user_reports` sin ver (sin acceso SQL desde el emulador), (2) teclado sobre «Enviar reporte» (hallazgo P2 de codex, sin medir en emulador), (3) re-comprobar los botones tras el arreglo, (4) purga de cuentas inactivas retirada: reabrir solo con columna propia de última actividad, (5) iPhone y cámara real.
 
 ## ▶ Al retomar — estado del 2026-10-05 (el más reciente; lo de más abajo es histórico)
 

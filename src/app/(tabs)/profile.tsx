@@ -17,6 +17,7 @@ import {
   ProfileForm,
 } from '@/features/profile';
 import { PrimaryButton, SecondaryButton } from '@/features/profile/controls';
+import { useReduceMotion } from '@/hooks/use-reduce-motion';
 
 /**
  * Tab Perfil: ver y editar la ficha propia.
@@ -29,6 +30,8 @@ export default function ProfileScreen() {
   const repositories = useRepositories();
 
   const [editing, setEditing] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+  const reduceMotion = useReduceMotion();
   const {
     data: profile,
     loading,
@@ -131,7 +134,7 @@ export default function ProfileScreen() {
   return (
     <Screen ambient="plum">
       <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView ref={scrollRef} contentContainerStyle={styles.content}>
           <ThemedText type="label" themeColor="textSecondary">
             Perfil
           </ThemedText>
@@ -151,7 +154,12 @@ export default function ProfileScreen() {
           {/* La cuenta va al final: es lo que menos se visita y donde vive la
             salida destructiva. Arriba está lo que se viene a mirar. */}
           <Animated.View entering={enterUp(3)}>
-            <AccountSection onDeleted={() => router.replace('/')} />
+            <AccountSection
+              onDeleted={() => router.replace('/')}
+              onConfirmationShown={() =>
+                scrollRef.current?.scrollToEnd({ animated: !reduceMotion })
+              }
+            />
           </Animated.View>
         </ScrollView>
       </SafeAreaView>

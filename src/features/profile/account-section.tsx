@@ -49,9 +49,16 @@ import { useAccountActions } from './use-account-actions';
 export interface AccountSectionProps {
   /** Corre cuando la cuenta ya está borrada: la pantalla vuelve al arranque. */
   onDeleted?: () => void;
+  /**
+   * Corre cuando una confirmación (cerrar sesión sin acceso, eliminar cuenta)
+   * ya está pintada. Las confirmaciones crecen hacia abajo, justo bajo la barra
+   * de tabs flotante: la pantalla que aloja la sección usa esto para desplazarse
+   * hasta el final y que sus botones queden a la vista, no por debajo de la barra.
+   */
+  onConfirmationShown?: () => void;
 }
 
-export function AccountSection({ onDeleted }: AccountSectionProps = {}) {
+export function AccountSection({ onDeleted, onConfirmationShown }: AccountSectionProps = {}) {
   const theme = useTheme();
   const {
     account,
@@ -238,6 +245,7 @@ export function AccountSection({ onDeleted }: AccountSectionProps = {}) {
         // En la propia pantalla y no en un diálogo del sistema, igual que el
         // panel de verificación: un modal bloqueante deja la app sin responder.
         <View
+          onLayout={onConfirmationShown}
           style={[
             styles.confirm,
             { backgroundColor: theme.dangerSoft, borderColor: theme.danger },
@@ -276,6 +284,7 @@ export function AccountSection({ onDeleted }: AccountSectionProps = {}) {
 
       {confirmingDelete ? (
         <View
+          onLayout={onConfirmationShown}
           style={[
             styles.confirm,
             { backgroundColor: theme.dangerSoft, borderColor: theme.danger },
