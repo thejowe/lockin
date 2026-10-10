@@ -52,6 +52,24 @@ $fn$;
 
 -- Última definición: 20261009215240_delete_my_account.sql. Añade el paso de
 -- cancelar las salas futuras antes de borrar la cuenta.
+--
+-- Orden de bloqueos (importa, son dos carreras reales):
+--
+-- 1. La fila del perfil, `for update`, lo primero. `create_room` inserta una
+--    sala con `host_id` apuntando a ese perfil, y la clave ajena toma
+--    `FOR KEY SHARE` sobre él, que choca con `FOR UPDATE`: una `create_room`
+--    de esta misma cuenta (otro dispositivo) o bien termina antes del barrido
+--    —y entonces se ve y se cancela— o bien espera a que esta transacción
+--    acabe y falla la clave ajena porque el perfil ya no existe. Sin esto, una
+--    sala confirmada entre el barrido y el borrado quedaba futura, sin
+--    cancelar y con `host_id` nulo: nadie podría cancelarla.
+-- 2. Cada sala que convoca, `for update`, en orden de id (sin interbloqueos
+--    entre dos barridos) y ANTES de capturar el instante de corte: es el
+--    patrón del reloj de PLAN.md. Si otro RPC de sala sostiene el bloqueo
+--    mientras se espera y `starts_at` se cruza, un instante capturado antes
+--    seguiría cumpliendo `starts_at > v_now` al reanudarse y se cancelaría una
+--    sala que ya empezó, con asistentes dentro.
+-- 3. Solo entonces `clock_timestamp()`, y el UPDATE de cancelación.
 create or replace function public.delete_my_account()
 returns void
 language plpgsql
@@ -65,6 +83,14 @@ begin
   if v_uid is null then
     raise exception 'delete_my_account: no hay sesión' using errcode = 'LI007';
   end if;
+
+  perform 1 from public.profiles where id = v_uid for update;
+
+  perform 1
+    from public.lockin_rooms
+   where host_id = v_uid and cancelled_at is null
+   order by id
+     for update;
 
   v_now := clock_timestamp();
   update public.lockin_rooms

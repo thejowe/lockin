@@ -1952,6 +1952,47 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       'Borrar mi cuenta: LI007, anon/PUBLIC sin permiso, cascada sin tocar lo ajeno y salas ajenas canceladas: OK'
     );
 
+    // Orden de bloqueo de `delete_my_account()`. PGlite es una sola conexión y no
+    // puede reproducir la espera de un bloqueo ajeno, así que las dos carreras
+    // (un RPC de sala que sostiene la fila mientras se cruza `starts_at`; una
+    // `create_room` de la misma cuenta en otro dispositivo) NO se ejercitan en
+    // vivo: lo que se fija es el orden en el cuerpo real de la función, que es
+    // lo que las cierra. El valor lo tiene la revisión de ese orden, no una
+    // concurrencia simulada.
+    const cuerpo = stripComments(
+      (
+        await db.query(
+          "select pg_get_functiondef('public.delete_my_account()'::regprocedure) as def"
+        )
+      ).rows[0].def
+    )
+      .toLowerCase()
+      .replace(/\s+/g, ' ');
+    const posicion = (re, nombre) => {
+      const i = cuerpo.search(re);
+      assert.ok(i >= 0, `delete_my_account: falta ${nombre}`);
+      return i;
+    };
+    const perfil = posicion(
+      /from public\.profiles where id = v_uid for update/,
+      'el bloqueo de la fila del perfil'
+    );
+    const salas = posicion(
+      /from public\.lockin_rooms where host_id = v_uid and cancelled_at is null order by id for update/,
+      'el bloqueo de cada sala que convoca'
+    );
+    const reloj = posicion(/v_now := clock_timestamp\(\)/, 'la captura del reloj');
+    const cancela = posicion(/update public\.lockin_rooms set cancelled_at/, 'el UPDATE');
+    const borra = posicion(/delete from auth\.users/, 'el borrado de la cuenta');
+    assert.ok(perfil < salas, 'perfil bloqueado antes que las salas');
+    assert.ok(salas < reloj, 'salas bloqueadas ANTES de capturar el instante de corte');
+    assert.ok(reloj < cancela && cancela < borra, 'reloj, cancelación y borrado, en ese orden');
+    assert.equal(
+      cuerpo.match(/clock_timestamp\(\)/g).length,
+      1,
+      'un único instante de corte, tomado tras los bloqueos'
+    );
+
     // Ejecutar las definiciones reales de las dos funciones, sin sembrar cuentas.
     const seed = readFileSync(join(here, 'seed.sql'), 'utf8');
     const start = seed.search(/create or replace function public\.seed_incoming_likes/);
