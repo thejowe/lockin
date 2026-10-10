@@ -357,5 +357,12 @@ Requisito de Apple 1.2 y de Google Play (contenido generado por usuarios). Empez
 - [x] **[Claude]** Tests: `account-section.test.tsx` (título, botón, y que el aviso diga que no borra del servidor). `e2e/*.yaml` no pulsa ese texto (grep «Borrarlo todo» sin resultados), así que no se toca.
 - Fuera de este bloque y sin tocar: `docs/tiendas/*` aún cita «Borrarlo todo» (líneas de `cuestionario-privacidad.md` y `datos-recopilados.md`); lo actualizará quien lleve los textos de tienda.
 
+### Bloquear y reportar: lo que el cuarto `codex review` dejó abierto (2026-10-09)
+
+Cuatro pasadas de `codex review` sobre `codex/bloquear-reportar`. La cuarta dejó dos puntos que se aceptan, con su porqué:
+
+- [ ] **Canal retenido cuando el bloqueo ya existía** (P1 de la cuarta pasada). Si la pareja ya estaba bloqueada por la otra persona o desde otro dispositivo, la RLS bilateral hace que `liveScopesWith()` devuelva vacío con éxito y `block()` no cierra nada: un canal de presencia o vídeo ya autorizado sigue vivo hasta reconectar. Es el mismo límite de «canal ya autorizado» de `PLAN.md` (~l.373-381) y el servidor no puede revocarlo. Arreglo posible si importa: cerrar todos los canales del cliente cuando el lookup salga vacío, a costa de colgar llamadas ajenas.
+- [ ] **`session.deleteMyAccount` ignora el cliente inyectado** (P2). En `createSupabaseRepositories({ getClient, getUserId })` el borrado de cuenta usa el cliente global de `auth`. En producción hay un solo cliente, así que no afecta; solo importa para actores secundarios del arnés de contrato, y `safetyPair().close()` ya llama al RPC con el cliente de cada actor.
+
 ## Recuerda
 Nadie contrata a nadie: no metas campos de "salario" o "equity que ofrezco" — eso es Modo Talento, Fase 4, fuera de este MVP.
