@@ -227,7 +227,7 @@ pérdida de datos silenciosa.
    - `linkEmailToCurrentUser` debe propagar con mensaje claro los fallos
      típicos: email ya en uso, contraseña débil, email inválido;
    - recuperación de contraseña (`resetPasswordForEmail`) con el `redirectTo`
-     del esquema `lockin://`, que ya está configurado.
+     del esquema `cofounder://`, que ya está configurado.
 2. `signOut()` hoy borra las credenciales del dispositivo. Con cuenta con email
    eso está bien; **con cuenta anónima sin email es destruir los datos sin
    avisar**. Haz que `signOut()` se niegue a ejecutarse (o exija un flag

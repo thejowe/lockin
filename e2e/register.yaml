@@ -2,10 +2,10 @@
 # pedido. Solo en la variante `registro`, la única cuyo APK lleva la puerta
 # encendida (`buildEnv` en run.mjs). Lo lanza run.mjs, que a continuación lee el
 # correo de Mailpit, resuelve el enlace de verificación contra GoTrue y abre el
-# `lockin://auth/callback?code=…` que devuelve con `am start`. La segunda mitad
+# `cofounder://auth/callback?code=…` que devuelve con `am start`. La segunda mitad
 # es register-confirm.yaml. `e2e/register.test.mjs` fija las etiquetas contra el
 # código.
-appId: app.lockin.mobile
+appId: app.cofounder.mobile
 name: Registro con email (1/2) — crear la cuenta y quedar a la espera del correo
 ---
 - assertTrue: ${EMAIL}

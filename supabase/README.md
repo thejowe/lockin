@@ -347,7 +347,7 @@ Cuatro interruptores importan aquí, y el estado actual del proyecto
   la vía principal, se activa el envío de correos de verdad, no el autoconfirm.
 
 Y una lista, no un interruptor: **Authentication → URL Configuration →
-Redirect URLs contiene `lockin://auth/callback`**, confirmado el 2026-09-20. Es
+Redirect URLs contiene `cofounder://auth/callback`**, confirmado el 2026-09-20. Es
 donde caen tanto el enlace del correo de confirmación como la vuelta del OAuth
 de GitHub; sin esa entrada, GoTrue rechaza el `redirectTo` y el usuario se queda
 con un enlace que no abre la app.

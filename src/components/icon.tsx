@@ -1,5 +1,5 @@
 /**
- * Iconos de trazo de LockIn.
+ * Iconos de trazo de cofounder.
  *
  * Un solo juego, dibujado a mano en una rejilla de 24 con trazo redondeado de
  * 1.8: el mismo lenguaje que la referencia de diseño (cristal, línea fina). No

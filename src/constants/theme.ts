@@ -1,5 +1,5 @@
 /**
- * Sistema de diseño de LockIn — dirección «cristal».
+ * Sistema de diseño de cofounder — dirección «cristal».
  *
  * Fuente de verdad de la paleta (grafito, cristal, brasa y verde-azulado), la
  * escala tipográfica, el espaciado y el movimiento. Ver `docs/plan/CONCEPTO.md`.

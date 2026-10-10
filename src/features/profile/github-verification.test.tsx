@@ -153,14 +153,16 @@ describe('GithubVerification', () => {
 
   it('un fallo de verdad sí se cuenta, con el motivo del proveedor', async () => {
     verifyGithub.mockRejectedValue(
-      new Error('Esa cuenta de GitHub ya está verificada en otro perfil de LockIn.')
+      new Error('Esa cuenta de GitHub ya está verificada en otro perfil de cofounder.')
     );
     await renderOwnProfile(buildProfile({ githubVerification: null }));
 
     await fireEvent.press(screen.getByText('Verificar con GitHub'));
 
     expect(
-      await screen.findByText('Esa cuenta de GitHub ya está verificada en otro perfil de LockIn.')
+      await screen.findByText(
+        'Esa cuenta de GitHub ya está verificada en otro perfil de cofounder.'
+      )
     ).toBeTruthy();
   });
 

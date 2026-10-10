@@ -69,7 +69,7 @@ beforeEach(async () => {
   githubCode = `one-use-code-${++githubCodes}`;
   await AsyncStorage.clear();
   jest.clearAllMocks();
-  jest.mocked(Linking.createURL).mockReturnValue('lockin://auth/callback');
+  jest.mocked(Linking.createURL).mockReturnValue('cofounder://auth/callback');
   auth.linkIdentity.mockResolvedValue({
     data: { url: 'https://github.com/login/oauth' },
     error: null,
@@ -82,7 +82,7 @@ beforeEach(async () => {
   rpc.mockResolvedValue({ error: null });
   jest.mocked(WebBrowser.openAuthSessionAsync).mockResolvedValue({
     type: 'success',
-    url: `lockin://auth/callback?code=${githubCode}`,
+    url: `cofounder://auth/callback?code=${githubCode}`,
   });
   const shared = { auth, rpc } as unknown as ReturnType<typeof getSupabaseClient>;
   jest.mocked(getSupabaseClient).mockReturnValue(shared);
@@ -147,15 +147,15 @@ describe('adoptLinkedGithubIdentity', () => {
 describe('linkGithubIdentity', () => {
   it('vincula GitHub a la cuenta actual y canjea el code PKCE', async () => {
     await expect(linkGithubIdentity()).resolves.toBe(true);
-    // Sin barra: con ella, en release sale `lockin:///auth/callback` y GoTrue lo rechaza.
+    // Sin barra: con ella, en release sale `cofounder:///auth/callback` y GoTrue lo rechaza.
     expect(Linking.createURL).toHaveBeenCalledWith('auth/callback');
     expect(auth.linkIdentity).toHaveBeenCalledWith({
       provider: 'github',
-      options: { redirectTo: 'lockin://auth/callback', skipBrowserRedirect: true },
+      options: { redirectTo: 'cofounder://auth/callback', skipBrowserRedirect: true },
     });
     expect(WebBrowser.openAuthSessionAsync).toHaveBeenCalledWith(
       'https://github.com/login/oauth',
-      'lockin://auth/callback'
+      'cofounder://auth/callback'
     );
     expect(auth.exchangeCodeForSession).toHaveBeenCalledWith(githubCode);
     expect(auth.signInAnonymously).not.toHaveBeenCalled();
@@ -177,7 +177,7 @@ describe('linkGithubIdentity', () => {
     ['Manual linking is disabled', 'Enable Manual Linking'],
     [
       'Identity already linked',
-      'Esa cuenta de GitHub ya está verificada en otro perfil de LockIn.',
+      'Esa cuenta de GitHub ya está verificada en otro perfil de cofounder.',
     ],
   ])('explica el error de configuración o identidad: %s', async (message, expected) => {
     auth.linkIdentity.mockResolvedValueOnce({ data: null, error: new Error(message) });
@@ -195,7 +195,7 @@ describe('linkGithubIdentity', () => {
   it('no completa la verificación si falta el code', async () => {
     jest.mocked(WebBrowser.openAuthSessionAsync).mockResolvedValueOnce({
       type: 'success',
-      url: 'lockin://auth/callback',
+      url: 'cofounder://auth/callback',
     });
     await expect(linkGithubIdentity()).rejects.toThrow('GitHub no devolvió el código');
     expect(auth.exchangeCodeForSession).not.toHaveBeenCalled();
@@ -484,7 +484,7 @@ describe('la vuelta de GitHub en frío', () => {
     await forgetOldProcess();
 
     const denied = restartProcess().completeAuthLink(
-      'lockin://auth/callback?error=access_denied&error_description=The+user+denied'
+      'cofounder://auth/callback?error=access_denied&error_description=The+user+denied'
     );
     await expect(denied).rejects.toMatchObject({ github: true });
     await expect(denied).rejects.toThrow(/GitHub/);
@@ -499,7 +499,7 @@ describe('un error de GitHub en caliente', () => {
     linking.catch(() => {});
     await waitForBrowser();
 
-    const url = 'lockin://auth/callback?error=access_denied&error_description=The+user+denied';
+    const url = 'cofounder://auth/callback?error=access_denied&error_description=The+user+denied';
     const denied = completeAuthLink(url);
     denied.catch(() => {});
     browser.finish({ type: 'success', url });
@@ -517,7 +517,7 @@ async function waitForBrowser() {
 
 /** El enlace de vuelta con ese code. */
 function callback(code: string) {
-  return `lockin://auth/callback?code=${code}`;
+  return `cofounder://auth/callback?code=${code}`;
 }
 
 /** Una promesa que el test resuelve cuando quiere. */
@@ -716,7 +716,7 @@ describe('getAccountState', () => {
 });
 
 describe('linkEmailToCurrentUser', () => {
-  it('pide la confirmación con el redirect de lockin:// y deja la cuenta pendiente', async () => {
+  it('pide la confirmación con el redirect de cofounder:// y deja la cuenta pendiente', async () => {
     auth.updateUser.mockResolvedValueOnce({
       data: { user: user({ is_anonymous: true, new_email: 'ana@example.com' }) },
       error: null,
@@ -728,12 +728,12 @@ describe('linkEmailToCurrentUser', () => {
     });
     expect(auth.updateUser).toHaveBeenCalledWith(
       { email: 'ana@example.com' },
-      { emailRedirectTo: 'lockin://auth/callback' }
+      { emailRedirectTo: 'cofounder://auth/callback' }
     );
   });
 
   it.each([
-    ['email_exists', 'email-in-use', 'ya tiene una cuenta de LockIn'],
+    ['email_exists', 'email-in-use', 'ya tiene una cuenta de cofounder'],
     ['email_address_invalid', 'invalid-email', 'no parece válido'],
     ['over_email_send_rate_limit', 'too-many-emails', 'demasiados correos'],
   ])('traduce %s a un error con nombre y con mensaje', async (code, reason, text) => {
@@ -792,11 +792,11 @@ describe('setAccountPassword', () => {
 });
 
 describe('sendPasswordReset', () => {
-  it('manda el correo al esquema lockin://', async () => {
+  it('manda el correo al esquema cofounder://', async () => {
     auth.resetPasswordForEmail.mockResolvedValueOnce({ data: {}, error: null });
     await expect(sendPasswordReset('ana@example.com')).resolves.toBeUndefined();
     expect(auth.resetPasswordForEmail).toHaveBeenCalledWith('ana@example.com', {
-      redirectTo: 'lockin://auth/callback',
+      redirectTo: 'cofounder://auth/callback',
     });
   });
 
@@ -816,7 +816,7 @@ describe('completeAuthLink', () => {
     auth.exchangeCodeForSession.mockResolvedValueOnce({ error: null });
     signedInAs({ email: 'ana@example.com', email_confirmed_at: '2026-09-17T10:00:00Z' });
     await expect(
-      completeAuthLink('lockin://auth/callback?code=confirmacion')
+      completeAuthLink('cofounder://auth/callback?code=confirmacion')
     ).resolves.toMatchObject({ kind: 'email', recoverable: true });
     expect(auth.exchangeCodeForSession).toHaveBeenCalledWith('confirmacion');
     expect(AsyncStorage.removeItem).toHaveBeenCalledWith('lockin.supabase.device-account');
@@ -826,28 +826,28 @@ describe('completeAuthLink', () => {
     auth.verifyOtp.mockResolvedValueOnce({ error: null });
     signedInAs({ email: 'ana@example.com', email_confirmed_at: '2026-09-17T10:00:00Z' });
     await expect(
-      completeAuthLink('lockin://auth/callback?token_hash=abc123&type=email_change')
+      completeAuthLink('cofounder://auth/callback?token_hash=abc123&type=email_change')
     ).resolves.toMatchObject({ kind: 'email' });
     expect(auth.verifyOtp).toHaveBeenCalledWith({ token_hash: 'abc123', type: 'email_change' });
   });
 
   it('un enlace caducado se explica en vez de quedarse esperando', async () => {
     const caducado =
-      'lockin://auth/callback?error=access_denied&error_description=Email+link+is+invalid';
+      'cofounder://auth/callback?error=access_denied&error_description=Email+link+is+invalid';
     await expect(completeAuthLink(caducado)).rejects.toThrow('El enlace ya no sirve');
     await expect(completeAuthLink(caducado)).rejects.toMatchObject({ github: false });
     expect(auth.exchangeCodeForSession).not.toHaveBeenCalled();
   });
 
   it('un enlace sin código tampoco pasa por bueno', async () => {
-    await expect(completeAuthLink('lockin://auth/callback')).rejects.toThrow(
+    await expect(completeAuthLink('cofounder://auth/callback')).rejects.toThrow(
       'no trae el código de confirmación'
     );
   });
 
   it('si el canje falla no se borran las credenciales del dispositivo', async () => {
     auth.exchangeCodeForSession.mockResolvedValueOnce({ error: gotrueError('otp_expired') });
-    await expect(completeAuthLink('lockin://auth/callback?code=viejo')).rejects.toBeInstanceOf(
+    await expect(completeAuthLink('cofounder://auth/callback?code=viejo')).rejects.toBeInstanceOf(
       AccountError
     );
     expect(AsyncStorage.removeItem).not.toHaveBeenCalled();

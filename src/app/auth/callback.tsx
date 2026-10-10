@@ -8,7 +8,7 @@ import { useRepositories } from '@/data';
 import { AuthCallback, authLinkFromParams } from '@/features/profile';
 
 /**
- * Ruta `lockin://auth/callback`: donde caen los enlaces de los correos de
+ * Ruta `cofounder://auth/callback`: donde caen los enlaces de los correos de
  * cuenta (confirmar el email y cambiar la contraseña).
  *
  * No decide nada — el trabajo está en `AuthCallback`, dentro del bloque

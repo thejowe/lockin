@@ -48,7 +48,7 @@ salvo que te pidan apagarlo (`adb emu kill`) — puede estar usándolo otra sesi
   recarga. Las credenciales de Supabase entran por `EXPO_PUBLIC_*` en el entorno del build;
   `src/data/active.ts` elige mock o Supabase por su presencia — **di siempre contra qué backend
   comprobaste**, porque contra el mock no demuestra nada de Supabase.
-- `adb install -r <apk>`; para empezar limpio, `adb shell pm clear app.lockin.mobile` (`<package>` abajo es
+- `adb install -r <apk>`; para empezar limpio, `adb shell pm clear app.cofounder.mobile` (`<package>` abajo es
   ese mismo `applicationId`, de `android/app/build.gradle`).
 - Compilaciones largas: lánzalas en segundo plano y sigue el log, no bloquees la sesión.
 

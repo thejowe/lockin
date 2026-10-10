@@ -354,12 +354,12 @@ que toca es cubrir lo que entró con `696408a`.
 
 ### Verificación en dispositivo (2026-09-24)
 
-**Entorno.** Emulador Android 16 (AVD `lockin`), APK universal `preview` de EAS (`app.lockin.mobile`, instalado el 2026-09-23, construido desde `21418ee`), proyecto Supabase real. Entre `21418ee` y `c81e124` el código de producto solo cambia en `src/data/supabase/presence.ts` y `video-signal.ts` (realtime) y en scripts de `package.json`: nada del camino de arranque (`src/app/index.tsx`, `auth.ts`, `active.ts`, `client.ts`), así que el APK vale para esta casilla.
+**Entorno.** Emulador Android 16 (AVD `lockin`), APK universal `preview` de EAS (`app.cofounder.mobile`, instalado el 2026-09-23, construido desde `21418ee`), proyecto Supabase real. Entre `21418ee` y `c81e124` el código de producto solo cambia en `src/data/supabase/presence.ts` y `video-signal.ts` (realtime) y en scripts de `package.json`: nada del camino de arranque (`src/app/index.tsx`, `auth.ts`, `active.ts`, `client.ts`), así que el APK vale para esta casilla.
 
 **Pasos.**
 1. Emulador arrancado en frío (apagado desde ayer) → app lanzada → `[lockin] backend de datos: Supabase` (20:43:35) → aterriza **directo en Descubrir**, sin onboarding ni login: la sesión de la cuenta `joeldetorres123+lockin3@gmail.com` (la de `todo/perfil.md`, 2026-09-23) ya había sobrevivido a apagar el emulador entero. No hizo falta «Ya tengo cuenta» ni dar de alta nada.
 2. Perfil: «Verif · 30 · Barcelona», Compañero de Lock-In, Desarrollo, «10 h/semana · tarde», «una app de prueba para verificar el alta»; Cuenta: «Tu cuenta está asegurada», ese email.
-3. `adb shell am force-stop app.lockin.mobile` → `pidof` vacío → `adb logcat -c` → `monkey -p app.lockin.mobile 1` → proceso nuevo (pid 5148) → `[lockin] backend de datos: Supabase` (20:46:09) → aterriza en Descubrir.
+3. `adb shell am force-stop app.cofounder.mobile` → `pidof` vacío → `adb logcat -c` → `monkey -p app.cofounder.mobile 1` → proceso nuevo (pid 5148) → `[lockin] backend de datos: Supabase` (20:46:09) → aterriza en Descubrir.
 4. Perfil y Cuenta tras reabrir: los textos del volcado de jerarquía de la tab Perfil son **idénticos** a los de antes del cierre (`diff` vacío), mismo email en Cuenta.
 
 **Evidencia** (local, ignorada por git): `e2e/artifacts/local/2026-09-24-reabrir-perfil/` — `02-primera-apertura.png`, `03-perfil-antes.{png,xml}`, `04-cuenta-antes.*`, `05-tras-reabrir.*`, `06-perfil-despues.*`, `07-cuenta-despues.*`, `logcat.txt`.

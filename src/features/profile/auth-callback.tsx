@@ -2,7 +2,7 @@
  * La vuelta del enlace que Supabase manda por correo, y la de GitHub.
  *
  * Los dos correos de la cuenta —confirmar el email y cambiar la contraseña—
- * terminan en `lockin://auth/callback`. Sin nadie que recoja ese enlace, quien
+ * terminan en `cofounder://auth/callback`. Sin nadie que recoja ese enlace, quien
  * lo pincha aterriza en la pantalla de «ruta no encontrada» de expo-router, y
  * una recuperación de contraseña se queda directamente a medias: es el canje
  * del `code` lo que abre la sesión en la que después se pone la nueva.
@@ -60,7 +60,7 @@ export function authLinkFromParams(
     if (first) query.set(key, first);
   }
   const search = query.toString();
-  return search ? `lockin://auth/callback?${search}` : null;
+  return search ? `cofounder://auth/callback?${search}` : null;
 }
 
 export function AuthCallback({

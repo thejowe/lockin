@@ -149,7 +149,7 @@ describe('RegisterForm', () => {
       gateway.linkEmailToCurrentUser.mockRejectedValue(
         new AccountError(
           'email-in-use',
-          'Ese email ya tiene una cuenta de LockIn. Prueba con otro.'
+          'Ese email ya tiene una cuenta de cofounder. Prueba con otro.'
         )
       );
       await renderForm(ANONIMA);
@@ -160,7 +160,7 @@ describe('RegisterForm', () => {
 
       await waitFor(() =>
         expect(
-          screen.getByText('Ese email ya tiene una cuenta de LockIn. Prueba con otro.')
+          screen.getByText('Ese email ya tiene una cuenta de cofounder. Prueba con otro.')
         ).toBeTruthy()
       );
       // …y la salida está ahí mismo: en el alta no hay perfil que abandonar.

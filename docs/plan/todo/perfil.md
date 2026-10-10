@@ -112,7 +112,7 @@ enlace se haya pinchado en otro sitio—.
 `(tabs)/profile.tsx`, `src/features/profile/` y este TODO, pero pide «ofrezca
 recuperar contraseña», y una recuperación no se puede cerrar sin recoger el
 enlace del correo — es el canje del `code` lo que abre la sesión en la que
-después se pone la contraseña nueva. Sin ruta, `lockin://auth/callback` cae en la
+después se pone la contraseña nueva. Sin ruta, `cofounder://auth/callback` cae en la
 pantalla de «ruta no encontrada» de expo-router. De ahí `src/app/auth/callback.tsx`,
 que además es lo que `datos` dejó escrito que era de este bloque
 (`docs/plan/todo/datos.md` → «El enlace del correo lo tiene que recoger la app…
@@ -249,16 +249,16 @@ Hueco detectado por el usuario al probar «Ya tengo cuenta» (`9818fbb`): la pan
 
 ### Verificación en dispositivo (2026-09-23)
 
-**Entorno.** Emulador Android 16 (AVD `lockin`), APK universal del perfil `preview` de EAS (`app.lockin.mobile`, firmado con el keystore real, con el bloque `env` de `21418ee`), contra el proyecto Supabase real `grrzmzktrhksbttpbblg`, con la puerta de registro obligatorio encendida. El correo se abrió en la app Gmail del emulador; el alias `joeldetorres123+lockin3@gmail.com` llega al buzón real del usuario.
+**Entorno.** Emulador Android 16 (AVD `lockin`), APK universal del perfil `preview` de EAS (`app.cofounder.mobile`, firmado con el keystore real, con el bloque `env` de `21418ee`), contra el proyecto Supabase real `grrzmzktrhksbttpbblg`, con la puerta de registro obligatorio encendida. El correo se abrió en la app Gmail del emulador; el alias `joeldetorres123+lockin3@gmail.com` llega al buzón real del usuario.
 
 **Camino de éxito, paso a paso** (horas en UTC; cada pantalla se leyó con `uiautomator dump`, no con capturas):
 
 1. **Alta.** «Crea tu cuenta» con el alias +lockin3 → `PUT /user` desde la sesión anónima (21:43:08, `user_modified`, `actor_username` vacío) → `mail.send` `email_change` a +lockin3 → la app pinta «Confirma tu email … Te hemos mandado un correo a joeldetorres123+lockin3@gmail.com».
-2. **Correo → app.** Botón «Confirm new email address» del mensaje de 9:43 PM → Chrome Custom Tab → `…/auth/v1/verify?token=pkce_…&type=email_change&redirect_to=lockin://auth/callback` (`/verify` 303, 21:46:46) → `START … dat=lockin://auth/… cmp=app.lockin.mobile/.MainActivity` → canje PKCE (`login`, `grant_type: pkce`, `provider_type: email_change`, 21:46:56) → pantalla «Elige tu contraseña» con «Email confirmado: joeldetorres123+lockin3@gmail.com». Es la ruta que `auth/callback.tsx` promete sin perfil (`/register`).
+2. **Correo → app.** Botón «Confirm new email address» del mensaje de 9:43 PM → Chrome Custom Tab → `…/auth/v1/verify?token=pkce_…&type=email_change&redirect_to=cofounder://auth/callback` (`/verify` 303, 21:46:46) → `START … dat=cofounder://auth/… cmp=app.cofounder.mobile/.MainActivity` → canje PKCE (`login`, `grant_type: pkce`, `provider_type: email_change`, 21:46:56) → pantalla «Elige tu contraseña» con «Email confirmado: joeldetorres123+lockin3@gmail.com». Es la ruta que `auth/callback.tsx` promete sin perfil (`/register`).
 3. **Contraseña.** «Guardar y continuar» → `PUT /user` (21:47:49) → la puerta se abre y aparece «Paso 1 de 2 · ¿Qué buscas?».
 4. **Estado en el servidor tras el paso 3.** `auth.users` del uid `a5fe4d5c-27e5-4cf0-8ead-33bb4740f499`: `created_at 21:04:11` (nació anónimo), `email_confirmed_at 21:46:46`, `is_anonymous=false`, contraseña puesta. **`auth.uid()` se conserva** del anónimo a la cuenta, como pide la «Decisión de alta».
 5. **Perfil.** Modo Lock-In → formulario → «Crear perfil» → Descubrir. `public.profiles` tiene la fila `Verif` con ese mismo `id` (21:50:39).
-6. **Otro dispositivo.** `adb shell pm clear app.lockin.mobile` (sesión, almacenamiento y caché borrados) → arranque con `[lockin] backend de datos: Supabase` → «Crea tu cuenta» (instalación limpia, la puerta vuelve a cerrar) → «Ya tengo cuenta» → email + contraseña → `login` `grant_type: password` del mismo uid (21:51:55) → **directo a Descubrir, sin pasar por registro, modo ni formulario**. La tab Perfil enseña el perfil de antes del borrado: «Verif · 30 · Barcelona», Compañero de Lock-In, Desarrollo, «10 h/semana · tarde», «una app de prueba para verificar el alta».
+6. **Otro dispositivo.** `adb shell pm clear app.cofounder.mobile` (sesión, almacenamiento y caché borrados) → arranque con `[lockin] backend de datos: Supabase` → «Crea tu cuenta» (instalación limpia, la puerta vuelve a cerrar) → «Ya tengo cuenta» → email + contraseña → `login` `grant_type: password` del mismo uid (21:51:55) → **directo a Descubrir, sin pasar por registro, modo ni formulario**. La tab Perfil enseña el perfil de antes del borrado: «Verif · 30 · Barcelona», Compañero de Lock-In, Desarrollo, «10 h/semana · tarde», «una app de prueba para verificar el alta».
 
 **Límites de esta verificación, dichos tal cual.** (1) «Otro dispositivo» es el mismo emulador con los datos de la app borrados, no un segundo teléfono: prueba que nada local hace falta para volver, que es lo que importa, pero no cambia el hardware. (2) Es Android: iOS no se ha recorrido en esta cadena. (3) La cuenta de prueba (+lockin3, uid `a5fe4d5c…`, perfil «Verif») queda en la base de datos real; se puede borrar desde el dashboard.
 
@@ -372,3 +372,54 @@ Cuatro pasadas de `codex review` sobre `codex/bloquear-reportar`. La cuarta dej�
 
 ## Recuerda
 Nadie contrata a nadie: no metas campos de "salario" o "equity que ofrezco" — eso es Modo Talento, Fase 4, fuera de este MVP.
+
+## Hallazgos del comprobador
+
+### 2026-10-10 — eliminar cuenta y bloquear/reportar contra Supabase real (commit e5ecf23)
+
+Backend: **Supabase real** (`grrzmzktrhksbttpbblg`, log: `[lockin] backend de datos: Supabase`). APK release compilado con `createBundleReleaseJsAndAssets --rerun` y `EXPO_PUBLIC_REQUIRE_ACCOUNT=false` (la puerta de registro apagada para entrar por el alta anónima; GoTrue tiene `mailer_autoconfirm: false` y no hay buzón al que acceder, así que no se probó con cuenta de email). Emulador `lockin`, `pm clear` previo. Evidencia: `e2e/artifacts/local/2026-10-10-borrar-bloquear-supabase/`.
+
+**Eliminar mi cuenta — ✅ con una reserva.** Cuenta anónima `b91687f5…` con perfil «Borrar Prueba29». Antes: `GET /auth/v1/user` 200 y `profiles` devuelve la fila (`11-antes-de-borrar.txt`). Perfil → «Eliminar mi cuenta» → «Mejor no» cierra la confirmación sin borrar (`16-mejor-no`, el usuario sigue existiendo) → «Eliminar mi cuenta para siempre» → la app vuelve a «¿Qué buscas?» (`20-tras-borrar.png`). Después: con el JWT guardado, `/auth/v1/user` → **403 `user_not_found` «User from sub claim in JWT does not exist»** y `profiles` → `[]` (`21-despues-de-borrar.txt`). Reserva: **no hubo consulta SQL directa sobre `auth.users`** (el comprobador no tiene clave de servicio ni acceso SQL al remoto); la inexistencia se prueba por GoTrue. Y se probó una cuenta **anónima**, no una con email confirmado (la sección de cuenta también aparece ahí); el RPC es el mismo.
+
+**Bloquear/reportar — parcial.**
+- ✅ Reportar desde el deck: «Reportar a Bloqueo Deck» → «Spam o estafa» + detalle → «Reporte enviado.» (`28-tras-enviar.png`). ⚠️ **No se comprobó la fila en `user_reports`**: la tabla no tiene política SELECT para `authenticated` (`42501`, por diseño) y no hay acceso SQL; solo consta que el RPC no devolvió error. Requiere que lo mire quien tenga el dashboard: `select * from user_reports where reporter_id = '62d37452-e58c-4c66-ad78-5a44c287629a'` (usuario ya borrado: la fila habrá caído en cascada, así que habría que repetirlo con una cuenta viva).
+- ✅ Bloquear desde el deck: «Bloquear» → confirmación → tarjeta fuera del deck; `user_blocks` del bloqueador contiene la fila (`31-user-blocks.txt`).
+- ✅ Bloquear desde el chat con match real (match creado por like mutuo en la UI; ambos lados lo ven vía REST, `34-matches-antes.txt`): «Opciones de …» → Bloquear → pantalla «Esta conversación no está disponible» (`36-tras-bloquear-chat.png`); `matches` vacío **para los dos clientes** (`37-matches-despues.txt`) y la tab Matches del dispositivo vacía (`38-matches-tab.png`). El lado bloqueado se comprobó con un cliente REST, no con un segundo dispositivo.
+- Los dos usuarios contraparte eran cuentas anónimas creadas por REST con perfil por `upsert`; no se probó el deck del bloqueado en pantalla.
+
+Limpieza: las 3 cuentas de prueba (`62d37452…`, `9645216e…`, `d3a1f527…`) borradas con `delete_my_account` y verificadas con `403 user_not_found` (`39-limpieza.txt`). Eso también retira sus filas de `user_blocks`/`profiles` por cascada.
+
+Observaciones (no bloquean):
+1. Tras borrar la cuenta, el arranque abre otra sesión anónima nueva (`62d37452…`) antes de que el usuario haga nada: en Supabase se crea una fila en `auth.users` por cada vuelta al onboarding. Es la conducta esperada del alta anónima, pero conviene saberlo para la limpieza de usuarios huérfanos.
+2. Con la confirmación de borrado abierta, el botón «Eliminar mi cuenta para siempre» queda **bajo la barra de tabs flotante** hasta hacer scroll (un toque en su centro cae en la tab «Matches»); lo mismo con «Enviar reporte» del panel de reporte, que exige scroll interior de la tarjeta. Funcional, pero fácil de tomar por roto.
+3. Un usuario cuyo perfil ya existe en el servidor y que reabre la app con `pm clear`/sesión nueva de onboarding local ve el formulario vacío (el modo y el formulario no se hidratan del perfil remoto). Observado al crear el perfil por REST; no se ha podido distinguir si es intencional.
+4. Primer arranque: `PGRST303 … se repite la petición una vez` en el logcat (intermitente conocido).
+
+Casillas: «Recorrido … borrar cuenta … la fila de `auth.users` ya no existe» queda **comprobable como ✅ con la reserva de arriba**; «bloquear desde el deck y desde el chat … reportar escribe una fila en `user_reports`» queda **✅ en bloquear (deck y chat, dos lados) y ⚠️ en la fila de `user_reports`**. No marco ninguna casilla.
+
+### 2026-10-10 — acciones bajo la barra de tabs, re-comprobación (commit 555ea2f)
+
+Backend: **Supabase real** (`grrzmzktrhksbttpbblg`, logcat `[lockin] backend de datos: Supabase`). APK release recompilado con `createBundleReleaseJsAndAssets --rerun` y `EXPO_PUBLIC_REQUIRE_ACCOUNT=false`, sobre el árbol de trabajo (HEAD 555ea2f más cambios sin commitear ajenos, sin efecto en maquetación). Emulador `lockin`, 1080x2400 @420dpi, `pm clear` previo, cuenta anónima desechable (borrada al final desde la propia UI). Evidencia: `e2e/artifacts/local/2026-10-10-acciones-bajo-tabs/`.
+
+- **✅ Eliminar mi cuenta, sin scroll a mano.** Perfil, scroll al fondo, «Eliminar mi cuenta» → aparece la confirmación y la pantalla se desplaza sola: «Eliminar mi cuenta para siempre» en y=1601–1748 y «Mejor no» en y=1769–1916 (barra de tabs desde y=2171, ~255 px de margen). Pulsable (`53.png`/`53.xml`, `51.xml`). Con «Reducir animaciones» (`window/transition/animator_duration_scale=0`, reinicio en frío de la app) las mismas coordenadas, sin desplazamiento animado y visible (`53.png`). «Mejor no» cierra la confirmación (`55-mejor-no.png`) y «Eliminar mi cuenta para siempre» devuelve al onboarding (`60.xml`).
+- **✅ Reportar sin teclado.** Tarjeta → ⋯ → Reportar: «Enviar reporte» y «Cancelar» fijos al pie, y=1529–1676 / 1697–1844, visibles con la lista de motivos sin scroll (`25.png`). «Detalles» queda oculto en la zona de campos hasta hacer scroll interior (el tap a y≈1540 cayó en «Enviar reporte», que ya estaba habilitado, y **envió un reporte real**; ver limpieza).
+- **❌ Reportar con «Detalles» enfocado y el teclado abierto (riesgo P2 de codex confirmado).** IME de Gboard con `frame=[0,1517][1080,2400]` (883 px ≈ 336 dp, `adjustResize` no reduce el panel): «Enviar reporte» (1529–1676) y «Cancelar» (1697–1844) quedan **enteras bajo el teclado**, no se ven ni se pueden pulsar; solo se ve «0/500 caracteres» pegado al borde (`41.png`, `42-teclado-con-texto.png`). Se recuperan cerrando el teclado con Atrás (el panel no se cierra, `43b-sin-teclado.png`). Misma altura con texto escrito. No se ha arreglado.
+- **✅ Swipe del deck sin regresión.** Tras abrir y cerrar el panel de reporte (Cancelar → Cerrar), arrastre horizontal 900→100 en y=1000: la tarjeta «Verif GH» se va y entra «adwa» (`45-antes-swipe.png`, `46.xml`).
+
+Observaciones:
+1. Con «Reducir animaciones» activado la barra de tabs se pinta mal en la tab Perfil: la píldora de selección queda sobre «Matches» y el icono de Perfil aparece recortado (`53.png`, `54-tabbar-persist.png`, `55-mejor-no.png`); persiste con la pantalla quieta. No es de este commit, pero es visible.
+2. Entorno: el AVD tenía `hw.keyboard=yes`, y Android no pinta el teclado en pantalla (IME con frame de altura 0) ni Gboard responde a `show_ime_with_hard_keyboard`. Para medir se reinició el emulador una vez con `hw.keyboard=no` y se restauró `config.ini` justo después del arranque; el emulador queda encendido en ese estado. Cualquier comprobación que dependa del teclado en pantalla necesita ese mismo arranque (queda en el recuerdo del comprobador).
+3. Limpieza: la cuenta anónima de prueba se borró con «Eliminar mi cuenta» (vuelve al onboarding, que abre otra anónima nueva, conocido). El reporte que se envió por error a «Verif GH» (perfil de pruebas ya existente) desaparece con el borrado en cascada; no se verificó en SQL.
+
+Casillas: «Pendiente de re-comprobar en dispositivo» de «Acciones bajo la barra de tabs» queda **✅ en eliminar cuenta y en reportar sin teclado, ❌ en reportar con teclado**. No marco ninguna casilla.
+
+### 2026-10-10 — reporte con teclado, re-comprobación (commit fc27e27)
+
+Backend: **Supabase real** (logcat `[lockin] backend de datos: Supabase`). APK release recompilado con `createBundleReleaseJsAndAssets --rerun` y `EXPO_PUBLIC_REQUIRE_ACCOUNT=false` sobre el árbol de trabajo (HEAD fc27e27 + cambios ajenos sin commitear). AVD `lockin` arrancado con `hw.keyboard=no` (config.ini restaurado a `yes` justo después), Gboard en pantalla (IME top y=1517). Cuenta anónima desechable con perfil «Comprobador», borrada al final con «Eliminar mi cuenta para siempre». Evidencia: `e2e/artifacts/local/2026-10-10-teclado-reporte-y-tabs/`.
+
+- **✅ Reportar con «Detalles» enfocado y teclado abierto.** Tarjeta → ⋯ → Reportar → scroll interior → tap en «Detalles»: teclado [0,1517][1080,2400]; «Enviar reporte» y=1202–1349 y «Cancelar» y=1370–1517 enteros **por encima** del teclado; campo «Detalles» y=950–1181 visible con el cursor (`19.png`/`19.xml`). Tecleado texto («prueba teclado», 14/500) y elegido motivo «Otro motivo» con el teclado abierto: «Enviar reporte» habilitado y sigue visible (`20`, `21`). Con la lista de motivos desplazada al principio (título, Acoso, Contenido, Spam visibles), acciones igualmente fijas sobre el teclado (`22.png`). «Cancelar» pulsado a y≈1443 con el teclado abierto: cierra el panel y el teclado (`23.xml`, `mInputShown=false`). No se pulsó «Enviar reporte» en ningún momento.
+- **✅ Sin teclado, igual que antes.** Antes de enfocar (`17`/`24`) y tras cerrar el teclado con Atrás (`26`): «Enviar reporte» y=1529–1676, «Cancelar» y=1697–1844, como en la prueba anterior.
+- Observación menor: con el teclado abierto «Cancelar» queda **pegado** al borde del teclado (borde inferior y=1517 = techo del IME, margen 0), sin la holgura inferior de la tarjeta; entero y pulsable, pero sin aire.
+- ⚠️ Con el campo «Detalles» oculto bajo las acciones (sin teclado) sigue haciendo falta scroll interior para alcanzarlo (comportamiento previo, no regresión).
+
+Casilla «Re-comprobar en emulador con hw.keyboard=no…» (línea «teclado sobre las acciones del reporte»): la evidencia la **confirma ✅**; no la marco.

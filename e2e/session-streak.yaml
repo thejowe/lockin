@@ -7,7 +7,7 @@
 # No hay oráculo de Postgres: la racha no se guarda, así que lo único que se
 # puede comprobar es lo que pinta la app. Relanza la app por lo mismo que
 # session-rate.yaml: la siembra ocurre en Postgres con la app abierta.
-appId: app.lockin.mobile
+appId: app.cofounder.mobile
 name: Ver la racha de pareja en Matches y en el chat
 ---
 - launchApp:

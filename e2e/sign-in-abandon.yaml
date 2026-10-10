@@ -14,7 +14,7 @@
 # toda ruta (`scheme: "lockin"`). La otra cuenta —email confirmado y ficha
 # `${PROFILE_NAME}`— la crea run.mjs con la service_role antes de este flujo.
 # `e2e/sign-in.test.mjs` fija las etiquetas contra el formulario.
-appId: app.lockin.mobile
+appId: app.cofounder.mobile
 name: Entrar en otra cuenta abandonando el perfil anónimo
 ---
 - assertTrue: ${EMAIL && PASSWORD && PROFILE_NAME && ANON_PROFILE_NAME}
@@ -23,7 +23,7 @@ name: Entrar en otra cuenta abandonando el perfil anónimo
 - extendedWaitUntil:
     visible: 'Descubrir'
     timeout: 60000
-- openLink: lockin://sign-in
+- openLink: cofounder://sign-in
 - extendedWaitUntil:
     visible: 'Vuelve a tu cuenta'
     timeout: 30000

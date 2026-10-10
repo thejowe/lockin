@@ -1,5 +1,5 @@
 /**
- * Test de la ruta `lockin://auth/callback`.
+ * Test de la ruta `cofounder://auth/callback`.
  *
  * La ruta no decide nada más que a dónde sigue la persona cuando el enlace ya
  * está aplicado — la lógica vive en `AuthCallback`, que tiene sus propios tests

@@ -7,7 +7,7 @@
 # Relanza la app a propósito: el envejecido de la sesión ocurre en Postgres
 # mientras la app está abierta, y esperar al tic de 30 s de `useActiveSession`
 # sería atarse a un temporizador. Volver a arrancar releé sin esperas.
-appId: app.lockin.mobile
+appId: app.cofounder.mobile
 name: Valorar la sesión Lock-In desde el chat
 ---
 - assertTrue: ${MESSAGE}

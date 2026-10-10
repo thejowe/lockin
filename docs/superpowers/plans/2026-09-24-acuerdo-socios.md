@@ -2922,7 +2922,7 @@ export async function verifyAgreementAnswer(status, profileName) {
 # y espera la revelación. Solo en la variante con credenciales, encadenado
 # después de session-streak.yaml. `e2e/agreement.test.mjs` fija las etiquetas
 # contra el código.
-appId: app.lockin.mobile
+appId: app.cofounder.mobile
 name: Acuerdo de socios a ciegas desde el chat
 ---
 - assertTrue: ${MESSAGE}

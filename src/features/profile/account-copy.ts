@@ -64,7 +64,8 @@ const COPY: Record<AccountErrorReason, string | null> = {
   'unrecoverable-account':
     'Esta cuenta solo vive en este teléfono: si cierras sesión, perderás el acceso a tu perfil, ' +
     'tus matches y tus conversaciones y no podrás recuperarlos. Asegúrala antes con un email.',
-  'no-session': 'Aquí ya no hay ninguna sesión abierta. Cierra LockIn, vuelve a abrirla y repite.',
+  'no-session':
+    'Aquí ya no hay ninguna sesión abierta. Cierra cofounder, vuelve a abrirla y repite.',
   offline: OFFLINE,
   unknown: null,
 };
@@ -110,7 +111,7 @@ export function describeAccountError(cause: unknown): string {
       // `invalid_credentials` es el fallo propio de «Ya tengo cuenta» y GoTrue
       // no le da código traducible en `auth.ts`, así que se reconoce aquí. No
       // distingue «ese email no existe» de «contraseña errónea»: decirlo sería
-      // contarle a cualquiera quién tiene cuenta en LockIn.
+      // contarle a cualquiera quién tiene cuenta en cofounder.
       if (causeCode(cause.cause) === 'invalid_credentials') {
         return 'Email o contraseña incorrectos. Revísalos e inténtalo otra vez.';
       }

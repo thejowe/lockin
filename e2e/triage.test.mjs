@@ -234,7 +234,7 @@ describe('parseAnrDialog', () => {
 
 describe('classifyFailure: el ANR de otro proceso tapando la pantalla', () => {
   // Run 34172803719, trabajo `mock`: el logcat dice
-  // `Displayed app.lockin.mobile/.MainActivity for user 0: +3s934ms`, o sea que
+  // `Displayed app.cofounder.mobile/.MainActivity for user 0: +3s934ms`, o sea que
   // la app SÍ pintó, y aun así el `extendedWaitUntil` de 60 s falló. En el
   // volcado del paso fallido la pantalla es "System UI isn't responding": la
   // aserción estuvo preguntando por la ventana del sistema, no por la app.

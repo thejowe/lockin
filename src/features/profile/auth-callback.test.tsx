@@ -26,7 +26,7 @@ const gateway = jest.requireMock('./account-gateway') as {
   completeAuthLink: jest.Mock;
 };
 
-const ENLACE = 'lockin://auth/callback?code=abc123';
+const ENLACE = 'cofounder://auth/callback?code=abc123';
 
 let onDone: jest.Mock;
 
@@ -134,7 +134,7 @@ describe('AuthCallback', () => {
     const { rerender } = await render(<AuthCallback url={ENLACE} onDone={onDone} />);
     await waitFor(() => expect(screen.getByText('Ese enlace no ha funcionado')).toBeTruthy());
 
-    const OTRO = 'lockin://auth/callback?code=otro456';
+    const OTRO = 'cofounder://auth/callback?code=otro456';
     await rerender(<AuthCallback url={OTRO} onDone={onDone} />);
 
     await waitFor(() => expect(gateway.completeAuthLink).toHaveBeenCalledWith(OTRO));

@@ -1,5 +1,5 @@
 /**
- * Tipos de dominio de LockIn.
+ * Tipos de dominio de cofounder.
  *
  * Este archivo es el contrato compartido entre bloques (`perfil`, `descubrir`,
  * `chat`, `datos`). Un cambio aquí rompe pantallas de otros bloques: avisa antes

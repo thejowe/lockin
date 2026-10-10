@@ -1282,7 +1282,7 @@ no llegaba a pintar la pantalla de modo. No es eso. El artefacto
 `e2e-android-mock` lo desmiente en dos sitios:
 
 - `logcat.txt`:
-  `Displayed app.lockin.mobile/.MainActivity for user 0: +3s934ms`. La app
+  `Displayed app.cofounder.mobile/.MainActivity for user 0: +3s934ms`. La app
   arrancó y pintó, cuatro segundos después del `launchApp`.
 - el volcado de jerarquía del paso que falla
   (`step-005-assertCondition-Cofundador.json`) tiene **tres nodos con texto y
@@ -2755,7 +2755,7 @@ rojo; no lo son, y ninguno de los dos se arregla desde este bloque.
       `e2e-android-mock/.../logs/crash-report.txt`:
 
       ```
-      E/AndroidRuntime( 3879): Process: app.lockin.mobile, PID: 3879
+      E/AndroidRuntime( 3879): Process: app.cofounder.mobile, PID: 3879
       E/AndroidRuntime( 3879): com.facebook.react.common.JavascriptException:
       Error: LockIn no puede arrancar sin backend: faltan
       EXPO_PUBLIC_SUPABASE_URL y EXPO_PUBLIC_SUPABASE_ANON_KEY. ...
@@ -3464,7 +3464,7 @@ usara. Solo `e2e/**` y este archivo.
       + `cd33cac` + `0dd7388`, y comprobado el 2026-09-23 sobre el artefacto del
       run 35686717809: existe la tercera variante `registro` en la matriz de
       `e2e.yml`, con `mail.mjs`, `register.yaml` y `register-confirm.yaml`, y el
-      recorrido entero —correo, enlace por `lockin://auth/callback`, contraseña,
+      recorrido entero —correo, enlace por `cofounder://auth/callback`, contraseña,
       mismo uid— sale `pass`. Lo de abajo está obsoleto en dos cosas más: el
       correo lo sirve **Mailpit**, no Inbucket, y no hizo falta `assetlinks`
       porque el enlace vuelve por el esquema. Sigue sin recorrerse «Ya tengo
@@ -3515,7 +3515,7 @@ emulador»). Hoy la matriz de `.github/workflows/e2e.yml` tiene **tres** variant
 sino uno propio: `register.yaml` + `register-confirm.yaml`, con `e2e/mail.mjs`
 leyendo el correo. Dos detalles de la nota vieja que ya no valen: el correo no lo
 sirve Inbucket sino **Mailpit**, y el enlace no necesita `assetlinks` porque
-vuelve por el **esquema** `lockin://auth/callback`.
+vuelve por el **esquema** `cofounder://auth/callback`.
 
 - [x] **Run [35686717809](https://github.com/thejowe/lockin/actions/runs/35686717809)**
       (`0dd7388`, el HEAD de la rama), trabajo `E2E Android (registro)`
@@ -3528,8 +3528,8 @@ vuelve por el **esquema** `lockin://auth/callback`.
         las tres y en la raíz.
       - `attempt-03/mail.json` → email `e2e-a960ae3b-…@example.com`, `userId`
         `105243a4-b17e-4ca3-a63f-938b9bc70b5e`, `verifyLink`
-        `…/auth/v1/verify?token=…&type=email_change&redirect_to=lockin://auth/callback`
-        y `callback` `lockin://auth/callback?code=…` — el token y el `code` van
+        `…/auth/v1/verify?token=…&type=email_change&redirect_to=cofounder://auth/callback`
+        y `callback` `cofounder://auth/callback?code=…` — el token y el `code` van
         elididos **a propósito** en el artefacto (`run.mjs`: «ya es una
         credencial»).
       - `attempt-03/postgres.json` → `{ variant: "registro", userId: "105243a4-…",
@@ -3539,7 +3539,7 @@ vuelve por el **esquema** `lockin://auth/callback`.
       - `commands.json` de los dos flujos, **todos los comandos `COMPLETED`**:
         `register.yaml` recorre «Crea tu cuenta» → email → «Crear cuenta» →
         «Confirma tu email»; `register-confirm.yaml`, tras el
-        `am start -a android.intent.action.VIEW -d 'lockin://auth/callback?code=…'`,
+        `am start -a android.intent.action.VIEW -d 'cofounder://auth/callback?code=…'`,
         recorre «Elige tu contraseña», la aserción `Email confirmado: ${EMAIL}`,
         la contraseña, «Guardar y continuar» → «Cofundador», y después un
         `stopApp` + `launchApp` con `clearState: false` que vuelve a exigir
@@ -3551,7 +3551,7 @@ vuelve por el **esquema** `lockin://auth/callback`.
 - [x] **El caso no es decorativo: pilló dos bugs reales antes de ponerse verde.**
       Run [35656515945](https://github.com/thejowe/lockin/actions/runs/35656515945)
       (`b788b04`) → `caso`: «GoTrue redirigió a `http://127.0.0.1:3000?code=…` y
-      no a `lockin://auth/callback`» (lo arregló `cd33cac`). Run
+      no a `cofounder://auth/callback`» (lo arregló `cd33cac`). Run
       [35658934499](https://github.com/thejowe/lockin/actions/runs/35658934499)
       (`cd33cac`) → `caso` en `attempt-03`: `Assertion is false: "Elige tu
       contraseña" is visible` (lo arregló `0dd7388`, el canje con la app ya
@@ -3599,7 +3599,7 @@ vuelve por el **esquema** `lockin://auth/callback`.
       onboarding (`mode.tsx:89`, `register.tsx:30`) y quien tiene perfil no pasa
       por él (`index.tsx:43` → `/discover`). Pero expo-router expone toda ruta
       como deep link (`scheme: "lockin"` en `app.json`), y `sign-in.tsx:25` solo
-      comprueba `accountsAvailable`: `lockin://sign-in` abre el formulario desde
+      comprueba `accountsAvailable`: `cofounder://sign-in` abre el formulario desde
       cualquier sitio. La otra mitad de la condición —perfil en una cuenta no
       recuperable— existe en dos casos: (a) una build con
       `EXPO_PUBLIC_REQUIRE_ACCOUNT=false`, como el APK de la variante `supabase`
@@ -3622,8 +3622,8 @@ vuelve por el **esquema** `lockin://auth/callback`.
       2. `e2e/sign-in-abandon.yaml`, encadenado **después** de
          `full-journey.yaml` en la misma variante (hereda su perfil anónimo):
          `launchApp: clearState: false` → esperar `'Descubrir'`.
-      3. `openLink: lockin://sign-in` (o `am start -a android.intent.action.VIEW
-         -d lockin://sign-in app.lockin.mobile` desde `run.mjs`, como hace
+      3. `openLink: cofounder://sign-in` (o `am start -a android.intent.action.VIEW
+         -d cofounder://sign-in app.cofounder.mobile` desde `run.mjs`, como hace
          `register.yaml` con el callback) → esperar `'Vuelve a tu cuenta'`.
       4. Escribir `${EMAIL}` y `${PASSWORD}` con los mismos `tapOn` +
          `hideKeyboard` de `sign-in.yaml`, pulsar `'Entrar'` → afirmar
@@ -3645,7 +3645,7 @@ vuelve por el **esquema** `lockin://auth/callback`.
       **[Claude] 2026-09-30 — Flujo escrito, pendiente de run de «E2E Android».**
       Sin emulador en esta máquina: nada de esto se ha visto en un dispositivo.
       - `e2e/sign-in-abandon.yaml`: pasos 2-6 tal cual (`launchApp: clearState:
-        false` → `'Descubrir'` → `openLink: lockin://sign-in` → email y
+        false` → `'Descubrir'` → `openLink: cofounder://sign-in` → email y
         contraseña → aviso → «Mejor no» → aviso fuera y `'Entrar'` de vuelta →
         «Entrar» → aviso → «Entrar y dejar este perfil» → `'Matches'` →
         Perfil con `${PROFILE_NAME}` y sin `${ANON_PROFILE_NAME}` → «Email de tu
@@ -3670,7 +3670,7 @@ vuelve por el **esquema** `lockin://auth/callback`.
       Qué mirar en el run: `e2e/artifacts/supabase/<intento>/sign-in-abandon/`.
       Riesgos conocidos: (1) `openLink` con la app viva en las tabs — si
       expo-router no empuja `/sign-in`, muere en `'Vuelve a tu cuenta'`, y la
-      alternativa es el `am start ... app.lockin.mobile` desde `run.mjs`;
+      alternativa es el `am start ... app.cofounder.mobile` desde `run.mjs`;
       (2) tras `router.replace('/')` las tabs que ya estaban montadas no
       releen (`useQuery` no refresca al enfocar): el flujo solo tiene montada
       Descubrir al entrar, así que Perfil se lee de cero, pero si el volcado

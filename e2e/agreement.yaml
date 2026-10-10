@@ -8,7 +8,7 @@
 #
 # Relanza la app por lo mismo que session-rate.yaml: la siembra ocurre en
 # Postgres con la app abierta, y volver a arrancar relee sin esperas.
-appId: app.lockin.mobile
+appId: app.cofounder.mobile
 name: Acuerdo de socios a ciegas desde el chat
 ---
 - assertTrue: ${MESSAGE}

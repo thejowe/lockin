@@ -5503,7 +5503,7 @@ for each row execute function public.e2e_session_now();
 # mensaje de ese recorrido, y la sesión aceptada que deja `session-now.sql`.
 # Solo en la variante con credenciales. `e2e/session.test.mjs` fija las
 # etiquetas contra el código.
-appId: app.lockin.mobile
+appId: app.cofounder.mobile
 name: Entrar y salir de una sesión Lock-In
 ---
 - assertTrue: ${MESSAGE}

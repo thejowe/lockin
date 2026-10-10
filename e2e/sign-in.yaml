@@ -1,6 +1,6 @@
 # La cuenta y su perfil único los prepara registrationAttempt antes de borrar
 # el estado. La ficha recuperada distingue su uid del anónimo del nuevo arranque.
-appId: app.lockin.mobile
+appId: app.cofounder.mobile
 name: Entrar en la cuenta existente desde una instalación limpia
 ---
 - assertTrue: ${EMAIL && PASSWORD && PROFILE_NAME}

@@ -65,16 +65,16 @@ describe('register.yaml y register-confirm.yaml', () => {
 
 describe('el enlace del correo vuelve a la app', () => {
   it('por el esquema de app.json, el mismo que usa auth.ts', () => {
-    assert.equal(app.expo.scheme, 'lockin');
+    assert.equal(app.expo.scheme, 'cofounder');
     assert.equal(AUTH_CALLBACK, app.expo.scheme + '://auth/callback');
-    // Sin barra inicial: `createURL('/auth/callback')` da `lockin:///auth/callback`
+    // Sin barra inicial: `createURL('/auth/callback')` da `cofounder:///auth/callback`
     // en release y GoTrue lo manda a `site_url` (run 35656515945).
     assert.match(auth, /Linking\.createURL\('auth\/callback'\)/);
     assert.doesNotMatch(auth, /Linking\.createURL\('\//);
   });
 
   it('prepare lo permite en GoTrue y enciende la confirmación, como en el dashboard', () => {
-    assert.match(runner, /"lockin:\/\/auth\/callback"\]/);
+    assert.match(runner, /"cofounder:\/\/auth\/callback"\]/);
     assert.match(runner, /'\$1enable_confirmations = true'/);
     assert.match(runner, /'double_confirm_changes = false'/);
   });
@@ -104,7 +104,7 @@ describe('la variante en el runner y en el workflow', () => {
 
 describe('mail.mjs', () => {
   const link =
-    'http://127.0.0.1:54321/auth/v1/verify?token=pkce_abc&type=email_change&redirect_to=lockin://auth/callback';
+    'http://127.0.0.1:54321/auth/v1/verify?token=pkce_abc&type=email_change&redirect_to=cofounder://auth/callback';
 
   it('prefiere MAILPIT_URL y cae en INBUCKET_URL, sin barra final', () => {
     assert.equal(mailpitUrl({ MAILPIT_URL: 'http://127.0.0.1:54324/' }), 'http://127.0.0.1:54324');
@@ -123,15 +123,15 @@ describe('mail.mjs', () => {
   });
 
   it('acepta solo el callback de la app con un code de PKCE', () => {
-    const ok = 'lockin://auth/callback?code=0b3c';
+    const ok = 'cofounder://auth/callback?code=0b3c';
     assert.equal(callbackFrom(ok), ok);
     assert.throws(
       () => callbackFrom('http://127.0.0.1:3000?code=0b3c'),
       /additional_redirect_urls/
     );
-    assert.throws(() => callbackFrom('lockin://auth/callback#access_token=x'), /sin `\?code=`/);
+    assert.throws(() => callbackFrom('cofounder://auth/callback#access_token=x'), /sin `\?code=`/);
     assert.throws(
-      () => callbackFrom('lockin://auth/callback?error=access_denied&error_description=expired'),
+      () => callbackFrom('cofounder://auth/callback?error=access_denied&error_description=expired'),
       /rechazó el enlace del correo: expired/
     );
     assert.throws(() => callbackFrom(null), /Location/);

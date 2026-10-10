@@ -149,7 +149,7 @@ contra el mock y contra PGlite, que es donde llega el desarrollo.
       confirmado por el cotejo remoto (ver arriba).
 - [x] **[comprobador]** Verificar el flujo en el emulador con un APK nativo
       (no Expo Go) contra Supabase real: el OAuth necesita un navegador de
-      verdad y un deep link de vuelta (`lockin://`). Evidencia: el sello en
+      verdad y un deep link de vuelta (`cofounder://`). Evidencia: el sello en
       la tab Perfil y `github_*` rellenos en `profiles`. El usuario teclea su
       login de GitHub cuando el agente se lo pida. **Intentado el 2026-09-24:
       ❌ bloqueado por configuración, no por código.** El Client ID guardado en
@@ -298,12 +298,12 @@ Tras `force-stop` + relanzar, el sello sigue (`04-perfil-frio-defensa.*`).
 sello, también tras `force-stop` (`05-tras-quitar.*`,
 `06-perfil-frio-quitado.*`). «Verificar con GitHub» → en cuanto
 `CustomTabActivity` queda arriba, modo avión: Custom Tab de `github.com` sin
-red (`08-customtab.png`). `am kill app.lockin.mobile` con la app detrás →
-`Killing 18333:app.lockin.mobile/u0a218 (adj 700): kill background`, `pidof`
+red (`08-customtab.png`). `am kill app.cofounder.mobile` con la app detrás →
+`Killing 18333:app.cofounder.mobile/u0a218 (adj 700): kill background`, `pidof`
 vacío (`pid-tras-am-kill.txt`). Fuera el modo avión: GitHub autoriza solo y
 Supabase redirige; logcat: `START u0 {act=VIEW cat=[BROWSABLE]
-dat=lockin://auth/... cmp=app.lockin.mobile/.MainActivity} with
-LAUNCH_SINGLE_TASK ... result code=2` y `Start proc 18866:app.lockin.mobile
+dat=cofounder://auth/... cmp=app.cofounder.mobile/.MainActivity} with
+LAUNCH_SINGLE_TASK ... result code=2` y `Start proc 18866:app.cofounder.mobile
 ... for next-top-activity` (`logcat-tras-red.txt`): el mismo
 `START_DELIVERED_TO_TOP` que el 2026-10-04 sobre `70e4042`, pero ahora **la
 app arranca en `auth/callback`**: «Un momento… Estamos actualizando tu
@@ -359,15 +359,15 @@ con la anon key y `GET /rest/v1/profiles`).
    vuelva se activó el modo avión en cuanto `CustomTabActivity` quedó arriba:
    Custom Tab de `github.com` parada, cargando (`11-customtab.*`).
 3. Con la app en segundo plano detrás de la Custom Tab: `am kill
-   app.lockin.mobile` → logcat `Killing 14318:app.lockin.mobile/u0a218 (adj
+   app.cofounder.mobile` → logcat `Killing 14318:app.cofounder.mobile/u0a218 (adj
    700): kill background`, `pidof` vacío (`pid-tras-am-kill.txt`,
    `logcat-hasta-kill.txt`).
 4. Fuera el modo avión: Chrome recarga solo, GitHub autoriza y Supabase
-   redirige a `lockin://auth/...`. logcat (`logcat-tras-red.txt`):
-   `START u0 {act=VIEW cat=[BROWSABLE] dat=lockin://auth/... flg=0x14000000
-   cmp=app.lockin.mobile/.MainActivity} with LAUNCH_SINGLE_TASK ... result
+   redirige a `cofounder://auth/...`. logcat (`logcat-tras-red.txt`):
+   `START u0 {act=VIEW cat=[BROWSABLE] dat=cofounder://auth/... flg=0x14000000
+   cmp=app.cofounder.mobile/.MainActivity} with LAUNCH_SINGLE_TASK ... result
    code=2`, `onActivityRestartAttempt: topActivity=...MainActivity`, y
-   `Start proc 15620:app.lockin.mobile ... for next-top-activity`.
+   `Start proc 15620:app.cofounder.mobile ... for next-top-activity`.
 5. **La app arranca en Descubrir, no en `auth/callback`** (`14-app-tras-vuelta.*`).
    Ninguna pantalla de «Un momento…» ni de error; logcat de JS solo dice
    `Running "main"` y el backend. (Chrome se quedó colgado con un ANR encima;
@@ -395,7 +395,7 @@ con la anon key y `GET /rest/v1/profiles`).
 `result code=2` es `START_DELIVERED_TO_TOP`: con `launchMode="singleTask"` y
 la tarea de LockIn aún en recientes (solo había muerto el proceso), Android
 no lanza la actividad con el intent `VIEW`. Recrea `MainActivity` con su
-intent de origen (el `MAIN` del lanzador) y entrega el `lockin://` por
+intent de origen (el `MAIN` del lanzador) y entrega el `cofounder://` por
 `onNewIntent`. Entonces `Linking.getInitialURL()` / expo-router ven el `MAIN`
 y arrancan en `/`, y el evento `url` de `onNewIntent` llega antes de que JS
 escuche y se pierde. Por eso no se monta `AuthCallback`, no se llama a
@@ -441,7 +441,7 @@ ejecutó, no salió UP-TO-DATE) e instalado como actualización
 2. «Verificar con GitHub» → Custom Tab de `github.com`. GitHub **no enseña la
    pantalla «Authorize»**: la OAuth App ya estaba autorizada en la cuenta
    `thejowe` desde la prueba anterior y GitHub redirige solo, en ~3 s.
-3. Vuelta: un único intent `VIEW lockin://auth/...` a `MainActivity`
+3. Vuelta: un único intent `VIEW cofounder://auth/...` a `MainActivity`
    (`START ... result code=2`, entregado a la actividad ya abierta), antes de
    que se cierre la Custom Tab. No hay un evento aparte de «vuelta del
    navegador»: `openAuthSessionAsync` y la ruta de callback salen de ese mismo
@@ -501,7 +501,7 @@ la base de datos real; se puede borrar desde el dashboard.
    LockIn» by thejowe**, «Authorizing will redirect to
    https://grrzmzktrhksbttpbblg.supabase.co» (`22-navegador.png`). La sesión
    de GitHub seguía iniciada: no hizo falta login. El Client ID ya es bueno.
-3. «Authorize thejowe» → GitHub → Supabase → `lockin://auth/...` abre
+3. «Authorize thejowe» → GitHub → Supabase → `cofounder://auth/...` abre
    `MainActivity` (logcat 21:34:30). **La app enseña «CUENTA · Ese enlace no
    ha funcionado · No hemos podido completar la operación. Inténtalo otra
    vez. Tu cuenta no ha cambiado.»** (`23-tras-authorize.png`).
@@ -515,7 +515,7 @@ la base de datos real; se puede borrar desde el dashboard.
 6. `am force-stop` + relanzar → el sello sigue (`26-perfil-frio.*`).
 
 **El fallo (para `verificacion`).** `linkIdentity` usa como `redirectTo`
-`lockin://auth/callback`, la misma ruta que los enlaces de los correos de
+`cofounder://auth/callback`, la misma ruta que los enlaces de los correos de
 cuenta. En Android la vuelta del navegador llega también como intent a
 `MainActivity`, expo-router monta `src/app/auth/callback.tsx` y `AuthCallback`
 trata el código como un enlace de correo. Leyendo el código: el mismo
@@ -526,7 +526,7 @@ la ruta de callback)—; gana uno (el sello queda puesto) y el otro pinta el
 error. Qué canje gana no se ha medido. Resultado: quien verifica ve «Tu cuenta no
 ha cambiado» justo cuando acaba de cambiar, y tiene que volver a Perfil para
 descubrir el sello. Arreglo probable: un `redirectTo` propio para el OAuth
-(p. ej. `lockin://auth/github`) que la ruta de correos no intercepte, o que
+(p. ej. `cofounder://auth/github`) que la ruta de correos no intercepte, o que
 `AuthCallback` ignore la vuelta de `linkIdentity`. Repetir esta casilla
 después del arreglo. **Arreglado en `17e09f6` y repetido el mismo día: ✅
 sin pantalla de error (ver el hallazgo «tras 17e09f6» arriba).**
@@ -541,7 +541,7 @@ sin pantalla de error (ver el hallazgo «tras 17e09f6» arriba).**
 ### Verificar con GitHub contra Supabase real (2026-09-24) — ❌ Client ID mal puesto
 
 **Entorno.** Emulador Android 16 (AVD `lockin`), APK universal `preview` de
-EAS (`app.lockin.mobile`, construido desde `21418ee`; entre ese commit y
+EAS (`app.cofounder.mobile`, construido desde `21418ee`; entre ese commit y
 `c81e124` no cambia `src/data/supabase/auth.ts` ni la tab Perfil). **Supabase
 real** (`[lockin] backend de datos: Supabase` en logcat). Cuenta `+lockin3` /
 perfil «Verif» (`a5fe4d5c-…`).
@@ -553,7 +553,7 @@ perfil «Verif» (`a5fe4d5c-…`).
    `github.com` con «Sign in to GitHub» (`04-login.png`). Hasta aquí, bien:
    `linkIdentity` responde, así que Enable Manual Linking está activo.
 3. El usuario inicia sesión en GitHub → **«Page not found · GitHub»**
-   (`05-vuelta.png`). No hay pantalla de «Authorize» ni vuelta a `lockin://`.
+   (`05-vuelta.png`). No hay pantalla de «Authorize» ni vuelta a `cofounder://`.
 4. Al cerrar la pestaña, la app dice «La verificación no se completó. No ha
    cambiado nada.» (`06-tras-cerrar-tab.png`). `profiles` sigue igual, todo a
    `null` (`profiles-despues.txt`). El fallo se maneja bien.
@@ -750,7 +750,7 @@ Al pulsar el enlace del correo de verificación se abre una página de
 `exp://<subdominio>.exp.direct/--/auth/callback`. Esa URL no está en
 **Redirect URLs** de Supabase, GoTrue compara exacto y manda el enlace a
 `site_url`, que sigue en el `http://localhost:3000` por defecto. En un build de
-desarrollo o release es `lockin://auth/callback`, que sí está permitida
+desarrollo o release es `cofounder://auth/callback`, que sí está permitida
 (`supabase/README.md`, confirmado el 2026-09-20) y que el E2E `registro` cubre.
 
 **Arreglo pendiente (usuario, dashboard de Supabase → Authentication → URL
@@ -758,5 +758,5 @@ Configuration):**
 - [ ] Añadir `exp://*.exp.direct/--/auth/callback` a Redirect URLs (el
       subdominio cambia en cada sesión, por eso el comodín). Solo hace falta
       para probar con Expo Go.
-- [ ] Cambiar Site URL a algo real, o a `lockin://auth/callback`, para que un
+- [ ] Cambiar Site URL a algo real, o a `cofounder://auth/callback`, para que un
       fallo del redirect no deje en una página muerta.

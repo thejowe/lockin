@@ -153,8 +153,8 @@ describe('entrar en otra cuenta dejando atrás el perfil anónimo', () => {
   it('hereda el perfil anónimo: sin clearState y por el deep link a /sign-in', () => {
     assert.match(abandon, /launchApp:\r?\n\s+clearState: false/);
     assert.doesNotMatch(abandon, /^\s+clearState: true/m);
-    assert(abandon.includes('- openLink: lockin://sign-in'));
-    assert.match(read('../app.json'), /"scheme": "lockin"/);
+    assert(abandon.includes('- openLink: cofounder://sign-in'));
+    assert.match(read('../app.json'), /"scheme": "cofounder"/);
     assert(read('../src/app/(onboarding)/sign-in.tsx').includes('<SignInForm'));
   });
 

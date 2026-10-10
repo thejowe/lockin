@@ -21,7 +21,7 @@ export default function IndexRoute() {
 
   // Nunca en blanco: con Supabase esta consulta cruza la red, y una pantalla
   // vacía no distingue «tarda» de «se ha colgado».
-  if (loading) return <LoadingState label="Abriendo LockIn…" />;
+  if (loading) return <LoadingState label="Abriendo cofounder…" />;
 
   // Una consulta fallida no significa que el usuario no tenga perfil.
   if (error) {

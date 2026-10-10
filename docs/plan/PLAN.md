@@ -227,7 +227,7 @@ nadie lo descubra a mitad:
 - **El copy dice GitHub y nada más.** Certifica autoría del enlace: ni «perfil
   verificado», ni «persona verificada», ni un check a secas junto al nombre.
 - Cero dependencias nuevas y ninguna build nativa: `expo-web-browser`,
-  `expo-linking` y `"scheme": "lockin"` ya estaban.
+  `expo-linking` y `"scheme": "cofounder"` ya estaban.
 - Depende de: nada del código — no toca Fase 2. **Del usuario sí**: GitHub OAuth
   App en el dashboard, «Enable Manual Linking» y aplicar la migración (hecho).
   Probar el flujo en un dispositivo lo hace el agente `comprobador` en el

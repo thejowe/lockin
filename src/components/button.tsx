@@ -1,5 +1,5 @@
 /**
- * Botón de acción de LockIn: píldora de alto `Control.button`.
+ * Botón de acción de cofounder: píldora de alto `Control.button`.
  *
  * Antes vivía copiado en `descubrir` (`ActionButton`), en `perfil`
  * (`PrimaryButton`/`SecondaryButton`) y a mano en tres estados vacíos, cada uno

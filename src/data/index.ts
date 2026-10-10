@@ -1,5 +1,5 @@
 /**
- * Punto único de acceso a datos de LockIn.
+ * Punto único de acceso a datos de cofounder.
  *
  * Las pantallas importan siempre desde `@/data` — nunca desde `@/data/mock`
  * ni desde `@/data/supabase`. Así el backend se puede sustituir sin tocarlas.

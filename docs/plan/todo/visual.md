@@ -801,3 +801,12 @@ plantilla «casi negro con un acento», y la tarjeta del deck era sopa de cajas
 - [ ] `[comprobador]` Re-comprobar en el emulador con «Reducir animaciones» activado (escalas a
   0) y release: navegar Descubrir → Matches → Perfil y volver; la píldora debe quedar bajo la
   tab activa y el icono completo.
+### 2026-10-10 — barra de tabs con reducir animaciones, re-comprobación (commit fc27e27)
+
+Backend: **Supabase real**, APK release recompilado con `--rerun` (log en `e2e/artifacts/local/2026-10-10-teclado-reporte-y-tabs/build-fc27e27.log`), AVD `lockin`. Evidencia: `e2e/artifacts/local/2026-10-10-teclado-reporte-y-tabs/` (`tabs-normal.png`, `tabs-reducir.png`, `40`–`46`).
+
+- **✅ Reducir animaciones (`window/transition/animator_duration_scale=0`, reinicio en frío con `am force-stop` + relanzar).** Recorrido Descubrir → Matches → Perfil → Matches → Descubrir → Perfil → Descubrir: en cada paso la píldora queda bajo la tab activa con su etiqueta (Descubrir, Matches, Perfil) y el icono de Perfil entero con la barra en su ancho final (`tabs-reducir.png`, `41`–`46`). El defecto anterior (píldora sobre Matches e icono de Perfil recortado) no aparece.
+- **✅ Sin reducir animaciones (escalas a 1), sin regresión.** Mismo recorrido con transición normal: píldora y barra correctas en Descubrir, Matches y Perfil (`tabs-normal.png`, `30`–`35`).
+- Observación (no regresión): en Perfil la barra translúcida se superpone al texto de fondo («Puedes pr…»), igual con y sin reducir animaciones.
+
+Casilla `[comprobador]` de esta sección: la evidencia la **confirma ✅**; no la marco.

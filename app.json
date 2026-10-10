@@ -1,18 +1,18 @@
 {
   "expo": {
-    "name": "lockin",
+    "name": "cofounder",
     "slug": "lockin",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "lockin",
+    "scheme": "cofounder",
     "userInterfaceStyle": "dark",
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "app.lockin.mobile"
+      "bundleIdentifier": "app.cofounder.mobile"
     },
     "android": {
-      "package": "app.lockin.mobile",
+      "package": "app.cofounder.mobile",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -45,8 +45,8 @@
       [
         "@config-plugins/react-native-webrtc",
         {
-          "cameraPermission": "LockIn necesita la cámara para la llamada de vídeo de la sesión Lock-In.",
-          "microphonePermission": "LockIn necesita el micrófono para la llamada de vídeo de la sesión Lock-In."
+          "cameraPermission": "cofounder necesita la cámara para la llamada de vídeo de la sesión Lock-In.",
+          "microphonePermission": "cofounder necesita el micrófono para la llamada de vídeo de la sesión Lock-In."
         }
       ]
     ],

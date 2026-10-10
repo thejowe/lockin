@@ -1235,8 +1235,8 @@ a leerse como deriva real.
 - [x] `AccountError` con `reason` tipado (`email-in-use`, `weak-password`, `invalid-email`, `same-password`, `too-many-emails`, `needs-confirmed-email`, `unrecoverable-account`, `no-session`, `offline`, `unknown`). Traduce los `code` de GoTrue una sola vez, para que `perfil` no tenga que hacer expresiones regulares sobre el texto inglés del servidor, que cambia entre versiones
 - [x] `linkEmailToCurrentUser(email)` — **cambió de firma**: ya no acepta contraseña. GoTrue exige el email verificado antes de aceptar una contraseña en una cuenta anónima ([docs de Anonymous Sign-Ins](https://supabase.com/docs/guides/auth/auth-anonymous)), así que el ascenso es de dos pasos. Nadie la consumía todavía, así que no rompe nada
 - [x] `setAccountPassword(password)` — el segundo paso, ya con el email confirmado. Es también el que cierra una recuperación de contraseña
-- [x] `sendPasswordReset(email)` — `resetPasswordForEmail` con `redirectTo` al `lockin://auth/callback` que ya usa el flujo de GitHub. No dice si el email existe: responder distinto sería contarle a cualquiera quién tiene cuenta en LockIn
-- [x] `completeAuthLink(url)` — cierra el enlace que llega por `lockin://auth/callback`. Acepta las dos formas (`?code=` PKCE y `?token_hash=&type=`), traduce los enlaces caducados en vez de dejar al usuario esperando, y cuando la cuenta ya es recuperable borra `DEVICE_ACCOUNT_KEY`: seguir guardándolo dejaría una segunda puerta a la misma cuenta escrita en claro en el teléfono
+- [x] `sendPasswordReset(email)` — `resetPasswordForEmail` con `redirectTo` al `cofounder://auth/callback` que ya usa el flujo de GitHub. No dice si el email existe: responder distinto sería contarle a cualquiera quién tiene cuenta en LockIn
+- [x] `completeAuthLink(url)` — cierra el enlace que llega por `cofounder://auth/callback`. Acepta las dos formas (`?code=` PKCE y `?token_hash=&type=`), traduce los enlaces caducados en vez de dejar al usuario esperando, y cuando la cuenta ya es recuperable borra `DEVICE_ACCOUNT_KEY`: seguir guardándolo dejaría una segunda puerta a la misma cuenta escrita en claro en el teléfono
 - [x] `signOut({ acceptDataLoss })` — se niega si `recoverable` es `false`
 - [x] Encabezado de `auth.ts` reescrito con el ciclo de vida completo (anónima/dispositivo → `pending-email` → `email`) y con lo que hace falta tocar en el dashboard. Antes describía el estado provisional como si fuera definitivo
 - [x] Los nuevos exports salen por `src/data/supabase/index.ts`, tipos incluidos
@@ -1263,7 +1263,7 @@ hay que releer es esta lista**, empezando por el punto 2.
    al buzón `device-…@lockin.app`, que no existe, y el ascenso no se completaría
    jamás.
 3. **Authentication → URL Configuration → Redirect URLs:** añadir
-   `lockin://auth/callback` si no está ya (lo usa el flujo de GitHub, así que es
+   `cofounder://auth/callback` si no está ya (lo usa el flujo de GitHub, así que es
    probable que sí).
 
 #### Lo que le queda a `perfil` (orden `P1`, Ola 3)

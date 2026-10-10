@@ -16,7 +16,7 @@
 #
 # Relanza la app por lo mismo que session-rate.yaml: la siembra ocurre en
 # Postgres con la app abierta, y volver a arrancar relee sin esperas.
-appId: app.lockin.mobile
+appId: app.cofounder.mobile
 name: Aceptar, entrar y salir de una sala Lock-In
 ---
 - launchApp:

@@ -6,7 +6,7 @@
 # El orden del deck lo fija el `update` de `created_at` de `incoming-likes.sql`:
 # lo que se afirma de la tarjeta son datos de una persona concreta, y sin un
 # orden fijo no querrían decir nada. `full-journey.test.mjs` fija esa relación.
-appId: app.lockin.mobile
+appId: app.cofounder.mobile
 name: Alta, perfil, deck, match, mensaje y persistencia
 ---
 - assertTrue: ${PROFILE_NAME && MESSAGE && (DECK_FIXTURE == 'postgres' || DECK_FIXTURE == 'memoria')}

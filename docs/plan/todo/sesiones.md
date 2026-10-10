@@ -158,7 +158,7 @@ apartado «mitad Android del fallback en Expo Go».
 ### Aviso de 5 minutos con la app cerrada (2026-09-24)
 
 **Entorno.** Emulador Android 16 (AVD `lockin`), APK universal `preview` de
-EAS (`app.lockin.mobile`, construido desde `21418ee`; entre ese commit y
+EAS (`app.cofounder.mobile`, construido desde `21418ee`; entre ese commit y
 `c81e124` no cambia nada de `src/features/session`, `src/app` ni `app.json`),
 **Supabase real** (`[lockin] backend de datos: Supabase` en logcat). En la app,
 la cuenta `+lockin3` / perfil «Verif». La otra parte es una cuenta anónima
@@ -181,7 +181,7 @@ creada por API con la clave anon: «Aviso Prueba», `dd195de0-…`.
 6. **Cierre B, el habitual:** Inicio → Recientes → se desliza la tarjeta de
    LockIn → `am kill`. `pidof` vacío, `stopped=false`, la alarma sigue ahí
    (`alarm-tras-cerrar.txt`, `12-recientes-vacio.png`).
-7. A las **21:26:26.9**, `ActivityManager: Start proc … app.lockin.mobile for
+7. A las **21:26:26.9**, `ActivityManager: Start proc … app.cofounder.mobile for
    broadcast … NotificationsService`: el sistema arranca el proceso en frío. A
    las **21:26:28.7** (`when=` de la notificación) se publica en el canal
    `lockin-sessions`, con importancia 4, el aviso «Sesión Lock-In en 5

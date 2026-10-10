@@ -22,7 +22,7 @@ const GOTRUE_ERROR = (code: string) => Object.assign(new Error('Server said no')
 describe('describeAccountError', () => {
   describe('las razones que la capa de datos ya escribió para la pantalla', () => {
     it.each<[AccountErrorReason, string]>([
-      ['email-in-use', 'Ese email ya tiene una cuenta de LockIn. Prueba con otro.'],
+      ['email-in-use', 'Ese email ya tiene una cuenta de cofounder. Prueba con otro.'],
       [
         'weak-password',
         'Esa contraseña es demasiado fácil de adivinar. Alárgala o mézclala con números.',
@@ -63,7 +63,7 @@ describe('describeAccountError', () => {
       );
 
       expect(text).toMatch(/ninguna sesión abierta/);
-      expect(text).toMatch(/Cierra LockIn, vuelve a abrirla/);
+      expect(text).toMatch(/Cierra cofounder, vuelve a abrirla/);
     });
 
     it('offline habla de la red, que es lo que hay que distinguir de una contraseña mal puesta', () => {
@@ -91,7 +91,7 @@ describe('describeAccountError', () => {
 
       expect(text).toBe('Email o contraseña incorrectos. Revísalos e inténtalo otra vez.');
       // Ni «ese email no existe» ni «la contraseña no es esa»: eso contaría
-      // quién tiene cuenta en LockIn.
+      // quién tiene cuenta en cofounder.
       expect(text).not.toMatch(/no existe|no está registrad/i);
     });
 

@@ -29,7 +29,7 @@
  * «Entrar» y no «Iniciar sesión / Registrarse»: aquí nadie crea nada. Y el
  * correo de recuperación no dice si el email existe, igual que
  * `sendPasswordReset` — responder distinto le contaría a cualquiera quién
- * tiene cuenta en LockIn.
+ * tiene cuenta en cofounder.
  *
  * El texto de cada fallo lo pone `account-copy.ts`, compartido con el resto del
  * bloque. Importa sobre todo aquí: quedarse sin red es el fallo más probable en

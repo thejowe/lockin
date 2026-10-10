@@ -1,4 +1,4 @@
-# LockIn — concepto de producto (resumen operativo)
+# cofounder — concepto de producto (resumen operativo)
 
 > Documento de referencia para desarrollo. Es el resumen de la sesión de diseño de producto — cualquier agente debe leerlo antes de tocar código relacionado con una feature. El documento de concepto completo (con toda la argumentación) vive como un Artifact compartido con el usuario; esto es la versión condensada para construir.
 
@@ -44,7 +44,7 @@ Las sesiones de Lock-In (co-working programado) son lo que evita que la gente ab
 ## Dirección visual: «cristal» (desde el 2026-10-03)
 
 Decidida por el usuario a partir de una referencia (Hume, Phenomenon Studio) y
-del canvas «LockIn — Rediseño». Sustituye a la paleta latón/Fraunces anterior.
+del canvas «cofounder — Rediseño». Sustituye a la paleta latón/Fraunces anterior.
 
 - **Solo oscuro.** No hay modo claro: `useThemeName()` devuelve siempre `dark`.
 - **Luz ambiental + cristal.** Detrás de cada pantalla, una sola fuente de luz

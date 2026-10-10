@@ -397,7 +397,7 @@ verde con el permiso abierto, que es el peor falso negativo posible aquí.
 
 - `expo-web-browser` (~57.0.2) y `expo-linking` (~57.0.9) **ya son
   dependencias** del repo.
-- `app.json` ya declara `"scheme": "lockin"`, así que el deep link de vuelta
+- `app.json` ya declara `"scheme": "cofounder"`, así que el deep link de vuelta
   existe sin tocar el plugin nativo.
 - `client.ts` ya pone `detectSessionInUrl: false`, que es lo correcto en nativo.
 
@@ -410,7 +410,7 @@ una pantalla de navegador del sistema.
 1. `supabase.auth.linkIdentity({ provider: 'github', options: { redirectTo,
    skipBrowserRedirect: true } })` devuelve la URL de autorización.
 2. `WebBrowser.openAuthSessionAsync(url, redirectTo)` la abre en la pestaña del
-   sistema y resuelve cuando GitHub redirige a `lockin://…`.
+   sistema y resuelve cuando GitHub redirige a `cofounder://…`.
 3. La app cierra la sesión del navegador y consuma el callback.
 4. `rpc('sync_github_verification')`, y se relee el perfil propio.
 

@@ -171,7 +171,7 @@ export function AccountSection({ onDeleted, onConfirmationShown }: AccountSectio
           <ThemedText type="bodyStrong">Tus datos viven solo en este teléfono</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
             Tu perfil, tus matches y tus conversaciones están guardados aquí, en este móvil. Si
-            cambias de teléfono o desinstalas LockIn, no hay forma de traerlos de vuelta.
+            cambias de teléfono o desinstalas cofounder, no hay forma de traerlos de vuelta.
           </ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
             Con un email recuperas tu cuenta desde donde quieras. No creas otra: aseguras la que ya

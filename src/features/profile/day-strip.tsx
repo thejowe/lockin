@@ -2,7 +2,7 @@
  * La jornada: una regla de 24 horas con las franjas en las que la persona
  * trabaja, a escala (madrugada 00–06, mañana 06–12, tarde 12–20, noche 20–00).
  *
- * Es la firma visual de LockIn: la app va de trabajar a la vez, así que la
+ * Es la firma visual de cofounder: la app va de trabajar a la vez, así que la
  * disponibilidad no se resume en una frase sino que se ve como un día. Si quien
  * mira está en la misma zona horaria, las franjas en las que coincidís salen en
  * verde-azulado (el acento de Lock-In) y además se dicen en texto: el color solo

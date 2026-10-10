@@ -445,7 +445,7 @@ al reinicio del emulador (`28-…` a `46-…`, `expo-start-2.log`, `logcat.txt`)
   mock.
 - Entorno, para quien repita: el host (8 GB) iba justo de memoria y el
   emulador acabó con ANR en Expo Go y en `com.google.android.tts`, `adb` que se
-  colgaba y un `app.lockin.mobile` de otra sesión atascado en primer plano.
+  colgaba y un `app.cofounder.mobile` de otra sesión atascado en primer plano.
   La primera tanda (`01-…` a `27-…`, `logcat-1.txt`) se perdió por eso, y
   además el Metro lanzado por WMI murió a las 08:37. Nada de eso es de la app:
   en esa tanda no hay ningún error JS. Lo arregló `adb reboot`. Con el

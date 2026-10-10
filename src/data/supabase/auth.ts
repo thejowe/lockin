@@ -83,7 +83,7 @@ const DEVICE_EMAIL_PATTERN = /^device-[0-9a-f]+@lockin\.app$/i;
  * El destino de los enlaces que Supabase manda por correo, y de la vuelta de GitHub.
  *
  * Sin barra inicial a propósito: en una build release `createURL('/auth/callback')`
- * da `lockin:///auth/callback` (tres barras, host vacío), GoTrue no lo encuentra en
+ * da `cofounder:///auth/callback` (tres barras, host vacío), GoTrue no lo encuentra en
  * Redirect URLs —la comparación es exacta— y manda el enlace a `site_url`, fuera
  * de la app. Lo destapó el E2E de la variante `registro` (run 35656515945).
  */
@@ -120,7 +120,7 @@ export class AccountError extends Error {
 
   /**
    * Si el fallo es de la vuelta de GitHub y no de un enlace de correo. Las dos
-   * llegan a `lockin://auth/callback`, y esa pantalla no puede mandar a «pedir
+   * llegan a `cofounder://auth/callback`, y esa pantalla no puede mandar a «pedir
    * otro correo» a quien venía de verificar GitHub (revisión del 2026-10-02).
    */
   github = false;
@@ -159,7 +159,7 @@ function toAccountError(error: unknown): AccountError {
       // los chats de este dispositivo, y eso no se propone de pasada.
       return new AccountError(
         'email-in-use',
-        'Ese email ya tiene una cuenta de LockIn. Prueba con otro.',
+        'Ese email ya tiene una cuenta de cofounder. Prueba con otro.',
         error
       );
     case 'weak_password':
@@ -362,7 +362,7 @@ export interface AccountState {
    *
    * Es la única pregunta que le importa a la pantalla: si es `false`, los datos
    * viven solo aquí. Vincular GitHub (`linkGithubIdentity`) **no** cuenta: en
-   * LockIn es el distintivo de verificación y la app no ofrece "entrar con
+   * cofounder es el distintivo de verificación y la app no ofrece "entrar con
    * GitHub", así que no es un camino de vuelta.
    */
   recoverable: boolean;
@@ -437,7 +437,7 @@ export async function getAccountState(): Promise<AccountState> {
  *
  * No termina aquí. Supabase manda un correo al email indicado y la cuenta sigue
  * siendo irrecuperable hasta que el usuario pincha ese enlace, que vuelve a la
- * app por `lockin://auth/callback` y cierra `completeAuthLink`.
+ * app por `cofounder://auth/callback` y cierra `completeAuthLink`.
  *
  * Tampoco se pone contraseña en este paso: GoTrue exige que el email esté
  * verificado antes de aceptar una contraseña para una cuenta anónima
@@ -482,12 +482,12 @@ export async function setAccountPassword(password: string): Promise<void> {
 /**
  * Manda el correo de recuperación de contraseña.
  *
- * El enlace vuelve a la app por el esquema `lockin://`, abre sesión en la
+ * El enlace vuelve a la app por el esquema `cofounder://`, abre sesión en la
  * cuenta de ese email y deja al usuario en condiciones de llamar a
  * `setAccountPassword`.
  *
  * No dice si el email existe o no: responder distinto sería contarle a
- * cualquiera que pregunte quién tiene cuenta en LockIn.
+ * cualquiera que pregunte quién tiene cuenta en cofounder.
  */
 export async function sendPasswordReset(email: string): Promise<void> {
   const { error } = await getSupabaseClient().auth.resetPasswordForEmail(email, {
@@ -497,7 +497,7 @@ export async function sendPasswordReset(email: string): Promise<void> {
 }
 
 /**
- * Cierra el enlace que llega por `lockin://auth/callback`: confirmación de
+ * Cierra el enlace que llega por `cofounder://auth/callback`: confirmación de
  * email o recuperación de contraseña.
  *
  * Acepta las dos formas en que Supabase puede devolverlo según la plantilla de
@@ -672,7 +672,7 @@ export async function deleteMyAccount(client?: LockInSupabaseClient): Promise<vo
 /* -------------------------------------------------------------------------- */
 
 /**
- * La vuelta de GitHub llega a `lockin://auth/callback`, la misma URL que los
+ * La vuelta de GitHub llega a `cofounder://auth/callback`, la misma URL que los
  * correos: GoTrue compara Redirect URLs de forma exacta, así que una propia
  * obligaría a tocar el dashboard. En Android esa vuelta resuelve
  * `openAuthSessionAsync` **y además** abre la ruta de callback, que pasa el
@@ -867,7 +867,7 @@ export async function linkGithubIdentity(): Promise<boolean> {
       );
     }
     if (/already/i.test(error.message)) {
-      throw new Error('Esa cuenta de GitHub ya está verificada en otro perfil de LockIn.');
+      throw new Error('Esa cuenta de GitHub ya está verificada en otro perfil de cofounder.');
     }
     throw error;
   }

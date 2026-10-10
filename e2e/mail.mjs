@@ -1,4 +1,4 @@
-// El correo del registro, de Mailpit al `lockin://` que se abre en el emulador.
+// El correo del registro, de Mailpit al `cofounder://` que se abre en el emulador.
 //
 // La CLI de Supabase levanta Mailpit (Inbucket hasta la 2.x temprana; la 2.116
 // de CI ya trae `axllent/mailpit`) y GoTrue le entrega ahí todo lo que mandaría
@@ -7,17 +7,17 @@
 //
 // Por qué el runner resuelve el enlace y no el navegador del emulador: el enlace
 // del correo es `http://127.0.0.1:54321/auth/v1/verify?...`, que GoTrue contesta
-// con un 303 a `lockin://auth/callback?code=…`. Un navegador que recibe una
+// con un 303 a `cofounder://auth/callback?code=…`. Un navegador que recibe una
 // redirección a un esquema propio sin gesto del usuario puede pedir permiso o
-// quedarse quieto según versión, y eso es ruido que no dice nada de LockIn. Lo
-// que sí es de LockIn —que el esquema abra la app y que la app canjee el código—
+// quedarse quieto según versión, y eso es ruido que no dice nada de cofounder. Lo
+// que sí es de cofounder —que el esquema abra la app y que la app canjee el código—
 // se recorre entero con `am start`. Lo que se pierde es el salto navegador → app,
 // que es del sistema. Y no hay `assetlinks.json`: los App Links necesitan un
 // dominio https verificado, y aquí el enlace es http contra 127.0.0.1.
 import assert from 'node:assert/strict';
 
 /** El destino al que el correo tiene que devolver, igual que en el dashboard. */
-export const AUTH_CALLBACK = 'lockin://auth/callback';
+export const AUTH_CALLBACK = 'cofounder://auth/callback';
 
 /** La URL de Mailpit que da `supabase status`, con la clave vieja de reserva. */
 export function mailpitUrl(status) {
@@ -112,7 +112,7 @@ export async function waitForVerifyLink(status, email, { timeoutMs = 60000 } = {
 
 /**
  * Pincha el enlace como lo haría el navegador, pero sin seguir la redirección:
- * consume el token en GoTrue y devuelve el `lockin://…?code=` que la app canjea.
+ * consume el token en GoTrue y devuelve el `cofounder://…?code=` que la app canjea.
  */
 export async function resolveVerifyLink(link) {
   const response = await fetch(link, { redirect: 'manual' });

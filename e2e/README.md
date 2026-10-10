@@ -84,7 +84,7 @@ configurados en el mismo entorno). Requisitos:
 - Docker operativo y puertos locales de Supabase libres (54321 y adyacentes).
 - Supabase CLI **2.119.0** (la de CI; vale desde la 2.118.0: `prepare` exige PostgREST ≥ v16.3) y Maestro **2.10.0** en PATH.
 - Un único Android dedicado visible en `adb devices`. Se instala
-  `app.lockin.mobile` y se borran sus datos al inicio; no usar tu instalación personal.
+  `app.cofounder.mobile` y se borran sus datos al inicio; no usar tu instalación personal.
 
 Desde la raíz:
 
@@ -415,7 +415,7 @@ E2E no debe forzar `none` desde fuera del bloque `perfil`.
 
 `[Failed] ... (1m 12s) (Assertion is false: "Cofundador" is visible)` en el
 `extendedWaitUntil` de la línea 17, antes de tocar nada. Pero el logcat del
-artefacto dice `Displayed app.lockin.mobile/.MainActivity for user 0: +3s934ms`:
+artefacto dice `Displayed app.cofounder.mobile/.MainActivity for user 0: +3s934ms`:
 la app **sí** arrancó y pintó. El volcado de jerarquía del paso que falla
 (`screen-hierarchy/step-005-assertCondition-Cofundador.json`) explica el resto —
 la pantalla la ocupaba un diálogo del sistema:

@@ -3,7 +3,7 @@
 # correo con `am start`, así que la app ya está en `/auth/callback` canjeando el
 # código. Sin `launchApp` al principio a propósito: relanzar la app mataría ese
 # canje a medias.
-appId: app.lockin.mobile
+appId: app.cofounder.mobile
 name: Registro con email (2/2) — volver del correo, elegir contraseña y pasar la puerta
 ---
 - assertTrue: ${EMAIL && PASSWORD}

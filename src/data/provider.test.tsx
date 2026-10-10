@@ -221,13 +221,13 @@ describe('useQuery — retención mientras relee', () => {
     // `run`, sin llegar a haber promesa. Ese fallo síncrono escapaba del efecto
     // y mataba el árbol entero — pantalla en negro en el E2E (run 35362453233).
     const run = jest.fn((): Promise<string> => {
-      throw new Error('LockIn no puede arrancar sin backend');
+      throw new Error('cofounder no puede arrancar sin backend');
     });
 
     const { result } = await renderHook(() => useQuery('síncrono', run), { wrapper });
 
     await waitFor(() =>
-      expect(result.current.error?.message).toBe('LockIn no puede arrancar sin backend')
+      expect(result.current.error?.message).toBe('cofounder no puede arrancar sin backend')
     );
     expect(result.current.loading).toBe(false);
   });

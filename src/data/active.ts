@@ -78,7 +78,7 @@ function chooseBackend(): Backend {
 
   if (!__DEV__ && !mockAllowedInRelease) {
     throw new Error(
-      'LockIn no puede arrancar sin backend: ' +
+      'cofounder no puede arrancar sin backend: ' +
         `faltan ${missingCredentials().join(' y ')}. ` +
         'Las variables EXPO_PUBLIC_* se inlinean en tiempo de build, así que ' +
         'tienen que estar definidas en el entorno que compila el bundle ' +

@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - **Expo ha cambiado**: consulta `https://docs.expo.dev/versions/v57.0.0/` antes de escribir código de Expo. No de memoria (`AGENTS.md`).
-- **Cero dependencias nuevas.** `expo-web-browser` (~57.0.2), `expo-linking` (~57.0.9) y `"scheme": "lockin"` ya están. Si crees que necesitas instalar algo, para y dilo.
+- **Cero dependencias nuevas.** `expo-web-browser` (~57.0.2), `expo-linking` (~57.0.9) y `"scheme": "cofounder"` ya están. Si crees que necesitas instalar algo, para y dilo.
 - **El cliente nunca declara su propia verificación.** Cualquier camino en el que el cliente mande el handle, la fecha o un booleano de verificado es un fallo de la tarea, no un atajo.
 - **El sello certifica autoría del enlace y nada más.** Ni «perfil verificado», ni «persona verificada», ni un check a secas junto al nombre sin decir de qué. El copy dice GitHub.
 - **Es señal, no puerta:** no filtra el deck, no lo ordena, no condiciona el match.

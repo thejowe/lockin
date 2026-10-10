@@ -110,10 +110,10 @@ describe('elección de backend', () => {
     const active = loadActive();
     expect(() =>
       active.presence.join('s1', 'p1', { onPeers: () => {}, onConnection: () => {} })
-    ).toThrow(/LockIn no puede arrancar sin backend/);
+    ).toThrow(/cofounder no puede arrancar sin backend/);
     expect(() =>
       active.videoSignal.send('s1', { kind: 'hangup', from: 'p1', payload: null })
-    ).toThrow(/LockIn no puede arrancar sin backend/);
+    ).toThrow(/cofounder no puede arrancar sin backend/);
   });
 
   it('fuera de desarrollo con permiso explícito sirve el mock en vez de lanzar', () => {
@@ -135,7 +135,7 @@ describe('elección de backend', () => {
     setCredentials(false);
     process.env.EXPO_PUBLIC_LOCKIN_ALLOW_MOCK = 'true';
 
-    expect(() => loadActive().activeBackend()).toThrow(/LockIn no puede arrancar sin backend/);
+    expect(() => loadActive().activeBackend()).toThrow(/cofounder no puede arrancar sin backend/);
   });
 
   it('el rastro dice que el mock va con permiso, para que nadie lo confunda con Supabase', () => {

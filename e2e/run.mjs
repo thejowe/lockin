@@ -92,7 +92,7 @@ const negative = process.env.E2E_NEGATIVE_CONTROL === '1';
 // Tercera variante, `registro`: el APK lleva credenciales y la puerta de cuenta
 // obligatoria ENCENDIDA —la de `supabase` la apaga, ver `buildEnv`—, y lo único
 // que recorre es el alta y la recuperación con email: la pantalla «Crea tu cuenta», el correo que
-// deja GoTrue en Mailpit, el enlace de vuelta por `lockin://auth/callback` y la
+// deja GoTrue en Mailpit, el enlace de vuelta por `cofounder://auth/callback` y la
 // contraseña. Va aparte y no delante de `full-journey.yaml` porque la puerta se
 // decide al compilar: meterla en el APK de `supabase` obligaría a tocar el caso
 // que comparte con el control negativo.
@@ -188,7 +188,7 @@ function buildEnv(status) {
   // lleva credenciales y `hasSupabaseCredentials` es falso dentro del APK.
   //
   // Pero desde A3 el APK es una release y la guarda de backend mata el arranque
-  // antes de la primera pantalla (`FATAL EXCEPTION ... LockIn no puede arrancar
+  // antes de la primera pantalla (`FATAL EXCEPTION ... cofounder no puede arrancar
   // sin backend`, run 35362453233). El mock en release solo se permite si se
   // pide a mano, así que el control negativo pide permiso explícito: sigue sin
   // credenciales — que es lo que lo hace control — pero ahora arranca y llega al
@@ -483,10 +483,10 @@ if (command === 'prepare') {
       [/(\[auth\.email\][^[]*?)enable_confirmations = false/, '$1enable_confirmations = true'],
       // «Secure email change» DESACTIVADO, como en el dashboard.
       ['double_confirm_changes = true', 'double_confirm_changes = false'],
-      // `lockin://auth/callback` en Redirect URLs: sin él GoTrue cae en `site_url`.
+      // `cofounder://auth/callback` en Redirect URLs: sin él GoTrue cae en `site_url`.
       [
         'additional_redirect_urls = ["https://127.0.0.1:3000"]',
-        'additional_redirect_urls = ["https://127.0.0.1:3000", "lockin://auth/callback"]',
+        'additional_redirect_urls = ["https://127.0.0.1:3000", "cofounder://auth/callback"]',
       ],
       // 2 correos/hora de la CLI no aguantan un reintento de Maestro más otro
       // emulador: cada intento manda el suyo. No es algo que el caso pruebe.
@@ -594,7 +594,11 @@ if (command === 'build') {
   // `prebuild` convierte en un intent-filter. Sin él `am start` no encuentra a
   // quién entregar el enlace; mejor saberlo aquí que tras 15 min de emulador.
   if (registration) {
-    assert.match(xml, /android:scheme="lockin"/, 'El manifiesto no declara el esquema lockin://');
+    assert.match(
+      xml,
+      /android:scheme="lockin"/,
+      'El manifiesto no declara el esquema cofounder://'
+    );
   }
   // El daemon de Gradle se queda sin Metaspace compilando este árbol nativo.
   // Lo destapó el bloque `video` al meter `react-native-webrtc`: el primer build
@@ -1064,7 +1068,7 @@ if (command === 'test') {
    *
    *   register.yaml          → «Crea tu cuenta», email, «Confirma tu email»
    *   oráculo                → la cuenta anónima espera ese email (su uid)
-   *   Mailpit → GoTrue       → el enlace del correo, resuelto a lockin://…?code=
+   *   Mailpit → GoTrue       → el enlace del correo, resuelto a cofounder://…?code=
    *   am start               → el enlace entra en la app por el esquema
    *   register-confirm.yaml  → contraseña, la puerta se abre y sigue abierta
    *   oráculo                → mismo uid, email confirmado, la contraseña entra
@@ -1116,7 +1120,7 @@ if (command === 'test') {
       // un `&` del enlace partiría la orden en dos.
       run('adb', [
         'shell',
-        "am start -W -a android.intent.action.VIEW -d '" + callback + "' app.lockin.mobile",
+        "am start -W -a android.intent.action.VIEW -d '" + callback + "' app.cofounder.mobile",
       ]);
 
       const confirmDir = join(dir, 'confirm');
@@ -1226,7 +1230,9 @@ if (command === 'test') {
       );
       run('adb', [
         'shell',
-        "am start -W -a android.intent.action.VIEW -d '" + recoveryCallback + "' app.lockin.mobile",
+        "am start -W -a android.intent.action.VIEW -d '" +
+          recoveryCallback +
+          "' app.cofounder.mobile",
       ]);
       const resetDir = join(dir, 'password-reset-confirm');
       if (maestroFlow(resetDir, passwordResetFile, { ...resetVars, PHASE: 'confirm' }) !== 0) {

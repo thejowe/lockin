@@ -50,7 +50,7 @@ jobs:
           # El alta con email obligatoria, de punta a punta: su APK es el único
           # con la puerta de cuenta encendida (`buildEnv` en `e2e/run.mjs`), y
           # recorre «Crea tu cuenta», el correo que GoTrue deja en Mailpit, el
-          # enlace de vuelta por `lockin://auth/callback` y la contraseña.
+          # enlace de vuelta por `cofounder://auth/callback` y la contraseña.
           - variant: registro
             negative: '0'
             registration: '1'
@@ -198,7 +198,7 @@ jobs:
           # System UI que tapaba la app en casi todos los intentos (run
           # 37150674444). Cuando no salía, los seis flujos de `supabase`
           # pasaban enteros. Ocultarlo no oculta nada de la app: un cuelgue de
-          # LockIn sigue haciendo fallar la aserción.
+          # cofounder sigue haciendo fallar la aserción.
           script: |
             adb shell settings put global hide_error_dialogs 1
             node e2e/run.mjs test
@@ -225,7 +225,7 @@ jobs:
           # System UI que tapaba la app en casi todos los intentos (run
           # 37150674444). Cuando no salía, los seis flujos de `supabase`
           # pasaban enteros. Ocultarlo no oculta nada de la app: un cuelgue de
-          # LockIn sigue haciendo fallar la aserción.
+          # cofounder sigue haciendo fallar la aserción.
           script: |
             adb shell settings put global hide_error_dialogs 1
             node e2e/run.mjs test

@@ -403,7 +403,7 @@ describe('AccountSection', () => {
       gateway.linkEmailToCurrentUser.mockRejectedValue(
         new AccountError(
           'email-in-use',
-          'Ese email ya tiene una cuenta de LockIn. Prueba con otro.'
+          'Ese email ya tiene una cuenta de cofounder. Prueba con otro.'
         )
       );
       await renderSection(ANONIMA);
@@ -416,7 +416,7 @@ describe('AccountSection', () => {
       await press('Asegurar mi cuenta');
 
       await waitFor(() =>
-        expect(screen.getByText(/Ese email ya tiene una cuenta de LockIn/)).toBeTruthy()
+        expect(screen.getByText(/Ese email ya tiene una cuenta de cofounder/)).toBeTruthy()
       );
       expect(screen.queryByText(/entrar en (esa|la otra) cuenta/i)).toBeNull();
     });

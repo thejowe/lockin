@@ -3,9 +3,9 @@
  * de la actividad, para que `Linking.getInitialURL()` lo vea.
  *
  * El caso que arregla (comprobador, 2026-10-04, «Verificar con GitHub» en frío):
- * con la tarea de LockIn viva en recientes y el proceso muerto, Android recrea
+ * con la tarea de cofounder viva en recientes y el proceso muerto, Android recrea
  * `MainActivity` (`singleTask`) con su intent base `MAIN` y entrega el
- * `lockin://auth/callback?code=…` por `onNewIntent`, antes de que React exista.
+ * `cofounder://auth/callback?code=…` por `onNewIntent`, antes de que React exista.
  * `ReactHostImpl.onNewIntent` lo descarta («Tried to access onNewIntent while
  * context is not ready») y `getInitialURL()` lee `activity.intent`, el `MAIN`:
  * la app arranca en `/` y el code no se canjea nunca.
@@ -17,7 +17,7 @@
 
 const { withMainActivity } = require('expo/config-plugins');
 
-const MARKER = 'LockIn: deep link de onNewIntent como intent de la actividad';
+const MARKER = 'cofounder: deep link de onNewIntent como intent de la actividad';
 
 const METHOD = `
   // ${MARKER} (plugins/with-new-intent-initial-url.js).
