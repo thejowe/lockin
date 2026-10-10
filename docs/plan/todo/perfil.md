@@ -320,5 +320,14 @@ Requisito de Apple 5.1.1(v) y de Google Play; no estaba en ninguna spec. Empezó
 - [ ] **[comprobador]** Recorrido en el emulador contra Supabase real: borrar cuenta → vuelve al onboarding → la fila de `auth.users` ya no existe.
 - Sin cubrir: no hay caso en `repositories.contract.ts` porque borrar la cuenta acaba la sesión compartida de la suite; la cobertura es mock + `schema-embedded`.
 
+## Copy de «cerrar sesión» sin promesa de borrado (2026-10-09)
+
+`docs/tiendas/cuestionario-privacidad.md` pedía corregirlo antes de publicar: el botón de cerrar sesión con pérdida de datos decía «Borrarlo todo y cerrar sesión», pero `signOut({ acceptDataLoss: true })` solo quita las credenciales locales; el borrado real es «Eliminar mi cuenta».
+
+- [x] **[Claude]** `account-section.tsx`: título «Cerrar sesión aquí te deja sin acceso a tu cuenta»; el aviso dice que se pierde el acceso desde este dispositivo y que cerrar sesión **no** borra nada del servidor (para eso, «Eliminar mi cuenta»); botón «Cerrar sesión y perder el acceso» y estado ocupado «Cerrando sesión…» (antes «Borrando…»).
+- [x] **[Claude]** `account-copy.ts` (`unrecoverable-account`): «desaparecen para siempre» → «perderás el acceso … y no podrás recuperarlos».
+- [x] **[Claude]** Tests: `account-section.test.tsx` (título, botón, y que el aviso diga que no borra del servidor). `e2e/*.yaml` no pulsa ese texto (grep «Borrarlo todo» sin resultados), así que no se toca.
+- Fuera de este bloque y sin tocar: `docs/tiendas/*` aún cita «Borrarlo todo» (líneas de `cuestionario-privacidad.md` y `datos-recopilados.md`); lo actualizará quien lleve los textos de tienda.
+
 ## Recuerda
 Nadie contrata a nadie: no metas campos de "salario" o "equity que ofrezco" — eso es Modo Talento, Fase 4, fuera de este MVP.
