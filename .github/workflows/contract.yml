@@ -88,9 +88,16 @@ jobs:
           config="$RUNTIME/supabase/config.toml"
           grep -q 'enable_anonymous_sign_ins = false' "$config" \
             || { echo 'Cambió el formato de config de Supabase'; exit 1; }
+          # La suite de seguridad (`safetyPair`) da de alta tres anónimos por test:
+          # con el límite por defecto de GoTrue (30/hora/IP) la pasada se queda
+          # sin altas a mitad. Solo se sube en esta base desechable.
+          # Aviso y no fallo: si el formato cambia, la suite dirá «rate limit» sola.
+          grep -Eq '^anonymous_users *= *30' "$config" \
+            || echo '::warning::config de Supabase sin anonymous_users = 30: el límite de altas no se ha subido'
           sed -i \
             -e 's/^project_id = .*/project_id = "lockin-contract"/' \
             -e 's/enable_anonymous_sign_ins = false/enable_anonymous_sign_ins = true/' \
+            -e 's/^anonymous_users *= *30.*/anonymous_users = 1000/' \
             "$config"
           cp -r supabase/migrations "$RUNTIME/supabase/migrations"
           # Solo el seed del repo: el de E2E añade triggers que aquí sobran.

@@ -17,7 +17,7 @@ import {
   resolveMatchMode,
 } from './store';
 import { SEED_RECIPROCAL_IDS } from './seed';
-import { createMockRoomRepository } from './rooms';
+import { createMockRoomRepository, roomsTopic } from './rooms';
 import { createMockSessionRepository } from './sessions';
 import { REPORT_MAX_LENGTH, REPORT_REASONS } from '../types';
 
@@ -184,6 +184,10 @@ export function createMockRepositories(
       blocks.add(profileId);
       getState().userBlocks.set(actorId, blocks);
       notify(MATCHES_TOPIC);
+      // Las salas de quien bloquea y de quien es bloqueado dejan de verse: sus
+      // avisos locales y vistas cacheadas se releen, como en Supabase.
+      notify(roomsTopic(actorId));
+      notify(roomsTopic(profileId));
       for (const match of getState().matches) {
         if (match.profileIds.includes(actorId) && match.profileIds.includes(profileId))
           notify(messagesTopic(match.id));

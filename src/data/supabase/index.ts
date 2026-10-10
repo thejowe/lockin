@@ -224,24 +224,50 @@ async function liveScopesWith(
   profileId: string
 ): Promise<string[] | null> {
   try {
-    const matchRows = await client
-      .from('matches')
-      .select('id')
-      .or('profile_a.eq.' + profileId + ',profile_b.eq.' + profileId);
-    if (matchRows.error) return null;
-    const matchIds = (matchRows.data ?? []).map((row) => row.id);
+    // Cada lectura en vueltas de `fetchAllPages`: un `select` sin `range()` que
+    // supere el tope de fila de PostgREST se corta en silencio, y una sesión
+    // omitida dejaría su canal abierto sin disparar el «cerrar todos».
+    const matchRows = await fetchAllPages<{ id: string }>((from, to) =>
+      client
+        .from('matches')
+        .select('id')
+        .or('profile_a.eq.' + profileId + ',profile_b.eq.' + profileId)
+        .order('id', { ascending: true })
+        .range(from, to)
+    );
+    const matchIds = matchRows.map((row) => row.id);
     const [sessions, hosted, memberships] = await Promise.all([
       matchIds.length > 0
-        ? client.from('lockin_sessions').select('id').in('match_id', matchIds)
-        : Promise.resolve({ data: [] as { id: string }[], error: null }),
-      client.from('lockin_rooms').select('id').eq('host_id', profileId),
-      client.from('room_members').select('room_id').eq('profile_id', profileId),
+        ? fetchAllPages<{ id: string }>((from, to) =>
+            client
+              .from('lockin_sessions')
+              .select('id')
+              .in('match_id', matchIds)
+              .order('id', { ascending: true })
+              .range(from, to)
+          )
+        : Promise.resolve([] as { id: string }[]),
+      fetchAllPages<{ id: string }>((from, to) =>
+        client
+          .from('lockin_rooms')
+          .select('id')
+          .eq('host_id', profileId)
+          .order('id', { ascending: true })
+          .range(from, to)
+      ),
+      fetchAllPages<{ room_id: string }>((from, to) =>
+        client
+          .from('room_members')
+          .select('room_id')
+          .eq('profile_id', profileId)
+          .order('room_id', { ascending: true })
+          .range(from, to)
+      ),
     ]);
-    if (sessions.error || hosted.error || memberships.error) return null;
     return [
-      ...(sessions.data ?? []).map((row) => row.id),
-      ...(hosted.data ?? []).map((row) => row.id),
-      ...(memberships.data ?? []).map((row) => row.room_id),
+      ...sessions.map((row) => row.id),
+      ...hosted.map((row) => row.id),
+      ...memberships.map((row) => row.room_id),
     ];
   } catch {
     return null;
