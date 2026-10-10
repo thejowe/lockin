@@ -2199,3 +2199,86 @@ aviso por canal, no un DELETE.
 - [x] Unitarias: `sessions.test.ts` e `instances.test.ts` fijan los eventos
       registrados (ni `'*'` ni DELETE). `tsc`, `eslint src/data` y jest de
       `src/data` en verde.
+
+## Auditoría de seguridad 2026-10 (H1 y H2)
+
+Origen: `docs/plan/auditoria-seguridad-2026-10.md` (commit `35be273`). De sus 4
+hallazgos, este bloque arregla **H1** (baja) y **H2** (media). H3 (ventana de la
+política de presencia de salas) y H4 (DELETE en la publicación `supabase_realtime`)
+quedan fuera de esta migración. Migración única:
+`supabase/migrations/20261009230000_audit_h1_h2_attendance_and_message_clock.sql`
+(posterior a `20261009224000`, la de bloquear/reportar, cuyos objetos no toca).
+
+- [x] **H1 — `session_both_attended(uuid)` consultable por un no-miembro.**
+      `CREATE OR REPLACE` conservando firma, `STABLE`, `SECURITY DEFINER`,
+      `search_path = ''` y EXECUTE solo a `authenticated`; ahora devuelve `false`
+      a quien no está en `(profile_a, profile_b)` del match de la sesión, a quien
+      llama sin `auth.uid()` y para una sesión inexistente (`coalesce(…, false)`,
+      nunca NULL). La definición de «asistió» no cambia. `rate_session` y
+      `match_streaks` la llaman siendo el actor miembro, así que no cambian. No
+      nombra `session_ratings` (decisión de privacidad de la valoración).
+- [x] **H2 — el cliente podía falsificar `messages.sent_at`.** `REVOKE INSERT` de
+      tabla a `public, anon, authenticated` y `GRANT INSERT (id, match_id,
+      sender_id, body)` a `authenticated`. La política INSERT de RLS no cambia.
+      Distinto del SQL propuesto: no se añade `revoke insert (sent_at)`, porque el
+      REVOKE de tabla ya retira los permisos de columna del mismo privilegio.
+      SELECT, UPDATE y DELETE de tabla no se tocan (UPDATE/DELETE siguen sin
+      política). `service_role` y el dueño conservan el INSERT completo (seeds y
+      fixtures siguen pudiendo fijar `sent_at`).
+- [x] **El cliente no cambia.** `MessageRepository.send` inserta
+      `{ match_id, sender_id, body }` y pide `.select('*')` (RETURNING usa el
+      SELECT de tabla, conservado); `MessageInsert` ya era
+      `Pick<MessageRow, 'match_id' | 'sender_id' | 'body'>`, sin `sent_at`. Sin
+      cambios en `src/`.
+- [x] **Tests** (`supabase/schema-embedded.test.mjs`, dos bloques nuevos al
+      final): H1 (miembro true, no-miembro false, sin sesión false, sesión
+      inexistente false, anon 42501, `rate_session`/`match_streaks` siguen
+      funcionando, catálogo y ACL) y H2 (envío con `RETURNING *`, `sent_at` =
+      reloj de la base y copia a `last_message_at`, `infinity`/futuro/pasado/
+      `default` denegados con 42501, suplantación sigue en 42501, ACL de columna
+      exacta, huella con `grantcol messages.body … INSERT` y sin `sent_at`).
+      Único cambio a lo existente: el caso de `session_both_attended` de la
+      fixture de rachas (≈ línea 282) ahora fija `auth.uid()` a Ana antes de
+      preguntar, porque preguntaba sin sesión y por diseño ya contesta `false`.
+      Sin la migración el bloque H1 cae («un no-miembro que conoce el UUID…»).
+- [x] **Verificación:** `npm run test:schema` 75/75; `npx tsc --noEmit` limpio;
+      `npx jest --maxWorkers=2 src/data/supabase` 11 suites pasan, 229 tests
+      pasan y 129 saltan (la suite de contrato, que exige proyecto remoto).
+- [ ] **[usuario]** Migración **sin aplicar al remoto**. Hasta entonces H1 y H2
+      siguen abiertos allí y `Schema drift` saldrá rojo (deriva legítima, no
+      regresión). Aplicarla con el procedimiento habitual y comprobar que el job
+      queda verde.
+- [ ] **Fechas ya falsificadas en el remoto** (decisión aparte, sin automatizar):
+      buscar `messages.sent_at > now()` o `matches.last_message_at > now()` y
+      decidir si se sanean. Esta migración no borra ni reordena datos.
+
+## Auditoría de seguridad 2026-10 (H3 y H4)
+
+Origen: `docs/plan/auditoria-seguridad-2026-10.md`. Migración única de este
+bloque para H3 y H4:
+`supabase/migrations/20261009230200_realtime_room_window_no_delete_2.sql`
+(el sufijo `_2` la distingue de la de H1/H2).
+
+- [x] **H3 — presencia de sala fuera de ventana.** `is_room_topic_member`
+      exige ahora, además de ser asistente, sala no cancelada y
+      `clock_timestamp()` entre `starts_at - 5 min` y `session_ends_at(...)`,
+      la misma ventana que `join_room`. Pasa a `volatile`; sigue SECURITY
+      INVOKER, sin `anon`. Una aceptada ya no puede autorizar el canal una
+      hora antes y rechazar después conservando la caché.
+- [x] **H4 — la publicación no emite DELETE.**
+      `alter publication supabase_realtime set (publish = 'insert, update')`.
+      **Ningún cliente depende de DELETE**: todas las suscripciones
+      `postgres_changes` (`index.ts`, `rooms.ts`, `sessions.ts`) piden
+      INSERT/UPDATE explícitos y `realtime.ts`/pantallas de sala no registran
+      eventos propios. Los casos del contrato que vigilan DELETE esperan
+      silencio, que ahora lo garantiza el servidor.
+- [x] Casos nuevos al final de `supabase/schema-embedded.test.mjs`: ventana
+      (1 h, 6 min, 4 min, terminada, anfitriona, cancelada, rechazada, sin
+      sesión, topic no uuid) y flags de la publicación.
+- [x] Verificado: `npm run test:schema` (75 pasan), `npx tsc --noEmit`, jest
+      de `src/data/supabase` y `src/features/room` (296 pasan; ejecutado en
+      copia fuera de `.claude/worktrees`).
+- [ ] **[usuario] Aplicar la migración al proyecto remoto** (`supabase db
+      push`) y, tras desplegarla, revalidar/cerrar las conexiones Realtime ya
+      abiertas: no se expulsan solas. NO aplicada desde este bloque.
+      Después, `schema-drift` remoto debe seguir en verde.

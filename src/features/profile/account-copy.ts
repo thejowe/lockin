@@ -62,8 +62,8 @@ const COPY: Record<AccountErrorReason, string | null> = {
   'too-many-emails': null,
   'needs-confirmed-email': null,
   'unrecoverable-account':
-    'Esta cuenta solo vive en este teléfono: si cierras sesión, tu perfil, tus matches y tus ' +
-    'conversaciones desaparecen para siempre. Asegúrala antes con un email.',
+    'Esta cuenta solo vive en este teléfono: si cierras sesión, perderás el acceso a tu perfil, ' +
+    'tus matches y tus conversaciones y no podrás recuperarlos. Asegúrala antes con un email.',
   'no-session': 'Aquí ya no hay ninguna sesión abierta. Cierra LockIn, vuelve a abrirla y repite.',
   offline: OFFLINE,
   unknown: null,

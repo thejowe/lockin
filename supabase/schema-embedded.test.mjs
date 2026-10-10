@@ -279,6 +279,12 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
         ('${session(6)}', '${ana}', 1499), ('${session(6)}', '${bea}', 1499),
         ('${session(7)}', '${ana}', 49), ('${session(7)}', '${bea}', 48)
       ) as a(id, profile_id, mins);`);
+    // `session_both_attended` solo contesta a quien es del match (auditoría
+    // 2026-10, H1): sin `auth.uid()` devuelve false, así que la sonda de
+    // asistencia pregunta como Ana, que es del match de estas sesiones.
+    await db.exec(
+      `create or replace function auth.uid() returns uuid language sql as $$ select '${ana}'::uuid $$;`
+    );
     const rating = await db.query(`select
         public.session_rating_window_is_open(now() - interval '29 minutes 59 seconds', 1::smallint, now()) as un_segundo_antes_del_final,
         public.session_rating_window_is_open(now() - interval '30 minutes', 1::smallint, now()) as justo_al_terminar,
@@ -2266,6 +2272,340 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
     );
     await db.exec('rollback;');
     console.log('Rol lector, 5 mutaciones, teardown dos veces y guardia de sobrecarga: OK');
+
+    // Auditoría de seguridad 2026-10 (docs/plan/auditoria-seguridad-2026-10.md).
+    // Bloques nuevos, al final: H1 y H2. Fixture propia dentro de una
+    // transacción que se deshace, como las anteriores.
+    const noSession = () =>
+      db.exec(`reset role;
+        create or replace function auth.uid() returns uuid language sql as $$ select null::uuid $$;
+        set local role authenticated;`);
+
+    // H1 — `session_both_attended` es un helper SECURITY DEFINER que cuenta la
+    // asistencia por encima de RLS: tiene que contestar solo a quien es del match.
+    const h1Ana = person('f400');
+    const h1Bea = person('f401');
+    const h1Out = person('f402');
+    const h1Match = '00000000-0000-4000-8000-00000000f4a0';
+    const h1Session = '00000000-0000-4000-8000-00000000f4b0';
+    await db.exec(`begin;
+      insert into auth.users (id, email) values
+        ('${h1Ana}', 'h1ana@lockin.test'), ('${h1Bea}', 'h1bea@lockin.test'),
+        ('${h1Out}', 'h1out@lockin.test');
+      insert into public.profiles (
+        id, name, age, location, timezone, avatar_initials, specialties,
+        looking_for, starting_point, availability_hours_per_week, availability_bands, ambition
+      ) select id, 'H1', 30, 'Madrid', 'Europe/Madrid', 'H',
+        array['dev']::public.specialty[], 'ambos', 'solo-ganas', 10,
+        array['tarde']::public.time_band[], 'equilibrado'
+        from auth.users where id in ('${h1Ana}', '${h1Bea}', '${h1Out}');
+      insert into public.matches (id, profile_a, profile_b, mode) values
+        ('${h1Match}', least('${h1Ana}'::uuid, '${h1Bea}'::uuid),
+         greatest('${h1Ana}'::uuid, '${h1Bea}'::uuid), 'lockin');
+      insert into public.lockin_sessions
+        (id, match_id, proposed_by, starts_at, blocks, status, responded_at)
+      values ('${h1Session}', '${h1Match}', '${h1Ana}', now() - interval '40 minutes', 1,
+        'aceptada', now() - interval '100 minutes');
+      insert into public.session_attendance (session_id, profile_id, joined_at) values
+        ('${h1Session}', '${h1Ana}', now() - interval '39 minutes'),
+        ('${h1Session}', '${h1Bea}', now() - interval '38 minutes');`);
+    const bothAttended = async (sessionId) =>
+      (await db.query(`select public.session_both_attended('${sessionId}') as v`)).rows[0].v;
+
+    await actingAs(h1Ana);
+    assert.equal(await bothAttended(h1Session), true, 'quien es del match ve la asistencia');
+    await actingAs(h1Bea);
+    assert.equal(await bothAttended(h1Session), true, 'la otra persona del match también');
+    await actingAs(h1Out);
+    assert.equal(
+      await bothAttended(h1Session),
+      false,
+      'un no-miembro que conoce el UUID de la sesión no averigua si entraron'
+    );
+    await noSession();
+    assert.equal(await bothAttended(h1Session), false, 'sin auth.uid() no hay respuesta');
+    await actingAs(h1Ana);
+    assert.equal(
+      await bothAttended('00000000-0000-4000-8000-00000000f4ff'),
+      false,
+      'una sesión inexistente es false, no NULL'
+    );
+    await db.exec('reset role; set local role anon;');
+    assert.equal(await sonda(`select public.session_both_attended('${h1Session}')`), '42501');
+
+    // Quienes dependen del helper siguen funcionando para el miembro: la
+    // valoración (RPC) y las rachas.
+    await actingAs(h1Ana);
+    assert.equal(
+      await sonda(`select * from public.rate_session('${h1Session}', 'genial')`),
+      'sin error',
+      'rate_session sigue valorando una sesión a la que asistieron los dos'
+    );
+    assert.ok(
+      (await db.query('select * from public.match_streaks()')).rows.some(
+        (row) => row.match_id === h1Match
+      ),
+      'match_streaks sigue contando la sesión a la que asistieron los dos'
+    );
+    await actingAs(h1Out);
+    assert.equal(
+      await sonda(`select * from public.rate_session('${h1Session}', 'genial')`),
+      'LI004',
+      'un no-miembro sigue sin poder valorar'
+    );
+    const h1Fn = (
+      await db.query(`select p.prosecdef, p.proconfig,
+          pg_get_functiondef(p.oid) as def,
+          has_function_privilege('anon', p.oid, 'execute') as anon_ejecuta,
+          has_function_privilege('authenticated', p.oid, 'execute') as authenticated_ejecuta
+        from pg_proc p where p.oid = 'public.session_both_attended(uuid)'::regprocedure`)
+    ).rows[0];
+    assert.deepEqual(
+      {
+        prosecdef: h1Fn.prosecdef,
+        proconfig: h1Fn.proconfig,
+        anon_ejecuta: h1Fn.anon_ejecuta,
+        authenticated_ejecuta: h1Fn.authenticated_ejecuta,
+      },
+      {
+        prosecdef: true,
+        proconfig: ['search_path=""'],
+        anon_ejecuta: false,
+        authenticated_ejecuta: true,
+      }
+    );
+    assert.match(h1Fn.def, /auth\.uid\(\)/, 'el helper mira quién pregunta');
+    assert.doesNotMatch(h1Fn.def, /session_ratings/);
+    await db.exec('rollback;');
+    console.log('H1: session_both_attended solo contesta al match, sin sesión es false: OK');
+
+    // H2 — `messages.sent_at` lo pone la base: el cliente no puede escribirlo,
+    // pero sigue enviando con las columnas que concede el GRANT.
+    const h2Ana = person('f410');
+    const h2Bea = person('f411');
+    const h2Match = '00000000-0000-4000-8000-00000000f4c0';
+    await db.exec(`begin;
+      insert into auth.users (id, email) values
+        ('${h2Ana}', 'h2ana@lockin.test'), ('${h2Bea}', 'h2bea@lockin.test');
+      insert into public.profiles (
+        id, name, age, location, timezone, avatar_initials, specialties,
+        looking_for, starting_point, availability_hours_per_week, availability_bands, ambition
+      ) select id, 'H2', 30, 'Madrid', 'Europe/Madrid', 'H',
+        array['dev']::public.specialty[], 'ambos', 'solo-ganas', 10,
+        array['tarde']::public.time_band[], 'equilibrado'
+        from auth.users where id in ('${h2Ana}', '${h2Bea}');
+      insert into public.matches (id, profile_a, profile_b, mode) values
+        ('${h2Match}', least('${h2Ana}'::uuid, '${h2Bea}'::uuid),
+         greatest('${h2Ana}'::uuid, '${h2Bea}'::uuid), 'par');
+      -- Mensaje anterior sembrado por el dueño de la tabla (no por el cliente).
+      insert into public.messages (match_id, sender_id, body, sent_at)
+        values ('${h2Match}', '${h2Ana}', 'anterior', now() - interval '1 minute');`);
+
+    // Lo que la app envía: match_id, sender_id y body, con RETURNING *.
+    await actingAs(h2Ana);
+    const h2Sent = (
+      await db.query(`insert into public.messages (match_id, sender_id, body)
+        values ('${h2Match}', '${h2Ana}', 'hola') returning *`)
+    ).rows[0];
+    assert.equal(h2Sent.body, 'hola');
+    assert.equal(
+      (
+        await db.query(`select (sent_at = now()) as es_el_reloj_de_la_base
+          from public.messages where id = '${h2Sent.id}'`)
+      ).rows[0].es_el_reloj_de_la_base,
+      true,
+      'sent_at sale del DEFAULT de la base'
+    );
+    assert.equal(
+      (
+        await db.query(`select (m.last_message_at = x.sent_at) as copiada
+          from public.matches m, public.messages x
+          where m.id = '${h2Match}' and x.id = '${h2Sent.id}'`)
+      ).rows[0].copiada,
+      true,
+      'el trigger copia ese mismo instante a matches.last_message_at'
+    );
+
+    // Lo que ya no se puede: escribir la fecha, venga la que venga.
+    for (const value of ["'infinity'", "now() + interval '1 year'", "now() - interval '1 year'"]) {
+      assert.equal(
+        await sonda(`insert into public.messages (match_id, sender_id, body, sent_at)
+          values ('${h2Match}', '${h2Ana}', 'falsificado', ${value})`),
+        '42501',
+        `sent_at = ${value} denegado`
+      );
+    }
+    assert.equal(
+      await sonda(`insert into public.messages (match_id, sender_id, body, sent_at)
+        values ('${h2Match}', '${h2Ana}', 'falsificado', default)`),
+      '42501',
+      'ni siquiera nombrando la columna con DEFAULT'
+    );
+    // Lo que sigue denegado por RLS: otra persona como autora.
+    assert.equal(
+      await sonda(`insert into public.messages (match_id, sender_id, body)
+        values ('${h2Match}', '${h2Bea}', 'suplantado')`),
+      '42501'
+    );
+
+    // El resumen de la conversación solo ve fechas de la base: ninguna en el
+    // futuro. (Los dos mensajes de la transacción comparten now(); el orden
+    // entre ellos no es lo que se prueba aquí.)
+    await actingAs(h2Bea);
+    await db.query(`insert into public.messages (match_id, sender_id, body)
+      values ('${h2Match}', '${h2Bea}', 'respuesta')`);
+    const h2Last = (
+      await db.query(`select body, sent_at <= now() as no_es_futuro
+        from public.last_messages_for_matches(array['${h2Match}'::uuid])`)
+    ).rows;
+    assert.equal(h2Last.length, 1);
+    assert.equal(h2Last[0].no_es_futuro, true);
+    assert.ok(['hola', 'respuesta'].includes(h2Last[0].body));
+
+    // Permisos efectivos: INSERT solo en las cuatro columnas, ninguno de tabla,
+    // nada para anon, y la huella lo recoge.
+    await db.exec('reset role;');
+    assert.deepEqual(
+      (
+        await db.query(`select a.attname
+          from pg_attribute a, aclexplode(a.attacl) g
+          where a.attrelid = 'public.messages'::regclass and a.attnum > 0
+            and pg_get_userbyid(g.grantee) = 'authenticated' and g.privilege_type = 'INSERT'
+          order by 1`)
+      ).rows.map((row) => row.attname),
+      ['body', 'id', 'match_id', 'sender_id']
+    );
+    assert.deepEqual(
+      (
+        await db.query(`select
+            has_table_privilege('authenticated', 'public.messages', 'INSERT') as tabla,
+            has_column_privilege('authenticated', 'public.messages', 'sent_at', 'INSERT') as sent_at,
+            has_any_column_privilege('anon', 'public.messages', 'INSERT') as anon,
+            has_any_column_privilege('public', 'public.messages', 'INSERT') as public`)
+      ).rows[0],
+      { tabla: false, sent_at: false, anon: false, public: false }
+    );
+    assert.deepEqual(
+      (
+        await db.query(`select
+            has_table_privilege('authenticated', 'public.messages', 'SELECT') as lee,
+            has_table_privilege('service_role', 'public.messages', 'INSERT') as service_role_inserta`)
+      ).rows[0],
+      { lee: true, service_role_inserta: true },
+      'se conserva el SELECT del cliente y el INSERT completo de service_role'
+    );
+    assert.match(expected, /grantcol\s+messages\.body\s+authenticated\s+INSERT/);
+    assert.doesNotMatch(expected, /grantcol\s+messages\.sent_at/);
+    await db.exec('rollback;');
+    console.log('H2: la app envía sin sent_at y el cliente no puede falsificarlo: OK');
+
+    // Auditoría de seguridad 2026-10, H3: la autorización de presencia de una
+    // sala exige estar dentro de la ventana de entrada y que la sala siga viva.
+    const winHost = person('f300');
+    const winBea = person('f301');
+    const winCai = person('f302');
+    await db.exec(`begin;
+      insert into auth.users (id, email) values
+        ('${winHost}', 'win-host@lockin.test'), ('${winBea}', 'win-bea@lockin.test'),
+        ('${winCai}', 'win-cai@lockin.test');
+      insert into public.profiles (
+        id, name, age, location, timezone, avatar_initials, specialties,
+        looking_for, starting_point, availability_hours_per_week, availability_bands, ambition
+      ) select id, 'Ventana', 30, 'Madrid', 'Europe/Madrid', 'V',
+        array['dev']::public.specialty[], 'ambos', 'solo-ganas', 10,
+        array['tarde']::public.time_band[], 'equilibrado'
+        from auth.users where id in ('${winHost}', '${winBea}', '${winCai}');
+      insert into public.matches (profile_a, profile_b, mode) values
+        (least('${winHost}'::uuid, '${winBea}'::uuid), greatest('${winHost}'::uuid, '${winBea}'::uuid), 'par'),
+        (least('${winHost}'::uuid, '${winCai}'::uuid), greatest('${winHost}'::uuid, '${winCai}'::uuid), 'lockin');`);
+    const winRoom = async () => {
+      await actingAs(winHost);
+      const created = (
+        await db.query(`select * from public.create_room(
+          array['${winBea}', '${winCai}']::uuid[], clock_timestamp() + interval '1 hour', 1::smallint)`)
+      ).rows[0];
+      await actingAs(winBea);
+      await db.query(`select * from public.respond_room('${created.id}', 'aceptada')`);
+      return created.id;
+    };
+    const winMember = async (id) =>
+      (await db.query(`select public.is_room_topic_member('lockin:room:${id}') as ok`)).rows[0].ok;
+    const winMove = async (id, interval) => {
+      await db.exec(`reset role; update public.lockin_rooms
+        set starts_at = clock_timestamp() + interval '${interval}' where id = '${id}';`);
+      await actingAs(winBea);
+    };
+    const winPresence = (id) =>
+      sonda(`insert into realtime.messages (topic, extension)
+        values ('lockin:room:${id}', 'presence')`);
+
+    // Aceptada pero antes de la ventana: ni helper ni presencia.
+    const earlyRoom = await winRoom();
+    assert.equal(await winMember(earlyRoom), false, 'una hora antes no autoriza');
+    await db.exec(`set local "realtime.topic" = 'lockin:room:${earlyRoom}';`);
+    assert.equal(await winPresence(earlyRoom), '42501', 'presencia denegada antes de la ventana');
+    await winMove(earlyRoom, '6 minutes');
+    assert.equal(await winMember(earlyRoom), false, 'a 6 minutos aún no');
+    await winMove(earlyRoom, '4 minutes');
+    assert.equal(await winMember(earlyRoom), true, 'a 4 minutos, sí');
+    assert.equal(await winPresence(earlyRoom), 'sin error');
+    // Terminada la sesión: se cierra.
+    await winMove(earlyRoom, '-1 day');
+    assert.equal(await winMember(earlyRoom), false, 'sala terminada');
+    // La anfitriona es asistente y entra en la misma ventana.
+    await winMove(earlyRoom, '2 minutes');
+    await actingAs(winHost);
+    assert.equal(await winMember(earlyRoom), true, 'la anfitriona entra en ventana');
+
+    // Cancelada dentro de la ventana: se cierra.
+    const cancelledRoom = await winRoom();
+    await winMove(cancelledRoom, '2 minutes');
+    assert.equal(await winMember(cancelledRoom), true);
+    await db.exec(`reset role; update public.lockin_rooms
+      set cancelled_at = clock_timestamp() where id = '${cancelledRoom}';`);
+    await actingAs(winBea);
+    assert.equal(await winMember(cancelledRoom), false, 'sala cancelada');
+
+    // Rechazada: pierde el acceso (y como no pudo autorizarse antes, no hay caché).
+    const rejectedRoom = await winRoom();
+    await winMove(rejectedRoom, '10 minutes');
+    assert.equal(await winMember(rejectedRoom), false);
+    await db.query(`select * from public.respond_room('${rejectedRoom}', 'rechazada')`);
+    await winMove(rejectedRoom, '2 minutes');
+    assert.equal(await winMember(rejectedRoom), false, 'rechazada, ni en ventana');
+    assert.equal(
+      await sonda(`select public.is_room_topic_member('lockin:room:no-es-uuid')`),
+      'sin error'
+    );
+    assert.equal(await winMember(rejectedRoom), false);
+    await db.exec(`reset role;
+      create or replace function auth.uid() returns uuid language sql as $$ select null::uuid $$;
+      set local role authenticated;`);
+    assert.equal(await winMember(earlyRoom), false, 'sin sesión no autoriza');
+    const helper = (
+      await db.query(`select provolatile, prosecdef, proconfig from pg_proc
+        where oid = 'public.is_room_topic_member(text)'::regprocedure`)
+    ).rows[0];
+    assert.deepEqual(helper, { provolatile: 'v', prosecdef: false, proconfig: ['search_path=""'] });
+    await db.exec('rollback;');
+    console.log('H3: presencia de sala solo en ventana, no cancelada y no rechazada: OK');
+
+    // H4: la publicación de Realtime no emite DELETE ni TRUNCATE.
+    const publication = (
+      await db.query(`select pubinsert, pubupdate, pubdelete, pubtruncate
+        from pg_publication where pubname = 'supabase_realtime'`)
+    ).rows;
+    assert.deepEqual(publication, [
+      { pubinsert: true, pubupdate: true, pubdelete: false, pubtruncate: false },
+    ]);
+    assert.deepEqual(
+      (
+        await db.query(`select tablename from pg_publication_tables
+          where pubname = 'supabase_realtime' order by tablename`)
+      ).rows.map((row) => row.tablename),
+      ['lockin_rooms', 'lockin_sessions', 'matches', 'messages', 'session_attendance']
+    );
+    console.log('H4: supabase_realtime publica solo INSERT y UPDATE: OK');
   } finally {
     await db.close();
   }
