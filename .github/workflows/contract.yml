@@ -97,7 +97,7 @@ jobs:
           sed -i \
             -e 's/^project_id = .*/project_id = "lockin-contract"/' \
             -e 's/enable_anonymous_sign_ins = false/enable_anonymous_sign_ins = true/' \
-            -e 's/^anonymous_users *= *30.*/anonymous_users = 1000/' \
+            -e 's/^anonymous_users *= *30.*/anonymous_users = 1000/' \
             "$config"
           cp -r supabase/migrations "$RUNTIME/supabase/migrations"
           # Solo el seed del repo: el de E2E añade triggers que aquí sobran.
