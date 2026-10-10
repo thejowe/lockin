@@ -17,7 +17,7 @@ pasa por ahí; solo `comprobador` se libra).
 **Es del usuario:**
 1. **Aplicar las 6 migraciones** en `grrzmzktrhksbttpbblg`: `20261009215240`, `20261009224000`, `20261009230000`, `20261009230200`, `20261009231000`, `20261010000100`. Hasta entonces Schema drift remoto sale rojo a propósito y los botones nuevos fallarían contra Supabase real.
 2. Decidir qué pasa con `user_reports` al borrar cuenta (cascada = se pierde la evidencia; alternativas en `todo/perfil.md`).
-3. Decisiones D01–D12 de `docs/tiendas/` (responsable legal, URLs, plazos, menores).
+3. ~~Decisiones D01–D12 de `docs/tiendas/`~~ — **cerradas el 2026-10-10**; los textos están rellenos. Queda: crear las 4 páginas públicas (GitHub Pages), un buzón de soporte dedicado y decidir SCHEDULE_EXACT_ALARM.
 4. Lo de iPhone y cámara real, sin cambios (`todo/visual.md`, `todo/video.md`).
 
 **Después de aplicar:** `comprobador` contra Supabase real para «Eliminar mi cuenta» y para bloquear/reportar.

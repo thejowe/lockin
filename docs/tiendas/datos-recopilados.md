@@ -1,4 +1,4 @@
-# LockIn — inventario de datos recopilados
+# cofounder — inventario de datos recopilados
 
 Auditoría documental: 9 de octubre de 2026. Base: commit `0cddbbbae3a894c64e2be04f2c74c081602db8e6`. Describe el código y todas las migraciones del repositorio; no certifica la configuración del proyecto de producción. La política y los cuestionarios deben usar este mismo inventario.
 
@@ -19,9 +19,9 @@ Visibilidad efectiva para usuarios normales:
 | S | Quien tiene una fila de miembro con estado distinto de rechazada puede leer la sala. Tras rechazar deja de ver los datos de la sala, pero su propia fila de miembro sigue siendo legible. |
 | SM | Cada persona lee su propia fila; quien convoca lee todas; los demás participantes no rechazados leen las filas aceptadas. Una invitación pendiente no se muestra a otros invitados; quien convoca sí ve rechazos. |
 
-Además, las personas con acceso administrativo privilegiado al proyecto y sus proveedores pueden acceder según sus permisos operativos. RLS limita clientes normales; no equivale a cifrado que impida al operador leer mensajes. **[PENDIENTE DE DECISIÓN] D05:** concretar proveedores, accesos operativos y garantías en producción.
+Además, las personas con acceso administrativo privilegiado al proyecto y sus proveedores pueden acceder según sus permisos operativos. RLS limita clientes normales; no equivale a cifrado que impida al operador leer mensajes. Decisión D05 (10-oct-2026): proveedores en producción = Supabase (región `eu-central-1`, Fráncfort, encargado), Expo/EAS (encargado), GitHub (solo si se verifica) y STUN público de Google; correo de autenticación con SMTP propio gratuito (Resend o Brevo) antes del lanzamiento.
 
-Retención: el código no fija un plazo general ni una purga automática por antigüedad en estas tablas. **[PENDIENTE DE DECISIÓN] D04:** definir plazos por clase de datos, cuentas inactivas o irrecuperables, solicitudes de baja, registros operativos y copias de seguridad. Los códigos siguientes describen únicamente lo que sí hace el esquema:
+Retención: el código no fija un plazo general ni una purga automática por antigüedad en estas tablas. Decisión D04 (10-oct-2026): datos de producto hasta la baja de la cuenta, que los borra de inmediato; cuentas inactivas 24 meses + aviso y 30 días de gracia; backups hasta 30 días; registros técnicos de proveedores máx. 90 días; reportes de abuso máx. 12 meses desde su resolución (compromiso operativo, hoy sin automatizar). Los códigos siguientes describen únicamente lo que sí hace el esquema:
 
 | Código | Comportamiento actual de conservación |
 | --- | --- |
@@ -192,7 +192,7 @@ Almacén: Supabase Postgres, tabla `public.room_members`. Fuente: [2026100200010
 
 ## Identidad y credenciales
 
-Fuente: [auth.ts](../../src/data/supabase/auth.ts) y [client.ts](../../src/data/supabase/client.ts). Esquema Auth gestionado por Supabase; sus tablas internas no se crean con las migraciones de LockIn. Esta lista cubre datos que usa la app; no es un volcado de todas las columnas internas del proveedor.
+Fuente: [auth.ts](../../src/data/supabase/auth.ts) y [client.ts](../../src/data/supabase/client.ts). Esquema Auth gestionado por Supabase; sus tablas internas no se crean con las migraciones de cofounder. Esta lista cubre datos que usa la app; no es un volcado de todas las columnas internas del proveedor.
 
 | Dato | Dónde | Quién lo ve / finalidad | Retención actual |
 | --- | --- | --- | --- |
@@ -204,7 +204,7 @@ Fuente: [auth.ts](../../src/data/supabase/auth.ts) y [client.ts](../../src/data/
 | Identidad OAuth de GitHub, datos devueltos por el proveedor | Supabase Auth, auth.identities; user_name origina el sello público | Titular y servicios de autenticación; handle y fecha publicados en profiles | La identidad se puede desvincular; sync_github_verification elimina handle, fecha y link_github. Sin plazo general |
 | Sesión Auth, access token, refresh token y datos de usuario del SDK | Supabase Auth y AsyncStorage de la app; PKCE también usa almacenamiento del SDK | App/Auth; mantiene la sesión entre reinicios | El SDK renueva/limpia la sesión; cierre de sesión no borra filas de producto |
 
-**[PENDIENTE DE DECISIÓN] D05:** confirmar proveedor SMTP, datos y scopes reales recibidos de GitHub, configuración de Auth, región del proyecto, encargados, subencargados y transferencias internacionales. No afirmar que solo se recibe el handle: Auth puede conservar más metadatos del OAuth.
+Decisión D05: SMTP propio gratuito antes del lanzamiento; Supabase en `eu-central-1`. Auth puede conservar más metadatos del OAuth que el handle, y así se declara en la política.
 
 **Borrado comprobado en código:** signOut solo llama a auth.signOut() y removeItem(DEVICE_ACCOUNT_KEY). La pantalla [account-section.tsx](../../src/features/profile/account-section.tsx) usa «Borrarlo todo y cerrar sesión», pero no llama a deleteUser, a una función de baja ni a DELETE de datos de producto. Perder acceso a una cuenta irrecuperable no prueba que sus datos desaparezcan del servidor.
 
@@ -217,7 +217,7 @@ Fuente: [auth.ts](../../src/data/supabase/auth.ts) y [client.ts](../../src/data/
 | lockin:reminder:<sessionId>: notificationId | AsyncStorage | App; correlaciona sesión y aviso local | Se cancela y elimina al reconciliar una sesión que ya no se desea; no hay plazo independiente |
 | lockin:room-reminder:<roomId>: notificationId | AsyncStorage | App; correlaciona sala y aviso | Igual que sesiones, con reconciliación de salas |
 | lockin:reminder-hint-dismissed: 1 | AsyncStorage | App; recuerda que se cerró el aviso de permiso | Sin caducidad en código |
-| Hora, título y cuerpo del recordatorio | Programador de notificaciones del sistema operativo | Titular y quien vea sus notificaciones/pantalla bloqueada según sus ajustes | Hasta ejecución/cancelación y conservación por el sistema; no plazo controlado por LockIn |
+| Hora, título y cuerpo del recordatorio | Programador de notificaciones del sistema operativo | Titular y quien vea sus notificaciones/pantalla bloqueada según sus ajustes | Hasta ejecución/cancelación y conservación por el sistema; no plazo controlado por cofounder |
 | Nombre del compañero en «Con {nombre}. Entra desde el chat.» | Cuerpo del aviso local de sesión | Visible en notificaciones según ajustes del dispositivo | Igual que el aviso. El de sala solo dice «Entra desde Matches.» |
 | Perfil, matches y respuestas cargadas | Memoria/caché del proceso de la app | Titular según RLS | Vida del proceso o invalidación; no se ha encontrado copia persistente completa de producto en AsyncStorage |
 
@@ -236,7 +236,7 @@ Fuentes: [recordatorios de sesiones](../../src/features/session/reminders.ts), [
 | EAS-Client-ID (UUID aleatorio persistente) | SharedPreferences Android / UserDefaults iOS; cabecera de expo-updates hacia Expo/EAS | Servicio de actualizaciones | Persiste entre arranques; no es ID publicitario ni prueba de anonimato. Plazo servidor D04 pendiente |
 | Expo-Platform, Expo-Runtime-Version y metadatos de protocolo | Peticiones de expo-updates a u.expo.dev y activos | Expo/EAS | Versiones de plataforma/runtime; sin política de plazo en el repo |
 | Expo-Current-Update-ID, Expo-Embedded-Update-ID y Expo-Recent-Failed-Update-IDs | Estado local del SDK y cabeceras de actualización cuando corresponda | Expo/EAS | IDs de actualización en uso/incluida y fallos de arranque; no son UUID de cuenta. D04 pendiente |
-| Estado, manifiestos y archivos de actualizaciones descargadas | Caché/base local de expo-updates | App y SDK; proveedores sirven los archivos | Gestionado por el SDK; no plazo definido por LockIn |
+| Estado, manifiestos y archivos de actualizaciones descargadas | Caché/base local de expo-updates | App y SDK; proveedores sirven los archivos | Gestionado por el SDK; no plazo definido por cofounder |
 
 Fuentes: [presencia](../../src/data/supabase/presence.ts), [señalización](../../src/data/supabase/video-signal.ts), [tipos de señalización](../../src/data/video-signal.ts), [videollamada](../../src/features/session/use-video-call.ts), app.json y las dependencias bloqueadas en [package-lock.json](../../package-lock.json). Se inspeccionó además el código instalado de expo-updates 57.0.22 y expo-eas-client: FileDownloader.kt/Swift envían EAS-Client-ID y metadatos; EASClientID.kt/Swift generan y persisten el UUID. No se modificaron dependencias.
 
@@ -253,7 +253,7 @@ El permiso de cámara/micrófono y que el vídeo sea temporal no bastan para res
 | Localización/contactos/fotos | No se declaran permisos de localización, agenda o biblioteca de fotos en app.json | Ciudad y zona horaria escritas por el usuario; grafo de matches propio, sin importar la agenda |
 | Seguimiento/publicidad | No se ha encontrado SDK publicitario, ATT, IDFA, Advertising ID ni analítica comercial en src/package.json | Eso no excluye identificadores y registros técnicos de Expo/Supabase |
 
-La manifestación final de permisos puede añadir los de las dependencias nativas, por ejemplo POST_NOTIFICATIONS. **[PENDIENTE DE DECISIÓN] D09:** verificar el binario de publicación, SDKs, permisos efectivos, configuración de servicios, cifrado de todos los flujos y clasificación definitiva de metadatos técnicos.
+La manifestación final de permisos puede añadir los de las dependencias nativas, por ejemplo POST_NOTIFICATIONS. Revisión D09 (10-oct-2026) sobre `app.json`: CAMERA y RECORD_AUDIO se justifican por la videollamada; **SCHEDULE_EXACT_ALARM exige declaración en Play Console** (Google solo la admite si la alarma es función principal) y conviene valorar su retirada, porque los avisos de 5 minutos funcionan con alarmas inexactas.
 
 No hay Storage de avatares, cobros, historial de compras, documentos de identidad ni datos biométricos implementados. El acuerdo pregunta por disposición a aportar dinero y reparto futuro, sin pedir cuentas bancarias, salario ni importes reales; revisar si el formulario clasifica esas preferencias como información financiera adicional (D09). Los campos libres pueden contener lo que escriba el usuario.
 
@@ -272,15 +272,15 @@ Fuentes de acceso: [RLS de perfiles y chat](../../supabase/migrations/2026090500
 
 | ID | Marca y decisión |
 | --- | --- |
-| D01 | [PENDIENTE DE DECISIÓN] Identidad del responsable/editor: razón social o nombre legal y domicilio. owner de Expo no identifica por sí solo al responsable legal. |
-| D02 | [PENDIENTE DE DECISIÓN] Correo operativo de privacidad y soporte; canal para ejercer derechos. |
-| D03 | [PENDIENTE DE DECISIÓN] Jurisdicción y mercados, bases jurídicas por finalidad, derechos aplicables y autoridad de control. |
-| D04 | [PENDIENTE DE DECISIÓN] Plazos de conservación por dato, inactividad, cuentas sin acceso, bajas, logs, backups y excepciones legales. |
-| D05 | [PENDIENTE DE DECISIÓN] Proveedores/configuración de producción: región, contratos, subencargados, transferencias, correo, OAuth y tratamiento de Expo/STUN. |
-| D06 | [PENDIENTE DE DECISIÓN] Política de menores, público objetivo, edad mínima de uso y clasificación final Apple/IARC por territorio. El código admite 16 años; no decide un lanzamiento solo para mayores de 18. |
-| D07 | [PENDIENTE DE DECISIÓN] Categorías definitivas de las tiendas. Se proponen Redes sociales / Social. |
-| D08 | [PENDIENTE DE DECISIÓN] URLs públicas de privacidad, soporte, solicitud de eliminación de cuenta y normas de comunidad/seguridad infantil. |
-| D09 | [PENDIENTE DE DECISIÓN] Validación de versión de publicación: permisos/SDKs, despliegue/RLS/Realtime, cifrado, retención de proveedores y tipos técnicos/financieros que deben declararse. |
-| D10 | [PENDIENTE DE DECISIÓN] Aplicación de excepciones de «compartidos» en Google según contratos y transparencia/acción del usuario; no equivalen a «nadie recibe los datos». |
-| D11 | [PENDIENTE DE DECISIÓN] Normas y operación de moderación/seguridad infantil: términos, responsable, contacto designado, revisión de reportes y plazos de respuesta. Bloquear/reportar aún requieren implementación. |
-| D12 | [PENDIENTE DE DECISIÓN] Fecha de entrada en vigor de la política y procedimiento para comunicar cambios. |
+| D01 | **Decidido:** Joel de Torres Sainz de la Maza, carrer Nou, 37, 25153 Lleida (Catalunya, España). Titular del copyright y editor en ambas tiendas. |
+| D02 | **Decidido:** joeldetorres123@gmail.com como contacto de privacidad, soporte y derechos. Recomendado sustituirlo por un buzón dedicado antes de publicar. |
+| D03 | **Decidido:** España y resto del EEE; RGPD + LOPDGDD; autoridad AEPD (y APDCAT en Catalunya). Bases: contrato, consentimiento, interés legítimo, obligación legal (detalle en `privacidad.md`). |
+| D04 | **Decidido:** ver el párrafo de retención de este documento y `privacidad.md` §7. |
+| D05 | **Decidido:** Supabase `eu-central-1`, Expo/EAS, GitHub opcional, STUN de Google, SMTP propio gratuito. Transferencias fuera del EEE con CCT / Marco UE-EE. UU. |
+| D06 | **Decidido:** edad mínima 16 años. Público objetivo Play: 16–17 y 18+. Cuestionarios Apple/IARC a rellenar con contenido generado por usuarios (chat y perfiles) y sin acceso web abierto. |
+| D07 | **Decidido:** Apple, Redes sociales (principal) y Productividad (secundaria); Google Play, Social. Se descartan Negocios y Citas: el producto no es de citas. |
+| D08 | **Decidido:** GitHub Pages del repo público. Privacidad `https://thejowe.github.io/lockin/privacidad`, soporte `https://thejowe.github.io/lockin/soporte`, eliminar cuenta `https://thejowe.github.io/lockin/eliminar-cuenta`, normas y seguridad infantil `https://thejowe.github.io/lockin/normas`. Pendiente de crear las páginas y activar Pages. |
+| D09 | **Revisado 10-oct-2026:** las 6 migraciones de bloqueo/borrado/auditoría **no están aplicadas** en producción (`list_migrations`), así que esta versión **no es publicable aún**; además, SCHEDULE_EXACT_ALARM y el ajuste «Allow public access» de Realtime hay que cerrar/declarar. Cifrado en tránsito: HTTPS/WSS a Supabase y medios WebRTC con DTLS-SRTP. Sin datos financieros declarables. |
+| D10 | **Decidido:** no se declaran datos como «compartidos» con proveedores que actúan como encargados (Supabase, Expo) ni con la otra persona del match, que ve el dato por acción del propio usuario. GitHub y STUN de Google se mencionan en la política. |
+| D11 | **Decidido:** responsable de moderación y contacto de seguridad infantil: Joel de Torres, joeldetorres123@gmail.com. Normas en `https://thejowe.github.io/lockin/normas`. Reportes revisados en 72 h; los que afecten a menores o contenido sexual, en 24 h con suspensión cautelar. Bloquear/reportar **ya está implementado** (migraciones `20261009224000` y `20261009231000`, pendientes de aplicar). |
+| D12 | **Decidido:** vigencia desde el 10 de octubre de 2026; cambios relevantes avisados en la app y por email con 30 días de antelación. |

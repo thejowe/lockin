@@ -57,3 +57,6 @@ example
 # Copias de trabajo temporales que crean los agentes de Claude Code
 # (isolation: worktree): son de la sesión, no del repo.
 /.claude/worktrees/
+
+# Salida de scripts/build-web.mjs (GitHub Pages)
+_site/

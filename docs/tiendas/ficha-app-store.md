@@ -1,10 +1,10 @@
-# LockIn — ficha de App Store (español)
+# cofounder — ficha de App Store (español)
 
 Preparada el 9 de octubre de 2026 sobre `0cddbbbae3a894c64e2be04f2c74c081602db8e6`. Los textos de los bloques siguientes son para copiar en los campos de la consola; las notas de preparación no forman parte de la descripción.
 
 ## Nombre
 
-LockIn
+cofounder
 
 ## Subtítulo
 
@@ -20,7 +20,7 @@ Apple no tiene el mismo campo «descripción corta» que Google Play. Este texto
 
 Encuentra con quién empezar a construir o con quién concentrarte.
 
-LockIn conecta a personas que buscan un cofundador o un compañero de trabajo concentrado. Puedes estar sin idea, tener una idea sin empezar o haber probado algo pequeño. La relación es entre pares: ambos aportáis y decidís juntos.
+cofounder conecta a personas que buscan un cofundador o un compañero de trabajo concentrado. Puedes estar sin idea, tener una idea sin empezar o haber probado algo pequeño. La relación es entre pares: ambos aportáis y decidís juntos.
 
 ELIGE TU MODO
 
@@ -60,11 +60,11 @@ socios,emprender,colaborar,coworking,pomodoro,proyectos,productividad,equipo,con
 
 ## Categoría
 
-Propuesta editorial: **Redes sociales (Social Networking)** como categoría principal, por descubrimiento de personas, matches y chat. **[PENDIENTE DE DECISIÓN] D07:** confirmar la categoría final; el repositorio no la configura. No se propone una categoría secundaria sin decisión del editor.
+Categoría decidida (D07): **Redes sociales (Social Networking)** como principal y **Productividad** como secundaria.
 
 ## Clasificación de edad
 
-**[PENDIENTE DE DECISIÓN] D06:** completar el cuestionario real de App Store Connect y confirmar su resultado por territorio. No se deduce una clasificación automática de que el formulario admita 16 años.
+Decisión D06: edad mínima 16. Completar el cuestionario de App Store Connect declarando contenido generado por usuarios (chat y perfiles) con filtros de reporte y bloqueo; revisar el resultado por territorio antes de enviar.
 
 El código admite edades declaradas desde 16 años (formulario 16–99; SQL 16–120). No hay verificación documental, controles parentales ni un bloqueo de uso para mayores de 18. Si la clasificación calculada fuera inferior a la edad mínima de uso finalmente elegida, revisar la opción de aumentar la clasificación. No reducir una clasificación superior calculada por Apple.
 
@@ -92,12 +92,12 @@ La escala actual incluye 4+, 9+, 13+, 16+ y 18+ en las plataformas recientes, co
 | Descripción | 2118 caracteres, incluidos saltos de línea | 4000 caracteres |
 | Palabras clave | 90 bytes UTF-8; texto ASCII | 100 bytes |
 
-Fuentes: [información de la app](https://developer.apple.com/help/app-store-connect/reference/app-information/app-information/) y [campos de la versión](https://developer.apple.com/help/app-store-connect/reference/app-information/platform-version-information/). Bundle ID del repo: `app.lockin.mobile`; versión configurada: `1.0.0`; nombre técnico en app.json: `lockin`.
+Fuentes: [información de la app](https://developer.apple.com/help/app-store-connect/reference/app-information/app-information/) y [campos de la versión](https://developer.apple.com/help/app-store-connect/reference/app-information/platform-version-information/). Bundle ID del repo: `app.cofounder.mobile`; versión configurada: `1.0.0`; nombre técnico en app.json: `lockin`.
 
-- **[PENDIENTE DE DECISIÓN] D01:** nombre legal/editor, domicilio y titular del copyright.
-- **[PENDIENTE DE DECISIÓN] D02:** contacto de soporte y privacidad.
-- **[PENDIENTE DE DECISIÓN] D08:** URL pública de soporte y política de privacidad.
-- **[PENDIENTE DE DECISIÓN] D09:** validar build nativa con WebRTC, configuración de backend y permisos antes de usar la descripción de videollamada en la versión enviada.
+- **D01 decidido:** Joel de Torres Sainz de la Maza, carrer Nou, 37, 25153 Lleida (España); copyright © 2026 Joel de Torres Sainz de la Maza.
+- **D02 decidido:** soporte y privacidad en joeldetorres123@gmail.com.
+- **D08 decidido:** soporte https://thejowe.github.io/lockin/soporte y privacidad https://thejowe.github.io/lockin/privacidad (páginas por crear).
+- **D09:** validar una build nativa real con WebRTC y cámara en dispositivo antes de usar la descripción de videollamada; la cámara real sigue sin comprobar (`todo/video.md`).
 
 ## Evidencia y preparación de revisión
 

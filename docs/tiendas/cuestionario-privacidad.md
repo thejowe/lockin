@@ -1,4 +1,4 @@
-# LockIn — cuestionario de privacidad de las tiendas
+# cofounder — cuestionario de privacidad de las tiendas
 
 Preparado el 9 de octubre de 2026 sobre `0cddbbbae3a894c64e2be04f2c74c081602db8e6`. Fuente factual: [inventario campo a campo](datos-recopilados.md). Los datos de proveedores también cuentan; las respuestas no se limitan a las tablas public.
 
@@ -16,7 +16,7 @@ Fuente de las definiciones: [App Privacy Details de Apple](https://developer.app
 | ¿Se usan datos para seguimiento (tracking)? | **No se ha encontrado tracking publicitario en el código.** Respuesta propuesta: No, tras validar prácticas de proveedores en D05/D09. Matching entre personas no es tracking publicitario. |
 | ¿Los datos están vinculados a la identidad? | **Sí** para los datos de cuenta/producto. El UUID conecta perfil y actividad aunque la cuenta sea «anónima». |
 | ¿Se recoge el identificador publicitario? | No se ha encontrado IDFA/Advertising ID. Sí existe un identificador de instalación EAS-Client-ID, que pertenece a Device ID. |
-| URL de política de privacidad | **[PENDIENTE DE DECISIÓN] D08:** publicar una URL accesible con el texto de privacidad completado. Un archivo local no cubre este campo. |
+| URL de política de privacidad | https://thejowe.github.io/lockin/privacidad (D08; hay que crear la página a partir de `privacidad.md`). |
 
 ### Tipos y finalidad
 
@@ -37,11 +37,11 @@ Finalidad principal: **App Functionality**. Añadir **Product Personalization** 
 | Diagnostics → Crash Data | Expo-Recent-Failed-Update-IDs cuando hay fallos de arranque | Sí: transmisión comprobada; conservación proveedor pendiente | Sí como opción conservadora al asociarse con EAS-Client-ID | Funcionalidad de actualizaciones/diagnóstico; no hay integración de crash reporting propia |
 | Diagnostics → Other Diagnostic Data | Plataforma/runtime e IDs de actualización actual/incluida | Sí: transmisión comprobada; conservación proveedor pendiente | Sí como opción conservadora | Funcionalidad de actualizaciones; validar fines adicionales en D05/D09 |
 
-No declarar el grafo de matches como Gameplay Content: LockIn no es un juego. La autodeclaración de una edad no es información biométrica. No clasificar el email de acceso como contenido de «Emails or Text Messages»: ese campo corresponde a los mensajes, no a la dirección de contacto.
+No declarar el grafo de matches como Gameplay Content: cofounder no es un juego. La autodeclaración de una edad no es información biométrica. No clasificar el email de acceso como contenido de «Emails or Text Messages»: ese campo corresponde a los mensajes, no a la dirección de contacto.
 
-**[PENDIENTE DE DECISIÓN] D09:** cerrar la clasificación de preferencias sobre aportación económica del tema dinero-propio. El código pregunta una disposición cualitativa, no salario, deuda ni cuentas; no declarar datos de pago inexistentes. Si el formulario considera esas respuestas Other Financial Info, añadirlo como opcional, vinculado, con finalidad de funcionalidad del acuerdo.
+Decisión D09: la disposición cualitativa de aportación económica **no** se declara como información financiera; no hay salario, deuda, cuentas ni pago. Se cubre como contenido generado por el usuario, opcional y vinculado.
 
-**[PENDIENTE DE DECISIÓN] D05/D09:** comprobar conservación y uso del ID EAS, metadatos, IP y registros de Supabase/Expo/STUN. Si se usan para análisis, añadir Analytics a los tipos correspondientes; no inferir que ausencia de SDK propio elimina toda analítica de terceros. Solo declarar «no vinculados» si se acredita el tratamiento exigido por Apple antes de conservarlos.
+Decisión D05/D09: el ID EAS, la IP y los registros de Supabase/Expo se usan solo para operación del servicio (actualizaciones, autenticación), sin analítica. Declarar como «Identificadores de dispositivo», vinculados, funcionalidad de la app.
 
 ### Vídeo, audio, datos locales y categorías negativas
 
@@ -51,7 +51,7 @@ No declarar el grafo de matches como Gameplay Content: LockIn no es un juego. La
 | SDP/ICE y presencia | No hay tabla de contenido ni historial. Confirmar registros de proveedor antes de aplicar exclusión por procesamiento temporal. Los UUID ya persistentes siguen declarados como User ID. |
 | Credenciales/recordatorios solo locales | El acceso exclusivamente local no se añade como recogida independiente. Los datos de cuenta que también envía Auth sí están cubiertos arriba. |
 | Fotos de avatar, GPS preciso, historial de búsquedas o navegación, salud, biometría, compras, datos de pago, documentos | No se han encontrado funciones que recaben estas categorías. Abrir enlaces en el navegador del sistema no crea un historial propio en la base de datos. |
-| Customer Support | No hay canal/SDK de soporte implementado. **[PENDIENTE DE DECISIÓN] D02/D09:** revisar qué datos recogerá el canal publicado y añadir este tipo si corresponde. |
+| Customer Support | Canal de soporte por correo (joeldetorres123@gmail.com): los mensajes que la persona envíe se tratan para atenderlos. Solo declarar si Play/App Store lo pide para el canal publicado; no hay SDK. |
 
 No prometer «Data Not Collected» o «Data Not Linked to You».
 
@@ -64,10 +64,10 @@ Fuente: [guía oficial del formulario](https://support.google.com/googleplay/and
 | Pregunta | Respuesta de preparación |
 | --- | --- |
 | ¿Recoge o comparte algún tipo de dato obligatorio de declarar? | **Sí.** No seleccionar «no recoge datos». |
-| ¿Todos los datos se cifran en tránsito? | **No dar un Sí sin comprobarlo.** El repo permite configurar la URL Supabase y usa STUN público sin TLS; no acredita todos los transportes. Respuesta conservadora actual: **No**. **[PENDIENTE DE DECISIÓN] D09:** comprobar alcance de la pregunta, URLs HTTPS/WSS, medios WebRTC y tratamiento STUN/IP en la build; cambiar a Sí solo con evidencia. |
+| ¿Todos los datos se cifran en tránsito? | **Sí.** Supabase por HTTPS/WSS y medios WebRTC con DTLS-SRTP; el STUN transporta solo datos de red, no contenido de usuario. Comprobar que `EXPO_PUBLIC_SUPABASE_URL` de la build es `https://` antes de enviar. |
 | ¿Cómo se crean cuentas? | **Nombre de usuario y contraseña** para email/contraseña (real o sintético); **OAuth** para vinculación de GitHub; **Otros** para creación anónima automática. Declarar todos los métodos que estén habilitados en la versión final. |
 | ¿Se puede solicitar eliminación de cuenta y datos desde la app? | **No existe un flujo completo.** Cerrar sesión no elimina la cuenta ni las filas de producto. No responder que sí por el texto «Borrarlo todo». |
-| Enlace web de solicitud de eliminación | **[PENDIENTE DE DECISIÓN] D08:** URL accesible y mecanismo operativo; no encontrado en el repo. |
+| Enlace web de solicitud de eliminación | https://thejowe.github.io/lockin/eliminar-cuenta (D08; hay que crear la página). Mecanismo en app: Perfil → Cuenta → Eliminar mi cuenta. |
 | ¿Ofrece eliminación de datos sin eliminar la cuenta? | No hay borrado individual de mensajes, valoraciones o historial. La edición del perfil no equivale a borrar todas las categorías. |
 | ¿Revisión independiente de seguridad / distintivos? | No se ha encontrado certificación; no marcar que se dispone de ella. |
 
@@ -95,7 +95,7 @@ En las filas siguientes, **recogidos = Sí** y **procesamiento temporal = No**, 
 
 El hecho de poder abandonar la app no convierte un campo exigido por el formulario en opcional. Cuando un tipo agrega datos obligatorios y opcionales, no marcar todo el tipo «opcional».
 
-**[PENDIENTE DE DECISIÓN] D09:** determinar si las preferencias cualitativas de aportación de dinero se incluyen además como Información financiera → Otra información financiera; si corresponde, recogidos Sí, opcional, no temporal, funcionalidad del acuerdo. No se han encontrado tarjetas, cobros, saldo, salario ni deudas.
+Decisión D09: no incluir Información financiera. No hay tarjetas, cobros, saldo, salario ni deudas.
 
 No hay evidencia de personalización publicitaria o marketing. El filtrado y matching son funcionalidad de la app; no añadir fines comerciales ausentes del código. Confirmar fines operativos adicionales de proveedores en D05.
 
@@ -115,7 +115,7 @@ Los mensajes enviados, respuestas al acuerdo tras respuesta recíproca, particip
 | GitHub OAuth y SMTP | Sí, en los flujos correspondientes | Revisar datos, contratos y acción del usuario en D05/D10 |
 | Google STUN: IP y negociación | Sí, durante conexión | Papel, tratamiento y tipo a declarar pendientes en D05/D09/D10 |
 
-**[PENDIENTE DE DECISIÓN] D10:** decidir y documentar las excepciones que realmente aplican. El repo identifica receptores pero no aporta todos los contratos ni avisos necesarios para dar un «No comparte datos» global. Si no hay base para una excepción, marcar Sí en el tipo afectado.
+Decisión D10: marcar «No se comparten» para Supabase y Expo (encargados que tratan datos por cuenta del responsable) y para lo que la otra persona del match ve por acción del usuario. Marcar compartido solo el enlace de GitHub si la persona lo abre (servicio externo) y la IP al STUN de Google en llamada.
 
 ### Vídeo, audio y datos temporales
 
@@ -126,7 +126,7 @@ El código envía voz y vídeo fuera del dispositivo, sin grabarlos en el produc
 - SDP/ICE contiene UUID y puede contener IP/puertos. La presencia usa IDs. Preparar los tipos correspondientes y confirmar su procesamiento temporal y logs en D05/D09.
 - IP no debe declararse como ubicación precisa por defecto: depende de uso/derivación; la ciudad declarada sí está incluida como ubicación aproximada.
 
-**[PENDIENTE DE DECISIÓN] D05/D09:** verificar estos tratamientos de proveedor y conexión. No afirmar simultáneamente «ningún dato sale del dispositivo» y «hay llamada remota».
+Decisión D05/D09: hay llamada remota (WebRTC) y, por tanto, datos que salen del dispositivo; no afirmar lo contrario.
 
 ## Lo que Apple/Google exigirán y la app aún no tiene
 

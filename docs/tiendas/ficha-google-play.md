@@ -1,10 +1,10 @@
-# LockIn — ficha de Google Play (español)
+# cofounder — ficha de Google Play (español)
 
 Preparada el 9 de octubre de 2026 sobre `0cddbbbae3a894c64e2be04f2c74c081602db8e6`. Copiar únicamente el contenido de cada campo, no las notas de preparación.
 
 ## Nombre
 
-LockIn
+cofounder
 
 ## Subtítulo editorial
 
@@ -20,7 +20,7 @@ Encuentra cofundador o compañero de foco. Haz match y trabaja con Pomodoro.
 
 Encuentra con quién empezar a construir o con quién concentrarte.
 
-LockIn conecta a personas que buscan un cofundador o un compañero de trabajo concentrado. Puedes estar sin idea, tener una idea sin empezar o haber probado algo pequeño. La relación es entre pares: ambos aportáis y decidís juntos.
+cofounder conecta a personas que buscan un cofundador o un compañero de trabajo concentrado. Puedes estar sin idea, tener una idea sin empezar o haber probado algo pequeño. La relación es entre pares: ambos aportáis y decidís juntos.
 
 ELIGE TU MODO
 
@@ -62,11 +62,11 @@ Google Play no tiene un campo separado de keywords equivalente al de Apple. Usar
 
 ## Categoría
 
-Tipo: **Aplicación**. Propuesta editorial de categoría: **Social**, por descubrimiento de personas, matches, conversaciones e invitaciones. **[PENDIENTE DE DECISIÓN] D07:** confirmar categoría y etiquetas en Play Console. El repo no las decide.
+Tipo: **Aplicación**. Categoría decidida (D07): **Social**. Etiquetas a elegir en Play Console entre las ofrecidas para Social.
 
 ## Clasificación de edad y público objetivo
 
-**[PENDIENTE DE DECISIÓN] D06:** completar el cuestionario IARC, confirmar los resultados por región y elegir el público objetivo de Play Console y la edad mínima de uso. No afirmar PEGI 16, ESRB Teen o «18+» sin los resultados y decisiones correspondientes.
+Decisión D06: público objetivo **16–17 y 18+**, edad mínima 16. Completar el cuestionario IARC declarando contenido generado por usuarios con interacción entre usuarios, y confirmar los resultados por región. No afirmar PEGI 16 ni ESRB Teen sin el resultado oficial.
 
 El formulario admite edad declarada desde 16; SQL admite 16–120. No existe verificación real de edad ni una política de menores configurada. La edad de uso del producto, el público objetivo y el resultado IARC son campos distintos.
 
@@ -82,12 +82,12 @@ Fuente para los campos de clasificación, público y privacidad: [preparar una a
 | Descripción breve | 75 caracteres | 80 caracteres |
 | Descripción completa | 2118 caracteres, incluidos saltos de línea | 4000 caracteres |
 
-Fuente: [crear y configurar una aplicación](https://support.google.com/googleplay/android-developer/answer/9859152?hl=es). Package Android del repo: `app.lockin.mobile`; versión app.json: `1.0.0`.
+Fuente: [crear y configurar una aplicación](https://support.google.com/googleplay/android-developer/answer/9859152?hl=es). Package Android del repo: `app.cofounder.mobile`; versión app.json: `1.0.0`.
 
-- **[PENDIENTE DE DECISIÓN] D01:** identidad legal del editor y domicilio.
-- **[PENDIENTE DE DECISIÓN] D02:** correo de soporte obligatorio y contacto de privacidad.
-- **[PENDIENTE DE DECISIÓN] D08:** URL de privacidad, soporte y solicitud de eliminación de cuenta.
-- **[PENDIENTE DE DECISIÓN] D09:** revisar el AAB/APK final, permisos generados, WebRTC y configuración de backend.
+- **D01 decidido:** Joel de Torres Sainz de la Maza, carrer Nou, 37, 25153 Lleida (España). Como persona física se publica como «trader» (DSA): Play mostrará nombre y dirección públicamente.
+- **D02 decidido:** soporte y privacidad en joeldetorres123@gmail.com (obligatorio en la ficha).
+- **D08 decidido:** privacidad https://thejowe.github.io/lockin/privacidad, soporte https://thejowe.github.io/lockin/soporte, eliminación de cuenta https://thejowe.github.io/lockin/eliminar-cuenta, normas/seguridad infantil https://thejowe.github.io/lockin/normas.
+- **D09:** revisar el AAB final; declarar o retirar SCHEDULE_EXACT_ALARM, y comprobar «Allow public access» de Realtime cerrado en producción.
 
 ## Evidencia y preparación de publicación
 

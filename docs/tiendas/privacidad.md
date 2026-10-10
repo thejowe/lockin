@@ -1,16 +1,16 @@
-# Política de privacidad de LockIn
+# Política de privacidad de cofounder
 
-> Borrador para publicación, preparado el 9 de octubre de 2026 sobre el commit `0cddbbbae3a894c64e2be04f2c74c081602db8e6`. Completar las marcas antes de publicarlo. Los ID D01–D12 se explican en [el inventario](datos-recopilados.md#decisiones-pendientes-compartidas-por-los-cinco-documentos).
+> Texto para publicación, completado el 10 de octubre de 2026 con las decisiones D01–D12 del responsable (ver [el inventario](datos-recopilados.md#decisiones-pendientes-compartidas-por-los-cinco-documentos)). Antes de publicarlo en la URL pública, revisar la nota final.
 
-**Entrada en vigor:** [PENDIENTE DE DECISIÓN] D12: fecha de vigencia.
+**Entrada en vigor:** 10 de octubre de 2026.
 
 ## 1. Quién es responsable de tus datos
 
-LockIn permite encontrar un cofundador en modo Par o una persona con quien trabajar concentrado en modo Lock-In.
+cofounder permite encontrar un cofundador en modo Par o una persona con quien trabajar concentrado en modo Lock-In.
 
-El responsable del tratamiento es **[PENDIENTE DE DECISIÓN] D01: nombre legal o razón social y domicilio**. Puedes contactar para cuestiones de privacidad o soporte en **[PENDIENTE DE DECISIÓN] D02: correo de contacto operativo**.
+El responsable del tratamiento es **Joel de Torres Sainz de la Maza**, con domicilio en carrer Nou, 37, 25153 (Lleida, Catalunya, España). Puedes contactar para cuestiones de privacidad o soporte en **joeldetorres123@gmail.com**.
 
-**[PENDIENTE DE DECISIÓN] D03:** jurisdicción y mercados de publicación, normativa aplicable y autoridad de control competente. El nombre de la app o una cuenta técnica del proveedor no sustituyen la identificación legal del responsable.
+Publicamos la app en España y el resto del Espacio Económico Europeo. Se aplican el Reglamento (UE) 2016/679 (RGPD) y la Ley Orgánica 3/2018 (LOPDGDD). La autoridad de control competente es la Agencia Española de Protección de Datos ([aepd.es](https://www.aepd.es)); en Catalunya también puedes acudir a la Autoritat Catalana de Protecció de Dades.
 
 ## 2. Qué datos tratamos
 
@@ -42,7 +42,7 @@ En las salas grupales guardamos quién convoca, horario, duración, cancelación
 
 Si usas vídeo en una sesión individual, la cámara y el micrófono transmiten imagen y voz a la otra persona mediante WebRTC. La app no implementa grabación ni conserva archivos de esa llamada en su base de datos. Esto no impide que el receptor pueda capturar el contenido por otros medios.
 
-El servicio de señalización transmite identificadores y datos técnicos para establecer la conexión, que pueden incluir direcciones de red y puertos. La conexión usa el servicio STUN público de Google. La presencia en sesiones y salas comunica quién está conectado. Estos flujos no generan un historial de contenido en las tablas de producto de LockIn.
+El servicio de señalización transmite identificadores y datos técnicos para establecer la conexión, que pueden incluir direcciones de red y puertos. La conexión usa el servicio STUN público de Google. La presencia en sesiones y salas comunica quién está conectado. Estos flujos no generan un historial de contenido en las tablas de producto de cofounder.
 
 ### Datos del dispositivo y servicios técnicos
 
@@ -50,7 +50,7 @@ La app guarda localmente la sesión de autenticación, ciertos datos para comple
 
 Para descargar actualizaciones, Expo/EAS recibe un identificador aleatorio persistente de instalación, plataforma, versión de ejecución y metadatos de actualizaciones y posibles fallos de arranque. No es un identificador publicitario.
 
-Los servicios de autenticación, base de datos, conexión y actualizaciones reciben datos de red como la dirección IP y pueden generar registros operativos. **[PENDIENTE DE DECISIÓN] D05:** concretar los metadatos que conservan los proveedores y su configuración de producción.
+Los servicios de autenticación, base de datos, conexión y actualizaciones reciben datos de red como la dirección IP y pueden generar registros operativos. Los proveedores conservan estos registros operativos durante el plazo que fija su propia configuración; no los usamos para publicidad ni para elaborar perfiles.
 
 ## 3. Para qué usamos los datos
 
@@ -60,7 +60,12 @@ Los datos técnicos permiten autenticar peticiones, mantener conexiones, complet
 
 La versión descrita no incluye SDK de publicidad dirigida ni una integración de analítica comercial propia en el código revisado. No se han encontrado usos publicitarios de los datos de perfil o mensajes.
 
-**[PENDIENTE DE DECISIÓN] D03:** especificar la base jurídica de cada finalidad, incluidos servicio principal, datos públicos del perfil, autenticación opcional, cámara/micrófono, recordatorios y operaciones técnicas. Conceder un permiso del sistema no determina por sí solo todas las bases jurídicas.
+Bases jurídicas (art. 6 RGPD):
+
+- **Ejecución del servicio que solicitas** (art. 6.1.b): cuenta, perfil, swipes, matches, mensajes, sesiones, salas, rachas, valoraciones y acuerdo.
+- **Consentimiento** (art. 6.1.a): cámara y micrófono para la videollamada, recordatorios y verificación opcional de GitHub. Puedes retirarlo en cualquier momento desde los ajustes del dispositivo o desvinculando GitHub.
+- **Interés legítimo** (art. 6.1.f): seguridad, prevención de abusos, moderación de reportes y operación técnica del servicio.
+- **Obligación legal** (art. 6.1.c): atender requerimientos de las autoridades.
 
 ## 4. Quién puede verlos
 
@@ -76,9 +81,17 @@ Los recordatorios son locales. El aviso de sesión incluye el nombre del compañ
 
 ## 5. Servicios externos y transferencias
 
-LockIn utiliza Supabase para autenticación, base de datos y Realtime; Expo/EAS para actualizaciones; GitHub si eliges verificar tu enlace; y STUN de Google para negociar la conexión de vídeo. El envío de emails de autenticación depende del servicio configurado.
+cofounder utiliza Supabase para autenticación, base de datos y Realtime; Expo/EAS para actualizaciones; GitHub si eliges verificar tu enlace; y STUN de Google para negociar la conexión de vídeo. El envío de emails de autenticación depende del servicio configurado.
 
-**[PENDIENTE DE DECISIÓN] D05:** identificar los proveedores legales, el servicio de correo, sus funciones como encargados o responsables independientes, regiones de alojamiento, subencargados, transferencias internacionales y garantías aplicables. No se atribuye una región o un contrato que el repositorio no acredita.
+Proveedores y su función:
+
+- **Supabase** (encargado del tratamiento): autenticación, base de datos y Realtime. El proyecto está alojado en la región UE Centro (Fráncfort, `eu-central-1`).
+- **Expo / EAS** (encargado): distribución de actualizaciones de la app.
+- **GitHub** (responsable independiente), solo si eliges verificar tu enlace.
+- **Google** (STUN público), solo en videollamada: recibe datos de red para negociar la conexión, sin contenido de imagen ni voz.
+- **Servicio de correo de autenticación**: envía los emails de confirmación y recuperación.
+
+Algunos proveedores pueden tratar datos fuera del EEE, en cuyo caso se apoyan en las cláusulas contractuales tipo de la Comisión Europea o en el Marco de Privacidad de Datos UE-EE. UU.
 
 Al abrir un enlace de portfolio, GitHub o LinkedIn, visitas un servicio externo que aplica sus propias prácticas de privacidad.
 
@@ -92,13 +105,18 @@ Puedes cambiar los permisos en los ajustes del dispositivo. Denegar un permiso p
 
 ## 7. Cuánto tiempo se conservan
 
-**[PENDIENTE DE DECISIÓN] D04:** definir los plazos de conservación de cuentas y perfiles, swipes, matches, mensajes, sesiones y asistencia, valoraciones, acuerdos, salas e invitaciones; además de cuentas inactivas o irrecuperables, registros técnicos y copias de seguridad.
+Conservamos tus datos mientras tu cuenta exista. Al eliminar la cuenta desde la app (Perfil → Cuenta → Eliminar mi cuenta) se borran tu perfil y los datos asociados de forma inmediata en la base de datos.
+
+- **Cuentas inactivas:** si no accedes en 24 meses, te avisaremos por email (si lo tienes confirmado) y eliminaremos la cuenta transcurridos 30 días sin respuesta. Las cuentas anónimas sin email no pueden avisarse y se eliminan al cumplirse ese plazo.
+- **Copias de seguridad del proveedor:** pueden conservar datos eliminados hasta 30 días más.
+- **Registros técnicos de los proveedores** (IP, peticiones): según su configuración, sin superar 90 días en nuestra operación.
+- **Reportes de abuso:** se conservan mientras lo exija su revisión y, como máximo, 12 meses desde su resolución.
 
 Actualmente, las tablas de producto no tienen una eliminación automática por antigüedad. Terminar o cancelar una sesión o sala no borra sus datos. La ventana de 24 horas para valorar una sesión limita cuándo puedes valorar; no elimina la valoración después.
 
 Cerrar sesión o desinstalar la app no equivale a borrar los datos del servidor. Cerrar sesión elimina credenciales locales y puede hacer irrecuperable una cuenta sin email confirmado, aunque las filas sigan en el servidor.
 
-Cuando se elimina un perfil en la base de datos, las relaciones definidas en el esquema pueden borrar también los matches y sus mensajes, sesiones, valoraciones y acuerdos, incluidos datos aportados por la otra persona. Si se elimina el perfil de quien convoca una sala, se eliminan la sala y sus miembros. La app aún no ofrece un flujo completo de eliminación de cuenta.
+Cuando se elimina una cuenta, también se borran los matches y sus mensajes, sesiones, valoraciones y acuerdos, incluidos los datos que aportó la otra persona en esos matches. Las salas cuyo convocante se da de baja se conservan para los demás participantes, sin la persona convocante.
 
 Los flujos de vídeo y presencia no se graban como contenido de producto; la conservación de registros de los proveedores debe concretarse por separado.
 
@@ -106,24 +124,22 @@ Los flujos de vídeo y presencia no se graban como contenido de producto; la con
 
 Puedes editar tu perfil y sus enlaces. Puedes desvincular GitHub mediante el flujo disponible; ello retira el sello y el enlace derivado cuando se sincroniza. La app no ofrece edición o borrado individual de mensajes ni cambio de una valoración ya enviada.
 
-**[PENDIENTE DE DECISIÓN] D02/D03:** completar el canal de solicitudes y el procedimiento para ejercer los derechos aplicables de acceso, rectificación, supresión, oposición, limitación o portabilidad, según la normativa y los tratamientos correspondientes; concretar cómo reclamar ante la autoridad competente.
-
-La baja completa desde la app y un canal web de solicitud de eliminación están pendientes de implementación/publicación. **[PENDIENTE DE DECISIÓN] D08:** URL pública de eliminación de cuenta y de esta política. No presentamos el botón de cerrar sesión como una baja.
+Puedes darte de baja desde la app (Perfil → Cuenta → Eliminar mi cuenta) o pedir la eliminación escribiendo a joeldetorres123@gmail.com; respondemos en un máximo de 30 días. Cerrar sesión no es una baja. Tienes además derecho a acceso, rectificación, supresión, oposición, limitación y portabilidad, que puedes ejercer por el mismo correo, y a reclamar ante la AEPD. Las páginas públicas están en https://thejowe.github.io/lockin/.
 
 ## 9. Menores
 
-El formulario actual permite declarar edades desde 16 años. La edad es autodeclarada y no hay verificación documental de edad ni controles parentales.
-
-**[PENDIENTE DE DECISIÓN] D06:** establecer la edad mínima contractual y la política sobre menores, el público objetivo de las tiendas y las restricciones necesarias por territorio. La clasificación de una tienda no sustituye estas decisiones.
+cofounder es para personas de **16 años o más**. La edad es autodeclarada y no hay verificación documental de edad ni controles parentales. Si detectamos una cuenta de una persona menor de 16 años, la eliminaremos. Si crees que ocurre, avísanos por correo.
 
 ## 10. Seguridad y cambios
 
 El servidor aplica controles de acceso por cuenta, pertenencia a matches y pertenencia a salas. Su funcionamiento efectivo depende de que las migraciones y los ajustes de producción estén aplicados. Los datos no son anónimos por el hecho de usar una cuenta sin email.
 
-**[PENDIENTE DE DECISIÓN] D09:** verificar el binario, la configuración de producción y la protección de todos los flujos de datos. No se promete una certificación o un cifrado universal no comprobado.
+Las conexiones con Supabase y Expo usan TLS. No prometemos cifrado de extremo a extremo del chat ni una certificación de seguridad.
 
-**[PENDIENTE DE DECISIÓN] D12:** definir cómo comunicaremos cambios de esta política y su fecha de entrada en vigor.
+Puedes **bloquear y reportar** a otra persona desde la app. Revisamos los reportes y actuamos sobre contenido o cuentas que incumplan las [normas de la comunidad](https://thejowe.github.io/lockin/normas).
+
+Si cambiamos esta política de forma relevante, lo avisaremos dentro de la app y, si tienes email, por correo, al menos 30 días antes de que entre en vigor. La fecha de entrada en vigor figura al principio.
 
 ---
 
-Nota editorial para el responsable, a retirar del texto publicado: este borrador describe el comportamiento actual y sus carencias. Las bases jurídicas y derechos se deben concretar según D03; las instrucciones a las tiendas y los requisitos pendientes de cuenta/moderación están en [cuestionario-privacidad.md](cuestionario-privacidad.md). Sus fuentes oficiales son las [reglas de privacidad de Apple](https://developer.apple.com/app-store/review/guidelines/#privacy) y la [política de datos de usuario de Google Play](https://support.google.com/googleplay/android-developer/answer/10144311?hl=es).
+Nota editorial para el responsable, a retirar del texto publicado: el plazo de 24 meses de inactividad y la purga de reportes a 12 meses son compromisos de operación que ningún código automatiza todavía; hay que ejecutarlos a mano o implementarlos antes de publicar. Esta política supone aplicadas en producción las migraciones de cuenta y de bloqueo. Las instrucciones a las tiendas están en [cuestionario-privacidad.md](cuestionario-privacidad.md). Sus fuentes oficiales son las [reglas de privacidad de Apple](https://developer.apple.com/app-store/review/guidelines/#privacy) y la [política de datos de usuario de Google Play](https://support.google.com/googleplay/android-developer/answer/10144311?hl=es).
