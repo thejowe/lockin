@@ -258,7 +258,7 @@ describe('AccountSection', () => {
       await press('Cerrar sesión');
 
       await waitFor(() => expect(gateway.signOut).toHaveBeenCalledWith());
-      expect(screen.queryByText('Cerrar sesión aquí borra tus datos')).toBeNull();
+      expect(screen.queryByText('Cerrar sesión aquí te deja sin acceso a tu cuenta')).toBeNull();
     });
   });
 
@@ -272,7 +272,7 @@ describe('AccountSection', () => {
           : Promise.reject(
               new AccountError(
                 'unrecoverable-account',
-                'Esta cuenta solo vive en este teléfono: cerrar sesión borraría tu perfil.'
+                'Esta cuenta solo vive en este teléfono: cerrar sesión te dejaría sin acceso a tu perfil.'
               )
             )
       );
@@ -285,9 +285,10 @@ describe('AccountSection', () => {
       await press('Cerrar sesión');
 
       await waitFor(() =>
-        expect(screen.getByText('Cerrar sesión aquí borra tus datos')).toBeTruthy()
+        expect(screen.getByText('Cerrar sesión aquí te deja sin acceso a tu cuenta')).toBeTruthy()
       );
-      expect(screen.getByText(/desaparecen para siempre/i)).toBeTruthy();
+      expect(screen.getByText(/perderás el acceso/i)).toBeTruthy();
+      expect(screen.getByText(/no borra tus datos del servidor/i)).toBeTruthy();
       expect(gateway.signOut).toHaveBeenCalledTimes(1);
       expect(gateway.signOut).not.toHaveBeenCalledWith({ acceptDataLoss: true });
     });
@@ -297,12 +298,12 @@ describe('AccountSection', () => {
       await waitFor(() => expect(screen.getByText('Cerrar sesión')).toBeTruthy());
       await press('Cerrar sesión');
       await waitFor(() =>
-        expect(screen.getByText('Cerrar sesión aquí borra tus datos')).toBeTruthy()
+        expect(screen.getByText('Cerrar sesión aquí te deja sin acceso a tu cuenta')).toBeTruthy()
       );
 
       await press('Mejor no');
 
-      expect(screen.queryByText('Cerrar sesión aquí borra tus datos')).toBeNull();
+      expect(screen.queryByText('Cerrar sesión aquí te deja sin acceso a tu cuenta')).toBeNull();
       expect(gateway.signOut).toHaveBeenCalledTimes(1);
     });
 
@@ -311,10 +312,10 @@ describe('AccountSection', () => {
       await waitFor(() => expect(screen.getByText('Cerrar sesión')).toBeTruthy());
       await press('Cerrar sesión');
       await waitFor(() =>
-        expect(screen.getByText('Cerrar sesión aquí borra tus datos')).toBeTruthy()
+        expect(screen.getByText('Cerrar sesión aquí te deja sin acceso a tu cuenta')).toBeTruthy()
       );
 
-      await press('Borrarlo todo y cerrar sesión');
+      await press('Cerrar sesión y perder el acceso');
 
       await waitFor(() => expect(gateway.signOut).toHaveBeenCalledWith({ acceptDataLoss: true }));
     });
@@ -444,7 +445,7 @@ describe('AccountSection', () => {
       await press('Cerrar sesión');
 
       await waitFor(() => expect(screen.getByText(/El servidor ha dicho que no/)).toBeTruthy());
-      expect(screen.queryByText('Cerrar sesión aquí borra tus datos')).toBeNull();
+      expect(screen.queryByText('Cerrar sesión aquí te deja sin acceso a tu cuenta')).toBeNull();
     });
   });
 
