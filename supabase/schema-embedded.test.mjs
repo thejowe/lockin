@@ -1857,6 +1857,114 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
     );
     await db.exec('rollback;');
     console.log('Rol lector, 5 mutaciones, teardown dos veces y guardia de sobrecarga: OK');
+
+    // Auditoría de seguridad 2026-10, H3: la autorización de presencia de una
+    // sala exige estar dentro de la ventana de entrada y que la sala siga viva.
+    const winHost = person('f300');
+    const winBea = person('f301');
+    const winCai = person('f302');
+    await db.exec(`begin;
+      insert into auth.users (id, email) values
+        ('${winHost}', 'win-host@lockin.test'), ('${winBea}', 'win-bea@lockin.test'),
+        ('${winCai}', 'win-cai@lockin.test');
+      insert into public.profiles (
+        id, name, age, location, timezone, avatar_initials, specialties,
+        looking_for, starting_point, availability_hours_per_week, availability_bands, ambition
+      ) select id, 'Ventana', 30, 'Madrid', 'Europe/Madrid', 'V',
+        array['dev']::public.specialty[], 'ambos', 'solo-ganas', 10,
+        array['tarde']::public.time_band[], 'equilibrado'
+        from auth.users where id in ('${winHost}', '${winBea}', '${winCai}');
+      insert into public.matches (profile_a, profile_b, mode) values
+        (least('${winHost}'::uuid, '${winBea}'::uuid), greatest('${winHost}'::uuid, '${winBea}'::uuid), 'par'),
+        (least('${winHost}'::uuid, '${winCai}'::uuid), greatest('${winHost}'::uuid, '${winCai}'::uuid), 'lockin');`);
+    const winRoom = async () => {
+      await actingAs(winHost);
+      const created = (
+        await db.query(`select * from public.create_room(
+          array['${winBea}', '${winCai}']::uuid[], clock_timestamp() + interval '1 hour', 1::smallint)`)
+      ).rows[0];
+      await actingAs(winBea);
+      await db.query(`select * from public.respond_room('${created.id}', 'aceptada')`);
+      return created.id;
+    };
+    const winMember = async (id) =>
+      (await db.query(`select public.is_room_topic_member('lockin:room:${id}') as ok`)).rows[0].ok;
+    const winMove = async (id, interval) => {
+      await db.exec(`reset role; update public.lockin_rooms
+        set starts_at = clock_timestamp() + interval '${interval}' where id = '${id}';`);
+      await actingAs(winBea);
+    };
+    const winPresence = (id) =>
+      sonda(`insert into realtime.messages (topic, extension)
+        values ('lockin:room:${id}', 'presence')`);
+
+    // Aceptada pero antes de la ventana: ni helper ni presencia.
+    const earlyRoom = await winRoom();
+    assert.equal(await winMember(earlyRoom), false, 'una hora antes no autoriza');
+    await db.exec(`set local "realtime.topic" = 'lockin:room:${earlyRoom}';`);
+    assert.equal(await winPresence(earlyRoom), '42501', 'presencia denegada antes de la ventana');
+    await winMove(earlyRoom, '6 minutes');
+    assert.equal(await winMember(earlyRoom), false, 'a 6 minutos aún no');
+    await winMove(earlyRoom, '4 minutes');
+    assert.equal(await winMember(earlyRoom), true, 'a 4 minutos, sí');
+    assert.equal(await winPresence(earlyRoom), 'sin error');
+    // Terminada la sesión: se cierra.
+    await winMove(earlyRoom, '-1 day');
+    assert.equal(await winMember(earlyRoom), false, 'sala terminada');
+    // La anfitriona es asistente y entra en la misma ventana.
+    await winMove(earlyRoom, '2 minutes');
+    await actingAs(winHost);
+    assert.equal(await winMember(earlyRoom), true, 'la anfitriona entra en ventana');
+
+    // Cancelada dentro de la ventana: se cierra.
+    const cancelledRoom = await winRoom();
+    await winMove(cancelledRoom, '2 minutes');
+    assert.equal(await winMember(cancelledRoom), true);
+    await db.exec(`reset role; update public.lockin_rooms
+      set cancelled_at = clock_timestamp() where id = '${cancelledRoom}';`);
+    await actingAs(winBea);
+    assert.equal(await winMember(cancelledRoom), false, 'sala cancelada');
+
+    // Rechazada: pierde el acceso (y como no pudo autorizarse antes, no hay caché).
+    const rejectedRoom = await winRoom();
+    await winMove(rejectedRoom, '10 minutes');
+    assert.equal(await winMember(rejectedRoom), false);
+    await db.query(`select * from public.respond_room('${rejectedRoom}', 'rechazada')`);
+    await winMove(rejectedRoom, '2 minutes');
+    assert.equal(await winMember(rejectedRoom), false, 'rechazada, ni en ventana');
+    assert.equal(
+      await sonda(`select public.is_room_topic_member('lockin:room:no-es-uuid')`),
+      'sin error'
+    );
+    assert.equal(await winMember(rejectedRoom), false);
+    await db.exec(`reset role;
+      create or replace function auth.uid() returns uuid language sql as $$ select null::uuid $$;
+      set local role authenticated;`);
+    assert.equal(await winMember(earlyRoom), false, 'sin sesión no autoriza');
+    const helper = (
+      await db.query(`select provolatile, prosecdef, proconfig from pg_proc
+        where oid = 'public.is_room_topic_member(text)'::regprocedure`)
+    ).rows[0];
+    assert.deepEqual(helper, { provolatile: 'v', prosecdef: false, proconfig: ['search_path=""'] });
+    await db.exec('rollback;');
+    console.log('H3: presencia de sala solo en ventana, no cancelada y no rechazada: OK');
+
+    // H4: la publicación de Realtime no emite DELETE ni TRUNCATE.
+    const publication = (
+      await db.query(`select pubinsert, pubupdate, pubdelete, pubtruncate
+        from pg_publication where pubname = 'supabase_realtime'`)
+    ).rows;
+    assert.deepEqual(publication, [
+      { pubinsert: true, pubupdate: true, pubdelete: false, pubtruncate: false },
+    ]);
+    assert.deepEqual(
+      (
+        await db.query(`select tablename from pg_publication_tables
+          where pubname = 'supabase_realtime' order by tablename`)
+      ).rows.map((row) => row.tablename),
+      ['lockin_rooms', 'lockin_sessions', 'matches', 'messages', 'session_attendance']
+    );
+    console.log('H4: supabase_realtime publica solo INSERT y UPDATE: OK');
   } finally {
     await db.close();
   }
