@@ -110,3 +110,86 @@ describe('perfiles y avisos', () => {
     expect([...heard].sort()).toEqual([CURRENT_USER_ID, NURIA, ALBA].sort());
   });
 });
+
+describe('borrar la cuenta de quien convoca', () => {
+  /** Una sala futura y otra ya empezada del usuario, y una de Núria con él dentro. */
+  async function seed() {
+    const repositories = createMockRepositories(store);
+    await matchWith(repositories, NURIA, ALBA);
+    const future = await repositories.rooms.create({
+      inviteeIds: [NURIA, ALBA],
+      startsAt: new Date(store.nowMs() + 3 * 60 * MINUTE).toISOString(),
+      blocks: 1,
+    });
+    const started = await repositories.rooms.create({
+      inviteeIds: [NURIA, ALBA],
+      startsAt: soonest(),
+      blocks: 1,
+    });
+    store.advanceClock(5 * MINUTE + 2_000);
+    return { repositories, future: future.room.id, started: started.room.id };
+  }
+
+  it('las futuras se cancelan, las empezadas se conservan, y todas pierden el convocante', async () => {
+    const { future, started } = await seed();
+
+    store.deleteCurrentUser();
+
+    const byId = (id: string) => store.state.rooms.find((room) => room.id === id);
+    expect(byId(future)).toMatchObject({ hostId: null, cancelledAt: expect.any(String) });
+    expect(byId(started)).toMatchObject({ hostId: null, cancelledAt: null });
+  });
+
+  it('solo cae la fila de miembro de la cuenta borrada; las demás siguen', async () => {
+    const { future, started } = await seed();
+
+    store.deleteCurrentUser();
+
+    for (const roomId of [future, started]) {
+      const members = store.state.roomMembers
+        .filter((member) => member.roomId === roomId)
+        .map((member) => member.profileId)
+        .sort();
+      expect(members).toEqual([NURIA, ALBA].sort());
+    }
+  });
+
+  it('quienes quedan ven la sala cancelada y nadie manda en una sin convocante', async () => {
+    const { future, started } = await seed();
+    store.deleteCurrentUser();
+    const nuria = createMockRoomRepository(NURIA, store);
+
+    const view = await nuria.getById(future);
+    expect(view?.room).toMatchObject({ hostId: null });
+    expect(view?.room.cancelledAt).not.toBeNull();
+    await expect(nuria.cancel(started)).rejects.toThrow('Solo cancela quien convoca');
+  });
+
+  it('una sala ajena donde estaba invitada sigue en pie y conserva a su convocante', async () => {
+    const repositories = createMockRepositories(store);
+    await matchWith(repositories, NURIA);
+    const nuria = createMockRoomRepository(NURIA, store);
+    store.state.matches.push({
+      id: 'match-nuria-alba',
+      profileIds: [NURIA, ALBA],
+      mode: 'lockin',
+      createdAt: new Date(store.nowMs()).toISOString(),
+      lastMessageAt: null,
+    });
+    const view = await nuria.create({
+      inviteeIds: [CURRENT_USER_ID, ALBA],
+      startsAt: soonest(),
+      blocks: 1,
+    });
+
+    store.deleteCurrentUser();
+
+    const room = store.state.rooms.find((candidate) => candidate.id === view.room.id);
+    expect(room).toMatchObject({ hostId: NURIA, cancelledAt: null });
+    expect(
+      store.state.roomMembers.some(
+        (member) => member.roomId === view.room.id && member.profileId === CURRENT_USER_ID
+      )
+    ).toBe(false);
+  });
+});

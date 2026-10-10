@@ -1910,7 +1910,11 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       [sesionBeaCarla],
       'la sesión del match de Ana cae; la de Bea y Carla sigue'
     );
-    assert.equal(await countOf('public.session_attendance'), 2, 'asistencia de la sesión que sigue');
+    assert.equal(
+      await countOf('public.session_attendance'),
+      2,
+      'asistencia de la sesión que sigue'
+    );
     assert.equal(await countOf('public.session_ratings'), 1, 'valoración de la sesión que sigue');
     assert.equal(await countOf('public.agreement_answers'), 1, 'acuerdo del match que sigue');
 

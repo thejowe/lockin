@@ -146,9 +146,6 @@ export function createMockStore(): MockStore {
           .filter((session) => matchIds.has(session.matchId) || session.proposedBy === userId)
           .map((session) => session.id)
       );
-      const roomIds = new Set(
-        state.rooms.filter((room) => room.hostId === userId).map((room) => room.id)
-      );
 
       state.profiles.delete(userId);
       // Estos dos índices contienen solo decisiones de/a la cuenta propia.
@@ -169,10 +166,19 @@ export function createMockStore(): MockStore {
         (entry) => !matchIds.has(entry.matchId) && entry.profileId !== userId
       );
       for (const matchId of matchIds) state.agreementSeeded.delete(matchId);
-      state.rooms = state.rooms.filter((room) => !roomIds.has(room.id));
-      state.roomMembers = state.roomMembers.filter(
-        (member) => !roomIds.has(member.roomId) && member.profileId !== userId
-      );
+      // Las salas sobreviven a quien las convocó (espejo de
+      // `20261010000100_rooms_survive_host_deletion.sql`): `hostId` pasa a null,
+      // las que aún no han empezado se cancelan y las empezadas o terminadas se
+      // conservan tal cual. Solo cae la fila de miembro de esta cuenta.
+      const nowMs = Date.now() + clockOffsetMs;
+      for (const room of state.rooms) {
+        if (room.hostId !== userId) continue;
+        if (room.cancelledAt === null && Date.parse(room.startsAt) > nowMs) {
+          room.cancelledAt = new Date(nowMs).toISOString();
+        }
+        room.hostId = null;
+      }
+      state.roomMembers = state.roomMembers.filter((member) => member.profileId !== userId);
       state.session = { profileId: null, activeMode: null };
       listeners.forEach((set) => set.forEach((listener) => listener()));
     },
