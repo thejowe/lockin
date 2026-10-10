@@ -1956,46 +1956,120 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       'Borrar mi cuenta: LI007, anon/PUBLIC sin permiso, cascada sin tocar lo ajeno y salas ajenas canceladas: OK'
     );
 
-    // Orden de bloqueo de `delete_my_account()`. PGlite es una sola conexión y no
-    // puede reproducir la espera de un bloqueo ajeno, así que las dos carreras
-    // (un RPC de sala que sostiene la fila mientras se cruza `starts_at`; una
-    // `create_room` de la misma cuenta en otro dispositivo) NO se ejercitan en
-    // vivo: lo que se fija es el orden en el cuerpo real de la función, que es
-    // lo que las cierra. El valor lo tiene la revisión de ese orden, no una
-    // concurrencia simulada.
-    const cuerpo = stripComments(
+    // Toda vía de borrado de perfil cancela las salas futuras que convoca: el
+    // barrido vive en un trigger BEFORE DELETE sobre `profiles`, no en el RPC.
+    const dirAna = person('f230');
+    const dirBea = person('f231');
+    const dirFutura = person('f232');
+    const dirEmpezada = person('f233');
+    const dirCascada = person('f234');
+    await db.exec(`begin;
+      insert into auth.users (id, email) values
+        ('${dirAna}', 'dir-ana@lockin.test'), ('${dirBea}', 'dir-bea@lockin.test');
+      insert into public.profiles (
+        id, name, age, location, timezone, avatar_initials, specialties,
+        looking_for, starting_point, availability_hours_per_week, availability_bands, ambition
+      ) select id, 'Directa', 30, 'Madrid', 'Europe/Madrid', 'D',
+        array['dev']::public.specialty[], 'ambos', 'solo-ganas', 10,
+        array['tarde']::public.time_band[], 'equilibrado'
+        from auth.users where id in ('${dirAna}', '${dirBea}');
+      insert into public.lockin_rooms (id, host_id, starts_at, blocks) values
+        ('${dirFutura}', '${dirAna}', clock_timestamp() + interval '1 hour', 1),
+        ('${dirEmpezada}', '${dirAna}', clock_timestamp() - interval '10 minutes', 1),
+        ('${dirCascada}', '${dirBea}', clock_timestamp() + interval '1 hour', 1);
+      insert into public.room_members (room_id, profile_id, status, responded_at) values
+        ('${dirFutura}', '${dirAna}', 'aceptada', now()),
+        ('${dirEmpezada}', '${dirAna}', 'aceptada', now()),
+        ('${dirCascada}', '${dirBea}', 'aceptada', now());`);
+
+    // Borrado directo del perfil como `authenticated`, sin pasar por el RPC.
+    await actingAs(dirAna);
+    await db.exec(`delete from public.profiles where id = '${dirAna}';`);
+    await db.exec('reset role;');
+    assert.equal(
+      (await db.query(`select count(*)::int as n from public.profiles where id = '${dirAna}'`))
+        .rows[0].n,
+      0,
+      'el DELETE directo del perfil se ejecuta como authenticated'
+    );
+    assert.deepEqual(await roomOf(dirFutura), { host_id: null, cancelada: true, miembros: null });
+    assert.deepEqual(await roomOf(dirEmpezada), {
+      host_id: null,
+      cancelada: false,
+      miembros: null,
+    });
+
+    // Cascada desde auth.users: pasa por el mismo trigger de fila.
+    await db.exec(`delete from auth.users where id = '${dirBea}';`);
+    assert.deepEqual(await roomOf(dirCascada), { host_id: null, cancelada: true, miembros: null });
+
+    // El trigger no es invocable por los clientes.
+    assert.deepEqual(
       (
-        await db.query(
-          "select pg_get_functiondef('public.delete_my_account()'::regprocedure) as def"
-        )
-      ).rows[0].def
-    )
-      .toLowerCase()
-      .replace(/\s+/g, ' ');
-    const posicion = (re, nombre) => {
-      const i = cuerpo.search(re);
-      assert.ok(i >= 0, `delete_my_account: falta ${nombre}`);
+        await db.query(`select
+          has_function_privilege('anon', 'public.cancel_hosted_rooms_before_profile_delete()', 'execute') as anon,
+          has_function_privilege('authenticated', 'public.cancel_hosted_rooms_before_profile_delete()', 'execute') as authenticated`)
+      ).rows[0],
+      { anon: false, authenticated: false }
+    );
+    await db.exec('rollback;');
+    console.log('Borrado de perfil directo y en cascada cancela las salas futuras: OK');
+
+    // Orden de bloqueo. PGlite es una sola conexión y no puede reproducir la
+    // espera de un bloqueo ajeno, así que las dos carreras (un RPC de sala que
+    // sostiene la fila mientras se cruza `starts_at`; una `create_room` de la
+    // misma cuenta en otro dispositivo) NO se ejercitan en vivo: lo que se fija
+    // es el orden en el cuerpo real del trigger y del RPC, que es lo que las
+    // cierra. El valor lo tiene la revisión de ese orden, no una concurrencia
+    // simulada.
+    const cuerpoDe = async (firma) =>
+      stripComments(
+        (await db.query(`select pg_get_functiondef('${firma}'::regprocedure) as def`)).rows[0].def
+      )
+        .toLowerCase()
+        .replace(/\s+/g, ' ');
+    const posicionEn = (texto, re, nombre) => {
+      const i = texto.search(re);
+      assert.ok(i >= 0, `falta ${nombre}`);
       return i;
     };
-    const perfil = posicion(
-      /from public\.profiles where id = v_uid for update/,
+
+    const trigger = await cuerpoDe('public.cancel_hosted_rooms_before_profile_delete()');
+    const perfil = posicionEn(
+      trigger,
+      /from public\.profiles where id = old\.id for update/,
       'el bloqueo de la fila del perfil'
     );
-    const salas = posicion(
-      /from public\.lockin_rooms where host_id = v_uid and cancelled_at is null order by id for update/,
+    const salas = posicionEn(
+      trigger,
+      /from public\.lockin_rooms where host_id = old\.id and cancelled_at is null order by id for update/,
       'el bloqueo de cada sala que convoca'
     );
-    const reloj = posicion(/v_now := clock_timestamp\(\)/, 'la captura del reloj');
-    const cancela = posicion(/update public\.lockin_rooms set cancelled_at/, 'el UPDATE');
-    const borra = posicion(/delete from auth\.users/, 'el borrado de la cuenta');
+    const reloj = posicionEn(trigger, /v_now := clock_timestamp\(\)/, 'la captura del reloj');
+    const cancela = posicionEn(
+      trigger,
+      /update public\.lockin_rooms set cancelled_at/,
+      'el UPDATE'
+    );
     assert.ok(perfil < salas, 'perfil bloqueado antes que las salas');
     assert.ok(salas < reloj, 'salas bloqueadas ANTES de capturar el instante de corte');
-    assert.ok(reloj < cancela && cancela < borra, 'reloj, cancelación y borrado, en ese orden');
+    assert.ok(reloj < cancela, 'reloj y cancelación, en ese orden');
     assert.equal(
-      cuerpo.match(/clock_timestamp\(\)/g).length,
+      trigger.match(/clock_timestamp\(\)/g).length,
       1,
       'un único instante de corte, tomado tras los bloqueos'
     );
+
+    const rpc = await cuerpoDe('public.delete_my_account()');
+    assert.ok(
+      posicionEn(
+        rpc,
+        /from public\.profiles where id = v_uid for update/,
+        'el bloqueo del perfil'
+      ) < posicionEn(rpc, /delete from auth\.users/, 'el borrado de la cuenta'),
+      'el RPC bloquea el perfil antes de borrar'
+    );
+    assert.ok(!/clock_timestamp|lockin_rooms/.test(rpc), 'el barrido ya no vive en el RPC');
 
     // Ejecutar las definiciones reales de las dos funciones, sin sembrar cuentas.
     const seed = readFileSync(join(here, 'seed.sql'), 'utf8');

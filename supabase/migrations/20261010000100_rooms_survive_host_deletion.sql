@@ -50,26 +50,69 @@ begin
 end;
 $fn$;
 
--- Última definición: 20261009215240_delete_my_account.sql. Añade el paso de
--- cancelar las salas futuras antes de borrar la cuenta.
+-- El barrido de cancelación vive en un trigger BEFORE DELETE sobre `profiles`,
+-- no en `delete_my_account()`: un cliente autenticado puede borrar su propio
+-- perfil directamente (política y permiso DELETE de `profiles`), y con
+-- `on delete set null` sus salas futuras habrían quedado sin convocante y sin
+-- cancelar, con `cancel_room` dando LI004 a todo el mundo. Un trigger cubre
+-- TODA vía de borrado: el DELETE directo, el RPC y la cascada desde
+-- `auth.users` (las acciones referenciales ejecutan DELETE sobre `profiles` y
+-- disparan sus triggers de fila).
 --
 -- Orden de bloqueos (importa, son dos carreras reales):
 --
--- 1. La fila del perfil, `for update`, lo primero. `create_room` inserta una
---    sala con `host_id` apuntando a ese perfil, y la clave ajena toma
---    `FOR KEY SHARE` sobre él, que choca con `FOR UPDATE`: una `create_room`
---    de esta misma cuenta (otro dispositivo) o bien termina antes del barrido
---    —y entonces se ve y se cancela— o bien espera a que esta transacción
---    acabe y falla la clave ajena porque el perfil ya no existe. Sin esto, una
---    sala confirmada entre el barrido y el borrado quedaba futura, sin
---    cancelar y con `host_id` nulo: nadie podría cancelarla.
+-- 1. La fila del perfil, `for update`. `create_room` inserta una sala con
+--    `host_id` apuntando a ese perfil, y la clave ajena toma `FOR KEY SHARE`
+--    sobre él, que choca con `FOR UPDATE`: una `create_room` de esta misma
+--    cuenta (otro dispositivo) o bien termina antes del barrido —y entonces
+--    se ve y se cancela— o bien espera a que esta transacción acabe y falla la
+--    clave ajena porque el perfil ya no existe. (El propio DELETE ya la tiene
+--    bloqueada al llegar al trigger; el bloqueo explícito deja el orden escrito
+--    y lo toma `delete_my_account()` antes de empezar.)
 -- 2. Cada sala que convoca, `for update`, en orden de id (sin interbloqueos
---    entre dos barridos) y ANTES de capturar el instante de corte: es el
---    patrón del reloj de PLAN.md. Si otro RPC de sala sostiene el bloqueo
---    mientras se espera y `starts_at` se cruza, un instante capturado antes
---    seguiría cumpliendo `starts_at > v_now` al reanudarse y se cancelaría una
---    sala que ya empezó, con asistentes dentro.
+--    entre dos barridos) y ANTES de capturar el instante de corte: patrón del
+--    reloj de PLAN.md. Si otro RPC de sala sostiene el bloqueo mientras se
+--    espera y `starts_at` se cruza, un instante capturado antes seguiría
+--    cumpliendo `starts_at > v_now` y se cancelaría una sala que ya empezó.
 -- 3. Solo entonces `clock_timestamp()`, y el UPDATE de cancelación.
+create or replace function public.cancel_hosted_rooms_before_profile_delete()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $fn$
+declare
+  v_now timestamptz;
+begin
+  perform 1 from public.profiles where id = old.id for update;
+
+  perform 1
+    from public.lockin_rooms
+   where host_id = old.id and cancelled_at is null
+   order by id
+     for update;
+
+  v_now := clock_timestamp();
+  update public.lockin_rooms
+     set cancelled_at = v_now, updated_at = v_now
+   where host_id = old.id
+     and cancelled_at is null
+     and starts_at > v_now;
+
+  return old;
+end;
+$fn$;
+
+revoke execute on function public.cancel_hosted_rooms_before_profile_delete()
+  from public, anon, authenticated;
+
+create trigger profiles_cancel_hosted_rooms
+  before delete on public.profiles
+  for each row execute function public.cancel_hosted_rooms_before_profile_delete();
+
+-- Última definición: 20261009215240_delete_my_account.sql. Bloquea el perfil
+-- antes de nada (el orden de arriba) y borra `auth.users`; la cancelación de
+-- salas la hace el trigger al caer el perfil en cascada.
 create or replace function public.delete_my_account()
 returns void
 language plpgsql
@@ -78,26 +121,12 @@ set search_path = ''
 as $$
 declare
   v_uid uuid := auth.uid();
-  v_now timestamptz;
 begin
   if v_uid is null then
     raise exception 'delete_my_account: no hay sesión' using errcode = 'LI007';
   end if;
 
   perform 1 from public.profiles where id = v_uid for update;
-
-  perform 1
-    from public.lockin_rooms
-   where host_id = v_uid and cancelled_at is null
-   order by id
-     for update;
-
-  v_now := clock_timestamp();
-  update public.lockin_rooms
-     set cancelled_at = v_now, updated_at = v_now
-   where host_id = v_uid
-     and cancelled_at is null
-     and starts_at > v_now;
 
   delete from auth.users where id = v_uid;
 end;

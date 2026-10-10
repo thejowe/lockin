@@ -129,6 +129,19 @@ desaparecer una sesión agendada sin saber por qué.
       (todas las comparaciones son `===`/`!==`). La pantalla de sala tiene texto
       neutro: «Se canceló la sala: quien la convocó ya no está» y «Convoca
       alguien que ya no está». Tests en `test/app/roomId.test.tsx`.
+- [x] Segunda pasada de codex review (P2): un cliente autenticado puede borrar
+      su propio perfil por el DELETE de `profiles`, y con `set null` sus salas
+      futuras quedaban sin convocante y sin cancelar. El barrido de
+      cancelación vive ahora en un trigger `BEFORE DELETE` sobre `profiles`
+      (`profiles_cancel_hosted_rooms`, SECURITY DEFINER, sin EXECUTE para
+      clientes), con el mismo orden de bloqueo: perfil, salas, reloj.
+      `delete_my_account()` solo bloquea el perfil y borra `auth.users`. Tests:
+      borrado directo como `authenticated` y cascada desde `auth.users`.
+- [ ] Riesgo conocido y raro, sin resolver: si quien convoca y una invitada de
+      la misma sala borran su cuenta a la vez, una de las dos bajas puede
+      fallar con `40P01` (interbloqueo) y se reintenta sin más. Causa: orden de
+      bloqueo cruzado, la cascada de cada baja toca `decisions`/`matches` y
+      `room_members`/`touch_room` en distinto orden. No se rediseña por ello.
 - [ ] Migración sin aplicar al remoto (la aplica el usuario) en
       `grrzmzktrhksbttpbblg`. Hasta entonces, `Schema drift` remoto saldrá
       rojo por esta migración (esperado, no regresión).
