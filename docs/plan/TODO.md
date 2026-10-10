@@ -2,6 +2,26 @@
 
 Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>.md` — márcalo ahí, no aquí.
 
+## ▶ Al retomar — estado del 2026-10-09 (preparación para tiendas)
+
+Frente nuevo fuera de las Fases 1–3: lo que Apple 5.1.1(v)/1.2 y Google Play exigen. Todo fusionado en
+la rama principal y revisado con `codex review` (regla fija de `pilar`: todo agente que escribe código
+pasa por ahí; solo `comprobador` se libra).
+
+- **Auditoría de seguridad** (`docs/plan/auditoria-seguridad-2026-10.md`): H1–H4 arreglados en dos migraciones (`20261009230000`, `20261009230200`). Detalle en `todo/datos.md`.
+- **Eliminar mi cuenta** (`20261009215240`): hecho. Solo se comprueba contra Supabase real (el mock no pinta la sección de cuenta).
+- **Las salas sobreviven al borrado del convocante** (`20261010000100`): trigger `BEFORE DELETE` en `profiles`. Riesgo conocido, `40P01` si convocante e invitada se dan de baja a la vez (`todo/salas.md`).
+- **Bloquear y reportar** (`20261009224000`, `20261009231000`): bloqueo bilateral en matches, mensajes, deck, sesiones, salas y acuerdo. Qué queda abierto, en `todo/perfil.md` → «Bloquear y reportar».
+- **Copy honesto de «cerrar sesión»**: hecho.
+
+**Es del usuario:**
+1. **Aplicar las 6 migraciones** en `grrzmzktrhksbttpbblg`: `20261009215240`, `20261009224000`, `20261009230000`, `20261009230200`, `20261009231000`, `20261010000100`. Hasta entonces Schema drift remoto sale rojo a propósito y los botones nuevos fallarían contra Supabase real.
+2. Decidir qué pasa con `user_reports` al borrar cuenta (cascada = se pierde la evidencia; alternativas en `todo/perfil.md`).
+3. Decisiones D01–D12 de `docs/tiendas/` (responsable legal, URLs, plazos, menores).
+4. Lo de iPhone y cámara real, sin cambios (`todo/visual.md`, `todo/video.md`).
+
+**Después de aplicar:** `comprobador` contra Supabase real para «Eliminar mi cuenta» y para bloquear/reportar.
+
 ## ▶ Al retomar — estado del 2026-10-05 (el más reciente; lo de más abajo es histórico)
 
 Último commit de código: `33378bc`. Encima solo van commits de docs. **El plan está agotado.** Las
