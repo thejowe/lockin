@@ -63,8 +63,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 
-import { getSupabaseClient } from './client';
+import { getSupabaseClient, peekSupabaseClient } from './client';
 
+import type { LockInSupabaseClient } from './client';
 import type { SignOutOptions } from '../types';
 import type { EmailOtpType, User } from '@supabase/supabase-js';
 
@@ -643,14 +644,27 @@ export async function signOut(options: SignOutOptions = {}): Promise<void> {
   if (error) throw toAccountError(error);
 }
 
-/** Borra solo la cuenta de la sesión actual; nunca llama a ensureUserId(). */
-export async function deleteMyAccount(): Promise<void> {
-  const { error } = await getSupabaseClient().rpc('delete_my_account');
+/**
+ * Borra solo la cuenta de la sesión actual; nunca llama a ensureUserId().
+ *
+ * Con `client` borra la cuenta de ESE cliente (repositorios inyectados, p. ej.
+ * un actor secundario del arnés de contrato); sin él, la del cliente compartido.
+ * El estado de dispositivo (`DEVICE_ACCOUNT_KEY`) es del cliente compartido: un
+ * cliente inyectado distinto solo cierra su propia sesión local.
+ */
+export async function deleteMyAccount(client?: LockInSupabaseClient): Promise<void> {
+  const target = client ?? getSupabaseClient();
+  const { error } = await target.rpc('delete_my_account');
   if (error) throw toAccountError(error);
 
   // La cuenta ya no existe. No se exige email recuperable ni se consulta
   // getUser(): se reutiliza la limpieza del cierre de sesión confirmado.
-  await signOut({ acceptDataLoss: true, scope: 'local' });
+  if (client === undefined || client === peekSupabaseClient()) {
+    await signOut({ acceptDataLoss: true, scope: 'local' });
+    return;
+  }
+  const { error: signOutError } = await target.auth.signOut({ scope: 'local' });
+  if (signOutError) throw toAccountError(signOutError);
 }
 
 /* -------------------------------------------------------------------------- */

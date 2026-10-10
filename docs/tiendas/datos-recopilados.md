@@ -21,7 +21,7 @@ Visibilidad efectiva para usuarios normales:
 
 Además, las personas con acceso administrativo privilegiado al proyecto y sus proveedores pueden acceder según sus permisos operativos. RLS limita clientes normales; no equivale a cifrado que impida al operador leer mensajes. Decisión D05 (10-oct-2026): proveedores en producción = Supabase (región `eu-central-1`, Fráncfort, encargado), Expo/EAS (encargado), GitHub (solo si se verifica) y STUN público de Google; correo de autenticación con SMTP propio gratuito (Resend o Brevo) antes del lanzamiento.
 
-Retención: el código no fija un plazo general ni una purga automática por antigüedad en estas tablas. Decisión D04 (10-oct-2026): datos de producto hasta la baja de la cuenta, que los borra de inmediato; cuentas inactivas 24 meses + aviso y 30 días de gracia; backups hasta 30 días; registros técnicos de proveedores máx. 90 días; reportes de abuso máx. 12 meses desde su resolución (compromiso operativo, hoy sin automatizar). Los códigos siguientes describen únicamente lo que sí hace el esquema:
+Retención: el código no fija un plazo general ni una purga automática por antigüedad en estas tablas. Decisión D04 (10-oct-2026): datos de producto hasta la baja de la cuenta, que los borra de inmediato; cuentas con 24 meses sin acceso: pueden eliminarse, sin proceso automático ni aviso (no hay registro de última actividad propio); backups hasta 30 días; registros técnicos de proveedores máx. 90 días; reportes de abuso máx. 12 meses desde su creación, con borrado automático y supervivencia a la baja de las cuentas implicadas (misma migración). Los códigos siguientes describen únicamente lo que sí hace el esquema:
 
 | Código | Comportamiento actual de conservación |
 | --- | --- |

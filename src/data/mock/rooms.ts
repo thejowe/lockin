@@ -94,12 +94,17 @@ export function createMockRoomRepository(
     return { room, me };
   };
 
-  /** El ciego de invitados: la misma regla que la política de `room_members`. */
+  /**
+   * El ciego de invitados: la misma regla que la política de `room_members`, que
+   * además oculta la fila de quien tiene un bloqueo con el actor (en cualquier
+   * dirección): dos invitadas bloqueadas entre sí no se ven en la sala.
+   */
   const toView = (room: LockInRoom, me: RoomMember): RoomView => {
     const profiles = getState().profiles;
     const isHost = room.hostId === actorId;
     const others = membersOf(room.id)
       .filter((member) => member.profileId !== actorId)
+      .filter((member) => !isBlockedPair(getState(), actorId, member.profileId))
       .filter((member) => isHost || member.status === 'aceptada')
       .sort((a, b) => (a.profileId < b.profileId ? -1 : a.profileId > b.profileId ? 1 : 0))
       .flatMap((member) => {

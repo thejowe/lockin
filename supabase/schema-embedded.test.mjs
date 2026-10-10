@@ -40,7 +40,20 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
     // verde que no prueba nada. Con ellos puestos, el único motivo por el que
     // el sello no se deja escribir es el permiso de columna de la migración.
     await db.exec(`create schema auth;
-      create table auth.users (id uuid primary key, email text);
+      create table auth.users (
+        id uuid primary key,
+        email text,
+        created_at timestamptz not null default now(),
+        last_sign_in_at timestamptz
+      );
+      -- Tabla mínima de GoTrue; refreshed_at es timestamp sin zona, como allí.
+      create table auth.sessions (
+        id uuid primary key default gen_random_uuid(),
+        user_id uuid not null references auth.users (id) on delete cascade,
+        created_at timestamptz not null default now(),
+        updated_at timestamptz not null default now(),
+        refreshed_at timestamp
+      );
       create table auth.identities (
         provider_id text not null,
         user_id uuid not null,
@@ -1974,7 +1987,7 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       })
     );
     await t.test(
-      'borrar cualquiera de los perfiles limpia bloqueos y reportes por cascada',
+      'borrar cualquiera de los perfiles limpia los bloqueos y deja el reporte con el id a null y su instantánea',
       async () => {
         for (const deleted of [safetyA, safetyB]) {
           await withSafetyPair(async () => {
@@ -1983,7 +1996,21 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
             await db.exec('reset role;');
             await db.query('delete from public.profiles where id = $1', [deleted]);
             assert.deepEqual((await db.query('select * from public.user_blocks')).rows, []);
-            assert.deepEqual((await db.query('select * from public.user_reports')).rows, []);
+            assert.deepEqual(
+              (
+                await db.query(
+                  'select reporter_id, reported_id, reporter_ref, reported_ref from public.user_reports'
+                )
+              ).rows,
+              [
+                {
+                  reporter_id: deleted === safetyA ? null : safetyA,
+                  reported_id: deleted === safetyB ? null : safetyB,
+                  reporter_ref: safetyA,
+                  reported_ref: safetyB,
+                },
+              ]
+            );
             assert.equal(
               (await db.query('select count(*)::int as n from public.profiles')).rows[0].n,
               1
@@ -2206,6 +2233,210 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
         );
       });
     });
+
+    // 20261010120000: bloqueo y salas, rachas, retención de reportes y caducidad
+    // de cuentas. Mismo reparto de actores: H convoca, X e Y son sus matches.
+    const memberRows = async (roomId) =>
+      (
+        await db.query(
+          `select profile_id, status from public.room_members
+            where room_id = '${roomId}' order by profile_id`
+        )
+      ).rows;
+    const sweepRoom = async () => {
+      await actingAs(blkH);
+      const room = (await db.query(blkCreateRoom)).rows[0];
+      await actingAs(blkX);
+      await db.query(`select public.respond_room('${room.id}', 'aceptada')`);
+      return room;
+    };
+
+    await t.test(
+      'block_profile rechaza al bloqueado en las salas aún no empezadas de quien bloquea',
+      async () => {
+        await withBlockedTrio(async () => {
+          const room = await sweepRoom();
+          await blkBlocks(blkH, blkX);
+          await db.exec('reset role;');
+          assert.deepEqual(await memberRows(room.id), [
+            { profile_id: blkH, status: 'aceptada' },
+            { profile_id: blkX, status: 'rechazada' },
+            { profile_id: blkY, status: 'invitada' },
+          ]);
+          const row = (
+            await db.query(
+              `select responded_at is not null as responded from public.room_members
+                where room_id = '${room.id}' and profile_id = '${blkX}'`
+            )
+          ).rows[0];
+          assert.equal(row.responded, true);
+          // Quien convoca ya no ve al bloqueado entre los miembros.
+          await actingAs(blkH);
+          assert.deepEqual(
+            (await memberRows(room.id)).map((r) => r.profile_id),
+            [blkH, blkY]
+          );
+        });
+      }
+    );
+    await t.test(
+      'el barrido no toca salas empezadas, canceladas ni las de otra persona',
+      async () => {
+        await withBlockedTrio(async () => {
+          const started = await sweepRoom();
+          await db.exec(`reset role;
+          update public.lockin_rooms set starts_at = clock_timestamp() - interval '1 minute'
+          where id = '${started.id}';`);
+          await blkBlocks(blkH, blkX);
+          await db.exec('reset role;');
+          assert.deepEqual(
+            (await memberRows(started.id)).find((r) => r.profile_id === blkX),
+            { profile_id: blkX, status: 'aceptada' },
+            'una sala ya empezada se conserva'
+          );
+        });
+        await withBlockedTrio(async () => {
+          const cancelled = await sweepRoom();
+          await actingAs(blkH);
+          await db.query(`select public.cancel_room('${cancelled.id}')`);
+          await blkBlocks(blkH, blkX);
+          await db.exec('reset role;');
+          assert.deepEqual(
+            (await memberRows(cancelled.id)).find((r) => r.profile_id === blkX),
+            { profile_id: blkX, status: 'aceptada' },
+            'una sala cancelada se conserva'
+          );
+        });
+        await withBlockedTrio(async () => {
+          const room = await sweepRoom();
+          await blkBlocks(blkX, blkY);
+          await db.exec('reset role;');
+          assert.deepEqual(
+            await memberRows(room.id),
+            [
+              { profile_id: blkH, status: 'aceptada' },
+              { profile_id: blkX, status: 'aceptada' },
+              { profile_id: blkY, status: 'invitada' },
+            ],
+            'quien bloquea sin ser anfitrión no rechaza a nadie'
+          );
+        });
+      }
+    );
+    await t.test(
+      'dos invitadas bloqueadas entre sí no se ven; quien convoca ve a las dos',
+      async () => {
+        await withBlockedTrio(async () => {
+          const room = await sweepRoom();
+          await actingAs(blkY);
+          await db.query(`select public.respond_room('${room.id}', 'aceptada')`);
+          const seen = async (actor) => {
+            await actingAs(actor);
+            return (await memberRows(room.id)).map((r) => r.profile_id);
+          };
+          assert.deepEqual(await seen(blkX), [blkH, blkX, blkY]);
+          await blkBlocks(blkX, blkY);
+          assert.deepEqual(await seen(blkX), [blkH, blkX]);
+          assert.deepEqual(await seen(blkY), [blkH, blkY]);
+          assert.deepEqual(await seen(blkH), [blkH, blkX, blkY]);
+        });
+      }
+    );
+    await t.test(
+      'la presencia de la sala excluye a una pareja bloqueada y deja al resto',
+      async () => {
+        await withBlockedTrio(async () => {
+          const room = await sweepRoom();
+          await actingAs(blkY);
+          await db.query(`select public.respond_room('${room.id}', 'aceptada')`);
+          await db.exec(`reset role;
+          update public.lockin_rooms set starts_at = clock_timestamp() + interval '1 minute'
+          where id = '${room.id}';`);
+          const open = async (actor) => {
+            await actingAs(actor);
+            return (
+              await db.query(`select public.is_room_topic_member('lockin:room:${room.id}') as ok`)
+            ).rows[0].ok;
+          };
+          for (const actor of [blkH, blkX, blkY]) assert.equal(await open(actor), true);
+          await blkBlocks(blkX, blkY);
+          assert.equal(await open(blkX), false);
+          assert.equal(await open(blkY), false);
+          assert.equal(await open(blkH), true);
+        });
+      }
+    );
+    await t.test('match_streaks no cuenta la racha de una pareja bloqueada', async () => {
+      await withBlockedTrio(async () => {
+        const matchXid = (
+          await db.query(`select id from public.matches where profile_b = '${blkX}'`)
+        ).rows[0].id;
+        await db.exec(`insert into public.lockin_sessions
+            (id, match_id, proposed_by, starts_at, blocks, status, responded_at)
+          values ('${session(8)}', '${matchXid}', '${blkH}', now() - interval '60 minutes', 1,
+            'aceptada', now() - interval '120 minutes');
+          insert into public.session_attendance (session_id, profile_id, joined_at) values
+            ('${session(8)}', '${blkH}', now() - interval '59 minutes'),
+            ('${session(8)}', '${blkX}', now() - interval '58 minutes');`);
+        for (const actor of [blkH, blkX]) {
+          await actingAs(actor);
+          assert.deepEqual(
+            (await db.query('select match_id, streak_count from public.match_streaks()')).rows,
+            [{ match_id: matchXid, streak_count: 1 }]
+          );
+        }
+        await blkBlocks(blkX, blkH);
+        for (const actor of [blkH, blkX]) {
+          await actingAs(actor);
+          assert.deepEqual((await db.query('select * from public.match_streaks()')).rows, []);
+        }
+      });
+    });
+    await t.test('purge_old_user_reports borra los de más de 12 meses y nadie más la ejecuta', () =>
+      withSafetyPair(async () => {
+        await actingAs(safetyA);
+        await db.query(`select public.report_profile('${safetyB}', 'acoso', 'viejo')`);
+        await db.query(`select public.report_profile('${safetyB}', 'spam', 'borde')`);
+        await db.query(`select public.report_profile('${safetyB}', 'otro', 'reciente')`);
+        await db.exec(`reset role;
+          update public.user_reports set created_at = now() - interval '13 months'
+           where details = 'viejo';
+          update public.user_reports set created_at = now() - interval '11 months'
+           where details = 'borde';`);
+        for (const role of ['anon', 'authenticated']) {
+          await db.exec(`set local role ${role};`);
+          assert.equal(await sonda('select public.purge_old_user_reports()'), '42501');
+        }
+        await db.exec('reset role;');
+        assert.equal((await db.query('select public.purge_old_user_reports() as n')).rows[0].n, 1);
+        assert.deepEqual(
+          (await db.query('select details from public.user_reports order by details')).rows,
+          [{ details: 'borde' }, { details: 'reciente' }]
+        );
+        const refs = (
+          await db.query('select reporter_ref, reported_ref from public.user_reports limit 1')
+        ).rows[0];
+        assert.deepEqual(refs, { reporter_ref: safetyA, reported_ref: safetyB });
+      })
+    );
+    await t.test('el reporte con los dos ids a null cumple el CHECK; el mismo id no', async () => {
+      await withSafetyPair(async () => {
+        await db.exec('reset role;');
+        assert.equal(
+          await sonda(`insert into public.user_reports
+            (reporter_id, reported_id, reporter_ref, reported_ref, reason)
+            values (null, null, 'x', 'y', 'otro')`),
+          'sin error'
+        );
+        assert.equal(
+          await sonda(`insert into public.user_reports
+            (reporter_id, reported_id, reporter_ref, reported_ref, reason)
+            values ('${safetyA}', '${safetyA}', 'x', 'x', 'otro')`),
+          '23514'
+        );
+      });
+    });
+    console.log('Retención de reportes, barrido de salas y rachas con bloqueo: OK');
 
     // Borrar mi cuenta: `delete_my_account()` borra a quien llama y a nadie más.
     // Lo suyo cae en cascada sin tocar lo ajeno, y las salas que convocó siguen

@@ -58,10 +58,20 @@ export interface MockState {
   actorSessions: Map<string, Session>;
   actorDecisions: Map<string, Map<string, Decision>>;
   userBlocks: Map<string, Set<string>>;
-  /** Almacén privado; no se expone ningún método de lectura de reportes. */
+  /**
+   * Almacén privado; no se expone ningún método de lectura de reportes.
+   *
+   * Sobreviven al borrado de la cuenta de quien reporta o del reportado (espejo
+   * de `20261010120000_reports_retention_and_block_followups.sql`): el id pasa a
+   * `null` y la referencia en texto (`*Ref`) se queda. Caducan a los 12 meses de
+   * su creación (`purgeOldReports`).
+   */
   userReports: {
-    reporterId: string;
-    reportedId: string;
+    reporterId: string | null;
+    reportedId: string | null;
+    reporterRef: string;
+    reportedRef: string;
+    createdAtMs: number;
     reason: ReportReason;
     details: string | null;
   }[];
@@ -107,6 +117,11 @@ export interface MockStore {
   advanceClock(ms: number): void;
   /** Vuelve al estado semilla y avisa a todos los suscriptores. */
   reset(): void;
+  /**
+   * Borra los reportes de más de 12 meses desde su creación, con el reloj del
+   * mock (espejo de `purge_old_user_reports()`). Devuelve cuántos borró.
+   */
+  purgeOldReports(): number;
   /** Elimina la cuenta propia en cascada, conservando los datos ajenos. */
   deleteCurrentUser(): void;
   /** Igual, para cualquier actor del mock (los clientes secundarios de los tests). */
@@ -163,6 +178,23 @@ export function createMockStore(): MockStore {
       listeners.forEach((set) => set.forEach((listener) => listener()));
     },
 
+    purgeOldReports() {
+      // 12 meses atrás ajustando al último día válido (29-feb → 28-feb), como
+      // `now() - interval '12 months'` de Postgres: setMonth desbordaría a 1-mar.
+      const cutoff = new Date(Date.now() + clockOffsetMs);
+      const day = cutoff.getDate();
+      cutoff.setDate(1);
+      cutoff.setFullYear(cutoff.getFullYear() - 1);
+      cutoff.setDate(
+        Math.min(day, new Date(cutoff.getFullYear(), cutoff.getMonth() + 1, 0).getDate())
+      );
+      const before = state.userReports.length;
+      state.userReports = state.userReports.filter(
+        (report) => report.createdAtMs >= cutoff.getTime()
+      );
+      return before - state.userReports.length;
+    },
+
     deleteCurrentUser() {
       this.deleteUser(CURRENT_USER_ID);
     },
@@ -183,9 +215,10 @@ export function createMockStore(): MockStore {
       for (const decisions of state.actorDecisions.values()) decisions.delete(userId);
       state.userBlocks.delete(userId);
       for (const blocked of state.userBlocks.values()) blocked.delete(userId);
-      state.userReports = state.userReports.filter(
-        (report) => report.reporterId !== userId && report.reportedId !== userId
-      );
+      for (const report of state.userReports) {
+        if (report.reporterId === userId) report.reporterId = null;
+        if (report.reportedId === userId) report.reportedId = null;
+      }
       if (userId === CURRENT_USER_ID) {
         // Estos dos índices contienen solo decisiones de/a la cuenta propia.
         state.decisions.clear();

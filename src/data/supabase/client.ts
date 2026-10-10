@@ -85,6 +85,15 @@ export function getSupabaseClient(): LockInSupabaseClient {
   return client;
 }
 
+/**
+ * El cliente compartido si ya se creó, o `null`. A diferencia de
+ * `getSupabaseClient()` no lo crea ni lanza sin credenciales: sirve para saber si
+ * un cliente inyectado es el compartido.
+ */
+export function peekSupabaseClient(): LockInSupabaseClient | null {
+  return client;
+}
+
 /** Solo para tests: olvida el cliente memoizado. */
 export function resetSupabaseClient(): void {
   client = null;

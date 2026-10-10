@@ -388,7 +388,8 @@ export function createSupabaseRepositories({
       return current.profileId !== null && current.activeMode !== null;
     },
 
-    deleteMyAccount,
+    // El cliente inyectado, no el global: un actor secundario borra su cuenta.
+    deleteMyAccount: () => deleteMyAccount(getClient()),
   };
 
   const profiles: ProfileRepository = {

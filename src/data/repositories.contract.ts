@@ -2357,6 +2357,44 @@ function describeSafetyContract(backend: ContractBackend): void {
       ).rejects.toBeTruthy();
     });
 
+    it('el anfitrión que bloquea a una invitada que ya aceptó la saca de su lista de miembros', async () => {
+      const view = await trioRoom();
+      const roomId = view.room.id;
+      await b.rooms.respond(roomId, 'aceptada');
+      await c.rooms.respond(roomId, 'aceptada');
+      expect(
+        (await a.rooms.getById(roomId))?.others.map(({ profile }) => profile.id).sort()
+      ).toEqual([bId, cId].sort());
+      await a.profiles.block(bId);
+      expect((await a.rooms.getById(roomId))?.others.map(({ profile }) => profile.id)).toEqual([
+        cId,
+      ]);
+      expect(await b.rooms.getById(roomId)).toBeNull();
+      expect((await c.rooms.getById(roomId))?.others.map(({ profile }) => profile.id)).toEqual([
+        aId,
+      ]);
+    });
+
+    it('dos invitadas bloqueadas entre sí no se ven en la sala; quien convoca ve a las dos', async () => {
+      const view = await trioRoom();
+      const roomId = view.room.id;
+      await b.rooms.respond(roomId, 'aceptada');
+      await c.rooms.respond(roomId, 'aceptada');
+      expect(
+        (await b.rooms.getById(roomId))?.others.map(({ profile }) => profile.id).sort()
+      ).toEqual([aId, cId].sort());
+      await b.profiles.block(cId);
+      expect((await b.rooms.getById(roomId))?.others.map(({ profile }) => profile.id)).toEqual([
+        aId,
+      ]);
+      expect((await c.rooms.getById(roomId))?.others.map(({ profile }) => profile.id)).toEqual([
+        aId,
+      ]);
+      expect(
+        (await a.rooms.getById(roomId))?.others.map(({ profile }) => profile.id).sort()
+      ).toEqual([bId, cId].sort());
+    });
+
     it('bloquear dos veces es idempotente', async () => {
       await a.profiles.block(bId);
       await expect(a.profiles.block(bId)).resolves.toBeUndefined();

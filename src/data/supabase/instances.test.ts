@@ -13,7 +13,7 @@
 
 import { buildProfile } from '@/data/test-fixtures';
 
-import { adoptLinkedGithubIdentity, linkGithubIdentity } from './auth';
+import { adoptLinkedGithubIdentity, deleteMyAccount, linkGithubIdentity } from './auth';
 import { createSupabaseRepositories } from './index';
 import { getSupabaseClient } from './client';
 
@@ -22,6 +22,7 @@ import type { MatchRow } from './database.types';
 
 jest.mock('./client', () => ({
   getSupabaseClient: jest.fn(),
+  peekSupabaseClient: jest.fn(),
   hasSupabaseCredentials: true,
 }));
 
@@ -29,6 +30,7 @@ jest.mock('./auth', () => ({
   ensureUserId: jest.fn(async () => 'user-a'),
   adoptLinkedGithubIdentity: jest.fn(async () => false),
   linkGithubIdentity: jest.fn(),
+  deleteMyAccount: jest.fn(async () => undefined),
   unlinkGithubIdentity: jest.fn(),
   AccountError: class extends Error {},
   completeAuthLink: jest.fn(),
@@ -240,5 +242,19 @@ describe('verifyGithub', () => {
 
     expect(adoptLinkedGithubIdentity).toHaveBeenCalled();
     expect(linkGithubIdentity).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('deleteMyAccount', () => {
+  it('con el cliente inyectado y no con el global', async () => {
+    const global = fakeClient();
+    const injected = fakeClient();
+    asMock.mockReturnValue(global.client);
+    const repositories = createSupabaseRepositories({ getClient: () => injected.client });
+
+    await repositories.session.deleteMyAccount();
+
+    expect(deleteMyAccount).toHaveBeenCalledWith(injected.client);
+    expect(deleteMyAccount).not.toHaveBeenCalledWith(global.client);
   });
 });

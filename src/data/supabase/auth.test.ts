@@ -17,9 +17,9 @@ import {
   signOut,
   unlinkGithubIdentity,
 } from './auth';
-import { getSupabaseClient } from './client';
+import { getSupabaseClient, peekSupabaseClient } from './client';
 
-jest.mock('./client', () => ({ getSupabaseClient: jest.fn() }));
+jest.mock('./client', () => ({ getSupabaseClient: jest.fn(), peekSupabaseClient: jest.fn() }));
 jest.mock('expo-linking', () => ({ createURL: jest.fn() }));
 jest.mock('expo-web-browser', () => ({ openAuthSessionAsync: jest.fn() }));
 const auth = {
@@ -84,9 +84,9 @@ beforeEach(async () => {
     type: 'success',
     url: `lockin://auth/callback?code=${githubCode}`,
   });
-  jest
-    .mocked(getSupabaseClient)
-    .mockReturnValue({ auth, rpc } as unknown as ReturnType<typeof getSupabaseClient>);
+  const shared = { auth, rpc } as unknown as ReturnType<typeof getSupabaseClient>;
+  jest.mocked(getSupabaseClient).mockReturnValue(shared);
+  jest.mocked(peekSupabaseClient).mockReturnValue(shared);
 });
 it('reutiliza la identidad guardada al arrancar', async () => {
   auth.getSession.mockResolvedValue({
@@ -896,6 +896,40 @@ describe('deleteMyAccount', () => {
     expect(auth.signOut).toHaveBeenCalledWith({ scope: 'local' });
     expect(auth.getSession).not.toHaveBeenCalled();
     expect(AsyncStorage.removeItem).toHaveBeenCalledWith('lockin.supabase.device-account');
+  });
+
+  it('con un cliente inyectado borra con él y deja intacto el dispositivo', async () => {
+    const other = {
+      rpc: jest.fn().mockResolvedValue({ error: null }),
+      auth: { signOut: jest.fn().mockResolvedValue({ error: null }) },
+    };
+
+    await expect(
+      deleteMyAccount(other as unknown as Parameters<typeof deleteMyAccount>[0])
+    ).resolves.toBeUndefined();
+
+    expect(other.rpc).toHaveBeenCalledWith('delete_my_account');
+    expect(other.auth.signOut).toHaveBeenCalledWith({ scope: 'local' });
+    expect(rpc).not.toHaveBeenCalled();
+    expect(auth.signOut).not.toHaveBeenCalled();
+    expect(AsyncStorage.removeItem).not.toHaveBeenCalled();
+  });
+
+  it('con un cliente inyectado y sin cliente compartido no intenta crearlo', async () => {
+    const other = {
+      rpc: jest.fn().mockResolvedValue({ error: null }),
+      auth: { signOut: jest.fn().mockResolvedValue({ error: null }) },
+    };
+    jest.mocked(peekSupabaseClient).mockReturnValue(null);
+    jest.mocked(getSupabaseClient).mockImplementation(() => {
+      throw new Error('Faltan credenciales');
+    });
+
+    await expect(
+      deleteMyAccount(other as unknown as Parameters<typeof deleteMyAccount>[0])
+    ).resolves.toBeUndefined();
+
+    expect(other.auth.signOut).toHaveBeenCalledWith({ scope: 'local' });
   });
 
   it('si el servidor falla no toca la sesión local', async () => {

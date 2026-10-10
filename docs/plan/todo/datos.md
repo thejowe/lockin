@@ -2282,3 +2282,16 @@ bloque para H3 y H4:
       push`) y, tras desplegarla, revalidar/cerrar las conexiones Realtime ya
       abiertas: no se expulsan solas. NO aplicada desde este bloque.
       Después, `schema-drift` remoto debe seguir en verde.
+
+## Retención de reportes, cuentas inactivas y cabos del bloqueo (2026-10-10)
+
+Migración `20261010120000_reports_retention_and_block_followups.sql`. **No aplicada al remoto desde este bloque**: la orquesta la pasa por `codex review` y la aplica; al aplicarla, `Schema drift` compara la huella de funciones contra este archivo.
+
+- [x] `user_reports`: ids anulables con `on delete set null`, `reporter_ref`/`reported_ref` (instantánea, `not null`, rellenada en la propia migración para las filas existentes), CHECK `user_reports_distinct_parties`, índice por `created_at`. `report_profile` redefinida.
+- [x] `purge_old_user_reports()`: SECURITY DEFINER, `search_path` vacío, sin EXECUTE para public/anon/authenticated; borra con más de 12 meses desde `created_at`.
+- [x] ~~`purge_inactive_accounts()`~~ **retirada tras `codex review` (2026-10-10)**: `auth.sessions` se borra al cerrar sesión, así que la última actividad no es fiable y un barrido podía eliminar una cuenta usada ayer (P1); además, carrera con login/refresh y orden de bloqueos cruzado con `delete_my_account`. Reabrir solo con una columna propia de última actividad.
+- [x] pg_cron: bloque `do` que programa el barrido de reportes a diario (03:20) solo si `pg_available_extensions` lista `pg_cron`; si falla, WARNING y las funciones quedan sin programar. En el PostgreSQL embebido no hay pg_cron: sale un NOTICE.
+- [x] Bloqueo y salas: `block_profile` rechaza al bloqueado en las salas del bloqueador sin empezar; política de `room_members` y `is_room_topic_member` (+ `is_room_free_of_member_blocks`); `match_streaks()` con `is_unblocked_match`.
+- [x] Mock con paridad (`block()`, `toView`, `deleteUser`, `purgeOldReports`) y casos en `schema-embedded.test.mjs`, `safety-followups.test.ts` y el contrato compartido.
+- [x] `supabase/schema-embedded.test.mjs`: la fixture de Auth gana `created_at`, `last_sign_in_at` y `auth.sessions`; `drift-check.test.mjs` lista las tres constraints nuevas.
+- [ ] **[orquesta] Aplicar la migración al remoto** y comprobar `select jobname, schedule from cron.job` (una fila).

@@ -107,12 +107,12 @@ Puedes cambiar los permisos en los ajustes del dispositivo. Denegar un permiso p
 
 Conservamos tus datos mientras tu cuenta exista. Al eliminar la cuenta desde la app (Perfil → Cuenta → Eliminar mi cuenta) se borran tu perfil y los datos asociados de forma inmediata en la base de datos.
 
-- **Cuentas inactivas:** si no accedes en 24 meses, te avisaremos por email (si lo tienes confirmado) y eliminaremos la cuenta transcurridos 30 días sin respuesta. Las cuentas anónimas sin email no pueden avisarse y se eliminan al cumplirse ese plazo.
+- **Cuentas inactivas:** podemos eliminar las cuentas que lleven 24 meses sin acceso. No hay aviso previo automático por email: la app no cuenta con un mecanismo de envío.
 - **Copias de seguridad del proveedor:** pueden conservar datos eliminados hasta 30 días más.
 - **Registros técnicos de los proveedores** (IP, peticiones): según su configuración, sin superar 90 días en nuestra operación.
-- **Reportes de abuso:** se conservan mientras lo exija su revisión y, como máximo, 12 meses desde su resolución.
+- **Reportes de abuso:** se conservan como máximo 12 meses desde su creación y se borran automáticamente después. Si la persona que reporta o la reportada elimina su cuenta, el reporte permanece hasta ese plazo, sin enlace a un perfil y con el identificador interno de la cuenta como referencia.
 
-Actualmente, las tablas de producto no tienen una eliminación automática por antigüedad. Terminar o cancelar una sesión o sala no borra sus datos. La ventana de 24 horas para valorar una sesión limita cuándo puedes valorar; no elimina la valoración después.
+Salvo la eliminación automática de reportes, las tablas de producto no se borran por antigüedad. Terminar o cancelar una sesión o sala no borra sus datos. La ventana de 24 horas para valorar una sesión limita cuándo puedes valorar; no elimina la valoración después.
 
 Cerrar sesión o desinstalar la app no equivale a borrar los datos del servidor. Cerrar sesión elimina credenciales locales y puede hacer irrecuperable una cuenta sin email confirmado, aunque las filas sigan en el servidor.
 
@@ -142,4 +142,4 @@ Si cambiamos esta política de forma relevante, lo avisaremos dentro de la app y
 
 ---
 
-Nota editorial para el responsable, a retirar del texto publicado: el plazo de 24 meses de inactividad y la purga de reportes a 12 meses son compromisos de operación que ningún código automatiza todavía; hay que ejecutarlos a mano o implementarlos antes de publicar. Las migraciones de cuenta y de bloqueo ya están aplicadas en producción (10-oct-2026). Las instrucciones a las tiendas están en [cuestionario-privacidad.md](cuestionario-privacidad.md). Sus fuentes oficiales son las [reglas de privacidad de Apple](https://developer.apple.com/app-store/review/guidelines/#privacy) y la [política de datos de usuario de Google Play](https://support.google.com/googleplay/android-developer/answer/10144311?hl=es).
+Nota editorial para el responsable, a retirar del texto publicado: la purga de reportes a 12 meses la implementa `purge_old_user_reports()` (migración `20261010120000`), programada a diario con pg_cron; antes de publicar, comprobar en producción que `select jobname, schedule from cron.job` la lista (si pg_cron no está disponible, hay que llamarla desde otro planificador y este texto no sería cierto). La eliminación de cuentas con 24 meses sin acceso es una facultad, no un proceso automático: el esquema no guarda una última actividad fiable, y borrar cuentas solo por inactividad se retiró tras la revisión de Codex por el riesgo de eliminar una cuenta en uso. Las migraciones de cuenta y de bloqueo anteriores ya están aplicadas en producción (10-oct-2026). Las instrucciones a las tiendas están en [cuestionario-privacidad.md](cuestionario-privacidad.md). Sus fuentes oficiales son las [reglas de privacidad de Apple](https://developer.apple.com/app-store/review/guidelines/#privacy) y la [política de datos de usuario de Google Play](https://support.google.com/googleplay/android-developer/answer/10144311?hl=es).

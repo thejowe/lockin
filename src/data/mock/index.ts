@@ -183,6 +183,24 @@ export function createMockRepositories(
       const blocks = getState().userBlocks.get(actorId) ?? new Set<string>();
       blocks.add(profileId);
       getState().userBlocks.set(actorId, blocks);
+      // Espejo de `block_profile`: las filas `invitada`/`aceptada` de la persona
+      // bloqueada en las salas de quien bloquea que aún no han empezado pasan a
+      // `rechazada`. Las que ya empezaron o se cancelaron no se tocan.
+      const nowMs = store.nowMs();
+      for (const room of getState().rooms) {
+        if (room.hostId !== actorId || room.cancelledAt !== null) continue;
+        if (Date.parse(room.startsAt) <= nowMs) continue;
+        const members = getState().roomMembers.filter((m) => m.roomId === room.id);
+        const swept = members.find(
+          (m) => m.profileId === profileId && (m.status === 'invitada' || m.status === 'aceptada')
+        );
+        if (!swept) continue;
+        swept.status = 'rechazada';
+        swept.respondedAt = swept.respondedAt ?? new Date(nowMs).toISOString();
+        members
+          .filter((m) => m.status !== 'rechazada')
+          .forEach((m) => notify(roomsTopic(m.profileId)));
+      }
       notify(MATCHES_TOPIC);
       // Las salas de quien bloquea y de quien es bloqueado dejan de verse: sus
       // avisos locales y vistas cacheadas se releen, como en Supabase.
@@ -205,6 +223,9 @@ export function createMockRepositories(
       getState().userReports.push({
         reporterId: actorId,
         reportedId: profileId,
+        reporterRef: actorId,
+        reportedRef: profileId,
+        createdAtMs: store.nowMs(),
         reason,
         details: details?.trim() || null,
       });
