@@ -2251,3 +2251,34 @@ quedan fuera de esta migración. Migración única:
 - [ ] **Fechas ya falsificadas en el remoto** (decisión aparte, sin automatizar):
       buscar `messages.sent_at > now()` o `matches.last_message_at > now()` y
       decidir si se sanean. Esta migración no borra ni reordena datos.
+
+## Auditoría de seguridad 2026-10 (H3 y H4)
+
+Origen: `docs/plan/auditoria-seguridad-2026-10.md`. Migración única de este
+bloque para H3 y H4:
+`supabase/migrations/20261009230200_realtime_room_window_no_delete_2.sql`
+(el sufijo `_2` la distingue de la de H1/H2).
+
+- [x] **H3 — presencia de sala fuera de ventana.** `is_room_topic_member`
+      exige ahora, además de ser asistente, sala no cancelada y
+      `clock_timestamp()` entre `starts_at - 5 min` y `session_ends_at(...)`,
+      la misma ventana que `join_room`. Pasa a `volatile`; sigue SECURITY
+      INVOKER, sin `anon`. Una aceptada ya no puede autorizar el canal una
+      hora antes y rechazar después conservando la caché.
+- [x] **H4 — la publicación no emite DELETE.**
+      `alter publication supabase_realtime set (publish = 'insert, update')`.
+      **Ningún cliente depende de DELETE**: todas las suscripciones
+      `postgres_changes` (`index.ts`, `rooms.ts`, `sessions.ts`) piden
+      INSERT/UPDATE explícitos y `realtime.ts`/pantallas de sala no registran
+      eventos propios. Los casos del contrato que vigilan DELETE esperan
+      silencio, que ahora lo garantiza el servidor.
+- [x] Casos nuevos al final de `supabase/schema-embedded.test.mjs`: ventana
+      (1 h, 6 min, 4 min, terminada, anfitriona, cancelada, rechazada, sin
+      sesión, topic no uuid) y flags de la publicación.
+- [x] Verificado: `npm run test:schema` (75 pasan), `npx tsc --noEmit`, jest
+      de `src/data/supabase` y `src/features/room` (296 pasan; ejecutado en
+      copia fuera de `.claude/worktrees`).
+- [ ] **[usuario] Aplicar la migración al proyecto remoto** (`supabase db
+      push`) y, tras desplegarla, revalidar/cerrar las conexiones Realtime ya
+      abiertas: no se expulsan solas. NO aplicada desde este bloque.
+      Después, `schema-drift` remoto debe seguir en verde.
