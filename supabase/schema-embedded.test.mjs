@@ -1779,6 +1779,415 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
     await db.exec('rollback;');
     console.log('Salas grupales: 15 casos del plan, ciego, permisos, reloj y presencia: OK');
 
+    // Seguridad UGC: cada caso usa dos usuarios reales bajo RLS, y su propia transacción.
+    const safetyA = person('f300');
+    const safetyB = person('f301');
+    const withSafetyPair = async (run) => {
+      await db.exec(`begin;
+        insert into auth.users (id) values ('${safetyA}'), ('${safetyB}');
+        insert into public.profiles (
+          id, name, age, location, timezone, avatar_initials, specialties,
+          looking_for, starting_point, availability_hours_per_week, availability_bands, ambition
+        ) select id, 'Seguridad', 30, 'Madrid', 'Europe/Madrid', 'S',
+          array['dev']::public.specialty[], 'par', 'solo-ganas', 10,
+          array['tarde']::public.time_band[], 'equilibrado' from auth.users;
+        insert into public.matches (profile_a, profile_b, mode)
+          values ('${safetyA}', '${safetyB}', 'par');`);
+      const matchId = (await db.query('select id from public.matches')).rows[0].id;
+      try {
+        await run(matchId);
+      } finally {
+        await db.exec('rollback;');
+      }
+    };
+    const blockB = async () => {
+      await actingAs(safetyA);
+      await db.query(`select public.block_profile('${safetyB}')`);
+    };
+
+    await t.test('bloquear excluye el deck en ambas direcciones y conserva la firma única', () =>
+      withSafetyPair(async () => {
+        for (const [actor, other] of [
+          [safetyA, safetyB],
+          [safetyB, safetyA],
+        ]) {
+          await actingAs(actor);
+          assert.deepEqual((await db.query('select id from public.discovery_deck()')).rows, [
+            { id: other },
+          ]);
+        }
+        await blockB();
+        for (const actor of [safetyA, safetyB]) {
+          await actingAs(actor);
+          assert.deepEqual((await db.query('select id from public.discovery_deck()')).rows, []);
+        }
+        await db.exec('reset role;');
+        assert.equal(
+          (
+            await db.query(`select count(*)::int as n from pg_proc
+          where pronamespace = 'public'::regnamespace and proname = 'discovery_deck'`)
+          ).rows[0].n,
+          1
+        );
+      })
+    );
+    await t.test('bloquear oculta el match existente a ambas personas sin borrarlo', () =>
+      withSafetyPair(async (matchId) => {
+        await blockB();
+        for (const actor of [safetyA, safetyB]) {
+          await actingAs(actor);
+          assert.deepEqual((await db.query('select id from public.matches')).rows, []);
+        }
+        await db.exec('reset role;');
+        assert.deepEqual((await db.query('select id from public.matches')).rows, [{ id: matchId }]);
+      })
+    );
+    await t.test('messages INSERT rechaza los dos sentidos tras el bloqueo', () =>
+      withSafetyPair(async (matchId) => {
+        const send = (actor) => `insert into public.messages (match_id, sender_id, body)
+          values ('${matchId}', '${actor}', 'mensaje')`;
+        for (const actor of [safetyA, safetyB]) {
+          await actingAs(actor);
+          assert.equal(await sonda(send(actor)), 'sin error');
+        }
+        await blockB();
+        for (const actor of [safetyA, safetyB]) {
+          await actingAs(actor);
+          assert.equal(await sonda(send(actor)), '42501');
+        }
+      })
+    );
+    await t.test('bloquear dos veces deja una sola fila', () =>
+      withSafetyPair(async () => {
+        await blockB();
+        await db.query(`select public.block_profile('${safetyB}')`);
+        await db.exec('reset role;');
+        assert.deepEqual(
+          (await db.query('select blocker_id, blocked_id from public.user_blocks')).rows,
+          [{ blocker_id: safetyA, blocked_id: safetyB }]
+        );
+      })
+    );
+    await t.test(
+      'reportar persiste una fila privada: nadie puede leer ni mutar reportes directamente',
+      () =>
+        withSafetyPair(async () => {
+          await actingAs(safetyA);
+          await db.query(`select public.report_profile('${safetyB}', 'acoso', 'Detalle privado')`);
+          for (const actor of [safetyA, safetyB]) {
+            await actingAs(actor);
+            assert.equal(await sonda('select * from public.user_reports'), '42501');
+            assert.equal(
+              await sonda(`insert into public.user_reports (reporter_id, reported_id, reason)
+            values ('${actor}', '${safetyB}', 'acoso')`),
+              '42501'
+            );
+            assert.equal(await sonda("update public.user_reports set reason = 'otro'"), '42501');
+            assert.equal(await sonda('delete from public.user_reports'), '42501');
+          }
+          await db.exec('reset role;');
+          assert.deepEqual(
+            (
+              await db.query(
+                'select reporter_id, reported_id, reason, details from public.user_reports'
+              )
+            ).rows,
+            [
+              {
+                reporter_id: safetyA,
+                reported_id: safetyB,
+                reason: 'acoso',
+                details: 'Detalle privado',
+              },
+            ]
+          );
+        })
+    );
+    await t.test('LI008 impide bloquearse o reportarse a sí mismo', () =>
+      withSafetyPair(async () => {
+        await actingAs(safetyA);
+        assert.equal(await sonda(`select public.block_profile('${safetyA}')`), 'LI008');
+        assert.equal(
+          await sonda(`select public.report_profile('${safetyA}', 'otro', null)`),
+          'LI008'
+        );
+      })
+    );
+    await t.test('LI009 para motivo inválido y límite de 500 caracteres en el servidor', () =>
+      withSafetyPair(async () => {
+        await actingAs(safetyA);
+        for (const reason of ["'invalido'", 'null']) {
+          assert.equal(
+            await sonda(`select public.report_profile('${safetyB}', ${reason}, null)`),
+            'LI009'
+          );
+        }
+        assert.equal(
+          await sonda(`select public.report_profile('${safetyB}', 'otro', repeat('x', 501))`),
+          '23514'
+        );
+        await db.query(`select public.report_profile('${safetyB}', 'otro', repeat('x', 500))`);
+        await db.query(`select public.report_profile('${safetyB}', 'spam', null)`);
+        await db.exec('reset role;');
+        assert.deepEqual(
+          (
+            await db.query(
+              'select char_length(details) as n from public.user_reports order by reason'
+            )
+          ).rows,
+          [{ n: 500 }, { n: null }]
+        );
+      })
+    );
+    await t.test('anon sin EXECUTE; authenticated sin sesión no escribe ni bloquea', () =>
+      withSafetyPair(async () => {
+        for (const role of ['anon', 'authenticated']) {
+          await db.exec(`reset role;
+            create or replace function auth.uid() returns uuid language sql as $$ select null::uuid $$;
+            set local role ${role};`);
+          const expectedCode = role === 'anon' ? '42501' : '28000';
+          assert.equal(await sonda(`select public.block_profile('${safetyB}')`), expectedCode);
+          assert.equal(
+            await sonda(`select public.report_profile('${safetyB}', 'otro', null)`),
+            expectedCode
+          );
+        }
+      })
+    );
+    await t.test(
+      'borrar cualquiera de los perfiles limpia bloqueos y reportes por cascada',
+      async () => {
+        for (const deleted of [safetyA, safetyB]) {
+          await withSafetyPair(async () => {
+            await blockB();
+            await db.query(`select public.report_profile('${safetyB}', 'spam', null)`);
+            await db.exec('reset role;');
+            await db.query('delete from public.profiles where id = $1', [deleted]);
+            assert.deepEqual((await db.query('select * from public.user_blocks')).rows, []);
+            assert.deepEqual((await db.query('select * from public.user_reports')).rows, []);
+            assert.equal(
+              (await db.query('select count(*)::int as n from public.profiles')).rows[0].n,
+              1
+            );
+          });
+        }
+      }
+    );
+
+    // El bloqueo corta también las rutas SECURITY DEFINER (20261009231000): tres
+    // personas, H convoca/propone; X y Y son sus matches. Cada caso, en su transacción.
+    const [blkH, blkX, blkY] = [person('f310'), person('f311'), person('f312')];
+    const withBlockedTrio = async (run) => {
+      await db.exec(`begin;
+        insert into auth.users (id) values ('${blkH}'), ('${blkX}'), ('${blkY}');
+        insert into public.profiles (
+          id, name, age, location, timezone, avatar_initials, specialties,
+          looking_for, starting_point, availability_hours_per_week, availability_bands, ambition
+        ) select id, 'Bloqueo', 30, 'Madrid', 'Europe/Madrid', 'B',
+          array['dev']::public.specialty[], 'ambos', 'solo-ganas', 10,
+          array['tarde']::public.time_band[], 'equilibrado'
+          from auth.users where id in ('${blkH}', '${blkX}', '${blkY}');
+        insert into public.matches (profile_a, profile_b, mode)
+          values ('${blkH}', '${blkX}', 'par'), ('${blkH}', '${blkY}', 'lockin');`);
+      try {
+        await run();
+      } finally {
+        await db.exec('rollback;');
+      }
+    };
+    const blkBlocks = async (blocker, blocked) => {
+      await actingAs(blocker);
+      await db.query(`select public.block_profile('${blocked}')`);
+    };
+    const blkCreateRoom = `select * from public.create_room(
+      array['${blkX}', '${blkY}']::uuid[], clock_timestamp() + interval '1 hour', 2::smallint)`;
+
+    await t.test(
+      'create_room rechaza invitar a quien tiene un bloqueo, en ambas direcciones',
+      async () => {
+        for (const [blocker, blocked] of [
+          [blkH, blkX],
+          [blkX, blkH],
+        ]) {
+          await withBlockedTrio(async () => {
+            await actingAs(blkH);
+            assert.equal(await sonda(blkCreateRoom), 'sin error');
+            await blkBlocks(blocker, blocked);
+            await actingAs(blkH);
+            assert.equal(await sonda(blkCreateRoom), 'LI006');
+          });
+        }
+      }
+    );
+    await t.test(
+      'una sala ya creada se oculta al bloqueado y a quien bloquea al anfitrión',
+      async () => {
+        for (const [blocker, blocked] of [
+          [blkX, blkH],
+          [blkH, blkX],
+        ]) {
+          await withBlockedTrio(async () => {
+            await actingAs(blkH);
+            const room = (await db.query(blkCreateRoom)).rows[0];
+            await actingAs(blkX);
+            await db.query(`select public.respond_room('${room.id}', 'aceptada')`);
+            await blkBlocks(blocker, blocked);
+            await actingAs(blkX);
+            assert.deepEqual((await db.query('select id from public.live_rooms()')).rows, []);
+            assert.deepEqual(
+              (await db.query(`select id from public.lockin_rooms where id = '${room.id}'`)).rows,
+              []
+            );
+            for (const rpc of [
+              `select public.respond_room('${room.id}', 'rechazada')`,
+              `select public.join_room('${room.id}')`,
+              `select public.leave_room('${room.id}')`,
+            ])
+              assert.equal(await sonda(rpc), 'LI004');
+            // Quien no tiene bloqueo con el anfitrión sigue viendo la sala.
+            await actingAs(blkY);
+            assert.deepEqual((await db.query('select id from public.live_rooms()')).rows, [
+              { id: room.id },
+            ]);
+          });
+        }
+      }
+    );
+    await t.test(
+      'el canal de presencia de la sala se cierra al bloquear al anfitrión',
+      async () => {
+        await withBlockedTrio(async () => {
+          await actingAs(blkH);
+          const room = (await db.query(blkCreateRoom)).rows[0];
+          await actingAs(blkX);
+          await db.query(`select public.respond_room('${room.id}', 'aceptada')`);
+          await db.exec(`reset role;
+          update public.lockin_rooms set starts_at = clock_timestamp() + interval '1 minute'
+          where id = '${room.id}';`);
+          const topic = `lockin:room:${room.id}`;
+          const open = async () =>
+            (await db.query(`select public.is_room_topic_member('${topic}') as ok`)).rows[0].ok;
+          await actingAs(blkX);
+          assert.equal(await open(), true);
+          await blkBlocks(blkH, blkX);
+          await actingAs(blkX);
+          assert.equal(await open(), false);
+        });
+      }
+    );
+    await t.test(
+      'sesiones, valoración, presencia y vídeo se cierran en un match bloqueado',
+      async () => {
+        await withBlockedTrio(async () => {
+          const matchXid = (
+            await db.query(`select id from public.matches where profile_b = '${blkX}'`)
+          ).rows[0].id;
+          const propose = `select public.propose_session('${matchXid}',
+          clock_timestamp() + interval '1 day', 1::smallint)`;
+          await actingAs(blkH);
+          assert.equal(await sonda(propose), 'sin error');
+          await db.exec(`reset role;
+          insert into public.lockin_sessions
+            (id, match_id, proposed_by, starts_at, blocks, status, responded_at)
+          values ('${session(9)}', '${matchXid}', '${blkH}', now() + interval '1 hour', 1, 'aceptada', now());`);
+          const open = async (kind) =>
+            (
+              await db.query(
+                `select public.is_session_topic_member('lockin:${kind}:${session(9)}') as ok`
+              )
+            ).rows[0].ok;
+          for (const actor of [blkH, blkX]) {
+            await actingAs(actor);
+            assert.equal(await open('presence'), true);
+            assert.equal(await open('video'), true);
+            assert.equal(
+              (await db.query(`select * from public.active_session('${matchXid}')`)).rows.length,
+              1
+            );
+          }
+          await blkBlocks(blkX, blkH);
+          for (const actor of [blkH, blkX]) {
+            await actingAs(actor);
+            assert.equal(await open('presence'), false);
+            assert.equal(await open('video'), false);
+            assert.deepEqual(
+              (await db.query(`select * from public.active_session('${matchXid}')`)).rows,
+              []
+            );
+            for (const sql of [
+              propose,
+              `select public.respond_session('${session(9)}', 'rechazada')`,
+              `select public.cancel_session('${session(9)}')`,
+              `select public.join_session('${session(9)}')`,
+              `select public.leave_session('${session(9)}')`,
+              `select public.rate_session('${session(9)}', 'bien')`,
+            ])
+              assert.equal(await sonda(sql), 'LI004', sql);
+            assert.deepEqual(
+              (await db.query(`select * from public.ratable_session('${matchXid}')`)).rows,
+              []
+            );
+          }
+        });
+      }
+    );
+    await t.test('el acuerdo de socios no se lee ni se escribe tras el bloqueo', async () => {
+      await withBlockedTrio(async () => {
+        const matchXid = (
+          await db.query(`select id from public.matches where profile_b = '${blkX}'`)
+        ).rows[0].id;
+        const answer = `select public.answer_agreement_topic('${matchXid}', 'dedicacion', 'completa', null)`;
+        const read = `select * from public.match_agreement('${matchXid}')`;
+        await actingAs(blkX);
+        assert.equal(await sonda(answer), 'sin error');
+        assert.equal(await sonda(read), 'sin error');
+        await blkBlocks(blkH, blkX);
+        for (const actor of [blkH, blkX]) {
+          await actingAs(actor);
+          assert.equal(await sonda(answer), 'LI004');
+          assert.equal(await sonda(read), 'LI004');
+        }
+      });
+    });
+    await t.test('record_decision no crea ni devuelve match con bloqueo', async () => {
+      const mutualLike = async (blocked) => {
+        await actingAs(blkX);
+        await db.query(`select public.record_decision('${blkY}', 'like')`);
+        if (blocked) await blkBlocks(blkY, blkX);
+        await actingAs(blkY);
+        const row = (await db.query(`select (public.record_decision('${blkX}', 'like')).id as id`))
+          .rows[0];
+        await db.exec('reset role;');
+        const stored = (
+          await db.query(`select count(*)::int as n from public.matches
+            where profile_a = '${blkX}' and profile_b = '${blkY}'`)
+        ).rows[0].n;
+        return { id: row.id, stored };
+      };
+      await withBlockedTrio(async () => {
+        const free = await mutualLike(false);
+        assert.notEqual(free.id, null, 'sin bloqueo, el like recíproco crea el match');
+        assert.equal(free.stored, 1);
+      });
+      await withBlockedTrio(async () => {
+        const blocked = await mutualLike(true);
+        assert.equal(blocked.id, null);
+        assert.equal(blocked.stored, 0);
+      });
+      // Un match que ya existía tampoco se devuelve.
+      await withBlockedTrio(async () => {
+        await actingAs(blkH);
+        await db.query(`select public.record_decision('${blkY}', 'like')`);
+        await blkBlocks(blkY, blkH);
+        await actingAs(blkY);
+        assert.equal(
+          (await db.query(`select (public.record_decision('${blkH}', 'like')).id as id`)).rows[0]
+            .id,
+          null
+        );
+      });
+    });
+
     // Borrar mi cuenta: `delete_my_account()` borra a quien llama y a nadie más, y
     // todo lo suyo cae en cascada sin tocar lo ajeno.
     const delAna = person('f200');
