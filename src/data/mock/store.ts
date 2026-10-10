@@ -22,6 +22,7 @@ import type {
   Message,
   ModePreference,
   Profile,
+  ReportReason,
   RoomMember,
   Session,
   SessionAttendance,
@@ -53,6 +54,17 @@ export interface MockState {
   rooms: LockInRoom[];
   /** Una fila por persona y sala. Quién ve cuál lo decide `./rooms.ts` (el ciego). */
   roomMembers: RoomMember[];
+  /** Estado de clientes secundarios de las pruebas, sin cambiar la sesión de la app. */
+  actorSessions: Map<string, Session>;
+  actorDecisions: Map<string, Map<string, Decision>>;
+  userBlocks: Map<string, Set<string>>;
+  /** Almacén privado; no se expone ningún método de lectura de reportes. */
+  userReports: {
+    reporterId: string;
+    reportedId: string;
+    reason: ReportReason;
+    details: string | null;
+  }[];
 }
 
 function initialState(): MockState {
@@ -70,6 +82,10 @@ function initialState(): MockState {
     agreementSeeded: new Set(),
     rooms: [],
     roomMembers: [],
+    actorSessions: new Map(),
+    actorDecisions: new Map(),
+    userBlocks: new Map(),
+    userReports: [],
   };
 }
 
@@ -151,6 +167,14 @@ export function createMockStore(): MockStore {
       );
 
       state.profiles.delete(userId);
+      state.actorSessions.delete(userId);
+      state.actorDecisions.delete(userId);
+      for (const decisions of state.actorDecisions.values()) decisions.delete(userId);
+      state.userBlocks.delete(userId);
+      for (const blocked of state.userBlocks.values()) blocked.delete(userId);
+      state.userReports = state.userReports.filter(
+        (report) => report.reporterId !== userId && report.reportedId !== userId
+      );
       // Estos dos índices contienen solo decisiones de/a la cuenta propia.
       state.decisions.clear();
       state.incomingLikes.clear();

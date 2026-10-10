@@ -15,6 +15,23 @@ export type Mode = 'par' | 'lockin';
 /** Lo que elige el usuario en el onboarding: un modo concreto o los dos. */
 export type ModePreference = Mode | 'ambos';
 
+/** Lista cerrada compartida por el formulario y ambos backends. */
+export const REPORT_REASONS = [
+  'acoso',
+  'contenido-inapropiado',
+  'spam',
+  'suplantacion',
+  'otro',
+] as const;
+export type ReportReason = (typeof REPORT_REASONS)[number];
+export const REPORT_MAX_LENGTH = 500;
+
+export interface ProfileReportInput {
+  profileId: string;
+  reason: ReportReason;
+  details?: string;
+}
+
 /** Especialidad declarada en el perfil. */
 export type Specialty =
   | 'diseno'

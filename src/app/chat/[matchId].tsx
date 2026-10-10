@@ -38,6 +38,7 @@ import {
 } from '@/features/chat';
 import { AgreementCard } from '@/features/agreement';
 import { SessionCard } from '@/features/session';
+import { SafetyMenuButton, SafetyPanel } from '@/features/safety/safety-panel';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function ChatScreen() {
@@ -49,6 +50,8 @@ export default function ChatScreen() {
     useConversation(matchId);
 
   const [draft, setDraft] = useState('');
+  const [safetyOpen, setSafetyOpen] = useState(false);
+  const [blocked, setBlocked] = useState(false);
   const inputRef = useRef<TextInput>(null);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -85,7 +88,15 @@ export default function ChatScreen() {
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
       <AmbientBackground variant="teal" />
-      <Stack.Screen options={{ title }} />
+      <Stack.Screen
+        options={{
+          title,
+          headerRight: () =>
+            match && !blocked ? (
+              <SafetyMenuButton name={match.counterpart.name} onPress={() => setSafetyOpen(true)} />
+            ) : null,
+        }}
+      />
 
       {/*
         `KeyboardAvoidingView` de `react-native-keyboard-controller`, NO el de
@@ -122,10 +133,26 @@ export default function ChatScreen() {
         behavior="padding"
         keyboardVerticalOffset={keyboardVerticalOffset(windowHeight, avoidingViewHeight)}
         onLayout={handleAvoidingViewLayout}>
-        {loading && !match ? (
+        {blocked ? (
+          <MissingMatch error={null} />
+        ) : loading && !match ? (
           <LoadingState label="Cargando la conversación…" />
         ) : !match ? (
           <MissingMatch error={error} />
+        ) : safetyOpen ? (
+          <ScrollView contentContainerStyle={styles.safety} keyboardShouldPersistTaps="handled">
+            <SafetyPanel
+              profileId={match.counterpart.id}
+              name={match.counterpart.name}
+              matchId={matchId}
+              onClose={() => setSafetyOpen(false)}
+              onBlocked={() => {
+                setSafetyOpen(false);
+                setBlocked(true);
+                setDraft('');
+              }}
+            />
+          </ScrollView>
         ) : (
           <View style={styles.content}>
             <View style={styles.lockIn}>
@@ -196,7 +223,7 @@ function MissingMatch({ error }: { error: Error | null }) {
       body={
         error
           ? 'Ha fallado la carga. Vuelve a tus matches y entra otra vez.'
-          : 'El match ya no existe. Los mensajes del MVP solo viven mientras la app está abierta.'
+          : 'Vuelve a tus matches para ver tus conversaciones disponibles.'
       }>
       <Button label="Volver a Matches" href="/matches" />
     </MessageState>
@@ -204,6 +231,7 @@ function MissingMatch({ error }: { error: Error | null }) {
 }
 
 const styles = StyleSheet.create({
+  safety: { padding: Spacing.three, width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center' },
   root: {
     flex: 1,
   },

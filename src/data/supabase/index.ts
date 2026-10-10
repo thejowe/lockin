@@ -34,6 +34,8 @@ import {
   toMessage,
   toProfile,
   toProfileInsert,
+  toReportArgs,
+  toSafetyError,
 } from './mappers';
 import { fetchAllPages } from './pagination';
 import { createSupabaseRoomRepository } from './rooms';
@@ -42,6 +44,7 @@ import { createSupabaseSessionRepository } from './sessions';
 import { GITHUB_VERIFICATION_CANCELLED } from '../repositories';
 
 import type { MatchRow, MessageRow, ProfileRow } from './database.types';
+import type { LockInSupabaseClient } from './client';
 import type {
   DiscoveryRepository,
   MatchRepository,
@@ -111,6 +114,7 @@ const EMITTED_MARK_TTL_MS = 30_000;
 /** Los avisos y los canales de realtime de UN juego de repositorios. */
 interface Notifier {
   notify(topic: string): void;
+  notifyMessageListeners(): void;
   /** Marca una fila propia para que su eco de realtime no vuelva a avisar. */
   markEmitted(id: string): void;
   /** `true` si esta fila la escribimos nosotros y ya avisamos por ella. */
@@ -118,7 +122,7 @@ interface Notifier {
   subscribeTo(topic: string, listener: () => void, openChannel: () => RealtimeChannel): Unsubscribe;
 }
 
-function createNotifier(): Notifier {
+function createNotifier(getClient: () => LockInSupabaseClient): Notifier {
   const listeners = new Map<string, Set<() => void>>();
 
   /**
@@ -134,6 +138,12 @@ function createNotifier(): Notifier {
   return {
     notify(topic) {
       listeners.get(topic)?.forEach((listener) => listener());
+    },
+
+    notifyMessageListeners() {
+      for (const [topic, set] of listeners) {
+        if (topic.startsWith('messages:')) for (const listener of [...set]) listener();
+      }
     },
 
     markEmitted(id) {
@@ -171,7 +181,7 @@ function createNotifier(): Notifier {
         listeners.delete(topic);
         const channel = channels.get(topic);
         channels.delete(topic);
-        if (channel) void getSupabaseClient().removeChannel(channel);
+        if (channel) void getClient().removeChannel(channel);
       };
     },
   };
@@ -186,11 +196,14 @@ function createNotifier(): Notifier {
  * resuelve el `distinct on (match_id)` en Postgres, que PostgREST no expone
  * directamente — exacto para cualquier historial, sin techo.
  */
-async function lastMessagesByMatch(matchIds: string[]): Promise<Map<string, Message>> {
+async function lastMessagesByMatch(
+  matchIds: string[],
+  client: LockInSupabaseClient
+): Promise<Map<string, Message>> {
   const byMatch = new Map<string, Message>();
   if (matchIds.length === 0) return byMatch;
 
-  const { data, error } = await getSupabaseClient().rpc('last_messages_for_matches', {
+  const { data, error } = await client.rpc('last_messages_for_matches', {
     p_match_ids: matchIds,
   });
   if (error) throw error;
@@ -201,15 +214,21 @@ async function lastMessagesByMatch(matchIds: string[]): Promise<Map<string, Mess
 }
 
 /** Añade a cada match el perfil del otro lado y su último mensaje. */
-async function resolveMatches(rows: MatchRow[], userId: string): Promise<MatchWithProfile[]> {
+async function resolveMatches(
+  rows: MatchRow[],
+  userId: string,
+  client: LockInSupabaseClient
+): Promise<MatchWithProfile[]> {
   if (rows.length === 0) return [];
 
-  const client = getSupabaseClient();
   const counterpartIds = [...new Set(rows.map((row) => counterpartIdOf(row, userId)))];
 
   const [counterparts, lastMessages] = await Promise.all([
     client.from('profiles').select('*').in('id', counterpartIds),
-    lastMessagesByMatch(rows.map((row) => row.id)),
+    lastMessagesByMatch(
+      rows.map((row) => row.id),
+      client
+    ),
   ]);
   if (counterparts.error) throw counterparts.error;
 
@@ -243,8 +262,14 @@ async function resolveMatches(rows: MatchRow[], userId: string): Promise<MatchWi
  * comparten ni listeners, ni canales de realtime, ni marcas de escritura
  * propia, así que un test puede aislar dos instancias.
  */
-export function createSupabaseRepositories(): Repositories {
-  const hub = createNotifier();
+export function createSupabaseRepositories({
+  getClient = getSupabaseClient,
+  getUserId = ensureUserId,
+}: {
+  getClient?: () => LockInSupabaseClient;
+  getUserId?: () => Promise<string>;
+} = {}): Repositories {
+  const hub = createNotifier(getClient);
   const notify = (topic: string) => hub.notify(topic);
   const markEmitted = (id: string) => hub.markEmitted(id);
   const wasEmittedLocally = (id: string | undefined) => hub.wasEmittedLocally(id);
@@ -253,8 +278,8 @@ export function createSupabaseRepositories(): Repositories {
 
   const session: SessionRepository = {
     async get(): Promise<Session> {
-      const client = getSupabaseClient();
-      const userId = await ensureUserId();
+      const client = getClient();
+      const userId = await getUserId();
 
       const [profile, settings] = await Promise.all([
         client.from('profiles').select('id').eq('id', userId).maybeSingle(),
@@ -271,8 +296,8 @@ export function createSupabaseRepositories(): Repositories {
     },
 
     async setActiveMode(mode) {
-      const client = getSupabaseClient();
-      const userId = await ensureUserId();
+      const client = getClient();
+      const userId = await getUserId();
 
       const { error } = await client
         .from('user_settings')
@@ -304,6 +329,20 @@ export function createSupabaseRepositories(): Repositories {
   };
 
   const profiles: ProfileRepository = {
+    async block(profileId) {
+      await getUserId();
+      const { error } = await getClient().rpc('block_profile', { p_profile_id: profileId });
+      if (error) throw toSafetyError(error);
+      notify(MATCHES_TOPIC);
+      // Invalida también el chat abierto de este dispositivo; no hay aviso al otro usuario.
+      hub.notifyMessageListeners();
+    },
+
+    async report(input) {
+      await getUserId();
+      const { error } = await getClient().rpc('report_profile', toReportArgs(input));
+      if (error) throw toSafetyError(error);
+    },
     async verifyGithub() {
       // Una vuelta de GitHub perdida deja la identidad vinculada sin sello, y
       // volver a vincular choca con «Identity is already linked»: si ya está,
@@ -323,7 +362,7 @@ export function createSupabaseRepositories(): Repositories {
     async unverifyGithub() {
       await unlinkGithubIdentity();
 
-      const { error } = await getSupabaseClient().rpc('sync_github_verification');
+      const { error } = await getClient().rpc('sync_github_verification');
       if (error) throw error;
 
       const profile = await profiles.getCurrent();
@@ -341,7 +380,7 @@ export function createSupabaseRepositories(): Repositories {
       // formulario. Salir antes es la guarda, no una optimización.
       if (!before.githubVerification) return before;
 
-      const { error } = await getSupabaseClient().rpc('sync_github_verification');
+      const { error } = await getClient().rpc('sync_github_verification');
       if (error) throw error;
 
       const after = await profiles.getCurrent();
@@ -350,8 +389,8 @@ export function createSupabaseRepositories(): Repositories {
     },
 
     async getCurrent() {
-      const client = getSupabaseClient();
-      const userId = await ensureUserId();
+      const client = getClient();
+      const userId = await getUserId();
 
       const { data, error } = await client
         .from('profiles')
@@ -364,8 +403,8 @@ export function createSupabaseRepositories(): Repositories {
     },
 
     async saveCurrent(input: ProfileInput) {
-      const client = getSupabaseClient();
-      const userId = await ensureUserId();
+      const client = getClient();
+      const userId = await getUserId();
 
       // Se lee el perfil actual solo para heredar el acento del avatar cuando el
       // formulario no manda uno; el resto de campos los pisa `input` entero.
@@ -386,8 +425,8 @@ export function createSupabaseRepositories(): Repositories {
     },
 
     async getById(id) {
-      const client = getSupabaseClient();
-      await ensureUserId();
+      const client = getClient();
+      await getUserId();
 
       const { data, error } = await client.from('profiles').select('*').eq('id', id).maybeSingle();
       if (error) throw error;
@@ -396,8 +435,8 @@ export function createSupabaseRepositories(): Repositories {
     },
 
     async list(filter: ProfileFilter = {}) {
-      const client = getSupabaseClient();
-      const userId = await ensureUserId();
+      const client = getClient();
+      const userId = await getUserId();
 
       let query = client.from('profiles').select('*').neq('id', userId);
 
@@ -422,8 +461,8 @@ export function createSupabaseRepositories(): Repositories {
 
   const discovery: DiscoveryRepository = {
     async getDeck(filter: ProfileFilter = {}) {
-      const client = getSupabaseClient();
-      await ensureUserId();
+      const client = getClient();
+      await getUserId();
 
       // `discovery_deck` ya excluye el perfil propio, todo lo swipeado y ahora
       // también `excludeIds`, y aplica el modo efectivo (el activo de la sesión
@@ -451,8 +490,8 @@ export function createSupabaseRepositories(): Repositories {
       decision: Decision,
       mode?: ModePreference
     ): Promise<DecisionResult> {
-      const client = getSupabaseClient();
-      const userId = await ensureUserId();
+      const client = getClient();
+      const userId = await getUserId();
 
       // `p_mode` solo viaja si hay modo: sin él, la llamada es la de dos
       // argumentos de siempre, que también resuelve contra un despliegue que
@@ -488,8 +527,8 @@ export function createSupabaseRepositories(): Repositories {
     },
 
     async listDecided() {
-      const client = getSupabaseClient();
-      const userId = await ensureUserId();
+      const client = getClient();
+      const userId = await getUserId();
 
       const { data, error } = await client
         .from('decisions')
@@ -503,8 +542,8 @@ export function createSupabaseRepositories(): Repositories {
 
   const matches: MatchRepository = {
     async list() {
-      const client = getSupabaseClient();
-      const userId = await ensureUserId();
+      const client = getClient();
+      const userId = await getUserId();
 
       // Sin `where`: la política "matches: solo los tuyos" ya limita la lectura a
       // los matches del usuario. Filtrar otra vez aquí solo daría una falsa
@@ -519,12 +558,12 @@ export function createSupabaseRepositories(): Repositories {
         client.from('matches').select('*').order('id', { ascending: true }).range(from, to)
       );
 
-      return resolveMatches(rows, userId);
+      return resolveMatches(rows, userId, client);
     },
 
     async getById(matchId) {
-      const client = getSupabaseClient();
-      const userId = await ensureUserId();
+      const client = getClient();
+      const userId = await getUserId();
 
       const { data, error } = await client
         .from('matches')
@@ -534,7 +573,7 @@ export function createSupabaseRepositories(): Repositories {
       if (error) throw error;
       if (!data) return null;
 
-      const [match] = await resolveMatches([data], userId);
+      const [match] = await resolveMatches([data], userId, client);
       return match ?? null;
     },
 
@@ -547,7 +586,7 @@ export function createSupabaseRepositories(): Repositories {
 
       return subscribeTo(MATCHES_TOPIC, listener, () =>
         subscribeResyncingOnRejoin(
-          getSupabaseClient()
+          getClient()
             .channel('lockin:matches')
             // RLS filtra el stream de realtime en INSERT y UPDATE, así que por
             // estos dos solo llegan matches y mensajes del usuario.
@@ -587,8 +626,8 @@ export function createSupabaseRepositories(): Repositories {
 
   const messages: MessageRepository = {
     async listByMatch(matchId) {
-      const client = getSupabaseClient();
-      await ensureUserId();
+      const client = getClient();
+      await getUserId();
 
       const { data, error } = await client
         .from('messages')
@@ -602,8 +641,8 @@ export function createSupabaseRepositories(): Repositories {
     },
 
     async send({ matchId, body }: MessageInput) {
-      const client = getSupabaseClient();
-      const userId = await ensureUserId();
+      const client = getClient();
+      const userId = await getUserId();
 
       // `sent_at` lo pone la base (`default now()`), no el reloj del teléfono: es
       // el mismo instante que el trigger copia a `matches.last_message_at`, así
@@ -627,7 +666,7 @@ export function createSupabaseRepositories(): Repositories {
 
       return subscribeTo(topic, listener, () =>
         subscribeResyncingOnRejoin(
-          getSupabaseClient()
+          getClient()
             .channel(`lockin:${topic}`)
             .on(
               'postgres_changes',
@@ -655,8 +694,8 @@ export function createSupabaseRepositories(): Repositories {
     discovery,
     matches,
     messages,
-    sessions: createSupabaseSessionRepository(),
-    agreement: createSupabaseAgreementRepository(),
-    rooms: createSupabaseRoomRepository(),
+    sessions: createSupabaseSessionRepository({ getClient, getUserId }),
+    agreement: createSupabaseAgreementRepository({ getClient, getUserId }),
+    rooms: createSupabaseRoomRepository({ getClient, getUserId }),
   };
 }

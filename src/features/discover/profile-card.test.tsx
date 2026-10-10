@@ -9,13 +9,39 @@
  * Ojo: en RNTL 14 `render` es asíncrono.
  */
 
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import { buildProfile } from '@/data/test-fixtures';
 
 import { ProfileCard } from './profile-card';
 
 describe('ProfileCard', () => {
+  it('ofrece Bloquear y Reportar desde las opciones de la tarjeta', async () => {
+    await render(<ProfileCard profile={buildProfile({ name: 'Núria' })} />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Opciones de Núria' }));
+    expect(screen.getByRole('button', { name: 'Bloquear a Núria' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Reportar a Núria' })).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar opciones' }));
+    expect(screen.getByText('Domina')).toBeTruthy();
+  });
+  it('con el panel controlado desde fuera, avisa de cada apertura y cierre', async () => {
+    const onSafetyOpenChange = jest.fn();
+    const profile = buildProfile({ name: 'Núria' });
+    const view = await render(
+      <ProfileCard profile={profile} safetyOpen={false} onSafetyOpenChange={onSafetyOpenChange} />
+    );
+    await fireEvent.press(screen.getByRole('button', { name: 'Opciones de Núria' }));
+    expect(onSafetyOpenChange).toHaveBeenLastCalledWith(true);
+    // El padre manda: sin reabrir la prop, la tarjeta sigue en su contenido normal.
+    expect(screen.queryByRole('button', { name: 'Bloquear a Núria' })).toBeNull();
+
+    await view.rerender(
+      <ProfileCard profile={profile} safetyOpen onSafetyOpenChange={onSafetyOpenChange} />
+    );
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar opciones' }));
+    expect(onSafetyOpenChange).toHaveBeenLastCalledWith(false);
+  });
+
   it('separa lo que domina de lo que busca, cada uno bajo su etiqueta', async () => {
     const profile = buildProfile({
       lookingFor: 'par',

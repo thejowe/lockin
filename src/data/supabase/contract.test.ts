@@ -540,6 +540,56 @@ const supabaseBackend: ContractBackend = {
     };
   },
 
+  async safetyPair() {
+    // Dos usuarios anónimos NUEVOS, aparte del usuario del test y de los de
+    // apoyo; cada uno con su propio cliente y su propio juego de repositorios.
+    const { createSupabaseRepositories } = require('./index') as typeof import('./index');
+    const actors: {
+      client: SupabaseClient<Database>;
+      id: string;
+      repositories: Repositories;
+    }[] = [];
+    for (let index = 0; index < 2; index += 1) {
+      const client = createClient<Database>(url!, anonKey!, {
+        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+      });
+      const { data, error } = await client.auth.signInAnonymously();
+      if (error) throw error;
+      const id = data.user!.id;
+      actors.push({
+        client,
+        id,
+        repositories: createSupabaseRepositories({
+          getClient: () => client,
+          getUserId: async () => id,
+        }),
+      });
+    }
+    return {
+      a: actors[0].repositories,
+      b: actors[1].repositories,
+      aId: actors[0].id,
+      bId: actors[1].id,
+      async expectReportsPrivate() {
+        // Sin política SELECT: 42501 (permiso denegado) o, como mucho, vacío.
+        for (const { client } of actors) {
+          const { data, error } = await client.from('user_reports').select('*');
+          if (error) expect(error.code).toBe('42501');
+          else expect(data).toEqual([]);
+        }
+      },
+      async close() {
+        for (const { client } of actors) {
+          const { error } = await client.rpc('delete_my_account');
+          if (error) throw error;
+          await client.removeAllChannels();
+          client.realtime.disconnect();
+          await client.auth.signOut();
+        }
+      },
+    };
+  },
+
   async teardown() {
     // Deshacer lo que la pasada ha metido en el catálogo, ANTES de cerrar las
     // sesiones: `dev_reset_current_user()` solo mira `auth.uid()`, así que sin

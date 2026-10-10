@@ -17,6 +17,7 @@ import {
   createMockRepositories,
   createMockRoomRepository,
   createMockSessionRepository,
+  createMockStore,
   CURRENT_USER_ID,
   resetState,
 } from './index';
@@ -87,6 +88,27 @@ const mockBackend: ContractBackend = {
       async elapse(ms) {
         advanceMockClock(ms);
       },
+    };
+  },
+
+  async safetyPair() {
+    // Dos clientes sobre el MISMO almacén: el segundo actúa como otra persona.
+    const store = createMockStore();
+    const bId = 'safety-b';
+    const a = createMockRepositories(store);
+    const b = createMockRepositories(store, { actorId: bId });
+    return {
+      a,
+      b,
+      aId: CURRENT_USER_ID,
+      bId,
+      async expectReportsPrivate(expected) {
+        expect(store.state.userReports).toEqual([expect.objectContaining(expected)]);
+        // El cliente solo expone block/report, nunca el almacén privado.
+        expect('listReports' in a.profiles).toBe(false);
+        expect('listReports' in b.profiles).toBe(false);
+      },
+      async close() {},
     };
   },
 };

@@ -25,6 +25,7 @@ import type {
   Profile,
   ProfileFilter,
   ProfileInput,
+  ProfileReportInput,
   RoomInput,
   RoomMember,
   RoomView,
@@ -65,6 +66,10 @@ export interface SessionRepository {
 
 /** Fichas de persona: la propia y las de los demás. */
 export interface ProfileRepository {
+  /** Idempotente. Oculta deck y matches en ambos lados e impide enviar mensajes. */
+  block(profileId: string): Promise<void>;
+  /** Solo escritura: ningún cliente puede consultar reportes, ni siquiera los propios. */
+  report(input: ProfileReportInput): Promise<void>;
   /** El perfil del usuario, o `null` si aún no lo ha creado. */
   getCurrent(): Promise<Profile | null>;
   /** Crea el perfil propio o actualiza el existente. */

@@ -21,6 +21,7 @@ import type {
   Mode,
   ModePreference,
   ProfilePrompt,
+  ReportReason,
   SessionBlocks,
   SessionRating,
   SessionStatus,
@@ -107,6 +108,17 @@ export type MessageRow = {
 };
 
 export type MessageInsert = Pick<MessageRow, 'match_id' | 'sender_id' | 'body'>;
+
+export type UserBlockRow = { blocker_id: string; blocked_id: string; created_at: string };
+/** Tipo SQL para el contrato; la base no concede SELECT a ningún cliente. */
+export type UserReportRow = {
+  id: string;
+  reporter_id: string;
+  reported_id: string;
+  reason: ReportReason;
+  details: string | null;
+  created_at: string;
+};
 
 /** Fila de `public.lockin_sessions`. */
 export type SessionRow = {
@@ -206,6 +218,48 @@ export type MatchAgreementRow = {
 export type Database = {
   public: {
     Tables: {
+      user_blocks: {
+        Row: UserBlockRow;
+        Insert: Record<string, never>;
+        Update: Record<string, never>;
+        Relationships: [
+          {
+            foreignKeyName: 'user_blocks_blocker_id_fkey';
+            columns: ['blocker_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'user_blocks_blocked_id_fkey';
+            columns: ['blocked_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      user_reports: {
+        Row: UserReportRow;
+        Insert: Record<string, never>;
+        Update: Record<string, never>;
+        Relationships: [
+          {
+            foreignKeyName: 'user_reports_reporter_id_fkey';
+            columns: ['reporter_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'user_reports_reported_id_fkey';
+            columns: ['reported_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       profiles: {
         Row: ProfileRow;
         Insert: ProfileInsert;
@@ -315,6 +369,13 @@ export type Database = {
     };
     Views: Record<never, never>;
     Functions: {
+      block_profile: { Args: { p_profile_id: string }; Returns: undefined };
+      report_profile: {
+        Args: { p_profile_id: string; p_reason: string; p_details?: string | null };
+        Returns: undefined;
+      };
+      has_profile_block: { Args: { p_profile_id: string }; Returns: boolean };
+      is_unblocked_match: { Args: { p_match_id: string }; Returns: boolean };
       delete_my_account: {
         Args: Record<string, never>;
         Returns: undefined;

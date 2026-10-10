@@ -177,8 +177,34 @@ export interface ContractBackend {
   foreignMatch?(onReady: () => void): Promise<{ matchId: string; wipe(): Promise<void> }>;
   /** Estado limpio para el test que viene. Se llama en cada `beforeEach`. */
   reset(): Promise<ContractFixture>;
+  /** Dos usuarios nuevos y aislados para los casos de bloqueo y reporte. */
+  safetyPair(): Promise<SafetyPair>;
   /** Cierre de lo que quede abierto (sesiones, canales de realtime). */
   teardown?(): Promise<void>;
+}
+
+/**
+ * Dos clientes completos y aislados para los casos de bloqueo y reporte. Los
+ * fixtures antiguos solo exponen sesiones de la contraparte, y crear dos
+ * usuarios depende del backend: lo monta cada arnés, no el contrato.
+ */
+export interface SafetyPair {
+  a: Repositories;
+  b: Repositories;
+  aId: string;
+  bId: string;
+  /**
+   * Comprueba que el reporte quedó guardado con estos datos (si el backend
+   * puede inspeccionarlo) y que ningún cliente puede leer reportes.
+   */
+  expectReportsPrivate(expected: {
+    reporterId: string;
+    reportedId: string;
+    reason: string;
+    details: string;
+  }): Promise<void>;
+  /** Cierra clientes y borra lo creado. */
+  close(): Promise<void>;
 }
 
 /**
@@ -187,6 +213,7 @@ export interface ContractBackend {
  * Llámala desde un `*.test.ts`: declara sus propios `describe`/`it`.
  */
 export function describeRepositoryContract(backend: ContractBackend): void {
+  describeSafetyContract(backend);
   describe(`contrato de Repositories — ${backend.name}`, () => {
     let fixture: ContractFixture;
     let repositories: Repositories;
@@ -2171,6 +2198,130 @@ export function describeRepositoryContract(backend: ContractBackend): void {
           outsider.answer({ matchId, topic: 'horizonte', option: '1-ano' })
         ).rejects.toBeInstanceOf(AgreementForbiddenError);
       });
+    });
+  });
+}
+
+/**
+ * Pareja aislada: los fixtures antiguos solo exponen sesiones de la contraparte.
+ * Aquí se crean dos clientes completos sin cambiar esos arneses ni sus semillas.
+ * Supabase se ejecuta únicamente dentro de la suite opt-in existente.
+ */
+function describeSafetyContract(backend: ContractBackend): void {
+  describe(`seguridad entre dos clientes — ${backend.name}`, () => {
+    let pair: SafetyPair;
+    let a: Repositories;
+    let b: Repositories;
+    let aId: string;
+    let bId: string;
+
+    beforeEach(async () => {
+      // Toda la preparación específica del backend (clientes, sesiones, limpieza)
+      // vive en su arnés: aquí solo hay comportamiento de producto.
+      pair = await backend.safetyPair();
+      ({ a, b, aId, bId } = pair);
+      await a.profiles.saveCurrent(buildProfileInput({ name: 'Seguridad A', lookingFor: 'par' }));
+      await b.profiles.saveCurrent(buildProfileInput({ name: 'Seguridad B', lookingFor: 'par' }));
+    });
+
+    afterEach(async () => {
+      await pair.close();
+    });
+
+    async function matchPair(): Promise<string> {
+      await b.discovery.recordDecision(aId, 'like');
+      const { match } = await a.discovery.recordDecision(bId, 'like');
+      expect(match).not.toBeNull();
+      return match!.id;
+    }
+
+    it('A bloquea a B: desaparecen mutuamente del deck', async () => {
+      expect((await a.discovery.getDeck()).map((p) => p.id)).toContain(bId);
+      expect((await b.discovery.getDeck()).map((p) => p.id)).toContain(aId);
+      await a.profiles.block(bId);
+      expect((await a.discovery.getDeck()).map((p) => p.id)).not.toContain(bId);
+      expect((await b.discovery.getDeck()).map((p) => p.id)).not.toContain(aId);
+    });
+
+    it('el match existente desaparece de las dos listas y de getById', async () => {
+      const matchId = await matchPair();
+      expect((await a.matches.list()).map((m) => m.id)).toContain(matchId);
+      expect((await b.matches.list()).map((m) => m.id)).toContain(matchId);
+      await a.profiles.block(bId);
+      expect(await a.matches.list()).toEqual([]);
+      expect(await b.matches.list()).toEqual([]);
+      expect(await a.matches.getById(matchId)).toBeNull();
+      expect(await b.matches.getById(matchId)).toBeNull();
+    });
+
+    it('tras bloquear, ninguno puede enviar mensajes al otro', async () => {
+      const matchId = await matchPair();
+      await a.messages.send({ matchId, body: 'Antes A' });
+      await b.messages.send({ matchId, body: 'Antes B' });
+      await a.profiles.block(bId);
+      await expect(b.messages.send({ matchId, body: 'Después B' })).rejects.toBeTruthy();
+      await expect(a.messages.send({ matchId, body: 'Después A' })).rejects.toBeTruthy();
+    });
+
+    it('tras bloquear, el historial del match no se lista para ninguno', async () => {
+      const matchId = await matchPair();
+      await a.messages.send({ matchId, body: 'Historial A' });
+      await b.messages.send({ matchId, body: 'Historial B' });
+      expect(await a.messages.listByMatch(matchId)).toHaveLength(2);
+      await a.profiles.block(bId);
+      expect(await a.messages.listByMatch(matchId)).toEqual([]);
+      expect(await b.messages.listByMatch(matchId)).toEqual([]);
+    });
+
+    it('tras bloquear, un like recíproco no crea ni devuelve match', async () => {
+      await b.discovery.recordDecision(aId, 'like');
+      await a.profiles.block(bId);
+      const first = await a.discovery.recordDecision(bId, 'like');
+      expect(first.match).toBeNull();
+      expect(await a.matches.list()).toEqual([]);
+      expect(await b.matches.list()).toEqual([]);
+    });
+
+    it('tras bloquear, un like sobre un match ya existente no lo devuelve', async () => {
+      await matchPair();
+      await a.profiles.block(bId);
+      expect((await a.discovery.recordDecision(bId, 'like')).match).toBeNull();
+      expect((await b.discovery.recordDecision(aId, 'like')).match).toBeNull();
+    });
+
+    it('bloquear dos veces es idempotente', async () => {
+      await a.profiles.block(bId);
+      await expect(a.profiles.block(bId)).resolves.toBeUndefined();
+    });
+
+    it('reportar escribe el motivo y texto privados, sin lectura por ningún cliente', async () => {
+      await a.profiles.report({ profileId: bId, reason: 'acoso', details: 'Detalle privado' });
+      await pair.expectReportsPrivate({
+        reporterId: aId,
+        reportedId: bId,
+        reason: 'acoso',
+        details: 'Detalle privado',
+      });
+      expect((await a.discovery.getDeck()).map((p) => p.id)).toContain(bId);
+    });
+
+    it('rechaza bloquearse o reportarse a sí mismo', async () => {
+      await expect(a.profiles.block(aId)).rejects.toMatchObject({ code: 'LI008' });
+      await expect(a.profiles.report({ profileId: aId, reason: 'otro' })).rejects.toMatchObject({
+        code: 'LI008',
+      });
+    });
+
+    it('rechaza motivos fuera de la lista y textos de más de 500 caracteres', async () => {
+      await expect(
+        a.profiles.report({ profileId: bId, reason: 'invalido' as never })
+      ).rejects.toMatchObject({ code: 'LI009' });
+      await expect(
+        a.profiles.report({ profileId: bId, reason: 'otro', details: 'x'.repeat(501) })
+      ).rejects.toBeTruthy();
+      await expect(
+        a.profiles.report({ profileId: bId, reason: 'otro', details: 'x'.repeat(500) })
+      ).resolves.toBeUndefined();
     });
   });
 }

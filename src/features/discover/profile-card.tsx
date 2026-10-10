@@ -20,7 +20,8 @@
  * con el gesto horizontal.
  */
 
-import { StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Radii, Spacing, Stroke } from '@/constants/theme';
@@ -36,6 +37,7 @@ import {
   type DaySchedule,
 } from '@/features/profile';
 import { useTheme } from '@/hooks/use-theme';
+import { SafetyMenuButton, SafetyPanel } from '@/features/safety/safety-panel';
 
 import { Chip } from './chip';
 import { complementWith } from './complement';
@@ -54,15 +56,62 @@ export function ProfileCard({
   viewerSpecialties = [],
   /** Jornada de quien swipea: marca en qué franjas coincidís. Igual de opcional. */
   viewerSchedule,
+  /**
+   * El panel de seguridad abierto, controlado desde fuera. El deck lo sube para
+   * apagar el gesto y los botones de Like/Pass mientras el formulario está
+   * abierto: si no, un toque sobre «Me gusta» perdería el motivo y el detalle
+   * sin enviarlos. Sin esta prop la tarjeta lo lleva ella sola.
+   */
+  safetyOpen: controlledSafetyOpen,
+  onSafetyOpenChange,
+  /** Se llama tras bloquear con éxito: el deck pasa a la siguiente tarjeta. */
+  onBlocked,
 }: {
   profile: Profile;
   viewerSpecialties?: Specialty[];
   viewerSchedule?: DaySchedule;
+  safetyOpen?: boolean;
+  onSafetyOpenChange?: (open: boolean) => void;
+  onBlocked?: () => void;
 }) {
   const theme = useTheme();
+  const [localSafetyOpen, setLocalSafetyOpen] = useState(false);
+  const safetyOpen = controlledSafetyOpen ?? localSafetyOpen;
+  const setSafetyOpen = (open: boolean) => {
+    setLocalSafetyOpen(open);
+    onSafetyOpenChange?.(open);
+  };
+  const [blocked, setBlocked] = useState(false);
   const prompt = profile.prompts[0];
   const complement = complementWith(profile, viewerSpecialties);
   const divider = [styles.divider, { backgroundColor: theme.border }];
+
+  if (blocked)
+    return (
+      <View
+        style={[styles.card, { backgroundColor: theme.surfaceOpaque, borderColor: theme.border }]}>
+        <ThemedText type="subtitle">Perfil bloqueado.</ThemedText>
+      </View>
+    );
+
+  if (safetyOpen)
+    return (
+      <View
+        style={[styles.card, { backgroundColor: theme.surfaceOpaque, borderColor: theme.border }]}>
+        <ScrollView keyboardShouldPersistTaps="handled">
+          <SafetyPanel
+            profileId={profile.id}
+            name={profile.name}
+            onClose={() => setSafetyOpen(false)}
+            onBlocked={() => {
+              setBlocked(true);
+              setSafetyOpen(false);
+              onBlocked?.();
+            }}
+          />
+        </ScrollView>
+      </View>
+    );
 
   return (
     <View
@@ -86,6 +135,7 @@ export function ProfileCard({
               {profile.age} · {profile.location}
             </ThemedText>
           </View>
+          <SafetyMenuButton name={profile.name} onPress={() => setSafetyOpen(true)} />
         </View>
 
         <View style={styles.headerChips}>

@@ -18,6 +18,7 @@ import {
 import { SEED_RECIPROCAL_IDS } from './seed';
 import { createMockRoomRepository } from './rooms';
 import { createMockSessionRepository } from './sessions';
+import { REPORT_MAX_LENGTH, REPORT_REASONS } from '../types';
 
 import type { MockStore } from './store';
 
@@ -59,6 +60,8 @@ export { createMockRoomRepository, roomsTopic } from './rooms';
 export type { MockRoomOptions } from './rooms';
 
 export interface MockRepositoriesOptions {
+  /** Cliente secundario de contrato sobre el mismo almacén. */
+  actorId?: string;
   /**
    * Los perfiles de `SEED_RECIPROCAL_IDS` aceptan al instante las sesiones que
    * se les proponen y las salas a las que se les convoca, igual que devuelven
@@ -85,22 +88,47 @@ const messagesTopic = (matchId: string) => `messages:${matchId}`;
  */
 export function createMockRepositories(
   store: MockStore = defaultMockStore,
-  { autoAcceptSessions = process.env.NODE_ENV !== 'test' }: MockRepositoriesOptions = {}
+  {
+    actorId = CURRENT_USER_ID,
+    autoAcceptSessions = process.env.NODE_ENV !== 'test',
+  }: MockRepositoriesOptions = {}
 ): Repositories {
   const getState = () => store.state;
   const createId = (prefix: string) => store.createId(prefix);
   const notify = (topic: string) => store.notify(topic);
   const subscribeTo = (topic: string, listener: () => void) => store.subscribeTo(topic, listener);
 
+  const actorSession = (): Session =>
+    actorId === CURRENT_USER_ID
+      ? getState().session
+      : (getState().actorSessions.get(actorId) ?? { profileId: null, activeMode: null });
+  const actorDecisions = (): Map<string, Decision> => {
+    if (actorId === CURRENT_USER_ID) return getState().decisions;
+    let decisions = getState().actorDecisions.get(actorId);
+    if (!decisions) getState().actorDecisions.set(actorId, (decisions = new Map()));
+    return decisions;
+  };
+  const isBlocked = (a: string, b: string): boolean =>
+    Boolean(getState().userBlocks.get(a)?.has(b) || getState().userBlocks.get(b)?.has(a));
+  function checkTarget(profileId: string): void {
+    if (profileId === actorId)
+      throw Object.assign(new Error('No puedes bloquearte ni reportarte a ti mismo.'), {
+        code: 'LI008',
+      });
+    if (!getState().profiles.has(actorId) || !getState().profiles.has(profileId)) {
+      throw Object.assign(new Error('El perfil no está disponible.'), { code: '23503' });
+    }
+  }
+
   function currentProfile(): Profile | null {
     const state = getState();
-    return state.session.profileId ? (state.profiles.get(state.session.profileId) ?? null) : null;
+    const { profileId } = actorSession();
+    return profileId ? (state.profiles.get(profileId) ?? null) : null;
   }
 
   /** El modo con el que filtrar: el activo de la sesión, o el declarado en el perfil. */
   function effectiveMode(): ModePreference | undefined {
-    const state = getState();
-    return state.session.activeMode ?? currentProfile()?.lookingFor;
+    return actorSession().activeMode ?? currentProfile()?.lookingFor;
   }
 
   function lastMessageOf(matchId: string): Message | null {
@@ -110,7 +138,8 @@ export function createMockRepositories(
 
   function withCounterpart(match: Match): MatchWithProfile | null {
     const state = getState();
-    const counterpartId = match.profileIds.find((id) => id !== CURRENT_USER_ID);
+    if (!match.profileIds.includes(actorId) || isBlocked(...match.profileIds)) return null;
+    const counterpartId = match.profileIds.find((id) => id !== actorId);
     const counterpart = counterpartId ? state.profiles.get(counterpartId) : undefined;
     if (!counterpart) return null;
 
@@ -145,6 +174,33 @@ export function createMockRepositories(
   };
 
   const profiles: ProfileRepository = {
+    async block(profileId) {
+      checkTarget(profileId);
+      const blocks = getState().userBlocks.get(actorId) ?? new Set<string>();
+      blocks.add(profileId);
+      getState().userBlocks.set(actorId, blocks);
+      notify(MATCHES_TOPIC);
+      for (const match of getState().matches) {
+        if (match.profileIds.includes(actorId) && match.profileIds.includes(profileId))
+          notify(messagesTopic(match.id));
+      }
+    },
+
+    async report({ profileId, reason, details }) {
+      checkTarget(profileId);
+      if (!REPORT_REASONS.includes(reason))
+        throw Object.assign(new Error('Elige un motivo válido.'), { code: 'LI009' });
+      if (Array.from(details ?? '').length > REPORT_MAX_LENGTH)
+        throw Object.assign(new Error('El texto no puede superar 500 caracteres.'), {
+          code: '23514',
+        });
+      getState().userReports.push({
+        reporterId: actorId,
+        reportedId: profileId,
+        reason,
+        details: details?.trim() || null,
+      });
+    },
     async getCurrent() {
       return currentProfile();
     },
@@ -156,7 +212,7 @@ export function createMockRepositories(
 
       const profile: Profile = {
         ...input,
-        id: existing?.id ?? CURRENT_USER_ID,
+        id: existing?.id ?? actorId,
         // Ausente significa «abierto a cualquiera»; ver `ProfileInput` en types.ts.
         seekingSpecialties: input.seekingSpecialties ?? [],
         avatar: {
@@ -171,7 +227,8 @@ export function createMockRepositories(
       };
 
       state.profiles.set(profile.id, profile);
-      state.session = { ...state.session, profileId: profile.id };
+      if (actorId === CURRENT_USER_ID) state.session = { ...state.session, profileId: profile.id };
+      else state.actorSessions.set(actorId, { ...actorSession(), profileId: profile.id });
       notify(MATCHES_TOPIC);
 
       return profile;
@@ -182,7 +239,7 @@ export function createMockRepositories(
     },
 
     async list(filter: ProfileFilter = {}) {
-      const excluded = new Set([CURRENT_USER_ID, ...(filter.excludeIds ?? [])]);
+      const excluded = new Set([actorId, ...(filter.excludeIds ?? [])]);
 
       return [...getState().profiles.values()].filter((profile) => {
         if (excluded.has(profile.id)) return false;
@@ -248,7 +305,7 @@ export function createMockRepositories(
 
   const discovery: DiscoveryRepository = {
     async getDeck(filter: ProfileFilter = {}) {
-      const decided = [...getState().decisions.keys()];
+      const decided = [...actorDecisions().keys()];
 
       const mode = filter.mode ?? effectiveMode();
       const viewer = currentProfile();
@@ -271,9 +328,9 @@ export function createMockRepositories(
           Number(other.specialties.some((tag) => viewer.seekingSpecialties.includes(tag)))
         );
       };
-      return candidates.sort(
-        (a, b) => score(b) - score(a) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
-      );
+      return candidates
+        .filter((candidate) => !isBlocked(actorId, candidate.id))
+        .sort((a, b) => score(b) - score(a) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
     },
 
     async recordDecision(
@@ -282,15 +339,25 @@ export function createMockRepositories(
       mode?: ModePreference
     ): Promise<DecisionResult> {
       const state = getState();
-      state.decisions.set(profileId, decision);
+      actorDecisions().set(profileId, decision);
 
       const other = state.profiles.get(profileId);
-      const isReciprocal = decision === 'like' && state.incomingLikes.has(profileId);
+      const reverse =
+        profileId === CURRENT_USER_ID ? state.decisions : state.actorDecisions.get(profileId);
+      const isReciprocal =
+        decision === 'like' &&
+        (reverse?.get(actorId) === 'like' ||
+          (actorId === CURRENT_USER_ID && state.incomingLikes.has(profileId)));
       if (!other || !isReciprocal) return { decision, match: null };
+      if (isBlocked(actorId, profileId)) return { decision, match: null };
+      const existing = state.matches.find(
+        (match) => match.profileIds.includes(actorId) && match.profileIds.includes(profileId)
+      );
+      if (existing) return { decision, match: existing };
 
       const match: Match = {
         id: createId('match'),
-        profileIds: [CURRENT_USER_ID, other.id],
+        profileIds: [actorId, other.id],
         // El modo del deck manda; sin él, el de la sesión. Espejo del
         // `coalesce(p_mode, active_mode, looking_for)` de `record_decision`.
         mode: resolveMatchMode(mode ?? effectiveMode() ?? 'ambos', other.lookingFor),
@@ -305,7 +372,7 @@ export function createMockRepositories(
     },
 
     async listDecided() {
-      return [...getState().decisions.keys()];
+      return [...actorDecisions().keys()];
     },
   };
 
@@ -331,22 +398,28 @@ export function createMockRepositories(
 
   const messages: MessageRepository = {
     async listByMatch(matchId) {
+      const match = getState().matches.find((candidate) => candidate.id === matchId);
+      // Mismo bloqueo bilateral que Supabase: tras bloquear, sin historial.
+      if (!match?.profileIds.includes(actorId) || isBlocked(...match.profileIds)) return [];
       return getState().messages.filter((message) => message.matchId === matchId);
     },
 
     async send({ matchId, body }: MessageInput) {
       const state = getState();
+      const match = state.matches.find((candidate) => candidate.id === matchId);
+      if (!match || !match.profileIds.includes(actorId) || isBlocked(...match.profileIds)) {
+        throw Object.assign(new Error('No se puede enviar el mensaje.'), { code: '42501' });
+      }
       const message: Message = {
         id: createId('message'),
         matchId,
-        senderId: CURRENT_USER_ID,
+        senderId: actorId,
         body,
         sentAt: nowIso(),
       };
 
       state.messages.push(message);
 
-      const match = state.matches.find((candidate) => candidate.id === matchId);
       if (match) match.lastMessageAt = message.sentAt;
 
       notify(messagesTopic(matchId));
@@ -366,11 +439,11 @@ export function createMockRepositories(
     discovery,
     matches,
     messages,
-    sessions: createMockSessionRepository(CURRENT_USER_ID, store, {
+    sessions: createMockSessionRepository(actorId, store, {
       autoAcceptFrom: autoAcceptSessions ? SEED_RECIPROCAL_IDS : [],
     }),
-    agreement: createMockAgreementRepository(CURRENT_USER_ID, store),
-    rooms: createMockRoomRepository(CURRENT_USER_ID, store, {
+    agreement: createMockAgreementRepository(actorId, store),
+    rooms: createMockRoomRepository(actorId, store, {
       autoAcceptFrom: autoAcceptSessions ? SEED_RECIPROCAL_IDS : [],
     }),
   };
