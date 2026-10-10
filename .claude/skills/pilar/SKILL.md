@@ -114,6 +114,14 @@ Antes de ejecutar cada tarea, clasifícala y decide quién la hace.
 - Si falla dos veces en la misma tarea, hazla tú en vez de reintentar.
 - Cuando tú escribas una feature grande, pásala por `codex review` antes de cerrarla
   (segundo par de ojos con otro modelo).
+- **Regla fija (decidida por el usuario el 2026-10-09):** todo agente que escriba código o
+  esquema —`arquitecto`, `perfil`, `descubrir`, `chat`, `datos`, `calidad`, `sesiones`, `rachas`,
+  `video`, `salas`, `visual`, `acuerdo`, `verificacion`, o un `[Claude]` suelto— pasa por
+  `codex review` sobre su diff **antes de fusionar o commitear en la rama principal**. La
+  excepción es `comprobador`, que no escribe código de producto. Lo lanza la sesión que orquesta
+  (los subagentes no tienen el plugin de Codex), en modo `-s read-only`. Los hallazgos se
+  corrigen o se anotan en el `todo/<bloque>.md` antes de cerrar la casilla. Si el agente era
+  el propio Codex, la revisión la hace Claude, que es el otro par de ojos.
 
 ### Registro
 - Al final de cada tarea, indica en una línea quién la hizo y por qué.
