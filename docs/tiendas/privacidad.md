@@ -8,7 +8,7 @@
 
 cofounder permite encontrar un cofundador en modo Par o una persona con quien trabajar concentrado en modo Lock-In.
 
-El responsable del tratamiento es **Joel de Torres Sainz de la Maza**, con domicilio en carrer Nou, 37, 25153 (Lleida, Catalunya, España). Puedes contactar para cuestiones de privacidad o soporte en **joeldetorres123@gmail.com**.
+El responsable del tratamiento es **Joel de Torres Sainz de la Maza**, con domicilio en carrer Nou, 37, 25153 (Lleida, Catalunya, España). Puedes contactar para cuestiones de privacidad o soporte en **cofounder.soporte@gmail.com**.
 
 Publicamos la app en España y el resto del Espacio Económico Europeo. Se aplican el Reglamento (UE) 2016/679 (RGPD) y la Ley Orgánica 3/2018 (LOPDGDD). La autoridad de control competente es la Agencia Española de Protección de Datos ([aepd.es](https://www.aepd.es)); en Catalunya también puedes acudir a la Autoritat Catalana de Protecció de Dades.
 
@@ -124,7 +124,7 @@ Los flujos de vídeo y presencia no se graban como contenido de producto; la con
 
 Puedes editar tu perfil y sus enlaces. Puedes desvincular GitHub mediante el flujo disponible; ello retira el sello y el enlace derivado cuando se sincroniza. La app no ofrece edición o borrado individual de mensajes ni cambio de una valoración ya enviada.
 
-Puedes darte de baja desde la app (Perfil → Cuenta → Eliminar mi cuenta) o pedir la eliminación escribiendo a joeldetorres123@gmail.com; respondemos en un máximo de 30 días. Cerrar sesión no es una baja. Tienes además derecho a acceso, rectificación, supresión, oposición, limitación y portabilidad, que puedes ejercer por el mismo correo, y a reclamar ante la AEPD. Las páginas públicas están en https://thejowe.github.io/lockin/.
+Puedes darte de baja desde la app (Perfil → Cuenta → Eliminar mi cuenta) o pedir la eliminación escribiendo a cofounder.soporte@gmail.com; respondemos en un máximo de 30 días. Cerrar sesión no es una baja. Tienes además derecho a acceso, rectificación, supresión, oposición, limitación y portabilidad, que puedes ejercer por el mismo correo, y a reclamar ante la AEPD. Las páginas públicas están en https://thejowe.github.io/lockin/.
 
 ## 9. Menores
 
@@ -142,4 +142,4 @@ Si cambiamos esta política de forma relevante, lo avisaremos dentro de la app y
 
 ---
 
-Nota editorial para el responsable, a retirar del texto publicado: el plazo de 24 meses de inactividad y la purga de reportes a 12 meses son compromisos de operación que ningún código automatiza todavía; hay que ejecutarlos a mano o implementarlos antes de publicar. Esta política supone aplicadas en producción las migraciones de cuenta y de bloqueo. Las instrucciones a las tiendas están en [cuestionario-privacidad.md](cuestionario-privacidad.md). Sus fuentes oficiales son las [reglas de privacidad de Apple](https://developer.apple.com/app-store/review/guidelines/#privacy) y la [política de datos de usuario de Google Play](https://support.google.com/googleplay/android-developer/answer/10144311?hl=es).
+Nota editorial para el responsable, a retirar del texto publicado: el plazo de 24 meses de inactividad y la purga de reportes a 12 meses son compromisos de operación que ningún código automatiza todavía; hay que ejecutarlos a mano o implementarlos antes de publicar. Las migraciones de cuenta y de bloqueo ya están aplicadas en producción (10-oct-2026). Las instrucciones a las tiendas están en [cuestionario-privacidad.md](cuestionario-privacidad.md). Sus fuentes oficiales son las [reglas de privacidad de Apple](https://developer.apple.com/app-store/review/guidelines/#privacy) y la [política de datos de usuario de Google Play](https://support.google.com/googleplay/android-developer/answer/10144311?hl=es).

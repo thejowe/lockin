@@ -51,7 +51,7 @@ Decisión D05/D09: el ID EAS, la IP y los registros de Supabase/Expo se usan sol
 | SDP/ICE y presencia | No hay tabla de contenido ni historial. Confirmar registros de proveedor antes de aplicar exclusión por procesamiento temporal. Los UUID ya persistentes siguen declarados como User ID. |
 | Credenciales/recordatorios solo locales | El acceso exclusivamente local no se añade como recogida independiente. Los datos de cuenta que también envía Auth sí están cubiertos arriba. |
 | Fotos de avatar, GPS preciso, historial de búsquedas o navegación, salud, biometría, compras, datos de pago, documentos | No se han encontrado funciones que recaben estas categorías. Abrir enlaces en el navegador del sistema no crea un historial propio en la base de datos. |
-| Customer Support | Canal de soporte por correo (joeldetorres123@gmail.com): los mensajes que la persona envíe se tratan para atenderlos. Solo declarar si Play/App Store lo pide para el canal publicado; no hay SDK. |
+| Customer Support | Canal de soporte por correo (cofounder.soporte@gmail.com): los mensajes que la persona envíe se tratan para atenderlos. Solo declarar si Play/App Store lo pide para el canal publicado; no hay SDK. |
 
 No prometer «Data Not Collected» o «Data Not Linked to You».
 

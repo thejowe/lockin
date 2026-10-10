@@ -85,7 +85,7 @@ Fuente para los campos de clasificación, público y privacidad: [preparar una a
 Fuente: [crear y configurar una aplicación](https://support.google.com/googleplay/android-developer/answer/9859152?hl=es). Package Android del repo: `app.cofounder.mobile`; versión app.json: `1.0.0`.
 
 - **D01 decidido:** Joel de Torres Sainz de la Maza, carrer Nou, 37, 25153 Lleida (España). Como persona física se publica como «trader» (DSA): Play mostrará nombre y dirección públicamente.
-- **D02 decidido:** soporte y privacidad en joeldetorres123@gmail.com (obligatorio en la ficha).
+- **D02 decidido:** soporte y privacidad en cofounder.soporte@gmail.com (obligatorio en la ficha).
 - **D08 decidido:** privacidad https://thejowe.github.io/lockin/privacidad, soporte https://thejowe.github.io/lockin/soporte, eliminación de cuenta https://thejowe.github.io/lockin/eliminar-cuenta, normas/seguridad infantil https://thejowe.github.io/lockin/normas.
 - **D09:** revisar el AAB final; rellenar la declaración de SCHEDULE_EXACT_ALARM (uso: recordatorios de sesiones agendadas; se mantiene, ver `todo/sesiones.md`), y comprobar «Allow public access» de Realtime cerrado en producción.
 

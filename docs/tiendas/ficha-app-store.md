@@ -95,7 +95,7 @@ La escala actual incluye 4+, 9+, 13+, 16+ y 18+ en las plataformas recientes, co
 Fuentes: [información de la app](https://developer.apple.com/help/app-store-connect/reference/app-information/app-information/) y [campos de la versión](https://developer.apple.com/help/app-store-connect/reference/app-information/platform-version-information/). Bundle ID del repo: `app.cofounder.mobile`; versión configurada: `1.0.0`; nombre técnico en app.json: `lockin`.
 
 - **D01 decidido:** Joel de Torres Sainz de la Maza, carrer Nou, 37, 25153 Lleida (España); copyright © 2026 Joel de Torres Sainz de la Maza.
-- **D02 decidido:** soporte y privacidad en joeldetorres123@gmail.com.
+- **D02 decidido:** soporte y privacidad en cofounder.soporte@gmail.com.
 - **D08 decidido:** soporte https://thejowe.github.io/lockin/soporte y privacidad https://thejowe.github.io/lockin/privacidad (páginas por crear).
 - **D09:** validar una build nativa real con WebRTC y cámara en dispositivo antes de usar la descripción de videollamada; la cámara real sigue sin comprobar (`todo/video.md`).
 
