@@ -95,13 +95,17 @@ const mockBackend: ContractBackend = {
     // Dos clientes sobre el MISMO almacén: el segundo actúa como otra persona.
     const store = createMockStore();
     const bId = 'safety-b';
-    const a = createMockRepositories(store);
-    const b = createMockRepositories(store, { actorId: bId });
+    const cId = 'safety-c';
+    const a = createMockRepositories(store, { autoAcceptSessions: false });
+    const b = createMockRepositories(store, { actorId: bId, autoAcceptSessions: false });
+    const c = createMockRepositories(store, { actorId: cId, autoAcceptSessions: false });
     return {
       a,
       b,
+      c,
       aId: CURRENT_USER_ID,
       bId,
+      cId,
       async expectReportsPrivate(expected) {
         expect(store.state.userReports).toEqual([expect.objectContaining(expected)]);
         // El cliente solo expone block/report, nunca el almacén privado.
@@ -179,5 +183,27 @@ describe('mecánica del mock', () => {
     expect(await repositories.discovery.listDecided()).toHaveLength(0);
     // Las demás personas siguen ahí.
     expect(await repositories.profiles.getById(RECIPROCAL_NURIA)).not.toBeNull();
+  });
+
+  it('un cliente secundario lleva su propia sesión y su propia cuenta', async () => {
+    await repositories.profiles.saveCurrent(buildProfileInput({ name: 'Ana' }));
+    await repositories.session.setActiveMode('par');
+    const other = createMockRepositories(undefined, { actorId: 'segundo' });
+    await other.profiles.saveCurrent(buildProfileInput({ name: 'Segundo' }));
+    expect(await other.session.isOnboarded()).toBe(false);
+    await other.session.setActiveMode('lockin');
+
+    // La sesión principal no se ha movido.
+    expect(await repositories.session.get()).toMatchObject({ activeMode: 'par' });
+    expect(await other.session.get()).toMatchObject({ activeMode: 'lockin' });
+    expect(await other.session.isOnboarded()).toBe(true);
+
+    await other.session.deleteMyAccount();
+
+    expect(await other.session.get()).toMatchObject({ profileId: null, activeMode: null });
+    expect(await other.profiles.getCurrent()).toBeNull();
+    // La cuenta de la app, intacta.
+    expect(await repositories.session.isOnboarded()).toBe(true);
+    expect((await repositories.profiles.getCurrent())?.name).toBe('Ana');
   });
 });

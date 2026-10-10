@@ -25,7 +25,7 @@ import {
   SessionWindowError,
 } from '../session-errors';
 import { isSessionBlocks, isValidStartsAt } from '../sessions';
-import { defaultMockStore } from './store';
+import { defaultMockStore, isBlockedPair } from './store';
 
 import type { MockStore } from './store';
 import type { RoomRepository } from '../repositories';
@@ -58,16 +58,26 @@ export function createMockRoomRepository(
       (member) => member.roomId === roomId && member.profileId === profileId
     );
 
-  /** La fila del actor si la sala le es visible: existe y no la rechazó. */
+  /**
+   * La fila del actor si la sala le es visible: existe, no la rechazó y quien
+   * convoca no tiene un bloqueo con él (espejo de `is_room_unblocked`).
+   */
   const myRow = (roomId: string): RoomMember | null => {
     const row = rowOf(roomId, actorId);
-    return row && row.status !== 'rechazada' ? row : null;
+    if (!row || row.status === 'rechazada') return null;
+    const room = getState().rooms.find((candidate) => candidate.id === roomId);
+    if (room && isBlockedPair(getState(), actorId, room.hostId)) return null;
+    return row;
   };
 
   const matchIdsOfActor = (): Set<string> =>
     new Set(
       getState()
-        .matches.filter((match) => match.profileIds.includes(actorId))
+        .matches.filter(
+          (match) =>
+            match.profileIds.includes(actorId) &&
+            !isBlockedPair(getState(), match.profileIds[0], match.profileIds[1])
+        )
         .flatMap((match) => match.profileIds.filter((id) => id !== actorId))
     );
 

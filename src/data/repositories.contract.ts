@@ -191,8 +191,11 @@ export interface ContractBackend {
 export interface SafetyPair {
   a: Repositories;
   b: Repositories;
+  /** Tercera persona: hace falta para convocar una sala (2-4 invitadas). */
+  c: Repositories;
   aId: string;
   bId: string;
+  cId: string;
   /**
    * Comprueba que el reporte quedó guardado con estos datos (si el backend
    * puede inspeccionarlo) y que ningún cliente puede leer reportes.
@@ -2212,16 +2215,19 @@ function describeSafetyContract(backend: ContractBackend): void {
     let pair: SafetyPair;
     let a: Repositories;
     let b: Repositories;
+    let c: Repositories;
     let aId: string;
     let bId: string;
+    let cId: string;
 
     beforeEach(async () => {
       // Toda la preparación específica del backend (clientes, sesiones, limpieza)
       // vive en su arnés: aquí solo hay comportamiento de producto.
       pair = await backend.safetyPair();
-      ({ a, b, aId, bId } = pair);
+      ({ a, b, c, aId, bId, cId } = pair);
       await a.profiles.saveCurrent(buildProfileInput({ name: 'Seguridad A', lookingFor: 'par' }));
       await b.profiles.saveCurrent(buildProfileInput({ name: 'Seguridad B', lookingFor: 'par' }));
+      await c.profiles.saveCurrent(buildProfileInput({ name: 'Seguridad C', lookingFor: 'par' }));
     });
 
     afterEach(async () => {
@@ -2287,6 +2293,68 @@ function describeSafetyContract(backend: ContractBackend): void {
       await a.profiles.block(bId);
       expect((await a.discovery.recordDecision(bId, 'like')).match).toBeNull();
       expect((await b.discovery.recordDecision(aId, 'like')).match).toBeNull();
+    });
+
+    const inOneHour = () => new Date(Date.now() + 60 * 60_000).toISOString();
+
+    it('tras bloquear, la otra persona no responde ni lee la sesión, y nadie propone', async () => {
+      const matchId = await matchPair();
+      const proposed = await a.sessions.propose({
+        matchId,
+        startsAt: inOneHour(),
+        blocks: 1,
+      });
+      expect((await b.sessions.getById(proposed.id))?.id).toBe(proposed.id);
+      await a.profiles.block(bId);
+      expect(await b.sessions.getById(proposed.id)).toBeNull();
+      expect(await b.sessions.getActive(matchId)).toBeNull();
+      await expect(b.sessions.respond(proposed.id, 'aceptada')).rejects.toBeTruthy();
+      await expect(b.sessions.join(proposed.id)).rejects.toBeTruthy();
+      await expect(
+        b.sessions.propose({ matchId, startsAt: inOneHour(), blocks: 1 })
+      ).rejects.toBeTruthy();
+      await expect(a.sessions.cancel(proposed.id)).rejects.toBeTruthy();
+    });
+
+    it('tras bloquear, el acuerdo de socios no se lee ni se escribe', async () => {
+      const matchId = await matchPair();
+      await a.agreement.answer({ matchId, topic: 'horizonte', option: '1-ano' });
+      await b.profiles.block(aId);
+      for (const side of [a, b]) {
+        await expect(side.agreement.get(matchId)).rejects.toBeTruthy();
+        await expect(
+          side.agreement.answer({ matchId, topic: 'horizonte', option: '3-meses' })
+        ).rejects.toBeTruthy();
+      }
+    });
+
+    async function trioRoom() {
+      await b.discovery.recordDecision(aId, 'like');
+      await a.discovery.recordDecision(bId, 'like');
+      await c.discovery.recordDecision(aId, 'like');
+      await a.discovery.recordDecision(cId, 'like');
+      return a.rooms.create({ inviteeIds: [bId, cId], startsAt: inOneHour(), blocks: 1 });
+    }
+
+    it('tras bloquear al anfitrión, su sala desaparece y no se responde; la otra invitada la sigue viendo', async () => {
+      const view = await trioRoom();
+      const roomId = view.room.id;
+      expect((await b.rooms.listLive()).map((r) => r.room.id)).toContain(roomId);
+      await b.profiles.block(aId);
+      expect(await b.rooms.listLive()).toEqual([]);
+      expect(await b.rooms.getById(roomId)).toBeNull();
+      await expect(b.rooms.respond(roomId, 'aceptada')).rejects.toBeTruthy();
+      expect((await c.rooms.listLive()).map((r) => r.room.id)).toContain(roomId);
+    });
+
+    it('el anfitrión que bloquea a una invitada ya no la ve en sus salas ni la puede convocar', async () => {
+      const view = await trioRoom();
+      await a.profiles.block(bId);
+      expect(await b.rooms.listLive()).toEqual([]);
+      await expect(b.rooms.respond(view.room.id, 'aceptada')).rejects.toBeTruthy();
+      await expect(
+        a.rooms.create({ inviteeIds: [bId, cId], startsAt: inOneHour(), blocks: 1 })
+      ).rejects.toBeTruthy();
     });
 
     it('bloquear dos veces es idempotente', async () => {

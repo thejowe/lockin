@@ -109,9 +109,20 @@ export interface MockStore {
   reset(): void;
   /** Elimina la cuenta propia en cascada, conservando los datos ajenos. */
   deleteCurrentUser(): void;
+  /** Igual, para cualquier actor del mock (los clientes secundarios de los tests). */
+  deleteUser(userId: string): void;
   createId(prefix: string): string;
   subscribeTo(topic: string, listener: () => void): () => void;
   notify(topic: string): void;
+}
+
+/**
+ * ¿Hay un bloqueo entre las dos personas, en cualquier dirección? Es el espejo de
+ * `has_profile_block`: lo comparten el deck, los matches, los mensajes, las
+ * sesiones, las salas y el acuerdo del mock.
+ */
+export function isBlockedPair(state: MockState, a: string, b: string): boolean {
+  return Boolean(state.userBlocks.get(a)?.has(b) || state.userBlocks.get(b)?.has(a));
 }
 
 export function createMockStore(): MockStore {
@@ -153,7 +164,10 @@ export function createMockStore(): MockStore {
     },
 
     deleteCurrentUser() {
-      const userId = CURRENT_USER_ID;
+      this.deleteUser(CURRENT_USER_ID);
+    },
+
+    deleteUser(userId) {
       const matchIds = new Set(
         state.matches.filter((match) => match.profileIds.includes(userId)).map((match) => match.id)
       );
@@ -175,9 +189,15 @@ export function createMockStore(): MockStore {
       state.userReports = state.userReports.filter(
         (report) => report.reporterId !== userId && report.reportedId !== userId
       );
-      // Estos dos índices contienen solo decisiones de/a la cuenta propia.
-      state.decisions.clear();
-      state.incomingLikes.clear();
+      if (userId === CURRENT_USER_ID) {
+        // Estos dos índices contienen solo decisiones de/a la cuenta propia.
+        state.decisions.clear();
+        state.incomingLikes.clear();
+      } else {
+        // Lo que la cuenta propia decidió sobre quien se va, o recibió de ella.
+        state.decisions.delete(userId);
+        state.incomingLikes.delete(userId);
+      }
       state.matches = state.matches.filter((match) => !matchIds.has(match.id));
       state.messages = state.messages.filter(
         (message) => !matchIds.has(message.matchId) && message.senderId !== userId
@@ -197,7 +217,7 @@ export function createMockStore(): MockStore {
       state.roomMembers = state.roomMembers.filter(
         (member) => !roomIds.has(member.roomId) && member.profileId !== userId
       );
-      state.session = { profileId: null, activeMode: null };
+      if (userId === CURRENT_USER_ID) state.session = { profileId: null, activeMode: null };
       listeners.forEach((set) => set.forEach((listener) => listener()));
     },
 

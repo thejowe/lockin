@@ -13,7 +13,7 @@ import {
   validateAnswerInput,
 } from '../agreement';
 import { SEED_AGREEMENT_ANSWERS } from './seed';
-import { defaultMockStore } from './store';
+import { defaultMockStore, isBlockedPair } from './store';
 
 import type { MockStore } from './store';
 import type { AgreementRepository } from '../repositories';
@@ -39,7 +39,11 @@ export function createMockAgreementRepository(
   /** Mismas puertas y en el mismo orden que las RPC: primero LI004, luego LI005. */
   const guard = (matchId: string) => {
     const match = store.state.matches.find((candidate) => candidate.id === matchId);
-    if (!match || !match.profileIds.includes(actorId)) {
+    if (
+      !match ||
+      !match.profileIds.includes(actorId) ||
+      isBlockedPair(store.state, match.profileIds[0], match.profileIds[1])
+    ) {
       throw new AgreementForbiddenError('agreement: el match no es tuyo');
     }
     if (match.mode !== 'par') {

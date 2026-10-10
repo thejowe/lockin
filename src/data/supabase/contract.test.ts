@@ -541,7 +541,7 @@ const supabaseBackend: ContractBackend = {
   },
 
   async safetyPair() {
-    // Dos usuarios anónimos NUEVOS, aparte del usuario del test y de los de
+    // Tres usuarios anónimos NUEVOS, aparte del usuario del test y de los de
     // apoyo; cada uno con su propio cliente y su propio juego de repositorios.
     const { createSupabaseRepositories } = require('./index') as typeof import('./index');
     const actors: {
@@ -549,7 +549,7 @@ const supabaseBackend: ContractBackend = {
       id: string;
       repositories: Repositories;
     }[] = [];
-    for (let index = 0; index < 2; index += 1) {
+    for (let index = 0; index < 3; index += 1) {
       const client = createClient<Database>(url!, anonKey!, {
         auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
       });
@@ -568,8 +568,10 @@ const supabaseBackend: ContractBackend = {
     return {
       a: actors[0].repositories,
       b: actors[1].repositories,
+      c: actors[2].repositories,
       aId: actors[0].id,
       bId: actors[1].id,
+      cId: actors[2].id,
       async expectReportsPrivate() {
         // Sin política SELECT: 42501 (permiso denegado) o, como mucho, vacío.
         for (const { client } of actors) {

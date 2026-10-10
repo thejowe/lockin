@@ -11,6 +11,7 @@ import {
   CURRENT_USER_ID,
   defaultMockStore,
   initialsFrom,
+  isBlockedPair,
   matchesMode,
   nowIso,
   resolveMatchMode,
@@ -102,14 +103,18 @@ export function createMockRepositories(
     actorId === CURRENT_USER_ID
       ? getState().session
       : (getState().actorSessions.get(actorId) ?? { profileId: null, activeMode: null });
+  const writeActorSession = (next: Session): void => {
+    const state = getState();
+    if (actorId === CURRENT_USER_ID) state.session = next;
+    else state.actorSessions.set(actorId, next);
+  };
   const actorDecisions = (): Map<string, Decision> => {
     if (actorId === CURRENT_USER_ID) return getState().decisions;
     let decisions = getState().actorDecisions.get(actorId);
     if (!decisions) getState().actorDecisions.set(actorId, (decisions = new Map()));
     return decisions;
   };
-  const isBlocked = (a: string, b: string): boolean =>
-    Boolean(getState().userBlocks.get(a)?.has(b) || getState().userBlocks.get(b)?.has(a));
+  const isBlocked = (a: string, b: string): boolean => isBlockedPair(getState(), a, b);
   function checkTarget(profileId: string): void {
     if (profileId === actorId)
       throw Object.assign(new Error('No puedes bloquearte ni reportarte a ti mismo.'), {
@@ -148,28 +153,27 @@ export function createMockRepositories(
 
   const session: SessionRepository = {
     async get(): Promise<Session> {
-      return { ...getState().session };
+      return { ...actorSession() };
     },
 
     async setActiveMode(mode) {
-      const state = getState();
-      state.session = { ...state.session, activeMode: mode };
-      return { ...state.session };
+      writeActorSession({ ...actorSession(), activeMode: mode });
+      return { ...actorSession() };
     },
 
     async setProfileId(profileId) {
-      const state = getState();
-      state.session = { ...state.session, profileId };
-      return { ...state.session };
+      writeActorSession({ ...actorSession(), profileId });
+      return { ...actorSession() };
     },
 
     async isOnboarded() {
-      const { session: current } = getState();
+      const current = actorSession();
       return current.profileId !== null && current.activeMode !== null;
     },
 
     async deleteMyAccount() {
-      store.deleteCurrentUser();
+      // El actor seleccionado, no siempre la cuenta de la app.
+      store.deleteUser(actorId);
     },
   };
 

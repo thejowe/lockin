@@ -32,7 +32,7 @@ import {
   isValidStartsAt,
 } from '../sessions';
 import { pairStreak } from '../streaks';
-import { defaultMockStore } from './store';
+import { defaultMockStore, isBlockedPair } from './store';
 
 import type { MockStore } from './store';
 import type { LockInSessionRepository } from '../repositories';
@@ -74,7 +74,17 @@ export function createMockSessionRepository(
     );
   };
 
-  const isMember = (matchId: string) => membersOf(matchId).includes(actorId);
+  /**
+   * Miembro del match Y sin bloqueo con la otra persona: espejo de
+   * `lock_member_session`/`is_unblocked_match`. Un match bloqueado «no es tuyo».
+   */
+  const isMember = (matchId: string) => {
+    const members = membersOf(matchId);
+    return (
+      members.includes(actorId) &&
+      !isBlockedPair(getState(), members[0], members[1] ?? members[0])
+    );
+  };
 
   /** La sesión si existe y es de un match del actor; si no, como si no existiera. */
   const visible = (sessionId: string): LockInSession | null =>
