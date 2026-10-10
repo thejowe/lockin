@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, within } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
 import { ReportForm } from './report-form';
 
@@ -84,6 +85,56 @@ describe('formulario de reporte', () => {
       await fireEvent.press(screen.getByRole('radio', { name: 'Spam o estafa' }));
       await fireEvent.press(screen.getByRole('button', { name: 'Enviar reporte' }));
       expect(onSubmit).toHaveBeenCalledWith('spam', '');
+    });
+
+    describe('con el teclado abierto', () => {
+      const keyboard = jest.requireMock('react-native-keyboard-controller') as {
+        useKeyboardState: jest.Mock;
+      };
+      const previousState = keyboard.useKeyboardState.getMockImplementation();
+
+      afterEach(() => {
+        keyboard.useKeyboardState.mockImplementation(previousState);
+      });
+
+      function openKeyboard(isVisible: boolean) {
+        keyboard.useKeyboardState.mockImplementation(
+          (selector?: (state: { isVisible: boolean; height: number }) => unknown) => {
+            const state = { isVisible, height: 336 };
+            return selector ? selector(state) : state;
+          }
+        );
+      }
+
+      async function renderAnchored() {
+        await render(
+          <ReportForm
+            name="Núria"
+            anchorActions
+            onSubmit={jest.fn(async () => {})}
+            onCancel={jest.fn()}
+            onSubmitted={jest.fn()}
+          />
+        );
+        return screen.getByTestId('report-anchored');
+      }
+
+      it('reserva el teclado al pie para que las acciones queden sobre él', async () => {
+        openKeyboard(true);
+        const root = await renderAnchored();
+        // Sin medida del borde (no hay nativo en Jest) se reserva el teclado entero.
+        expect(StyleSheet.flatten(root.props.style).paddingBottom).toBe(336);
+        // Las acciones siguen fuera del scroll, accesibles y pulsables.
+        const actions = within(screen.getByTestId('report-actions'));
+        expect(actions.getByRole('button', { name: 'Enviar reporte' })).toBeTruthy();
+        expect(actions.getByRole('button', { name: 'Cancelar reporte' })).toBeTruthy();
+      });
+
+      it('con el teclado cerrado no cambia nada', async () => {
+        openKeyboard(false);
+        const root = await renderAnchored();
+        expect(StyleSheet.flatten(root.props.style).paddingBottom).toBe(0);
+      });
     });
 
     it('sin anclar no añade ningún scroll propio (el padre ya lo pone)', async () => {

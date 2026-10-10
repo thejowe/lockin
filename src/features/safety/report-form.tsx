@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { Button } from '@/components/button';
@@ -6,6 +6,8 @@ import { ThemedText } from '@/components/themed-text';
 import { Radii, Spacing, Stroke } from '@/constants/theme';
 import { REPORT_MAX_LENGTH, REPORT_REASONS, type ReportReason } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
+
+import { useReportKeyboardLift } from './keyboard-lift';
 
 const reasonLabels: Record<ReportReason, string> = {
   acoso: 'Acoso',
@@ -41,6 +43,8 @@ export function ReportForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
   const submitting = useRef(false);
+  const scrollRef = useRef<ScrollView>(null);
+  const detailsFocused = useRef(false);
   const length = Array.from(details).length;
   const valid = reason !== null && length <= REPORT_MAX_LENGTH;
 
@@ -96,6 +100,13 @@ export function ReportForm({
         value={details}
         onChangeText={setDetails}
         editable={!busy}
+        onFocus={() => {
+          detailsFocused.current = true;
+          scrollRef.current?.scrollToEnd({ animated: false });
+        }}
+        onBlur={() => {
+          detailsFocused.current = false;
+        }}
         multiline
         maxLength={REPORT_MAX_LENGTH}
         textAlignVertical="top"
@@ -142,18 +153,9 @@ export function ReportForm({
 
   if (anchorActions)
     return (
-      <View style={styles.anchoredRoot}>
-        <ScrollView
-          testID="report-fields"
-          style={styles.anchoredScroll}
-          contentContainerStyle={styles.root}
-          keyboardShouldPersistTaps="handled">
-          {fields}
-        </ScrollView>
-        <View testID="report-actions" style={styles.actions}>
-          {actions}
-        </View>
-      </View>
+      <AnchoredLayout scrollRef={scrollRef} detailsFocused={detailsFocused} actions={actions}>
+        {fields}
+      </AnchoredLayout>
     );
 
   return (
@@ -164,8 +166,51 @@ export function ReportForm({
   );
 }
 
+/**
+ * Campos con scroll propio y acciones fijas al pie. El pie reserva el trozo de
+ * teclado que invade el contenedor (ver `keyboard-lift.ts`): el scroll se
+ * encoge y las acciones quedan por encima del teclado.
+ */
+function AnchoredLayout({
+  scrollRef,
+  detailsFocused,
+  actions,
+  children,
+}: {
+  scrollRef: RefObject<ScrollView | null>;
+  detailsFocused: RefObject<boolean>;
+  actions: ReactNode;
+  children: ReactNode;
+}) {
+  const { ref, onLayout, lift } = useReportKeyboardLift();
+
+  // Al encogerse el scroll, «Detalles» (último campo) podría quedar fuera.
+  useEffect(() => {
+    if (lift > 0 && detailsFocused.current) scrollRef.current?.scrollToEnd({ animated: false });
+  }, [lift, detailsFocused, scrollRef]);
+
+  return (
+    <View ref={ref} onLayout={onLayout} collapsable={false} style={styles.anchoredOuter}>
+      <View testID="report-anchored" style={[styles.anchoredRoot, { paddingBottom: lift }]}>
+        <ScrollView
+          ref={scrollRef}
+          testID="report-fields"
+          style={styles.anchoredScroll}
+          contentContainerStyle={styles.root}
+          keyboardShouldPersistTaps="handled">
+          {children}
+        </ScrollView>
+        <View testID="report-actions" style={styles.actions}>
+          {actions}
+        </View>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   root: { gap: Spacing.two },
+  anchoredOuter: { flex: 1 },
   anchoredRoot: { flex: 1, gap: Spacing.two },
   anchoredScroll: { flex: 1 },
   actions: { gap: Spacing.two },
