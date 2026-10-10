@@ -1724,8 +1724,9 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       2
     );
 
-    // Cascadas: un miembro invalida la sala y quien convoca puede borrarse sin
-    // que touch_room tropiece con la sala que también está desapareciendo.
+    // Cascadas: un miembro invalida la sala. Quien convoca puede borrarse: la
+    // sala se queda sin convocante (set null, 20261010000100) y solo cae su fila
+    // de miembro, sin que touch_room tropiece.
     const beforeDelete = await roomUpdated(presenceRoom.id);
     await db.exec(`reset role; delete from public.profiles where id = '${roomBea}';`);
     assert.ok(
@@ -1733,8 +1734,20 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       'borrar miembro toca updated_at'
     );
     await db.exec(`delete from public.profiles where id = '${roomAna}';`);
-    assert.deepEqual((await db.query('select id from public.lockin_rooms')).rows, []);
-    assert.deepEqual((await db.query('select room_id from public.room_members')).rows, []);
+    assert.deepEqual(
+      (await db.query('select id from public.lockin_rooms where host_id is not null')).rows,
+      [],
+      'ninguna sala conserva como convocante a una cuenta borrada'
+    );
+    assert.ok((await db.query('select id from public.lockin_rooms')).rows.length > 0);
+    assert.deepEqual(
+      (
+        await db.query(
+          `select room_id from public.room_members where profile_id in ('${roomAna}', '${roomBea}')`
+        )
+      ).rows,
+      []
+    );
     await db.exec('rollback;');
 
     // Fixture pequeña e independiente para el reloj transaccional y las 21 salas.
@@ -1779,11 +1792,17 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
     await db.exec('rollback;');
     console.log('Salas grupales: 15 casos del plan, ciego, permisos, reloj y presencia: OK');
 
-    // Borrar mi cuenta: `delete_my_account()` borra a quien llama y a nadie más, y
-    // todo lo suyo cae en cascada sin tocar lo ajeno.
+    // Borrar mi cuenta: `delete_my_account()` borra a quien llama y a nadie más.
+    // Lo suyo cae en cascada sin tocar lo ajeno, y las salas que convocó siguen
+    // en pie para quienes participan: las futuras, canceladas; el resto, intactas.
     const delAna = person('f200');
     const delBea = person('f201');
     const delCarla = person('f202');
+    const roomFutura = person('f210');
+    const roomEmpezada = person('f211');
+    const roomDeBea = person('f212');
+    const sesionAnaBea = person('f220');
+    const sesionBeaCarla = person('f221');
     await db.exec(`begin;
       insert into auth.users (id, email) values
         ('${delAna}', 'ana@lockin.test'), ('${delBea}', 'bea@lockin.test'), ('${delCarla}', 'carla@lockin.test');
@@ -1799,10 +1818,45 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
         (least('${delBea}'::uuid, '${delCarla}'::uuid), greatest('${delBea}'::uuid, '${delCarla}'::uuid), 'lockin');
       insert into public.messages (match_id, sender_id, body)
         select id, '${delBea}', 'hola' from public.matches;
-      insert into public.lockin_rooms (host_id, starts_at, blocks)
-        values ('${delAna}', clock_timestamp() + interval '1 hour', 1);`);
+
+      -- Una sesión 1:1 por match, con asistencia, valoración y acuerdo.
+      insert into public.lockin_sessions (id, match_id, proposed_by, starts_at, blocks, status, responded_at)
+      select s.id::uuid, m.id, '${delBea}', now() - interval '2 hours', 1, 'aceptada', now() - interval '3 hours'
+        from (values ('${sesionAnaBea}', '${delAna}'), ('${sesionBeaCarla}', '${delCarla}')) as s(id, otra)
+        join public.matches m
+          on '${delBea}'::uuid in (m.profile_a, m.profile_b) and s.otra::uuid in (m.profile_a, m.profile_b);
+      insert into public.session_attendance (session_id, profile_id, joined_at)
+      select s.id, p.id, now() - interval '110 minutes'
+        from public.lockin_sessions s
+        join public.matches m on m.id = s.match_id
+        join public.profiles p on p.id in (m.profile_a, m.profile_b);
+      insert into public.session_ratings (session_id, profile_id, rating)
+      select s.id, m.profile_a, 'bien' from public.lockin_sessions s join public.matches m on m.id = s.match_id;
+      insert into public.agreement_answers (match_id, profile_id, topic, option)
+      select m.id, m.profile_a, 'dedicacion', 'completa' from public.matches m;
+
+      -- Salas: la futura y la ya empezada de Ana, y una de Bea donde Ana es invitada.
+      insert into public.lockin_rooms (id, host_id, starts_at, blocks) values
+        ('${roomFutura}', '${delAna}', clock_timestamp() + interval '1 hour', 1),
+        ('${roomEmpezada}', '${delAna}', clock_timestamp() - interval '10 minutes', 1),
+        ('${roomDeBea}', '${delBea}', clock_timestamp() + interval '2 hours', 1);
+      insert into public.room_members (room_id, profile_id, status, responded_at) values
+        ('${roomFutura}', '${delAna}', 'aceptada', now()),
+        ('${roomFutura}', '${delBea}', 'aceptada', now()),
+        ('${roomFutura}', '${delCarla}', 'invitada', null),
+        ('${roomEmpezada}', '${delAna}', 'aceptada', now()),
+        ('${roomEmpezada}', '${delBea}', 'aceptada', now()),
+        ('${roomDeBea}', '${delBea}', 'aceptada', now()),
+        ('${roomDeBea}', '${delAna}', 'aceptada', now()),
+        ('${roomDeBea}', '${delCarla}', 'invitada', null);`);
     const countOf = async (table) =>
       Number((await db.query(`select count(*)::int as n from ${table}`)).rows[0].n);
+    const roomOf = async (id) =>
+      (
+        await db.query(`select host_id, cancelled_at is not null as cancelada,
+            (select array_agg(profile_id order by profile_id) from public.room_members where room_id = r.id) as miembros
+           from public.lockin_rooms r where id = '${id}'`)
+      ).rows[0];
 
     // Sin sesión: LI007, y no se borra nada.
     await db.exec(`reset role;
@@ -1811,10 +1865,24 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
     assert.equal(await sonda('select public.delete_my_account()'), 'LI007');
     await db.exec('reset role;');
     assert.equal(await countOf('auth.users'), 3);
+    assert.equal((await roomOf(roomFutura)).cancelada, false, 'LI007 no cancela salas');
 
-    // `anon` no puede ni ejecutarla.
+    // `anon` no puede ni ejecutarla, y PUBLIC tampoco tiene EXECUTE.
     await db.exec('reset role; set local role anon;');
     assert.equal(await sonda('select public.delete_my_account()'), '42501');
+    await db.exec('reset role;');
+    assert.deepEqual(
+      (
+        await db.query(`select
+          has_function_privilege('anon', 'public.delete_my_account()', 'execute') as anon,
+          has_function_privilege('authenticated', 'public.delete_my_account()', 'execute') as authenticated,
+          exists (
+            select 1 from pg_proc p, aclexplode(p.proacl) a
+             where p.oid = 'public.delete_my_account()'::regprocedure and a.grantee = 0
+          ) as public`)
+      ).rows[0],
+      { anon: false, authenticated: true, public: false }
+    );
 
     // Ana borra su cuenta: desaparece ella y lo que cuelga de ella.
     await actingAs(delAna);
@@ -1831,10 +1899,51 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
     );
     assert.equal(await countOf('public.matches'), 1, 'solo sobrevive el match de Bea y Carla');
     assert.equal(await countOf('public.messages'), 1, 'los mensajes del match de Ana caen con él');
-    assert.equal(await countOf('public.lockin_rooms'), 0, 'la sala que convocó Ana cae con ella');
+    assert.deepEqual(
+      (await db.query('select id from public.lockin_sessions')).rows.map((row) => row.id),
+      [sesionBeaCarla],
+      'la sesión del match de Ana cae; la de Bea y Carla sigue'
+    );
+    assert.equal(await countOf('public.session_attendance'), 2, 'asistencia de la sesión que sigue');
+    assert.equal(await countOf('public.session_ratings'), 1, 'valoración de la sesión que sigue');
+    assert.equal(await countOf('public.agreement_answers'), 1, 'acuerdo del match que sigue');
+
+    // La sala futura de Ana NO cae con ella: queda cancelada y sin convocante,
+    // con Bea y Carla dentro. Es lo que ven en pantalla en vez de verla desaparecer.
+    assert.deepEqual(await roomOf(roomFutura), {
+      host_id: null,
+      cancelada: true,
+      miembros: survivors,
+    });
+    // La que ya había empezado no se cancela con retraso: se conserva tal cual.
+    assert.deepEqual(await roomOf(roomEmpezada), {
+      host_id: null,
+      cancelada: false,
+      miembros: [delBea],
+    });
+    // Donde Ana era invitada, la sala sigue de Bea; solo cae la fila de Ana.
+    assert.deepEqual(await roomOf(roomDeBea), {
+      host_id: delBea,
+      cancelada: false,
+      miembros: survivors,
+    });
+
+    // Quienes se quedan ven la sala cancelada, y nadie manda en una sala sin
+    // convocante: con `<>` el nulo dejaba pasar a cualquiera.
+    await actingAs(delBea);
+    assert.deepEqual(
+      (
+        await db.query(`select id, cancelled_at is not null as cancelada
+          from public.lockin_rooms where id = '${roomFutura}'`)
+      ).rows,
+      [{ id: roomFutura, cancelada: true }]
+    );
+    assert.equal(await sonda(`select public.cancel_room('${roomFutura}')`), 'LI004');
+    assert.equal(await sonda(`select public.cancel_room('${roomEmpezada}')`), 'LI004');
+    await db.exec('reset role;');
     await db.exec('rollback;');
     console.log(
-      'Borrar mi cuenta: LI007 sin sesión, anon sin permiso y cascada sin tocar lo ajeno: OK'
+      'Borrar mi cuenta: LI007, anon/PUBLIC sin permiso, cascada sin tocar lo ajeno y salas ajenas canceladas: OK'
     );
 
     // Ejecutar las definiciones reales de las dos funciones, sin sembrar cuentas.

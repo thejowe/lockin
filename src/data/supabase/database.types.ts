@@ -123,7 +123,7 @@ export type SessionRow = {
 /** Fila de public.lockin_rooms. Solo se escribe por RPC. */
 export type RoomRow = {
   id: string;
-  host_id: string;
+  host_id: string | null;
   starts_at: string;
   blocks: SessionBlocks;
   cancelled_at: string | null;

@@ -254,7 +254,7 @@ export function parseMigrations(sql) {
       // esquema que no se está cotejando, y eso no puede ser un verde silencioso.
       const body = m[2].trim().toLowerCase();
       const known =
-        /^(enable|disable|force|no force) row level security$|^replica identity |^add constraint /;
+        /^(enable|disable|force|no force) row level security$|^replica identity |^add constraint |^drop constraint |^alter column \w+ (?:drop|set) not null$/;
       if (!known.test(body)) {
         throw new Error(
           `alter table public.${m[1]} con forma desconocida "${body}": parser desfasado`

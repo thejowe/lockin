@@ -358,8 +358,8 @@ export type RoomMemberStatus = 'invitada' | 'aceptada' | 'rechazada';
  */
 export interface LockInRoom {
   id: string;
-  /** Quien la convocó. No tiene más poder que cancelarla antes de empezar. */
-  hostId: string;
+  /** Quien la convocó; `null` si borró su cuenta. Solo puede cancelarla antes de empezar. */
+  hostId: string | null;
   /** ISO. Inicio del primer bloque. */
   startsAt: string;
   blocks: SessionBlocks;
