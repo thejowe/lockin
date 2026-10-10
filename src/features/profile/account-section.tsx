@@ -247,12 +247,11 @@ export function AccountSection({ onDeleted }: AccountSectionProps = {}) {
           </ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
             Esta cuenta solo existe en este teléfono. Si cierras sesión, perderás el acceso a tu
-            perfil, tus matches y tus conversaciones desde este dispositivo y no podrás
-            recuperarlo.
+            perfil, tus matches y tus conversaciones desde este dispositivo y no podrás recuperarlo.
           </ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            Cerrar sesión no borra tus datos del servidor; para eso está «Eliminar mi cuenta». Si
-            no quieres perder el acceso, asegura antes la cuenta con un email.
+            Cerrar sesión no borra tus datos del servidor; para eso está «Eliminar mi cuenta». Si no
+            quieres perder el acceso, asegura antes la cuenta con un email.
           </ThemedText>
 
           <SecondaryButton
