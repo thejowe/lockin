@@ -12,10 +12,10 @@
  * archivo de la app.
  */
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 
 import { resilientFetch } from './resilient-fetch';
+import { secureAuthStorage } from './secure-storage';
 
 import type { Database } from './database.types';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -60,12 +60,10 @@ export function getSupabaseClient(): LockInSupabaseClient {
 
   client = createClient<Database>(normalizeSupabaseUrl(rawUrl), anonKey, {
     auth: {
-      // La sesión sobrevive al reinicio de la app. `AsyncStorage` guarda el
-      // refresh token en claro en el almacenamiento privado de la app; para el
-      // MVP es el compromiso estándar en React Native. Si el producto llega a
-      // manejar datos sensibles, esto debe pasar a `expo-secure-store`
-      // (con el troceado que exige su límite de 2048 bytes).
-      storage: AsyncStorage,
+      // La sesión sobrevive al reinicio de la app. El refresh token va al
+      // Keystore/Keychain (`secure-storage.ts`), con migración desde la copia en
+      // claro de `AsyncStorage` y vuelta atrás si el almacén seguro falla.
+      storage: secureAuthStorage,
       autoRefreshToken: true,
       persistSession: true,
       // No hay callback OAuth en una URL: en nativo no hay nada que detectar.

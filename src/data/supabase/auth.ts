@@ -64,6 +64,7 @@ import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 
 import { getSupabaseClient, peekSupabaseClient } from './client';
+import { secureAuthStorage } from './secure-storage';
 
 import type { LockInSupabaseClient } from './client';
 import type { SignOutOptions } from '../types';
@@ -237,7 +238,7 @@ function randomHex(bytes: number): string {
 }
 
 async function readDeviceAccount(): Promise<DeviceAccount | null> {
-  const stored = await AsyncStorage.getItem(DEVICE_ACCOUNT_KEY);
+  const stored = await secureAuthStorage.getItem(DEVICE_ACCOUNT_KEY);
   if (!stored) return null;
 
   try {
@@ -290,7 +291,7 @@ async function signInWithDeviceAccount(): Promise<string> {
     );
   }
 
-  await AsyncStorage.setItem(DEVICE_ACCOUNT_KEY, JSON.stringify(account));
+  await secureAuthStorage.setItem(DEVICE_ACCOUNT_KEY, JSON.stringify(account));
 
   // Con "Confirm email" desactivado, `signUp` ya deja sesión abierta. Si no la
   // hubiera dejado, este login la abre.
@@ -593,7 +594,7 @@ export async function completeAuthLink(url: string): Promise<AccountState> {
   }
 
   const state = await getAccountState();
-  if (state.recoverable) await AsyncStorage.removeItem(DEVICE_ACCOUNT_KEY);
+  if (state.recoverable) await secureAuthStorage.removeItem(DEVICE_ACCOUNT_KEY);
   return state;
 }
 
@@ -640,7 +641,7 @@ export async function signOut(options: SignOutOptions = {}): Promise<void> {
   const { error } = options.scope
     ? await auth.signOut({ scope: options.scope })
     : await auth.signOut();
-  await AsyncStorage.removeItem(DEVICE_ACCOUNT_KEY);
+  await secureAuthStorage.removeItem(DEVICE_ACCOUNT_KEY);
   if (error) throw toAccountError(error);
 }
 

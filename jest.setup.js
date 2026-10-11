@@ -204,3 +204,20 @@ jest.mock('react-native-webrtc', () => {
     mediaDevices,
   };
 });
+
+// `expo-secure-store` es nativo y sus stubs por defecto no retienen nada: con
+// ellos, la sesión de Supabase escrita por `secure-storage.ts` no se podría
+// releer (el contrato contra Supabase real la necesita). Este mock es un
+// almacén en memoria que se vacía solo al reiniciar el proceso de Jest.
+jest.mock('expo-secure-store', () => {
+  const store = new Map();
+  return {
+    getItemAsync: jest.fn(async (key) => (store.has(key) ? store.get(key) : null)),
+    setItemAsync: jest.fn(async (key, value) => {
+      store.set(key, value);
+    }),
+    deleteItemAsync: jest.fn(async (key) => {
+      store.delete(key);
+    }),
+  };
+});

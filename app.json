@@ -48,7 +48,8 @@
           "cameraPermission": "cofounder necesita la cámara para la llamada de vídeo de la sesión Lock-In.",
           "microphonePermission": "cofounder necesita el micrófono para la llamada de vídeo de la sesión Lock-In."
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,
