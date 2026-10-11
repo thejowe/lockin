@@ -2,6 +2,18 @@
 
 Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>.md` — márcalo ahí, no aquí.
 
+## ▶ Al retomar — estado del 2026-10-11 (el más reciente; lo de más abajo es histórico)
+
+**El plan está agotado: no queda casilla para ningún agente.** El remoto `grrzmzktrhksbttpbblg` está al día (todas las migraciones aplicadas hasta `20261010120000`; `cron.job` tiene `lockin-purge-old-user-reports` a las `20 3 * * *`); Schema drift verde en local y remoto sobre `3c49aff` (run 38135186796) y el contrato Supabase pasa dentro de `ci.yml` (run 38135186820). `user_reports` tiene 1 fila. Las casillas de migración sin aplicar y de comprobador de `datos.md`/`perfil.md` quedan tachadas con su evidencia.
+
+**Solo es del usuario:**
+1. iPhone y cámara real (`todo/visual.md`, `todo/video.md`).
+2. Redirect URLs de Supabase Auth.
+3. Spec de salas pendiente de decidir.
+4. Páginas públicas (GitHub Pages), buzón de soporte y SCHEDULE_EXACT_ALARM.
+
+**Abierto pero no del plan:** `session_both_attended`, canal retenido de Realtime, y la consulta de saneamiento de «fechas ya falsificadas» (`sent_at > now()`), que no se ha corrido.
+
 ## ▶ Al retomar — estado del 2026-10-09 (preparación para tiendas)
 
 Frente nuevo fuera de las Fases 1–3: lo que Apple 5.1.1(v)/1.2 y Google Play exigen. Todo fusionado en

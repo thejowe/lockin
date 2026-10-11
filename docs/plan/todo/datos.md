@@ -2244,13 +2244,15 @@ quedan fuera de esta migración. Migración única:
 - [x] **Verificación:** `npm run test:schema` 75/75; `npx tsc --noEmit` limpio;
       `npx jest --maxWorkers=2 src/data/supabase` 11 suites pasan, 229 tests
       pasan y 129 saltan (la suite de contrato, que exige proyecto remoto).
-- [ ] **[usuario]** Migración **sin aplicar al remoto**. Hasta entonces H1 y H2
+- [x] **[usuario]** Migración **sin aplicar al remoto**. Hasta entonces H1 y H2
       siguen abiertos allí y `Schema drift` saldrá rojo (deriva legítima, no
       regresión). Aplicarla con el procedimiento habitual y comprobar que el job
       queda verde.
+      Verificado 2026-10-11: migración aplicada en `grrzmzktrhksbttpbblg` (todas hasta `20261010120000`; última registrada `20261010155438`); Schema drift verde en local y remoto sobre `3c49aff` (run 38135186796). H1 y H2 cerrados también allí.
 - [ ] **Fechas ya falsificadas en el remoto** (decisión aparte, sin automatizar):
       buscar `messages.sent_at > now()` o `matches.last_message_at > now()` y
       decidir si se sanean. Esta migración no borra ni reordena datos.
+      Nota 2026-10-11: la consulta de saneamiento no se ha corrido; sigue abierta (decisión aparte).
 
 ## Auditoría de seguridad 2026-10 (H3 y H4)
 
@@ -2278,10 +2280,11 @@ bloque para H3 y H4:
 - [x] Verificado: `npm run test:schema` (75 pasan), `npx tsc --noEmit`, jest
       de `src/data/supabase` y `src/features/room` (296 pasan; ejecutado en
       copia fuera de `.claude/worktrees`).
-- [ ] **[usuario] Aplicar la migración al proyecto remoto** (`supabase db
+- [x] **[usuario] Aplicar la migración al proyecto remoto** (`supabase db
       push`) y, tras desplegarla, revalidar/cerrar las conexiones Realtime ya
       abiertas: no se expulsan solas. NO aplicada desde este bloque.
       Después, `schema-drift` remoto debe seguir en verde.
+      Verificado 2026-10-11: aplicada (`20261009230200` incluida) y Schema drift remoto verde (run 38135186796). Las conexiones Realtime abiertas antes del despliegue no se expulsan solas; con la caché de autorización expirada o reconectada, la política nueva ya rige.
 
 ## Retención de reportes, cuentas inactivas y cabos del bloqueo (2026-10-10)
 
@@ -2294,4 +2297,5 @@ Migración `20261010120000_reports_retention_and_block_followups.sql`. **No apli
 - [x] Bloqueo y salas: `block_profile` rechaza al bloqueado en las salas del bloqueador sin empezar; política de `room_members` y `is_room_topic_member` (+ `is_room_free_of_member_blocks`); `match_streaks()` con `is_unblocked_match`.
 - [x] Mock con paridad (`block()`, `toView`, `deleteUser`, `purgeOldReports`) y casos en `schema-embedded.test.mjs`, `safety-followups.test.ts` y el contrato compartido.
 - [x] `supabase/schema-embedded.test.mjs`: la fixture de Auth gana `created_at`, `last_sign_in_at` y `auth.sessions`; `drift-check.test.mjs` lista las tres constraints nuevas.
-- [ ] **[orquesta] Aplicar la migración al remoto** y comprobar `select jobname, schedule from cron.job` (una fila).
+- [x] **[orquesta] Aplicar la migración al remoto** y comprobar `select jobname, schedule from cron.job` (una fila).
+      Verificado 2026-10-11: `20261010120000` aplicada; `cron.job` contiene `lockin-purge-old-user-reports` con `20 3 * * *` (una fila); Schema drift verde en local y remoto (run 38135186796).
