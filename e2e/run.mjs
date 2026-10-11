@@ -590,13 +590,13 @@ if (command === 'build') {
       ? xml.replace(/android:usesCleartextTraffic="[^"]*"/, 'android:usesCleartextTraffic="true"')
       : xml.replace('<application ', '<application android:usesCleartextTraffic="true" ')
   );
-  // El enlace del correo vuelve por el esquema `lockin` de app.json, que
+  // El enlace del correo vuelve por el esquema `cofounder` de app.json, que
   // `prebuild` convierte en un intent-filter. Sin él `am start` no encuentra a
   // quién entregar el enlace; mejor saberlo aquí que tras 15 min de emulador.
   if (registration) {
     assert.match(
       xml,
-      /android:scheme="lockin"/,
+      /android:scheme="cofounder"/,
       'El manifiesto no declara el esquema cofounder://'
     );
   }

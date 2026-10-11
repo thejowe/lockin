@@ -95,6 +95,7 @@ describe('entrada y recuperación desde instalación limpia', () => {
 
   it('encadena correo recovery, mismo uid y rechazo específico de la contraseña vieja', () => {
     const attempt = runner.slice(runner.indexOf('async function registrationAttempt('));
+    const normalizedAttempt = attempt.replace(/\s+/g, ' ');
     const order = [
       'await verifyRegistration(status, email, password, userId)',
       "admin.from('profiles').insert(",
@@ -117,9 +118,10 @@ describe('entrada y recuperación desde instalación limpia', () => {
     ];
     let cursor = 0;
     for (const text of order) {
-      const next = attempt.indexOf(text, cursor);
+      const normalizedText = text.replace(/\s+/g, ' ');
+      const next = normalizedAttempt.indexOf(normalizedText, cursor);
       assert(next >= cursor, 'Falta o está fuera de orden: ' + text);
-      cursor = next + text.length;
+      cursor = next + normalizedText.length;
     }
     assert.match(attempt, /assert.equal\(data.id, userId/);
     assert.match(attempt, /assert.equal\(settings.data.active_mode, 'par'/);
