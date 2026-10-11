@@ -6,7 +6,7 @@ Complementa `auditoria-seguridad-2026-10.md`, que cubrió solo el esquema SQL. E
 
 | # | Gravedad | Hallazgo | Estado |
 |---|---|---|---|
-| 1 | Media | «Leaked password protection» desactivada en Supabase Auth | **Abierto, del usuario** (dashboard; Chrome no estaba conectado) |
+| 1 | Media | «Leaked password protection» desactivada en Supabase Auth | **Bloqueado por plan**: «Only available on Pro plan and above». La organización «Second Thought» es Free. No se activa sin pagar |
 | 2 | Media-baja | Refresh token y contraseña de la cuenta de dispositivo en `AsyncStorage`, en claro | **Arreglado** en código; necesita build nativa nueva |
 | 3 | Media-baja | Altas anónimas sin captcha: solo frena el límite de 30/h por IP | **Abierto, del usuario** (ver abajo: no se puede activar sin cambio de cliente) |
 | 4 | Baja | `has_profile_block(uuid)` invocable por RPC: quien fue bloqueado puede sondear si lo bloquearon | **Aceptado**, razonado abajo |
@@ -47,8 +47,8 @@ La función solo contesta sobre bloqueos que implican a quien llama, así que el
 
 ## Pendiente del usuario
 
-1. **Auth → Password security → Leaked password protection**: activarla (puede requerir plan Pro).
-2. **Captcha en altas anónimas** (Auth → Attack Protection): **no activar todavía**. Con captcha el cliente tiene que mandar `captchaToken` en `signInAnonymously()`; sin ese cambio, nadie podría entrar. Es trabajo de código (hCaptcha o Turnstile en un WebView) que decide el usuario si compensa. Mientras, el límite por IP sigue siendo el freno.
+1. **Auth → Sign In / Providers → Email → Prevent use of leaked passwords**: requiere plan Pro (comprobado en el dashboard el 2026-10-11, desde Attack Protection → «Configure in email provider»). Decisión de gasto del usuario. Mientras tanto, subir «Minimum password length» de 6 a 8 (hoy 6) mitiga parte, pero antes hay que mirar si la app valida 6 en el formulario.
+2. **Captcha en altas anónimas** (Auth → Attack Protection → «Enable Captcha protection», hoy desactivado; el propio dashboard lo recomienda para altas anónimas): **no activar todavía**. Con captcha el cliente tiene que mandar `captchaToken` en `signInAnonymously()`; sin ese cambio, nadie podría entrar. Es trabajo de código (hCaptcha o Turnstile en un WebView) que decide el usuario si compensa. Mientras, el límite por IP sigue siendo el freno.
 3. Revisar en el dashboard: Redirect URLs exactas, «Only private channels» en Realtime, y SMTP propio (el límite de correo por defecto es ~2/hora).
 
 ## Sin revisar todavía
