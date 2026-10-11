@@ -142,7 +142,7 @@ desaparecer una sesión agendada sin saber por qué.
       fallar con `40P01` (interbloqueo) y se reintenta sin más. Causa: orden de
       bloqueo cruzado, la cascada de cada baja toca `decisions`/`matches` y
       `room_members`/`touch_room` en distinto orden. No se rediseña por ello.
-- [ ] Migración sin aplicar al remoto (la aplica el usuario) en
+- [x] Migración aplicada al remoto (verificado 2026-10-11: el trigger actúa en producción, ver «Hallazgos del comprobador») en
       `grrzmzktrhksbttpbblg`. Hasta entonces, `Schema drift` remoto saldrá
       rojo por esta migración (esperado, no regresión).
 - [x] Rama Supabase ejercida contra el proyecto real (2026-10-11, REST, ver
