@@ -2,7 +2,33 @@
 
 Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>.md` — márcalo ahí, no aquí.
 
-## ▶ Al retomar — estado del 2026-10-11 (el más reciente; lo de más abajo es histórico)
+## ▶ Al retomar — estado del 2026-10-11, noche (el más reciente; lo de más abajo es histórico)
+
+**Abierta una segunda pasada de seguridad** (cliente, dependencias, dashboard). El detalle
+accionable está en `docs/plan/todo/seguridad.md` y el razonamiento en
+`docs/plan/auditoria-seguridad-2026-10-cliente.md`. Último commit de código: `c40e766` (la sesión de
+Supabase y la cuenta de dispositivo pasan de `AsyncStorage` a `expo-secure-store`), subido; encima
+solo van docs.
+
+**Primer paso al volver:** lanzar el `comprobador` con la casilla de `seguridad.md` «la sesión
+existente sobrevive a la actualización». Es la única comprobación que falta de `c40e766` y su
+riesgo es perder cuentas anónimas. Necesita un APK nuevo (módulo nativo). Después, las casillas
+`[Claude]` de `seguridad.md` (deep link, URLs del perfil, manifiesto, logs) se pueden dar al
+agente `datos` de una en una.
+
+**Es del usuario** (bloqueado por plan o por decisión, no por falta de acceso):
+1. **Leaked password protection**: exige plan Pro y la organización es Free. Decisión de gasto.
+2. **Captcha en altas anónimas**: elegir Turnstile o hCaptcha. No se puede activar sin cambio de
+   cliente.
+3. Lo de siempre: iPhone y cámara real, Redirect URLs, spec de salas, páginas públicas.
+
+**Hecho el 2026-10-11 (noche):** `c40e766` con `codex review` en dos rondas; `has_profile_block`
+aceptado como riesgo; `npm audit` analizado sin acción; dashboard leído con Claude en Chrome
+(conecta en el Chrome del usuario, con sesión de GitHub; no funciona con Playwright porque aquí no
+hay Chrome instalado). `docs/plan/todo/verificacion.md` tiene un cambio sin commitear que **no es
+de esta sesión**.
+
+## Estado del 2026-10-11, mañana (histórico)
 
 **El plan está agotado: no queda casilla para ningún agente.** El remoto `grrzmzktrhksbttpbblg` está al día (todas las migraciones aplicadas hasta `20261010120000`; `cron.job` tiene `lockin-purge-old-user-reports` a las `20 3 * * *`); Schema drift verde en local y remoto sobre `3c49aff` (run 38135186796) y el contrato Supabase pasa dentro de `ci.yml` (run 38135186820). `user_reports` tiene 1 fila. Las casillas de migración sin aplicar y de comprobador de `datos.md`/`perfil.md` quedan tachadas con su evidencia.
 
