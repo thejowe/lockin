@@ -2310,4 +2310,7 @@ Migración `20261011120000_session_both_attended_blocks.sql`. **No aplicada al r
 
 - [x] `session_both_attended(uuid)` redefinida con `and public.is_unblocked_match(m.id)`: false si hay bloqueo entre la pareja en cualquier dirección. Misma firma, `SECURITY DEFINER`, `search_path` vacío y grants (sin public/anon, con authenticated). Cierra el hueco del hallazgo de `perfil.md` (auditoría H1).
 - [x] `schema-embedded.test.mjs`: pareja sin bloqueo sigue true; tras `block_profile` por cualquiera de las dos, false para ambas; no-miembro false. `npm run test:schema` 106/106; la huella no exige cambios (misma firma).
-- [ ] **[orquesta] Aplicar la migración al remoto** y comprobar Schema drift verde.
+- [x] **[orquesta] Aplicar la migración al remoto** y comprobar Schema drift verde.
+      **Hecho 2026-10-11** (aplicada por MCP con autorización expresa del usuario): el remoto
+      cierra por `is_unblocked_match`, SECURITY DEFINER, `search_path` vacío, sin EXECUTE para
+      `anon`; Schema drift verde en local y remoto ([run 38163911920](https://github.com/thejowe/lockin/actions/runs/38163911920)).
