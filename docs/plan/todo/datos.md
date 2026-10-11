@@ -2249,9 +2249,12 @@ quedan fuera de esta migración. Migración única:
       regresión). Aplicarla con el procedimiento habitual y comprobar que el job
       queda verde.
       Verificado 2026-10-11: migración aplicada en `grrzmzktrhksbttpbblg` (todas hasta `20261010120000`; última registrada `20261010155438`); Schema drift verde en local y remoto sobre `3c49aff` (run 38135186796). H1 y H2 cerrados también allí.
-- [ ] **Fechas ya falsificadas en el remoto** (decisión aparte, sin automatizar):
+- [x] **Fechas ya falsificadas en el remoto** (decisión aparte, sin automatizar):
       buscar `messages.sent_at > now()` o `matches.last_message_at > now()` y
       decidir si se sanean. Esta migración no borra ni reordena datos.
+      **Verificado 2026-10-11 (orquesta, SQL de solo lectura en `grrzmzktrhksbttpbblg`):**
+      0 mensajes con `sent_at > now()` y 0 matches con `last_message_at > now()`
+      (3 mensajes en total, el último del 2026-10-09). Nada que sanear.
       Nota 2026-10-11: la consulta de saneamiento no se ha corrido; sigue abierta (decisión aparte).
 
 ## Auditoría de seguridad 2026-10 (H3 y H4)
