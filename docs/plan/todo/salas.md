@@ -145,9 +145,9 @@ desaparecer una sesión agendada sin saber por qué.
 - [ ] Migración sin aplicar al remoto (la aplica el usuario) en
       `grrzmzktrhksbttpbblg`. Hasta entonces, `Schema drift` remoto saldrá
       rojo por esta migración (esperado, no regresión).
-- [ ] Sin comprobación en dispositivo: el recorrido de «Eliminar mi cuenta» no
-      es posible en mock (ver `perfil`), y la rama Supabase no se ha ejercido
-      contra el proyecto real.
+- [x] Rama Supabase ejercida contra el proyecto real (2026-10-11, REST, ver
+      «Hallazgos del comprobador»). Sigue sin comprobarse la tarjeta de sala de
+      la invitada en la UI del emulador (solo cliente REST); en mock el recorrido no existe.
 
 ## Hallazgos del comprobador
 
@@ -228,3 +228,23 @@ Onboarding «Ambos», like a Marc Oller y a Alba Ferrer: los dos dan match (`13-
    (`23-matches-con-sala.png`, `23-matches-con-sala.xml`). No se comprobó la forma «Tu sala · k de n»
    con respuestas pendientes: el mock no deja ninguna.
 3. `logcat.txt` (`*:E ReactNativeJS:V`): ningún error de JS ni crash.
+
+### 2026-10-11 — Convocante borra su cuenta, sala viva (Supabase real, `092bbb2`)
+
+Backend: Supabase real `grrzmzktrhksbttpbblg`. Cliente REST (supabase-js, sin emulador), tres cuentas
+anónimas desechables con perfil: A convoca, B y C invitadas, match A-B y A-C por like mutuo.
+Script y salida: `e2e/artifacts/local/2026-10-11-salas-cuenta/` (`run.mjs`, `salida.txt`).
+
+1. **✅ `create_room` y `respond_room`.** A crea sala a +3 h con B y C; B responde `aceptada`.
+2. **✅ A ejecuta `delete_my_account()`** sin error (sin violación de FK). Con su JWT, `getUser` da 403
+   `user_not_found`.
+3. **✅ La sala no cae en cascada.** B y C la leen: `host_id: null`, `cancelled_at` puesto por el
+   trigger `profiles_cancel_hosted_rooms`. La fila de miembro de B (`aceptada`) y la de C (`invitada`)
+   se conservan; solo desaparece la de A.
+4. **✅ `cancel_room` por B → `LI004`** (con host nulo ya nadie cancela).
+5. **ℹ️ `live_rooms()` no devuelve la sala cancelada** (n=0 para B y C): la ven por lectura directa de
+   `lockin_rooms` por id, no por la lista viva. Es lo esperado por diseño; el cliente debe leerla por id.
+6. **✅ Limpieza:** `delete_my_account` de B, C y A sin error; las tres dan 403 `user_not_found`.
+
+Implicación: la migración `20261010000100` está efectivamente aplicada en el remoto (el trigger actúa),
+aunque la casilla «Migración sin aplicar al remoto» sigue sin marcar (ajena).
