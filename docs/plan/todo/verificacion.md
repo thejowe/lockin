@@ -760,3 +760,9 @@ Configuration):**
       para probar con Expo Go.
 - [ ] Cambiar Site URL a algo real, o a `cofounder://auth/callback`, para que un
       fallo del redirect no deje en una página muerta.
+
+## Rebranding lockin → cofounder: E2E y runner (2026-10-11)
+
+- [x] **[Codex, revisado por Claude]** El commit `336db44` dejó dos rojos: `registro` (el `assert.match` del manifiesto exigía `android:scheme="lockin"` y ahora es `cofounder`) y `Runner E2E` en CI (`sign-in.test.mjs` buscaba `-d '" + recoveryCallback` en una línea y Prettier la partió al alargarse el nombre del paquete). Arreglo `3c49aff`: regex en `e2e/run.mjs` y comparación del test normalizando espacios, sin tocar el orden exigido.
+  - El `mock` de ese run cayó además por un fallo transitorio de descarga del NDK (`ZipFile` corrupto); no necesitó cambio.
+  - Evidencia: CI 38135186820, Schema drift 38135186796 y E2E Android 38135186768 (`mock`, `registro`, `supabase`), todos en verde sobre `3c49aff`.

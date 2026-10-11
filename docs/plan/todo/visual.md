@@ -798,9 +798,10 @@ plantilla «casi negro con un acento», y la tarjeta del deck era sopa de cajas
     sin muelle) la recoge. Mismo resultado final con y sin animación.
   - Test: `src/components/app-tabs.test.tsx` → «con reducir movimiento» (sin transición de
     layout, y el resalte termina en la tab activa con su ancho).
-- [ ] `[comprobador]` Re-comprobar en el emulador con «Reducir animaciones» activado (escalas a
+- [x] `[comprobador]` Re-comprobar en el emulador con «Reducir animaciones» activado (escalas a
   0) y release: navegar Descubrir → Matches → Perfil y volver; la píldora debe quedar bajo la
   tab activa y el icono completo.
+  - Confirmado ✅ por el comprobador en `fc27e27` (2026-10-10): píldora bajo la tab activa en las tres tabs, sin regresión con escalas a 1; ver el hallazgo siguiente.
 ### 2026-10-10 — barra de tabs con reducir animaciones, re-comprobación (commit fc27e27)
 
 Backend: **Supabase real**, APK release recompilado con `--rerun` (log en `e2e/artifacts/local/2026-10-10-teclado-reporte-y-tabs/build-fc27e27.log`), AVD `lockin`. Evidencia: `e2e/artifacts/local/2026-10-10-teclado-reporte-y-tabs/` (`tabs-normal.png`, `tabs-reducir.png`, `40`–`46`).
