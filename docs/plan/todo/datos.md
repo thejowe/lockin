@@ -2299,3 +2299,12 @@ Migración `20261010120000_reports_retention_and_block_followups.sql`. **No apli
 - [x] `supabase/schema-embedded.test.mjs`: la fixture de Auth gana `created_at`, `last_sign_in_at` y `auth.sessions`; `drift-check.test.mjs` lista las tres constraints nuevas.
 - [x] **[orquesta] Aplicar la migración al remoto** y comprobar `select jobname, schedule from cron.job` (una fila).
       Verificado 2026-10-11: `20261010120000` aplicada; `cron.job` contiene `lockin-purge-old-user-reports` con `20 3 * * *` (una fila); Schema drift verde en local y remoto (run 38135186796).
+
+
+## `session_both_attended` cierra por bloqueo (2026-10-11)
+
+Migración `20261011120000_session_both_attended_blocks.sql`. **No aplicada al remoto desde este bloque**: la orquesta la pasa por `codex review` y la aplica; al aplicarla, `Schema drift` compara la huella de funciones.
+
+- [x] `session_both_attended(uuid)` redefinida con `and public.is_unblocked_match(m.id)`: false si hay bloqueo entre la pareja en cualquier dirección. Misma firma, `SECURITY DEFINER`, `search_path` vacío y grants (sin public/anon, con authenticated). Cierra el hueco del hallazgo de `perfil.md` (auditoría H1).
+- [x] `schema-embedded.test.mjs`: pareja sin bloqueo sigue true; tras `block_profile` por cualquiera de las dos, false para ambas; no-miembro false. `npm run test:schema` 106/106; la huella no exige cambios (misma firma).
+- [ ] **[orquesta] Aplicar la migración al remoto** y comprobar Schema drift verde.

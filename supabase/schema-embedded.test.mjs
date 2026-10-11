@@ -3065,6 +3065,65 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       ['lockin_rooms', 'lockin_sessions', 'matches', 'messages', 'session_attendance']
     );
     console.log('H4: supabase_realtime publica solo INSERT y UPDATE: OK');
+
+    // 20261011120000: `session_both_attended` cierra por bloqueo.
+    const sbaAna = person('f410');
+    const sbaBea = person('f411');
+    const sbaOut = person('f412');
+    const sbaMatch = '00000000-0000-4000-8000-00000000f4c0';
+    const sbaSession = '00000000-0000-4000-8000-00000000f4c1';
+    const sbaSeed = async () =>
+      db.exec(`begin;
+        insert into auth.users (id, email) values
+          ('${sbaAna}', 'sbaana@lockin.test'), ('${sbaBea}', 'sbabea@lockin.test'),
+          ('${sbaOut}', 'sbaout@lockin.test');
+        insert into public.profiles (
+          id, name, age, location, timezone, avatar_initials, specialties,
+          looking_for, starting_point, availability_hours_per_week, availability_bands, ambition
+        ) select id, 'SBA', 30, 'Madrid', 'Europe/Madrid', 'S',
+          array['dev']::public.specialty[], 'ambos', 'solo-ganas', 10,
+          array['tarde']::public.time_band[], 'equilibrado'
+          from auth.users where id in ('${sbaAna}', '${sbaBea}', '${sbaOut}');
+        insert into public.matches (id, profile_a, profile_b, mode) values
+          ('${sbaMatch}', least('${sbaAna}'::uuid, '${sbaBea}'::uuid),
+           greatest('${sbaAna}'::uuid, '${sbaBea}'::uuid), 'lockin');
+        insert into public.lockin_sessions
+          (id, match_id, proposed_by, starts_at, blocks, status, responded_at)
+        values ('${sbaSession}', '${sbaMatch}', '${sbaAna}', now() - interval '40 minutes', 1,
+          'aceptada', now() - interval '100 minutes');
+        insert into public.session_attendance (session_id, profile_id, joined_at) values
+          ('${sbaSession}', '${sbaAna}', now() - interval '39 minutes'),
+          ('${sbaSession}', '${sbaBea}', now() - interval '38 minutes');`);
+    const sbaAttended = async () =>
+      (await db.query(`select public.session_both_attended('${sbaSession}') as v`)).rows[0].v;
+
+    // Bloquea la primera persona.
+    await sbaSeed();
+    await actingAs(sbaAna);
+    assert.equal(await sbaAttended(), true, 'pareja sin bloqueo: sigue true');
+    await actingAs(sbaBea);
+    assert.equal(await sbaAttended(), true, 'pareja sin bloqueo: la otra también');
+    await actingAs(sbaOut);
+    assert.equal(await sbaAttended(), false, 'no-miembro: false');
+    await actingAs(sbaAna);
+    await db.query(`select public.block_profile('${sbaBea}')`);
+    assert.equal(await sbaAttended(), false, 'quien bloquea ya no lo averigua');
+    await actingAs(sbaBea);
+    assert.equal(await sbaAttended(), false, 'la bloqueada tampoco');
+    await actingAs(sbaOut);
+    assert.equal(await sbaAttended(), false, 'no-miembro sigue en false');
+    await db.exec('rollback;');
+
+    // Y en la otra dirección: bloquea la segunda persona.
+    await sbaSeed();
+    await actingAs(sbaBea);
+    assert.equal(await sbaAttended(), true);
+    await db.query(`select public.block_profile('${sbaAna}')`);
+    assert.equal(await sbaAttended(), false, 'bloquea la otra persona: false');
+    await actingAs(sbaAna);
+    assert.equal(await sbaAttended(), false, 'y la bloqueada, false');
+    await db.exec('rollback;');
+    console.log('session_both_attended devuelve false con bloqueo entre la pareja: OK');
   } finally {
     await db.close();
   }
