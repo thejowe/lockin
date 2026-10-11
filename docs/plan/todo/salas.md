@@ -148,6 +148,13 @@ desaparecer una sesión agendada sin saber por qué.
 - [x] Rama Supabase ejercida contra el proyecto real (2026-10-11, REST, ver
       «Hallazgos del comprobador»). Sigue sin comprobarse la tarjeta de sala de
       la invitada en la UI del emulador (solo cliente REST); en mock el recorrido no existe.
+- [x] `[comprobador]` Qué ve la persona invitada en la app cuando quien convoca
+      borra su cuenta con la sala viva (Supabase real, emulador `lockin`): tab
+      Matches y pantalla de sala, con la app abierta (realtime) y tras reabrirla
+      en frío. ¿Desaparece limpia, enseña «cancelada», se cuelga con host nulo,
+      crashea o queda un aviso local de 5 min huérfano? (`live_rooms()` no lista
+      salas canceladas.)
+      Veredicto 2026-10-11 en «Hallazgos del comprobador» (emulador, Supabase real).
 
 ## Hallazgos del comprobador
 
@@ -248,3 +255,43 @@ Script y salida: `e2e/artifacts/local/2026-10-11-salas-cuenta/` (`run.mjs`, `sal
 
 Implicación: la migración `20261010000100` está efectivamente aplicada en el remoto (el trigger actúa),
 aunque la casilla «Migración sin aplicar al remoto» sigue sin marcar (ajena).
+
+### 2026-10-11 — La invitada ve la sala cuyo convocante borró su cuenta (emulador, Supabase real)
+
+Backend: Supabase real `grrzmzktrhksbttpbblg` (logcat: `[lockin] backend de datos: Supabase`). APK release
+x86_64 con `EXPO_PUBLIC_REQUIRE_ACCOUNT=false` y `createBundleReleaseJsAndAssets --rerun`; el bundle
+regenerado dejó `mergeReleaseAssets UP-TO-DATE`, es decir, byte a byte el del APK anterior (no pude
+comprobar de otra forma que ese APK incluya `336db44`; la línea de backend sí es de este bundle).
+B = la app del emulador (onboarding por UI, «Invitada B»); A (convoca) y C (invitada) = cuentas anónimas por REST
+(`scen.mjs`). Carpeta: `e2e/artifacts/local/2026-10-11-salas-ui-host-borrado/`.
+
+1. **✅ Con la app abierta (realtime), en la pantalla de la sala.** B con la sala abierta y aceptada
+   (`48-sala-antes.png`: «Convoca Comprob», B «Vas»). A ejecuta `delete_my_account`. A los 2 s la pantalla
+   sigue igual; antes de 10 s pasa sola a «Se canceló la sala: quien la convocó ya no está» + «Volver a
+   Matches» (`49-live-10.png`, `50-live.xml`). Sin crash, sin host nulo a la vista.
+2. **✅ Aviso local de 5 min, app abierta.** Estaba programado (`47-alarm-antes.txt`, alarma
+   `expo.modules.notifications` 13:48:10); tras el borrado desaparece de `dumpsys alarm`
+   (`51-alarm-vivo.txt`): `RoomReminderSync` lo reconcilia al llegar el aviso de realtime.
+3. **✅ Tab Matches con la app abierta.** «Volver a Matches»: desaparecen la fila de sala y la conversación
+   con A (cuenta borrada); queda solo la de C. Sin «Salas Lock-In», sin «Convocar sala» (solo queda 1 match;
+   `52-matches-tras.png`).
+4. **✅ Reapertura en frío (`force-stop` + monkey).** Matches limpio (`55-frio-matches.png`), sin alarma
+   (`54-alarm-frio.txt`). Abriendo la sala por id con `cofounder://room/<id>`, en caliente y en frío directo:
+   mismo mensaje «Se canceló la sala: quien la convocó ya no está» (`56-`, `57-`). No cuelga con host nulo.
+5. **⚠️ Aviso huérfano con la app cerrada (comportamiento, no crash).** Segunda sala (hoy 13:33), B acepta,
+   B cierra la app (HOME + `am kill`, alarma confirmada), A borra su cuenta. La alarma local sigue
+   (`70-alarm-app-cerrada.txt`; sin JS nadie la cancela) y dispara «Sala Lock-In en 5 minutos / Entra desde
+   Matches.» para una sala ya cancelada (`71-notif.txt`, `73-shade.png`). Al tocarla, la app abre en
+   Descubrir (no en Matches ni en la sala) sin la sala en ninguna parte (`74-`, `75-matches-fin.png`), y la
+   alarma queda cancelada. Capa responsable: cliente (avisos locales; no hay push del servidor que lo
+   retire). Es el mismo límite de cualquier cancelación con la app cerrada, no específico del borrado de
+   cuenta; se anota por si se quiere un push de cancelación o un texto «Entra desde Matches» menos
+   prometedor. El reloj del AVD saltó ~4,5 h durante la espera (suspensión del host): el momento exacto del
+   disparo no es evidencia fina.
+6. **Límite.** No comprobé que ocurra con B ya dentro de la ventana de trabajo (sala empezada: el trigger no
+   cancela salas empezadas, ver arriba), ni el aviso de «Salas Lock-In» con otra sala viva a la vez.
+7. **Limpieza.** B eliminada desde la UI («Eliminar mi cuenta»); A, C y reemplazos eliminados por REST
+   (`delete_my_account` ok; tras las horas de salto de reloj los JWT estaban caducados y el 403 es `bad_jwt`,
+   no `user_not_found`; la ausencia se comprobó leyendo `profiles`). **Quedó una cuenta anónima inerte
+   «Comprob Conv2» (`ca2fd368-…`)**, sin salas ni matches, cuyo token perdí al sobrescribir el estado del
+   script; no se puede borrar sin su sesión.
