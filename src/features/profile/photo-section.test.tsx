@@ -142,4 +142,41 @@ describe('PhotoSection', () => {
       await screen.findByText('No se ha podido subir la foto. Inténtalo de nuevo.')
     ).toBeTruthy();
   });
+
+  it('si el selector o el recorte revientan lo cuenta y deja reintentar', async () => {
+    await setup();
+    pick.mockRejectedValueOnce(new Error('No se ha podido abrir la imagen.'));
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Elegir de la galería' }));
+
+    expect(await screen.findByText('No se ha podido abrir la imagen.')).toBeTruthy();
+    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Elegir de la galería' })).not.toBeDisabled();
+  });
+
+  it('mientras sube, las tres acciones están deshabilitadas de verdad y se recuperan', async () => {
+    await setup(true);
+    let finish: () => void = () => {};
+    pick.mockResolvedValue({ status: 'picked', uri: 'file:///nueva.jpg' });
+    jest.spyOn(repositories.profiles, 'setAvatarPhoto').mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = () => resolve(profile);
+        })
+    );
+
+    // Sin `await`: la subida queda pendiente a propósito y el `press` no termina.
+    void fireEvent.press(screen.getByRole('button', { name: 'Elegir de la galería' }));
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Hacer una foto' })).toBeDisabled()
+    );
+    expect(screen.getByRole('button', { name: 'Elegir de la galería' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Quitar foto' })).toBeDisabled();
+
+    finish();
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Hacer una foto' })).not.toBeDisabled()
+    );
+  });
 });

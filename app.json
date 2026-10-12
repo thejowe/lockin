@@ -54,8 +54,7 @@
         "expo-image-picker",
         {
           "photosPermission": "cofounder necesita tu galería para que elijas tu foto de perfil.",
-          "cameraPermission": "cofounder necesita la cámara para hacerte la foto de perfil.",
-          "microphonePermission": false
+          "cameraPermission": "cofounder necesita la cámara para hacerte la foto de perfil."
         }
       ],
       "expo-secure-store"

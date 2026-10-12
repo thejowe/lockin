@@ -43,15 +43,18 @@ export function PhotoSection({ profile, onChange }: { profile: Profile; onChange
   async function choose(source: 'library' | 'camera') {
     setError(null);
 
-    const picked = await pickAvatarPhoto(source);
-    if (picked.status === 'cancelled') return;
-    if (picked.status === 'denied') {
-      setError(DENIED[source]);
-      return;
-    }
-
+    // Todo dentro del `try`: el selector nativo o el recorte también pueden
+    // rechazar (una imagen dañada, un permiso que cambia a mitad), y eso no
+    // puede quedarse como una promesa rechazada sin enseñar nada.
     setBusy(true);
     try {
+      const picked = await pickAvatarPhoto(source);
+      if (picked.status === 'cancelled') return;
+      if (picked.status === 'denied') {
+        setError(DENIED[source]);
+        return;
+      }
+
       await repositories.profiles.setAvatarPhoto(picked.uri);
       onChange();
     } catch (cause) {
@@ -112,10 +115,14 @@ export function PhotoSection({ profile, onChange }: { profile: Profile; onChange
       ) : null}
 
       <View style={styles.actions}>
-        <SecondaryButton label="Elegir de la galería" onPress={() => !busy && choose('library')} />
-        <SecondaryButton label="Hacer una foto" onPress={() => !busy && choose('camera')} />
+        <SecondaryButton
+          label="Elegir de la galería"
+          disabled={busy}
+          onPress={() => choose('library')}
+        />
+        <SecondaryButton label="Hacer una foto" disabled={busy} onPress={() => choose('camera')} />
         {hasPhoto ? (
-          <SecondaryButton label="Quitar foto" tone="danger" onPress={() => !busy && remove()} />
+          <SecondaryButton label="Quitar foto" tone="danger" disabled={busy} onPress={remove} />
         ) : null}
       </View>
     </View>

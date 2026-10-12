@@ -72,8 +72,16 @@ Principio: **nada se publica sin que el servidor lo haya revisado, y si no puede
   `avatars/<uid>/<uuid>.jpg`, apunta `avatar_url`, y borra la subida y la foto anterior.
 - **Qué se rechaza:** `flagged` del proveedor, o `sexual` ≥ 0,4, o `sexual/minors` > 0, o
   `violence/graphic` ≥ 0,5. Siempre se borra la subida pendiente.
-- **Falla cerrado:** si el proveedor no responde, da error o devuelve algo inesperado, la
-  foto se rechaza con «inténtalo más tarde». Nunca se publica sin escanear.
+- **Falla cerrado:** si el proveedor no responde, da error o devuelve algo inesperado —o
+  una respuesta sin las tres categorías (`sexual`, `sexual/minors`, `violence/graphic`)
+  con número—, la foto se rechaza con «inténtalo más tarde». Nunca se publica sin escanear.
+- **Carreras y huérfanos (revisión de Codex, 2026-10-12):** `avatar_url` se actualiza de
+  forma condicional (solo si sigue siendo la foto que se leyó); quien pierde la carrera
+  retira su publicación y recibe `409 conflict`. Si apuntar `avatar_url` falla, lo
+  publicado se retira. `remove` borra primero el archivo y solo si Storage lo confirma
+  pone `avatar_url` a `null`; además barre las subidas pendientes del usuario. Un error
+  al leer la foto actual aborta la petición, nunca se interpreta como «sin foto».
+- **Web:** la función responde al preflight CORS y lleva las cabeceras en todas las respuestas.
 - **Clave:** `OPENAI_API_KEY` como secreto de la función, nunca en el repo ni en el cliente.
 - **Privacidad:** la foto se envía a OpenAI solo para revisarla; hay que decirlo en `privacidad.md`.
 - Segunda red, ya existente: reportar un perfil cubre la foto; bloquear a alguien lo saca del deck.

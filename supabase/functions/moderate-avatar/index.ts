@@ -19,10 +19,19 @@ const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 const PUBLIC_PREFIX = `${SUPABASE_URL}/storage/v1/object/public/avatars/`;
 
+// La web llama con `Authorization` y JSON: el navegador hace un preflight
+// OPTIONS y bloquea la respuesta si no lleva estas cabeceras (en todas, errores
+// incluidos).
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
 function json(status: number, body: unknown) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...CORS, 'Content-Type': 'application/json' },
   });
 }
 
@@ -53,7 +62,12 @@ async function moderate(bytes: Uint8Array) {
   };
 }
 
+function pathOfPublicUrl(url: string | null | undefined): string | null {
+  return url?.startsWith(PUBLIC_PREFIX) ? url.slice(PUBLIC_PREFIX.length) : null;
+}
+
 Deno.serve(async (request) => {
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
   if (request.method !== 'POST') return json(405, { error: 'method' });
 
   // `verify_jwt` ya ha validado la firma; aquí se saca QUIÉN es.
@@ -65,51 +79,67 @@ Deno.serve(async (request) => {
 
   const body = await request.json().catch(() => null);
 
-  try {
-    const result = await handleAvatarRequest({
-      userId: auth.user.id,
-      body,
-      deps: {
-        async downloadPending(path: string) {
-          const { data, error } = await admin.storage.from('avatar-uploads').download(path);
-          return error || !data ? null : new Uint8Array(await data.arrayBuffer());
-        },
-        moderate,
-        async publish(userId: string, bytes: Uint8Array) {
-          const path = `${userId}/${crypto.randomUUID()}.jpg`;
-          const { error } = await admin.storage
-            .from('avatars')
-            .upload(path, bytes, { contentType: 'image/jpeg', upsert: false });
-          if (error) throw error;
-          return { path, url: `${PUBLIC_PREFIX}${path}` };
-        },
-        async currentAvatarPath(userId: string) {
-          const { data } = await admin
-            .from('profiles')
-            .select('avatar_url')
-            .eq('id', userId)
-            .single();
-          const url = data?.avatar_url as string | null | undefined;
-          return url?.startsWith(PUBLIC_PREFIX) ? url.slice(PUBLIC_PREFIX.length) : null;
-        },
-        async setAvatarUrl(userId: string, url: string | null) {
-          const { error } = await admin
-            .from('profiles')
-            .update({ avatar_url: url })
-            .eq('id', userId);
-          if (error) throw error;
-        },
-        async removePublic(path: string) {
-          await admin.storage.from('avatars').remove([path]);
-        },
-        async removePending(path: string) {
-          await admin.storage.from('avatar-uploads').remove([path]);
-        },
+  const result = await handleAvatarRequest({
+    userId: auth.user.id,
+    body,
+    deps: {
+      async downloadPending(path: string) {
+        const { data, error } = await admin.storage.from('avatar-uploads').download(path);
+        return error || !data ? null : new Uint8Array(await data.arrayBuffer());
       },
-    });
-    return json(result.status, result.body);
-  } catch {
-    // Cualquier fallo inesperado deja la foto sin publicar.
-    return json(503, { error: 'unavailable' });
-  }
+      moderate,
+      async publish(userId: string, bytes: Uint8Array) {
+        const path = `${userId}/${crypto.randomUUID()}.jpg`;
+        const { error } = await admin.storage
+          .from('avatars')
+          .upload(path, bytes, { contentType: 'image/jpeg', upsert: false });
+        if (error) throw error;
+        return { path, url: `${PUBLIC_PREFIX}${path}` };
+      },
+      async currentAvatar(userId: string) {
+        // Un error de lectura NO es «sin foto»: se propaga y la petición falla.
+        const { data, error } = await admin
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', userId)
+          .maybeSingle();
+        if (error) throw error;
+        const url = (data?.avatar_url as string | null | undefined) ?? null;
+        return { url, path: pathOfPublicUrl(url) };
+      },
+      async setAvatarUrl(userId: string, url: string | null, expectedUrl?: string | null) {
+        let query = admin.from('profiles').update({ avatar_url: url }).eq('id', userId);
+        // Condicional: solo si nadie ha cambiado la foto mientras tanto.
+        if (expectedUrl !== undefined) {
+          query =
+            expectedUrl === null
+              ? query.is('avatar_url', null)
+              : query.eq('avatar_url', expectedUrl);
+        }
+        const { data, error } = await query.select('id');
+        if (error) throw error;
+        return (data?.length ?? 0) > 0;
+      },
+      async removePublic(path: string) {
+        const { error } = await admin.storage.from('avatars').remove([path]);
+        if (error) throw error;
+      },
+      async removePending(path: string) {
+        const { error } = await admin.storage.from('avatar-uploads').remove([path]);
+        if (error) throw error;
+      },
+      async removeAllPending(userId: string) {
+        const bucket = admin.storage.from('avatar-uploads');
+        const { data, error } = await bucket.list(userId);
+        if (error) throw error;
+        const paths = (data ?? []).map((file) => `${userId}/${file.name}`);
+        if (paths.length > 0) {
+          const { error: removeError } = await bucket.remove(paths);
+          if (removeError) throw removeError;
+        }
+      },
+    },
+  });
+
+  return json(result.status, result.body);
 });

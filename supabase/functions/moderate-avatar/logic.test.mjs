@@ -1,32 +1,42 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { handleAvatarRequest, isJpeg, ownsPath, verdict } from './logic.mjs';
+import { handleAvatarRequest, isComplete, isJpeg, ownsPath, verdict } from './logic.mjs';
 
 const JPEG = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 0, 0]);
 const PNG = Uint8Array.from([0x89, 0x50, 0x4e, 0x47]);
+const OLD_URL = 'https://x/storage/v1/object/public/avatars/u1/old.jpg';
+const NEW_URL = 'https://x/storage/v1/object/public/avatars/u1/n.jpg';
+
+/** Una respuesta completa y limpia del proveedor. */
+const CLEAN = {
+  flagged: false,
+  scores: { sexual: 0.01, 'sexual/minors': 0, 'violence/graphic': 0.01 },
+};
 
 function deps(over = {}) {
   const calls = [];
   return {
     calls,
     downloadPending: async () => JPEG,
-    moderate: async () => ({ flagged: false, scores: { sexual: 0.01 } }),
+    moderate: async () => CLEAN,
     publish: async (uid) => {
       calls.push('publish');
-      return {
-        path: `${uid}/n.jpg`,
-        url: `https://x/storage/v1/object/public/avatars/${uid}/n.jpg`,
-      };
+      return { path: `${uid}/n.jpg`, url: NEW_URL };
     },
-    currentAvatarPath: async () => 'u1/old.jpg',
-    setAvatarUrl: async (_uid, url) => calls.push(`setUrl:${url}`),
+    currentAvatar: async () => ({ url: OLD_URL, path: 'u1/old.jpg' }),
+    setAvatarUrl: async (_uid, url, expected) => {
+      calls.push(`setUrl:${url}:${expected === undefined ? 'any' : expected}`);
+      return true;
+    },
     removePublic: async (p) => calls.push(`removePublic:${p}`),
     removePending: async (p) => calls.push(`removePending:${p}`),
+    removeAllPending: async (uid) => calls.push(`removeAllPending:${uid}`),
     ...over,
   };
 }
 
 const set = (path = 'u1/p.jpg') => ({ action: 'set', path });
+const run = (body, d) => handleAvatarRequest({ userId: 'u1', body, deps: d });
 
 test('isJpeg mira los magic bytes, no la extensión', () => {
   assert.equal(isJpeg(JPEG), true);
@@ -44,30 +54,57 @@ test('ownsPath solo acepta <uid>/<archivo>.jpg propio, sin escapar de la carpeta
 });
 
 test('verdict: flagged, sexual alto, menores y violencia gráfica se rechazan', () => {
-  assert.equal(verdict({ flagged: false, scores: { sexual: 0.1 } }), true);
-  assert.equal(verdict({ flagged: true, scores: {} }), false);
-  assert.equal(verdict({ flagged: false, scores: { sexual: 0.4 } }), false);
-  assert.equal(verdict({ flagged: false, scores: { 'sexual/minors': 0.001 } }), false);
-  assert.equal(verdict({ flagged: false, scores: { 'violence/graphic': 0.5 } }), false);
+  assert.equal(verdict(CLEAN), true);
+  assert.equal(verdict({ ...CLEAN, flagged: true }), false);
+  assert.equal(verdict({ flagged: false, scores: { ...CLEAN.scores, sexual: 0.4 } }), false);
+  assert.equal(
+    verdict({ flagged: false, scores: { ...CLEAN.scores, 'sexual/minors': 0.001 } }),
+    false
+  );
+  assert.equal(
+    verdict({ flagged: false, scores: { ...CLEAN.scores, 'violence/graphic': 0.5 } }),
+    false
+  );
 });
 
-test('set limpio: publica, apunta avatar_url, borra la anterior y la pendiente', async () => {
+test('isComplete exige las tres categorías con números finitos', () => {
+  assert.equal(isComplete(CLEAN), true);
+  assert.equal(isComplete({ flagged: false, scores: {} }), false);
+  assert.equal(
+    isComplete({ flagged: false, scores: { ...CLEAN.scores, sexual: undefined } }),
+    false
+  );
+  assert.equal(isComplete({ flagged: false, scores: { ...CLEAN.scores, sexual: NaN } }), false);
+  assert.equal(isComplete({ flagged: 'no', scores: CLEAN.scores }), false);
+  assert.equal(isComplete(null), false);
+});
+
+test('respuesta incompleta del proveedor: 503 y nada publicado (falla cerrado)', async () => {
+  const d = deps({ moderate: async () => ({ flagged: false, scores: {} }) });
+  const res = await run(set(), d);
+
+  assert.equal(res.status, 503);
+  assert.equal(res.body.error, 'unavailable');
+  assert.deepEqual(d.calls, ['removePending:u1/p.jpg']);
+});
+
+test('set limpio: publica, apunta avatar_url con la anterior como esperada, borra la anterior y la pendiente', async () => {
   const d = deps();
-  const res = await handleAvatarRequest({ userId: 'u1', body: set(), deps: d });
+  const res = await run(set(), d);
 
   assert.equal(res.status, 200);
-  assert.match(res.body.avatarUrl, /avatars\/u1\/n\.jpg$/);
+  assert.equal(res.body.avatarUrl, NEW_URL);
   assert.deepEqual(d.calls, [
     'publish',
-    'setUrl:https://x/storage/v1/object/public/avatars/u1/n.jpg',
+    `setUrl:${NEW_URL}:${OLD_URL}`,
     'removePublic:u1/old.jpg',
     'removePending:u1/p.jpg',
   ]);
 });
 
 test('imagen marcada: 422 flagged, no publica y borra la pendiente', async () => {
-  const d = deps({ moderate: async () => ({ flagged: true, scores: { sexual: 0.9 } }) });
-  const res = await handleAvatarRequest({ userId: 'u1', body: set(), deps: d });
+  const d = deps({ moderate: async () => ({ ...CLEAN, flagged: true }) });
+  const res = await run(set(), d);
 
   assert.equal(res.status, 422);
   assert.equal(res.body.error, 'flagged');
@@ -80,7 +117,7 @@ test('proveedor caído: falla cerrado, 503, nada publicado', async () => {
       throw new Error('500');
     },
   });
-  const res = await handleAvatarRequest({ userId: 'u1', body: set(), deps: d });
+  const res = await run(set(), d);
 
   assert.equal(res.status, 503);
   assert.equal(res.body.error, 'unavailable');
@@ -93,10 +130,10 @@ test('no es JPEG: 422 invalid-image y ni se llama al proveedor', async () => {
     downloadPending: async () => PNG,
     moderate: async () => {
       called = true;
-      return { flagged: false, scores: {} };
+      return CLEAN;
     },
   });
-  const res = await handleAvatarRequest({ userId: 'u1', body: set(), deps: d });
+  const res = await run(set(), d);
 
   assert.equal(res.status, 422);
   assert.equal(res.body.error, 'invalid-image');
@@ -107,17 +144,14 @@ test('no es JPEG: 422 invalid-image y ni se llama al proveedor', async () => {
 test('más de 5 MB: 422 invalid-image', async () => {
   const big = new Uint8Array(5 * 1024 * 1024 + 1);
   big.set(JPEG);
-  const d = deps({ downloadPending: async () => big });
-  const res = await handleAvatarRequest({ userId: 'u1', body: set(), deps: d });
+  const res = await run(set(), deps({ downloadPending: async () => big }));
 
   assert.equal(res.status, 422);
   assert.equal(res.body.error, 'invalid-image');
 });
 
 test('archivo pendiente inexistente: 422 invalid-image', async () => {
-  const d = deps({ downloadPending: async () => null });
-  const res = await handleAvatarRequest({ userId: 'u1', body: set(), deps: d });
-
+  const res = await run(set(), deps({ downloadPending: async () => null }));
   assert.equal(res.status, 422);
 });
 
@@ -129,7 +163,7 @@ test('path de otra persona: 403 sin leer nada', async () => {
       return JPEG;
     },
   });
-  const res = await handleAvatarRequest({ userId: 'u1', body: set('u2/p.jpg'), deps: d });
+  const res = await run(set('u2/p.jpg'), d);
 
   assert.equal(res.status, 403);
   assert.equal(downloaded, false);
@@ -137,20 +171,82 @@ test('path de otra persona: 403 sin leer nada', async () => {
 });
 
 test('cuerpo desconocido o ausente: 400', async () => {
-  const hack = await handleAvatarRequest({ userId: 'u1', body: { action: 'hack' }, deps: deps() });
-  assert.equal(hack.status, 400);
-  const none = await handleAvatarRequest({ userId: 'u1', body: null, deps: deps() });
-  assert.equal(none.status, 400);
+  assert.equal((await run({ action: 'hack' }, deps())).status, 400);
+  assert.equal((await run(null, deps())).status, 400);
 });
 
-test('remove: pone avatar_url a null y borra el archivo; sin foto no falla', async () => {
-  const d = deps();
-  const res = await handleAvatarRequest({ userId: 'u1', body: { action: 'remove' }, deps: d });
-  assert.equal(res.status, 200);
-  assert.deepEqual(d.calls, ['setUrl:null', 'removePublic:u1/old.jpg']);
+test('si no se puede leer la foto actual no se publica nada: 503', async () => {
+  const d = deps({
+    currentAvatar: async () => {
+      throw new Error('db caída');
+    },
+  });
+  const res = await run(set(), d);
 
-  const none = deps({ currentAvatarPath: async () => null });
-  const again = await handleAvatarRequest({ userId: 'u1', body: { action: 'remove' }, deps: none });
-  assert.equal(again.status, 200);
-  assert.deepEqual(none.calls, ['setUrl:null']);
+  assert.equal(res.status, 503);
+  assert.deepEqual(d.calls, ['removePending:u1/p.jpg']);
+});
+
+test('si apuntar avatar_url falla, retira lo publicado y la pendiente', async () => {
+  const d = deps({
+    setAvatarUrl: async () => {
+      throw new Error('db caída');
+    },
+  });
+  const res = await run(set(), d);
+
+  assert.equal(res.status, 503);
+  assert.deepEqual(d.calls, ['publish', 'removePublic:u1/n.jpg', 'removePending:u1/p.jpg']);
+});
+
+test('dos set a la vez: el que pierde la carrera retira su publicación y responde 409', async () => {
+  const d = deps({ setAvatarUrl: async () => false });
+  const res = await run(set(), d);
+
+  assert.equal(res.status, 409);
+  assert.equal(res.body.error, 'conflict');
+  assert.deepEqual(d.calls, ['publish', 'removePublic:u1/n.jpg', 'removePending:u1/p.jpg']);
+});
+
+test('borrar la foto anterior es de mejor esfuerzo: si falla, la nueva ya está puesta', async () => {
+  const d = deps({
+    removePublic: async () => {
+      throw new Error('storage');
+    },
+  });
+  const res = await run(set(), d);
+
+  assert.equal(res.status, 200);
+  assert.equal(res.body.avatarUrl, NEW_URL);
+});
+
+test('remove: borra el archivo, luego pone avatar_url a null y barre las pendientes', async () => {
+  const d = deps();
+  const res = await run({ action: 'remove' }, d);
+
+  assert.equal(res.status, 200);
+  assert.deepEqual(d.calls, ['removePublic:u1/old.jpg', 'setUrl:null:any', 'removeAllPending:u1']);
+});
+
+test('remove: si Storage rechaza el borrado no se confirma y avatar_url sigue apuntando al archivo', async () => {
+  const d = deps({
+    removePublic: async () => {
+      throw new Error('storage');
+    },
+  });
+  const res = await run({ action: 'remove' }, d);
+
+  assert.equal(res.status, 503);
+  assert.deepEqual(
+    d.calls.filter((c) => c.startsWith('setUrl')),
+    []
+  );
+});
+
+test('remove sin foto no falla y también barre las pendientes', async () => {
+  const d = deps({ currentAvatar: async () => ({ url: null, path: null }) });
+  const res = await run({ action: 'remove' }, d);
+
+  assert.equal(res.status, 200);
+  assert.deepEqual(d.calls, ['setUrl:null:any', 'removeAllPending:u1']);
 });

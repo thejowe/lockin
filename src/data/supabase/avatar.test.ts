@@ -90,6 +90,17 @@ describe('uploadAvatar', () => {
     expect(failure.reason).toBe('invalid-image');
   });
 
+  it('dos cambios a la vez: conflict, con mensaje para reintentar', async () => {
+    const { client } = fakeClient({
+      invoke: { data: null, error: httpError(409, 'conflict') },
+    });
+
+    const failure = await uploadAvatar(client, 'u1', 'file:///a.jpg').catch((e) => e);
+
+    expect(failure.reason).toBe('conflict');
+    expect(failure.message).toMatch(/Inténtalo de nuevo/);
+  });
+
   it('proveedor caído: «inténtalo más tarde», sin culpar a la foto', async () => {
     const { client } = fakeClient({
       invoke: { data: null, error: httpError(503, 'unavailable') },

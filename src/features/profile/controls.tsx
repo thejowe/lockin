@@ -338,14 +338,22 @@ export function SecondaryButton({
   label,
   onPress,
   tone = 'text',
+  disabled = false,
 }: {
   label: string;
   onPress: () => void;
   /** `danger` para acciones que descartan cambios. */
   tone?: 'text' | 'danger';
+  /** Mientras algo está en curso: deshabilitado de verdad, no solo sin efecto. */
+  disabled?: boolean;
 }) {
   return (
-    <Button label={label} onPress={onPress} variant={tone === 'danger' ? 'danger' : 'secondary'} />
+    <Button
+      label={label}
+      onPress={onPress}
+      disabled={disabled}
+      variant={tone === 'danger' ? 'danger' : 'secondary'}
+    />
   );
 }
 

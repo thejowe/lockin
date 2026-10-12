@@ -5,12 +5,26 @@
  *
  * Es JavaScript plano (ESM) a propósito: lo importan Deno (`index.ts`) y
  * `node --test` sin transpilar.
+ *
+ * `deps`:
+ * - `downloadPending(path)` → bytes | null
+ * - `moderate(bytes)` → `{ flagged, scores }` (lanza si el proveedor falla)
+ * - `publish(userId, bytes)` → `{ path, url }`
+ * - `currentAvatar(userId)` → `{ url, path }` (nulos sin foto; lanza si no se puede leer)
+ * - `setAvatarUrl(userId, url, expectedUrl)` → boolean. Con `expectedUrl`
+ *   definido es condicional (solo si `avatar_url` sigue siendo esa): `false`
+ *   significa que otra petición se adelantó. Sin él, incondicional.
+ * - `removePublic(path)` (lanza si Storage lo rechaza), `removePending(path)`,
+ *   `removeAllPending(userId)`.
  */
 
 export const MAX_BYTES = 5 * 1024 * 1024;
 
 /** Umbrales sobre `category_scores`, además del `flagged` del proveedor. */
 const LIMITS = { sexual: 0.4, 'violence/graphic': 0.5 };
+
+/** Sin estas tres categorías con número, la respuesta no vale para decidir. */
+const REQUIRED = ['sexual', 'sexual/minors', 'violence/graphic'];
 
 /** JPEG de verdad: lo dicen los primeros bytes, no la extensión. */
 export function isJpeg(bytes) {
@@ -24,32 +38,50 @@ export function ownsPath(userId, path) {
   return match !== null && match[1] === userId && !match[2].includes('..');
 }
 
-/** `true` si la imagen puede publicarse. */
+/**
+ * ¿Trae el proveedor todo lo necesario para decidir? Una categoría ausente se
+ * leería como 0 y dejaría pasar la imagen: por eso se exige, no se asume.
+ */
+export function isComplete(result) {
+  return (
+    typeof result?.flagged === 'boolean' &&
+    typeof result.scores === 'object' &&
+    result.scores !== null &&
+    REQUIRED.every((category) => Number.isFinite(result.scores[category]))
+  );
+}
+
+/** `true` si la imagen puede publicarse. Presupone `isComplete(result)`. */
 export function verdict({ flagged, scores }) {
   if (flagged) return false;
   if ((scores['sexual/minors'] ?? 0) > 0) return false;
   return Object.entries(LIMITS).every(([category, limit]) => (scores[category] ?? 0) < limit);
 }
 
-/**
- * @param {{ userId: string, body: unknown, deps: object }} input
- * @returns {Promise<{ status: number, body: object }>}
- */
-export async function handleAvatarRequest({ userId, body, deps }) {
-  if (body?.action === 'remove') {
-    const current = await deps.currentAvatarPath(userId);
-    await deps.setAvatarUrl(userId, null);
-    if (current) await deps.removePublic(current);
-    return { status: 200, body: { avatarUrl: null } };
+const UNAVAILABLE = { status: 503, body: { error: 'unavailable' } };
+
+async function quietly(promise) {
+  try {
+    await promise;
+  } catch {
+    // Mejor esfuerzo: un archivo huérfano es el mal menor.
   }
+}
 
-  if (body?.action !== 'set') return { status: 400, body: { error: 'bad-request' } };
-  if (!ownsPath(userId, body.path)) return { status: 403, body: { error: 'forbidden' } };
+async function remove(userId, deps) {
+  const current = await deps.currentAvatar(userId);
+  // Primero el archivo, y solo si Storage lo confirma, la referencia: si el
+  // borrado falla, `avatar_url` sigue apuntando y «quitar» se puede reintentar.
+  if (current.path) await deps.removePublic(current.path);
+  await deps.setAvatarUrl(userId, null, undefined);
+  // Lo que una subida cortada dejó en pendientes también se va con la foto.
+  await quietly(deps.removeAllPending(userId));
+  return { status: 200, body: { avatarUrl: null } };
+}
 
-  const path = body.path;
+async function publishIfClean(userId, path, deps) {
   const bytes = await deps.downloadPending(path);
   if (!bytes || bytes.length === 0 || bytes.length > MAX_BYTES || !isJpeg(bytes)) {
-    await deps.removePending(path);
     return { status: 422, body: { error: 'invalid-image' } };
   }
 
@@ -57,20 +89,53 @@ export async function handleAvatarRequest({ userId, body, deps }) {
   try {
     result = await deps.moderate(bytes);
   } catch {
-    // Falla cerrado: sin veredicto no hay foto.
-    await deps.removePending(path);
-    return { status: 503, body: { error: 'unavailable' } };
+    return UNAVAILABLE;
   }
+  // Falla cerrado: una respuesta a medias no es un «sí».
+  if (!isComplete(result)) return UNAVAILABLE;
+  if (!verdict(result)) return { status: 422, body: { error: 'flagged' } };
 
-  if (!verdict(result)) {
-    await deps.removePending(path);
-    return { status: 422, body: { error: 'flagged' } };
-  }
-
-  const previous = await deps.currentAvatarPath(userId);
+  const previous = await deps.currentAvatar(userId);
   const published = await deps.publish(userId, bytes);
-  await deps.setAvatarUrl(userId, published.url);
-  if (previous && previous !== published.path) await deps.removePublic(previous);
-  await deps.removePending(path);
+
+  let applied;
+  try {
+    applied = await deps.setAvatarUrl(userId, published.url, previous.url);
+  } catch {
+    applied = null;
+  }
+  if (applied !== true) {
+    // Lo publicado no quedó asociado a nadie: se retira para que no sea un
+    // archivo público huérfano.
+    await quietly(deps.removePublic(published.path));
+    return applied === false ? { status: 409, body: { error: 'conflict' } } : UNAVAILABLE;
+  }
+
+  if (previous.path && previous.path !== published.path) {
+    await quietly(deps.removePublic(previous.path));
+  }
   return { status: 200, body: { avatarUrl: published.url } };
+}
+
+/**
+ * @param {{ userId: string, body: unknown, deps: object }} input
+ * @returns {Promise<{ status: number, body: object }>}
+ */
+export async function handleAvatarRequest({ userId, body, deps }) {
+  try {
+    if (body?.action === 'remove') return await remove(userId, deps);
+
+    if (body?.action !== 'set') return { status: 400, body: { error: 'bad-request' } };
+    if (!ownsPath(userId, body.path)) return { status: 403, body: { error: 'forbidden' } };
+
+    try {
+      return await publishIfClean(userId, body.path, deps);
+    } finally {
+      // Sea cual sea el desenlace, la subida pendiente no se queda.
+      await quietly(deps.removePending(body.path));
+    }
+  } catch {
+    // Cualquier fallo inesperado deja la foto sin publicar.
+    return UNAVAILABLE;
+  }
 }

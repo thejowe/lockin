@@ -14,11 +14,12 @@ import type { LockInSupabaseClient } from './client';
 const UPLOADS = 'avatar-uploads';
 const FUNCTION = 'moderate-avatar';
 
-export type AvatarRejectedReason = 'flagged' | 'invalid-image' | 'unavailable';
+export type AvatarRejectedReason = 'flagged' | 'invalid-image' | 'conflict' | 'unavailable';
 
 const MESSAGES: Record<AvatarRejectedReason, string> = {
   flagged: 'Esta foto no cumple las normas de la comunidad. Prueba con otra.',
   'invalid-image': 'No hemos podido usar esa imagen. Prueba con otra foto.',
+  conflict: 'Tu foto ha cambiado a la vez desde otro sitio. Inténtalo de nuevo.',
   unavailable: 'No hemos podido revisar la foto ahora mismo. Inténtalo más tarde.',
 };
 
@@ -40,13 +41,19 @@ function newName(): string {
   return `${id}.jpg`;
 }
 
-/** Qué dijo la función: rechazo por contenido, imagen inválida, o «no disponible». */
+/** Qué dijo la función: rechazo por contenido, imagen inválida, carrera, o «no disponible». */
 async function reasonOf(error: unknown): Promise<AvatarRejectedReason> {
   const context = (error as { context?: { json?: () => Promise<{ error?: string }> } } | null)
     ?.context;
   try {
     const body = await context?.json?.();
-    if (body?.error === 'flagged' || body?.error === 'invalid-image') return body.error;
+    if (
+      body?.error === 'flagged' ||
+      body?.error === 'invalid-image' ||
+      body?.error === 'conflict'
+    ) {
+      return body.error;
+    }
   } catch {
     // Cuerpo ilegible: se trata como «no disponible».
   }
