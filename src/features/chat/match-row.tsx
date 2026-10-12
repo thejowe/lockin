@@ -18,13 +18,12 @@ import { usePressScale } from '@/hooks/use-press-scale';
 import { useTheme } from '@/hooks/use-theme';
 
 import { formatRelative } from './format';
-import { MODE_LABELS } from './labels';
 import { ProfileAvatar } from './profile-avatar';
 
 import type { MatchWithProfile } from '@/data';
 
 /** Lo que se lee bajo el nombre mientras nadie ha escrito nada. */
-export const NO_MESSAGES_HINT = 'Decidid cuándo hacer vuestro primer Lock-In';
+export const NO_MESSAGES_HINT = 'Escribe el primer mensaje';
 
 /**
  * Textos de la racha de pareja. Son copia de `streakTag`/`streakLine` de
@@ -102,12 +101,10 @@ export function MatchRow({
               </View>
 
               <View style={styles.tags}>
-                <ThemedText type="label" themeColor="textMuted">
-                  {MODE_LABELS[match.mode]}
-                </ThemedText>
+                {/* Sin etiqueta de modo: desde el 2026-10-12 todo match es de cofundador. */}
                 {lastMessage === null && (
                   <ThemedText type="label" themeColor="brass">
-                    · Nuevo
+                    Nuevo
                   </ThemedText>
                 )}
                 {streak !== null && (

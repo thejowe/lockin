@@ -5,14 +5,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Screen } from '@/components/ambient-background';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
-import { useQuery, useRepositories, type ProfileInput } from '@/data';
+import { useRepositories, type ProfileInput } from '@/data';
 import { ProfileForm, useRegistrationGate } from '@/features/profile';
 
 /**
  * Paso 2 del onboarding: crear el perfil.
  *
  * El formulario es el mismo componente que usa la tab Perfil para editar. Aquí
- * arranca vacío, con "qué busco" precargado desde el modo elegido en el paso 1.
+ * arranca vacío. No pregunta qué busca la persona: desde el 2026-10-12 el
+ * producto es solo buscar cofundador.
  *
  * Con el registro obligatorio (2026-09-20) tampoco se llega aquí sin cuenta: la
  * puerta manda a `/register`, igual que `mode`, para que una URL directa no la
@@ -23,7 +24,6 @@ export default function ProfileFormScreen() {
   const repositories = useRepositories();
 
   const gate = useRegistrationGate();
-  const { data: session, loading } = useQuery('session:mode', () => repositories.session.get());
 
   async function handleSubmit(input: ProfileInput) {
     await repositories.profiles.saveCurrent(input);
@@ -31,16 +31,13 @@ export default function ProfileFormScreen() {
     router.replace('/discover');
   }
 
-  // Esperamos al modo elegido antes de montar el formulario: si llegara después,
-  // el campo "qué busco" ya estaría inicializado en vacío.
-  if (loading || gate === 'checking') return null;
+  if (gate === 'checking') return null;
   if (gate === 'required') return <Redirect href="/register" />;
 
   return (
     <Screen ambient="plum">
       <SafeAreaView style={styles.root} edges={['top']}>
         <ProfileForm
-          defaultLookingFor={session?.activeMode ?? null}
           submitLabel="Crear perfil"
           onSubmit={handleSubmit}
           header={

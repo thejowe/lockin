@@ -129,7 +129,7 @@ describe('session-streak.yaml', () => {
   it('el runner lo encadena después de session-rate.yaml y de su oráculo', () => {
     assert.match(runner, /e2e\/session-streak\.yaml/);
     assert.match(runner, /await prepareSessionStreak\(status, profileName\);/);
-    assert.match(runner, /streak: 'verified'/);
+    assert.match(runner, /streak: LOCKIN_FLOWS \? 'verified' : 'skipped'/);
     // Anclado en los argumentos del spawn, como en session-rate.yaml.
     const rated = runner.indexOf('await verifySessionRating(');
     const seeded = runner.indexOf('await prepareSessionStreak(');

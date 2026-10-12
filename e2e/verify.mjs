@@ -15,7 +15,8 @@ export async function verifyPersistence(status, profileName, message) {
   const profile = await rows(client.from('profiles').select('*').eq('name', profileName).single());
   assert.equal(profile.age, 28);
   assert.equal(profile.location, 'Barcelona');
-  assert.equal(profile.looking_for, 'ambos');
+  // Solo cofundador desde el 2026-10-12: ni la bienvenida ni el formulario preguntan.
+  assert.equal(profile.looking_for, 'par');
   assert.deepEqual(profile.specialties, ['dev', 'marketing']);
   // Lo que la UI declaró en "Lo que debe dominar quien busco". Que llegue a
   // Postgres es lo único que distingue la feature de un estado local: los tests
@@ -31,7 +32,7 @@ export async function verifyPersistence(status, profileName, message) {
   const settings = await rows(
     client.from('user_settings').select('*').eq('user_id', profile.id).single()
   );
-  assert.equal(settings.active_mode, 'ambos');
+  assert.equal(settings.active_mode, 'par');
   const sent = await rows(
     client.from('messages').select('*').eq('sender_id', profile.id).eq('body', message).single()
   );

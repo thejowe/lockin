@@ -70,14 +70,13 @@ describe('enlace «Ya tengo cuenta» del paso 1', () => {
 
     await renderRoute(<ModeScreen />);
 
-    expect(screen.getByText('¿Qué buscas?')).toBeTruthy();
+    expect(screen.getByText('Encuentra con quién construir')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Ya tengo cuenta' })).toBeNull();
   });
 
   it('no es un muro: el onboarding sigue pudiéndose completar sin pulsarlo', async () => {
     await renderRoute(<ModeScreen />);
 
-    await fireEvent.press(screen.getByText('Cofundador'));
     await fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
 
     await waitFor(() => expect(router.push).toHaveBeenCalledWith('/profile-form'));

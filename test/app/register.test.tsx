@@ -71,12 +71,12 @@ beforeEach(() => {
   mockSetPassword.mockReset().mockResolvedValue(undefined);
 });
 
-describe('la puerta en «¿Qué buscas?»', () => {
+describe('la puerta en la bienvenida', () => {
   it('sin la cuenta confirmada manda a /register y no enseña el paso', async () => {
     await renderRoute(<ModeScreen />);
 
     await waitFor(() => expect(router.redirects).toEqual(['/register']));
-    expect(screen.queryByText('¿Qué buscas?')).toBeNull();
+    expect(screen.queryByText('Encuentra con quién construir')).toBeNull();
   });
 
   it('con una cuenta pendiente de confirmar tampoco pasa', async () => {
@@ -96,7 +96,7 @@ describe('la puerta en «¿Qué buscas?»', () => {
 
     await renderRoute(<ModeScreen />);
 
-    expect(await screen.findByText('¿Qué buscas?')).toBeTruthy();
+    expect(await screen.findByText('Encuentra con quién construir')).toBeTruthy();
     expect(router.redirects).toEqual([]);
   });
 
@@ -105,7 +105,7 @@ describe('la puerta en «¿Qué buscas?»', () => {
 
     await renderRoute(<ModeScreen />);
 
-    expect(screen.queryByText('¿Qué buscas?')).toBeNull();
+    expect(screen.queryByText('Encuentra con quién construir')).toBeNull();
     expect(router.redirects).toEqual([]);
   });
 
@@ -115,7 +115,7 @@ describe('la puerta en «¿Qué buscas?»', () => {
     await renderRoute(<ModeScreen />);
 
     await waitFor(() => expect(router.redirects).toEqual(['/register']));
-    expect(screen.queryByText('¿Qué buscas?')).toBeNull();
+    expect(screen.queryByText('Encuentra con quién construir')).toBeNull();
   });
 
   it('sin capa de cuentas (mock) o con la puerta apagada no hay puerta', async () => {
@@ -123,7 +123,7 @@ describe('la puerta en «¿Qué buscas?»', () => {
 
     await renderRoute(<ModeScreen />);
 
-    expect(screen.getByText('¿Qué buscas?')).toBeTruthy();
+    expect(screen.getByText('Encuentra con quién construir')).toBeTruthy();
     expect(router.redirects).toEqual([]);
   });
 });

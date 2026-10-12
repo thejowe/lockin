@@ -90,7 +90,7 @@ describe('room.yaml', () => {
 
   it('el runner lo encadena después de agreement.yaml, con siembra y oráculo', () => {
     assert.match(runner, /e2e\/room\.yaml/);
-    assert.match(runner, /room: 'verified'/);
+    assert.match(runner, /room: LOCKIN_FLOWS \? 'verified' : 'skipped'/);
     const agreementChecked = runner.indexOf('await verifyAgreementAnswer(status, profileName);');
     const seeded = runner.indexOf('const room = await prepareRoom(status, profileName);');
     const flowRun = runner.indexOf('roomFile,');

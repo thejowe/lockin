@@ -35,7 +35,7 @@ import {
   Springs,
   Stroke,
 } from '@/constants/theme';
-import { ProfileAvatar, modeLabel, specialtyLabel } from '@/features/profile';
+import { ProfileAvatar, specialtyLabel } from '@/features/profile';
 import { useReduceMotion } from '@/hooks/use-reduce-motion';
 import { useTheme, useThemeName } from '@/hooks/use-theme';
 
@@ -101,10 +101,6 @@ export function MatchModal({
                 boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}, ${elevation.overlay}`,
               },
             ]}>
-            <ThemedText type="label" themeColor="teal" style={styles.blurb}>
-              Modo {modeLabel(event.match.mode)}
-            </ThemedText>
-
             <Animated.View entering={reduceMotion ? undefined : enterUp(2)}>
               <ThemedText type="display" style={styles.blurb}>
                 ¡Match!

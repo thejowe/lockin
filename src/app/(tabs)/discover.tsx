@@ -1,12 +1,12 @@
 /**
- * Tab Descubrir: el deck de swipe.
+ * Tab Descubrir: el deck de swipe, a pantalla completa como en Tinder.
  *
  * Solo compone — el estado del deck vive en `useDeck` y el gesto en `SwipeDeck`,
  * para que cuando `datos` cambie el mock por Supabase esta pantalla no cambie.
  *
- * El filtro arranca en el modo elegido en el onboarding y se puede cambiar sin
- * salir de aquí; mientras la sesión se resuelve el deck se lee sin filtrar, que
- * es lo mismo que hace la capa de datos por debajo.
+ * Sin cabecera ni filtro: desde el 2026-10-12 el producto es solo buscar
+ * cofundador, así que el deck se lee siempre en modo `par` y la tarjeta se
+ * queda con todo el alto que deja la barra de pestañas.
  *
  * También lee el perfil propio, y solo por una cosa: qué domina uno, para que
  * la tarjeta pueda resaltar el encaje con lo que la otra persona busca. Es una
@@ -15,7 +15,6 @@
  */
 
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -24,17 +23,13 @@ import { LoadingState, MessageState } from '@/components/state-view';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useQuery, useRepositories } from '@/data';
-import {
-  ActionButton,
-  DeckEmpty,
-  MatchModal,
-  ModeFilter,
-  SwipeDeck,
-  useDeck,
-} from '@/features/discover';
+import { ActionButton, DeckEmpty, MatchModal, SwipeDeck, useDeck } from '@/features/discover';
 import { useTheme } from '@/hooks/use-theme';
 
 import type { ModePreference, Specialty } from '@/data';
+
+/** El único modo del producto: buscar cofundador. Lock-In queda fuera de la UI. */
+const DECK_MODE: ModePreference = 'par';
 
 /** Constante para no crear un array nuevo en cada render mientras no hay perfil. */
 const EMPTY_SPECIALTIES: Specialty[] = [];
@@ -44,7 +39,6 @@ export default function DiscoverScreen() {
   const router = useRouter();
   const repositories = useRepositories();
 
-  const { data: session } = useQuery('session:discover', () => repositories.session.get());
   const { data: viewer } = useQuery('profile:discover', () => repositories.profiles.getCurrent());
   /** Vacío mientras el perfil carga: la tarjeta simplemente no resalta nada. */
   const viewerSpecialties = viewer?.specialties ?? EMPTY_SPECIALTIES;
@@ -52,11 +46,7 @@ export default function DiscoverScreen() {
   const viewerSchedule = viewer
     ? { bands: viewer.availability.bands, timezone: viewer.timezone }
     : undefined;
-  /** Modo elegido en esta pantalla; `null` mientras mande el del onboarding. */
-  const [override, setOverride] = useState<ModePreference | null>(null);
-  const mode: ModePreference = override ?? session?.activeMode ?? 'ambos';
-
-  const { cards, loading, error, match, decide, dismissMatch, refresh } = useDeck(mode);
+  const { cards, loading, error, match, decide, dismissMatch, refresh } = useDeck(DECK_MODE);
 
   function openChat(matchId: string) {
     dismissMatch();
@@ -68,18 +58,6 @@ export default function DiscoverScreen() {
       <AmbientBackground variant="ember" />
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
         <View style={styles.content}>
-          <View style={styles.header}>
-            <ThemedText type="label" themeColor="textSecondary">
-              Descubrir
-            </ThemedText>
-            {/* Una sola línea: cada píxel de alto que ahorra la cabecera es tarjeta. */}
-            <ThemedText type="subtitle" numberOfLines={1}>
-              Quién está construyendo
-            </ThemedText>
-          </View>
-
-          <ModeFilter value={mode} onChange={setOverride} />
-
           <View style={styles.deck}>
             {loading ? (
               <LoadingState label="Buscando perfiles…" />
@@ -97,11 +75,7 @@ export default function DiscoverScreen() {
                 viewerSchedule={viewerSchedule}
               />
             ) : (
-              <DeckEmpty
-                mode={mode}
-                onOpenMatches={() => router.push('/matches')}
-                onRefresh={refresh}
-              />
+              <DeckEmpty onOpenMatches={() => router.push('/matches')} onRefresh={refresh} />
             )}
           </View>
 
@@ -135,13 +109,10 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
-    gap: Spacing.three,
-    paddingHorizontal: Spacing.three,
-    paddingTop: Spacing.two,
-    paddingBottom: BottomTabInset + Spacing.two,
-  },
-  header: {
-    gap: Spacing.half,
+    gap: Spacing.two,
+    paddingHorizontal: Spacing.two,
+    paddingTop: Spacing.one,
+    paddingBottom: BottomTabInset + Spacing.one,
   },
   deck: {
     flex: 1,

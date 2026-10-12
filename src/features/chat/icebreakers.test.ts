@@ -108,7 +108,7 @@ describe('suggestIcebreakers — forma del resultado', () => {
 
     expect(suggestIcebreakers(them, buildMe(), 'par')).toEqual([
       'Yo voy más por desarrollo y tú por diseño — eso encaja. ¿Qué parte te apetecería llevar?',
-      'Los dos solemos estar por la noche. ¿Probamos un Lock-In esta semana a esa hora?',
+      'Los dos solemos estar por la noche. ¿Hablamos esta semana a esa hora?',
       'Has puesto «Un CRM.». Cuéntame más.',
     ]);
   });
@@ -182,7 +182,7 @@ describe('franja horaria compartida', () => {
     const them = buildThem({ availability: { hoursPerWeek: 10, bands: ['noche'] } });
 
     expect(suggestIcebreakers(them, me, 'par')[0]).toBe(
-      'Los dos solemos estar por la noche. ¿Probamos un Lock-In esta semana a esa hora?'
+      'Los dos solemos estar por la noche. ¿Hablamos esta semana a esa hora?'
     );
   });
 
@@ -194,7 +194,7 @@ describe('franja horaria compartida', () => {
     });
 
     expect(suggestIcebreakers(them, flexibleMe, 'par')[0]).toBe(
-      'Los dos solemos estar por la tarde. ¿Probamos un Lock-In esta semana a esa hora?'
+      'Los dos solemos estar por la tarde. ¿Hablamos esta semana a esa hora?'
     );
   });
 

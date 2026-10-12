@@ -51,6 +51,11 @@ const runtime = join(root, 'e2e/.runtime');
 const journeyFile = join(root, 'e2e/full-journey.yaml');
 // Segundo caso, solo con credenciales: entra y sale de la sesión que deja
 // `e2e/session-now.sql` en el match del recorrido. Ver la cabecera de ese `.yaml`.
+/**
+ * Los flujos de Lock-In (sesión, valoración, racha y sala). Apagados desde el
+ * 2026-10-12: la app se centra solo en buscar cofundador y su UI ya no se ve.
+ */
+const LOCKIN_FLOWS = false;
 const sessionFile = join(root, 'e2e/session.yaml');
 // Tercer caso, encadenado al anterior: valora de un toque esa misma sesión, ya
 // terminada por `prepareSessionRating`. Ver la cabecera de ese `.yaml`.
@@ -780,97 +785,102 @@ if (command === 'test') {
       }
       await verifyPersistence(status, profileName, message);
 
-      // Su propia carpeta de evidencia dentro del intento: `diagnose` lee los
-      // volcados de Maestro de la carpeta que se le pasa.
-      const sessionDir = join(dir, 'session');
-      mkdirSync(sessionDir, { recursive: true });
-      const sessionRun = spawnSync(
-        'maestro',
-        [
-          'test',
-          '--format',
-          'junit',
-          '--output',
-          join(sessionDir, 'maestro.xml'),
-          '--debug-output',
-          sessionDir,
-          '--test-output-dir',
-          sessionDir,
-          '--flatten-debug-output',
-          '-e',
-          'MESSAGE=' + message,
-          sessionFile,
-        ],
-        { cwd: root, stdio: 'inherit' }
-      );
-      if (sessionRun.error) throw sessionRun.error;
-      if (sessionRun.status !== 0) {
-        const diagnosis = diagnose(sessionDir);
-        return { outcome: diagnosis.kind, why: 'session.yaml: ' + diagnosis.why };
-      }
-      await verifySessionAttendance(status, profileName);
+      // Sesión, valoración y racha son Lock-In: desde el 2026-10-12 la app es
+      // solo cofundador y esas pantallas ya no se pintan, así que sus flujos no
+      // corren (ver `LOCKIN_FLOWS`). Se quedan en el repo por si vuelven.
+      if (LOCKIN_FLOWS) {
+        // Su propia carpeta de evidencia dentro del intento: `diagnose` lee los
+        // volcados de Maestro de la carpeta que se le pasa.
+        const sessionDir = join(dir, 'session');
+        mkdirSync(sessionDir, { recursive: true });
+        const sessionRun = spawnSync(
+          'maestro',
+          [
+            'test',
+            '--format',
+            'junit',
+            '--output',
+            join(sessionDir, 'maestro.xml'),
+            '--debug-output',
+            sessionDir,
+            '--test-output-dir',
+            sessionDir,
+            '--flatten-debug-output',
+            '-e',
+            'MESSAGE=' + message,
+            sessionFile,
+          ],
+          { cwd: root, stdio: 'inherit' }
+        );
+        if (sessionRun.error) throw sessionRun.error;
+        if (sessionRun.status !== 0) {
+          const diagnosis = diagnose(sessionDir);
+          return { outcome: diagnosis.kind, why: 'session.yaml: ' + diagnosis.why };
+        }
+        await verifySessionAttendance(status, profileName);
 
-      // La sesión que se acaba de vivir se envejece hasta dejarla terminada y
-      // con los dos dentro: es la única forma de llegar a la repesca sin dejar
-      // dos sesiones en el match, donde la viva taparía a la valorable.
-      await prepareSessionRating(status, profileName);
+        // La sesión que se acaba de vivir se envejece hasta dejarla terminada y
+        // con los dos dentro: es la única forma de llegar a la repesca sin dejar
+        // dos sesiones en el match, donde la viva taparía a la valorable.
+        await prepareSessionRating(status, profileName);
 
-      const ratingDir = join(dir, 'rating');
-      mkdirSync(ratingDir, { recursive: true });
-      const ratingRun = spawnSync(
-        'maestro',
-        [
-          'test',
-          '--format',
-          'junit',
-          '--output',
-          join(ratingDir, 'maestro.xml'),
-          '--debug-output',
-          ratingDir,
-          '--test-output-dir',
-          ratingDir,
-          '--flatten-debug-output',
-          '-e',
-          'MESSAGE=' + message,
-          ratingFile,
-        ],
-        { cwd: root, stdio: 'inherit' }
-      );
-      if (ratingRun.error) throw ratingRun.error;
-      if (ratingRun.status !== 0) {
-        const diagnosis = diagnose(ratingDir);
-        return { outcome: diagnosis.kind, why: 'session-rate.yaml: ' + diagnosis.why };
-      }
-      await verifySessionRating(status, profileName);
+        const ratingDir = join(dir, 'rating');
+        mkdirSync(ratingDir, { recursive: true });
+        const ratingRun = spawnSync(
+          'maestro',
+          [
+            'test',
+            '--format',
+            'junit',
+            '--output',
+            join(ratingDir, 'maestro.xml'),
+            '--debug-output',
+            ratingDir,
+            '--test-output-dir',
+            ratingDir,
+            '--flatten-debug-output',
+            '-e',
+            'MESSAGE=' + message,
+            ratingFile,
+          ],
+          { cwd: root, stdio: 'inherit' }
+        );
+        if (ratingRun.error) throw ratingRun.error;
+        if (ratingRun.status !== 0) {
+          const diagnosis = diagnose(ratingDir);
+          return { outcome: diagnosis.kind, why: 'session-rate.yaml: ' + diagnosis.why };
+        }
+        await verifySessionRating(status, profileName);
 
-      // Después del oráculo de la valoración: la sesión sembrada queda fuera de
-      // su ventana de 24 h y no toca `session_ratings`. Sin oráculo detrás: la
-      // racha no se guarda, así que lo que se comprueba es lo que pinta la app.
-      await prepareSessionStreak(status, profileName);
+        // Después del oráculo de la valoración: la sesión sembrada queda fuera de
+        // su ventana de 24 h y no toca `session_ratings`. Sin oráculo detrás: la
+        // racha no se guarda, así que lo que se comprueba es lo que pinta la app.
+        await prepareSessionStreak(status, profileName);
 
-      const streakDir = join(dir, 'streak');
-      mkdirSync(streakDir, { recursive: true });
-      const streakRun = spawnSync(
-        'maestro',
-        [
-          'test',
-          '--format',
-          'junit',
-          '--output',
-          join(streakDir, 'maestro.xml'),
-          '--debug-output',
-          streakDir,
-          '--test-output-dir',
-          streakDir,
-          '--flatten-debug-output',
-          streakFile,
-        ],
-        { cwd: root, stdio: 'inherit' }
-      );
-      if (streakRun.error) throw streakRun.error;
-      if (streakRun.status !== 0) {
-        const diagnosis = diagnose(streakDir);
-        return { outcome: diagnosis.kind, why: 'session-streak.yaml: ' + diagnosis.why };
+        const streakDir = join(dir, 'streak');
+        mkdirSync(streakDir, { recursive: true });
+        const streakRun = spawnSync(
+          'maestro',
+          [
+            'test',
+            '--format',
+            'junit',
+            '--output',
+            join(streakDir, 'maestro.xml'),
+            '--debug-output',
+            streakDir,
+            '--test-output-dir',
+            streakDir,
+            '--flatten-debug-output',
+            streakFile,
+          ],
+          { cwd: root, stdio: 'inherit' }
+        );
+        if (streakRun.error) throw streakRun.error;
+        if (streakRun.status !== 0) {
+          const diagnosis = diagnose(streakDir);
+          return { outcome: diagnosis.kind, why: 'session-streak.yaml: ' + diagnosis.why };
+        }
       }
 
       // Después de la racha y en el mismo match: la contraparte ya ha respondido
@@ -905,36 +915,39 @@ if (command === 'test') {
       }
       await verifyAgreementAnswer(status, profileName);
 
-      // Después del acuerdo: la sala la convoca la misma contraparte y empieza
-      // a 7 minutos. El flujo tiene 2 para aceptar antes de que se cierren las
-      // respuestas; ver la cabecera de `room.yaml`.
-      const room = await prepareRoom(status, profileName);
+      // La sala grupal también es Lock-In: fuera con el resto (`LOCKIN_FLOWS`).
+      if (LOCKIN_FLOWS) {
+        // Después del acuerdo: la sala la convoca la misma contraparte y empieza
+        // a 7 minutos. El flujo tiene 2 para aceptar antes de que se cierren las
+        // respuestas; ver la cabecera de `room.yaml`.
+        const room = await prepareRoom(status, profileName);
 
-      const roomDir = join(dir, 'room');
-      mkdirSync(roomDir, { recursive: true });
-      const roomRun = spawnSync(
-        'maestro',
-        [
-          'test',
-          '--format',
-          'junit',
-          '--output',
-          join(roomDir, 'maestro.xml'),
-          '--debug-output',
-          roomDir,
-          '--test-output-dir',
-          roomDir,
-          '--flatten-debug-output',
-          roomFile,
-        ],
-        { cwd: root, stdio: 'inherit' }
-      );
-      if (roomRun.error) throw roomRun.error;
-      if (roomRun.status !== 0) {
-        const diagnosis = diagnose(roomDir);
-        return { outcome: diagnosis.kind, why: 'room.yaml: ' + diagnosis.why };
+        const roomDir = join(dir, 'room');
+        mkdirSync(roomDir, { recursive: true });
+        const roomRun = spawnSync(
+          'maestro',
+          [
+            'test',
+            '--format',
+            'junit',
+            '--output',
+            join(roomDir, 'maestro.xml'),
+            '--debug-output',
+            roomDir,
+            '--test-output-dir',
+            roomDir,
+            '--flatten-debug-output',
+            roomFile,
+          ],
+          { cwd: root, stdio: 'inherit' }
+        );
+        if (roomRun.error) throw roomRun.error;
+        if (roomRun.status !== 0) {
+          const diagnosis = diagnose(roomDir);
+          return { outcome: diagnosis.kind, why: 'room.yaml: ' + diagnosis.why };
+        }
+        await verifyRoomAttendance(status, profileName, room);
       }
-      await verifyRoomAttendance(status, profileName, room);
 
       // Lo último del intento, porque cambia la sesión del teléfono: la otra
       // cuenta —email confirmado y ficha propia— se crea aquí con la
@@ -1014,11 +1027,13 @@ if (command === 'test') {
             runId,
             variant,
             persistence: 'verified',
-            session: 'verified',
-            rating: 'verified',
-            streak: 'verified',
+            // Con `LOCKIN_FLOWS` apagado esos flujos no corren: decirlo, no
+            // publicar como verificado lo que no se ha ejecutado.
+            session: LOCKIN_FLOWS ? 'verified' : 'skipped',
+            rating: LOCKIN_FLOWS ? 'verified' : 'skipped',
+            streak: LOCKIN_FLOWS ? 'verified' : 'skipped',
             agreement: 'verified',
-            room: 'verified',
+            room: LOCKIN_FLOWS ? 'verified' : 'skipped',
             signInAbandon: 'verified',
           },
           null,
@@ -1027,7 +1042,9 @@ if (command === 'test') {
       );
       return {
         outcome: 'pass',
-        why: 'recorrido, persistencia, sesión Lock-In, acuerdo, sala y abandono al entrar verificados',
+        why: LOCKIN_FLOWS
+          ? 'recorrido, persistencia, sesión Lock-In, acuerdo, sala y abandono al entrar verificados'
+          : 'recorrido, persistencia, acuerdo y abandono al entrar verificados (Lock-In apagado)',
       };
     } catch (error) {
       // Un oráculo que falla es un fallo del caso, no del runner: no se reintenta.

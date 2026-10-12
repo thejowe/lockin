@@ -13,15 +13,10 @@ import { useTheme } from '@/hooks/use-theme';
 
 import { ActionButton } from './action-button';
 
-import type { ModePreference } from '@/data';
-
 export function DeckEmpty({
-  mode,
   onOpenMatches,
   onRefresh,
 }: {
-  /** Modo con el que está filtrado el deck: cambia el motivo del vacío. */
-  mode: ModePreference;
   onOpenMatches: () => void;
   onRefresh: () => void;
 }) {
@@ -40,9 +35,8 @@ export function DeckEmpty({
       <ThemedText type="title">Ya has visto a todo el mundo</ThemedText>
 
       <ThemedText type="body" themeColor="textSecondary">
-        {mode === 'ambos'
-          ? 'No quedan perfiles nuevos por decidir. Vuelve en un rato: la gente que se apunta entra directamente en tu deck.'
-          : 'No quedan perfiles nuevos en este modo. Prueba a cambiar el filtro de arriba para ver el resto.'}
+        No quedan perfiles nuevos por decidir. Vuelve en un rato: la gente que se apunta entra
+        directamente en tu deck.
       </ThemedText>
 
       <View style={styles.actions}>

@@ -4,6 +4,7 @@
 
 export { useRoomPresence } from './use-room-presence';
 export { RoomReminderSync } from './room-reminder-sync';
+export { ClearLockInReminders } from './clear-lockin-reminders';
 export { ROOM_REMINDER_KEY_PREFIX, syncRoomReminders } from './room-reminders';
 export { roomRowView } from './row-view';
 export { RoomRow } from './room-row';

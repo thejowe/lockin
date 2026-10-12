@@ -1,12 +1,13 @@
 /**
- * Botones de pass/like.
+ * Botones de pass/like, redondos y flotando sobre la tarjeta como en Tinder.
  *
  * No son un adorno: el gesto no es accesible para todo el mundo (lectores de
  * pantalla, movilidad reducida, ratón en web), así que toda decisión posible
  * con el dedo tiene que poder tomarse aquí también.
  *
- * Pasar es cristal, Like es brasa sólida: los dos dicen su nombre, pero solo
- * uno es «lo siguiente que haces» si la tarjeta te convence.
+ * Solo icono, pero cada uno dice su nombre y su efecto al lector de pantalla.
+ * Son cristal oscuro con el icono en su color —alerta para pasar, brasa para
+ * el like— y al pulsarlos se tiñen de ese color, igual que en Tinder.
  */
 
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -14,12 +15,20 @@ import Animated from 'react-native-reanimated';
 
 import { glassStyle } from '@/components/glass';
 import { Icon } from '@/components/icon';
-import { ThemedText } from '@/components/themed-text';
-import { Control, Opacity, Radii, Spacing } from '@/constants/theme';
+import { Opacity, Radii, Spacing } from '@/constants/theme';
 import { usePressScale } from '@/hooks/use-press-scale';
 import { useTheme } from '@/hooks/use-theme';
 
 import type { Decision } from '@/data';
+
+/** Diámetro de cada botón. */
+const BUTTON_SIZE = 64;
+
+/**
+ * Alto que ocupan los botones, con su margen inferior: la tarjeta deja ese
+ * hueco abajo para que su texto no quede debajo.
+ */
+export const DECK_ACTIONS_SPACE = BUTTON_SIZE + Spacing.four;
 
 export function DeckActions({
   onDecide,
@@ -64,10 +73,11 @@ function ActionButton({
   const theme = useTheme();
   const press = usePressScale();
   const like = tone === 'like';
-  const color = like ? theme.onAccent : theme.text;
+  const color = like ? theme.brass : theme.danger;
+  const pressedFill = like ? theme.brassSoft : theme.dangerSoft;
 
   return (
-    <Animated.View style={[like ? styles.likeSlot : styles.passSlot, press.style]}>
+    <Animated.View style={press.style}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={label}
@@ -79,15 +89,12 @@ function ActionButton({
         onPressOut={press.onPressOut}
         style={({ pressed }) => [
           styles.button,
-          like
-            ? { backgroundColor: theme.brass }
-            : glassStyle(theme, { elevated: true, radius: Radii.pill }),
-          disabled ? styles.disabled : pressed && styles.pressed,
+          glassStyle(theme, { elevated: true, floating: true, radius: Radii.pill }),
+          { backgroundColor: theme.surfaceOpaque },
+          pressed && !disabled && { backgroundColor: pressedFill, borderColor: color },
+          disabled && styles.disabled,
         ]}>
-        <Icon name={like ? 'heart' : 'close'} size={20} color={color} strokeWidth={2} />
-        <ThemedText type="bodyStrong" style={{ color }}>
-          {label}
-        </ThemedText>
+        <Icon name={like ? 'heart' : 'close'} size={30} color={color} strokeWidth={2.4} />
       </Pressable>
     </Animated.View>
   );
@@ -96,24 +103,14 @@ function ActionButton({
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
-    gap: Spacing.two + Spacing.one,
-  },
-  passSlot: {
-    flex: 2,
-  },
-  likeSlot: {
-    flex: 3,
+    justifyContent: 'center',
+    gap: Spacing.five,
   },
   button: {
-    minHeight: Control.button,
-    flexDirection: 'row',
+    width: BUTTON_SIZE,
+    height: BUTTON_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing.two,
-    borderRadius: Radii.pill,
-  },
-  pressed: {
-    opacity: Opacity.pressed,
   },
   disabled: {
     opacity: Opacity.disabled,

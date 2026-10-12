@@ -3,9 +3,10 @@
  *
  * La pantalla solo compone, pero decide cuál de los cuatro estados del deck se
  * ve (cargando, error, tarjetas, vacío) y con qué modo se lee. Dos reglas suyas
- * no viven en `useDeck` y por eso se prueban aquí: que el filtro arranque en el
- * modo del onboarding pero lo pueda pisar el de esta pantalla, y que un fallo
- * al guardar una decisión no borre el deck que ya está en pantalla — solo avise.
+ * no viven en `useDeck` y por eso se prueban aquí: que el deck se lea siempre
+ * en modo cofundador, sin filtro ni cabecera (desde el 2026-10-12), y que un
+ * fallo al guardar una decisión no borre el deck que ya está en pantalla — solo
+ * avise.
  *
  * `SwipeDeck` se sustituye por un doble: su gesto ya está probado en
  * `swipe-deck.test.tsx`, y montarlo aquí arrastraría Reanimated sin aportar
@@ -72,39 +73,22 @@ beforeEach(() => {
 });
 
 describe('DiscoverScreen', () => {
-  it('encabeza la pantalla y ofrece el filtro de modo', async () => {
+  it('solo enseña tarjetas: sin cabecera ni filtro de modo', async () => {
     await renderDiscover();
 
-    expect(screen.getByText('Descubrir')).toBeTruthy();
-    expect(screen.getByText('Quién está construyendo')).toBeTruthy();
-    expect(screen.getAllByRole('radio')).toHaveLength(3);
+    expect(screen.queryByText('Quién está construyendo')).toBeNull();
+    expect(screen.queryAllByRole('radio')).toHaveLength(0);
+    expect(screen.queryByText(/Lock-In/)).toBeNull();
   });
 
-  it('arranca con el modo elegido en el onboarding', async () => {
+  it('lee el deck en modo cofundador aunque la sesión guarde otro', async () => {
+    const getDeck = jest.spyOn(repositories.discovery, 'getDeck');
     await repositories.session.setActiveMode('lockin');
 
     await renderDiscover();
 
-    await waitFor(() => expect(screen.getByLabelText('Compañero de Lock-In')).toBeSelected());
-  });
-
-  it('sin sesión resuelta lee el deck sin filtrar', async () => {
-    await renderDiscover();
-
-    expect(screen.getByLabelText('Ambos')).toBeSelected();
-  });
-
-  it('cambiar el filtro relee el deck con ese modo', async () => {
-    await renderDiscover();
-    const todos = mockDeck.profiles.length;
-
-    await fireEvent.press(screen.getByLabelText('Compañero de Lock-In'));
-
-    await waitFor(() => expect(screen.getByLabelText('Compañero de Lock-In')).toBeSelected());
-    await waitFor(() =>
-      expect(mockDeck.profiles.every((profile) => profile.lookingFor !== 'par')).toBe(true)
-    );
-    expect(mockDeck.profiles.length).toBeLessThanOrEqual(todos);
+    expect(getDeck).toHaveBeenCalledWith({ mode: 'par' });
+    expect(mockDeck.profiles.every((profile) => profile.lookingFor !== 'lockin')).toBe(true);
   });
 
   it('con el deck agotado ofrece las salidas del vacío, no una tarjeta', async () => {

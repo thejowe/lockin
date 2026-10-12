@@ -15,15 +15,11 @@ import { enterFade } from '@/components/motion';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { MatchRow, MatchesEmpty, useMatches } from '@/features/chat';
-import { RoomsSection, useRefreshLiveRooms } from '@/features/room';
-import { useMatchStreaks } from '@/features/session';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function MatchesScreen() {
   const theme = useTheme();
   const { data, loading, error, refresh } = useMatches();
-  const streaks = useMatchStreaks();
-  const refreshRooms = useRefreshLiveRooms();
   const matches = data ?? [];
 
   return (
@@ -38,17 +34,9 @@ export default function MatchesScreen() {
             // Las filas forman un solo bloque: entran con un fundido escalonado y
             // sin desplazarse, para que el bloque no se vea partido mientras llega.
             <Animated.View entering={enterFade(Math.min(index, 6))}>
-              <MatchRow
-                match={item}
-                streak={streaks.streakFor(item.id)}
-                first={index === 0}
-                last={index === matches.length - 1}
-              />
+              <MatchRow match={item} first={index === 0} last={index === matches.length - 1} />
             </Animated.View>
           )}
-          // Sin `extraData` la lista no repinta las filas cuando las rachas llegan
-          // después que los matches.
-          extraData={streaks}
           contentContainerStyle={[styles.list, matches.length === 0 && styles.listEmpty]}
           ListHeaderComponent={
             <View style={styles.header}>
@@ -56,7 +44,6 @@ export default function MatchesScreen() {
                 Matches
               </ThemedText>
               <ThemedText type="title">Con quién has conectado</ThemedText>
-              <RoomsSection />
               {error && (
                 <ThemedText type="small" themeColor="danger">
                   No hemos podido cargar tus matches. Desliza hacia abajo para reintentar.
@@ -68,15 +55,7 @@ export default function MatchesScreen() {
           // matches" cuando en realidad aún no lo sabemos.
           ListEmptyComponent={loading || error ? null : <MatchesEmpty />}
           refreshControl={
-            <RefreshControl
-              refreshing={loading}
-              onRefresh={() => {
-                refresh();
-                streaks.refresh();
-                refreshRooms();
-              }}
-              tintColor={theme.brass}
-            />
+            <RefreshControl refreshing={loading} onRefresh={refresh} tintColor={theme.brass} />
           }
         />
       </SafeAreaView>

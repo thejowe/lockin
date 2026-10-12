@@ -48,7 +48,8 @@ describe('DeckActions', () => {
     const { ui } = setup();
     await render(ui);
 
-    expect(screen.getByText(label)).toBeVisible();
+    // Solo icono, como en Tinder: el nombre lo lleva la etiqueta accesible.
+    expect(screen.queryByText(label)).toBeNull();
     const button = screen.getByRole('button', { name: label });
     expect(screen.getByLabelText(label)).toBe(button);
     expect(button).toHaveProp('accessibilityLabel', label);

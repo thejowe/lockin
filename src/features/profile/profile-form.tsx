@@ -26,12 +26,10 @@ import {
   HOURS_MAX,
   HOURS_MIN,
   HOURS_STEP,
-  MODE_OPTIONS,
   PROMPT_MAX_LENGTH,
   PROMPT_QUESTIONS,
   SPECIALTY_OPTIONS,
   STARTING_POINT_OPTIONS,
-  seeksComplement,
   TIME_BAND_OPTIONS,
 } from './catalog';
 import {
@@ -47,7 +45,6 @@ import {
 
 import type {
   Ambition,
-  ModePreference,
   Profile,
   ProfileInput,
   Specialty,
@@ -64,7 +61,6 @@ interface Draft {
   specialties: Specialty[];
   /** Lo que quiere que domine la otra persona. Vacío = «me da igual». */
   seekingSpecialties: Specialty[];
-  lookingFor: ModePreference | null;
   startingPoint: StartingPoint | null;
   hoursPerWeek: number;
   bands: TimeBand[];
@@ -87,7 +83,7 @@ function deviceTimezone(): string {
   }
 }
 
-function initialDraft(profile: Profile | null, defaultLookingFor: ModePreference | null): Draft {
+function initialDraft(profile: Profile | null): Draft {
   const prompts = [0, 1].map((index) => ({
     question: profile?.prompts[index]?.question ?? PROMPT_QUESTIONS[index],
     answer: profile?.prompts[index]?.answer ?? '',
@@ -100,7 +96,6 @@ function initialDraft(profile: Profile | null, defaultLookingFor: ModePreference
     timezone: profile?.timezone ?? deviceTimezone(),
     specialties: profile?.specialties ?? [],
     seekingSpecialties: profile?.seekingSpecialties ?? [],
-    lookingFor: profile?.lookingFor ?? defaultLookingFor,
     startingPoint: profile?.startingPoint ?? null,
     hoursPerWeek: profile?.availability.hoursPerWeek ?? 10,
     bands: profile?.availability.bands ?? [],
@@ -132,7 +127,6 @@ function validate(draft: Draft): Errors {
   if (draft.location.trim().length < 2) errors.location = 'Ciudad o zona donde estás.';
   if (draft.timezone.trim().length === 0) errors.timezone = 'Necesitamos tu zona horaria.';
   if (draft.specialties.length === 0) errors.specialties = 'Elige al menos una especialidad.';
-  if (!draft.lookingFor) errors.lookingFor = 'Dinos qué buscas.';
   if (!draft.startingPoint) errors.startingPoint = 'Elige tu punto de partida.';
   if (draft.bands.length === 0) errors.bands = 'Marca al menos una franja horaria.';
   if (!draft.ambition) errors.ambition = 'Elige tu nivel de compromiso.';
@@ -158,12 +152,11 @@ function toInput(draft: Draft): ProfileInput {
     location: draft.location.trim(),
     timezone: draft.timezone.trim(),
     specialties: draft.specialties,
-    // La invariante de `Profile.seekingSpecialties`: un perfil de lock-in lo
-    // guarda vacío pase lo que pase, aunque el usuario llegara a marcar chips
-    // y luego cambiara de modo.
-    seekingSpecialties: seeksComplement(draft.lookingFor) ? draft.seekingSpecialties : [],
-    // Validado antes de llegar aquí: `validate` exige las tres elecciones.
-    lookingFor: draft.lookingFor as ModePreference,
+    seekingSpecialties: draft.seekingSpecialties,
+    // Desde el 2026-10-12 el producto es solo buscar cofundador: no se pregunta
+    // y todo perfil que se guarda queda en `par`, también los que eran de
+    // lock-in o «ambos», para que aparezcan en el único deck que hay.
+    lookingFor: 'par',
     startingPoint: draft.startingPoint as StartingPoint,
     availability: { hoursPerWeek: draft.hoursPerWeek, bands: draft.bands },
     ambition: draft.ambition as Ambition,
@@ -181,8 +174,6 @@ function toInput(draft: Draft): ProfileInput {
 export interface ProfileFormProps {
   /** Perfil a editar, o `null` para un alta. */
   initial?: Profile | null;
-  /** Modo elegido en el onboarding: precarga "qué busco" en un alta. */
-  defaultLookingFor?: ModePreference | null;
   submitLabel: string;
   /** Guarda. Si lanza, el formulario enseña el error y no se cierra. */
   onSubmit: (input: ProfileInput) => Promise<void>;
@@ -195,14 +186,13 @@ export interface ProfileFormProps {
 
 export function ProfileForm({
   initial = null,
-  defaultLookingFor = null,
   submitLabel,
   onSubmit,
   onCancel,
   cancelLabel = 'Cancelar',
   header,
 }: ProfileFormProps) {
-  const [draft, setDraft] = useState<Draft>(() => initialDraft(initial, defaultLookingFor));
+  const [draft, setDraft] = useState<Draft>(() => initialDraft(initial));
   const [errors, setErrors] = useState<Errors>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -319,44 +309,26 @@ export function ProfileForm({
           </ChipRow>
         </Field>
 
-        <Field label="Qué busco" error={errors.lookingFor}>
-          {MODE_OPTIONS.map((option) => (
-            <OptionCard
-              key={option.value}
-              option={option}
-              selected={draft.lookingFor === option.value}
-              onPress={() => update('lookingFor', option.value)}
-            />
-          ))}
+        <Field
+          label="Lo que debe dominar quien busco"
+          hint="Lo que a ti te falta. Si lo dejas vacío, te enseñamos a todo el mundo.">
+          <ChipRow>
+            {SPECIALTY_OPTIONS.map((option) => (
+              <Chip
+                key={option.value}
+                label={option.label}
+                // Sin esto, "Desarrollo" nombraría dos chips distintos del
+                // mismo formulario: el que domino y el que busco.
+                accessibilityLabel={`Busco ${option.label}`}
+                multiple
+                selected={draft.seekingSpecialties.includes(option.value)}
+                onPress={() =>
+                  update('seekingSpecialties', toggle(draft.seekingSpecialties, option.value))
+                }
+              />
+            ))}
+          </ChipRow>
         </Field>
-
-        {/*
-          Solo con `par` o `ambos`: a un compañero de lock-in se le pide franja
-          horaria, no skills. Va justo detrás de "Qué busco" porque es la misma
-          pregunta afinada, y aparece o desaparece al cambiar de modo.
-        */}
-        {seeksComplement(draft.lookingFor) ? (
-          <Field
-            label="Lo que debe dominar quien busco"
-            hint="Lo que a ti te falta. Si lo dejas vacío, te enseñamos a todo el mundo.">
-            <ChipRow>
-              {SPECIALTY_OPTIONS.map((option) => (
-                <Chip
-                  key={option.value}
-                  label={option.label}
-                  // Sin esto, "Desarrollo" nombraría dos chips distintos del
-                  // mismo formulario: el que domino y el que busco.
-                  accessibilityLabel={`Busco ${option.label}`}
-                  multiple
-                  selected={draft.seekingSpecialties.includes(option.value)}
-                  onPress={() =>
-                    update('seekingSpecialties', toggle(draft.seekingSpecialties, option.value))
-                  }
-                />
-              ))}
-            </ChipRow>
-          </Field>
-        ) : null}
 
         <Field label="Punto de partida" error={errors.startingPoint}>
           {STARTING_POINT_OPTIONS.map((option) => (

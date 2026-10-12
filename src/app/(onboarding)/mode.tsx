@@ -1,31 +1,27 @@
 import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/ambient-background';
-import { type IconName } from '@/components/icon';
 import { enterUp } from '@/components/motion';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { useRepositories, type ModePreference } from '@/data';
-import { MODE_OPTIONS, useRegistrationGate } from '@/features/profile';
+import { useRepositories } from '@/data';
+import { useRegistrationGate } from '@/features/profile';
 import { accountsAvailable } from '@/features/profile/account-gateway';
-import { OptionCard, PrimaryButton, SecondaryButton } from '@/features/profile/controls';
-
-/** Icono de cada modo: dos personas, un reloj de enfoque, dos círculos que se cruzan. */
-const MODE_ICONS: Record<ModePreference, IconName> = {
-  par: 'pair',
-  lockin: 'focus',
-  ambos: 'both',
-};
+import { PrimaryButton, SecondaryButton } from '@/features/profile/controls';
 
 /**
- * Paso 1 del onboarding: qué busca la persona.
+ * Paso 1 del onboarding: la bienvenida.
  *
- * Guarda el modo en la sesión antes de navegar, para que el formulario del paso
- * 2 pueda precargar "qué busco" y el deck de `descubrir` arranque ya filtrado.
+ * Hasta el 2026-10-12 aquí se elegía modo (cofundador, Lock-In o ambos). Desde
+ * entonces el producto es solo buscar cofundador, así que no hay nada que
+ * elegir: la pantalla presenta la app y guarda el modo `par` en la sesión antes
+ * de navegar, para que nada de lo que aún lee `activeMode` se quede a medias.
+ * La ruta conserva su nombre (`/mode`) porque la enlazan el arranque, el
+ * registro y el inicio de sesión.
  *
  * Sin la cuenta creada no se entra: el registro es obligatorio (2026-09-20) y la
  * puerta manda a `/register`. Está aquí y en `profile-form` porque son las dos
@@ -36,17 +32,14 @@ export default function ModeScreen() {
   const repositories = useRepositories();
   const gate = useRegistrationGate();
 
-  const [selected, setSelected] = useState<ModePreference | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleContinue() {
-    if (!selected) return;
-
     setSaving(true);
     setError(null);
     try {
-      await repositories.session.setActiveMode(selected);
+      await repositories.session.setActiveMode('par');
       router.push('/profile-form');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'No se ha podido guardar el modo.');
@@ -63,28 +56,13 @@ export default function ModeScreen() {
       <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
         <ScrollView contentContainerStyle={styles.content}>
           <Animated.View entering={enterUp(0)} style={styles.header}>
-            <ThemedText type="label" themeColor="textSecondary">
-              Paso 1 de 2
-            </ThemedText>
-            <ThemedText type="title">¿Qué buscas?</ThemedText>
+            <ThemedText type="title">Encuentra con quién construir</ThemedText>
             <ThemedText type="body" themeColor="textSecondary">
-              Cofundador en igualdad de condiciones, compañero de Lock-In, o ambos. Nadie contrata a
-              nadie: los dos lados del match son pares.
+              Desliza perfiles de gente que, como tú, quiere empezar algo grande. Si los dos os dais
+              like, hay match y podéis hablar. Nadie contrata a nadie: los dos lados del match son
+              pares.
             </ThemedText>
           </Animated.View>
-
-          <View style={styles.options}>
-            {MODE_OPTIONS.map((option, index) => (
-              <Animated.View key={option.value} entering={enterUp(index + 1)}>
-                <OptionCard
-                  option={option}
-                  icon={MODE_ICONS[option.value]}
-                  selected={selected === option.value}
-                  onPress={() => setSelected(option.value)}
-                />
-              </Animated.View>
-            ))}
-          </View>
 
           {error ? (
             <ThemedText type="small" themeColor="danger">
@@ -94,7 +72,7 @@ export default function ModeScreen() {
 
           <PrimaryButton
             label={saving ? 'Guardando…' : 'Continuar'}
-            disabled={!selected || saving}
+            disabled={saving}
             onPress={handleContinue}
           />
 
@@ -123,9 +101,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   header: {
-    gap: Spacing.two,
-  },
-  options: {
     gap: Spacing.two,
   },
 });

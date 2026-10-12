@@ -68,16 +68,13 @@ describe('MatchRow', () => {
     expect(screen.getByText('NB')).toBeTruthy();
   });
 
-  it('nombra el modo bajo el que nació el match', async () => {
+  it('no nombra el modo: todo match es de cofundador', async () => {
     await render(<MatchRow match={buildMatch({ mode: 'par' })} />);
-    expect(screen.getByText('Cofundador')).toBeTruthy();
-
-    await render(<MatchRow match={buildMatch({ mode: 'lockin' })} />);
-    expect(screen.getByText('Lock-In')).toBeTruthy();
+    expect(screen.queryByText('Cofundador')).toBeNull();
   });
 
   describe('sin mensajes todavía', () => {
-    it('empuja al primer Lock-In en lugar de dejar el hueco vacío', async () => {
+    it('empuja al primer mensaje en lugar de dejar el hueco vacío', async () => {
       await render(<MatchRow match={buildMatch()} />);
 
       expect(screen.getByText(NO_MESSAGES_HINT)).toBeTruthy();
@@ -86,7 +83,7 @@ describe('MatchRow', () => {
     it('se marca como nuevo', async () => {
       await render(<MatchRow match={buildMatch()} />);
 
-      expect(screen.getByText('· Nuevo')).toBeTruthy();
+      expect(screen.getByText('Nuevo')).toBeTruthy();
     });
 
     it('fecha el match, que es lo único que ha pasado', async () => {
@@ -113,7 +110,7 @@ describe('MatchRow', () => {
     it('deja de marcarse como nuevo', async () => {
       await render(<MatchRow match={buildMatch({ lastMessage: buildMessage() })} />);
 
-      expect(screen.queryByText('· Nuevo')).toBeNull();
+      expect(screen.queryByText('Nuevo')).toBeNull();
     });
 
     it('la fecha pasa a ser la del mensaje, no la del match', async () => {

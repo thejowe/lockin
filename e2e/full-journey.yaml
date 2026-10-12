@@ -13,10 +13,10 @@ name: Alta, perfil, deck, match, mensaje y persistencia
 # Registro actual: Auth anónimo automático; no existe pantalla de login.
 - launchApp:
     clearState: true
+# Bienvenida: desde el 2026-10-12 no se elige modo, todo perfil es de cofundador.
 - extendedWaitUntil:
-    visible: 'Cofundador'
+    visible: 'Encuentra con quién construir'
     timeout: 60000
-- tapOn: 'Ambos'
 - tapOn: 'Continuar'
 - tapOn:
     text: 'Nombre|Cómo te llamas'
@@ -141,7 +141,7 @@ name: Alta, perfil, deck, match, mensaje y persistencia
 - extendedWaitUntil:
     visible: 'Descubrir'
     timeout: 60000
-- assertNotVisible: 'Paso 1 de 2'
+- assertNotVisible: 'Encuentra con quién construir'
 - tapOn: 'Perfil'
 - extendedWaitUntil:
     visible: ${PROFILE_NAME}

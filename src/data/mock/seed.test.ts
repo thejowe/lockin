@@ -43,10 +43,14 @@ const tapped = <T>(options: { value: T; label: string }[], prefix = '') =>
     (option) => option.value
   );
 
-/** Lo que domina el recorrido, lo que busca y en qué modo. Todo de los taps. */
+/** Lo que domina el recorrido y lo que busca, de los taps. */
 const DOMINA = tapped<Specialty>(SPECIALTY_OPTIONS);
 const BUSCA = tapped<Specialty>(SPECIALTY_OPTIONS, 'Busco ');
-const MODO = tapped<ModePreference>(MODE_OPTIONS)[0];
+/**
+ * Desde el 2026-10-12 no se elige modo: la bienvenida y el formulario guardan
+ * siempre `par`. Que el recorrido no toque ningún modo lo fija el primer caso.
+ */
+const MODO: ModePreference = 'par';
 
 /** El perfil que teclea `e2e/full-journey.yaml`, derivado de sus propios taps. */
 const E2E_PROFILE = buildProfileInput({
@@ -69,14 +73,14 @@ describe('el catálogo mock sostiene el recorrido E2E', () => {
     // regular daría un perfil vacío y los demás casos hablarían de otra cosa.
     expect(DOMINA).toEqual(['dev', 'marketing']);
     expect(BUSCA).toEqual(['diseno']);
-    expect(MODO).toBe('ambos');
+    expect(tapped<ModePreference>(MODE_OPTIONS)).toEqual([]);
   });
 
   it('la tarjeta de delante es alguien que ya dio like', async () => {
-    await repositories.session.setActiveMode('ambos');
+    await repositories.session.setActiveMode(MODO);
     await repositories.profiles.saveCurrent(E2E_PROFILE);
 
-    const [front] = await repositories.discovery.getDeck();
+    const [front] = await repositories.discovery.getDeck({ mode: MODO });
 
     expect(SEED_RECIPROCAL_IDS).toContain(front.id);
     // Y el like sobre ella cierra match, que es lo que el `.yaml` afirma con

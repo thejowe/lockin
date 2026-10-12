@@ -2,6 +2,11 @@
 
 > Documento de referencia para desarrollo. Es el resumen de la sesión de diseño de producto — cualquier agente debe leerlo antes de tocar código relacionado con una feature. El documento de concepto completo (con toda la argumentación) vive como un Artifact compartido con el usuario; esto es la versión condensada para construir.
 
+> **Pivote del 2026-10-12.** El producto se centra **solo en buscar cofundador**. El modo Lock-In
+> (compañero de enfoque, sesiones, salas, vídeo, rachas) queda fuera de la UI: su código y sus
+> tablas siguen en el repo, ocultos, por si vuelve. Descubrir copia a Tinder: tarjeta a pantalla
+> completa, sin filtro de modo. Lo que este documento dice de Lock-In es histórico hasta nuevo aviso.
+
 ## Pitch
 
 Una app estilo swipe para gente que **no tiene nada construido todavía** —ni proyecto, ni equipo, ni cofundador— y quiere encontrar con quién construir algo grande. También sirve para encontrar un compañero de **lock-in**: alguien con quien trabajar concentrado a la vez, aunque cada uno esté en lo suyo.

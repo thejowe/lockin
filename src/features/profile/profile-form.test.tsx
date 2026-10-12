@@ -27,7 +27,6 @@ async function fillValidForm() {
   await fireEvent.changeText(screen.getByLabelText('Edad'), '31');
   await fireEvent.changeText(screen.getByLabelText('Ubicación'), 'Barcelona');
   await fireEvent.press(screen.getByLabelText('Desarrollo'));
-  await fireEvent.press(screen.getByLabelText('Cofundador'));
   await fireEvent.press(screen.getByLabelText('Idea sin empezar'));
   await fireEvent.press(screen.getByLabelText('Noche · 20–00'));
   await fireEvent.press(screen.getByLabelText('Apostarlo todo'));
@@ -108,7 +107,6 @@ describe('ProfileForm', () => {
 
     expect(await screen.findByText('Escribe tu nombre.')).toBeTruthy();
     expect(screen.getByText('Elige al menos una especialidad.')).toBeTruthy();
-    expect(screen.getByText('Dinos qué buscas.')).toBeTruthy();
     expect(screen.getByText('Marca al menos una franja horaria.')).toBeTruthy();
     expect(screen.getByText('Responde al menos a la primera pregunta.')).toBeTruthy();
     expect(onSubmit).not.toHaveBeenCalled();
@@ -199,34 +197,18 @@ describe('ProfileForm', () => {
   });
 
   describe('lo que debe dominar quien busco', () => {
-    it('no se pregunta hasta saber qué busca la persona', async () => {
+    it('se pregunta siempre: todo el mundo busca cofundador', async () => {
       await render(<ProfileForm submitLabel="Guardar" onSubmit={jest.fn()} />);
-
-      expect(screen.queryByText('Lo que debe dominar quien busco')).toBeNull();
-      expect(screen.queryByLabelText('Busco Desarrollo')).toBeNull();
-    });
-
-    it('no se pregunta a quien busca compañero de lock-in', async () => {
-      await render(<ProfileForm submitLabel="Guardar" onSubmit={jest.fn()} />);
-
-      await fireEvent.press(screen.getByLabelText('Compañero de Lock-In'));
-
-      expect(screen.queryByText('Lo que debe dominar quien busco')).toBeNull();
-    });
-
-    it.each(['Cofundador', 'Ambos'])('se pregunta a quien elige "%s"', async (mode) => {
-      await render(<ProfileForm submitLabel="Guardar" onSubmit={jest.fn()} />);
-
-      await fireEvent.press(screen.getByLabelText(mode));
 
       expect(screen.getByText('Lo que debe dominar quien busco')).toBeTruthy();
       expect(screen.getByLabelText('Busco Desarrollo')).toBeTruthy();
+      // Ya no se pregunta qué se busca: no hay modo que elegir.
+      expect(screen.queryByText('Qué busco')).toBeNull();
+      expect(screen.queryByLabelText('Compañero de Lock-In')).toBeNull();
     });
 
     it('distingue en accesibilidad lo que domino de lo que busco', async () => {
-      await render(
-        <ProfileForm defaultLookingFor="par" submitLabel="Guardar" onSubmit={jest.fn()} />
-      );
+      await render(<ProfileForm submitLabel="Guardar" onSubmit={jest.fn()} />);
 
       // Mismo texto visible en dos grupos: si compartieran nombre accesible,
       // quien navega a ciegas no podría saber cuál está marcando.
@@ -260,21 +242,19 @@ describe('ProfileForm', () => {
       expect(onSubmit.mock.calls[0][0].seekingSpecialties).toEqual([]);
     });
 
-    it('lo vacía si al final se busca compañero de lock-in', async () => {
+    it('un perfil que era de lock-in se guarda como cofundador', async () => {
       const onSubmit = jest.fn<Promise<void>, [ProfileInput]>().mockResolvedValue(undefined);
-      await render(<ProfileForm submitLabel="Guardar" onSubmit={onSubmit} />);
+      const profile = buildProfile({ lookingFor: 'lockin', seekingSpecialties: [] });
+      await render(<ProfileForm initial={profile} submitLabel="Guardar" onSubmit={onSubmit} />);
 
-      await fillValidForm();
       await fireEvent.press(screen.getByLabelText('Busco Marketing'));
-      // Cambiar de idea después de marcar chips no puede colar un perfil de
-      // lock-in con especialidades buscadas: la invariante de `types.ts`.
-      await fireEvent.press(screen.getByLabelText('Compañero de Lock-In'));
       await fireEvent.press(screen.getByText('Guardar'));
 
+      // Si siguiera en `lockin` no aparecería en el único deck que queda.
       await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
       expect(onSubmit.mock.calls[0][0]).toMatchObject({
-        lookingFor: 'lockin',
-        seekingSpecialties: [],
+        lookingFor: 'par',
+        seekingSpecialties: ['marketing'],
       });
     });
 
@@ -298,15 +278,6 @@ describe('ProfileForm', () => {
     expect(screen.getByLabelText('Nombre').props.value).toBe('Alba Ferrer');
     expect(screen.getByLabelText('Edad').props.value).toBe('27');
     expect(screen.getByLabelText('Ubicación').props.value).toBe('Valencia');
-  });
-
-  it('precarga "qué busco" con el modo elegido en el onboarding', async () => {
-    await render(
-      <ProfileForm defaultLookingFor="lockin" submitLabel="Crear" onSubmit={jest.fn()} />
-    );
-
-    expect(screen.getByLabelText('Compañero de Lock-In')).toBeSelected();
-    expect(screen.getByLabelText('Cofundador')).not.toBeSelected();
   });
 
   it('solo pinta el botón de cancelar cuando hay algo que cancelar', async () => {

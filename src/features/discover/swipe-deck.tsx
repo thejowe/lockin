@@ -7,6 +7,9 @@
  * `DeckActions` disparan exactamente la misma animación de salida para que
  * ambos caminos se sientan iguales.
  *
+ * Las tarjetas ocupan todo el alto y los botones flotan encima, abajo, fijos
+ * mientras la tarjeta se mueve por debajo: como en Tinder.
+ *
  * Solo la tarjeta superior escucha el gesto. La de justo detrás sube hacia
  * delante a medida que la de arriba se aparta (escala y desplazamiento ligados
  * al arrastre, no a un temporizador): cuando la superior sale, la siguiente ya
@@ -56,7 +59,7 @@ import { Curves, Duration, Elevation, Radii, Spacing, Springs, Stroke } from '@/
 import { useReduceMotion } from '@/hooks/use-reduce-motion';
 import { useTheme, useThemeName } from '@/hooks/use-theme';
 
-import { DeckActions } from './deck-actions';
+import { DECK_ACTIONS_SPACE, DeckActions } from './deck-actions';
 import { ProfileCard } from './profile-card';
 
 import type { SharedValue } from 'react-native-reanimated';
@@ -79,7 +82,11 @@ const MAX_ROTATION = 12;
 const VISIBLE_CARDS = 3;
 /** Cuánto encoge y baja cada tarjeta por cada puesto que tiene delante. */
 const DEPTH_SCALE = 0.04;
-const DEPTH_OFFSET = 14;
+/**
+ * Sin desplazamiento vertical: como en Tinder, las de detrás no asoman por
+ * debajo de la superior. Solo se ven cuando la de arriba se aparta.
+ */
+const DEPTH_OFFSET = 0;
 /** Cuánto se apaga cada tarjeta de detrás por puesto de profundidad. */
 const DEPTH_DIM = 0.35;
 
@@ -330,7 +337,16 @@ export function SwipeDeck({
         )}
       </View>
 
-      <DeckActions onDecide={swipeAway} disabled={top === null || safetyOpen} />
+      {/*
+        Encima de las tarjetas y fijos: la tarjeta se va por debajo. Con el panel
+        de seguridad abierto no se pintan: flotarían sobre sus botones (Cancelar
+        del reporte va anclado abajo) y se comerían los toques.
+      */}
+      {safetyOpen ? null : (
+        <View style={styles.actions} pointerEvents="box-none">
+          <DeckActions onDecide={swipeAway} disabled={top === null} />
+        </View>
+      )}
     </View>
   );
 }
@@ -414,6 +430,7 @@ function TopCard({
         safetyOpen={safetyOpen}
         onSafetyOpenChange={onSafetyOpenChange}
         onBlocked={onBlocked}
+        bottomInset={DECK_ACTIONS_SPACE}
       />
 
       <Animated.View
@@ -424,8 +441,8 @@ function TopCard({
           { borderColor: theme.teal },
           likeStyle,
         ]}>
-        <ThemedText type="bodyStrong" style={{ color: theme.teal }}>
-          Like
+        <ThemedText type="title" style={[styles.stampText, { color: theme.teal }]}>
+          LIKE
         </ThemedText>
       </Animated.View>
 
@@ -437,8 +454,8 @@ function TopCard({
           { borderColor: theme.danger },
           passStyle,
         ]}>
-        <ThemedText type="bodyStrong" style={{ color: theme.danger }}>
-          Pasar
+        <ThemedText type="title" style={[styles.stampText, { color: theme.danger }]}>
+          NOPE
         </ThemedText>
       </Animated.View>
     </Animated.View>
@@ -514,21 +531,13 @@ function BehindCard({
       // Se pintan detrás y no se pueden decidir todavía: para un lector de
       // pantalla solo son ruido delante de la tarjeta real.
       aria-hidden
-      style={[
-        styles.card,
-        styles.cardBehind,
-        {
-          backgroundColor: theme.surfaceOpaque,
-          borderColor: theme.border,
-          boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
-        },
-        style,
-      ]}>
+      style={[styles.card, styles.cardBehind, { backgroundColor: theme.surfaceOpaque }, style]}>
       <Animated.View style={[styles.behindContent, contentStyle]}>
         <ProfileCard
           profile={profile}
           viewerSpecialties={viewerSpecialties}
           viewerSchedule={viewerSchedule}
+          bottomInset={DECK_ACTIONS_SPACE}
         />
       </Animated.View>
     </Animated.View>
@@ -547,7 +556,6 @@ function stampFill(base: string, tint: string) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    gap: Spacing.four,
   },
   deck: {
     flex: 1,
@@ -562,7 +570,7 @@ const styles = StyleSheet.create({
   cardBehind: {
     pointerEvents: 'none',
     borderRadius: Radii.card,
-    borderWidth: Stroke.hairline,
+    overflow: 'hidden',
   },
   behindContent: {
     flex: 1,
@@ -570,19 +578,29 @@ const styles = StyleSheet.create({
   cardTop: {
     borderRadius: Radii.card,
   },
+  // Sellos de Tinder: rectángulo de canto grueso, girado, bajo las barras de página.
   badge: {
     position: 'absolute',
     pointerEvents: 'none',
-    top: Spacing.four,
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.three + Spacing.one,
-    borderRadius: Radii.pill,
-    borderWidth: Stroke.strong,
+    top: Spacing.six,
+    paddingVertical: Spacing.one,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Radii.medium,
+    borderWidth: Stroke.strong * 2,
   },
   badgeLike: {
     left: Spacing.four,
   },
   badgePass: {
     right: Spacing.four,
+  },
+  stampText: {
+    letterSpacing: 1,
+  },
+  actions: {
+    position: 'absolute',
+    right: 0,
+    bottom: Spacing.four,
+    left: 0,
   },
 });

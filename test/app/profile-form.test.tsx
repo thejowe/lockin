@@ -95,19 +95,10 @@ describe('ProfileFormScreen', () => {
     expect(screen.getByText('Crear perfil')).toBeTruthy();
   });
 
-  it('precarga "qué busco" con el modo elegido en el paso 1', async () => {
-    await repositories.session.setActiveMode('lockin');
-
-    await renderRoute(<ProfileFormScreen />);
-
-    await waitFor(() => expect(mockForm.props?.defaultLookingFor).toBe('lockin'));
-  });
-
-  it('sin modo guardado monta el formulario sin precargar nada', async () => {
+  it('monta el formulario sin esperar a ningún modo: ya no se elige', async () => {
     await renderRoute(<ProfileFormScreen />);
 
     await waitFor(() => expect(mockForm.props).not.toBeNull());
-    expect(mockForm.props?.defaultLookingFor).toBeNull();
   });
 
   it('guarda el perfil y sustituye la ruta: atrás no vuelve al onboarding', async () => {

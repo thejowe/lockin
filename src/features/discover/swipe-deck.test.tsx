@@ -135,10 +135,10 @@ describe('SwipeDeck', () => {
     expect(screen.getByText('Núria Bosch')).toBeOnTheScreen();
   });
 
-  it('los sellos Like y Pasar tienen base opaca: caen encima del avatar', async () => {
+  it('los sellos LIKE y NOPE tienen base opaca: caen encima del retrato', async () => {
     await renderDeck();
 
-    for (const label of ['Like', 'Pasar']) {
+    for (const label of ['LIKE', 'NOPE']) {
       const stamps = screen
         .getAllByText(label, { includeHiddenElements: true })
         .map((text) => StyleSheet.flatten(text.parent?.props.style ?? {}))
@@ -278,14 +278,14 @@ describe('SwipeDeck con el panel de seguridad abierto', () => {
     return { ...view, repositories };
   }
 
-  it('apaga Like y Pasar mientras el formulario está abierto, y los devuelve al cerrarlo', async () => {
+  it('retira Like y Pasar mientras el formulario está abierto, y los devuelve al cerrarlo', async () => {
     await renderWithRepositories();
 
     await fireEvent.press(screen.getByRole('button', { name: 'Opciones de Núria Bosch' }));
 
-    expect(screen.getByLabelText('Like')).toBeDisabled();
-    expect(screen.getByLabelText('Pasar')).toBeDisabled();
-    await fireEvent.press(screen.getByLabelText('Like'));
+    // Flotan sobre la tarjeta: abiertos taparían el Cancelar del reporte.
+    expect(screen.queryByLabelText('Like')).toBeNull();
+    expect(screen.queryByLabelText('Pasar')).toBeNull();
     expect(onDecide).not.toHaveBeenCalled();
 
     await fireEvent.press(screen.getByRole('button', { name: 'Cerrar opciones' }));
@@ -452,9 +452,10 @@ describe('SwipeDeck en el relevo', () => {
     expect(screen.queryByTestId(cardTestId('p1'))).toBeNull();
     expect(cardStyle('p2')).toMatchObject({ opacity: 1, translateX: 0, translateY: 0, scale: 1 });
     // La que sube a segundo puesto queda a un puesto de profundidad, no a la
-    // escala de la superior ni a la de dos puestos.
-    expect(cardStyle('p3')).toMatchObject({ translateY: 14, scale: 0.96 });
-    expect(cardStyle('p4')).toMatchObject({ translateY: 28, scale: 0.92 });
+    // escala de la superior ni a la de dos puestos. Sin desplazamiento: como en
+    // Tinder, las de detrás no asoman por debajo.
+    expect(cardStyle('p3')).toMatchObject({ translateY: 0, scale: 0.96 });
+    expect(cardStyle('p4')).toMatchObject({ translateY: 0, scale: 0.92 });
   });
 
   it('con los botones el relevo deja la nueva superior igual de colocada', async () => {
@@ -481,7 +482,7 @@ describe('SwipeDeck en el relevo', () => {
     expect(cardStyle('p1').translateX).toBeGreaterThan(THRESHOLD);
     // La de detrás ya ocupa el sitio de la superior, sin esperar al commit.
     expect(cardStyle('p2')).toMatchObject({ translateY: 0, scale: 1 });
-    expect(cardStyle('p3')).toMatchObject({ translateY: 14, scale: 0.96 });
+    expect(cardStyle('p3')).toMatchObject({ translateY: 0, scale: 0.96 });
   });
 
   it('una tarjeta que vuelve al deck (el guardado falló) aparece visible y en el centro', async () => {
@@ -491,6 +492,6 @@ describe('SwipeDeck en el relevo', () => {
     await act(async () => restore(PROFILES[0]));
 
     expect(cardStyle('p1')).toMatchObject({ opacity: 1, translateX: 0, translateY: 0 });
-    expect(cardStyle('p2')).toMatchObject({ translateY: 14, scale: 0.96 });
+    expect(cardStyle('p2')).toMatchObject({ translateY: 0, scale: 0.96 });
   });
 });

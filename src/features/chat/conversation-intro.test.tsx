@@ -67,19 +67,16 @@ describe('ConversationIntro', () => {
     expect(screen.getByText('15 h/semana · por la mañana y noche')).toBeTruthy();
   });
 
-  it.each([
-    ['par', 'Match de Cofundador · Hoy'],
-    ['lockin', 'Match de Lock-In · Hoy'],
-  ] as const)('nombra el modo del match (%s) y lo fecha', async (mode, expected) => {
-    await render(<ConversationIntro match={buildMatch({ mode })} />);
+  it('fecha el match sin nombrar modo: todo match es de cofundador', async () => {
+    await render(<ConversationIntro match={buildMatch({ mode: 'par' })} />);
 
-    expect(screen.getByText(expected)).toBeTruthy();
+    expect(screen.getByText('Match · Hoy')).toBeTruthy();
   });
 
   it('un match de ayer se fecha como "Ayer", no con el día de la semana', async () => {
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     await render(<ConversationIntro match={buildMatch({ createdAt: yesterday })} />);
 
-    expect(screen.getByText('Match de Cofundador · Ayer')).toBeTruthy();
+    expect(screen.getByText('Match · Ayer')).toBeTruthy();
   });
 });

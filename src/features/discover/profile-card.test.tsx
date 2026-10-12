@@ -156,11 +156,51 @@ describe('ProfileCard', () => {
     });
   });
 
-  it('el modo se lee sin confundirse con lo que busca en skills', async () => {
-    const profile = buildProfile({ lookingFor: 'par' });
+  it('no dice qué modo busca: el producto es solo cofundador', async () => {
+    await render(<ProfileCard profile={buildProfile({ lookingFor: 'par' })} />);
 
-    await render(<ProfileCard profile={profile} />);
+    expect(screen.queryByText(/^Quiere:/)).toBeNull();
+  });
 
-    expect(screen.getByText('Quiere: Cofundador')).toBeTruthy();
+  describe('páginas, como las fotos de Tinder', () => {
+    const profile = buildProfile({
+      name: 'Núria',
+      prompts: [{ question: 'Lo que me quita el sueño', answer: 'Hacer algo que dure' }],
+    });
+
+    it('empieza por quién es y qué aporta; el resto espera a un toque', async () => {
+      await render(<ProfileCard profile={profile} />);
+
+      expect(screen.getByText('Núria')).toBeTruthy();
+      expect(screen.getByText('Domina')).toBeTruthy();
+      expect(screen.queryByText('Punto de partida')).toBeNull();
+      expect(screen.queryByText('Hacer algo que dure')).toBeNull();
+    });
+
+    it('el toque a la derecha avanza y el de la izquierda vuelve', async () => {
+      await render(<ProfileCard profile={profile} />);
+
+      await fireEvent.press(screen.getByRole('button', { name: 'Ver cuándo trabaja' }));
+      expect(screen.getByText('Punto de partida')).toBeTruthy();
+      expect(screen.queryByText('Domina')).toBeNull();
+      // El nombre no se va con la página: es lo que ancla la tarjeta.
+      expect(screen.getByText('Núria')).toBeTruthy();
+
+      await fireEvent.press(screen.getByRole('button', { name: 'Ver su respuesta' }));
+      expect(screen.getByText('Hacer algo que dure')).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Final' })).toBeDisabled();
+
+      await fireEvent.press(screen.getByRole('button', { name: 'Ver cuándo trabaja' }));
+      await fireEvent.press(screen.getByRole('button', { name: 'Ver quién es' }));
+      expect(screen.getByText('Domina')).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Inicio' })).toBeDisabled();
+    });
+
+    it('sin prompt no hay página de respuesta', async () => {
+      await render(<ProfileCard profile={buildProfile({ prompts: [] })} />);
+
+      await fireEvent.press(screen.getByRole('button', { name: 'Ver cuándo trabaja' }));
+      expect(screen.getByRole('button', { name: 'Final' })).toBeDisabled();
+    });
   });
 });

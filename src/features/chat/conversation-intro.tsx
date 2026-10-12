@@ -12,7 +12,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 
 import { formatDayHeading } from './format';
-import { MODE_LABELS, SPECIALTY_LABELS, TIME_BAND_LABELS, joinNaturally } from './labels';
+import { SPECIALTY_LABELS, TIME_BAND_LABELS, joinNaturally } from './labels';
 import { ProfileAvatar } from './profile-avatar';
 
 import type { MatchWithProfile } from '@/data';
@@ -40,7 +40,7 @@ export function ConversationIntro({ match }: { match: MatchWithProfile }) {
       </ThemedText>
 
       <ThemedText type="label" themeColor="textSecondary" style={styles.centered}>
-        Match de {MODE_LABELS[match.mode]} · {formatDayHeading(match.createdAt)}
+        Match · {formatDayHeading(match.createdAt)}
       </ThemedText>
     </View>
   );

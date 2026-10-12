@@ -76,14 +76,14 @@ function sharedSpecialties(counterpart: Profile, me: Profile): string | null {
   return `Los dos venimos de ${joinNaturally(shared.map((s) => SPECIALTY_LABELS[s]))}. ¿En qué parte te sientes más fuerte?`;
 }
 
-/** Franja compartida: es la excusa natural para proponer la primera sesión Lock-In. */
+/** Franja compartida: es la excusa natural para proponer la primera llamada. */
 function sharedTimeBand(counterpart: Profile, me: Profile): string | null {
   const shared = counterpart.availability.bands.filter((band) =>
     me.availability.bands.includes(band)
   );
   if (shared.length === 0) return null;
 
-  return `Los dos solemos estar por la ${TIME_BAND_LABELS[shared[0]]}. ¿Probamos un Lock-In esta semana a esa hora?`;
+  return `Los dos solemos estar por la ${TIME_BAND_LABELS[shared[0]]}. ¿Hablamos esta semana a esa hora?`;
 }
 
 function sharedAmbition(counterpart: Profile, me: Profile): string | null {

@@ -2,7 +2,26 @@
 
 Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>.md` — márcalo ahí, no aquí.
 
-## ▶ Al retomar — estado del 2026-10-11, noche (el más reciente; lo de más abajo es histórico)
+## ▶ Pivote del 2026-10-12: solo cofundador, deck a pantalla completa estilo Tinder
+
+Decisión del usuario: la app se centra **solo en buscar cofundador**. Lock-In sale de la UI, pero
+**solo se oculta** (elegido así para poder recuperarlo): el código de `session`, `room`, vídeo y
+rachas, sus rutas y sus tablas en Supabase siguen en el repo, sin entrada visible.
+
+- Descubrir: sin cabecera ni filtro Todo/Cofundador/Lock-In; deck siempre en modo `par`. La tarjeta
+  ocupa todo el alto, con el color del avatar y las iniciales en grande como «retrato» (no hay
+  fotos), páginas que se pasan tocando cada mitad (quién es → jornada → prompt) y botones redondos
+  flotando encima. Sellos LIKE/NOPE.
+- Onboarding: `/mode` es ahora una bienvenida que guarda `par`; el formulario ya no pregunta «qué
+  busco» y guarda siempre `lookingFor: 'par'`.
+- Chat sin `SessionCard`; Matches sin salas ni rachas; sin avisos de sesión/sala en `(tabs)`;
+  fuera las etiquetas de modo del match, la fila y la ficha.
+- E2E: `full-journey` y `register-confirm` pasan la bienvenida; `run.mjs` apaga los flujos de
+  sesión, valoración, racha y sala con `LOCKIN_FLOWS = false`.
+- **Pendiente:** fotos de perfil reales (decisión del usuario: por ahora sin fotos), y pasar el
+  `comprobador` por el deck nuevo en el emulador.
+
+## ▶ Estado del 2026-10-11, noche (histórico desde el pivote de arriba)
 
 **Abierta una segunda pasada de seguridad** (cliente, dependencias, dashboard). El detalle
 accionable está en `docs/plan/todo/seguridad.md` y el razonamiento en

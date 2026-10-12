@@ -29,10 +29,11 @@ const verify = readFileSync(join(here, 'verify.mjs'), 'utf8');
 const at = (needle) => journey.indexOf(needle);
 
 describe('full-journey declara lo que busca la persona', () => {
-  it('elige "Ambos", que es lo que hace existir el campo', () => {
-    // Invariante de `Profile.seekingSpecialties`: el bloque solo se pinta con
-    // `par` o `ambos`. Con `lockin` los pasos de abajo no encontrarían nada.
-    assert(at("- tapOn: 'Ambos'") >= 0, 'El recorrido ya no elige un modo que pida complemento');
+  it('pasa la bienvenida sin elegir modo: todo perfil es de cofundador', () => {
+    // Desde el 2026-10-12 el formulario siempre pinta «lo que debe dominar
+    // quien busco»: ya no hay un modo `lockin` que lo esconda.
+    assert(at("- tapOn: 'Continuar'") >= 0, 'El recorrido ya no pasa la bienvenida');
+    assert(at("- tapOn: 'Ambos'") < 0, 'La bienvenida ya no ofrece modos');
   });
 
   it('toca el chip por su etiqueta de accesibilidad, no por el texto visible', () => {
@@ -111,7 +112,7 @@ describe('full-journey declara lo que busca la persona', () => {
     // sus dos aserciones pasarían a comprobar el vacío.
     const marketing = at("- tapOn: 'Marketing'");
     assert(marketing >= 0, 'El recorrido ya no domina marketing');
-    assert(marketing > at("- tapOn: 'Ambos'"), 'Se elige antes de entrar al formulario');
+    assert(marketing > at("- tapOn: 'Continuar'"), 'Se elige antes de entrar al formulario');
     assert(marketing < at("- tapOn: 'Crear perfil'"), 'Se elige después de guardar el perfil');
   });
 

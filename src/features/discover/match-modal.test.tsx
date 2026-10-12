@@ -83,14 +83,11 @@ describe('MatchModal', () => {
       expect(screen.getByText('NB', { includeHiddenElements: true })).toBeTruthy();
     });
 
-    it.each([
-      ['par', 'Modo Cofundador'],
-      ['lockin', 'Modo Compañero de Lock-In'],
-    ] as const)('dice bajo qué modo nació el match (%s)', async (mode, heading) => {
-      const { ui } = setup(buildEvent({ mode }));
+    it('no nombra ningún modo: solo hay uno, cofundador', async () => {
+      const { ui } = setup(buildEvent({ mode: 'par' }));
       await render(ui);
 
-      expect(screen.getByText(heading)).toBeTruthy();
+      expect(screen.queryByText(/^Modo /)).toBeNull();
     });
 
     it('la acción principal abre el chat de ese match, no otro', async () => {

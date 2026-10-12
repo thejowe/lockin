@@ -37,7 +37,6 @@ import {
   useConversation,
 } from '@/features/chat';
 import { AgreementCard } from '@/features/agreement';
-import { SessionCard } from '@/features/session';
 import { SafetyMenuButton, SafetyPanel } from '@/features/safety/safety-panel';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -156,7 +155,6 @@ export default function ChatScreen() {
         ) : (
           <View style={styles.content}>
             <View style={styles.lockIn}>
-              <SessionCard match={match} me={me} />
               <AgreementCard match={match} />
             </View>
 

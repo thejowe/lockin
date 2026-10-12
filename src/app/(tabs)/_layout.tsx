@@ -1,13 +1,15 @@
 import AppTabs from '@/components/app-tabs';
-import { RoomReminderSync } from '@/features/room';
-import { SessionReminderSync } from '@/features/session';
+import { ClearLockInReminders } from '@/features/room';
 
+/**
+ * Sin `SessionReminderSync` ni `RoomReminderSync` desde el 2026-10-12: el
+ * producto es solo cofundador y las sesiones y salas Lock-In ya no se ven, así
+ * que tampoco se programan sus avisos — y los que ya lo estaban se cancelan.
+ */
 export default function TabsLayout() {
   return (
     <>
-      {/* Avisos de sesiones Lock-In: reconcilia al abrir la app. Ver `src/features/session/`. */}
-      <SessionReminderSync />
-      <RoomReminderSync />
+      <ClearLockInReminders />
       <AppTabs />
     </>
   );

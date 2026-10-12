@@ -17,9 +17,9 @@ name: Registro con email (2/2) — volver del correo, elegir contraseña y pasar
 - inputText: ${PASSWORD}
 - hideKeyboard
 - tapOn: 'Guardar y continuar'
-# La puerta abierta: el onboarding sigue en la elección de modo.
+# La puerta abierta: el onboarding sigue en la bienvenida.
 - extendedWaitUntil:
-    visible: 'Cofundador'
+    visible: 'Encuentra con quién construir'
     timeout: 30000
 # Y sigue abierta tras reiniciar: la puerta pregunta al servidor en cada montaje,
 # así que esto no lo puede sostener ningún estado en memoria de la app.
@@ -27,6 +27,6 @@ name: Registro con email (2/2) — volver del correo, elegir contraseña y pasar
 - launchApp:
     clearState: false
 - extendedWaitUntil:
-    visible: 'Cofundador'
+    visible: 'Encuentra con quién construir'
     timeout: 60000
 - assertNotVisible: 'Crea tu cuenta'

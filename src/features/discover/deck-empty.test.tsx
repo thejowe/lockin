@@ -1,10 +1,9 @@
 /**
  * Tests del deck agotado.
  *
- * Lo único que decide este componente es el motivo del vacío: con el filtro en
- * "ambos" no quedan perfiles en toda la app, y con un modo concreto puede que
- * solo falten en ese modo. Decir lo segundo cuando toca lo primero deja a la
- * persona cambiando de filtro para siempre, así que esa rama se prueba.
+ * Desde que el deck es solo de cofundador (2026-10-12) no hay filtro que
+ * cambiar, así que el vacío nunca debe mandar a tocarlo: solo puede decir que
+ * no queda nadie por ahora y ofrecer las dos salidas.
  *
  * Ojo: en RNTL 14 `render` y `fireEvent` son asíncronos.
  */
@@ -13,15 +12,13 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import { DeckEmpty } from './deck-empty';
 
-import type { ModePreference } from '@/data';
-
-function setup(mode: ModePreference = 'ambos') {
+function setup() {
   const onOpenMatches = jest.fn();
   const onRefresh = jest.fn();
   return {
     onOpenMatches,
     onRefresh,
-    ui: <DeckEmpty mode={mode} onOpenMatches={onOpenMatches} onRefresh={onRefresh} />,
+    ui: <DeckEmpty onOpenMatches={onOpenMatches} onRefresh={onRefresh} />,
   };
 }
 
@@ -34,24 +31,13 @@ describe('DeckEmpty', () => {
     expect(screen.getByText('Ya has visto a todo el mundo')).toBeTruthy();
   });
 
-  it('con el filtro en "ambos" no manda a tocar el filtro: no hay otro que probar', async () => {
-    const { ui } = setup('ambos');
+  it('no manda a cambiar ningún filtro: ya no hay ninguno', async () => {
+    const { ui } = setup();
     await render(ui);
 
     expect(screen.getByText(/No quedan perfiles nuevos por decidir/)).toBeTruthy();
-    expect(screen.queryByText(/cambiar el filtro/)).toBeNull();
+    expect(screen.queryByText(/filtro/)).toBeNull();
   });
-
-  it.each(['par', 'lockin'] as const)(
-    'con el filtro en %s sugiere ampliarlo, que es lo que falta',
-    async (mode) => {
-      const { ui } = setup(mode);
-      await render(ui);
-
-      expect(screen.getByText(/No quedan perfiles nuevos en este modo/)).toBeTruthy();
-      expect(screen.getByText(/cambiar el filtro de arriba/)).toBeTruthy();
-    }
-  );
 
   it('ofrece las dos salidas: ver matches y volver a comprobar', async () => {
     const { onOpenMatches, onRefresh, ui } = setup();

@@ -13,13 +13,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-import {
-  ambitionLabel,
-  modeLabel,
-  seeksComplement,
-  specialtyLabel,
-  startingPointSentence,
-} from './catalog';
+import { ambitionLabel, seeksComplement, specialtyLabel, startingPointSentence } from './catalog';
 import { DayStrip } from './day-strip';
 import { GithubSeal } from './github-seal';
 import { ProfileAvatar } from './profile-avatar';
@@ -52,9 +46,6 @@ export function ProfileDetails({ profile }: { profile: Profile }) {
             {profile.age} · {profile.location}
           </ThemedText>
           {/* La zona horaria la nombra la jornada, más abajo: aquí sobraba. */}
-          <View style={[styles.mode, { backgroundColor: theme.backgroundSelected }]}>
-            <ThemedText type="smallBold">Quiere: {modeLabel(profile.lookingFor)}</ThemedText>
-          </View>
         </View>
       </View>
 
@@ -249,13 +240,6 @@ const styles = StyleSheet.create({
   identityText: {
     flex: 1,
     gap: Spacing.half,
-  },
-  mode: {
-    alignSelf: 'flex-start',
-    marginTop: Spacing.one,
-    paddingVertical: Spacing.one,
-    paddingHorizontal: Spacing.two + Spacing.half,
-    borderRadius: Radii.pill,
   },
   group: {
     gap: Spacing.three,

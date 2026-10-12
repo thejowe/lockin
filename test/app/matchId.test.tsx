@@ -90,13 +90,14 @@ describe('ChatScreen', () => {
       await waitFor(() => expect(screen.getByText(counterpart.name)).toBeTruthy());
     });
 
-    it('pone arriba el hueco de Lock-In y presenta a la otra persona', async () => {
+    it('presenta a la otra persona sin ofrecer sesiones Lock-In', async () => {
       const { counterpart } = await seedMatch();
 
       await renderRoute(<ChatScreen />);
 
       await waitFor(() => expect(screen.getByText(counterpart.name)).toBeTruthy());
-      expect(screen.getByLabelText('Agendar sesión Lock-In')).toBeTruthy();
+      // Desde el 2026-10-12 el producto es solo cofundador: el hueco de sesión no se pinta.
+      expect(screen.queryByLabelText('Agendar sesión Lock-In')).toBeNull();
     });
 
     it('sin mensajes ofrece icebreakers', async () => {
