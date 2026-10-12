@@ -716,7 +716,7 @@ usuario por el camino: **solo modo oscuro**. Rama `claude/visual-cristal`.
   Android y web sin cambios (confirmado en el emulador el 2026-10-04).
   `expo-glass-effect` pasa a dependencia directa. El modal de match no cambia:
   su fondo es un desenfoque de pantalla, no una superficie de cristal.
-- [ ] (usuario — iPhone con iOS 26) Ver la barra en Expo Go o en un build de
+- [x] (usuario — iPhone con iOS 26) Ver la barra en Expo Go o en un build de
   desarrollo: que sea el cristal del sistema y que «Descubrir», «Matches» y
   «Perfil» se lean bien encima de la luz ambiental. Ojo con cualquier
   `opacity: 0` en un padre de `Frosted`: deja el cristal sin pintar.
@@ -731,6 +731,7 @@ usuario por el camino: **solo modo oscuro**. Rama `claude/visual-cristal`.
   Developer y el UDID del iPhone). Para confirmarlo antes sin build: un
   `console.log` temporal de `isLiquidGlassAvailable()` e
   `isGlassEffectAPIAvailable()` y leer Metro.
+  *2026-10-12, usuario (iPhone con iOS 26, Expo Go por tunnel, servidor nuevo): **confirmado, hay Liquid Glass.*** Lo da su palabra; la captura estática sobre fondo oscuro no lo distingue del *fallback* por sí sola. Contradice la hipótesis del 2026-10-09 (Expo Go no debería poder pintarlo): o el Expo Go actual ya lo hace, o aquella vez fue otra cosa. Sin `console.log` que lo mida; queda sin verificar por qué.
 
 Textos: ningún texto ni etiqueta que usen los `e2e/*.yaml` ha cambiado. Cambia
 la presentación de «Enviar» (ahora icono; su etiqueta «Enviar mensaje» sigue).
