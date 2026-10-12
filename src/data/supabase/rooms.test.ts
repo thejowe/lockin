@@ -44,6 +44,7 @@ const profile = (id: string): ProfileRow => ({
   timezone: 'Europe/Madrid',
   avatar_initials: 'AB',
   avatar_accent: 'brass',
+  avatar_url: null,
   specialties: ['dev'],
   seeking_specialties: [],
   looking_for: 'ambos',

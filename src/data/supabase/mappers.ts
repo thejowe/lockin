@@ -75,7 +75,11 @@ export function toProfile(row: ProfileRow): Profile {
     age: row.age,
     location: row.location,
     timezone: row.timezone,
-    avatar: { initials: row.avatar_initials, accent: row.avatar_accent },
+    avatar: {
+      initials: row.avatar_initials,
+      accent: row.avatar_accent,
+      ...(row.avatar_url ? { imageUrl: row.avatar_url } : {}),
+    },
     specialties: row.specialties,
     seekingSpecialties: row.seeking_specialties,
     lookingFor: row.looking_for,

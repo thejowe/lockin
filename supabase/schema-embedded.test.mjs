@@ -864,8 +864,8 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       order by a.attnum`);
     assert.deepEqual(
       permisos.rows.filter((c) => !c.inserta || !c.actualiza).map((c) => c.attname),
-      ['github_handle', 'github_verified_at'],
-      'el sello, y solo el sello, está cerrado a authenticated'
+      ['github_handle', 'github_verified_at', 'avatar_url'],
+      'el sello y la foto, y solo ellos, están cerrados a authenticated'
     );
     assert.deepEqual(
       permisos.rows.filter((c) => !c.lee).map((c) => c.attname),
@@ -888,6 +888,11 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       `update public.profiles set github_handle = 'torvalds' where id = '${ana}';`,
       /permission denied|no privileges/i,
       'authenticated no debe poder escribir el handle a mano'
+    );
+    await rechaza(
+      `update public.profiles set avatar_url = 'https://x.supabase.co/storage/v1/object/public/avatars/${ana}/a.jpg' where id = '${ana}';`,
+      /permission denied|no privileges/i,
+      'la foto solo la pone la función de moderación'
     );
     // Y por la otra puerta: el perfil se crea con un `.upsert()`, así que un
     // INSERT abierto sería el mismo agujero con el sello ya encendido de fábrica.

@@ -39,6 +39,11 @@ export type ProfileRow = {
   timezone: string;
   avatar_initials: string;
   avatar_accent: Avatar['accent'];
+  /**
+   * URL pública de la foto, ya moderada. NO la escribe el cliente: solo la
+   * Edge Function `moderate-avatar` (sin `grant` de columna para `authenticated`).
+   */
+  avatar_url: string | null;
   specialties: Specialty[];
   /**
    * Lo que el perfil busca que domine la otra persona. Puede ir vacío —es lo
@@ -65,7 +70,7 @@ export type ProfileRow = {
 /** Lo que se envía al crear o actualizar un perfil. */
 export type ProfileInsert = Omit<
   ProfileRow,
-  'created_at' | 'updated_at' | 'github_handle' | 'github_verified_at'
+  'created_at' | 'updated_at' | 'github_handle' | 'github_verified_at' | 'avatar_url'
 >;
 
 /** Fila de `public.user_settings`. */

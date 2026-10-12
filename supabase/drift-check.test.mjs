@@ -13,14 +13,18 @@ import { migrationSql, stripComments, parseMigrations } from './drift-check.mjs'
 
 const real = parseMigrations(stripComments(migrationSql()));
 
-test('ve el sello de GitHub cerrado a authenticated, en INSERT y en UPDATE', () => {
+test('ve el sello de GitHub y la foto cerrados a authenticated, en INSERT y en UPDATE', () => {
   const sealed = real.sealed
     .filter((s) => s.table === 'profiles' && s.role === 'authenticated')
     .map((s) => `${s.privilege} ${s.column}`)
     .sort();
+  // La foto (`avatar_url`) va cerrada igual que el sello: solo la escribe la
+  // Edge Function `moderate-avatar` con la service role.
   assert.deepEqual(sealed, [
+    'insert avatar_url',
     'insert github_handle',
     'insert github_verified_at',
+    'update avatar_url',
     'update github_handle',
     'update github_verified_at',
   ]);

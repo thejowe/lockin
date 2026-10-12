@@ -32,6 +32,7 @@ function buildProfileRow(overrides: Partial<ProfileRow> = {}): ProfileRow {
     timezone: 'Europe/Madrid',
     avatar_initials: 'NB',
     avatar_accent: 'teal',
+    avatar_url: null,
     specialties: ['dev', 'datos'],
     seeking_specialties: ['marketing', 'ventas'],
     looking_for: 'par',
@@ -289,5 +290,26 @@ describe('byRecentActivity', () => {
     const viejo = { createdAt: '2026-01-01T00:00:00.000Z', lastMessageAt: null };
 
     expect([viejo, sinMensajes].sort(byRecentActivity)).toEqual([sinMensajes, viejo]);
+  });
+});
+
+describe('toProfile: foto', () => {
+  it('sin avatar_url no hay imageUrl', () => {
+    const profile = toProfile(buildProfileRow({ avatar_url: null }));
+
+    expect(profile.avatar).toEqual({ initials: 'NB', accent: 'teal' });
+    expect('imageUrl' in profile.avatar).toBe(false);
+  });
+
+  it('con avatar_url expone imageUrl', () => {
+    const url = `https://x.supabase.co/storage/v1/object/public/avatars/${ME}/a.jpg`;
+
+    expect(toProfile(buildProfileRow({ avatar_url: url })).avatar.imageUrl).toBe(url);
+  });
+});
+
+describe('toProfileInsert: foto', () => {
+  it('no manda avatar_url: editar la ficha no puede borrar la foto', () => {
+    expect(toProfileInsert(ME, buildProfileInput(), null)).not.toHaveProperty('avatar_url');
   });
 });
