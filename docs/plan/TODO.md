@@ -2,6 +2,24 @@
 
 Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>.md` — márcalo ahí, no aquí.
 
+## ▶ Estado del 2026-10-12, tarde: foto de perfil y puerta del correo
+
+**Dónde estamos:** el código de las dos cosas está hecho, revisado con `codex review` y empujado
+(`929c92d` puerta del correo; `8698f5a`…`07a3881` foto). **La foto no está en producción.** El
+detalle accionable, en orden, vive en `docs/plan/todo/foto-perfil.md`; léelo antes de proponer nada.
+
+**Primer paso al volver:** comprobar si el usuario ya aplicó la migración `avatar_photo` y desplegó
+`moderate-avatar` (`list_migrations`, `list_edge_functions` sobre `grrzmzktrhksbttpbblg`). Lo
+bloqueó el clasificador del modo automático («Production Deploy»), no el código. Sin eso, **Schema
+drift sale rojo por `avatar_url` y es esperado**; no lo persigas como deriva real.
+
+**Es del usuario:** (1) aplicar la migración o añadir la regla de permiso para `apply_migration`;
+(2) poner `OPENAI_API_KEY` como secreto de la función (Claude no mete claves en campos ni la ve);
+(3) decidir qué hacer con el CI rojo por cobertura de `swipe-between-tabs.tsx` (ya lo estaba antes).
+
+**Después:** `comprobador` de la foto y de la puerta del correo; contrato de Storage en rama
+desechable; `privacidad.md` + web pública (sin eso no publicar); `CONCEPTO.md`.
+
 ## ▶ Pivote del 2026-10-12: solo cofundador, deck a pantalla completa estilo Tinder
 
 Decisión del usuario: la app se centra **solo en buscar cofundador**. Lock-In sale de la UI, pero
@@ -18,8 +36,8 @@ rachas, sus rutas y sus tablas en Supabase siguen en el repo, sin entrada visibl
   fuera las etiquetas de modo del match, la fila y la ficha.
 - E2E: `full-journey` y `register-confirm` pasan la bienvenida; `run.mjs` apaga los flujos de
   sesión, valoración, racha y sala con `LOCKIN_FLOWS = false`.
-- **Pendiente:** fotos de perfil reales (decisión del usuario: por ahora sin fotos), y pasar el
-  `comprobador` por el deck nuevo en el emulador.
+- **Pendiente:** ~~fotos de perfil~~ (hechas el 2026-10-12, ver arriba) y pasar el `comprobador`
+  por el deck nuevo en el emulador.
 
 ## ▶ Estado del 2026-10-11, noche (histórico desde el pivote de arriba)
 
