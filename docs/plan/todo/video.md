@@ -170,8 +170,12 @@ qué puede solaparse).
       real (no el aviso de `'no-disponible'`) y pide permisos de cámara/mic.
       Hecho el 2026-09-27; detalle y un bug de señalización en «Hallazgos
       del comprobador» abajo.
-- [ ] iOS (usuario): `eas build --profile development` para confirmar que
+- [x] iOS (usuario): `eas build --profile development` para confirmar que
       el plugin compila también en iOS — el emulador no lo cubre.
+      Hecho el 2026-10-12 (Claude, sobre `577b16e`): build `0667b0d4-071f-4364-9b99-6230da8ad10b`
+      en EAS, `--platform ios`, perfil `development` (`ios.simulator: true`),
+      estado `finished`. Compila para **simulador**; un iPhone físico necesita
+      otro perfil con `simulator: false` y cuenta de Apple Developer.
 - [ ] (usuario — el emulador no sirve: su cámara es una escena de juguete)
       Con ese build en dos móviles reales: abrir la misma sesión Lock-In
       desde los dos, comprobar que la llamada conecta (STUN público, sin
