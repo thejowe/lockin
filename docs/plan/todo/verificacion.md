@@ -758,7 +758,8 @@ Configuration):**
 - [x] Añadir `exp://*.exp.direct/--/auth/callback` a Redirect URLs (el
       subdominio cambia en cada sesión, por eso el comodín). Solo hace falta
       para probar con Expo Go.
-- [ ] Cambiar Site URL a algo real, o a `cofounder://auth/callback`, para que un
+- [x] Cambiar Site URL a algo real, o a `cofounder://auth/callback` (hecho el 2026-10-12 con
+      Claude en Chrome: estaba en `http://localhost:3000`), para que un
       fallo del redirect no deje en una página muerta.
 
 ## Rebranding lockin → cofounder: E2E y runner (2026-10-11)
