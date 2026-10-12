@@ -755,7 +755,7 @@ desarrollo o release es `cofounder://auth/callback`, que sí está permitida
 
 **Arreglo pendiente (usuario, dashboard de Supabase → Authentication → URL
 Configuration):**
-- [ ] Añadir `exp://*.exp.direct/--/auth/callback` a Redirect URLs (el
+- [x] Añadir `exp://*.exp.direct/--/auth/callback` a Redirect URLs (el
       subdominio cambia en cada sesión, por eso el comodín). Solo hace falta
       para probar con Expo Go.
 - [ ] Cambiar Site URL a algo real, o a `cofounder://auth/callback`, para que un
