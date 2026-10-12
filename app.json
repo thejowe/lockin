@@ -50,6 +50,14 @@
           "microphonePermission": "cofounder necesita el micrófono para la llamada de vídeo de la sesión Lock-In."
         }
       ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "cofounder necesita tu galería para que elijas tu foto de perfil.",
+          "cameraPermission": "cofounder necesita la cámara para hacerte la foto de perfil.",
+          "microphonePermission": false
+        }
+      ],
       "expo-secure-store"
     ],
     "experiments": {
