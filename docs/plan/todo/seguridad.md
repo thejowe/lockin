@@ -83,9 +83,9 @@ archivos.
   `expo-web-browser`, tras una variable `EXPO_PUBLIC_CAPTCHA_URL` apagada por defecto, para no
   añadir `react-native-webview`. Cuidado: ese deep link comparte esquema con
   `cofounder://auth/callback`, así que primero hay que cerrar la casilla del deep link.
-- [ ] **«Minimum password length» = 6** en Email → subir a 8. **Es seguro hacerlo**: la app no
-  valida la longitud en el cliente y un rechazo llega como `weak-password` con copy claro; los
-  E2E usan contraseñas largas. Solo falta tocar el ajuste (no pude: Chrome no estaba conectado).
+- [x] **«Minimum password length» = 8** (2026-10-11, con Claude en Chrome): subido de 6 a 8 en
+  Email y comprobado recargando el panel. La app no valida la longitud en el cliente y un rechazo
+  llega como `weak-password` con copy claro; los E2E usan contraseñas largas.
 - [x] **«Secure email change»**: se queda activo. Comentario de `auth.ts` y `supabase/README.md`
   corregidos; con anónimos activos no estorba (una anónima sin email recibe un solo correo).
 - [ ] Revisar en el dashboard: Redirect URLs exactas, «Only private channels» en Realtime y SMTP
