@@ -247,6 +247,8 @@ export function createMockRepositories(
         avatar: {
           initials: input.avatar?.initials ?? initialsFrom(input.name),
           accent: input.avatar?.accent ?? existing?.avatar.accent ?? 'brass',
+          // La foto no viene del formulario: se hereda, como `githubVerification`.
+          ...(existing?.avatar.imageUrl ? { imageUrl: existing.avatar.imageUrl } : {}),
         },
         createdAt: existing?.createdAt ?? timestamp,
         updatedAt: timestamp,
@@ -260,6 +262,31 @@ export function createMockRepositories(
       else state.actorSessions.set(actorId, { ...actorSession(), profileId: profile.id });
       notify(MATCHES_TOPIC);
 
+      return profile;
+    },
+
+    async setAvatarPhoto(localUri: string) {
+      const existing = currentProfile();
+      if (!existing) throw new Error('No hay perfil al que ponerle foto todavía.');
+
+      const profile: Profile = {
+        ...existing,
+        avatar: { ...existing.avatar, imageUrl: localUri },
+        updatedAt: nowIso(),
+      };
+      getState().profiles.set(profile.id, profile);
+      notify(MATCHES_TOPIC);
+      return profile;
+    },
+
+    async removeAvatarPhoto() {
+      const existing = currentProfile();
+      if (!existing) throw new Error('No hay perfil al que ponerle foto todavía.');
+
+      const { imageUrl: _removed, ...avatar } = existing.avatar;
+      const profile: Profile = { ...existing, avatar, updatedAt: nowIso() };
+      getState().profiles.set(profile.id, profile);
+      notify(MATCHES_TOPIC);
       return profile;
     },
 

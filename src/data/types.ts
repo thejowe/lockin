@@ -102,14 +102,20 @@ export interface ProfilePrompt {
 }
 
 /**
- * Avatar del MVP: iniciales sobre un color derivado del perfil.
- * No hay subida de imágenes en el MVP — no añadas `imageUrl` aquí sin coordinarlo.
+ * Avatar: iniciales sobre un color derivado del perfil y, opcionalmente, una
+ * foto. Sin `imageUrl` se pinta el color con las iniciales, como siempre.
  */
 export interface Avatar {
   /** 1-2 letras, ya en mayúsculas. */
   initials: string;
   /** Token de acento con el que pintar el fondo. */
   accent: 'brass' | 'teal';
+  /**
+   * Foto de perfil: URL pública del bucket `avatars` (Supabase) o URI local en
+   * el mock. Ausente si la persona no ha puesto ninguna. No entra en
+   * `ProfileInput`: se mueve solo con `setAvatarPhoto()`/`removeAvatarPhoto()`.
+   */
+  imageUrl?: string;
 }
 
 /** Ficha de una persona. */

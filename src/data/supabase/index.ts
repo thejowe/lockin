@@ -62,6 +62,7 @@ import type {
   Message,
   MessageInput,
   ModePreference,
+  Profile,
   ProfileFilter,
   ProfileInput,
   Session,
@@ -497,6 +498,15 @@ export function createSupabaseRepositories({
       notify(MATCHES_TOPIC);
 
       return toProfile(data);
+    },
+
+    // Provisional hasta la Tarea 3B del plan de la foto: sin servidor de moderación no se publica nada.
+    async setAvatarPhoto(): Promise<Profile> {
+      throw new Error('La foto de perfil todavía no está disponible.');
+    },
+
+    async removeAvatarPhoto(): Promise<Profile> {
+      throw new Error('La foto de perfil todavía no está disponible.');
     },
 
     async getById(id) {

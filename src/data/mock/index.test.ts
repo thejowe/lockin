@@ -207,3 +207,50 @@ describe('mecánica del mock', () => {
     expect((await repositories.profiles.getCurrent())?.name).toBe('Ana');
   });
 });
+
+describe('foto de perfil (mock)', () => {
+  beforeEach(() => {
+    resetState();
+  });
+
+  it('sin perfil no hay a quién ponerle foto', async () => {
+    const { profiles } = createMockRepositories();
+
+    await expect(profiles.setAvatarPhoto('file:///a.jpg')).rejects.toThrow(/No hay perfil/);
+    await expect(profiles.removeAvatarPhoto()).rejects.toThrow(/No hay perfil/);
+  });
+
+  it('setAvatarPhoto guarda imageUrl y conserva iniciales y acento', async () => {
+    const { profiles } = createMockRepositories();
+    const saved = await profiles.saveCurrent(buildProfileInput({ name: 'Núria Bosch' }));
+
+    const updated = await profiles.setAvatarPhoto('file:///a.jpg');
+
+    expect(updated.avatar).toEqual({
+      initials: saved.avatar.initials,
+      accent: saved.avatar.accent,
+      imageUrl: 'file:///a.jpg',
+    });
+    expect((await profiles.getCurrent())?.avatar.imageUrl).toBe('file:///a.jpg');
+  });
+
+  it('editar la ficha no borra la foto', async () => {
+    const { profiles } = createMockRepositories();
+    await profiles.saveCurrent(buildProfileInput());
+    await profiles.setAvatarPhoto('file:///a.jpg');
+
+    const edited = await profiles.saveCurrent(buildProfileInput({ location: 'Girona' }));
+
+    expect(edited.avatar.imageUrl).toBe('file:///a.jpg');
+  });
+
+  it('removeAvatarPhoto la quita y es idempotente', async () => {
+    const { profiles } = createMockRepositories();
+    await profiles.saveCurrent(buildProfileInput());
+    await profiles.setAvatarPhoto('file:///a.jpg');
+
+    const removed = await profiles.removeAvatarPhoto();
+    expect(removed.avatar.imageUrl).toBeUndefined();
+    await expect(profiles.removeAvatarPhoto()).resolves.toMatchObject({ id: removed.id });
+  });
+});

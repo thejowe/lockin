@@ -101,6 +101,19 @@ export interface ProfileRepository {
    * por el navegador, y eso es `verifyGithub()`.
    */
   refreshGithubVerification(): Promise<Profile>;
+
+  /**
+   * Pone la foto de perfil propia a partir de un archivo local ya reducido
+   * (ver `features/profile/avatar-photo.ts`). Sustituye la anterior y la borra
+   * del almacenamiento. Devuelve el perfil actualizado.
+   *
+   * Lanza si no hay perfil o si la subida falla; en ese caso el perfil
+   * conserva la foto que tuviera.
+   */
+  setAvatarPhoto(localUri: string): Promise<Profile>;
+
+  /** Quita la foto propia y la borra del almacenamiento. Idempotente. */
+  removeAvatarPhoto(): Promise<Profile>;
 }
 
 /** El deck de swipe y lo que pasa al soltar una tarjeta. */
