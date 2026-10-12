@@ -118,4 +118,28 @@ describe('PhotoSection', () => {
     await waitFor(() => expect(onChange).toHaveBeenCalledTimes(1));
     expect((await repositories.profiles.getCurrent())?.avatar.imageUrl).toBeUndefined();
   });
+
+  it('si quitar la foto falla enseña el motivo y no avisa', async () => {
+    await setup(true);
+    jest
+      .spyOn(repositories.profiles, 'removeAvatarPhoto')
+      .mockRejectedValueOnce(new Error('No hemos podido revisar la foto ahora mismo.'));
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Quitar foto' }));
+
+    expect(await screen.findByText('No hemos podido revisar la foto ahora mismo.')).toBeTruthy();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('un fallo sin mensaje usa uno genérico', async () => {
+    await setup();
+    pick.mockResolvedValue({ status: 'picked', uri: 'file:///nueva.jpg' });
+    jest.spyOn(repositories.profiles, 'setAvatarPhoto').mockRejectedValueOnce('cayó');
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Elegir de la galería' }));
+
+    expect(
+      await screen.findByText('No se ha podido subir la foto. Inténtalo de nuevo.')
+    ).toBeTruthy();
+  });
 });

@@ -43,14 +43,7 @@ import {
   TextField,
 } from './controls';
 
-import type {
-  Ambition,
-  Profile,
-  ProfileInput,
-  Specialty,
-  StartingPoint,
-  TimeBand,
-} from '@/data';
+import type { Ambition, Profile, ProfileInput, Specialty, StartingPoint, TimeBand } from '@/data';
 
 /** Estado del formulario. Los números viven como texto mientras se teclean. */
 interface Draft {
