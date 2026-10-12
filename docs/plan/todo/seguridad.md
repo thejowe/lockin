@@ -21,7 +21,7 @@ archivos.
 
 ## Abierto
 
-- [ ] **[comprobador]** La sesión **existente sobrevive a la actualización** (migración desde
+- [x] **[comprobador]** La sesión **existente sobrevive a la actualización** (migración desde
   `AsyncStorage`) y cierre + reapertura la mantiene, contra **Supabase real**. Es el riesgo real
   del cambio de `c40e766`: perder la sesión anónima es perder el perfil. Hace falta un APK nuevo
   (`expo-secure-store` es nativo): `expo prebuild --clean` y build release con
@@ -29,19 +29,46 @@ archivos.
   **anterior** (`preview` de EAS), crear cuenta y perfil, instalar encima el nuevo, abrir y
   comprobar mismo uid y mismo perfil; `am force-stop` y repetir. Citar en la evidencia `[lockin]
   backend de datos: Supabase`.
-- [ ] **[Claude]** Revisar el deep link `cofounder://auth/callback`: `completeAuthLink`
-  (`src/data/supabase/auth.ts`, ~línea 514) se leyó solo a medias. El esquema propio es
-  secuestrable en Android; PKCE mitiga. Comprobar que un enlace malformado o ajeno no cambia de
-  cuenta ni abre sesión.
-- [ ] **[Claude]** URLs del perfil (`link_github`, portfolio): comprobar con qué esquema se abren
-  (`Linking.openURL`) y validar que sea `https:`. Sin hallazgo todavía.
-- [ ] **[Claude]** Manifiesto Android tras `expo prebuild`: `allowBackup`, componentes
-  exportados, `SCHEDULE_EXACT_ALARM`. Confirmar de paso que el plugin de `expo-secure-store` deja
-  su dato fuera del Auto Backup.
-- [ ] **[Claude]** Logs: buscar datos personales en `console.*` y en mensajes de error que lleguen
-  al usuario o a Sentry si lo hubiera. Sin hallazgo todavía.
-- [ ] **WebRTC, solo STUN**: expone la IP de la otra persona. Decisión de producto, no de código:
-  o se acepta y se dice en `docs/tiendas/` (privacidad), o hay que contratar un TURN.
+  **Comprobado 2026-10-11 (comprobador), ✅, Supabase real.** APK anterior = `878d98a` y nuevo =
+  `9c17d42`, ambos release x86_64 con `EXPO_PUBLIC_SUPABASE_*` y `--rerun`, compilados desde
+  copias `git archive` en `C:\w\{old,new}` (no el árbol compartido). Se compiló con
+  `EXPO_PUBLIC_REQUIRE_ACCOUNT=false` (sesión **anónima**, como el E2E `supabase`): la puerta de
+  email necesita un buzón confirmable y el límite de GoTrue es ~2/hora; el almacenamiento de la
+  sesión es el mismo. Pasos: `pm clear`, alta anónima, perfil «Migracion SS, 31, Sevilla»; en
+  `RKStorage` (adb root) la clave `sb-…-auth-token` con uid `66c9b705-8bee-4841-b59e-17f453f4af0e`
+  (`is_anonymous: true`); `adb install -r` del nuevo encima; abrir: va directo al deck y el Perfil
+  muestra el mismo perfil; `RKStorage` queda sin la clave y existe `SecureStore.xml`; `am
+  force-stop` + relanzar: mismo perfil. En Postgres hay una sola fila «Migracion SS», con ese
+  uid (no se creó una cuenta nueva). Logcat de ambos arranques: `[lockin] backend de datos:
+  Supabase`. No cubierto: sesión con email+contraseña (mismo almacén, no recorrido) ni migración
+  desde un APK EAS firmado distinto. Queda una fila de prueba «Migracion SS» en el remoto.
+  Evidencia: `e2e/artifacts/local/2026-10-11-secure-store-migracion/` (`old-22.png`, `new-02-perfil.png`,
+  `new-03-tras-forcestop.png`, `old-RKStorage.db`, `new-RKStorage*.db`).
+- [x] **[Claude]** Deep link `cofounder://auth/callback` (2026-10-11). La ruta reconstruye la URL
+  con esquema, host y ruta fijos y solo deja pasar `code`, `token_hash`, `type`, `error`: un enlace
+  ajeno no cambia de destino. `code` va ligado al verificador PKCE de este teléfono, así que un
+  `code` forjado no canjea. **Hueco real, cerrado:** `token_hash` + `type` no iba ligado a nadie, y
+  `verifyOtp` con el hash de la cuenta del atacante dejaba el teléfono dentro de ella. Ahora solo
+  se acepta con un correo pedido desde este dispositivo en las últimas 24 h (`signUp`,
+  `linkEmailToCurrentUser`, `sendPasswordReset` lo apuntan) y con `type` en
+  `email_change|recovery|signup|email`. La marca no se borra al usar el enlace: «Secure email
+  change» manda dos enlaces por petición. `codex review` en 2 rondas: la primera cazó que se
+  rompían el alta por `signUp` y el segundo enlace del cambio de email (corregidos); la segunda
+  sin hallazgos. Tests en `auth.test.ts`.
+- [x] **[Claude]** URLs del perfil (2026-10-11): se abren con `openBrowserAsync` (navegador
+  integrado, no `Linking.openURL`). El servidor ya tenía `check (… ~* '^https?://')` y el formulario
+  valida igual; añadido el mismo filtro en `ProfileDetails` por defensa en profundidad (la URL sale
+  de la fila de otra persona). Test: `javascript:` e `intent://` no se pintan.
+- [x] **[Claude]** Manifiesto Android (2026-10-11): `allowBackup="true"` era el hallazgo; puesto
+  `android.allowBackup: false` en `app.json` (efectivo en el próximo `prebuild`). Solo
+  `MainActivity` está exportada (necesario para el lanzador y el esquema `cofounder`).
+  `SCHEDULE_EXACT_ALARM` sigue declarado: decisión de Play ya listada en `docs/tiendas/`.
+- [x] **[Claude]** Logs (2026-10-11): solo hay tres `console.*` en `src/` (backend activo,
+  `la consulta "<key>" falló: <message>`, reintento por reloj). Ninguno imprime nombres, correos,
+  mensajes ni tokens; las claves de consulta son identificadores. Sin hallazgo.
+- [x] **WebRTC, solo STUN** (2026-10-11): se acepta sin TURN (coste cero, sin proveedor nuevo) y
+  se dice a quien usa la app: `docs/tiendas/privacidad.md` ya nombraba STUN de Google y ahora
+  dice que la otra persona ve tu IP en la llamada. Reabrir si algún día se quiere ocultarla.
 
 ## Del usuario (ningún agente puede)
 
@@ -56,10 +83,10 @@ archivos.
   `expo-web-browser`, tras una variable `EXPO_PUBLIC_CAPTCHA_URL` apagada por defecto, para no
   añadir `react-native-webview`. Cuidado: ese deep link comparte esquema con
   `cofounder://auth/callback`, así que primero hay que cerrar la casilla del deep link.
-- [ ] **«Minimum password length» = 6** en Email (Supabase recomienda 8). Subirla puede romper el
-  formulario si la app valida 6: mirar `src/features/profile/` antes de tocarla.
-- [ ] **«Secure email change» activo**, y un comentario de `auth.ts` dice que debe estar
-  desactivado. El E2E de registro pasa, así que no hay fallo demostrado: decidir si se actualiza
-  el comentario o el ajuste.
+- [ ] **«Minimum password length» = 6** en Email → subir a 8. **Es seguro hacerlo**: la app no
+  valida la longitud en el cliente y un rechazo llega como `weak-password` con copy claro; los
+  E2E usan contraseñas largas. Solo falta tocar el ajuste (no pude: Chrome no estaba conectado).
+- [x] **«Secure email change»**: se queda activo. Comentario de `auth.ts` y `supabase/README.md`
+  corregidos; con anónimos activos no estorba (una anónima sin email recibe un solo correo).
 - [ ] Revisar en el dashboard: Redirect URLs exactas, «Only private channels» en Realtime y SMTP
   propio (el límite por defecto es ~2 correos/hora).
