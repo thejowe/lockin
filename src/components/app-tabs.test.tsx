@@ -48,6 +48,12 @@ jest.mock('@/hooks/use-reduce-motion', () => ({
   useReduceMotion: () => mockSystem.reduceMotion,
 }));
 
+// El gesto usa hooks de `expo-router` que no existen sin navegador montado.
+jest.mock('@/components/swipe-between-tabs', () => ({
+  SwipeBetweenTabs: ({ children }: { children: ReactNode }) => children,
+  PagerPage: ({ children }: { children: ReactNode }) => children,
+}));
+
 /** Qué pestaña dice `expo-router` que está activa. Se mueve test a test. */
 const mockFocused = { name: 'discover' };
 

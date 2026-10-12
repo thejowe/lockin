@@ -20,6 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AmbientBackground } from '@/components/ambient-background';
 import { LoadingState, MessageState } from '@/components/state-view';
+import { useLockTabSwipe } from '@/components/swipe-between-tabs';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useQuery, useRepositories } from '@/data';
@@ -47,6 +48,10 @@ export default function DiscoverScreen() {
     ? { bands: viewer.availability.bands, timezone: viewer.timezone }
     : undefined;
   const { cards, loading, error, match, decide, dismissMatch, refresh } = useDeck(DECK_MODE);
+
+  // Con tarjetas, el swipe horizontal es de la tarjeta; sin ellas (deck vacío,
+  // cargando o en error) deslizar lleva a la pestaña de al lado.
+  useLockTabSwipe(!loading && !!cards && cards.length > 0);
 
   function openChat(matchId: string) {
     dismissMatch();

@@ -22,6 +22,7 @@ import {
   TabSlot,
   TabTrigger,
   type TabListProps,
+  type TabSlotProps,
   type TabTriggerSlotProps,
 } from 'expo-router/ui';
 import {
@@ -47,6 +48,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Frosted } from '@/components/glass';
 import { Icon, type IconName } from '@/components/icon';
+import { PagerPage, routeIndex, SwipeBetweenTabs } from '@/components/swipe-between-tabs';
 import { ThemedText } from '@/components/themed-text';
 import { Duration, Radii, Spacing, Springs } from '@/constants/theme';
 import { useReduceMotion } from '@/hooks/use-reduce-motion';
@@ -78,7 +80,9 @@ export default function AppTabs() {
   return (
     <Tabs style={styles.root}>
       <BlurTargetView ref={blurTarget} style={styles.root}>
-        <TabSlot style={styles.root} />
+        <SwipeBetweenTabs>
+          <TabSlot style={styles.root} detachInactiveScreens={false} renderFn={renderPage} />
+        </SwipeBetweenTabs>
       </BlurTargetView>
       <TabList asChild>
         <TabBar blurTarget={blurTarget}>
@@ -92,6 +96,20 @@ export default function AppTabs() {
     </Tabs>
   );
 }
+
+/**
+ * Las tres pantallas siempre montadas y colocadas en fila: así, al arrastrar, la
+ * vecina ya está ahí y se ve entrar. Sustituye al render por defecto, que solo
+ * pinta la activa.
+ */
+const renderPage: NonNullable<TabSlotProps['renderFn']> = (descriptor, { isFocused }) => (
+  <PagerPage
+    key={descriptor.route.key}
+    index={routeIndex(descriptor.route.name)}
+    isFocused={isFocused}>
+    {descriptor.render()}
+  </PagerPage>
+);
 
 function TabBar({
   blurTarget,
