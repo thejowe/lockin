@@ -11,7 +11,7 @@
  *   sería el fallo que la regla existe para evitar),
  * - que sin capa de cuentas (mock) o con la puerta apagada no hay puerta, y la
  *   pantalla de registro devuelve al principio,
- * - que al terminar el onboarding sigue por `/mode` con `replace`, y que
+ * - que al terminar el onboarding vuelve a `/` con `replace` (que decide `/mode` o `/discover`), y que
  *   «Ya tengo cuenta» abre el formulario de entrar con `push`.
  *
  * Ojo: en RNTL 14 `render` y `fireEvent` son asíncronos.
@@ -156,7 +156,7 @@ describe('RegisterScreen', () => {
     expect(router.replace).not.toHaveBeenCalled();
   });
 
-  it('al elegir la contraseña sigue el onboarding por /mode con replace', async () => {
+  it('al elegir la contraseña vuelve a / con replace, que decide el destino', async () => {
     mockReadAccountState.mockResolvedValue(CONFIRMADA);
     await renderRoute(<RegisterScreen />);
     await screen.findByText('Elige tu contraseña');
@@ -165,7 +165,7 @@ describe('RegisterScreen', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Guardar y continuar' }));
     await act(async () => {});
 
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/mode'));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/'));
     expect(mockSetPassword).toHaveBeenCalledWith('secreta-123');
     expect(router.push).not.toHaveBeenCalled();
   });

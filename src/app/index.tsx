@@ -6,12 +6,14 @@ import { AmbientBackground } from '@/components/ambient-background';
 import { Button } from '@/components/button';
 import { LoadingState, MessageState } from '@/components/state-view';
 import { useQuery, useRepositories } from '@/data';
+import { useRegistrationGate } from '@/features/profile';
 import { useTheme } from '@/hooks/use-theme';
 
 /** Recupera el perfil antes de decidir si hace falta onboarding. */
 export default function IndexRoute() {
   const repositories = useRepositories();
   const theme = useTheme();
+  const gate = useRegistrationGate();
   const {
     data: onboarded,
     loading,
@@ -21,7 +23,11 @@ export default function IndexRoute() {
 
   // Nunca en blanco: con Supabase esta consulta cruza la red, y una pantalla
   // vacía no distingue «tarda» de «se ha colgado».
-  if (loading) return <LoadingState label="Abriendo cofounder…" />;
+  // Con perfil de antes, esperar también a la puerta: no se enseña `/discover`
+  // a quien luego tendrá que confirmar el correo.
+  if (loading || (onboarded && gate === 'checking')) {
+    return <LoadingState label="Abriendo cofounder…" />;
+  }
 
   // Una consulta fallida no significa que el usuario no tenga perfil.
   if (error) {
@@ -45,7 +51,11 @@ export default function IndexRoute() {
     );
   }
 
-  return <Redirect href={onboarded ? '/discover' : '/mode'} />;
+  // Sin perfil sigue la bienvenida (`/mode`, que ya manda a `/register`). Con
+  // perfil pero sin email confirmado —cuenta anónima anterior al registro
+  // obligatorio— se asciende en `/register`: conserva perfil y matches.
+  if (!onboarded) return <Redirect href="/mode" />;
+  return <Redirect href={gate === 'required' ? '/register' : '/discover'} />;
 }
 
 const styles = StyleSheet.create({

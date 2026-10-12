@@ -43,6 +43,7 @@ import {
   type Phase,
 } from '@/features/session';
 import { useTheme } from '@/hooks/use-theme';
+import { RequireVerifiedEmail } from '@/features/profile';
 
 const PRESENCE_TEXT: Record<CounterpartPresence, string> = {
   aqui: 'Está aquí',
@@ -56,7 +57,7 @@ function phaseTitle(phase: Phase, blocks: number): string {
   return `${name} · bloque ${phase.block} de ${blocks}`;
 }
 
-export default function SessionScreen() {
+function SessionScreenContent() {
   const theme = useTheme();
   const router = useRouter();
   const params = useLocalSearchParams<{ sessionId: string }>();
@@ -311,3 +312,13 @@ const styles = StyleSheet.create({
   stretch: { alignSelf: 'stretch' },
   centeredText: { textAlign: 'center' },
 });
+
+
+/** Sin email confirmado no se ve nada de dentro: ver `RequireVerifiedEmail`. */
+export default function SessionScreen() {
+  return (
+    <RequireVerifiedEmail>
+      <SessionScreenContent />
+    </RequireVerifiedEmail>
+  );
+}

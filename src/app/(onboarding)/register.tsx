@@ -14,7 +14,9 @@ import { registrationRequired } from '@/features/profile/account-gateway';
  * confirmado. Sin capa de cuentas (mock, o la puerta apagada en la compilación)
  * no hay nada que crear: quien llegara por una URL vuelve al principio.
  *
- * Al terminar, el onboarding sigue por `/mode`, con `replace` porque el
+ * Al terminar vuelve a `/`, que decide: `/mode` si no hay perfil y `/discover`
+ * si ya lo había (cuenta anterior al registro obligatorio, ascendida). Con
+ * `replace` porque el
  * registro no es un sitio al que se vuelva con el botón atrás. «Ya tengo
  * cuenta» sí es un `push`: desde ahí se puede volver.
  */
@@ -28,7 +30,7 @@ export default function RegisterScreen() {
       <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <RegisterForm
-            onDone={() => router.replace('/mode')}
+            onDone={() => router.replace('/')}
             onSignIn={() => router.push('/sign-in')}
           />
         </ScrollView>

@@ -19,11 +19,12 @@ import { AGREEMENT_CATALOG, SECTION_LABELS, TopicRow, useAgreement } from '@/fea
 import { useTheme } from '@/hooks/use-theme';
 
 import type { AgreementSection } from '@/features/agreement';
+import { RequireVerifiedEmail } from '@/features/profile';
 
 const LEGAL_NOTICE =
   'Esto no es un contrato ni asesoría legal. Sirve para hablar de lo difícil antes de que salga caro. Cuando vayáis en serio, id a un profesional.';
 
-export default function AgreementScreen() {
+function AgreementScreenContent() {
   const theme = useTheme();
   const repositories = useRepositories();
   const params = useLocalSearchParams<{ matchId: string }>();
@@ -125,3 +126,13 @@ const styles = StyleSheet.create({
   section: { gap: Spacing.two },
   back: { alignItems: 'center', paddingVertical: Spacing.three },
 });
+
+
+/** Sin email confirmado no se ve nada de dentro: ver `RequireVerifiedEmail`. */
+export default function AgreementScreen() {
+  return (
+    <RequireVerifiedEmail>
+      <AgreementScreenContent />
+    </RequireVerifiedEmail>
+  );
+}

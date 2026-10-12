@@ -42,6 +42,7 @@ import {
   slotsForDay,
 } from '@/features/session';
 import { useTheme } from '@/hooks/use-theme';
+import { RequireVerifiedEmail } from '@/features/profile';
 
 const MINUTE = 60_000;
 
@@ -51,7 +52,7 @@ function createErrorText(error: unknown): string {
   return 'No se ha podido convocar. Inténtalo de nuevo.';
 }
 
-export default function NewRoomScreen() {
+function NewRoomScreenContent() {
   const router = useRouter();
   const repositories = useRepositories();
   const matches = useMatches();
@@ -318,3 +319,13 @@ const styles = StyleSheet.create({
   },
   actions: { gap: Spacing.two },
 });
+
+
+/** Sin email confirmado no se ve nada de dentro: ver `RequireVerifiedEmail`. */
+export default function NewRoomScreen() {
+  return (
+    <RequireVerifiedEmail>
+      <NewRoomScreenContent />
+    </RequireVerifiedEmail>
+  );
+}

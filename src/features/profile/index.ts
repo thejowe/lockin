@@ -15,5 +15,6 @@ export { ProfileAvatar } from './profile-avatar';
 export { ProfileDetails } from './profile-details';
 export { ProfileForm, type ProfileFormProps } from './profile-form';
 export { RegisterForm } from './register-form';
+export { RequireVerifiedEmail } from './require-verified-email';
 export { SignInForm } from './sign-in-form';
 export { useRegistrationGate, type RegistrationGate } from './use-registration-gate';

@@ -18,9 +18,29 @@ import IndexRoute from '../../src/app/index';
 
 jest.mock('expo-router', () => require('../routes').expoRouterMock());
 
+// La puerta del correo: por defecto abierta (mock sin capa de cuentas); un test
+// la cierra para simular una cuenta anónima anterior al registro obligatorio.
+let mockRequired = false;
+const mockReadAccountState = jest.fn();
+
+jest.mock('@/features/profile/account-gateway', () => {
+  const mock = {
+    ...jest.requireActual('@/features/profile/account-gateway'),
+    readAccountState: () => mockReadAccountState(),
+  };
+  Object.defineProperty(mock, 'registrationRequired', { get: () => mockRequired });
+  Object.defineProperty(mock, 'accountsAvailable', { get: () => mockRequired });
+  return mock;
+});
+
+const ANONIMA = { kind: 'anonymous', userId: 'u', email: null, pendingEmail: null, recoverable: false };
+const CONFIRMADA = { ...ANONIMA, kind: 'email', email: 'ana@example.com', recoverable: true };
+
 beforeEach(() => {
   resetRepositories();
   resetRouter();
+  mockRequired = false;
+  mockReadAccountState.mockReset().mockResolvedValue(CONFIRMADA);
 });
 
 describe('IndexRoute', () => {
@@ -37,6 +57,38 @@ describe('IndexRoute', () => {
     await renderRoute(<IndexRoute />);
 
     await waitFor(() => expect(router.redirects).toEqual(['/discover']));
+  });
+});
+
+describe('IndexRoute con la puerta del correo', () => {
+  beforeEach(async () => {
+    mockRequired = true;
+    await repositories.session.setActiveMode('par');
+    await repositories.profiles.saveCurrent(buildProfileInput());
+  });
+
+  it('con perfil de antes y sin email confirmado manda a /register, no al deck', async () => {
+    mockReadAccountState.mockResolvedValue(ANONIMA);
+
+    await renderRoute(<IndexRoute />);
+
+    await waitFor(() => expect(router.redirects).toEqual(['/register']));
+  });
+
+  it('con perfil y email confirmado entra al deck', async () => {
+    mockReadAccountState.mockResolvedValue(CONFIRMADA);
+
+    await renderRoute(<IndexRoute />);
+
+    await waitFor(() => expect(router.redirects).toEqual(['/discover']));
+  });
+
+  it('si no se puede leer la cuenta no abre el deck: falla cerrado', async () => {
+    mockReadAccountState.mockRejectedValue(new Error('Sin conexión.'));
+
+    await renderRoute(<IndexRoute />);
+
+    await waitFor(() => expect(router.redirects).toEqual(['/register']));
   });
 });
 

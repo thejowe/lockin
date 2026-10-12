@@ -39,8 +39,9 @@ import {
 import { AgreementCard } from '@/features/agreement';
 import { SafetyMenuButton, SafetyPanel } from '@/features/safety/safety-panel';
 import { useTheme } from '@/hooks/use-theme';
+import { RequireVerifiedEmail } from '@/features/profile';
 
-export default function ChatScreen() {
+function ChatScreenContent() {
   const theme = useTheme();
   const params = useLocalSearchParams<{ matchId: string }>();
   const matchId = Array.isArray(params.matchId) ? params.matchId[0] : (params.matchId ?? '');
@@ -255,3 +256,13 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.one,
   },
 });
+
+
+/** Sin email confirmado no se ve nada de dentro: ver `RequireVerifiedEmail`. */
+export default function ChatScreen() {
+  return (
+    <RequireVerifiedEmail>
+      <ChatScreenContent />
+    </RequireVerifiedEmail>
+  );
+}

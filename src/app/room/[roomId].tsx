@@ -57,6 +57,7 @@ import { PresenceDot } from '@/features/session/presence-dot';
 import { useTheme } from '@/hooks/use-theme';
 
 import type { Phase } from '@/features/session';
+import { RequireVerifiedEmail } from '@/features/profile';
 
 const RETRY_MS = 5_000;
 
@@ -160,7 +161,7 @@ function useRoomEntry(
   }, [leave]);
 }
 
-export default function RoomScreen() {
+function RoomScreenContent() {
   const theme = useTheme();
   const router = useRouter();
   const repositories = useRepositories();
@@ -650,3 +651,13 @@ const styles = StyleSheet.create({
   actions: { gap: Spacing.two },
   confirm: { gap: Spacing.two },
 });
+
+
+/** Sin email confirmado no se ve nada de dentro: ver `RequireVerifiedEmail`. */
+export default function RoomScreen() {
+  return (
+    <RequireVerifiedEmail>
+      <RoomScreenContent />
+    </RequireVerifiedEmail>
+  );
+}

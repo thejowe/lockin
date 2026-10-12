@@ -1,4 +1,5 @@
 import AppTabs from '@/components/app-tabs';
+import { RequireVerifiedEmail } from '@/features/profile';
 import { ClearLockInReminders } from '@/features/room';
 
 /**
@@ -8,9 +9,9 @@ import { ClearLockInReminders } from '@/features/room';
  */
 export default function TabsLayout() {
   return (
-    <>
+    <RequireVerifiedEmail>
       <ClearLockInReminders />
       <AppTabs />
-    </>
+    </RequireVerifiedEmail>
   );
 }
