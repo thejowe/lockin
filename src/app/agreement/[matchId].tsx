@@ -127,7 +127,6 @@ const styles = StyleSheet.create({
   back: { alignItems: 'center', paddingVertical: Spacing.three },
 });
 
-
 /** Sin email confirmado no se ve nada de dentro: ver `RequireVerifiedEmail`. */
 export default function AgreementScreen() {
   return (

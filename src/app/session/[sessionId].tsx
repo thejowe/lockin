@@ -313,7 +313,6 @@ const styles = StyleSheet.create({
   centeredText: { textAlign: 'center' },
 });
 
-
 /** Sin email confirmado no se ve nada de dentro: ver `RequireVerifiedEmail`. */
 export default function SessionScreen() {
   return (

@@ -257,7 +257,6 @@ const styles = StyleSheet.create({
   },
 });
 
-
 /** Sin email confirmado no se ve nada de dentro: ver `RequireVerifiedEmail`. */
 export default function ChatScreen() {
   return (

@@ -652,7 +652,6 @@ const styles = StyleSheet.create({
   confirm: { gap: Spacing.two },
 });
 
-
 /** Sin email confirmado no se ve nada de dentro: ver `RequireVerifiedEmail`. */
 export default function RoomScreen() {
   return (

@@ -33,7 +33,13 @@ jest.mock('@/features/profile/account-gateway', () => {
   return mock;
 });
 
-const ANONIMA = { kind: 'anonymous', userId: 'u', email: null, pendingEmail: null, recoverable: false };
+const ANONIMA = {
+  kind: 'anonymous',
+  userId: 'u',
+  email: null,
+  pendingEmail: null,
+  recoverable: false,
+};
 const CONFIRMADA = { ...ANONIMA, kind: 'email', email: 'ana@example.com', recoverable: true };
 
 beforeEach(() => {
