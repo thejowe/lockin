@@ -204,3 +204,30 @@ describe('ProfileCard', () => {
     });
   });
 });
+
+describe('ProfileCard: foto de fondo', () => {
+  // El retrato es decorado y va oculto a los lectores de pantalla: el nombre ya
+  // se lee en el texto de la tarjeta.
+  const HIDDEN = { includeHiddenElements: true };
+
+  it('con foto la pinta de fondo y no pinta el monograma', async () => {
+    const base = buildProfile({ name: 'Núria' });
+    const profile = { ...base, avatar: { ...base.avatar, imageUrl: 'https://x/a.jpg' } };
+
+    await render(<ProfileCard profile={profile} />);
+
+    expect(screen.getByTestId('portrait-photo', HIDDEN)).toBeTruthy();
+    expect(screen.queryByText(base.avatar.initials, HIDDEN)).toBeNull();
+    // El texto de la tarjeta sigue ahí, encima de la foto.
+    expect(screen.getByText('Domina')).toBeTruthy();
+  });
+
+  it('sin foto sigue el retrato de color con las iniciales', async () => {
+    const profile = buildProfile({ name: 'Núria' });
+
+    await render(<ProfileCard profile={profile} />);
+
+    expect(screen.queryByTestId('portrait-photo', HIDDEN)).toBeNull();
+    expect(screen.getByText(profile.avatar.initials, HIDDEN)).toBeTruthy();
+  });
+});

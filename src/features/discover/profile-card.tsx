@@ -19,6 +19,7 @@
  * la lectura del perfil entero.
  */
 
+import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
@@ -261,8 +262,9 @@ export function ProfileCard({
 }
 
 /**
- * El «retrato» que ocupa la tarjeta entera: el color de la persona entrando
- * por arriba, sus iniciales en grande y un fundido a negro abajo para que el
+ * El «retrato» que ocupa la tarjeta entera. Con foto, la foto a pantalla
+ * completa; sin ella, el color de la persona entrando por arriba y sus
+ * iniciales en grande. En los dos casos, un fundido a negro abajo para que el
  * texto se lea encima. Es decorado: el nombre ya se lee en el texto.
  */
 function Portrait({ profile }: { profile: Profile }) {
@@ -271,6 +273,12 @@ function Portrait({ profile }: { profile: Profile }) {
   // Ids únicos por tarjeta: en web los `<defs>` de varias tarjetas comparten documento.
   const tintId = `portrait-tint-${profile.id}`;
   const fadeId = `portrait-fade-${profile.id}`;
+  const imageUrl = profile.avatar.imageUrl;
+  // Una foto puede ser clara: el fundido arranca antes y pesa más que sobre el
+  // color liso, para que el texto de abajo siga leyéndose (≥ 4,5:1).
+  const fade = imageUrl
+    ? { start: 0.3, mid: 0.55, midOpacity: 0.55, end: 0.75, endOpacity: 0.88 }
+    : { start: 0.35, mid: 0.72, midOpacity: 0.82, end: 1, endOpacity: 0.96 };
 
   return (
     <View
@@ -278,28 +286,40 @@ function Portrait({ profile }: { profile: Profile }) {
       pointerEvents="none"
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants">
-      <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
-        <Defs>
-          <LinearGradient id={tintId} x1="0" y1="0" x2="0.35" y2="1">
-            <Stop offset="0" stopColor={accent} stopOpacity={0.62} />
-            <Stop offset="0.75" stopColor={accent} stopOpacity={0.08} />
-          </LinearGradient>
-        </Defs>
-        <Rect width="100%" height="100%" fill={`url(#${tintId})`} />
-      </Svg>
+      {imageUrl ? (
+        <Image
+          testID="portrait-photo"
+          source={{ uri: imageUrl }}
+          contentFit="cover"
+          transition={150}
+          style={StyleSheet.absoluteFill}
+        />
+      ) : (
+        <>
+          <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
+            <Defs>
+              <LinearGradient id={tintId} x1="0" y1="0" x2="0.35" y2="1">
+                <Stop offset="0" stopColor={accent} stopOpacity={0.62} />
+                <Stop offset="0.75" stopColor={accent} stopOpacity={0.08} />
+              </LinearGradient>
+            </Defs>
+            <Rect width="100%" height="100%" fill={`url(#${tintId})`} />
+          </Svg>
 
-      <View style={styles.monogramSlot}>
-        <ThemedText style={styles.monogram}>{profile.avatar.initials}</ThemedText>
-      </View>
+          <View style={styles.monogramSlot}>
+            <ThemedText style={styles.monogram}>{profile.avatar.initials}</ThemedText>
+          </View>
+        </>
+      )}
 
       {/* Cada `<Svg>` resuelve sus `url(#…)` dentro de sí mismo en nativo: el
           degradado va definido en el mismo SVG que lo usa. */}
       <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
         <Defs>
           <LinearGradient id={fadeId} x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0.35" stopColor={theme.background} stopOpacity={0} />
-            <Stop offset="0.72" stopColor={theme.background} stopOpacity={0.82} />
-            <Stop offset="1" stopColor={theme.background} stopOpacity={0.96} />
+            <Stop offset={fade.start} stopColor={theme.background} stopOpacity={0} />
+            <Stop offset={fade.mid} stopColor={theme.background} stopOpacity={fade.midOpacity} />
+            <Stop offset={fade.end} stopColor={theme.background} stopOpacity={fade.endOpacity} />
           </LinearGradient>
         </Defs>
         <Rect width="100%" height="100%" fill={`url(#${fadeId})`} />
