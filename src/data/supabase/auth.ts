@@ -66,6 +66,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 
+import { deleteAvatar } from './avatar';
 import { getSupabaseClient, peekSupabaseClient } from './client';
 import { secureAuthStorage } from './secure-storage';
 
@@ -699,6 +700,12 @@ export async function signOut(options: SignOutOptions = {}): Promise<void> {
  */
 export async function deleteMyAccount(client?: LockInSupabaseClient): Promise<void> {
   const target = client ?? getSupabaseClient();
+
+  // El SQL de `delete_my_account` solo se lleva metadatos: el archivo de la foto
+  // se borra por la API (la función) y antes de que la sesión deje de valer.
+  // Mejor esfuerzo: un archivo huérfano es el mal menor, y no debe impedir borrar.
+  await deleteAvatar(target).catch(() => undefined);
+
   const { error } = await target.rpc('delete_my_account');
   if (error) throw toAccountError(error);
 

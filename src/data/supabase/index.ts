@@ -44,6 +44,7 @@ import { subscribeResyncingOnRejoin } from './realtime';
 import { createSupabaseSessionRepository } from './sessions';
 import { GITHUB_VERIFICATION_CANCELLED } from '../repositories';
 
+import { deleteAvatar, uploadAvatar } from './avatar';
 import type { MatchRow, MessageRow, ProfileRow } from './database.types';
 import type { LockInSupabaseClient } from './client';
 import type {
@@ -500,13 +501,31 @@ export function createSupabaseRepositories({
       return toProfile(data);
     },
 
-    // Provisional hasta la Tarea 3B del plan de la foto: sin servidor de moderación no se publica nada.
-    async setAvatarPhoto(): Promise<Profile> {
-      throw new Error('La foto de perfil todavía no está disponible.');
+    async setAvatarPhoto(localUri: string): Promise<Profile> {
+      const client = getClient();
+      const userId = await getUserId();
+      if (!(await profiles.getCurrent())) {
+        throw new Error('No hay perfil al que ponerle foto todavía.');
+      }
+
+      // La publica la Edge Function tras revisarla: el perfil se relee después.
+      await uploadAvatar(client, userId, localUri);
+      notify(MATCHES_TOPIC);
+
+      return (await profiles.getCurrent()) as Profile;
     },
 
     async removeAvatarPhoto(): Promise<Profile> {
-      throw new Error('La foto de perfil todavía no está disponible.');
+      const client = getClient();
+      await getUserId();
+      if (!(await profiles.getCurrent())) {
+        throw new Error('No hay perfil al que ponerle foto todavía.');
+      }
+
+      await deleteAvatar(client);
+      notify(MATCHES_TOPIC);
+
+      return (await profiles.getCurrent()) as Profile;
     },
 
     async getById(id) {

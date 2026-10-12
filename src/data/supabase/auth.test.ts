@@ -964,6 +964,32 @@ describe('deleteMyAccount', () => {
     expect(other.auth.signOut).toHaveBeenCalledWith({ scope: 'local' });
   });
 
+  it('quita la foto por la función antes del RPC y borra aunque eso falle', async () => {
+    const order: string[] = [];
+    const other = {
+      functions: {
+        invoke: jest.fn(async () => {
+          order.push('foto');
+          return { data: null, error: new Error('función caída') };
+        }),
+      },
+      rpc: jest.fn(async () => {
+        order.push('rpc');
+        return { error: null };
+      }),
+      auth: { signOut: jest.fn().mockResolvedValue({ error: null }) },
+    };
+
+    await expect(
+      deleteMyAccount(other as unknown as Parameters<typeof deleteMyAccount>[0])
+    ).resolves.toBeUndefined();
+
+    expect(other.functions.invoke).toHaveBeenCalledWith('moderate-avatar', {
+      body: { action: 'remove' },
+    });
+    expect(order).toEqual(['foto', 'rpc']);
+  });
+
   it('si el servidor falla no toca la sesión local', async () => {
     rpc.mockResolvedValueOnce({ error: gotrueError('LI007', 'sin sesión') });
 
