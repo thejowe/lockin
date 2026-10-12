@@ -9,7 +9,15 @@ module.exports = defineConfig([
   // `npm run format`, no ESLint.
   prettierConfig,
   {
-    ignores: ['dist/*', 'coverage/*', '.expo/*', 'e2e/.runtime/**', 'e2e/artifacts/**'],
+    ignores: [
+      'dist/*',
+      'coverage/*',
+      '.expo/*',
+      'e2e/.runtime/**',
+      'e2e/artifacts/**',
+      // Deno, no la app: sus imports `jsr:` no los resuelve este lint.
+      'supabase/functions/**/index.ts',
+    ],
   },
   {
     // Los tests corren en Node bajo Jest, no en el runtime de la app.

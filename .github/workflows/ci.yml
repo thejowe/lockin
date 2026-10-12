@@ -41,6 +41,9 @@ jobs:
           # de `src/`. Aquí se comprueba lo que decide si un fallo del emulador
           # se reintenta y uno del caso no: `node --test` sobre `e2e/triage.mjs`.
           - { name: Runner E2E, run: npm run test:e2e }
+          # Decisión de moderación de la foto de perfil (`moderate-avatar`): Node puro,
+          # sin Deno ni red; el proveedor va simulado.
+          - { name: Funciones Edge, run: npm run test:functions }
     steps:
       - uses: actions/checkout@v7
 
