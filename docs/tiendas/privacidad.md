@@ -74,7 +74,7 @@ Bases jurídicas (art. 6 RGPD):
 - Las dos personas del match ven su conversación, las sesiones individuales y su asistencia. La valoración de una persona no se muestra a la otra.
 - En el acuerdo, la otra persona ve tu opción y nota de un tema cuando también ha respondido a ese tema. Antes puede ver que ya respondiste.
 - En una sala, quien convoca ve todas las invitaciones y respuestas. Los demás participantes ven su propia fila y a quienes hayan aceptado. Los invitados pendientes no se muestran entre sí.
-- La otra persona de la videollamada recibe tu imagen, voz y los datos de conexión necesarios.
+- La otra persona de la videollamada recibe tu imagen, voz y los datos de conexión necesarios, entre ellos tu dirección IP: la conexión es directa entre los dos teléfonos y no pasa por un servidor intermedio que la oculte.
 - Los operadores con privilegios administrativos y los proveedores pueden acceder a datos según los permisos necesarios para prestar el servicio. El chat se almacena en la base de datos; no se ofrece una garantía de cifrado de extremo a extremo del chat.
 
 Los recordatorios son locales. El aviso de sesión incluye el nombre del compañero y puede aparecer en la pantalla bloqueada según tus ajustes del sistema.

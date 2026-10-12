@@ -327,10 +327,12 @@ Cuatro interruptores importan aquí, y el estado actual del proyecto
   `anonymous_users` siga activo ese paso no se ejecuta nunca y el coste real es
   cero — pero si algún día se apagan los anónimos, el arranque se queda sin red
   de seguridad y hay que replantearlo.
-- **Providers → Email → "Secure email change": desactivado** desde el
-  2026-09-20. Con él, ascender una cuenta de dispositivo mandaría además una
-  confirmación al buzón `device-…@lockin.app`, que no existe, y el ascenso no se
-  completaría jamás.
+- **Providers → Email → "Secure email change"**: se documentó desactivado el
+  2026-09-20, pero el dashboard lo mostraba **activo** el 2026-10-11 y el E2E de
+  registro pasa. Es inocuo mientras `anonymous_users` siga activo: la doble
+  confirmación solo rompía el ascenso de una cuenta de dispositivo (buzón
+  `device-…@lockin.app` inexistente), que es el paso 3 de `auth.ts` y no se
+  ejecuta nunca. Si se apagan los anónimos, hay que desactivarlo.
 - **`external.anonymous_users: true`** (activado). Es la vía principal de
   `src/data/supabase/auth.ts`: `signInAnonymously()` abre sesión sin pedir nada
   al usuario, que es lo que permite que el contrato de repositorio no tenga

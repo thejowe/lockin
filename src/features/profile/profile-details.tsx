@@ -34,7 +34,12 @@ export function ProfileDetails({ profile }: { profile: Profile }) {
     { label: 'GitHub', href: profile.links.github },
     { label: 'Portfolio', href: profile.links.portfolio },
     { label: 'LinkedIn', href: profile.links.linkedin },
-  ].filter((link): link is { label: string; href: string } => Boolean(link.href));
+  ].filter(
+    // El servidor y el formulario ya exigen http(s); aquí se vuelve a exigir porque
+    // `href` acaba en `openBrowserAsync` y viene de la fila de otra persona.
+    (link): link is { label: string; href: string } =>
+      Boolean(link.href) && /^https?:\/\//i.test(link.href ?? '')
+  );
 
   return (
     <View style={styles.root}>

@@ -87,6 +87,24 @@ describe('ProfileDetails', () => {
       expect(mockLinkHrefs).toEqual(['https://github.com/nuria', 'https://linkedin.com/in/nuria']);
     });
 
+    it('no abre esquemas que no sean http(s), aunque lleguen en la fila', async () => {
+      await render(
+        <ProfileDetails
+          profile={buildProfile({
+            links: {
+              github: 'javascript:alert(1)',
+              portfolio: 'intent://scan#Intent;scheme=zxing;end',
+              linkedin: 'https://linkedin.com/in/nuria',
+            },
+          })}
+        />
+      );
+
+      expect(screen.queryByText('GitHub')).toBeNull();
+      expect(screen.queryByText('Portfolio')).toBeNull();
+      expect(mockLinkHrefs).toEqual(['https://linkedin.com/in/nuria']);
+    });
+
     it('se calla la sección entera cuando no hay ningún enlace', async () => {
       await render(<ProfileDetails profile={buildProfile({ links: {} })} />);
 

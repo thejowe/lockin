@@ -822,13 +822,45 @@ describe('completeAuthLink', () => {
     expect(AsyncStorage.removeItem).toHaveBeenCalledWith('lockin.supabase.device-account');
   });
 
-  it('acepta también la forma token_hash de las plantillas de correo', async () => {
+  it('acepta la forma token_hash si el correo se pidió desde este dispositivo', async () => {
+    await AsyncStorage.setItem('lockin.supabase.email-link-request', String(Date.now()));
     auth.verifyOtp.mockResolvedValueOnce({ error: null });
     signedInAs({ email: 'ana@example.com', email_confirmed_at: '2026-09-17T10:00:00Z' });
     await expect(
       completeAuthLink('cofounder://auth/callback?token_hash=abc123&type=email_change')
     ).resolves.toMatchObject({ kind: 'email' });
     expect(auth.verifyOtp).toHaveBeenCalledWith({ token_hash: 'abc123', type: 'email_change' });
+    // Sigue apuntada: el cambio de email seguro manda dos enlaces por una petición.
+    expect(await AsyncStorage.getItem('lockin.supabase.email-link-request')).not.toBeNull();
+  });
+
+  it('rechaza un token_hash sin petición previa desde este dispositivo', async () => {
+    await expect(
+      completeAuthLink('cofounder://auth/callback?token_hash=ajeno&type=email')
+    ).rejects.toThrow('no corresponde a ninguna petición');
+    expect(auth.verifyOtp).not.toHaveBeenCalled();
+  });
+
+  it('rechaza un token_hash con la petición caducada o de un tipo que la app no manda', async () => {
+    await AsyncStorage.setItem(
+      'lockin.supabase.email-link-request',
+      String(Date.now() - 25 * 60 * 60 * 1000)
+    );
+    await expect(
+      completeAuthLink('cofounder://auth/callback?token_hash=viejo&type=email')
+    ).rejects.toThrow('no corresponde a ninguna petición');
+
+    await AsyncStorage.setItem('lockin.supabase.email-link-request', String(Date.now()));
+    await expect(
+      completeAuthLink('cofounder://auth/callback?token_hash=x&type=magiclink')
+    ).rejects.toThrow('no corresponde a ninguna petición');
+    expect(auth.verifyOtp).not.toHaveBeenCalled();
+  });
+
+  it('pedir un correo apunta la petición que habilita su token_hash', async () => {
+    auth.updateUser.mockResolvedValueOnce({ data: { user: { id: 'u' } }, error: null });
+    await linkEmailToCurrentUser('ana@example.com').catch(() => undefined);
+    expect(await AsyncStorage.getItem('lockin.supabase.email-link-request')).not.toBeNull();
   });
 
   it('un enlace caducado se explica en vez de quedarse esperando', async () => {

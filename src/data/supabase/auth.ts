@@ -54,9 +54,12 @@
  *   eso inutiliza el paso 3 (la cuenta de dispositivo necesita lo contrario),
  *   que pasa a ser una red de seguridad rota. Mientras "Anonymous sign-ins"
  *   siga activo, el paso 3 no se ejecuta nunca.
- * - "Secure email change" DESACTIVADO: con él, cambiar el email de una cuenta
- *   de dispositivo mandaría también una confirmación a `device-…@lockin.app`,
- *   un buzón que no existe, y el ascenso no se completaría jamás.
+ * - "Secure email change": hoy ACTIVO (visto en el dashboard el 2026-10-11) y es
+ *   inocuo. La doble confirmación solo estorbaba a una cuenta de dispositivo
+ *   (confirmaría también `device-…@lockin.app`, un buzón que no existe), y esa
+ *   cuenta es el paso 3, que con "Anonymous sign-ins" activo no se ejecuta nunca;
+ *   una anónima sin email recibe un solo correo. Si se apagan los anónimos,
+ *   desactivarlo vuelve a ser obligatorio.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -453,6 +456,7 @@ export async function linkEmailToCurrentUser(email: string): Promise<AccountStat
     { emailRedirectTo: authRedirectUrl() }
   );
   if (error) throw toAccountError(error);
+  await markEmailLinkRequested();
 
   return data.user ? describeUser(data.user) : getAccountState();
 }
@@ -495,6 +499,7 @@ export async function sendPasswordReset(email: string): Promise<void> {
     redirectTo: authRedirectUrl(),
   });
   if (error) throw toAccountError(error);
+  await markEmailLinkRequested();
 }
 
 /**
@@ -581,10 +586,25 @@ export async function completeAuthLink(url: string): Promise<AccountState> {
       });
     }
   } else if (tokenHash && type) {
+    // A diferencia del `code`, que solo canjea el verificador PKCE de ESTE
+    // dispositivo, un `token_hash` no va ligado a nadie: quien tenga uno válido de
+    // su propia cuenta podría abrir `cofounder://auth/callback?token_hash=…` en el
+    // teléfono ajeno y dejarlo dentro de la cuenta del atacante. Por eso solo se
+    // acepta con un correo pedido desde aquí hace poco y con un tipo de los que
+    // esta app manda.
+    if (!EMAIL_LINK_TYPES.has(type) || !(await hasPendingEmailLinkRequest())) {
+      throw new AccountError(
+        'unknown',
+        'Ese enlace no corresponde a ninguna petición hecha desde este teléfono. Pide ' +
+          'otro correo desde tu perfil.'
+      );
+    }
     const { error } = await client.auth.verifyOtp({
       token_hash: tokenHash,
       type: type as EmailOtpType,
     });
+    // La petición no se borra: con «Secure email change» llegan dos enlaces (el
+    // correo viejo y el nuevo) para una sola petición. Caduca por su cuenta.
     if (error) throw toAccountError(error);
   } else {
     throw new AccountError(
@@ -598,6 +618,29 @@ export async function completeAuthLink(url: string): Promise<AccountState> {
   return state;
 }
 
+/** Cuándo se pidió el último correo de cuenta desde este dispositivo. */
+const EMAIL_LINK_REQUEST_KEY = 'lockin.supabase.email-link-request';
+
+/** Cuánto vale ese correo pedido: pasado esto, un `token_hash` ya no se acepta. */
+const EMAIL_LINK_REQUEST_TTL_MS = 24 * 60 * 60 * 1000;
+
+/** Los tipos de correo de cuenta que manda esta app (ascenso, recuperación, alta). */
+const EMAIL_LINK_TYPES: ReadonlySet<string> = new Set([
+  'email_change',
+  'recovery',
+  'signup',
+  'email',
+]);
+
+async function markEmailLinkRequested(): Promise<void> {
+  await AsyncStorage.setItem(EMAIL_LINK_REQUEST_KEY, String(Date.now()));
+}
+
+async function hasPendingEmailLinkRequest(): Promise<boolean> {
+  const requestedAt = Number(await AsyncStorage.getItem(EMAIL_LINK_REQUEST_KEY));
+  return Number.isFinite(requestedAt) && Date.now() - requestedAt <= EMAIL_LINK_REQUEST_TTL_MS;
+}
+
 /** Login con email y contraseña, para recuperar la cuenta en otro dispositivo. */
 export async function signInWithEmail(email: string, password: string): Promise<string> {
   const { data, error } = await getSupabaseClient().auth.signInWithPassword({ email, password });
@@ -609,6 +652,7 @@ export async function signInWithEmail(email: string, password: string): Promise<
 export async function signUpWithEmail(email: string, password: string): Promise<string | null> {
   const { data, error } = await getSupabaseClient().auth.signUp({ email, password });
   if (error) throw toAccountError(error);
+  await markEmailLinkRequested();
   return data.user?.id ?? null;
 }
 
