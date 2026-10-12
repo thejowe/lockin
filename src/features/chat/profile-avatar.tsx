@@ -6,6 +6,7 @@
  * iguales en una lista.
  */
 
+import { Image } from 'expo-image';
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -37,13 +38,23 @@ export function ProfileAvatar({ avatar, size = 48 }: { avatar: Avatar; size?: nu
           boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
         },
       ]}>
-      <ThemedText
-        type="smallBold"
-        // El tamaño escala con el círculo: el mismo componente sirve para la
-        // fila de la lista y para la cabecera de la conversación.
-        style={[styles.initials, { fontSize: size * 0.34, lineHeight: size * 0.4 }]}>
-        {avatar.initials}
-      </ThemedText>
+      {avatar.imageUrl ? (
+        <Image
+          testID="avatar-photo"
+          source={{ uri: avatar.imageUrl }}
+          contentFit="cover"
+          transition={120}
+          style={StyleSheet.absoluteFill}
+        />
+      ) : (
+        <ThemedText
+          type="smallBold"
+          // El tamaño escala con el círculo: el mismo componente sirve para la
+          // fila de la lista y para la cabecera de la conversación.
+          style={[styles.initials, { fontSize: size * 0.34, lineHeight: size * 0.4 }]}>
+          {avatar.initials}
+        </ThemedText>
+      )}
     </View>
   );
 }
@@ -52,6 +63,7 @@ const styles = StyleSheet.create({
   root: {
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
     borderWidth: Stroke.hairline,
   },
   initials: {

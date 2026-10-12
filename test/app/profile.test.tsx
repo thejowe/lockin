@@ -109,6 +109,16 @@ describe('ProfileScreen', () => {
       expect(screen.queryByText('Guardar cambios')).toBeNull();
     });
 
+    it('monta el bloque de la foto: sin foto lo dice y no ofrece quitarla', async () => {
+      await withProfile();
+
+      await renderRoute(<ProfileScreen />);
+
+      expect(await screen.findByText('Aún no tienes foto')).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Elegir de la galería' })).toBeTruthy();
+      expect(screen.queryByRole('button', { name: 'Quitar foto' })).toBeNull();
+    });
+
     it('editar monta el formulario sobre la ficha actual', async () => {
       await withProfile();
 

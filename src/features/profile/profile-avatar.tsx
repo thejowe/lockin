@@ -6,6 +6,7 @@
  * reutilizable desde `descubrir` y `chat` sin arrastrar nada más.
  */
 
+import { Image } from 'expo-image';
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -52,7 +53,18 @@ export function ProfileAvatar({
           boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
         },
       ]}>
-      <ThemedText type={type}>{avatar.initials}</ThemedText>
+      {avatar.imageUrl ? (
+        // Sobre el vidrio teñido: mientras carga —o si falla— se ve el color de siempre.
+        <Image
+          testID="avatar-photo"
+          source={{ uri: avatar.imageUrl }}
+          contentFit="cover"
+          transition={120}
+          style={StyleSheet.absoluteFill}
+        />
+      ) : (
+        <ThemedText type={type}>{avatar.initials}</ThemedText>
+      )}
     </View>
   );
 }
@@ -61,5 +73,6 @@ const styles = StyleSheet.create({
   root: {
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
 });

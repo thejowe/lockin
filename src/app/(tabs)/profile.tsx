@@ -13,6 +13,7 @@ import { useQuery, useRepositories, type ProfileInput } from '@/data';
 import {
   AccountSection,
   GithubVerification,
+  PhotoSection,
   ProfileDetails,
   ProfileForm,
 } from '@/features/profile';
@@ -144,16 +145,20 @@ export default function ProfileScreen() {
           </Animated.View>
 
           <Animated.View entering={enterUp(1)}>
-            <GithubVerification profile={profile} onChange={refresh} />
+            <PhotoSection profile={profile} onChange={refresh} />
           </Animated.View>
 
           <Animated.View entering={enterUp(2)}>
+            <GithubVerification profile={profile} onChange={refresh} />
+          </Animated.View>
+
+          <Animated.View entering={enterUp(3)}>
             <SecondaryButton label="Editar perfil" onPress={() => setEditing(true)} />
           </Animated.View>
 
           {/* La cuenta va al final: es lo que menos se visita y donde vive la
             salida destructiva. Arriba está lo que se viene a mirar. */}
-          <Animated.View entering={enterUp(3)}>
+          <Animated.View entering={enterUp(4)}>
             <AccountSection
               onDeleted={() => router.replace('/')}
               onConfirmationShown={() =>
