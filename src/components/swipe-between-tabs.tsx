@@ -40,6 +40,8 @@ import { useReduceMotion } from '@/hooks/use-reduce-motion';
 
 const ORDER = ['discover', 'matches', 'profile'] as const;
 
+export const PAGER_PAN_TEST_ID = 'tab-pager-pan';
+
 /** Fracción del ancho (o velocidad, px/s) que da el deslizamiento por válido. */
 const MIN_FRACTION = 0.25;
 const MIN_VELOCITY = 600;
@@ -133,6 +135,8 @@ export function SwipeBetweenTabs({ children }: { children: ReactNode }) {
   const gesture = useMemo(
     () =>
       Gesture.Pan()
+        // Lo recupera `getByGestureTestId` en los tests del paginador.
+        .withTestId(PAGER_PAN_TEST_ID)
         .enabled(enabled)
         .activeOffsetX([-16, 16])
         .failOffsetY([-16, 16])
