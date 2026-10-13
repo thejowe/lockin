@@ -667,15 +667,31 @@ const supabaseBackend: ContractBackend = {
     // Cabecera JPEG mínima: el bucket solo admite `image/jpeg`.
     const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xdb, 0x00, 0x43, 0x00, 0xff, 0xd9]);
     const uploaded: string[] = [];
+    // Usuarios propios: el `teardown()` del contrato vacía `reciprocals` antes
+    // de que este bloque corra.
+    let actors: Reciprocal[] = [];
 
-    afterAll(async () => {
-      if (uploaded.length > 0) {
-        await reciprocals[0].client.storage.from('avatar-uploads').remove(uploaded);
+    beforeAll(async () => {
+      actors = [];
+      for (const label of ['Foto A', 'Foto B']) {
+        actors.push(await createReciprocal(label, 'par'));
       }
     });
 
+    afterAll(async () => {
+      if (uploaded.length > 0) {
+        await actors[0].client.storage.from('avatar-uploads').remove(uploaded);
+      }
+      for (const actor of actors) {
+        await callDevReset(actor.client);
+        await actor.client.removeAllChannels();
+        await actor.client.auth.signOut();
+      }
+      actors = [];
+    });
+
     it('subir a la propia carpeta de pendientes está permitido', async () => {
-      const [a] = reciprocals;
+      const [a] = actors;
       const path = `${a.id}/contract-${Date.now()}.jpg`;
 
       const { error } = await a.client.storage
@@ -687,7 +703,7 @@ const supabaseBackend: ContractBackend = {
     });
 
     it('subir a la carpeta de otra persona está denegado', async () => {
-      const [a, b] = reciprocals;
+      const [a, b] = actors;
 
       const { error } = await a.client.storage
         .from('avatar-uploads')
@@ -697,7 +713,7 @@ const supabaseBackend: ContractBackend = {
     });
 
     it('no se puede escribir directamente en el bucket público', async () => {
-      const [a] = reciprocals;
+      const [a] = actors;
 
       const { error } = await a.client.storage
         .from('avatars')
@@ -707,7 +723,7 @@ const supabaseBackend: ContractBackend = {
     });
 
     it('lo subido a pendientes no se puede leer por la API de cliente', async () => {
-      const [a] = reciprocals;
+      const [a] = actors;
       expect(uploaded).not.toHaveLength(0);
 
       const { data, error } = await a.client.storage.from('avatar-uploads').download(uploaded[0]);
@@ -717,7 +733,7 @@ const supabaseBackend: ContractBackend = {
     });
 
     it('un cliente no puede escribir `avatar_url` en su perfil', async () => {
-      const [a] = reciprocals;
+      const [a] = actors;
 
       const { error } = await a.client
         .from('profiles')
