@@ -24,7 +24,7 @@ Una app estilo swipe para gente que **no tiene nada construido todavía** —ni 
 ## Campos de perfil (MVP)
 
 - Nombre, edad, ubicación/zona horaria
-- Avatar: placeholder por iniciales/color — **sin subida de imágenes real en el MVP**
+- Avatar: iniciales/color por defecto, más **una foto de perfil opcional** (desde el 2026-10-12). La foto solo se publica tras revisarla en servidor (Edge Function `moderate-avatar`, que falla cerrado); la tarjeta del deck la usa de fondo, estilo Tinder
 - Especialidades (tags: diseño, dev, marketing, ventas, datos, legal, producto…)
 - Qué busco: Cofundador / Compañero de lock-in / Ambos
 - Punto de partida: "Solo tengo ganas y ambición, sin idea todavía" / "Tengo una idea pero no he empezado nada" / "Ya toqué algo pequeño, busco con quién llevarlo en serio"

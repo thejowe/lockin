@@ -26,7 +26,7 @@ Si eliges verificar tu enlace de GitHub, se vincula una identidad de GitHub y se
 
 Guardamos el nombre y la edad que indicas, tu ciudad o zona y zona horaria, iniciales y color del avatar, especialidades que dominas y buscas, qué tipo de compañero buscas, punto de partida de tu proyecto, disponibilidad semanal y franjas horarias, ambición, enlaces opcionales a GitHub, portfolio y LinkedIn, y respuestas breves a preguntas de perfil. Guardamos también las fechas de creación y modificación.
 
-La ubicación se introduce como texto. Esta versión no obtiene tu posición mediante GPS. El avatar usa iniciales y un color; no se sube una fotografía de perfil.
+La ubicación se introduce como texto. Esta versión no obtiene tu posición mediante GPS. El avatar usa iniciales y un color por defecto. Si quieres, puedes subir una fotografía de perfil: se guarda primero en un espacio privado, se envía a OpenAI únicamente para comprobar que es apropiada (no para entrenar modelos ni para otro fin) y solo se publica, visible para otras personas de la app, si supera esa revisión. Si el servicio de revisión no está disponible, la foto se rechaza y no se publica. Puedes quitarla cuando quieras; al borrar tu cuenta, se elimina.
 
 ### Tu actividad y conversaciones
 

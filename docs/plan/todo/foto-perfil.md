@@ -23,13 +23,13 @@ proyecto Supabase `lockin` (ref `grrzmzktrhksbttpbblg`) y, después, comprobarlo
 El clasificador del modo automático bloqueó `apply_migration` contra producción («Production
 Deploy»). Se resuelve de dos maneras; las dos son decisión del usuario.
 
-- [ ] **[usuario]** Aplicar `supabase/migrations/20261012120000_avatar_photo.sql` al proyecto
+- [x] **[usuario]** ~~Aplicar `supabase/migrations/20261012120000_avatar_photo.sql`~~ — **aplicada el 2026-10-13** (SQL Editor, por el usuario; el clasificador bloqueó `apply_migration` y el Run por Chrome). Verificado por SQL: `UPDATE` sobre `avatar_url` = false, `avatars` público, `avatar-uploads` privado, 2 políticas; `get_advisors` sin hallazgos nuevos. Falta regenerar huella si procede. Original: aplicar `supabase/migrations/20261012120000_avatar_photo.sql` al proyecto
   `lockin`. O bien añade una regla de permiso para `mcp__claude_ai_Supabase__apply_migration`
   en su `settings.json` y lo aplica Claude, o bien lo corre él:
   `! supabase db push --project-ref grrzmzktrhksbttpbblg`. Después, comprobar que
   `has_column_privilege('authenticated','public.profiles','avatar_url','UPDATE')` es `false`, que el
   bucket `avatars` es público y `avatar-uploads` privado, y pasar `get_advisors` (seguridad).
-- [ ] **[Claude]** Desplegar `supabase/functions/moderate-avatar/` (`index.ts` + `logic.mjs`) con
+- [ ] **[Claude]** (bloqueada por el clasificador «Production Deploy», 2026-10-13; necesita regla de permiso para `deploy_edge_function` o `supabase functions deploy` por el usuario; el bundle MCP debe llevar los archivos tal cual del repo) Desplegar `supabase/functions/moderate-avatar/` (`index.ts` + `logic.mjs`) con
   `verify_jwt: true` (`deploy_edge_function`), o `! supabase functions deploy moderate-avatar
   --project-ref grrzmzktrhksbttpbblg`. Necesita el mismo permiso que la migración.
 - [ ] **[usuario]** Poner el secreto `OPENAI_API_KEY` en la función: dashboard → Edge Functions →
@@ -58,10 +58,10 @@ Deploy»). Se resuelve de dos maneras; las dos son decisión del usuario.
   paso 3): A sube a `avatar-uploads/A/…` ✔; a `…/B/…` ✘; no escribe en `avatars` ✘; no lee
   `avatar-uploads` ✘; no hace `update profiles set avatar_url` ✘. **Solo en rama desechable**
   (memoria `contrato-manual-cancela-ci`), no a mano sobre la rama de trabajo.
-- [ ] **[Claude]** `privacidad.md` y la web pública: decir que la foto se envía a OpenAI solo
+- [~] **[Claude]** `privacidad.md` escrito (2026-10-13); **falta regenerar la web pública** y publicarla. `privacidad.md` y la web pública: decir que la foto se envía a OpenAI solo
   para revisarla. **Sin esto no debería publicarse la feature.** Regenerar la web (memoria
   `web-publica-github-pages`).
-- [ ] **[Claude]** `docs/plan/CONCEPTO.md`: quitar «el MVP no sube imágenes». Los comentarios
+- [x] **[Claude]** (hecho 2026-10-13) `docs/plan/CONCEPTO.md`: quitar «el MVP no sube imágenes». Los comentarios
   históricos de las migraciones viejas no se reescriben.
 - [ ] **[Claude]** Si el flujo de `supabase/README.md` lo manda, regenerar la huella esperada
   (`supabase/evidence/…/expected.txt`) tras aplicar la migración. No editarla a mano.
