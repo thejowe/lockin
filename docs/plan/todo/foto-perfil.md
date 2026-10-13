@@ -58,7 +58,7 @@ Deploy»). Se resuelve de dos maneras; las dos son decisión del usuario.
   paso 3): A sube a `avatar-uploads/A/…` ✔; a `…/B/…` ✘; no escribe en `avatars` ✘; no lee
   `avatar-uploads` ✘; no hace `update profiles set avatar_url` ✘. **Solo en rama desechable**
   (memoria `contrato-manual-cancela-ci`), no a mano sobre la rama de trabajo.
-- [~] **[Claude]** `privacidad.md` escrito (2026-10-13); **falta regenerar la web pública** y publicarla. `privacidad.md` y la web pública: decir que la foto se envía a OpenAI solo
+- [x] **[Claude]** (hecho 2026-10-13: web pública desplegada por `pages.yml`, run 38423985227, y `/privacidad/` en vivo menciona a OpenAI; `cuestionario-privacidad.md` y `datos-recopilados.md` corregidos, decían «no hay fotos») `privacidad.md` escrito; la web pública se regenera sola. `privacidad.md` y la web pública: decir que la foto se envía a OpenAI solo
   para revisarla. **Sin esto no debería publicarse la feature.** Regenerar la web (memoria
   `web-publica-github-pages`).
 - [x] **[Claude]** (hecho 2026-10-13) `docs/plan/CONCEPTO.md`: quitar «el MVP no sube imágenes». Los comentarios

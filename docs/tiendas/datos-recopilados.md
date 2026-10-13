@@ -49,7 +49,7 @@ Columnas añadidas: [especialidades buscadas](../../supabase/migrations/20260907
 | `location` | `location` | Ciudad o zona en texto libre; no coordenadas ni GPS. | P | R1; plazo D04 pendiente |
 | `timezone` | `timezone` | Zona horaria IANA declarada. | P | R1; plazo D04 pendiente |
 | `avatar_initials` | `avatar.initials` | Una o dos iniciales; se pueden derivar del nombre. | P | R1; plazo D04 pendiente |
-| `avatar_accent` | `avatar.accent` | Color brass o teal; no imagen. | P | R1; plazo D04 pendiente |
+| `avatar_accent` | `avatar.accent` | Color brass o teal. La foto opcional va en `avatar_url` (ver más abajo). | P | R1; plazo D04 pendiente |
 | `specialties` | `specialties` | Especialidades que declara dominar; 1–10 etiquetas. | P | R1; plazo D04 pendiente |
 | `looking_for` | `lookingFor` | par, lockin o ambos. | P | R1; plazo D04 pendiente |
 | `starting_point` | `startingPoint` | solo-ganas, idea-sin-empezar o algo-empezado. | P | R1; plazo D04 pendiente |
@@ -255,7 +255,7 @@ El permiso de cámara/micrófono y que el vídeo sea temporal no bastan para res
 
 La manifestación final de permisos puede añadir los de las dependencias nativas, por ejemplo POST_NOTIFICATIONS. Revisión D09 (10-oct-2026) sobre `app.json`: CAMERA y RECORD_AUDIO se justifican por la videollamada; **SCHEDULE_EXACT_ALARM exige declaración en Play Console** (uso permitido: avisos de eventos de calendario/temporizador). **Se mantiene**: Android 12–13 la concede por defecto y da avisos puntuales; en Android 14+ viene denegada y la app no la pide, así que el aviso es inexacto (ver `todo/sesiones.md`). Retirarla degradaría Android 12–13.
 
-No hay Storage de avatares, cobros, historial de compras, documentos de identidad ni datos biométricos implementados. El acuerdo pregunta por disposición a aportar dinero y reparto futuro, sin pedir cuentas bancarias, salario ni importes reales; revisar si el formulario clasifica esas preferencias como información financiera adicional (D09). Los campos libres pueden contener lo que escriba el usuario.
+Hay Storage de avatares desde 2026-10-12 (`avatar-uploads` privado, `avatars` público tras moderar con OpenAI; columna `profiles.avatar_url`), foto opcional vinculada a la cuenta. No hay cobros, historial de compras, documentos de identidad ni datos biométricos implementados. El acuerdo pregunta por disposición a aportar dinero y reparto futuro, sin pedir cuentas bancarias, salario ni importes reales; revisar si el formulario clasifica esas preferencias como información financiera adicional (D09). Los campos libres pueden contener lo que escriba el usuario.
 
 ## Datos derivados, que no son columnas nuevas
 
