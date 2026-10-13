@@ -54,7 +54,7 @@ Deploy»). Se resuelve de dos maneras; las dos son decisión del usuario.
 
 ## Cierres que quedan
 
-- [ ] **[Claude]** Contrato opt-in de Storage en `src/data/supabase/contract.test.ts` (Tarea 7,
+- [x] **[Claude]** (hecho 2026-10-13: `9023cd2` + arreglo `a6b45c8`; CI verde con el contrato Supabase local) Contrato opt-in de Storage en `src/data/supabase/contract.test.ts` (Tarea 7,
   paso 3): A sube a `avatar-uploads/A/…` ✔; a `…/B/…` ✘; no escribe en `avatars` ✘; no lee
   `avatar-uploads` ✘; no hace `update profiles set avatar_url` ✘. **Solo en rama desechable**
   (memoria `contrato-manual-cancela-ci`), no a mano sobre la rama de trabajo.
