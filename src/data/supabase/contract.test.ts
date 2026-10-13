@@ -659,4 +659,75 @@ const supabaseBackend: ContractBackend = {
   });
 
   describeRepositoryContract(supabaseBackend);
+
+  // Foto de perfil (`20261012120000_avatar_photo.sql`): lo que RLS y los
+  // permisos de columna dejan hacer a un cliente. La moderación en sí no se
+  // prueba aquí: es de la Edge Function y no está en la Supabase local.
+  describe('foto de perfil: permisos de Storage y de columna', () => {
+    // Cabecera JPEG mínima: el bucket solo admite `image/jpeg`.
+    const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xdb, 0x00, 0x43, 0x00, 0xff, 0xd9]);
+    const uploaded: string[] = [];
+
+    afterAll(async () => {
+      if (uploaded.length > 0) {
+        await reciprocals[0].client.storage.from('avatar-uploads').remove(uploaded);
+      }
+    });
+
+    it('subir a la propia carpeta de pendientes está permitido', async () => {
+      const [a] = reciprocals;
+      const path = `${a.id}/contract-${Date.now()}.jpg`;
+
+      const { error } = await a.client.storage
+        .from('avatar-uploads')
+        .upload(path, JPEG, { contentType: 'image/jpeg' });
+
+      expect(error).toBeNull();
+      uploaded.push(path);
+    });
+
+    it('subir a la carpeta de otra persona está denegado', async () => {
+      const [a, b] = reciprocals;
+
+      const { error } = await a.client.storage
+        .from('avatar-uploads')
+        .upload(`${b.id}/intruso.jpg`, JPEG, { contentType: 'image/jpeg' });
+
+      expect(error).not.toBeNull();
+    });
+
+    it('no se puede escribir directamente en el bucket público', async () => {
+      const [a] = reciprocals;
+
+      const { error } = await a.client.storage
+        .from('avatars')
+        .upload(`${a.id}/directa.jpg`, JPEG, { contentType: 'image/jpeg' });
+
+      expect(error).not.toBeNull();
+    });
+
+    it('lo subido a pendientes no se puede leer por la API de cliente', async () => {
+      const [a] = reciprocals;
+      expect(uploaded).not.toHaveLength(0);
+
+      const { data, error } = await a.client.storage.from('avatar-uploads').download(uploaded[0]);
+
+      expect(data).toBeNull();
+      expect(error).not.toBeNull();
+    });
+
+    it('un cliente no puede escribir `avatar_url` en su perfil', async () => {
+      const [a] = reciprocals;
+
+      const { error } = await a.client
+        .from('profiles')
+        // `ProfileUpdate` no admite `avatar_url` a propósito: el cliente no la escribe.
+        .update({
+          avatar_url: `${url}/storage/v1/object/public/avatars/${a.id}/x.jpg`,
+        } as never)
+        .eq('id', a.id);
+
+      expect(error?.code).toBe('42501');
+    });
+  });
 });
