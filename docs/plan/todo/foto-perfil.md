@@ -29,10 +29,10 @@ Deploy»). Se resuelve de dos maneras; las dos son decisión del usuario.
   `! supabase db push --project-ref grrzmzktrhksbttpbblg`. Después, comprobar que
   `has_column_privilege('authenticated','public.profiles','avatar_url','UPDATE')` es `false`, que el
   bucket `avatars` es público y `avatar-uploads` privado, y pasar `get_advisors` (seguridad).
-- [ ] **[Claude]** (bloqueada por el clasificador «Production Deploy», 2026-10-13; necesita regla de permiso para `deploy_edge_function` o `supabase functions deploy` por el usuario; el bundle MCP debe llevar los archivos tal cual del repo) Desplegar `supabase/functions/moderate-avatar/` (`index.ts` + `logic.mjs`) con
+- [x] **[Claude]** (hecho 2026-10-13, tras añadir el usuario la regla de permiso; `deploy_edge_function`, versión 1, `ACTIVE`, `verify_jwt: true`, archivos tal cual del repo) Desplegar `supabase/functions/moderate-avatar/` (`index.ts` + `logic.mjs`) con
   `verify_jwt: true` (`deploy_edge_function`), o `! supabase functions deploy moderate-avatar
   --project-ref grrzmzktrhksbttpbblg`. Necesita el mismo permiso que la migración.
-- [ ] **[usuario]** Poner el secreto `OPENAI_API_KEY` en la función: dashboard → Edge Functions →
+- [ ] **[usuario]** (**único bloqueo real que queda**) Poner el secreto `OPENAI_API_KEY` en la función: dashboard → Edge Functions →
   Secrets, o `! supabase secrets set OPENAI_API_KEY=… --project-ref grrzmzktrhksbttpbblg`. **Claude
   no introduce claves en campos ni las ve** (regla de seguridad del navegador; tampoco por
   Claude en Chrome). Hasta entonces la función rechaza todo con «inténtalo más tarde»: es el
@@ -65,7 +65,7 @@ Deploy»). Se resuelve de dos maneras; las dos son decisión del usuario.
   históricos de las migraciones viejas no se reescriben.
 - [ ] **[Claude]** Si el flujo de `supabase/README.md` lo manda, regenerar la huella esperada
   (`supabase/evidence/…/expected.txt`) tras aplicar la migración. No editarla a mano.
-- [ ] **[decisión del usuario]** CI rojo desde antes de este trabajo: `Tests` falla el suelo de
+- [x] **[decisión del usuario]** (resuelto 2026-10-13 con tests del paginador, `baacae7`; CI y Schema drift verdes) CI rojo desde antes de este trabajo: `Tests` falla el suelo de
   cobertura de funciones (93,6 % < 94,27 %) por `src/components/swipe-between-tabs.tsx`
   (42 % de funciones, commit `971ed17`). El código de la foto está casi al 100 %. O se escriben
   tests de los gestos de ese componente, o se baja el suelo de `jest.config.js` a propósito.
