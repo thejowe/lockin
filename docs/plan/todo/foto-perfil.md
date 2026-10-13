@@ -89,3 +89,41 @@ Deploy»). Se resuelve de dos maneras; las dos son decisión del usuario.
   `index` manda a `/register` a quien tiene perfil sin email confirmado (`929c92d`).
 - [x] Verificación local: `tsc`, `eslint` (0 errores), Jest 1539 pasan, `test:functions` 20,
   `test:schema` 106, `expo export --platform web`.
+
+## Hallazgos del comprobador
+
+**2026-10-13 · commit `baacae7` · AVD `lockin` (Android 16) · evidencia en
+`e2e/artifacts/local/2026-10-13-foto-puerta/` (local, ignorada por git).**
+
+- **Falla cerrado — NO comprobado, ya no es reproducible.** La clave `OPENAI_API_KEY` se puso en la
+  función mientras se preparaba la build (el coordinador lo avisó), así que el estado «clave
+  ausente» desapareció antes de poder recorrer el perfil. Casilla sin marcar. Además, elegir foto
+  exige una cuenta con email confirmado (la función da 401 a anónimos y la puerta de
+  `RequireVerifiedEmail` cierra el perfil a las anónimas): sin buzón al que pinchar el enlace
+  no hay cuenta así en el emulador.
+- **Foto de perfil (camino feliz) — ⚠️ no comprobable aquí** por el mismo motivo: no hay cuenta
+  confirmada ni acceso al buzón, y el correo de GoTrue tiene tope de ~2/hora por proyecto.
+  Pendiente: la persona que tenga una cuenta confirmada en el emulador, o un buzón legible.
+- **Puerta del correo (`929c92d`) — ⚠️ parcial, backend Supabase real (`grrzmzktrhksbttpbblg`).**
+  - Sin perfil: build release contra Supabase (`[lockin] backend de datos: Supabase`), `pm clear`,
+    arranque → `/register` («Crea tu cuenta»; pasa por `/mode`, que redirige). Captura
+    `03-anonima-con-perfil.png` (mismo aspecto) y `logcat.txt`. ✅ consistente con el código.
+  - Anónima antigua con perfil: creé por REST una cuenta anónima con perfil (201), la inyecté en
+    `RKStorage` (AsyncStorage) con root y arranqué en frío: llega a `/register` y la copia en
+    claro desaparece de `RKStorage` (la app la migró). **No distingue** «perfil + gate» de «sin
+    perfil»: ambos acaban en la misma pantalla, y no pude demostrar que el refresh token inyectado
+    se hubiera usado. Sin evidencia suficiente para marcar la casilla. «Asciende y vuelve a `/`»
+    requiere confirmar un correo: no hecho. Las dos cuentas anónimas de prueba se borraron con
+    `delete_my_account` (204).
+- **Deck estilo Tinder (pivote del 2026-10-12) — ✅ con backend MOCK** (`[lockin] backend de datos:
+  mock en memoria`), no con Supabase (no hay cuenta confirmada que llegue al deck). Capturas
+  `20-tras-crear.png` (tarjeta a pantalla completa, iniciales «DS» sin foto, botones redondos
+  ✕/♥, 3 segmentos de página), `21-deck-pagina2.png` y `22-deck-pagina3.png` (toque en la mitad
+  derecha pasa de página), `23-sello-like.png` y `24-sello-nope.png` (arrastre: sello LIKE a la
+  derecha y NOPE a la izquierda, tarjeta inclinada y la siguiente debajo). Texto legible sobre el
+  degradado. Falta ver la tarjeta CON foto (necesita el camino feliz).
+- **Entorno (no es bug de producto):** el emulador se quedó sin respuesta al instalar el APK de
+  165 MB (`Binder ... No space left on device`, «System UI isn't responding»); hizo falta
+  `adb emu kill` + arranque con `-no-snapshot-load` e instalar vía `adb push` + `pm install`. El
+  APK que queda en `android/app/build/outputs/apk/release/` y el instalado en el AVD son ahora la
+  build **mock**, no la de Supabase.
