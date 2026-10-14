@@ -1940,6 +1940,52 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
           );
         })
     );
+    await t.test('report_message guarda autor y referencia, solo para partes del match', () =>
+      withSafetyPair(async (matchId) => {
+        await actingAs(safetyB);
+        const sent = await db.query(
+          `insert into public.messages (match_id, sender_id, body)
+           values ('${matchId}', '${safetyB}', 'texto reportado') returning id`
+        );
+        const messageId = sent.rows[0].id;
+        // El autor no puede reportarse a sí mismo.
+        assert.equal(
+          await sonda(`select public.report_message('${messageId}', 'acoso', null)`),
+          'LI008'
+        );
+        await actingAs(safetyA);
+        assert.equal(
+          await sonda(`select public.report_message('${messageId}', 'invalido', null)`),
+          'LI009'
+        );
+        await db.query(`select public.report_message('${messageId}', 'acoso', 'Detalle')`);
+        await db.exec('reset role;');
+        assert.deepEqual(
+          (
+            await db.query(
+              `select reporter_id, reported_id, message_id, message_ref, message_excerpt
+                 from public.user_reports`
+            )
+          ).rows,
+          [
+            {
+              reporter_id: safetyA,
+              reported_id: safetyB,
+              message_id: messageId,
+              message_ref: messageId,
+              message_excerpt: 'texto reportado',
+            },
+          ]
+        );
+        // Quien no es parte del match recibe 42501.
+        const outsider = '00000000-0000-4000-8000-0000000000f9';
+        await actingAs(outsider);
+        assert.equal(
+          await sonda(`select public.report_message('${messageId}', 'otro', null)`),
+          '42501'
+        );
+      })
+    );
     await t.test('LI008 impide bloquearse o reportarse a sí mismo', () =>
       withSafetyPair(async () => {
         await actingAs(safetyA);

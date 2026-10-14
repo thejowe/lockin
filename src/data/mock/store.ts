@@ -74,6 +74,10 @@ export interface MockState {
     createdAtMs: number;
     reason: ReportReason;
     details: string | null;
+    /** Solo en reportes de un mensaje: referencia viva, en texto y fragmento. */
+    messageId?: string | null;
+    messageRef?: string;
+    messageExcerpt?: string;
   }[];
 }
 

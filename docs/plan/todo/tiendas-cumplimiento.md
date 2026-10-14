@@ -44,7 +44,7 @@ E después de fusionar B–D (toca rutas y `package.json`); F al final.
 
 - [ ] T1 documentos y páginas (A)
 - [ ] T3a aceptación y enlaces (B)
-- [ ] T3b reporte de mensajes y filtro (C)
+- [x] T3b reporte de mensajes y filtro (C) — migración 20261014130000 sin aplicar en producción; pendiente codex review
 - [ ] T4 fotos: retención y bucket (D)
 - [ ] T5 app.json y binario (E)
 - [ ] T6 declaraciones y cuenta de prueba de Apple (A, tras E)

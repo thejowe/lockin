@@ -145,6 +145,20 @@ describe('useConversation', () => {
     expect(threads.slice(firstMessage).every((length) => length > 0)).toBe(true);
   });
 
+  it('un mensaje objetable no llega al repositorio y expone un error claro', async () => {
+    const send = jest.spyOn(repositories.messages, 'send');
+    const { result } = await renderConversation();
+
+    let sent: boolean | undefined;
+    await act(async () => {
+      sent = await result.current.send('te voy a matar');
+    });
+
+    expect(sent).toBe(false);
+    expect(send).not.toHaveBeenCalled();
+    expect(result.current.sendError?.name).toBe('ObjectionableContentError');
+  });
+
   it('un mensaje solo de espacios no llega al repositorio', async () => {
     const send = jest.spyOn(repositories.messages, 'send');
     const { result } = await renderConversation();

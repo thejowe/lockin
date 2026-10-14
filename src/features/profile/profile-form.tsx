@@ -24,6 +24,7 @@ import {
 } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { OBJECTIONABLE_MESSAGE, isObjectionable } from '@/features/safety/content-filter';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 
 import {
@@ -149,6 +150,14 @@ function validate(draft: Draft): Errors {
   if (!draft.ambition) errors.ambition = 'Elige tu nivel de compromiso.';
   if (draft.prompts[0].answer.trim().length === 0) {
     errors.prompts = 'Responde al menos a la primera pregunta.';
+  }
+
+  // Complemento del reporte, no moderación: ver `safety/content-filter.ts`.
+  const objectionable = (text: string) => isObjectionable(text);
+  if (objectionable(draft.name)) errors.name = OBJECTIONABLE_MESSAGE;
+  if (objectionable(draft.location)) errors.location = OBJECTIONABLE_MESSAGE;
+  if (draft.prompts.some((prompt) => objectionable(prompt.answer))) {
+    errors.prompts = OBJECTIONABLE_MESSAGE;
   }
 
   const invalidLink = ([draft.github, draft.portfolio, draft.linkedin] as const).some(

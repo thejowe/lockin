@@ -32,6 +32,13 @@ export interface ProfileReportInput {
   details?: string;
 }
 
+/** Reporte de un mensaje concreto; el motivo y los límites son los del reporte de perfil. */
+export interface MessageReportInput {
+  messageId: string;
+  reason: ReportReason;
+  details?: string;
+}
+
 /** Especialidad declarada en el perfil. */
 export type Specialty =
   | 'diseno'

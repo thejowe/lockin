@@ -14,6 +14,7 @@ import type {
   Profile,
   ProfileInput,
   ProfileLinks,
+  MessageReportInput,
   ProfileReportInput,
 } from '../types';
 
@@ -22,12 +23,17 @@ export function toReportArgs({ profileId, reason, details }: ProfileReportInput)
   return { p_profile_id: profileId, p_reason: reason, p_details: details ?? null };
 }
 
+export function toMessageReportArgs({ messageId, reason, details }: MessageReportInput) {
+  return { p_message_id: messageId, p_reason: reason, p_details: details ?? null };
+}
+
 export function toSafetyError(error: { code: string; message: string }): Error & { code: string } {
   const messages: Record<string, string> = {
     LI008: 'No puedes bloquearte ni reportarte a ti mismo.',
     LI009: 'Elige un motivo válido.',
     '23514': 'El texto no puede superar 500 caracteres.',
     '23503': 'El perfil no está disponible.',
+    '42501': 'El mensaje no está disponible.',
   };
   return Object.assign(new Error(messages[error.code] ?? error.message), { code: error.code });
 }

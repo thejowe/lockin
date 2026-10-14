@@ -157,6 +157,20 @@ describe('ProfileForm', () => {
     expect(screen.queryByText('Escribe tu nombre.')).toBeNull();
   });
 
+  it('rechaza contenido objetable en los textos del perfil', async () => {
+    const onSubmit = jest.fn<Promise<void>, [ProfileInput]>().mockResolvedValue(undefined);
+    await render(<ProfileForm submitLabel="Guardar" onSubmit={onSubmit} />);
+    await fillValidForm();
+    await fireEvent.changeText(
+      screen.getByPlaceholderText('Tu respuesta'),
+      'Un CRM para hijos de puta'
+    );
+    await fireEvent.press(screen.getByText('Guardar'));
+
+    expect(await screen.findByText(/lenguaje que no permitimos/)).toBeTruthy();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
   it('exige que los enlaces parezcan una URL', async () => {
     await render(<ProfileForm submitLabel="Guardar" onSubmit={jest.fn()} />);
 

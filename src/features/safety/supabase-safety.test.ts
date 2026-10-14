@@ -143,6 +143,19 @@ describe('adaptador Supabase de seguridad (cliente doble, sin servidor)', () => 
     expect(client.from).not.toHaveBeenCalled();
   });
 
+  it('reportar un mensaje escribe por RPC report_message', async () => {
+    const { repositories, client } = setup();
+    await expect(
+      repositories.messages.report({ messageId: 'm1', reason: 'spam', details: 'Detalle' })
+    ).resolves.toBeUndefined();
+    expect(client.rpc).toHaveBeenCalledWith('report_message', {
+      p_message_id: 'm1',
+      p_reason: 'spam',
+      p_details: 'Detalle',
+    });
+    expect(client.from).not.toHaveBeenCalled();
+  });
+
   it('un like bloqueado llega como fila de nulos y no se entrega como match', async () => {
     const { repositories, client } = setup();
     // PostgREST devuelve el compuesto NULL de `record_decision` como una fila de nulos.

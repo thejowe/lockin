@@ -16,6 +16,10 @@ import {
   type Message,
   type Profile,
 } from '@/data';
+import {
+  ObjectionableContentError,
+  findObjectionableContent,
+} from '@/features/safety/content-filter';
 
 export interface Conversation {
   match: MatchWithProfile | null;
@@ -62,6 +66,13 @@ export function useConversation(matchId: string): Conversation {
     async (body: string): Promise<boolean> => {
       const trimmed = body.trim();
       if (trimmed.length === 0 || sending) return false;
+
+      // Complemento del reporte, no moderación: ver `content-filter.ts`.
+      const kind = findObjectionableContent(trimmed);
+      if (kind) {
+        setSendError(new ObjectionableContentError(kind));
+        return false;
+      }
 
       setSending(true);
       setSendError(null);
