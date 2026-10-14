@@ -49,3 +49,53 @@ E después de fusionar B–D (toca rutas y `package.json`); F al final.
 - [ ] T5 app.json y binario (E)
 - [ ] T6 declaraciones y cuenta de prueba de Apple (A, tras E)
 - [ ] T7 verificación en dispositivo (F)
+
+## ▶ Al retomar — estado del 2026-10-14 (parado a petición del usuario)
+
+**Hecho y fusionado en la rama principal (local, SIN push):** T1 `42c7ba4`, T4 `383fd66`, T3a `d319482`,
+T3b `207b512`, gate de chat `12ad442`. Suite: 141 suites / 1583 tests verdes, `tsc` limpio.
+**No se empujó a propósito:** `pages.yml` publica `web/**` y los documentos aún llevan marcadores
+(`[fecha de publicación]`, SMTP, OpenAI). Empujar solo tras cerrar los marcadores.
+Ningún worktree de agente retirado todavía (`.claude/worktrees/agent-a33ce…`, `a6af8…`, `ab2bb…`, `a51e2…`):
+sus ramas ya están fusionadas; comprobar con `git cherry` y retirar con la receta PowerShell de la memoria
+`worktree-remove-sigue-junctions`.
+
+**`codex review --base 7a1a7b0` — hallazgos abiertos (arreglar antes de empujar):**
+1. [P1] `src/features/profile/terms.tsx`: pantalla de aceptación sin scroll; en pantallas cortas o con
+   texto grande la casilla/botón quedan fuera. Envolver en `ScrollView`.
+2. [P1] `e2e/full-journey.yaml` (y `register-confirm`): no aceptan los términos; el gate rompe el
+   recorrido positivo y el control negativo. Añadir los pasos de aceptación.
+3. [P2] `(tabs)/profile.tsx`: `PhotoSection` publica foto sin aceptación. Gatearla (sin bloquear cuenta/baja).
+4. [P2] `useTermsGate`: compara igualdad con `TERMS_VERSION`; una versión más nueva aceptada en otro
+   dispositivo atrapa al cliente viejo en bucle. Aceptar versión >= vigente o consultar por versión.
+5. [P2] `.github/workflows/pages.yml`: paths solo vigilan `privacidad.md`; añadir `docs/tiendas/{terminos,normas,seguridad-infantil}.md`.
+
+**Casillas que siguen abiertas:**
+- [ ] T5 `app.json`/binario (agente `arquitecto`, tras arreglar lo de arriba): quitar
+  `@config-plugins/react-native-webrtc`, RECORD_AUDIO, SCHEDULE_EXACT_ALARM, `expo-notifications`
+  (solo sirve al recordatorio de Lock-In; `expo-secure-store` SE USA, se queda); dejar solo los textos de
+  `expo-image-picker`; sacar Lock-In/WebRTC de la build de tienda (Apple 2.3.1) o apagarlo de verdad;
+  revisar manifiesto del AAB.
+- [ ] T6 declaraciones: actualizar cuestionario/Data safety contra el binario final (incluida foto);
+  cuenta de prueba y notas de revisor de Apple.
+- [ ] T7 `comprobador` en emulador: aceptación de términos (onboarding, chat, perfil existente), enlaces
+  legales, reportar mensaje, filtro, baja de cuenta con fotos. Necesita APK nuevo y migraciones aplicadas.
+- [ ] Texto de `privacidad.md`/`eliminar-cuenta` sobre borrado de fotos: pasar de «mejor esfuerzo» a
+  «garantizado en servidor» una vez aplicada `20261014140000`.
+- [ ] Subir `TERMS_VERSION` si cambia la fecha final de `terminos.md` (hoy ambas 2026-10-14).
+
+**Migraciones SIN aplicar en producción** (`grrzmzktrhksbttpbblg`; requieren permiso del usuario):
+`20261014120000_terms_acceptances`, `20261014130000_report_message`, `20261014140000_avatar_storage_cleanup`.
+Tras aplicar: Schema drift, comprobar que `storage.protect_delete` no bloquea el borrado y que la URL da 404.
+
+**Datos de producción de Lock-In (solo lectura, 2026-10-14):** `lockin_sessions` 4, `session_attendance` 4,
+`lockin_rooms` 4; resto 0; `user_reports` 1; buckets de fotos 0. **No borrar sin orden del usuario.**
+
+**Decisiones pendientes del usuario:** (1) plazo de fotos rechazadas/pendientes (propuesta: borrado
+inmediato + purga de huérfanos a 24 h, ya implementada en la migración); (2) proveedor SMTP y fecha de
+publicación; (3) bucket `avatars` privado con URLs firmadas — diseño en `foto-perfil.md`, es un bloque propio;
+(4) Lock-In: quitar código del binario (propuesta) o dejarlo tras flag; (5) borrar o no las filas de prueba;
+(6) permiso para aplicar migraciones/desplegar; (7) correo de soporte `cofounder.soporte@gmail.com`
+y aceptar ser contacto de seguridad infantil; (8) revisión jurídica de `terminos.md`;
+(9) gate duro en servidor (`send_message` exigiendo aceptación) — hoy solo en cliente; (10) categoría
+secundaria de App Store y condiciones/DPA de OpenAI.

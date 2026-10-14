@@ -1,5 +1,10 @@
 # TODO maestro — LockIn MVP
 
+## ▶ Al retomar (2026-10-14, tarde): envío a tiendas — bloque `tiendas-cumplimiento`
+
+Parado a petición del usuario. T1, T3a, T3b, T4 y el gate de chat están fusionados **en local, sin push**; quedan 5 hallazgos de `codex review` por arreglar (2 P1), después T5 (`arquitecto`), T6 y T7 (`comprobador`). Detalle, migraciones sin aplicar y decisiones pendientes en `docs/plan/todo/tiendas-cumplimiento.md` → «Al retomar». No empujar hasta cerrar los marcadores de los documentos legales (`pages.yml` los publicaría).
+
+
 Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>.md` — márcalo ahí, no aquí.
 
 ## ▶ Estado vigente del 2026-10-14: solo cofundadores; deck con foto y conservación comprobados
