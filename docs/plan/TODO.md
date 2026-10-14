@@ -86,12 +86,25 @@ propia; no se deducen del verde de Actions.
   para esta tanda. Los tests unitarios y el éxito con clave válida no sustituyen esta prueba.
 
 **Observación visual conservada:** las barras de página y el botón `⋯` contrastan poco sobre
-la foto clara; el texto de perfil se lee en las seis capturas. No hay cambio de producto.
+la foto clara; el texto de perfil se lee en las seis capturas. El arreglo ya está commiteado en
+`codex/contraste-deck` (`1a2bd7c`, `0bf7e60`), todavía **sin fusionar**: velo superior con tokens
+existentes, barras distinguibles y menú visible. Sus 21 tests se han vuelto a ejecutar en verde;
+la evidencia Android con componentes reales y backend mock/fixtures está registrada en
+`todo/descubrir.md`, en esa rama. No sustituye la comprobación previa contra Supabase real.
+
+**Integración pendiente:** `PILAR-CODEX.md` exige revisión de Claude para código escrito por
+Codex. El intento registrado terminó con `429 usage_limit_reached`, sin revisión completada;
+la cuota indica restablecimiento a las 10:00 (Etc/GMT+12). Conservar rama y worktree hasta
+completar la revisión y fusionar. La documentación de foto/correo ya está consolidada en `5de444c`.
 
 **Al retomar:** las dos comprobaciones anteriores están cerradas. Seguir `foto-perfil.md` para
 preparar la prueba pendiente de clave ausente/inválida en un entorno aislado, sin cambiar el
 secreto de producción. Registrar commit, backend y evidencia del error y de la conservación de
 la foto anterior antes de cerrar esa casilla; los tests unitarios no sustituyen el dispositivo.
+En paralelo se puede completar la revisión de Claude del contraste; después, fusionar su rama
+y verificar CI sobre el resultado integrado. No quedan cambios de producto sin commitear en
+el worktree principal ni en el de contraste. El antiguo worktree de tablero conserva una copia
+anterior sin commit de `TODO.md`; ya se trasladó y actualizó en `5de444c`, no debe fusionarse encima.
 
 ### Riesgos aceptados y decisiones ya tomadas — sin orden de implementación activa
 
