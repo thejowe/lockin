@@ -9,7 +9,9 @@ vídeo y rachas) sigue oculto, con código y tablas conservados. La foto **ya es
 producción** (`grrzmzktrhksbttpbblg`): migración, función, secreto, contrato de Storage,
 privacidad y cobertura resueltos. La pasada de las **19:37–20:09 UTC** demuestra el deck con
 foto clara/oscura desde otra cuenta y la conservación de uid, perfil y match al confirmar correo
-y reiniciar en frío. Queda abierta la prueba de fallo cerrado con clave ausente/inválida.
+y reiniciar en frío. La pasada de las **21:32–21:35 UTC** cierra también el fallo con clave
+ausente e inválida en un APK aislado: función real y fixtures locales de Auth/perfil/Storage,
+con error visible y foto anterior conservada. No es una nueva prueba de RLS/gateway alojados.
 
 **Fuentes de este corte:** tablero **sin commit** trasladado únicamente desde
 `C:/Users/Usuari/Downloads/lockin-codex-tablero/docs/plan/TODO.md`, sin cherry-pick. Esa sesión
@@ -81,9 +83,13 @@ propia; no se deducen del verde de Actions.
   `99-veredicto-puerta.json` (PASS), cuatro snapshots iguales para perfil/match y capturas de UI.
   Se comprobó el canje del enlace y la vuelta a la app, **no la entrega a un buzón externo**;
   no se configuró contraseña nueva en esta pasada.
-- [ ] Fallo cerrado **en dispositivo con clave ausente/inválida**: mostrar el error y conservar
-  la foto anterior. No ejecutado; se mantiene pendiente y no se cambia el secreto de producción
-  para esta tanda. Los tests unitarios y el éxito con clave válida no sustituyen esta prueba.
+- [x] Fallo cerrado **en dispositivo con clave ausente e inválida**: AVD `lockin`, APK aislado,
+  módulos de producto y función sin modificar; servicios de Auth/perfil/Storage como fixtures
+  HTTP locales. Ambos casos muestran el error, responden 503, retiran la subida pendiente y
+  conservan perfil, `avatar_url` y bytes/píxeles de la foto anterior, también tras reinicio en frío.
+  Clave inválida → OpenAI 401 real; ausente → ninguna llamada al proveedor. `verdict.json` = PASS
+  en `e2e/artifacts/local/2026-10-14-avatar-fallo-cerrado/`, HEAD `72c1425`.
+  No se accedió a producción ni se alteró su secreto. Detalle y límites en `todo/foto-perfil.md`.
 
 **Observación visual conservada:** las barras de página y el botón `⋯` contrastan poco sobre
 la foto clara; el texto de perfil se lee en las seis capturas. El arreglo ya está commiteado en
@@ -97,12 +103,10 @@ Codex. El intento registrado terminó con `429 usage_limit_reached`, sin revisi�
 la cuota indica restablecimiento a las 10:00 (Etc/GMT+12). Conservar rama y worktree hasta
 completar la revisión y fusionar. La documentación de foto/correo ya está consolidada en `5de444c`.
 
-**Al retomar:** las dos comprobaciones anteriores están cerradas. Seguir `foto-perfil.md` para
-preparar la prueba pendiente de clave ausente/inválida en un entorno aislado, sin cambiar el
-secreto de producción. Registrar commit, backend y evidencia del error y de la conservación de
-la foto anterior antes de cerrar esa casilla; los tests unitarios no sustituyen el dispositivo.
-En paralelo se puede completar la revisión de Claude del contraste; después, fusionar su rama
-y verificar CI sobre el resultado integrado. No quedan cambios de producto sin commitear en
+**Al retomar:** las tres comprobaciones de foto/correo están cerradas con los alcances descritos.
+Completar la revisión de Claude del contraste; después, fusionar su rama y verificar CI sobre
+el resultado integrado. Para lanzamiento sigue pendiente configurar SMTP propio y comprobar
+la entrega real de correo. No quedan cambios de producto sin commitear en
 el worktree principal ni en el de contraste. El antiguo worktree de tablero conserva una copia
 anterior sin commit de `TODO.md`; ya se trasladó y actualizó en `5de444c`, no debe fusionarse encima.
 

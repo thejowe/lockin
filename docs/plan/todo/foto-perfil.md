@@ -10,24 +10,24 @@ Memoria: `foto-de-perfil-con-moderacion`.
 configurado, con publicación de fotos demostrada el 2026-10-14. La pasada de las
 **19:37–20:09 UTC** cierra el fondo del deck desde otra cuenta con foto clara/oscura y la
 conservación de uid, perfil y un match previo al confirmar correo y tras reinicio en frío.
-El fallo cerrado tiene cobertura unitaria; **sigue pendiente en dispositivo con clave
-ausente/inválida**. Se comprobó el canje del enlace y la vuelta a la app, **no la entrega a un
-buzón externo**. Las evidencias históricas y la observación de contraste se conservan abajo.
+El fallo cerrado también está comprobado en dispositivo con clave **ausente e inválida**
+(21:32–21:35 UTC): función y módulos de producto sin modificar, con Auth/perfil/Storage como
+fixtures HTTP locales. No vuelve a comprobar el gateway ni la RLS de Supabase alojado.
+Se comprobó el canje del enlace y la vuelta a la app, **no la entrega a un buzón externo**.
+Las evidencias históricas y la observación de contraste se conservan abajo.
 
 **Consolidó:** Codex, por encargo del usuario, tras cotejar `65-veredicto-foto.json`, las seis
 capturas del deck, `97-comparacion-verificada.json` y `99-veredicto-puerta.json` en
-`e2e/artifacts/local/2026-10-14-foto-match-secuencia/`. Solo se cierran las dos casillas demostradas;
-se preservan la corrección local previa y todos los hallazgos de las sesiones terminadas.
+`e2e/artifacts/local/2026-10-14-foto-match-secuencia/`. El cierre posterior del fallo de moderación
+añade su propia pasada y evidencia aislada; se preservan la corrección previa y los hallazgos.
 
 ## Orden al retomar
 
-1. Preparar en un entorno aislado la única comprobación de dispositivo pendiente: fallo cerrado
-   con clave ausente/inválida, error visible y conservación de la foto anterior. No retirar ni
-   cambiar el secreto de producción; preservar la sesión personal.
-2. Registrar commit, backend, veredicto y evidencia en «Hallazgos del comprobador» antes de cerrar
-   esa casilla. Las pruebas del deck desde otra cuenta y del ascenso con match previo ya están
-   cerradas; sus métodos y límites quedan registrados abajo. La entrega a un buzón externo no
-   forma parte del cierre demostrado.
+1. Las tres comprobaciones de esta lista están cerradas con sus límites registrados: deck desde
+   otra cuenta, conservación de identidad/perfil/match y fallo de moderación en un arnés aislado.
+   La entrega a un buzón externo no forma parte del cierre demostrado.
+2. El arreglo del contraste de barras y menú está commiteado en `codex/contraste-deck`, pendiente
+   de revisión de Claude antes de fusionar. Ver `TODO.md` y el `todo/descubrir.md` de esa rama.
 
 ## Producción — completada (registro histórico)
 
@@ -64,7 +64,7 @@ Deploy»). Se resuelve de dos maneras; las dos son decisión del usuario.
   `/profile` → deck; persiste tras reinicio en frío (`170945b`, 17:20 UTC). Contraseña guardada
   después desde Perfil. Sin perfil: bienvenida con puerta apagada; `/register` con puerta activa.
 
-### Pasada de las 19:37–20:09 UTC — dos cierres consolidados y un pendiente
+### Comprobaciones de dispositivo — las tres cerradas con evidencia
 
 - [x] Foto clara y oscura de una cuenta de prueba visibles de fondo en el deck
   desde otra cuenta; texto legible en **todas** las páginas de cada tarjeta. Capturas, jerarquía,
@@ -79,9 +79,13 @@ Deploy»). Se resuelve de dos maneras; las dos son decisión del usuario.
   `97-comparacion-verificada.json` y `99-veredicto-puerta.json` (PASS), cuatro snapshots con
   perfil y match completos iguales y capturas tras confirmación/reinicio. Solo canje del enlace
   y retorno a la app; no entrega a buzón externo ni contraseña nueva.
-- [ ] **[comprobador]** Escenario de fallo cerrado en dispositivo con clave ausente/inválida:
-  no ejecutado; no retirar ni cambiar el secreto para esta sesión. El rechazo por contenido se
-  verifica con tests, sin imágenes reales inapropiadas.
+- [x] Escenario de fallo cerrado en dispositivo con clave ausente/inválida. **Cerrada por Codex,
+  2026-10-14, HEAD `72c1425`:** AVD `lockin`, APK aislado, módulos reales de foto/cliente y función
+  real en Deno; Auth/perfil/Storage son fixtures locales. Ambos casos muestran el error previsto,
+  responden 503 y conservan URL, archivo y foto visible tras reinicio. La clave inválida recibe
+  un 401 real de OpenAI; sin clave no llama al proveedor. `verdict.json` = PASS en
+  `e2e/artifacts/local/2026-10-14-avatar-fallo-cerrado/`. Producción y su secreto sin cambios.
+  El rechazo por contenido sigue cubierto por tests, sin imágenes reales inapropiadas.
 
 ## Cierres que quedan
 
@@ -333,3 +337,46 @@ el comprobador registra los veredictos y deja las casillas al responsable.**
   cero match/decisiones de prueba y cero objetos de foto bajo sus rutas. Después se retiraron
   los usuarios Android 10 y 11 creados para esta pasada. El AVD queda encendido en el usuario
   personal 0, con la build con puerta instalada y sus datos conservados (`108-android-final.txt`).
+
+**2026-10-14 21:32–21:35 UTC · fallo cerrado, comprobación directa por Codex · HEAD
+`72c1425` · AVD `lockin`, Android 16/API 36 x86_64 · ✅ ambos escenarios.**
+Evidencia local, ignorada: `e2e/artifacts/local/2026-10-14-avatar-fallo-cerrado/`.
+
+- **Entorno y alcance:** APK separado `app.cofounder.avatarfailureqa`. Importa los módulos
+  originales `PhotoSection`, selector/recorte, repositorio Supabase y cliente de avatar, cotejados
+  con el source map; `index.ts` y `logic.mjs` de `moderate-avatar` se ejecutan sin modificar en
+  Deno 2.9.6 (dependencias fijadas en el `deno.lock` de la evidencia). Auth, perfil y Storage
+  son **fixtures HTTP locales**, con una foto verde previa preparada. Esto comprueba el error
+  y la conservación de la foto al recorrer cliente + función, no la RLS, el gateway o los
+  servicios alojados de Supabase. No se leyeron credenciales de producción: los únicos destinos
+  permitidos al servidor son localhost y `api.openai.com`, con clave ficticia o ausente.
+  `source-verification.json`, `*-runtime.json`, APK y source map conservados.
+- **Clave inválida — ✅:** galería → JPEG naranja de prueba → recorte → CROP. La subida real
+  llega al Storage local y la función la descarga. OpenAI devuelve **401 real**, no simulado
+  (`invalid-provider.jsonl`, 21:34:02 UTC); la función responde **503 `unavailable`** y elimina
+  el pendiente. La UI enseña «No hemos podido revisar la foto ahora mismo. Inténtalo más tarde.»
+  y conserva la foto verde (`08-clave-invalida-error-final.png` + XML). El perfil completo, URL
+  y archivo publicado siguen iguales; ninguna llamada a publicar/borrar foto pública o escribir
+  el perfil (`09-clave-invalida-server-final.json`). Reinicio en frío: misma foto (`12-…`).
+- **Clave ausente — ✅:** nuevo proceso Deno sin `OPENAI_API_KEY` (confirmado en
+  `missing-runtime.json`), mismo recorrido de galería y recorte. **Cero llamadas al proveedor**,
+  respuesta **503 `unavailable`**, mismo error visible y foto verde intacta
+  (`18-clave-ausente-error.png` + XML, `19-clave-ausente-server.json`). Pendientes vacíos y cero
+  escrituras públicas/de perfil. Tras `am force-stop` + relanzar, vuelve a leer el perfil y
+  conserva la foto (`22-frio-foto-anterior.png`, `23-server-final.json`; PID 4580 → 4932).
+  Al reiniciar, el rótulo del selector del arnés vuelve por defecto a «inválida»; el backend
+  sigue en «ausente», como registra la lectura, y no se hace otra subida durante ese reinicio.
+- **Oráculo — PASS:** `verify-result.py` coteja perfil/URL completos, hash del archivo previo,
+  ausencia de escrituras, retirada del pendiente, HTTP 401/503, error en las jerarquías,
+  botones recuperados y píxeles idénticos del avatar en las cinco capturas inicial/error/frío.
+  Resultado en `verdict.json`; los seis archivos de producto conservaron su SHA-256.
+- **Incidencias del entorno:** primer build falló por MAX_PATH; el segundo compiló en una ruta
+  corta, sin cambiar producto. System UI mostró un ANR al terminar el arranque; «Wait» lo cerró
+  y los dos recorridos posteriores fueron estables. Se conservan logs y captura inicial.
+- **Limpieza:** APK de prueba desinstalado, imagen del selector retirada, reverse ADB eliminado
+  y ambos servidores detenidos. `cleanup.json` confirma mismo paquete personal y usuarios Android;
+  no se cerró sesión ni se borraron sus datos. AVD encendido en usuario 0. El arnés anterior de
+  contraste se restauró desde su copia previa; producción y su secreto permanecen intactos.
+
+Comprobó y cerró Codex por encargo del usuario: ambos errores quedaron demostrados en dispositivo,
+con función y cliente reales, conservación verificable de la foto y límites del backend explícitos.
