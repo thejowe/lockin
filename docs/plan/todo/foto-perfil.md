@@ -5,20 +5,31 @@ Dos cosas del 2026-10-12, pedidas por el usuario. Spec:
 `docs/superpowers/plans/2026-10-12-foto-de-perfil.md` (Tareas 1-6 hechas; la 7 es esta lista).
 Memoria: `foto-de-perfil-con-moderacion`.
 
-**Estado en una frase:** el código está terminado, revisado con `codex review` y empujado
-(`07a3881`); **no está en producción**. Faltan tres pasos que exigen permiso del usuario sobre el
-proyecto Supabase `lockin` (ref `grrzmzktrhksbttpbblg`) y, después, comprobarlo en el emulador.
+**Estado consolidado, 2026-10-14:** código y despliegue completados en Supabase `lockin`
+(`grrzmzktrhksbttpbblg`): migración aplicada, `moderate-avatar` desplegada y secreto
+configurado, con publicación de fotos demostrada el 2026-10-14. La pasada de las
+**19:37–20:09 UTC** cierra el fondo del deck desde otra cuenta con foto clara/oscura y la
+conservación de uid, perfil y un match previo al confirmar correo y tras reinicio en frío.
+El fallo cerrado tiene cobertura unitaria; **sigue pendiente en dispositivo con clave
+ausente/inválida**. Se comprobó el canje del enlace y la vuelta a la app, **no la entrega a un
+buzón externo**. Las evidencias históricas y la observación de contraste se conservan abajo.
+
+**Consolidó:** Codex, por encargo del usuario, tras cotejar `65-veredicto-foto.json`, las seis
+capturas del deck, `97-comparacion-verificada.json` y `99-veredicto-puerta.json` en
+`e2e/artifacts/local/2026-10-14-foto-match-secuencia/`. Solo se cierran las dos casillas demostradas;
+se preservan la corrección local previa y todos los hallazgos de las sesiones terminadas.
 
 ## Orden al retomar
 
-1. Mira si el usuario ya aplicó la migración y desplegó la función: `list_migrations` (¿está
-   `avatar_photo`?) y `list_edge_functions` (¿está `moderate-avatar`?). Si no, no sigas con el
-   resto: sin ellos no hay foto que comprobar, y **Schema drift saldrá rojo en Actions por
-   `avatar_url`, y eso es esperado hasta que se aplique** (no es deriva real).
-2. Con la función desplegada y el secreto puesto, lanza el `comprobador` (casillas de abajo).
-3. Luego los cierres de documentación.
+1. Preparar en un entorno aislado la única comprobación de dispositivo pendiente: fallo cerrado
+   con clave ausente/inválida, error visible y conservación de la foto anterior. No retirar ni
+   cambiar el secreto de producción; preservar la sesión personal.
+2. Registrar commit, backend, veredicto y evidencia en «Hallazgos del comprobador» antes de cerrar
+   esa casilla. Las pruebas del deck desde otra cuenta y del ascenso con match previo ya están
+   cerradas; sus métodos y límites quedan registrados abajo. La entrega a un buzón externo no
+   forma parte del cierre demostrado.
 
-## Producción — lo bloquea un permiso, no el código
+## Producción — completada (registro histórico)
 
 El clasificador del modo automático bloqueó `apply_migration` contra producción («Production
 Deploy»). Se resuelve de dos maneras; las dos son decisión del usuario.
@@ -40,17 +51,37 @@ Deploy»). Se resuelve de dos maneras; las dos son decisión del usuario.
 
 ## Comprobar en el emulador
 
-- [x] **[comprobador]** (hecho 2026-10-14, `68480b3` + fila `avatar_url` leída por MCP: `null` → URL pública de `avatars` 18:07:05 → reemplazo 18:08:51 → `null` 18:10:37 UTC. **Sin comprobar:** deck desde segunda cuenta y legibilidad del texto sobre foto clara/oscura, que quedan para cuando haya segunda sesión; ver «Hallazgos» abajo) Foto de perfil contra Supabase real, tras los tres pasos de arriba:
-  perfil → «Elegir de la galería» → aparece en el avatar y, desde una segunda cuenta, de fondo en
-  la tarjeta del deck; texto legible sobre una foto clara y una oscura; «Quitar foto»; permiso
-  denegado; selección cancelada. Evidencia: captura, `[lockin] backend de datos: Supabase` en
-  logcat, y la fila `avatar_url` (o la URL pública abierta).
-- [x] **[comprobador]** (cubierto 2026-10-14: con clave válida la foto se publica; el rechazo está en los 20 tests de `logic.mjs`; el modo «clave ausente» no se reprodujo para no tocar el secreto) Falla cerrado: con `OPENAI_API_KEY` ausente o inválida, la foto se rechaza
-  con «No hemos podido revisar la foto ahora mismo» y el perfil conserva la anterior. El rechazo
-  por contenido NO se prueba con imágenes reales: lo cubren los 20 tests de `logic.mjs`.
-- [x] **[comprobador]** (hecho 2026-10-14, AVD + Supabase real, HEAD `170945b`; ver «Hallazgos» abajo. **Matiz:** «con sus matches» no se probó, la cuenta de prueba no tenía; el retorno del enlace va a `/profile`, no a `/`) Puerta del correo (`929c92d`): abrir con una cuenta anónima antigua con
-  perfil → cae en `/register`, asciende con email y contraseña, vuelve a `/` y entra al deck con
-  su perfil y sus matches. Una cuenta sin perfil sigue por la bienvenida (`/mode`).
+### Ya demostrado (alcance limitado a la evidencia existente)
+
+- [x] Foto en perfil propio contra Supabase real: elegir, publicar clara, reemplazar por oscura,
+  persistencia en frío, quitar, cancelar y permiso de cámara denegado. Pasada 18:05–18:11 UTC,
+  `8c767d4`; anotación de cierre anterior cita `68480b3` para el cotejo SQL de `avatar_url`
+  (`null` → URL 18:07:05 → reemplazo 18:08:51 → `null` 18:10:37). **No demuestra el deck**.
+- [x] Cobertura unitaria del rechazo/fallo cerrado: 20 tests de `logic.mjs`, según el registro
+  previo. El éxito con clave válida está demostrado en el AVD. **No demuestra el escenario
+  «clave ausente/inválida» en dispositivo**; se conserva `OPENAI_API_KEY`.
+- [x] Puerta con anónima y perfil previo **sin matches**: `/register` → confirmar enlace →
+  `/profile` → deck; persiste tras reinicio en frío (`170945b`, 17:20 UTC). Contraseña guardada
+  después desde Perfil. Sin perfil: bienvenida con puerta apagada; `/register` con puerta activa.
+
+### Pasada de las 19:37–20:09 UTC — dos cierres consolidados y un pendiente
+
+- [x] Foto clara y oscura de una cuenta de prueba visibles de fondo en el deck
+  desde otra cuenta; texto legible en **todas** las páginas de cada tarjeta. Capturas, jerarquía,
+  logcat de Supabase y cotejo de `avatar_url`. **Cerrada por Codex:** `65-veredicto-foto.json`
+  (PASS), capturas `51-clara-deck-pagina1.png`, `52-clara-deck-pagina2.png`,
+  `53-clara-deck-pagina3.png`, `61-oscura-deck-pagina1.png`, `62-oscura-deck-pagina2.png` y
+  `63-oscura-deck-pagina3.png`. Barras de página y `⋯` con poco contraste en la foto clara;
+  el texto de perfil se lee en todas las páginas.
+- [x] Anónima con perfil y **match previo**: mismo uid, perfil y match
+  después de confirmar correo y de reiniciar en frío. Preparada por la UI sin puerta y actualizada
+  con `install -r` a la build con puerta; sin inyección en almacenamiento. **Cerrada por Codex:**
+  `97-comparacion-verificada.json` y `99-veredicto-puerta.json` (PASS), cuatro snapshots con
+  perfil y match completos iguales y capturas tras confirmación/reinicio. Solo canje del enlace
+  y retorno a la app; no entrega a buzón externo ni contraseña nueva.
+- [ ] **[comprobador]** Escenario de fallo cerrado en dispositivo con clave ausente/inválida:
+  no ejecutado; no retirar ni cambiar el secreto para esta sesión. El rechazo por contenido se
+  verifica con tests, sin imágenes reales inapropiadas.
 
 ## Cierres que quedan
 
@@ -235,3 +266,70 @@ Estado final: sin foto, igual que al empezar (`18-frio-sin-foto.png`).
   reprodujo (no se toca el secreto).
 - Higiene: imágenes de prueba (gradientes, sin rostros) borradas del AVD; permiso CAMERA queda
   denegado (lo revoqué yo). Sin correos enviados ni cuentas creadas.
+
+
+**2026-10-14 19:37–20:03 UTC · comprobación directa por Codex (sin delegación) · HEAD
+`7df6285c8a7d04217c5a4b17330ac694491d74ec` · AVD `lockin`, Android 16 x86_64 · Supabase real
+`grrzmzktrhksbttpbblg`. Evidencia base: `e2e/artifacts/local/2026-10-14-foto-match-secuencia/`
+(local, ignorada por git). Esta pasada resuelve las dos comprobaciones pendientes anteriores;
+el comprobador registra los veredictos y deja las casillas al responsable.**
+
+- **1. Foto clara y oscura desde otra cuenta — ✅ funciona.** Cuenta de fotos `FFotoQA1410`,
+  uid `00b5f1ff-ac4f-454e-ac8a-40d11cdc6acb`; observadora `AnonQA1410`, uid
+  `a4cc5551-7aaf-4bcd-bbe3-7d69d87ee60c`. Ambos perfiles se crearon por la UI, con
+  `EXPO_PUBLIC_REQUIRE_ACCOUNT=false`; la cuenta de fotos confirmó su correo antes de publicar.
+  Galería → imagen clara → recorte → CROP → publicación; después el mismo recorrido para
+  reemplazarla por la oscura. Fixtures JPEG con gradientes grises claros y oscuros, sin rostros.
+  En el deck de la observadora se revisaron visualmente **las tres páginas de ambas fotos**:
+  nombre/edad/ubicación y especialidades; jornada/punto de partida/ambición; pregunta/respuesta.
+  El texto de perfil es legible y completo en las seis capturas. Evidencia: `51-clara-deck-pagina1`,
+  `52-clara-deck-pagina2`, `53-clara-deck-pagina3`, `61-oscura-deck-pagina1`,
+  `62-oscura-deck-pagina2`, `63-oscura-deck-pagina3` (cada nombre tiene `.png` y `.xml`).
+  `64-observador-perfil-propio.png` identifica a la cuenta observadora. `36-avatar-clara-supabase.json`
+  y `58-avatar-oscura-supabase.json` cotejan `avatar_url`: objeto `da0253a1-04b8-4a9a-9f3e-61edb708f75f.jpg`
+  → `53c82f6d-5b60-40eb-83c0-e97444038bcd.jpg`, ambos bajo `avatars/<uid de la cuenta de fotos>/`.
+  Los logs `06-clara-deck-logcat.txt` y `08-oscura-deck-logcat.txt` identifican Supabase.
+  Resumen de la primera comprobación, guardado **antes de crear el match**: `65-veredicto-foto.json`.
+  Observación visual: las barras y el botón `⋯` de arriba contrastan poco con la foto clara;
+  el contenido de las tres páginas sí se lee. No se modificó código de producto.
+- **2. Anónima con perfil y match previo — ✅ funciona.** La misma `AnonQA1410` se mantuvo anónima
+  hasta esta segunda comprobación. Perfil creado por la UI (`45-observador-formulario.png`,
+  `48-observador-form-final.png`, `64-observador-perfil-propio.png`); likes recíprocos desde las
+  dos cuentas por la UI (`70-antes-like-anonima.png`, `75-antes-like-reciproco.png`) → modal
+  `76-match-creado-ui.png`. La RPC real creó el match `d75ef5e6-5f23-4f53-8588-b3159c6c5061`
+  a las 19:52:10 UTC, modo `par`; ya aparecía en la UI de la anónima (`79-anonima-match-previo.png`).
+  Después se recompiló con `EXPO_PUBLIC_REQUIRE_ACCOUNT=true`, forzando
+  `:app:createBundleReleaseJsAndAssets --rerun` al cambiar la variable, y se instaló **encima**
+  con `adb install -r` (`82-install-r-conpuerta.txt`: Success), sin borrar datos.
+  Arranque → `/register` (`83-anonima-con-puerta.png`) → petición de correo por la UI
+  (`87-anonima-pendiente.png`) → confirmación a las **20:01:02 UTC** → perfil previo
+  (`89-anonima-tras-confirmar.png`) y match previo (`91-match-tras-confirmar.png`).
+  Reinicio en frío real con `am force-stop --user 11` + `am start --user 11`: entra al deck
+  (`93-frio-deck.png`), conserva el perfil (`94-frio-perfil.png`) y el match (`95-frio-match.png`).
+  Las cuatro lecturas administrativas `77-antes-puerta-supabase.json`, `84-con-puerta-supabase.json`,
+  `90-tras-confirmar-supabase.json` y `96-frio-supabase.json` mantienen **el mismo uid, todos los
+  campos del perfil y la misma fila completa del match**; solo cambia Auth de anónima a confirmada.
+  Comparación ejecutada y verificable: `verify-state.py` → `97-comparacion-verificada.json` (PASS).
+  `98-auth-server-confirmacion.json` registra `user_modified` y `login` del mismo uid en GoTrue.
+  `12-conpuerta-logcat.txt`, `13-tras-confirmar-logcat.txt` y `14-frio-logcat.txt` identifican Supabase;
+  el proceso ReactNativeJS cambia de **3263 a 6467** tras el reinicio. Resumen: `99-veredicto-puerta.json`.
+  No se configuró contraseña nueva en esta pasada; el alcance comprobado es la confirmación de
+  correo y conservación de identidad, perfil y match.
+- **Método de confirmación y límites:** la petición de correo nació en la UI; su hash pendiente
+  se leyó en Supabase solo en memoria y se consumió en `/auth/v1/verify`. GoTrue devolvió HTTP 303
+  con el callback PKCE original, abierto mediante un intent Android VIEW (`30-foto-confirmacion.json`
+  y `88-anonima-confirmacion.json`, código oculto). No se escribió en Auth por SQL ni se inyectaron
+  sesiones en `RKStorage`. Se comprueba el canje y la vuelta a la app, no la entrega a un buzón externo.
+- **Aislamiento y alcance:** un solo emulador; usuarios Android de prueba 10 y 11, separados del
+  usuario personal 0. Su sesión no se cerró ni se borraron sus datos. Las builds y sus hashes están
+  junto a las evidencias; `environment.json` registra el entorno. El arranque inicial con RAM
+  reducida produjo un ANR y volcados terminados con 137; se conservan las capturas iniciales,
+  y los veredictos se basan en el recorrido estable con los 4 GB habituales del AVD y Gradle detenido.
+  La corrección previa de este documento se conserva íntegra como prefijo, cotejada por SHA-256
+  y `secret-scan.json`; solo se añaden estas anotaciones. No hay cambios de código ni casillas ajenas.
+- **Clave ausente/inválida — sigue pendiente:** `OPENAI_API_KEY` no se leyó ni alteró.
+- **Limpieza posterior a los veredictos, 20:09 UTC:** las dos cuentas de prueba se eliminaron
+  desde la UI. `107-limpieza-supabase.json` confirma cero filas para sus uids en Auth/perfiles,
+  cero match/decisiones de prueba y cero objetos de foto bajo sus rutas. Después se retiraron
+  los usuarios Android 10 y 11 creados para esta pasada. El AVD queda encendido en el usuario
+  personal 0, con la build con puerta instalada y sus datos conservados (`108-android-final.txt`).
