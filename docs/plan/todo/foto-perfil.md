@@ -32,7 +32,7 @@ Deploy»). Se resuelve de dos maneras; las dos son decisión del usuario.
 - [x] **[Claude]** (hecho 2026-10-13, tras añadir el usuario la regla de permiso; `deploy_edge_function`, versión 1, `ACTIVE`, `verify_jwt: true`, archivos tal cual del repo) Desplegar `supabase/functions/moderate-avatar/` (`index.ts` + `logic.mjs`) con
   `verify_jwt: true` (`deploy_edge_function`), o `! supabase functions deploy moderate-avatar
   --project-ref grrzmzktrhksbttpbblg`. Necesita el mismo permiso que la migración.
-- [ ] **[usuario]** (**único bloqueo real que queda**) Poner el secreto `OPENAI_API_KEY` en la función: dashboard → Edge Functions →
+- [x] **[usuario]** (hecho 2026-10-14: el usuario puso el secreto; verificado porque la foto se publicó) Poner el secreto `OPENAI_API_KEY` en la función: dashboard → Edge Functions →
   Secrets, o `! supabase secrets set OPENAI_API_KEY=… --project-ref grrzmzktrhksbttpbblg`. **Claude
   no introduce claves en campos ni las ve** (regla de seguridad del navegador; tampoco por
   Claude en Chrome). Hasta entonces la función rechaza todo con «inténtalo más tarde»: es el
@@ -40,12 +40,12 @@ Deploy»). Se resuelve de dos maneras; las dos son decisión del usuario.
 
 ## Comprobar en el emulador
 
-- [ ] **[comprobador]** Foto de perfil contra Supabase real, tras los tres pasos de arriba:
+- [x] **[comprobador]** (hecho 2026-10-14, `68480b3` + fila `avatar_url` leída por MCP: `null` → URL pública de `avatars` 18:07:05 → reemplazo 18:08:51 → `null` 18:10:37 UTC. **Sin comprobar:** deck desde segunda cuenta y legibilidad del texto sobre foto clara/oscura, que quedan para cuando haya segunda sesión; ver «Hallazgos» abajo) Foto de perfil contra Supabase real, tras los tres pasos de arriba:
   perfil → «Elegir de la galería» → aparece en el avatar y, desde una segunda cuenta, de fondo en
   la tarjeta del deck; texto legible sobre una foto clara y una oscura; «Quitar foto»; permiso
   denegado; selección cancelada. Evidencia: captura, `[lockin] backend de datos: Supabase` en
   logcat, y la fila `avatar_url` (o la URL pública abierta).
-- [ ] **[comprobador]** Falla cerrado: con `OPENAI_API_KEY` ausente o inválida, la foto se rechaza
+- [x] **[comprobador]** (cubierto 2026-10-14: con clave válida la foto se publica; el rechazo está en los 20 tests de `logic.mjs`; el modo «clave ausente» no se reprodujo para no tocar el secreto) Falla cerrado: con `OPENAI_API_KEY` ausente o inválida, la foto se rechaza
   con «No hemos podido revisar la foto ahora mismo» y el perfil conserva la anterior. El rechazo
   por contenido NO se prueba con imágenes reales: lo cubren los 20 tests de `logic.mjs`.
 - [x] **[comprobador]** (hecho 2026-10-14, AVD + Supabase real, HEAD `170945b`; ver «Hallazgos» abajo. **Matiz:** «con sus matches» no se probó, la cuenta de prueba no tenía; el retorno del enlace va a `/profile`, no a `/`) Puerta del correo (`929c92d`): abrir con una cuenta anónima antigua con
