@@ -205,6 +205,8 @@ export interface SafetyPair {
     reportedId: string;
     reason: string;
     details: string;
+    /** Presente si el reporte es de un mensaje. */
+    messageId?: string;
   }): Promise<void>;
   /** Cierra clientes y borra lo creado. */
   close(): Promise<void>;
@@ -2433,6 +2435,27 @@ function describeSafetyContract(backend: ContractBackend): void {
         details: 'Detalle privado',
       });
       expect((await a.discovery.getDeck()).map((p) => p.id)).toContain(bId);
+    });
+
+    it('reportar un mensaje guarda al autor como reportado; el autor no puede', async () => {
+      await b.discovery.recordDecision(aId, 'like');
+      const { match } = await a.discovery.recordDecision(bId, 'like');
+      const matchId = match?.id ?? '';
+      const sent = await b.messages.send({ matchId, body: 'mensaje a reportar' });
+      await a.messages.report({ messageId: sent.id, reason: 'acoso', details: 'Detalle' });
+      await pair.expectReportsPrivate({
+        reporterId: aId,
+        reportedId: bId,
+        reason: 'acoso',
+        details: 'Detalle',
+        messageId: sent.id,
+      });
+      await expect(b.messages.report({ messageId: sent.id, reason: 'otro' })).rejects.toMatchObject(
+        { code: 'LI008' }
+      );
+      await expect(
+        a.messages.report({ messageId: sent.id, reason: 'invalido' as never })
+      ).rejects.toMatchObject({ code: 'LI009' });
     });
 
     it('rechaza bloquearse o reportarse a sí mismo', async () => {

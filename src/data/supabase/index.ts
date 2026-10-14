@@ -34,6 +34,7 @@ import {
   toMessage,
   toProfile,
   toProfileInsert,
+  toMessageReportArgs,
   toReportArgs,
   toSafetyError,
 } from './mappers';
@@ -785,6 +786,12 @@ export function createSupabaseRepositories({
       notify(MATCHES_TOPIC);
 
       return toMessage(data);
+    },
+
+    async report(input) {
+      await getUserId();
+      const { error } = await getClient().rpc('report_message', toMessageReportArgs(input));
+      if (error) throw toSafetyError(error);
     },
 
     subscribe(matchId, listener): Unsubscribe {

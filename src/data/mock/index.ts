@@ -506,6 +506,36 @@ export function createMockRepositories(
       return message;
     },
 
+    async report({ messageId, reason, details }) {
+      const state = getState();
+      if (!REPORT_REASONS.includes(reason))
+        throw Object.assign(new Error('Elige un motivo válido.'), { code: 'LI009' });
+      if (Array.from(details ?? '').length > REPORT_MAX_LENGTH)
+        throw Object.assign(new Error('El texto no puede superar 500 caracteres.'), {
+          code: '23514',
+        });
+      const message = state.messages.find((candidate) => candidate.id === messageId);
+      const match = message && state.matches.find((candidate) => candidate.id === message.matchId);
+      if (!message || !match?.profileIds.includes(actorId))
+        throw Object.assign(new Error('El mensaje no está disponible.'), { code: '42501' });
+      if (message.senderId === actorId)
+        throw Object.assign(new Error('No puedes reportar tus propios mensajes.'), {
+          code: 'LI008',
+        });
+      state.userReports.push({
+        reporterId: actorId,
+        reportedId: message.senderId,
+        reporterRef: actorId,
+        reportedRef: message.senderId,
+        createdAtMs: store.nowMs(),
+        reason,
+        details: details?.trim() || null,
+        messageId: message.id,
+        messageRef: message.id,
+        messageExcerpt: Array.from(message.body).slice(0, 500).join(''),
+      });
+    },
+
     subscribe(matchId, listener) {
       return subscribeTo(messagesTopic(matchId), listener);
     },

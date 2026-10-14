@@ -13,7 +13,7 @@
  */
 
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { Easing, FadeInDown } from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
@@ -29,7 +29,16 @@ const FRESH_MS = 3_000;
 
 const ENTERING = FadeInDown.duration(Duration.base).easing(Easing.bezier(...Curves.out));
 
-export function MessageBubble({ message, isMine }: { message: Message; isMine: boolean }) {
+export function MessageBubble({
+  message,
+  isMine,
+  onReport,
+}: {
+  message: Message;
+  isMine: boolean;
+  /** Solo en mensajes ajenos: abre el reporte de este mensaje. */
+  onReport?: () => void;
+}) {
   const theme = useTheme();
   // Se decide una vez, al montar: la burbuja no vuelve a entrar si se repinta.
   const [fresh] = useState(() => Date.now() - Date.parse(message.sentAt) < FRESH_MS);
@@ -63,6 +72,18 @@ export function MessageBubble({ message, isMine }: { message: Message; isMine: b
           {formatClock(message.sentAt)}
         </ThemedText>
       </View>
+      {!isMine && onReport ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Reportar mensaje"
+          hitSlop={12}
+          onPress={onReport}
+          style={styles.report}>
+          <ThemedText type="caption" themeColor="textMuted">
+            Reportar
+          </ThemedText>
+        </Pressable>
+      ) : null}
     </Animated.View>
   );
 }
@@ -81,6 +102,11 @@ export function DayDivider({ label }: { label: string }) {
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
+  },
+  report: {
+    alignSelf: 'flex-end',
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.one,
   },
   rowMine: {
     justifyContent: 'flex-end',

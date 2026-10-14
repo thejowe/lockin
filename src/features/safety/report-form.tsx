@@ -19,12 +19,15 @@ const reasonLabels: Record<ReportReason, string> = {
 
 export function ReportForm({
   name,
+  title,
   onSubmit,
   onCancel,
   onSubmitted,
   anchorActions = false,
 }: {
   name: string;
+  /** Sustituye el título «Reportar a {name}» (p. ej. al reportar un mensaje). */
+  title?: string;
   onSubmit: (reason: ReportReason, details: string) => Promise<void>;
   onCancel: () => void;
   onSubmitted: () => void;
@@ -66,7 +69,7 @@ export function ReportForm({
 
   const fields = (
     <>
-      <ThemedText type="subtitle">Reportar a {name}</ThemedText>
+      <ThemedText type="subtitle">{title ?? `Reportar a ${name}`}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">
         El reporte es privado. Esta persona no recibirá ningún aviso.
       </ThemedText>

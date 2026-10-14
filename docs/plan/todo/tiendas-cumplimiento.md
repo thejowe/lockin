@@ -43,8 +43,8 @@ E después de fusionar B–D (toca rutas y `package.json`); F al final.
 ## Casillas
 
 - [ ] T1 documentos y páginas (A)
-- [x] T3a aceptación y enlaces (B) — hecho 2026-10-14; falta gate en chat y aplicar migración 20261014120000 (ver informe)
-- [ ] T3b reporte de mensajes y filtro (C)
+- [x] T3a aceptación y enlaces (B) — hecho 2026-10-14; falta gate en chat y aplicar migración 20261014120000
+- [x] T3b reporte de mensajes y filtro (C) — migración 20261014130000 sin aplicar en producción; pendiente codex review
 - [ ] T4 fotos: retención y bucket (D)
 - [ ] T5 app.json y binario (E)
 - [ ] T6 declaraciones y cuenta de prueba de Apple (A, tras E)

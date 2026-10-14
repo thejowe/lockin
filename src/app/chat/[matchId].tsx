@@ -37,6 +37,8 @@ import {
   useConversation,
 } from '@/features/chat';
 import { AgreementCard } from '@/features/agreement';
+import { ObjectionableContentError } from '@/features/safety/content-filter';
+import { MessageReportPanel } from '@/features/safety/message-report-panel';
 import { SafetyMenuButton, SafetyPanel } from '@/features/safety/safety-panel';
 import { useTheme } from '@/hooks/use-theme';
 import { RequireVerifiedEmail } from '@/features/profile';
@@ -52,6 +54,7 @@ function ChatScreenContent() {
   const [draft, setDraft] = useState('');
   const [safetyOpen, setSafetyOpen] = useState(false);
   const [blocked, setBlocked] = useState(false);
+  const [reportingMessageId, setReportingMessageId] = useState<string | null>(null);
   const inputRef = useRef<TextInput>(null);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -139,6 +142,14 @@ function ChatScreenContent() {
           <LoadingState label="Cargando la conversación…" />
         ) : !match ? (
           <MissingMatch error={error} />
+        ) : reportingMessageId ? (
+          <ScrollView contentContainerStyle={styles.safety} keyboardShouldPersistTaps="handled">
+            <MessageReportPanel
+              messageId={reportingMessageId}
+              name={match.counterpart.name}
+              onClose={() => setReportingMessageId(null)}
+            />
+          </ScrollView>
         ) : safetyOpen ? (
           <ScrollView contentContainerStyle={styles.safety} keyboardShouldPersistTaps="handled">
             <SafetyPanel
@@ -186,6 +197,7 @@ function ChatScreenContent() {
                         // El emisor se compara con el otro lado del match, no con
                         // un id propio cableado: así vale también con backend real.
                         isMine={message.senderId !== match.counterpart.id}
+                        onReport={() => setReportingMessageId(message.id)}
                       />
                     </Fragment>
                   );
@@ -195,7 +207,9 @@ function ChatScreenContent() {
 
             {sendError && (
               <ThemedText type="small" themeColor="danger" style={styles.sendError}>
-                No se ha podido enviar. Inténtalo otra vez.
+                {sendError instanceof ObjectionableContentError
+                  ? sendError.message
+                  : 'No se ha podido enviar. Inténtalo otra vez.'}
               </ThemedText>
             )}
 

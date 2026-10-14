@@ -389,6 +389,10 @@ export type Database = {
         Returns: undefined;
       };
       accept_terms: { Args: { p_version: string }; Returns: string };
+      report_message: {
+        Args: { p_message_id: string; p_reason: string; p_details?: string | null };
+        Returns: undefined;
+      };
       has_profile_block: { Args: { p_profile_id: string }; Returns: boolean };
       is_unblocked_match: { Args: { p_match_id: string }; Returns: boolean };
       delete_my_account: {

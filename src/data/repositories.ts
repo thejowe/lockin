@@ -21,6 +21,7 @@ import type {
   MatchWithProfile,
   Message,
   MessageInput,
+  MessageReportInput,
   ModePreference,
   Profile,
   ProfileFilter,
@@ -184,6 +185,12 @@ export interface MessageRepository {
   listByMatch(matchId: string): Promise<Message[]>;
   /** Envía un mensaje como el usuario actual. */
   send(input: MessageInput): Promise<Message>;
+  /**
+   * Reporta un mensaje recibido. Solo escritura y privado, como
+   * `profiles.report`: el reportado es el autor. Solo lo pueden reportar las
+   * partes del match y nunca el propio autor.
+   */
+  report(input: MessageReportInput): Promise<void>;
   /** Se notifica cuando cambian los mensajes de ese match. */
   subscribe(matchId: string, listener: () => void): Unsubscribe;
 }
