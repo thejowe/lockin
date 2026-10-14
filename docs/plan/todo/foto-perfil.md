@@ -201,3 +201,37 @@ ignorada por git).**
 - Para retomar: una persona con cuenta confirmada inicia sesión en el AVD («Ya tengo cuenta»), o
   cupo de correo + alguien que pinche el enlace. Las 4 pruebas (clara, oscura, quitar, permiso
   denegado, cancelar) pueden hacerse entonces en una sola pasada.
+
+**2026-10-14 18:05-18:11 UTC · commit `8c767d4` · AVD `lockin` · backend Supabase real
+(`grrzmzktrhksbttpbblg`, `[lockin] backend de datos: Supabase` en `logcat.txt`) · evidencia en
+`e2e/artifacts/local/2026-10-14-foto-supabase/` (local, ignorada por git).** Cuenta: la del usuario
+(`bigjoowe@gmail.com`, perfil «Jo», confirmada), sesión ya abierta; no se cerró ni se tocó la contraseña.
+Estado previo: sin foto («Aún no tienes foto», avatar con inicial, `01-perfil.png`, `03-foto-bloque.png`).
+Estado final: sin foto, igual que al empezar (`18-frio-sin-foto.png`).
+
+- **Foto de perfil, camino feliz — ✅ funciona** (casilla sin marcar por el comprobador). Perfil →
+  «Elegir de la galería» → selector → recorte → CROP → la foto pasa la moderación de `moderate-avatar`
+  con la clave de OpenAI y se publica: foto clara (`08-resultado-clara.png`) y luego oscura
+  (`11-resultado-oscura.png`), aparece en el avatar de cabecera y en el bloque «Tu foto», con el botón
+  «Quitar foto». **Persiste tras arranque en frío** (`13-frio-perfil.png`: llega del servidor, no de
+  memoria local). Sin rechazo ni error.
+- **Selección cancelada — ✅**: abrir el selector y volver atrás deja la foto como estaba, sin error
+  (`12-cancelado.png`).
+- **Permiso denegado — ✅** (cámara: revocado con `pm revoke` y «Don't allow» en el diálogo del sistema,
+  `14-…`/`15-…`/`16-permiso-denegado.png`): mensaje «Sin permiso de cámara no podemos hacerte la foto.
+  Puedes dárselo en los ajustes del móvil.» y la foto previa se conserva. El selector de galería de
+  Android 16 es el Photo Picker (sin permiso de almacenamiento), así que ahí no existe «denegado».
+- **«Quitar foto» — ✅**: vuelve a la inicial en cabecera y bloque (`17-quitada.png`); tras arranque en
+  frío sigue sin foto (`18-frio-sin-foto.png`).
+- **De fondo en la tarjeta del deck vista desde una segunda cuenta — ⚠️ no comprobado**: no hay
+  segunda sesión en el AVD y no se crearon cuentas (cupo GoTrue). Tampoco se pudo ver el texto sobre
+  foto clara/oscura en una tarjeta (el deck no muestra la tuya); solo se vieron avatares circulares.
+  **La legibilidad del texto sobre foto queda sin comprobar.**
+- **Fila `avatar_url` / URL pública — ⚠️ no leída**: este agente no tiene acceso de lectura a
+  `profiles` (anon da 42501, y el MCP de Supabase no estaba disponible). La persistencia en frío es la
+  prueba indirecta de que la fila se escribió; cotejar en el dashboard si hace falta.
+- **Falla cerrado — ✅ por cobertura**: con la clave válida la foto se publica (arriba) y el rechazo/
+  fallo cerrado está cubierto por los 20 tests de `logic.mjs`. El modo «clave ausente» no se
+  reprodujo (no se toca el secreto).
+- Higiene: imágenes de prueba (gradientes, sin rostros) borradas del AVD; permiso CAMERA queda
+  denegado (lo revoqué yo). Sin correos enviados ni cuentas creadas.
