@@ -1,5 +1,47 @@
 # TODO — descubrir
 
+## Contraste de los controles sobre fotos (2026-10-14)
+
+- [x] Codex: proteger localmente toda `styles.top` con el velo de
+  `theme.background` + `ScrimAlpha`, que solo se desvanece debajo del menú.
+  Barras activas y ⋯ usan la tinta principal; las inactivas usan `textMuted`.
+  Se conservan gestos, zonas táctiles, etiquetas accesibles, `portrait-photo`
+  y el funcionamiento de `SafetyPanel`. Corregido el comentario que decía que
+  el producto no tenía fotos.
+- [x] Regresión de contraste sobre blanco, negro y muestras claras/oscuras:
+  mínimo 3:1 para menú, barra activa e inactivas; mínimo 2:1 entre barras
+  activas e inactivas. Cambio de indicador y apertura/cierre del panel con foto
+  cubiertos, incluyendo las opacidades de los controles en el cálculo.
+  `npm test -- --ci --runInBand --runTestsByPath src/features/discover/profile-card.test.tsx`:
+  **21/21**; `npm run typecheck` y `npm run lint` limpios. Sobre blanco, peor
+  caso para esta tinta: **7,61:1** activa/menú y **3,50:1** inactivas.
+- [x] Comprobación visual con evidencia inspeccionada por **Codex** en Android
+  16/API 36, AVD `lockin`. Código de producto de `1a2bd7c` (base `7df6285`),
+  backend **mock/fixtures**, APK aislado `app.cofounder.contrastdeck` con los
+  componentes reales `SwipeDeck` y `ProfileCard`, sin acceder a Supabase.
+  El source map coincide con el archivo de esta rama (`source-verification.json`).
+  El `comprobador` de Claude preparó el arnés, pero agotó su cuota; Codex terminó
+  la compilación, el recorrido y la inspección. Es evidencia del componente en
+  nativo, no una nueva comprobación del flujo de alta/foto/match contra Supabase.
+  Evidencia local, ignorada: `e2e/artifacts/local/2026-10-14-contraste-deck/`.
+  Capturas [clara](../../../e2e/artifacts/local/2026-10-14-contraste-deck/01-clara-pagina1.png)
+  y [oscura](../../../e2e/artifacts/local/2026-10-14-contraste-deck/11-oscura-pagina1.png);
+  las páginas 2/3 son `02`, `03`, `12`, `13`. Indicador correcto en las seis,
+  ⋯ visible, fundido por debajo de los controles. Muestreo de píxeles nativos:
+  **8,66:1 / 3,99:1** activa-menú/inactivas en clara;
+  **18,18:1 / 8,37:1** en oscura (`pixel-contrast.json`, tinta sin antialias).
+  Toques izquierda/derecha sobre el velo, apertura/cierre del panel conservando
+  la página (`05`, `06`, `14`, `15`), sin foto (`21`), swipe iniciado sobre el
+  velo (`22`) y botón Like (`23`) comprobados. Sin errores de ReactNativeJS;
+  XML, logcat, logs de validación y hash del APK conservados. APK de prueba
+  desinstalado al terminar; emulador encendido, aplicación personal intacta.
+  Captura del defecto: `e2e/artifacts/local/2026-10-14-foto-match-secuencia/51-clara-deck-pagina1.png`.
+- [ ] Revisión del diff por Claude antes de fusionar, como exige
+  `docs/plan/PILAR-CODEX.md`. Rama `codex/contraste-deck`, worktree
+  `../lockin-codex-contraste-deck`; conservar ambos hasta la revisión.
+  Intento registrado en `claude-review.json`: rechazado por cuota de sesión
+  (`429 usage_limit_reached`), sin revisión completada. **No fusionado.**
+
 ## Deck de swipe
 - [x] Componente de tarjeta de perfil (avatar/iniciales, nombre, especialidades, qué busca, prompt destacado)
 - [x] Gesto de swipe (like derecha / pass izquierda) con `react-native-gesture-handler` + `react-native-reanimated` (ya instalados por el scaffold — no añadas otra librería de swipe)
