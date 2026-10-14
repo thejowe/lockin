@@ -107,8 +107,9 @@ completar la revisión y fusionar. La documentación de foto/correo ya está con
 Completar la revisión de Claude del contraste; después, fusionar su rama y verificar CI sobre
 el resultado integrado. Para lanzamiento sigue pendiente configurar SMTP propio y comprobar
 la entrega real de correo. No quedan cambios de producto sin commitear en
-el worktree principal ni en el de contraste. El antiguo worktree de tablero conserva una copia
-anterior sin commit de `TODO.md`; ya se trasladó y actualizó en `5de444c`, no debe fusionarse encima.
+el worktree principal ni en el de contraste. El primer corte de tablero quedó archivado en
+`codex/tablero-real` (`7572b2f`), ya consolidado y actualizado en `5de444c` y los cierres posteriores.
+Esa rama conserva historia; la integración pendiente es únicamente `codex/contraste-deck`.
 
 ### Riesgos aceptados y decisiones ya tomadas — sin orden de implementación activa
 
