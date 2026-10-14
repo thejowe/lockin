@@ -13,8 +13,15 @@
  * rol vacante — eso es Modo Talento (Fase 4), fuera del MVP.
  */
 
-import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { useRef, useState } from 'react';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  View,
+  type LayoutChangeEvent,
+} from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -66,6 +73,23 @@ interface Draft {
 }
 
 type Errors = Partial<Record<keyof Draft, string>>;
+
+/** Orden de los campos en pantalla: el primero con error es adonde se lleva a la persona. */
+const FIELD_ORDER: (keyof Draft)[] = [
+  'name',
+  'age',
+  'location',
+  'timezone',
+  'specialties',
+  'startingPoint',
+  'bands',
+  'ambition',
+  'prompts',
+  'github',
+];
+
+/** Aire por encima del campo al llevarlo a la vista, para que se vea su etiqueta. */
+const SCROLL_MARGIN = Spacing.three;
 
 /** Zona horaria del dispositivo. Si el runtime no la expone, un valor editable. */
 function deviceTimezone(): string {
@@ -189,6 +213,16 @@ export function ProfileForm({
   const [errors, setErrors] = useState<Errors>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
+  /** Posición vertical de cada campo dentro del contenido, rellenada por `onLayout`. */
+  const [fieldY] = useState<Partial<Record<keyof Draft, number>>>(() => ({}));
+
+  /** Guarda dónde cae un campo, para poder llevar a la persona hasta él. */
+  function track(key: keyof Draft) {
+    return (event: LayoutChangeEvent) => {
+      fieldY[key] = event.nativeEvent.layout.y;
+    };
+  }
 
   /** Con sello, `links.github` deja de ser un campo y pasa a derivarse de la identidad. */
   const githubLocked = Boolean(initial?.githubVerification);
@@ -212,7 +246,16 @@ export function ProfileForm({
   async function handleSubmit() {
     const found = validate(draft);
     setErrors(found);
-    if (Object.values(found).some(Boolean)) return;
+    if (Object.values(found).some(Boolean)) {
+      // En un formulario largo el error puede quedar fuera de pantalla: sin
+      // esto el botón «no hace nada» y hay que buscar qué falta a mano.
+      const first = FIELD_ORDER.find((key) => found[key]);
+      const y = first ? fieldY[first] : undefined;
+      if (y !== undefined) {
+        scrollRef.current?.scrollTo({ y: Math.max(0, y - SCROLL_MARGIN), animated: true });
+      }
+      return;
+    }
 
     setSaving(true);
     setSaveError(null);
@@ -230,12 +273,13 @@ export function ProfileForm({
       style={styles.root}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag">
         {header}
 
-        <Field label="Nombre" error={errors.name}>
+        <Field label="Nombre" error={errors.name} onLayout={track('name')}>
           <TextField
             value={draft.name}
             onChangeText={(value) => update('name', value)}
@@ -247,7 +291,7 @@ export function ProfileForm({
           />
         </Field>
 
-        <Field label="Edad" error={errors.age}>
+        <Field label="Edad" error={errors.age} onLayout={track('age')}>
           <TextField
             value={draft.age}
             onChangeText={(value) => update('age', value.replace(/[^0-9]/g, ''))}
@@ -260,7 +304,7 @@ export function ProfileForm({
           />
         </Field>
 
-        <Field label="Ubicación" error={errors.location}>
+        <Field label="Ubicación" error={errors.location} onLayout={track('location')}>
           <TextField
             value={draft.location}
             onChangeText={(value) => update('location', value)}
@@ -274,7 +318,8 @@ export function ProfileForm({
         <Field
           label="Zona horaria"
           hint="La detectamos de tu dispositivo. Cámbiala si no es la tuya."
-          error={errors.timezone}>
+          error={errors.timezone}
+          onLayout={track('timezone')}>
           <TextField
             value={draft.timezone}
             onChangeText={(value) => update('timezone', value)}
@@ -288,7 +333,8 @@ export function ProfileForm({
         <Field
           label="Lo que domino"
           hint="Lo que sabes hacer. Elige todas las que apliquen."
-          error={errors.specialties}>
+          error={errors.specialties}
+          onLayout={track('specialties')}>
           <ChipRow>
             {SPECIALTY_OPTIONS.map((option) => (
               <Chip
@@ -323,7 +369,10 @@ export function ProfileForm({
           </ChipRow>
         </Field>
 
-        <Field label="Punto de partida" error={errors.startingPoint}>
+        <Field
+          label="Punto de partida"
+          error={errors.startingPoint}
+          onLayout={track('startingPoint')}>
           {STARTING_POINT_OPTIONS.map((option) => (
             <OptionCard
               key={option.value}
@@ -345,7 +394,7 @@ export function ProfileForm({
           />
         </Field>
 
-        <Field label="Cuándo sueles trabajar" error={errors.bands}>
+        <Field label="Cuándo sueles trabajar" error={errors.bands} onLayout={track('bands')}>
           <ChipRow>
             {TIME_BAND_OPTIONS.map((option) => (
               <Chip
@@ -359,7 +408,7 @@ export function ProfileForm({
           </ChipRow>
         </Field>
 
-        <Field label="Ambición" error={errors.ambition}>
+        <Field label="Ambición" error={errors.ambition} onLayout={track('ambition')}>
           {AMBITION_OPTIONS.map((option) => (
             <OptionCard
               key={option.value}
@@ -373,7 +422,8 @@ export function ProfileForm({
         <Field
           label="Tus respuestas"
           hint="La primera es obligatoria. Cortas: es lo que hace que un perfil se lea."
-          error={errors.prompts}>
+          error={errors.prompts}
+          onLayout={track('prompts')}>
           {draft.prompts.map((prompt, index) => (
             <View key={index} style={styles.prompt}>
               <ChipRow>
@@ -412,7 +462,8 @@ export function ProfileForm({
               ? 'Tu GitHub está verificado: lo lleva el sello, no este campo. Para cambiarlo, quita la verificación desde tu perfil.'
               : 'Lo que enseñe qué has hecho, si tienes algo.'
           }
-          error={errors.github}>
+          error={errors.github}
+          onLayout={track('github')}>
           <TextField
             value={draft.github}
             onChangeText={(value) => update('github', value)}

@@ -14,6 +14,9 @@
  */
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { ScrollView } from 'react-native';
+
+import { Spacing } from '@/constants/theme';
 
 import { buildProfile } from '@/data/test-fixtures';
 
@@ -119,6 +122,28 @@ describe('ProfileForm', () => {
     await fireEvent.press(screen.getByText('Guardar'));
 
     expect(await screen.findByText('Una edad entre 16 y 99.')).toBeTruthy();
+  });
+
+  it('lleva a la persona al primer campo con error en vez de dejarla buscarlo', async () => {
+    await render(<ProfileForm submitLabel="Guardar" onSubmit={jest.fn()} />);
+    await fillValidForm();
+    // Se desmarca la especialidad que `fillValidForm` eligió: es lo único que falta.
+    await fireEvent.press(screen.getByLabelText('Desarrollo'));
+
+    // Sin layout real en jest, cada campo declara dónde cae; el contenedor es el
+    // padre de su etiqueta.
+    const field = screen.getByText('Lo que domino').parent;
+    if (!field) throw new Error('El campo no tiene contenedor.');
+    await fireEvent(field, 'layout', {
+      nativeEvent: { layout: { x: 0, y: 640, width: 300, height: 120 } },
+    });
+    const scrollTo = jest.spyOn(ScrollView.prototype, 'scrollTo');
+
+    await fireEvent.press(screen.getByText('Guardar'));
+
+    expect(await screen.findByText('Elige al menos una especialidad.')).toBeTruthy();
+    expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ y: 640 - Spacing.three }));
+    scrollTo.mockRestore();
   });
 
   it('borra el error de un campo en cuanto se corrige', async () => {

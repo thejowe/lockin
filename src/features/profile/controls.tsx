@@ -6,7 +6,14 @@
  */
 
 import { useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
+  type LayoutChangeEvent,
+  type TextInputProps,
+} from 'react-native';
 import Animated, { ZoomIn, ZoomOut } from 'react-native-reanimated';
 
 import { Button } from '@/components/button';
@@ -32,15 +39,18 @@ export function Field({
   hint,
   error,
   children,
+  onLayout,
 }: {
   label: string;
   hint?: string;
   /** Mensaje de validación. Si existe, se pinta en lugar de la pista. */
   error?: string;
   children: React.ReactNode;
+  /** Para que quien monta el formulario sepa dónde cae cada campo. */
+  onLayout?: (event: LayoutChangeEvent) => void;
 }) {
   return (
-    <View style={styles.field}>
+    <View style={styles.field} onLayout={onLayout}>
       <ThemedText type="smallBold" themeColor="textSecondary">
         {label}
       </ThemedText>
