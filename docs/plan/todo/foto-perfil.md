@@ -48,7 +48,7 @@ Deploy»). Se resuelve de dos maneras; las dos son decisión del usuario.
 - [ ] **[comprobador]** Falla cerrado: con `OPENAI_API_KEY` ausente o inválida, la foto se rechaza
   con «No hemos podido revisar la foto ahora mismo» y el perfil conserva la anterior. El rechazo
   por contenido NO se prueba con imágenes reales: lo cubren los 20 tests de `logic.mjs`.
-- [ ] **[comprobador]** Puerta del correo (`929c92d`): abrir con una cuenta anónima antigua con
+- [x] **[comprobador]** (hecho 2026-10-14, AVD + Supabase real, HEAD `170945b`; ver «Hallazgos» abajo. **Matiz:** «con sus matches» no se probó, la cuenta de prueba no tenía; el retorno del enlace va a `/profile`, no a `/`) Puerta del correo (`929c92d`): abrir con una cuenta anónima antigua con
   perfil → cae en `/register`, asciende con email y contraseña, vuelve a `/` y entra al deck con
   su perfil y sus matches. Una cuenta sin perfil sigue por la bienvenida (`/mode`).
 
@@ -126,3 +126,61 @@ Deploy»). Se resuelve de dos maneras; las dos son decisión del usuario.
   `adb emu kill` + arranque con `-no-snapshot-load` e instalar vía `adb push` + `pm install`. El
   APK que queda en `android/app/build/outputs/apk/release/` y el instalado en el AVD son ahora la
   build **mock**, no la de Supabase.
+
+**2026-10-14 · commit `6a1114a` · AVD `lockin` (Android 16) · backend Supabase real
+(`grrzmzktrhksbttpbblg`) · evidencia en `e2e/artifacts/local/2026-10-14-puerta-correo/` (local,
+ignorada por git).**
+
+- **Puerta del correo (`929c92d`) — ⚠️ BLOQUEADA, sin veredicto; casilla sin marcar.** Build
+  release contra Supabase (`createBundleReleaseJsAndAssets --rerun`, log `[lockin] backend de
+  datos: Supabase`), instalada vía `adb push` + `pm install`, `pm clear` y arranque en frío. Sin que
+  el comprobador enviara ningún input, el AVD fue manejado por otra mano: pantalla pasó de «Vuelve
+  a tu cuenta» a «Confirma tu email» y a «Crea tu cuenta» con el campo a medio escribir («big») y
+  una burbuja flotante ajena (`01-arranque.png`, `02.png`, `ui1.xml`, `ui2.xml`). En los logs de
+  Auth: `/token` con contraseña inválida (15:07:02 UTC), `PUT /user` `user_modified` y `mail.send`
+  `email_change` a `bigjoowe@gmail.com` (15:07:17 UTC). **Se gastó 1 de los ~2 correos/hora del
+  proyecto** y esa sesión anónima quedó con un cambio de email pendiente. Parón hasta confirmar
+  quién tecleaba y a que el cupo se renueve (~16:07 UTC). Retomar desde `pm clear`.
+- **Puerta del correo — actualización 15:10 UTC: la mano era la del usuario; ⚠️ parcial.** Con
+  `bigjoowe@gmail.com` (cuenta `190e0f96…`) recorrió en el AVD, backend Supabase real: anónima sin
+  perfil → `/register` → `email_change` (15:07:17) → confirma (`email_confirmed_at` 15:07:53) →
+  contraseña (`PUT /user` 15:08:05, `is_anonymous=false`) → crea perfil (fila creada 15:09:05) →
+  deck «Descubrir» (`03-estado-actual.png`). ✅ camino «sin perfil: registro → confirmación →
+  contraseña → perfil → deck». **No cubre** lo que pide la casilla: la cuenta NO tenía perfil al
+  ascender (el perfil es posterior a la confirmación), así que «anónima antigua CON perfil → cae en
+  `/register` → asciende → vuelve a `/` con su perfil y matches» sigue sin comprobar. Casilla sin
+  marcar. Para cerrarla hace falta una anónima con perfil previo (REST + sesión inyectada, o build
+  sin puerta) y 1 correo más (cupo: 1 gastado a las 15:07 UTC).
+- **Puerta del correo — intento por inyección de sesión (17:02 UTC), ❌ método inválido, no es
+  bug de producto probado.** Creé por REST una anónima con perfil (`9b48456c…`, 201) y su sesión la
+  metí en `RKStorage` (`catalystLocalStorage`, clave `sb-grrzmzktrhksbttpbblg-auth-token`) tras
+  `pm clear`. La app (HEAD `170945b`, `[lockin] backend de datos: Supabase`) NO la usó: en auth_logs
+  hay un `signup` anónimo nuevo (`1518de3f…`, 17:02:45) y ningún `refresh_token` de `9b48456c`.
+  Por tanto aterrizar en `/register` no demuestra nada sobre «perfil + puerta». No se pudo
+  diagnosticar por qué (volcar `RKStorage` del AVD fue denegado por permisos). Método de
+  sustitución: build con `EXPO_PUBLIC_REQUIRE_ACCOUNT=false` → perfil anónimo por la UI →
+  `install -r` de la build con puerta (conserva datos).
+- **Puerta del correo (`929c92d`) — VEREDICTO 2026-10-14 17:20 UTC: ✅ funciona en el AVD**, backend
+  Supabase real, HEAD `170945b`, APK con `EXPO_PUBLIC_REQUIRE_ACCOUNT=true`. Casilla **sin
+  marcar por el comprobador** (la marca quien la posee). Evidencia en
+  `e2e/artifacts/local/2026-10-14-puerta-correo/` (local, ignorada por git).
+  1. Anónima con perfil creada por la UI con una build SIN puerta (`20-sinpuerta-arranque.png`,
+     `21-form-final.png`, `22-tras-crear.png`; fila `PuertaQA`, `is_anonymous=true`).
+  2. `adb install -r` de la build CON puerta (sin borrar datos) y arranque en frío →
+     «Crea tu cuenta» (`30-conpuerta-arranque.png`). ✅ cae en `/register`.
+  3. Ascenso con `+lockin4`: `PUT /user` con `actor_id` = la anónima del paso 1 (misma cuenta),
+     `mail.send email_change` 17:18:04, enlace abierto en el AVD → `email_confirmed_at` 17:19:38,
+     `is_anonymous=false` (`31-…`, `32-tras-enlace.png`).
+  4. Vuelta a la app: con perfil, `auth/callback` manda a `/profile` (no a `/`), por diseño del
+     código; el deck «Descubrir» carga (`33-deck.png`, candidato «Jo» de otra cuenta) y la pestaña
+     Matches sale vacía («Todavía no hay nadie…», `34-matches.png`). **«Con sus matches» NO está
+     probado:** la cuenta de prueba no tenía ninguno. Arranque en frío (`35-…`) → deck, sin
+     volver a pasar por la puerta.
+  5. «Y contraseña»: tras el enlace la cuenta queda sin contraseña; se pone desde Perfil → Cuenta
+     («Contraseña guardada», `37-password.png`). Eliminar cuenta desde la app → vuelta a `/register`.
+  6. Una cuenta sin perfil sigue por la bienvenida: ✅ con la build sin puerta (`20-…`: «Encuentra
+     con quién construir» → `Continuar` → formulario). Con la puerta encendida, una anónima sin
+     perfil cae en `/register` (hallazgo del 2026-10-13), sin pasar por `/mode`.
+  Higiene: borradas `9b48456c…` y `c1c67902…` (PuertaQA). **Queda `1518de3f…`** (anónima sin
+  perfil ni sesión recuperable, del intento de inyección); inofensiva, borrable desde el dashboard.
+  Cupo GoTrue: 2 correos en la hora (15:07 y 17:18).
