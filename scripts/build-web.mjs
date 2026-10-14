@@ -1,8 +1,9 @@
 // Construye el sitio público (`_site/`) que sirve GitHub Pages.
 //
-// Las páginas estáticas viven en `web/`. La política de privacidad NO se
-// duplica: se genera desde `docs/tiendas/privacidad.md`, que es la fuente de
-// verdad, para que la web y el texto que revisan las tiendas no diverjan.
+// Las páginas estáticas viven en `web/`. Los documentos legales NO se duplican:
+// se generan desde `docs/tiendas/*.md` (privacidad, términos, normas y
+// seguridad infantil), que son la fuente de verdad, para que la web y el texto
+// que revisan las tiendas —y que acepta la app— no diverjan.
 //
 // Uso: node scripts/build-web.mjs
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
@@ -95,7 +96,28 @@ export function publishableBody(markdown) {
     .join('\n');
 }
 
-const page = (title, body) => `<!doctype html>
+/** Documentos legales: archivo fuente → carpeta publicada y título. */
+export const LEGAL_PAGES = [
+  { source: 'privacidad.md', dir: 'privacidad', title: 'Política de privacidad · cofounder' },
+  { source: 'terminos.md', dir: 'terminos', title: 'Términos de uso · cofounder' },
+  { source: 'normas.md', dir: 'normas', title: 'Normas de la comunidad · cofounder' },
+  {
+    source: 'seguridad-infantil.md',
+    dir: 'seguridad-infantil',
+    title: 'Estándares de seguridad infantil · cofounder',
+  },
+];
+
+/**
+ * Marcadores que todavía esperan una decisión del responsable (`[fecha de
+ * publicación…]`, `[pendiente…]`, `[PROPUESTA…]`) en el texto publicable.
+ */
+export function pendingMarkers(markdown) {
+  const pattern = /\[(?:fecha de publicaci[oó]n|pendiente|propuesta|proveedor)[^\]]*\]/gi;
+  return [...markdown.matchAll(pattern)].map((match) => match[0]);
+}
+
+export const page = (title, body) => `<!doctype html>
 <html lang="es">
   <head>
     <meta charset="utf-8" />
@@ -109,8 +131,9 @@ const page = (title, body) => `<!doctype html>
 ${body}
     </main>
     <footer>
-      <a href="../privacidad/">Privacidad</a> · <a href="../soporte/">Soporte</a> ·
-      <a href="../eliminar-cuenta/">Eliminar cuenta</a> · <a href="../normas/">Normas</a>
+      <a href="../privacidad/">Privacidad</a> · <a href="../terminos/">Términos</a> ·
+      <a href="../normas/">Normas</a> · <a href="../seguridad-infantil/">Seguridad infantil</a> ·
+      <a href="../soporte/">Soporte</a> · <a href="../eliminar-cuenta/">Eliminar cuenta</a>
     </footer>
   </body>
 </html>
@@ -122,13 +145,15 @@ async function main() {
   await mkdir(out, { recursive: true });
   await cp(join(root, 'web'), out, { recursive: true });
 
-  const policy = await readFile(join(root, 'docs', 'tiendas', 'privacidad.md'), 'utf8');
-  const html = markdownToHtml(publishableBody(policy));
-  await mkdir(join(out, 'privacidad'), { recursive: true });
-  await writeFile(
-    join(out, 'privacidad', 'index.html'),
-    page('Política de privacidad · cofounder', html)
-  );
+  for (const { source, dir, title } of LEGAL_PAGES) {
+    const markdown = await readFile(join(root, 'docs', 'tiendas', source), 'utf8');
+    const body = publishableBody(markdown);
+    for (const marker of pendingMarkers(body)) {
+      console.warn(`AVISO ${source}: marcador pendiente en el texto publicable: ${marker}`);
+    }
+    await mkdir(join(out, dir), { recursive: true });
+    await writeFile(join(out, dir, 'index.html'), page(title, markdownToHtml(body)));
+  }
   console.log('Sitio generado en _site/');
 }
 

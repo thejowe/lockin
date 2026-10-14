@@ -1,98 +1,78 @@
 # cofounder — ficha de Google Play (español)
 
-Preparada el 9 de octubre de 2026 sobre `0cddbbbae3a894c64e2be04f2c74c081602db8e6`. Copiar únicamente el contenido de cada campo, no las notas de preparación.
+Revisada el 14 de octubre de 2026 tras el pivote del 12-oct-2026. Copiar únicamente el contenido de cada campo.
 
-## Nombre
+## Nombre de la aplicación
 
 cofounder
 
-## Subtítulo editorial
+## Descripción breve
 
-Cofundador o compañero de foco
+Encuentra cofundador: desliza perfiles, haz match y conversa de igual a igual.
 
-Google Play no ofrece un campo de subtítulo equivalente al de Apple. Se conserva aquí como referencia de mensaje; el campo que se envía es la descripción breve.
+## Descripción completa
 
-## Descripción corta / breve
+¿Tienes ganas de construir algo y te falta con quién? cofounder te ayuda a encontrar cofundador o cofundadora entre personas que están en un punto parecido al tuyo.
 
-Encuentra cofundador o compañero de foco. Haz match y trabaja con Pomodoro.
+No hace falta tener nada construido. Puedes no tener idea todavía, tener una idea sin empezar o haber probado algo pequeño. Aquí nadie contrata a nadie: la relación es entre pares, y ambos aportáis y decidís juntos.
 
-## Descripción larga / completa
+TU PERFIL
+Cuenta quién eres y qué aportas: nombre, edad, ubicación y zona horaria, especialidades, punto de partida, disponibilidad y nivel de ambición. Responde a una o dos preguntas breves para que se note cómo piensas, no solo lo que sabes hacer. Si quieres, añade enlaces a GitHub, portfolio o LinkedIn.
 
-Encuentra con quién empezar a construir o con quién concentrarte.
+También puedes añadir una foto. Es opcional y solo se publica después de pasar una revisión automática de seguridad.
 
-cofounder conecta a personas que buscan un cofundador o un compañero de trabajo concentrado. Puedes estar sin idea, tener una idea sin empezar o haber probado algo pequeño. La relación es entre pares: ambos aportáis y decidís juntos.
+DESLIZA
+Los perfiles aparecen a pantalla completa, uno a uno. Desliza para indicar que te interesa una persona o para pasar a la siguiente.
 
-ELIGE TU MODO
+MATCH Y CHAT
+Cuando el interés es mutuo, hacéis match y se abre un chat privado entre los dos. Para romper el hielo, la app te sugiere algunas preguntas con las que empezar.
 
-Par: descubre personas por sus especialidades y lo que buscan complementar. Cuenta qué dominas, qué quieres construir, tu disponibilidad y tu nivel de compromiso.
+GITHUB VERIFICADO
+Puedes vincular tu cuenta de GitHub para mostrar «GitHub verificado» en tu perfil. Indica que el enlace de GitHub pertenece a quien lo publica; no verifica la identidad de la persona ni sus conocimientos.
 
-Lock-In: encuentra compañía para trabajar al mismo tiempo, aunque cada uno esté en lo suyo. También puedes elegir ambos modos.
+SEGURIDAD Y CONTROL
+Puedes bloquear o reportar a cualquier persona desde la app. Puedes eliminar tu cuenta y tus datos cuando quieras desde Perfil > Cuenta.
 
-DESLIZA Y CONVERSA
+LO QUE NO ES
+cofounder no es una app de citas ni una bolsa de empleo. No ofrece asesoramiento legal ni financiación, ni garantiza resultados: te ayuda a conocer a personas con las que construir; lo que hagáis depende de vosotros.
 
-Explora perfiles con nombre, edad, zona, disponibilidad y respuestas breves. Indica si te interesa una persona. Cuando el interés es recíproco, hacéis match y podéis hablar por chat.
+Para personas de 16 años o más.
 
-ORGANIZA SESIONES DE ENFOQUE
+## Palabras clave
 
-Propón una fecha y una duración de 1, 2 o 4 bloques. Cada bloque combina 25 minutos de trabajo y 5 de descanso. La otra persona acepta o rechaza la propuesta.
-
-Comparte el temporizador y ve si tu compañero está presente. En las sesiones individuales puedes usar una videollamada con permisos de cámara y micrófono. Activa los avisos locales para recibir un recordatorio cinco minutos antes.
-
-Al terminar una sesión compartida, puedes valorarla con un toque. Tu valoración es privada. Las rachas compartidas te ayudan a ver la continuidad de vuestras sesiones.
-
-TRABAJA EN GRUPO
-
-Convoca una sala con 2–4 de tus matches, hasta reunir 3–5 personas. Cada invitado decide si se une. Las salas comparten Pomodoro y presencia, sin vídeo ni chat de grupo.
-
-ABRE LAS CONVERSACIONES DIFÍCILES
-
-En tus matches Par, responde por separado a temas sobre dedicación, reparto y salida. Ves la respuesta de la otra persona a un tema después de dar la tuya. Es una conversación guiada; no genera un contrato ni sustituye el asesoramiento legal.
-
-TU PERFIL, A TU MANERA
-
-Añade enlaces a GitHub, portfolio o LinkedIn. Puedes verificar que tu enlace de GitHub pertenece a tu cuenta. El sello verifica la autoría de ese enlace.
-
-Empieza con lo que tienes y encuentra con quién dar el siguiente paso.
-
-## Palabras clave editoriales
-
-cofundador, compañero de enfoque, coworking, Pomodoro, proyectos, colaboración, productividad.
-
-Google Play no tiene un campo separado de keywords equivalente al de Apple. Usarlas de forma natural en la ficha; no añadir un bloque de palabras repetidas a la descripción.
+Google Play no tiene campo de keywords. La descripción ya incluye de forma natural «cofundador», «emprender», «pares», «GitHub». No añadir bloques de palabras repetidas (política de metadatos).
 
 ## Categoría
 
-Tipo: **Aplicación**. Categoría decidida (D07): **Social**. Etiquetas a elegir en Play Console entre las ofrecidas para Social.
+Tipo: **Aplicación**. Categoría: **Social** (D07). Implica cumplir las normas de seguridad infantil de Google (normas públicas, mecanismo de aviso, contacto designado: D11).
 
-## Clasificación de edad y público objetivo
+## Clasificación de contenido y público objetivo
 
-Decisión D06: público objetivo **16–17 y 18+**, edad mínima 16. Completar el cuestionario IARC declarando contenido generado por usuarios con interacción entre usuarios, y confirmar los resultados por región. No afirmar PEGI 16 ni ESRB Teen sin el resultado oficial.
+Público objetivo: 16–17 y 18+ (D06). En el cuestionario IARC declarar interacción entre usuarios, contenido generado por usuarios, intercambio de fotos (foto de perfil) y chat. No declarar vídeo ni voz si el código de videollamada se retira del binario. No afirmar una calificación concreta antes del resultado oficial.
 
-El formulario admite edad declarada desde 16; SQL admite 16–120. No existe verificación real de edad ni una política de menores configurada. La edad de uso del producto, el público objetivo y el resultado IARC son campos distintos.
+## Data safety, eliminación de cuenta y permisos
 
-Para preparar el cuestionario, declarar interacción entre usuarios, contenido generado por usuarios y chat. Hay perfiles y notas de texto libre, mensajes 1:1 y videollamada individual. No se han encontrado apuestas, concursos, compras, anuncios integrados ni contenido adulto diseñado por la app. La ausencia de moderación impide garantizar qué escribirán o mostrarán otros usuarios.
+- Respuestas de Data safety: ver `cuestionario-privacidad.md`.
+- Eliminación de cuenta: en la app (Perfil > Cuenta > Eliminar mi cuenta) y URL web https://thejowe.github.io/lockin/eliminar-cuenta (obligatoria y funcionando; explica cómo pedirla por correo sin la app).
+- Seguridad infantil (categoría Social): URL de los estándares https://thejowe.github.io/lockin/seguridad-infantil; contacto designado cofounder.soporte@gmail.com.
+- Permisos: con Lock-In oculto, **retirar** `RECORD_AUDIO` y `SCHEDULE_EXACT_ALARM` (y el plugin WebRTC) de app.json salvo que alguna función visible los use. Si se mantiene `SCHEDULE_EXACT_ALARM`, Play Console exige justificarlo y ya no hay función visible que lo justifique.
 
-Fuente para los campos de clasificación, público y privacidad: [preparar una app para revisión](https://support.google.com/googleplay/android-developer/answer/9859455?hl=es). La calificación final puede variar por territorio; no trasladar sin más una cifra de App Store. Si se publica en la categoría Social, completar también las [normas de seguridad infantil de Google](https://support.google.com/googleplay/android-developer/answer/14747720?hl=en), incluido contacto y normas públicas; D02/D06/D08/D11 pendientes.
+## Límites
 
-## Límites y datos administrativos
-
-| Campo | Texto preparado | Límite |
+| Campo | Texto | Límite |
 | --- | --- | --- |
-| Nombre | 6 caracteres | 30 caracteres |
-| Descripción breve | 75 caracteres | 80 caracteres |
-| Descripción completa | 2118 caracteres, incluidos saltos de línea | 4000 caracteres |
+| Nombre | 9 caracteres | 30 |
+| Descripción breve | 78 caracteres | 80 |
+| Descripción completa | 1770 caracteres | 4000 |
 
-Fuente: [crear y configurar una aplicación](https://support.google.com/googleplay/android-developer/answer/9859152?hl=es). Package Android del repo: `app.cofounder.mobile`; versión app.json: `1.0.0`.
+Package: `app.cofounder.mobile`; versión 1.0.0. Como persona física publicando en la UE, Play mostrará nombre y dirección del editor (estado de «trader», DSA).
 
-- **D01 decidido:** Joel de Torres Sainz de la Maza, carrer Nou, 37, 25153 Lleida (España). Como persona física se publica como «trader» (DSA): Play mostrará nombre y dirección públicamente.
-- **D02 decidido:** soporte y privacidad en cofounder.soporte@gmail.com (obligatorio en la ficha).
-- **D08 decidido:** privacidad https://thejowe.github.io/lockin/privacidad, soporte https://thejowe.github.io/lockin/soporte, eliminación de cuenta https://thejowe.github.io/lockin/eliminar-cuenta, normas/seguridad infantil https://thejowe.github.io/lockin/normas.
-- **D09:** revisar el AAB final; rellenar la declaración de SCHEDULE_EXACT_ALARM (uso: recordatorios de sesiones agendadas; se mantiene, ver `todo/sesiones.md`), y comprobar «Allow public access» de Realtime cerrado en producción.
+## Comprobaciones previas al envío (no copiar en la consola)
 
-## Evidencia y preparación de publicación
-
-Las funciones proceden del [modelo de datos](../../src/data/types.ts) y de las implementaciones de [descubrimiento](../../src/features/discover/), [chat](../../src/features/chat/), [sesiones](../../src/features/session/), [acuerdo](../../src/features/agreement/) y [salas](../../src/features/room/). La verificación de GitHub solo prueba autoría del enlace. Las salas son de 3–5 personas con reloj/presencia, sin vídeo ni chat grupal.
-
-No se han inventado precio, ofertas premium, funciones de contratación, contratos, moderación, perfiles privados o garantías de compatibilidad. El vídeo requiere la build nativa y permisos; el código no demuestra por sí solo la conexión entre dos teléfonos físicos.
-
-Preparar las respuestas de [Data safety](cuestionario-privacidad.md#google-play--data-safety--seguridad-de-los-datos), los datos de acceso para revisión y los requisitos de [baja, bloqueo y reporte](cuestionario-privacidad.md#lo-que-applegoogle-exigirán-y-la-app-aún-no-tiene). No declarar esas funciones como terminadas.
+- **Bloquear/reportar y «Eliminar mi cuenta»:** comprobados en el código (`block_profile`, `report_profile`, panel de seguridad en deck y chat, `delete_my_account`) y dados por aplicados en producción el 10-oct-2026 (D09). Probarlos en la build final contra Supabase real. Reportar es de **perfiles**; reportar un mensaje concreto aún no existe (T3b).
+- **Aceptación de términos:** hoy la app no la pide. Apple 1.2 y la política UGC de Google la esperan: no enviar sin ella (T3a).
+- **Funciones ocultas (Lock-In):** sesiones, salas, vídeo, rachas, Pomodoro y acuerdo siguen en el código pero no en la UI (pivote del 12-oct-2026). No deben aparecer en la ficha, capturas ni vídeo de vista previa. Si el código sigue en el binario, conviene retirarlo o desactivarlo de verdad: las funciones ocultas o inactivas son motivo de rechazo en Apple (2.3.1) y las dependencias nativas que dejan (WebRTC, cámara/micrófono, alarmas exactas) generan permisos que hay que justificar. Ver INFORME.md.
+- **Capturas:** solo pantallas actuales (perfil, deck a pantalla completa, match, chat con sugerencias, GitHub verificado, bloqueo). Ninguna con temporizador, salas, vídeo o rachas.
+- **Cuenta de revisión:** preparar una cuenta de prueba con perfil completo y al menos un match con chat para que la revisión pueda ver las funciones.
+- **URLs públicas (D08):** privacidad, términos, normas, seguridad infantil, soporte y eliminar cuenta en https://thejowe.github.io/lockin/… (`/privacidad`, `/terminos`, `/normas`, `/seguridad-infantil`, `/soporte`, `/eliminar-cuenta`) deben estar publicadas y funcionando antes de enviar.
+- Responsable (D01): Joel de Torres Sainz de la Maza, carrer Nou, 37, 25153 Lleida (España). Contacto (D02): cofounder.soporte@gmail.com.

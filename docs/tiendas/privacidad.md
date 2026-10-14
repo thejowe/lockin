@@ -1,145 +1,121 @@
 # Política de privacidad de cofounder
 
-> Texto para publicación, completado el 10 de octubre de 2026 con las decisiones D01–D12 del responsable (ver [el inventario](datos-recopilados.md#decisiones-pendientes-compartidas-por-los-cinco-documentos)). Antes de publicarlo en la URL pública, revisar la nota final.
+> Revisada el 14 de octubre de 2026 tras el pivote del 12-oct-2026 (solo búsqueda de cofundador) y la foto de perfil opcional moderada con OpenAI. Antes de publicarla en la URL pública, resolver las preguntas de la nota final y actualizar la fecha de entrada en vigor.
 
-**Entrada en vigor:** 10 de octubre de 2026.
+**Versión:** 1.0.
+
+**Entrada en vigor:** [fecha de publicación — pendiente de fijar al publicar].
 
 ## 1. Quién es responsable de tus datos
 
-cofounder permite encontrar un cofundador en modo Par o una persona con quien trabajar concentrado en modo Lock-In.
+cofounder es una app para encontrar cofundador o cofundadora entre pares.
 
-El responsable del tratamiento es **Joel de Torres Sainz de la Maza**, con domicilio en carrer Nou, 37, 25153 (Lleida, Catalunya, España). Puedes contactar para cuestiones de privacidad o soporte en **cofounder.soporte@gmail.com**.
+El responsable del tratamiento es **Joel de Torres Sainz de la Maza**, con domicilio en carrer Nou, 37, 25153 Lleida (Catalunya, España). Para privacidad o soporte: **cofounder.soporte@gmail.com**.
 
-Publicamos la app en España y el resto del Espacio Económico Europeo. Se aplican el Reglamento (UE) 2016/679 (RGPD) y la Ley Orgánica 3/2018 (LOPDGDD). La autoridad de control competente es la Agencia Española de Protección de Datos ([aepd.es](https://www.aepd.es)); en Catalunya también puedes acudir a la Autoritat Catalana de Protecció de Dades.
+Publicamos la app en España y el resto del Espacio Económico Europeo. Se aplican el Reglamento (UE) 2016/679 (RGPD) y la Ley Orgánica 3/2018 (LOPDGDD). La autoridad de control es la Agencia Española de Protección de Datos ([aepd.es](https://www.aepd.es)); en Catalunya también puedes acudir a la Autoritat Catalana de Protecció de Dades.
 
 ## 2. Qué datos tratamos
 
 ### Tu cuenta
 
-La app puede crear una cuenta sin pedirte un correo. Aunque el acceso se denomine anónimo, se asigna un identificador de cuenta que vincula tu perfil y tu actividad.
+La app puede crear una cuenta sin pedirte un correo. Aunque el acceso sea «anónimo», se asigna un identificador de cuenta que vincula tu perfil y tu actividad.
 
-Puedes añadir un email, confirmarlo y establecer una contraseña para recuperar la cuenta desde otro dispositivo. También existen alta y acceso por email. El email y las credenciales se usan con el servicio de autenticación; el email no forma parte del perfil que mostramos a otras personas.
+Puedes añadir y confirmar un email y una contraseña para recuperar la cuenta desde otro dispositivo; también existen alta y acceso por email. El email no forma parte del perfil que ven otras personas.
 
-Si eliges verificar tu enlace de GitHub, se vincula una identidad de GitHub y se publica el nombre de esa cuenta y la fecha de verificación. El sello acredita la autoría del enlace; no acredita tu identidad legal ni tus conocimientos. La autenticación puede recibir otros metadatos de GitHub, según la configuración del proveedor.
+Si verificas tu enlace de GitHub, se vincula tu identidad de GitHub y se publica el nombre de esa cuenta y la fecha de verificación junto al distintivo «GitHub verificado». El distintivo indica que el enlace de GitHub te pertenece; no acredita tu identidad ni tus conocimientos. El servicio de autenticación puede recibir otros metadatos de GitHub según la configuración del proveedor.
 
 ### Tu perfil
 
-Guardamos el nombre y la edad que indicas, tu ciudad o zona y zona horaria, iniciales y color del avatar, especialidades que dominas y buscas, qué tipo de compañero buscas, punto de partida de tu proyecto, disponibilidad semanal y franjas horarias, ambición, enlaces opcionales a GitHub, portfolio y LinkedIn, y respuestas breves a preguntas de perfil. Guardamos también las fechas de creación y modificación.
+Guardamos el nombre y la edad que indicas, tu ciudad o zona y zona horaria, iniciales y color del avatar, especialidades que dominas y que buscas, punto de partida, disponibilidad semanal y franjas horarias, nivel de ambición, enlaces opcionales a GitHub, portfolio y LinkedIn, y tus respuestas breves a preguntas de perfil, con las fechas de creación y modificación.
 
-La ubicación se introduce como texto. Esta versión no obtiene tu posición mediante GPS. El avatar usa iniciales y un color por defecto. Si quieres, puedes subir una fotografía de perfil: se guarda primero en un espacio privado, se envía a OpenAI únicamente para comprobar que es apropiada (no para entrenar modelos ni para otro fin) y solo se publica, visible para otras personas de la app, si supera esa revisión. Si el servicio de revisión no está disponible, la foto se rechaza y no se publica. Puedes quitarla cuando quieras; al borrar tu cuenta, se elimina.
+La ubicación se escribe como texto; la app no usa GPS.
+
+**Foto de perfil (opcional).** Si subes una foto, se guarda primero en un espacio privado y nuestro servidor la envía a **OpenAI** (solo la imagen, sin tu nombre ni el resto del perfil) con el único fin de comprobar que es apropiada. La revisión es automática. Solo se publica, visible para otras personas de la app, si supera esa revisión. Si el servicio de revisión no está disponible, la foto no se publica. Puedes quitarla cuando quieras y se retira al borrar tu cuenta (ver §7).
 
 ### Tu actividad y conversaciones
 
-Guardamos el modo de navegación elegido, tus decisiones de swipe, los matches recíprocos y los mensajes de texto, con sus participantes y fechas.
-
-En las sesiones individuales de trabajo guardamos quién propone, fecha y hora, duración, respuesta o cancelación y registros de entrada y salida. Si valoras una sesión, guardamos la valoración y su fecha. Las rachas de pareja se calculan a partir de sesiones y asistencia; no son una puntuación pública.
-
-En modo Par puedes responder a temas de una conversación guiada sobre compromiso, reparto y salida. Guardamos el tema, la opción, una nota opcional y la última modificación. No se firma ni genera un contrato.
-
-En las salas grupales guardamos quién convoca, horario, duración, cancelación, invitaciones, respuestas y asistencia. Las salas son de 3–5 personas y no incluyen vídeo ni chat grupal.
-
-### Videollamada y presencia
-
-Si usas vídeo en una sesión individual, la cámara y el micrófono transmiten imagen y voz a la otra persona mediante WebRTC. La app no implementa grabación ni conserva archivos de esa llamada en su base de datos. Esto no impide que el receptor pueda capturar el contenido por otros medios.
-
-El servicio de señalización transmite identificadores y datos técnicos para establecer la conexión, que pueden incluir direcciones de red y puertos. La conexión usa el servicio STUN público de Google. La presencia en sesiones y salas comunica quién está conectado. Estos flujos no generan un historial de contenido en las tablas de producto de cofounder.
+Guardamos tus decisiones al deslizar (te interesa o pasas), los matches mutuos y los mensajes de texto del chat, con sus participantes y fechas. También guardamos los bloqueos y reportes que hagas o recibas: quién bloquea o reporta, a quién, el motivo elegido, el texto opcional que añadas (hasta 500 caracteres) y la fecha (ver §7). Los bloqueos son visibles solo para quien bloquea; los reportes no los ve ninguna otra persona de la app.
 
 ### Datos del dispositivo y servicios técnicos
 
-La app guarda localmente la sesión de autenticación, ciertos datos para completar la vinculación de GitHub y referencias de recordatorios. El almacenamiento local de sesión usa AsyncStorage; no se presenta como un almacén de credenciales cifrado por la app.
+La app guarda en el dispositivo la sesión de autenticación y datos temporales para completar la vinculación de GitHub. En Android e iOS la sesión se guarda en el almacén seguro del sistema (Keystore / Keychain); en la versión web, en el almacenamiento local del navegador.
 
-Para descargar actualizaciones, Expo/EAS recibe un identificador aleatorio persistente de instalación, plataforma, versión de ejecución y metadatos de actualizaciones y posibles fallos de arranque. No es un identificador publicitario.
+Para descargar actualizaciones, Expo/EAS recibe un identificador aleatorio de instalación, la plataforma, la versión y metadatos de actualizaciones y de posibles fallos de arranque. No es un identificador publicitario.
 
-Los servicios de autenticación, base de datos, conexión y actualizaciones reciben datos de red como la dirección IP y pueden generar registros operativos. Los proveedores conservan estos registros operativos durante el plazo que fija su propia configuración; no los usamos para publicidad ni para elaborar perfiles.
+Los servicios de autenticación, base de datos, almacenamiento y actualizaciones reciben datos de red como la dirección IP y pueden generar registros técnicos. No los usamos para publicidad ni para elaborar perfiles.
 
-## 3. Para qué usamos los datos
+## 3. Para qué usamos los datos y con qué base jurídica
 
-Los datos permiten mantener y recuperar tu cuenta, mostrar y editar tu perfil, filtrar perfiles por modo y preferencias, resolver likes recíprocos, comunicarte con tus matches, organizar sesiones y salas, calcular las rachas compartidas, mostrar tu valoración privada y comparar las respuestas del acuerdo cuando ambas personas hayan respondido.
+Usamos los datos para mantener y recuperar tu cuenta, mostrar y editar tu perfil, mostrarte perfiles, resolver los intereses mutuos, permitir el chat con tus matches, verificar tu enlace de GitHub, revisar fotos de perfil, atender bloqueos y reportes y servir actualizaciones de la app. No usamos SDK de publicidad ni analítica comercial.
 
-Los datos técnicos permiten autenticar peticiones, mantener conexiones, completar la verificación de GitHub, programar recordatorios y servir actualizaciones de la app.
-
-La versión descrita no incluye SDK de publicidad dirigida ni una integración de analítica comercial propia en el código revisado. No se han encontrado usos publicitarios de los datos de perfil o mensajes.
-
-Bases jurídicas (art. 6 RGPD):
-
-- **Ejecución del servicio que solicitas** (art. 6.1.b): cuenta, perfil, swipes, matches, mensajes, sesiones, salas, rachas, valoraciones y acuerdo.
-- **Consentimiento** (art. 6.1.a): cámara y micrófono para la videollamada, recordatorios y verificación opcional de GitHub. Puedes retirarlo en cualquier momento desde los ajustes del dispositivo o desvinculando GitHub.
-- **Interés legítimo** (art. 6.1.f): seguridad, prevención de abusos, moderación de reportes y operación técnica del servicio.
+- **Ejecución del servicio que solicitas** (art. 6.1.b RGPD): cuenta, perfil, swipes, matches y mensajes.
+- **Consentimiento** (art. 6.1.a): foto de perfil y verificación de GitHub, ambas opcionales. Puedes retirarlo quitando la foto o desvinculando GitHub.
+- **Interés legítimo** (art. 6.1.f): seguridad, prevención de abusos, revisión de fotos y de reportes y operación técnica.
 - **Obligación legal** (art. 6.1.c): atender requerimientos de las autoridades.
 
 ## 4. Quién puede verlos
 
-- **Tu perfil completo puede leerlo cualquier cuenta autenticada**, incluidas las cuentas creadas sin email. No se limita a quienes hayan hecho match contigo. Evita incluir información que no quieras compartir con estas personas.
-- Solo tú lees tus preferencias de navegación, tus swipes y tus valoraciones de sesión. El sistema usa los likes para resolver reciprocidad.
-- Las dos personas del match ven su conversación, las sesiones individuales y su asistencia. La valoración de una persona no se muestra a la otra.
-- En el acuerdo, la otra persona ve tu opción y nota de un tema cuando también ha respondido a ese tema. Antes puede ver que ya respondiste.
-- En una sala, quien convoca ve todas las invitaciones y respuestas. Los demás participantes ven su propia fila y a quienes hayan aceptado. Los invitados pendientes no se muestran entre sí.
-- La otra persona de la videollamada recibe tu imagen, voz y los datos de conexión necesarios, entre ellos tu dirección IP: la conexión es directa entre los dos teléfonos y no pasa por un servidor intermedio que la oculte.
-- Los operadores con privilegios administrativos y los proveedores pueden acceder a datos según los permisos necesarios para prestar el servicio. El chat se almacena en la base de datos; no se ofrece una garantía de cifrado de extremo a extremo del chat.
-
-Los recordatorios son locales. El aviso de sesión incluye el nombre del compañero y puede aparecer en la pantalla bloqueada según tus ajustes del sistema.
+- **Tu perfil (incluida la foto aprobada) puede verlo cualquier persona con cuenta en la app**, también las cuentas creadas sin email, no solo tus matches. No incluyas información que no quieras compartir.
+- **La foto aprobada se guarda en un espacio de lectura pública por URL**: quien conozca el enlace exacto de la imagen puede abrirla aunque no tenga cuenta.
+- Solo tú ves tus decisiones al deslizar; el sistema las usa para detectar el interés mutuo.
+- Solo las dos personas de un match ven su conversación.
+- Los operadores con acceso administrativo y los proveedores pueden acceder a datos en la medida necesaria para prestar el servicio. El chat se guarda en la base de datos y no tiene cifrado de extremo a extremo.
 
 ## 5. Servicios externos y transferencias
 
-cofounder utiliza Supabase para autenticación, base de datos y Realtime; Expo/EAS para actualizaciones; GitHub si eliges verificar tu enlace; y STUN de Google para negociar la conexión de vídeo. El envío de emails de autenticación depende del servicio configurado.
-
-Proveedores y su función:
-
-- **Supabase** (encargado del tratamiento): autenticación, base de datos y Realtime. El proyecto está alojado en la región UE Centro (Fráncfort, `eu-central-1`).
+- **Supabase** (encargado): autenticación, base de datos, almacenamiento de fotos y comunicación en tiempo real. Alojado en la región UE Centro (Fráncfort).
+- **OpenAI** (encargado, EE. UU.): revisión automática de las fotos de perfil, solo si subes una. Recibe la imagen desde nuestro servidor. Es una transferencia fuera del EEE (ver más abajo). Las condiciones de conservación de la imagen por OpenAI son las de su servicio: [pendiente de confirmar con las condiciones aplicables a nuestra cuenta].
 - **Expo / EAS** (encargado): distribución de actualizaciones de la app.
-- **GitHub** (responsable independiente), solo si eliges verificar tu enlace.
-- **Google** (STUN público), solo en videollamada: recibe datos de red para negociar la conexión, sin contenido de imagen ni voz.
-- **Servicio de correo de autenticación**: envía los emails de confirmación y recuperación.
+- **GitHub** (responsable independiente): solo si verificas tu enlace.
+- **Servicio de correo de autenticación** (encargado): emails de confirmación y recuperación. [Proveedor de correo: pendiente de decidir; nombrarlo aquí.]
 
-Algunos proveedores pueden tratar datos fuera del EEE, en cuyo caso se apoyan en las cláusulas contractuales tipo de la Comisión Europea o en el Marco de Privacidad de Datos UE-EE. UU.
+OpenAI trata datos fuera del Espacio Económico Europeo (EE. UU.). Esa transferencia se apoya en las cláusulas contractuales tipo de la Comisión Europea o en el Marco de Privacidad de Datos UE-EE. UU. (DPF), según el caso. Puedes pedir información sobre estas garantías en cofounder.soporte@gmail.com.
 
-Al abrir un enlace de portfolio, GitHub o LinkedIn, visitas un servicio externo que aplica sus propias prácticas de privacidad.
+Al abrir un enlace de portfolio, GitHub o LinkedIn de otra persona, visitas un servicio externo con sus propias prácticas de privacidad.
 
-## 6. Permisos y elecciones
+## 6. Permisos
 
-La cámara y el micrófono se usan para la videollamada 1:1. Puedes denegar sus permisos, apagar cámara o micrófono durante la llamada o colgar.
+La app pide acceso a tu galería o a tu cámara solo si eliges añadir una foto de perfil. Puedes denegarlo y usar el avatar de iniciales. Puedes cambiar los permisos en los ajustes del dispositivo.
 
-Las notificaciones se usan para avisos locales cinco minutos antes de sesiones y salas aceptadas. Android declara además el permiso de alarmas exactas para los avisos programados. No se ha encontrado registro de tokens push para enviar notificaciones desde un servidor.
-
-Puedes cambiar los permisos en los ajustes del dispositivo. Denegar un permiso puede impedir la función relacionada. Añadir email, enlaces, verificación GitHub y valoraciones es opcional. Para completar el perfil, la interfaz sí pide nombre, edad, zona, disponibilidad y al menos una respuesta de perfil.
+Para completar el perfil, la app pide nombre, edad, zona, disponibilidad y al menos una respuesta breve. Email, enlaces, foto y verificación de GitHub son opcionales.
 
 ## 7. Cuánto tiempo se conservan
 
-Conservamos tus datos mientras tu cuenta exista. Al eliminar la cuenta desde la app (Perfil → Cuenta → Eliminar mi cuenta) se borran tu perfil y los datos asociados de forma inmediata en la base de datos.
+Conservamos tus datos mientras tu cuenta exista. Al eliminar la cuenta desde la app (Perfil > Cuenta > Eliminar mi cuenta) se borran de inmediato tu perfil y los datos asociados. Antes de borrar la cuenta, la app pide al servidor que retire tu foto; si esa petición falla, la cuenta se borra igualmente y el archivo de la foto puede quedar en el almacenamiento sin vincularse a ninguna cuenta. En ese caso puedes pedirnos su retirada en cofounder.soporte@gmail.com.
 
-- **Cuentas inactivas:** podemos eliminar las cuentas que lleven 24 meses sin acceso. No hay aviso previo automático por email: la app no cuenta con un mecanismo de envío.
+- **Cuentas inactivas:** nos reservamos eliminar las cuentas que lleven 24 meses sin acceso, sin aviso previo automático. Hoy no existe un proceso automático que lo haga.
 - **Copias de seguridad del proveedor:** pueden conservar datos eliminados hasta 30 días más.
-- **Registros técnicos de los proveedores** (IP, peticiones): según su configuración, sin superar 90 días en nuestra operación.
-- **Reportes de abuso:** se conservan como máximo 12 meses desde su creación y se borran automáticamente después. Si la persona que reporta o la reportada elimina su cuenta, el reporte permanece hasta ese plazo, sin enlace a un perfil y con el identificador interno de la cuenta como referencia.
+- **Registros técnicos** (IP, peticiones): según la configuración de cada proveedor, sin superar 90 días en nuestra operación.
+- **Reportes de abuso:** se conservan como máximo 12 meses desde su creación y se borran automáticamente. Si una de las cuentas implicadas se elimina, el reporte se mantiene hasta ese plazo, con el identificador interno como referencia.
+- **Fotos rechazadas o pendientes de revisión:** tras cada revisión, aprobada o rechazada, el servidor intenta eliminar el archivo de la subida pendiente; si ese borrado falla, el archivo puede permanecer, porque hoy no hay un barrido programado que lo retire. [PROPUESTA, pendiente de confirmar: garantizar el borrado inmediato de la foto al aprobarse o rechazarse, con un barrido periódico de restos. Plazo definitivo por confirmar.]
+- **Foto aprobada:** hasta que la quites o elimines la cuenta; la copia anterior se retira al sustituirla.
 
-Salvo la eliminación automática de reportes, las tablas de producto no se borran por antigüedad. Terminar o cancelar una sesión o sala no borra sus datos. La ventana de 24 horas para valorar una sesión limita cuándo puedes valorar; no elimina la valoración después.
+Al eliminar una cuenta se borran también sus matches y los mensajes de esas conversaciones, incluidos los que escribió la otra persona.
 
-Cerrar sesión o desinstalar la app no equivale a borrar los datos del servidor. Cerrar sesión elimina credenciales locales y puede hacer irrecuperable una cuenta sin email confirmado, aunque las filas sigan en el servidor.
+Cerrar sesión o desinstalar la app no borra los datos del servidor. Cerrar sesión puede dejar irrecuperable una cuenta sin email confirmado.
 
-Cuando se elimina una cuenta, también se borran los matches y sus mensajes, sesiones, valoraciones y acuerdos, incluidos los datos que aportó la otra persona en esos matches. Las salas cuyo convocante se da de baja se conservan para los demás participantes, sin la persona convocante.
+## 8. Tus derechos
 
-Los flujos de vídeo y presencia no se graban como contenido de producto; la conservación de registros de los proveedores debe concretarse por separado.
+Puedes editar tu perfil, quitar tu foto y desvincular GitHub (se retiran el distintivo y el enlace derivado). La app no permite editar ni borrar mensajes individuales.
 
-## 8. Derechos y control sobre tus datos
-
-Puedes editar tu perfil y sus enlaces. Puedes desvincular GitHub mediante el flujo disponible; ello retira el sello y el enlace derivado cuando se sincroniza. La app no ofrece edición o borrado individual de mensajes ni cambio de una valoración ya enviada.
-
-Puedes darte de baja desde la app (Perfil → Cuenta → Eliminar mi cuenta) o pedir la eliminación escribiendo a cofounder.soporte@gmail.com; respondemos en un máximo de 30 días. Cerrar sesión no es una baja. Tienes además derecho a acceso, rectificación, supresión, oposición, limitación y portabilidad, que puedes ejercer por el mismo correo, y a reclamar ante la AEPD. Las páginas públicas están en https://thejowe.github.io/lockin/.
+Puedes eliminar tu cuenta desde la app o pedirlo en cofounder.soporte@gmail.com o en https://thejowe.github.io/lockin/eliminar-cuenta; respondemos en un máximo de 30 días. Tienes además derecho de acceso, rectificación, supresión, oposición, limitación y portabilidad, que puedes ejercer por el mismo correo, y a reclamar ante la AEPD.
 
 ## 9. Menores
 
-cofounder es para personas de **16 años o más**. La edad es autodeclarada y no hay verificación documental de edad ni controles parentales. Si detectamos una cuenta de una persona menor de 16 años, la eliminaremos. Si crees que ocurre, avísanos por correo.
+cofounder es para personas de **16 años o más**. La edad es autodeclarada y no hay verificación documental ni controles parentales. Si detectamos una cuenta de una persona menor de 16 años, la eliminaremos. Si crees que ocurre, escríbenos.
 
-## 10. Seguridad y cambios
+## 10. Seguridad, moderación y cambios
 
-El servidor aplica controles de acceso por cuenta, pertenencia a matches y pertenencia a salas. Su funcionamiento efectivo depende de que las migraciones y los ajustes de producción estén aplicados. Los datos no son anónimos por el hecho de usar una cuenta sin email.
+El servidor aplica controles de acceso por cuenta y por pertenencia a un match. Las conexiones con nuestros proveedores usan TLS. No prometemos cifrado de extremo a extremo ni certificaciones de seguridad.
 
-Las conexiones con Supabase y Expo usan TLS. No prometemos cifrado de extremo a extremo del chat ni una certificación de seguridad.
+Puedes **bloquear y reportar** a otra persona desde la app. Revisamos los reportes y actuamos sobre el contenido o las cuentas que incumplan las [normas de la comunidad](https://thejowe.github.io/lockin/normas) y los [términos de uso](https://thejowe.github.io/lockin/terminos). Nuestros estándares de seguridad infantil están en https://thejowe.github.io/lockin/seguridad-infantil.
 
-Puedes **bloquear y reportar** a otra persona desde la app. Revisamos los reportes y actuamos sobre contenido o cuentas que incumplan las [normas de la comunidad](https://thejowe.github.io/lockin/normas).
-
-Si cambiamos esta política de forma relevante, lo avisaremos dentro de la app y, si tienes email, por correo, al menos 30 días antes de que entre en vigor. La fecha de entrada en vigor figura al principio.
+Si cambiamos esta política de forma relevante, lo avisaremos en la app y, si tienes email, por correo, al menos 30 días antes de que entre en vigor.
 
 ---
 
-Nota editorial para el responsable, a retirar del texto publicado: la purga de reportes a 12 meses la implementa `purge_old_user_reports()` (migración `20261010120000`), programada a diario con pg_cron; antes de publicar, comprobar en producción que `select jobname, schedule from cron.job` la lista (si pg_cron no está disponible, hay que llamarla desde otro planificador y este texto no sería cierto). La eliminación de cuentas con 24 meses sin acceso es una facultad, no un proceso automático: el esquema no guarda una última actividad fiable, y borrar cuentas solo por inactividad se retiró tras la revisión de Codex por el riesgo de eliminar una cuenta en uso. Las migraciones de cuenta y de bloqueo anteriores ya están aplicadas en producción (10-oct-2026). Las instrucciones a las tiendas están en [cuestionario-privacidad.md](cuestionario-privacidad.md). Sus fuentes oficiales son las [reglas de privacidad de Apple](https://developer.apple.com/app-store/review/guidelines/#privacy) y la [política de datos de usuario de Google Play](https://support.google.com/googleplay/android-developer/answer/10144311?hl=es).
+Nota editorial, a retirar del texto publicado:
+
+- Se han retirado sesiones Lock-In, salas, videollamada, STUN de Google, rachas, valoraciones, acuerdo, recordatorios y alarmas exactas porque ya no están en la UI. El código y las tablas siguen en el repositorio y en la base de datos de producción (hay datos de prueba en `lockin_sessions`, `session_attendance` y `lockin_rooms`); mientras existan, o se borran o hay que mencionarlos.
+- **Cotejado con el código el 14-oct-2026:** los sugeridores de apertura del chat son reglas fijas, sin IA ni proveedor; la sesión se guarda con `expo-secure-store` en móvil; `expo-notifications` solo lo usa el recordatorio local de Lock-In (no hay push de match ni mensaje); `looking_for` y `active_mode` siguen escribiéndose en base de datos; `moderate-avatar` borra la subida pendiente tras cada revisión (mejor esfuerzo) y no hay barrido de huérfanos; el borrado de la foto al eliminar la cuenta es del cliente (mejor esfuerzo) y `delete_my_account` no toca Storage.
+- **Pendiente de decidir o confirmar:** (1) condiciones de la API de OpenAI aplicables (retención, entrenamiento, DPA): no afirmar nada hasta confirmarlo; (2) plazo definitivo de las fotos rechazadas o pendientes; (3) proveedor de correo (Resend o Brevo); (4) fecha de publicación; (5) que el job pg_cron `purge_old_user_reports()` exista en producción; (6) los plazos de revisión de reportes (72 h / 24 h) son un compromiso operativo, no una regla del código.
