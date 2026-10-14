@@ -10,10 +10,32 @@
  */
 
 import { fireEvent, render, screen } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
 import { buildProfile } from '@/data/test-fixtures';
 
 import { ProfileCard } from './profile-card';
+
+/** Contraste WCAG del color que llega al ojo, incluyendo el alfa del velo. */
+function contrastRatio(ink: string, background: string, scrim?: string): number {
+  const rgb = (hex: string) =>
+    [1, 3, 5].map((offset) => parseInt(hex.slice(offset, offset + 2), 16));
+  const alpha = scrim ? parseInt(scrim.slice(7, 9), 16) / 255 : 0;
+  const under = rgb(background);
+  const mixed = scrim
+    ? rgb(scrim).map((value, i) => value * alpha + under[i] * (1 - alpha))
+    : under;
+  const luminance = (channels: number[]) =>
+    channels
+      .map((value) => {
+        const channel = value / 255;
+        return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+      })
+      .reduce((sum, value, i) => sum + value * [0.2126, 0.7152, 0.0722][i], 0);
+  const a = luminance(rgb(ink));
+  const b = luminance(mixed);
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
 
 describe('ProfileCard', () => {
   it('ofrece Bloquear y Reportar desde las opciones de la tarjeta', async () => {
@@ -209,6 +231,42 @@ describe('ProfileCard: foto de fondo', () => {
   // El retrato es decorado y va oculto a los lectores de pantalla: el nombre ya
   // se lee en el texto de la tarjeta.
   const HIDDEN = { includeHiddenElements: true };
+
+  it.each([
+    ['blanco', '#FFFFFF'],
+    ['negro', '#000000'],
+    ['foto clara', '#E0E0E0'],
+    ['foto oscura', '#231C18'],
+  ])('protege barras y menú sobre %s con al menos 3:1', async (_name, background) => {
+    const base = buildProfile({ name: 'Núria' });
+    const profile = { ...base, avatar: { ...base.avatar, imageUrl: 'https://x/a.jpg' } };
+    await render(<ProfileCard profile={profile} />);
+
+    const scrim = screen.getByTestId('profile-card-top-scrim', HIDDEN);
+    expect(scrim).toHaveStyle(StyleSheet.absoluteFill);
+    expect(scrim.props.pointerEvents).toBe('none');
+    expect(scrim.props.accessibilityElementsHidden).toBe(true);
+    expect(scrim.props.importantForAccessibility).toBe('no-hide-descendants');
+    const veil = StyleSheet.flatten(scrim.props.style).backgroundColor;
+    const active = StyleSheet.flatten(screen.getByTestId('profile-card-page-about').props.style);
+    const idle = StyleSheet.flatten(screen.getByTestId('profile-card-page-schedule').props.style);
+    const menu = StyleSheet.flatten(screen.getByText('⋯', HIDDEN).props.style);
+
+    for (const ink of [active.backgroundColor, idle.backgroundColor, menu.color]) {
+      expect(contrastRatio(ink, background, veil)).toBeGreaterThanOrEqual(3);
+    }
+    // La activa destaca también frente a las inactivas, no solo frente a la foto.
+    expect(contrastRatio(active.backgroundColor, idle.backgroundColor)).toBeGreaterThanOrEqual(2);
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Ver cuándo trabaja' }));
+    expect(screen.getByTestId('profile-card-page-schedule')).toHaveStyle(active);
+    expect(screen.getByTestId('profile-card-page-about')).toHaveStyle(idle);
+    // El velo no altera la apertura ni el retorno del panel de seguridad.
+    await fireEvent.press(screen.getByRole('button', { name: 'Opciones de Núria' }));
+    expect(screen.getByRole('button', { name: 'Reportar a Núria' })).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar opciones' }));
+    expect(screen.getByText('Punto de partida')).toBeTruthy();
+  });
 
   it('con foto la pinta de fondo y no pinta el monograma', async () => {
     const base = buildProfile({ name: 'Núria' });

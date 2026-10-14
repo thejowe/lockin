@@ -2,9 +2,9 @@
  * Tarjeta de perfil del deck, a pantalla completa como las de Tinder.
  *
  * Presentacional: no sabe nada del gesto ni de la capa de datos. Toda la
- * tarjeta es el «retrato» —no hay fotos en el producto, así que lo pinta el
- * color del avatar con las iniciales en grande— y la información va abajo,
- * sobre un fundido a negro, empezando por el nombre y la edad.
+ * tarjeta es el «retrato»: la foto opcional o, sin ella, el color del avatar
+ * con las iniciales en grande. La información va abajo, sobre un fundido a
+ * negro, empezando por el nombre y la edad.
  *
  * Como Tinder con las fotos, la ficha se reparte en páginas que se pasan
  * tocando la mitad derecha (siguiente) o la izquierda (anterior), con las
@@ -25,7 +25,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { ThemedText } from '@/components/themed-text';
-import { FontFamily, Radii, Spacing } from '@/constants/theme';
+import { FontFamily, Radii, ScrimAlpha, Spacing } from '@/constants/theme';
 import {
   DayStrip,
   GithubSeal,
@@ -159,14 +159,40 @@ export function ProfileCard({
       </View>
 
       <View style={styles.top} pointerEvents="box-none">
+        {/* El velo cubre toda la zona de controles; solo se desvanece debajo.
+            Sobre blanco, la tinta activa y ⋯ superan 3:1 (también las inactivas).
+            Es decorado y deja pasar los toques a las mismas zonas de siempre. */}
+        <View
+          testID="profile-card-top-scrim"
+          pointerEvents="none"
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: `${theme.background}${ScrimAlpha}` },
+          ]}>
+          <Svg width="100%" height={Spacing.four} style={styles.topFade}>
+            <Defs>
+              <LinearGradient id={`top-fade-${profile.id}`} x1="0" y1="0" x2="0" y2="1">
+                <Stop
+                  offset="0"
+                  stopColor={theme.background}
+                  stopOpacity={parseInt(ScrimAlpha, 16) / 255}
+                />
+                <Stop offset="1" stopColor={theme.background} stopOpacity={0} />
+              </LinearGradient>
+            </Defs>
+            <Rect width="100%" height="100%" fill={`url(#top-fade-${profile.id})`} />
+          </Svg>
+        </View>
         <View style={styles.bars} pointerEvents="none">
           {pages.map((entry, index) => (
             <View
               key={entry}
+              testID={`profile-card-page-${entry}`}
               style={[
                 styles.bar,
-                { backgroundColor: theme.text },
-                index !== pageIndex && styles.barIdle,
+                { backgroundColor: index === pageIndex ? theme.text : theme.textMuted },
               ]}
             />
           ))}
@@ -433,6 +459,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.two,
     gap: Spacing.one,
   },
+  topFade: {
+    position: 'absolute',
+    top: '100%',
+    right: 0,
+    left: 0,
+  },
   bars: {
     flexDirection: 'row',
     gap: Spacing.one,
@@ -441,9 +473,6 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 3,
     borderRadius: Radii.pill,
-  },
-  barIdle: {
-    opacity: 0.3,
   },
   menu: {
     alignSelf: 'flex-end',

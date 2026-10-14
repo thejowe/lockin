@@ -1,5 +1,24 @@
 # TODO — descubrir
 
+## Contraste de los controles sobre fotos (2026-10-14)
+
+- [x] Codex: proteger localmente toda `styles.top` con el velo de
+  `theme.background` + `ScrimAlpha`, que solo se desvanece debajo del menú.
+  Barras activas y ⋯ usan la tinta principal; las inactivas usan `textMuted`.
+  Se conservan gestos, zonas táctiles, etiquetas accesibles, `portrait-photo`
+  y el funcionamiento de `SafetyPanel`. Corregido el comentario que decía que
+  el producto no tenía fotos.
+- [x] Regresión de contraste sobre blanco, negro y muestras claras/oscuras:
+  mínimo 3:1 para menú, barra activa e inactivas; mínimo 2:1 entre barras
+  activas e inactivas. Cambio de indicador y apertura/cierre del panel con foto
+  cubiertos. `profile-card.test.tsx`: 21/21; lint limpio.
+- [ ] Comprobación visual con capturas clara y oscura del resultado. La captura
+  del defecto es `e2e/artifacts/local/2026-10-14-foto-match-secuencia/51-clara-deck-pagina1.png`.
+  No cerrar esta casilla hasta inspeccionar evidencia del código nuevo.
+- [ ] Revisión del diff por Claude antes de fusionar, como exige
+  `docs/plan/PILAR-CODEX.md`. Rama `codex/contraste-deck`, worktree
+  `../lockin-codex-contraste-deck`; conservar ambos hasta la revisión.
+
 ## Deck de swipe
 - [x] Componente de tarjeta de perfil (avatar/iniciales, nombre, especialidades, qué busca, prompt destacado)
 - [x] Gesto de swipe (like derecha / pass izquierda) con `react-native-gesture-handler` + `react-native-reanimated` (ya instalados por el scaffold — no añadas otra librería de swipe)
