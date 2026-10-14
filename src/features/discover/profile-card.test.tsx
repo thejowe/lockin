@@ -17,7 +17,7 @@ import { buildProfile } from '@/data/test-fixtures';
 import { ProfileCard } from './profile-card';
 
 /** Contraste WCAG del color que llega al ojo, incluyendo el alfa del velo. */
-function contrastRatio(ink: string, background: string, scrim?: string): number {
+function contrastRatio(ink: string, background: string, scrim?: string, opacity = 1): number {
   const rgb = (hex: string) =>
     [1, 3, 5].map((offset) => parseInt(hex.slice(offset, offset + 2), 16));
   const alpha = scrim ? parseInt(scrim.slice(7, 9), 16) / 255 : 0;
@@ -32,7 +32,7 @@ function contrastRatio(ink: string, background: string, scrim?: string): number 
         return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
       })
       .reduce((sum, value, i) => sum + value * [0.2126, 0.7152, 0.0722][i], 0);
-  const a = luminance(rgb(ink));
+  const a = luminance(rgb(ink).map((value, i) => value * opacity + mixed[i] * (1 - opacity)));
   const b = luminance(mixed);
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
@@ -252,8 +252,12 @@ describe('ProfileCard: foto de fondo', () => {
     const idle = StyleSheet.flatten(screen.getByTestId('profile-card-page-schedule').props.style);
     const menu = StyleSheet.flatten(screen.getByText('⋯', HIDDEN).props.style);
 
-    for (const ink of [active.backgroundColor, idle.backgroundColor, menu.color]) {
-      expect(contrastRatio(ink, background, veil)).toBeGreaterThanOrEqual(3);
+    for (const { color, opacity } of [
+      { color: active.backgroundColor, opacity: active.opacity },
+      { color: idle.backgroundColor, opacity: idle.opacity },
+      { color: menu.color, opacity: menu.opacity },
+    ]) {
+      expect(contrastRatio(color, background, veil, opacity)).toBeGreaterThanOrEqual(3);
     }
     // La activa destaca también frente a las inactivas, no solo frente a la foto.
     expect(contrastRatio(active.backgroundColor, idle.backgroundColor)).toBeGreaterThanOrEqual(2);
