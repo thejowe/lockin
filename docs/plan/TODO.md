@@ -2,7 +2,118 @@
 
 Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>.md` — márcalo ahí, no aquí.
 
-## ▶ Estado del 2026-10-12, tarde: foto de perfil y puerta del correo
+## ▶ Estado vigente del 2026-10-14: solo cofundadores; foto desplegada, comprobaciones parciales
+
+**Dónde estamos:** cofounder busca exclusivamente **cofundadores**. Lock-In (sesiones, salas,
+vídeo y rachas) sigue oculto, con código y tablas conservados. La foto **ya está desplegada en
+producción** (`grrzmzktrhksbttpbblg`): migración, función, secreto, contrato de Storage,
+privacidad y cobertura resueltos. Quedan tres comprobaciones de dispositivo; no está agotado
+el trabajo verificable.
+
+**Fuentes de este corte:** todas las checklists `todo/*.md`, commits recientes hasta `7df6285`
+y Actions consultado con `gh`. También se leyó la corrección **sin commitear** de
+`todo/foto-perfil.md` en el worktree original `C:/Users/Usuari/Downloads/lockin`: reabre cierres
+con evidencia parcial de `d4d36e9`. Esa corrección no viaja al nuevo worktree; se respeta sin
+copiarla ni modificarla. Los pendientes siguientes prevalecen sobre las casillas amplias de la
+versión commiteada. Ninguna promesa de cierre de otra sesión cuenta como evidencia.
+
+### Resuelto con evidencia
+
+- **Despliegue de foto:** `20261012120000_avatar_photo.sql` aplicada (`6c3ebee`),
+  `moderate-avatar` desplegada con `verify_jwt: true` (`c38ed74`) y `OPENAI_API_KEY`
+  configurada; publicación demostrada el 2026-10-14. No queda pedir permiso para estos pasos.
+- **Contrato de Storage y columna:** `9023cd2` + `a6b45c8`; subida solo a pendientes propios,
+  sin lectura de pendientes ni escritura directa en `avatars` o `profiles.avatar_url`.
+  El contrato Supabase local está verde dentro del CI confirmado abajo.
+- **Privacidad de la foto:** `privacidad.md`, cuestionario e inventario actualizados
+  (`6c3ebee`, `6a1114a`); web pública desplegada con la declaración de envío a OpenAI para
+  moderación ([Web pública 38423985227](https://github.com/thejowe/lockin/actions/runs/38423985227),
+  `completed/success`, confirmado con `gh`). `CONCEPTO.md` ya recoge la foto opcional.
+- **Cobertura:** el rojo de `swipe-between-tabs.tsx` se resolvió con tests de gestos
+  (`baacae7`). El rechazo/fallo cerrado de moderación tiene 20 tests de `logic.mjs`;
+  esa cobertura no demuestra el fallo con clave ausente/inválida en dispositivo.
+- **Foto propia comprobada:** AVD + Supabase real, pasada sobre `8c767d4`, registrada en
+  `68480b3` y cotejo SQL en `d4d36e9`: publicar clara, reemplazar por oscura, persistir en
+  frío, cancelar, denegar permiso de cámara y quitar; `avatar_url`: `null` → URL → reemplazo
+  → `null`. Evidencia local: `e2e/artifacts/local/2026-10-14-foto-supabase/`.
+  No demuestra la foto como fondo del deck desde otra cuenta.
+- **Deck sin foto:** pantalla completa, páginas y sellos LIKE/NOPE comprobados con **mock**
+  el 2026-10-13 (`baacae7`, hallazgos en `foto-perfil.md`). No cierra el deck con foto real.
+- **Ascenso sin matches:** anónima con perfil previo, AVD + Supabase real sobre `170945b`:
+  `/register` → confirmación → `/profile` → deck; persiste tras reinicio en frío. Contraseña
+  guardada después desde Perfil. La cuenta no tenía matches: no demuestra conservar uno previo.
+  Sin perfil, la puerta activa lleva a `/register`; la bienvenida se vio con la puerta apagada.
+- **Otros cierres desde el tablero anterior:** Guardar lleva al primer error (`170945b`,
+  comprobado en `2767bbe`); migración de sesión a SecureStore comprobada (`e2dfc2f`);
+  deep links, URLs, backup y logs revisados (`7629f74`); Redirect URLs y Site URL resueltos
+  (`6e8965e`, `cf57065`). `session_both_attended` ya cierra por bloqueo y está desplegada
+  (`83f466a`, `878d98a`); consulta de fechas futuras: 0 filas, nada que sanear (`16db635`).
+  La revisión visual en iPhone y Liquid Glass constan cerradas en `visual.md` (`ad96f68`).
+
+### Actions confirmado sobre `7df6285`
+
+Los tres runs tienen `headSha` = `7df6285c8a7d04217c5a4b17330ac694491d74ec`,
+`status: completed` y `conclusion: success`, leídos con `gh run view` el 2026-10-14.
+
+| Workflow | Run | Alcance confirmado |
+|---|---|---|
+| CI | [38616778832](https://github.com/thejowe/lockin/actions/runs/38616778832) | Todos los jobs verdes, incluidos Tests, Funciones Edge y Contrato Supabase local |
+| Schema drift | [38616778924](https://github.com/thejowe/lockin/actions/runs/38616778924) | Huella local/controles negativos y comparación remota verdes |
+| E2E Android | [38616778864](https://github.com/thejowe/lockin/actions/runs/38616778864) | `supabase`, `mock` y `registro` verdes |
+
+No hay rojo esperado por `avatar_url` ni huella histórica que regenerar: se calcula desde las
+migraciones en cada run (`2bdc70e`). E2E mantiene `LOCKIN_FLOWS = false`; estos verdes no
+recorren sesiones, valoración, rachas o salas, ni cierran las comprobaciones de foto siguientes.
+
+### Pendiente ejecutable — detalle en `todo/foto-perfil.md`
+
+- [ ] Foto clara y oscura como fondo del deck **desde otra cuenta**, con texto legible en
+  todas las páginas; evidencia de dispositivo contra Supabase real.
+- [ ] Ascenso de anónima con perfil y **match previo**: conservar el mismo uid, perfil y match
+  después de confirmar correo y tras reinicio en frío. El caso sin matches no cierra este hito.
+- [ ] Fallo cerrado **en dispositivo con clave ausente/inválida**: mostrar el error y conservar
+  la foto anterior. No ejecutado; se mantiene pendiente y no se cambia el secreto de producción
+  para esta tanda. Los tests unitarios y el éxito con clave válida no sustituyen esta prueba.
+
+**Al retomar:** seguir el detalle corregido de `foto-perfil.md`; registrar commit, backend y
+evidencia de cada escenario antes de cerrar su casilla. Una pasada anunciada en otra sesión
+no cambia este estado hasta tener el resultado documentado.
+
+### Riesgos aceptados y decisiones ya tomadas — sin orden de implementación activa
+
+- `has_profile_block` como oráculo, WebRTC sin TURN y `npm audit` sin cambio de dependencias:
+  aceptados en `seguridad.md`; reabrir el audit al subir de SDK.
+- No contratar Pro para leaked password protection; captcha aplazado, Turnstile elegido y
+  disparador de reapertura = abuso visible de altas anónimas (`seguridad.md`).
+- Realtime público se mantiene para `postgres_changes`; vídeo/presencia usan canales privados
+  con RLS. La limitación de revocar canales ya autorizados está aceptada en `PLAN.md`.
+- Interbloqueo raro `40P01` al borrar a la vez convocante e invitada: riesgo conocido, sin
+  rediseño previsto (`salas.md`). Purga de cuentas inactivas retirada; solo se reabre con una
+  columna fiable de última actividad (`datos.md`).
+
+**Deuda del cliente aún abierta:** canal retenido cuando el bloqueo ya existía (`perfil.md`,
+P1). No está resuelto por el cierre de `session_both_attended` ni por el verde de CI; queda
+separado de las comprobaciones de foto y de la limitación aceptada del servidor.
+
+### Del usuario / preparación de lanzamiento
+
+- SMTP propio: falta cuenta de Resend o Brevo y configuración; el límite actual de GoTrue
+  (~2 correos/hora) condiciona las pruebas. Contacto de soporte ya decidido; sustituirlo por
+  un buzón dedicado sigue como recomendación, sin evidencia de creación (`seguridad.md`, D02/D05).
+- D01–D12 están decididas y la web pública está desplegada. Queda validar el binario final y
+  completar los formularios de tiendas (incluida la foto y la declaración de
+  `SCHEDULE_EXACT_ALARM`, que se decidió mantener); no consta envío a las consolas.
+- Pendientes del Lock-In oculto: revisión de decisiones de la spec de salas y videollamada
+  en dos móviles reales, incluido iPhone. El plugin iOS compiló para **simulador** (`1675203`);
+  eso no demuestra cámara/audio reales. Se conservan en sus bloques, fuera del frente activo
+  de búsqueda de cofundadores; no reabrir la revisión visual/Liquid Glass ya cerrada.
+
+**Actualizó:** Codex, 2026-10-14, para reconciliar el tablero con las checklists, los commits y
+Actions, y corregir cierres que excedían la evidencia disponible. Solo se modifica este TODO.
+
+Las entradas siguientes se conservan como histórico; sus pendientes no sustituyen este corte.
+
+## ▶ Estado del 2026-10-12, tarde: foto de perfil y puerta del correo (histórico)
 
 **Dónde estamos:** el código de las dos cosas está hecho, revisado con `codex review` y empujado
 (`929c92d` puerta del correo; `8698f5a`…`07a3881` foto). **La foto no está en producción.** El
