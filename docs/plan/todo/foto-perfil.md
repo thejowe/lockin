@@ -184,3 +184,20 @@ ignorada por git).**
   Higiene: borradas `9b48456c…` y `c1c67902…` (PuertaQA). **Queda `1518de3f…`** (anónima sin
   perfil ni sesión recuperable, del intento de inyección); inofensiva, borrable desde el dashboard.
   Cupo GoTrue: 2 correos en la hora (15:07 y 17:18).
+
+**2026-10-14 18:02 UTC · commit `6992b8a` · AVD `lockin` · backend Supabase real
+(`grrzmzktrhksbttpbblg`) · evidencia en `e2e/artifacts/local/2026-10-14-foto-perfil/` (local).**
+
+- **Foto de perfil contra Supabase real — ⚠️ NO comprobada, casilla sin marcar.** El AVD arranca en
+  «Crea tu cuenta» sin sesión (`00-estado.png`). Elegir foto exige una cuenta con email confirmado
+  (la función da 401 a anónimos y la puerta cierra el perfil) y no hay sesión reutilizable ni buzón
+  que el comprobador pueda leer; el correo de GoTrue tiene tope de ~2/hora (último `mail.send`
+  17:18 UTC) y confirmar requiere que una persona pinche el enlace. No se forzó (nada de insertar
+  en `auth.users`). No se envió ningún correo ni se creó ninguna cuenta.
+- **Falla cerrado — ⚠️ sin marcar.** Con la clave válida solo es comprobable el éxito del punto
+  anterior (pendiente); el modo «clave ausente» ya no se puede reproducir sin quitar el secreto.
+  Cuando la foto se publique en el AVD, esta casilla queda cubierta por ese éxito + los 20 tests de
+  `logic.mjs`.
+- Para retomar: una persona con cuenta confirmada inicia sesión en el AVD («Ya tengo cuenta»), o
+  cupo de correo + alguien que pinche el enlace. Las 4 pruebas (clara, oscura, quitar, permiso
+  denegado, cancelar) pueden hacerse entonces en una sola pasada.
