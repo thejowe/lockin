@@ -250,3 +250,46 @@ test('remove sin foto no falla y también barre las pendientes', async () => {
   assert.equal(res.status, 200);
   assert.deepEqual(d.calls, ['setUrl:null:any', 'removeAllPending:u1']);
 });
+
+test('la pendiente se borra en todos los desenlaces con path propio', async () => {
+  const cases = [
+    deps(),
+    deps({ moderate: async () => ({ ...CLEAN, flagged: true }) }),
+    deps({
+      moderate: async () => {
+        throw new Error('proveedor');
+      },
+    }),
+    deps({ moderate: async () => ({ flagged: false, scores: {} }) }),
+    deps({ downloadPending: async () => null }),
+    deps({
+      currentAvatar: async () => {
+        throw new Error('db');
+      },
+    }),
+    deps({ setAvatarUrl: async () => false }),
+  ];
+  for (const d of cases) {
+    await run(set(), d);
+    assert.ok(d.calls.includes('removePending:u1/p.jpg'), JSON.stringify(d.calls));
+  }
+});
+
+test('si borrar la pendiente falla, el resultado no cambia (huérfano que purga la retención)', async () => {
+  const failing = async () => {
+    throw new Error('storage');
+  };
+  const ok = await run(set(), deps({ removePending: failing }));
+  assert.equal(ok.status, 200);
+  const rejected = await run(
+    set(),
+    deps({ removePending: failing, moderate: async () => ({ ...CLEAN, flagged: true }) }),
+  );
+  assert.equal(rejected.status, 422);
+});
+
+test('path ajeno: no se borra nada (no es una pendiente propia)', async () => {
+  const d = deps();
+  await run(set('u2/p.jpg'), d);
+  assert.equal(d.calls.some((c) => c.startsWith('removePending')), false);
+});

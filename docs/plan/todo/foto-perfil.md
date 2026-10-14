@@ -380,3 +380,58 @@ Evidencia local, ignorada: `e2e/artifacts/local/2026-10-14-avatar-fallo-cerrado/
 
 Comprobó y cerró Codex por encargo del usuario: ambos errores quedaron demostrados en dispositivo,
 con función y cliente reales, conservación verificable de la foto y límites del backend explícitos.
+
+## Auditoría de Storage y diseño de bucket privado (2026-10-14, T4 de tiendas-cumplimiento)
+
+Migración nueva, SIN aplicar: `supabase/migrations/20261014140000_avatar_storage_cleanup.sql`.
+
+### Borrado de `avatar-uploads` en `moderate-avatar`
+
+- Aprobar, rechazar por contenido, imagen inválida/inexistente, proveedor caído o
+  respuesta incompleta, fallo al leer la foto actual y carrera (409): en todos el
+  `finally` borra la pendiente (`removePending`). Cubierto por tests nuevos en
+  `logic.test.mjs` (tabla de desenlaces).
+- `remove` barre además todo `avatar-uploads/<uid>/`.
+- Huecos que quedan, por diseño: (a) subida que el cliente nunca notificó
+  (app cerrada entre subir y llamar), (b) `removePending` que falla (es de mejor
+  esfuerzo; el resultado al usuario no cambia, también testeado). No se barre toda
+  la carpeta tras un `set` porque podría matar una subida concurrente legítima.
+- Retención: `public.purge_stale_avatar_uploads()` borra objetos de
+  `avatar-uploads` con más de 24 h; pg_cron cada hora (`10 * * * *`) si la
+  extensión existe; si no, se programa a mano. Sin permisos para
+  `public/anon/authenticated`.
+
+### Borrado en servidor al eliminar la cuenta
+
+`delete_my_account()` borra ahora de `storage.objects` los objetos de
+`avatars` y `avatar-uploads` bajo `<uid>/` antes de borrar `auth.users` (mantiene
+el bloqueo de perfil de `rooms_survive_host_deletion`). El cliente sigue llamando
+a `deleteAvatar` como primer intento. Límite: SQL elimina el objeto para la API
+(la URL pública deja de resolver) pero no los bytes del backend S3; es un residuo
+sin URL ni metadatos. Si hiciera falta borrado físico garantizado, el camino es
+la Storage API con service role (Edge Function disparada por webhook de
+`auth.users` delete o job), no SQL. Sin verificar contra Supabase real (el
+Postgres embebido no tiene `storage`): comprobar tras aplicar que el
+`delete` por SQL no lo bloquea `storage.protect_delete` (se fija
+`storage.allow_delete_query`) y que la URL devuelve 404.
+
+### Bucket `avatars` privado con URLs firmadas — NO implementado
+
+Valorado; no es acotado, se deja el diseño:
+
+- `profiles.avatar_url` hoy es una URL pública permanente y su CHECK exige
+  `.../object/public/avatars/<id>/...`. Con bucket privado habría que guardar la
+  ruta (`<uid>/<uuid>.jpg`), no una URL: migración de columna y CHECK, y
+  retrocompatibilidad con filas existentes.
+- Cada lectura (deck, perfil, chat, salas, matches) necesitaría
+  `createSignedUrls` por lote al mapear filas (`mappers.ts`), con TTL y
+  regeneración al caducar; hoy `imageUrl` es estático.
+- Caché de imagen: la URL firmada cambia en cada emisión; hay que fijar
+  `cacheKey` por ruta en expo-image o se pierde la caché y el prefetch del deck.
+- Realtime: los cambios llegan con la ruta, no con URL usable; cada cliente debe
+  re-firmar tras un evento.
+- Qué ganaría: solo conocedores de la URL dejan de poder verla indefinidamente y
+  la revocación pasa a ser real. Hoy el UUID aleatorio de la ruta ya la hace
+  inadivinable, y las fotos pasan moderación.
+- Coste estimado: migración + `mappers`, `avatar.ts`, la Edge Function (devolver
+  ruta), deck/prefetch y tests de contrato: un bloque propio, no una tarea de T4.
