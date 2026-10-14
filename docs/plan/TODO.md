@@ -93,7 +93,7 @@ propia; no se deducen del verde de Actions.
 
 **Contraste del deck — cerrado (2026-10-14):** `codex/contraste-deck` (`1a2bd7c`, `0bf7e60`) revisado por Claude (contraste, gestos, indicadores de página, menú de seguridad; 83/83 tests de `discover`, typecheck y lint limpios) y fusionado en principal. Evidencia Android con componentes reales y backend mock en `todo/descubrir.md`; no sustituye la comprobación contra Supabase real.
 
-**Al retomar:** foto/correo y contraste cerrados. Falta verificar CI, contrato Supabase, Schema drift y E2E sobre el resultado integrado. Para lanzamiento sigue pendiente configurar SMTP propio y comprobar la entrega real de correo. `codex/tablero-real` es archivo histórico consolidado: no se fusiona. Rama y worktree de contraste ya se pueden retirar (con la receta de PowerShell: `worktree remove` sigue junctions).
+**Al retomar:** foto/correo y contraste cerrados. CI, Schema drift y E2E verdes sobre `1e1cdbb` (runs 38646032324/…342/…333; el contrato va dentro de CI). Para lanzamiento sigue pendiente configurar SMTP propio y comprobar la entrega real de correo. `codex/tablero-real` es archivo histórico consolidado: no se fusiona. Worktrees retirados; `codex/tablero-real` queda como rama de archivo sin worktree. Evidencia del contraste copiada a `e2e/artifacts/local/2026-10-14-contraste-deck/` (sin `harness`).
 
 ### Riesgos aceptados y decisiones ya tomadas — sin orden de implementación activa
 
