@@ -36,11 +36,7 @@
   XML, logcat, logs de validación y hash del APK conservados. APK de prueba
   desinstalado al terminar; emulador encendido, aplicación personal intacta.
   Captura del defecto: `e2e/artifacts/local/2026-10-14-foto-match-secuencia/51-clara-deck-pagina1.png`.
-- [ ] Revisión del diff por Claude antes de fusionar, como exige
-  `docs/plan/PILAR-CODEX.md`. Rama `codex/contraste-deck`, worktree
-  `../lockin-codex-contraste-deck`; conservar ambos hasta la revisión.
-  Intento registrado en `claude-review.json`: rechazado por cuota de sesión
-  (`429 usage_limit_reached`), sin revisión completada. **No fusionado.**
+- [x] Revisión del diff por Claude (2026-10-14), como exige `docs/plan/PILAR-CODEX.md`: sin defectos; app solo-oscura, velo coherente con `match-modal`, `pointerEvents="none"`, gestos y zonas táctiles intactos, 83/83 tests de `discover`, typecheck y lint limpios. Fusionado en principal.
 
 ## Deck de swipe
 - [x] Componente de tarjeta de perfil (avatar/iniciales, nombre, especialidades, qué busca, prompt destacado)

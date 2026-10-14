@@ -91,25 +91,9 @@ propia; no se deducen del verde de Actions.
   en `e2e/artifacts/local/2026-10-14-avatar-fallo-cerrado/`, HEAD `72c1425`.
   No se accedió a producción ni se alteró su secreto. Detalle y límites en `todo/foto-perfil.md`.
 
-**Observación visual conservada:** las barras de página y el botón `⋯` contrastan poco sobre
-la foto clara; el texto de perfil se lee en las seis capturas. El arreglo ya está commiteado en
-`codex/contraste-deck` (`1a2bd7c`, `0bf7e60`), todavía **sin fusionar**: velo superior con tokens
-existentes, barras distinguibles y menú visible. Sus 21 tests se han vuelto a ejecutar en verde;
-la evidencia Android con componentes reales y backend mock/fixtures está registrada en
-`todo/descubrir.md`, en esa rama. No sustituye la comprobación previa contra Supabase real.
+**Contraste del deck — cerrado (2026-10-14):** `codex/contraste-deck` (`1a2bd7c`, `0bf7e60`) revisado por Claude (contraste, gestos, indicadores de página, menú de seguridad; 83/83 tests de `discover`, typecheck y lint limpios) y fusionado en principal. Evidencia Android con componentes reales y backend mock en `todo/descubrir.md`; no sustituye la comprobación contra Supabase real.
 
-**Integración pendiente:** `PILAR-CODEX.md` exige revisión de Claude para código escrito por
-Codex. El intento registrado terminó con `429 usage_limit_reached`, sin revisión completada;
-la cuota indica restablecimiento a las 10:00 (Etc/GMT+12). Conservar rama y worktree hasta
-completar la revisión y fusionar. La documentación de foto/correo ya está consolidada en `5de444c`.
-
-**Al retomar:** las tres comprobaciones de foto/correo están cerradas con los alcances descritos.
-Completar la revisión de Claude del contraste; después, fusionar su rama y verificar CI sobre
-el resultado integrado. Para lanzamiento sigue pendiente configurar SMTP propio y comprobar
-la entrega real de correo. No quedan cambios de producto sin commitear en
-el worktree principal ni en el de contraste. El primer corte de tablero quedó archivado en
-`codex/tablero-real` (`7572b2f`), ya consolidado y actualizado en `5de444c` y los cierres posteriores.
-Esa rama conserva historia; la integración pendiente es únicamente `codex/contraste-deck`.
+**Al retomar:** foto/correo y contraste cerrados. Falta verificar CI, contrato Supabase, Schema drift y E2E sobre el resultado integrado. Para lanzamiento sigue pendiente configurar SMTP propio y comprobar la entrega real de correo. `codex/tablero-real` es archivo histórico consolidado: no se fusiona. Rama y worktree de contraste ya se pueden retirar (con la receta de PowerShell: `worktree remove` sigue junctions).
 
 ### Riesgos aceptados y decisiones ya tomadas — sin orden de implementación activa
 
