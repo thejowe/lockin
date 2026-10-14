@@ -15,6 +15,7 @@
 
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
+import { TERMS_VERSION } from '@/constants/legal';
 import { buildProfileInput } from '@/data/test-fixtures';
 
 import { renderRoute, repositories, resetRepositories, resetRouter, router } from '../routes';
@@ -70,6 +71,7 @@ jest.mock('@/features/profile', () => {
 
 /** Deja una ficha guardada antes de montar la pantalla. */
 async function withProfile(name = 'Perfil Prueba') {
+  await repositories.session.acceptTerms(TERMS_VERSION);
   return repositories.profiles.saveCurrent(buildProfileInput({ name }));
 }
 
@@ -130,6 +132,17 @@ describe('ProfileScreen', () => {
       expect(screen.getByText('Editar perfil')).toBeTruthy();
       expect(screen.getByText('Tu ficha')).toBeTruthy();
       expect(screen.getByRole('button', { name: 'Guardar cambios' })).toBeTruthy();
+    });
+
+    it('sin aceptar la versión vigente, editar pide aceptar antes del formulario', async () => {
+      await repositories.profiles.saveCurrent(buildProfileInput({ name: 'Perfil Prueba' }));
+
+      await renderRoute(<ProfileScreen />);
+      await waitFor(() => expect(screen.getByText('Perfil')).toBeTruthy());
+      await fireEvent.press(screen.getByRole('button', { name: 'Editar perfil' }));
+
+      expect(screen.getByText('Términos y Normas')).toBeTruthy();
+      expect(screen.queryByRole('button', { name: 'Guardar cambios' })).toBeNull();
     });
 
     it('descartar vuelve a lectura sin tocar los datos', async () => {

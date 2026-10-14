@@ -392,6 +392,28 @@ export function createSupabaseRepositories({
 
     // El cliente inyectado, no el global: un actor secundario borra su cuenta.
     deleteMyAccount: () => deleteMyAccount(getClient()),
+
+    async getTermsAcceptance() {
+      const userId = await getUserId();
+      const { data, error } = await getClient()
+        .from('terms_acceptances')
+        .select('version, accepted_at')
+        .eq('user_id', userId)
+        .order('version', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data
+        ? { version: data.version, acceptedAt: new Date(data.accepted_at).toISOString() }
+        : null;
+    },
+
+    async acceptTerms(version) {
+      await getUserId();
+      const { data, error } = await getClient().rpc('accept_terms', { p_version: version });
+      if (error) throw error;
+      return { version, acceptedAt: new Date(data as string).toISOString() };
+    },
   };
 
   const profiles: ProfileRepository = {

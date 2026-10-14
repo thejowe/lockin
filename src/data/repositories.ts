@@ -34,6 +34,7 @@ import type {
   SessionProposalInput,
   SessionRating,
   SessionRatingEntry,
+  TermsAcceptance,
 } from './types';
 
 /** Cancela una suscripción. */
@@ -62,6 +63,16 @@ export interface SessionRepository {
    * local; no abre una cuenta nueva para ejecutar la operación.
    */
   deleteMyAccount(): Promise<void>;
+  /**
+   * La última aceptación de Términos y Normas de esta persona, o `null` si
+   * nunca aceptó. Quien llama compara `version` con `TERMS_VERSION`.
+   */
+  getTermsAcceptance(): Promise<TermsAcceptance | null>;
+  /**
+   * Registra la aceptación de `version`. Idempotente: repetirla conserva la
+   * fecha original. Lanza si `version` no tiene formato `AAAA-MM-DD`.
+   */
+  acceptTerms(version: string): Promise<TermsAcceptance>;
 }
 
 /** Fichas de persona: la propia y las de los demás. */

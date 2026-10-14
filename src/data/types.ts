@@ -254,6 +254,14 @@ export interface Session {
   activeMode: ModePreference | null;
 }
 
+/** Aceptación de Términos y Normas: qué versión y cuándo. */
+export interface TermsAcceptance {
+  /** Versión aceptada (`AAAA-MM-DD`); se compara con `TERMS_VERSION`. */
+  version: string;
+  /** ISO 8601 con `Z`. */
+  acceptedAt: string;
+}
+
 /** Opciones del cierre de sesión; el borrado de cuenta usa el alcance local. */
 export interface SignOutOptions {
   /** La persona ya ha confirmado que acepta perder una cuenta irrecuperable. */

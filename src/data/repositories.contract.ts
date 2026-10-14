@@ -1178,6 +1178,30 @@ export function describeRepositoryContract(backend: ContractBackend): void {
       });
     });
 
+    describe('aceptación de términos', () => {
+      it('sin aceptar es null; aceptar registra versión y fecha, de forma idempotente', async () => {
+        expect(await repositories.session.getTermsAcceptance()).toBeNull();
+
+        const first = await repositories.session.acceptTerms('2026-10-14');
+        expect(first.version).toBe('2026-10-14');
+        expect(Number.isNaN(Date.parse(first.acceptedAt))).toBe(false);
+
+        const again = await repositories.session.acceptTerms('2026-10-14');
+        expect(again.acceptedAt).toBe(first.acceptedAt);
+        expect(await repositories.session.getTermsAcceptance()).toEqual(first);
+      });
+
+      it('una versión posterior pasa a ser la última aceptada', async () => {
+        await repositories.session.acceptTerms('2026-10-14');
+        const next = await repositories.session.acceptTerms('2026-11-01');
+        expect((await repositories.session.getTermsAcceptance())?.version).toBe(next.version);
+      });
+
+      it('rechaza una versión con formato inválido', async () => {
+        await expect(repositories.session.acceptTerms('v1')).rejects.toThrow();
+      });
+    });
+
     describe('sessions', () => {
       const MINUTE = 60_000;
       /** Casos que saltan minutos: solo en backends con reloj simulado. */

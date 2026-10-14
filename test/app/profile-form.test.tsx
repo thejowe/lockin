@@ -39,11 +39,16 @@ const mockInput = buildProfileInput({ name: 'Núria Bosch' });
 /** Lo que responde la puerta del registro en cada test. */
 const mockGate: { value: 'checking' | 'required' | 'open' } = { value: 'open' };
 
+/** Lo que responde la puerta de Términos y Normas en cada test. */
+const mockTerms: { value: 'checking' | 'accepted' | 'required' } = { value: 'accepted' };
+
 jest.mock('@/features/profile', () => {
   const { Pressable, Text } = require('react-native');
 
   return {
     useRegistrationGate: () => mockGate.value,
+    useTermsGate: () => ({ gate: mockTerms.value, refresh: jest.fn() }),
+    TermsAcceptance: () => <Text>Términos y Normas</Text>,
     ProfileForm: (props: ProfileFormProps) => {
       mockForm.props = props;
       return (
@@ -61,6 +66,7 @@ jest.mock('@/features/profile', () => {
 beforeEach(() => {
   mockForm.props = null;
   mockGate.value = 'open';
+  mockTerms.value = 'accepted';
   resetRepositories();
   resetRouter();
 });
@@ -85,6 +91,15 @@ describe('ProfileFormScreen', () => {
       expect(mockForm.props).toBeNull();
       expect(screen.queryByText('Crear perfil')).toBeNull();
     });
+  });
+
+  it('sin Términos y Normas aceptados pide la aceptación en vez de pintar el formulario', async () => {
+    mockTerms.value = 'required';
+
+    await renderRoute(<ProfileFormScreen />);
+
+    expect(screen.getByText('Términos y Normas')).toBeTruthy();
+    expect(mockForm.props).toBeNull();
   });
 
   it('sitúa el paso y explica qué se pide en la cabecera del formulario', async () => {
