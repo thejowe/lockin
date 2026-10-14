@@ -63,8 +63,7 @@ Deploy»). Se resuelve de dos maneras; las dos son decisión del usuario.
   `web-publica-github-pages`).
 - [x] **[Claude]** (hecho 2026-10-13) `docs/plan/CONCEPTO.md`: quitar «el MVP no sube imágenes». Los comentarios
   históricos de las migraciones viejas no se reescriben.
-- [ ] **[Claude]** Si el flujo de `supabase/README.md` lo manda, regenerar la huella esperada
-  (`supabase/evidence/…/expected.txt`) tras aplicar la migración. No editarla a mano.
+- [x] **[Claude]** (resuelto 2026-10-14, sin regenerar) El flujo de `supabase/README.md` («Cotejo SQL en Actions») no manda guardar la huella: `expected.txt` se obtiene en cada run aplicando las migraciones con `db reset --local --no-seed` y el remoto se compara contra ella; `supabase/evidence/<run>/` son solo registros históricos de runs, no entrada del job. Evidencia: Schema drift verde tras aplicar `avatar_photo` (run 38438215662, push `fix(foto): el contrato de Storage crea sus propios usuarios`, 2026-10-13).
 - [x] **[decisión del usuario]** (resuelto 2026-10-13 con tests del paginador, `baacae7`; CI y Schema drift verdes) CI rojo desde antes de este trabajo: `Tests` falla el suelo de
   cobertura de funciones (93,6 % < 94,27 %) por `src/components/swipe-between-tabs.tsx`
   (42 % de funciones, commit `971ed17`). El código de la foto está casi al 100 %. O se escriben
