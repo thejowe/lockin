@@ -20,6 +20,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { CURRENT_USER_ID } from '@/data/mock';
 import { SEED_RECIPROCAL_IDS } from '@/data/mock/seed';
+import { TERMS_VERSION } from '@/constants/legal';
 import { buildProfileInput } from '@/data/test-fixtures';
 
 import {
@@ -37,7 +38,8 @@ jest.mock('expo-router', () => require('../routes').expoRouterMock());
 const COUNTERPART_ID = SEED_RECIPROCAL_IDS[0];
 
 /** Crea un match real en el mock y devuelve su id y el perfil del otro lado. */
-async function seedMatch() {
+async function seedMatch(options: { acceptTerms?: boolean } = {}) {
+  if (options.acceptTerms !== false) await repositories.session.acceptTerms(TERMS_VERSION);
   await repositories.profiles.saveCurrent(buildProfileInput());
   const { match } = await repositories.discovery.recordDecision(COUNTERPART_ID, 'like');
   if (!match) throw new Error('El seed no ha generado match');
@@ -56,6 +58,7 @@ beforeEach(() => {
 describe('ChatScreen', () => {
   describe('cuando el id no resuelve', () => {
     it('lo explica en vez de dejar un hilo vacío', async () => {
+      await repositories.session.acceptTerms(TERMS_VERSION);
       setSearchParams({ matchId: 'no-existe' });
 
       await renderRoute(<ChatScreen />);
@@ -71,6 +74,7 @@ describe('ChatScreen', () => {
 
     it('si además ha fallado la carga, lo cuenta como fallo y no como match borrado', async () => {
       jest.spyOn(repositories.matches, 'getById').mockRejectedValue(new Error('sin red'));
+      await repositories.session.acceptTerms(TERMS_VERSION);
       setSearchParams({ matchId: 'da-igual' });
 
       await renderRoute(<ChatScreen />);
@@ -98,6 +102,14 @@ describe('ChatScreen', () => {
       await waitFor(() => expect(screen.getByText(counterpart.name)).toBeTruthy());
       // Desde el 2026-10-12 el producto es solo cofundador: el hueco de sesión no se pinta.
       expect(screen.queryByLabelText('Agendar sesión Lock-In')).toBeNull();
+    });
+
+    it('sin Términos y Normas aceptados pide aceptarlos y no muestra el hilo', async () => {
+      await seedMatch({ acceptTerms: false });
+
+      await renderRoute(<ChatScreen />);
+
+      await waitFor(() => expect(screen.queryByText('Para romper el hielo')).toBeNull());
     });
 
     it('sin mensajes ofrece icebreakers', async () => {

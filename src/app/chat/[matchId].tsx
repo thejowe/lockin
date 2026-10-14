@@ -41,7 +41,9 @@ import { ObjectionableContentError } from '@/features/safety/content-filter';
 import { MessageReportPanel } from '@/features/safety/message-report-panel';
 import { SafetyMenuButton, SafetyPanel } from '@/features/safety/safety-panel';
 import { useTheme } from '@/hooks/use-theme';
-import { RequireVerifiedEmail } from '@/features/profile';
+import { RequireVerifiedEmail, TermsAcceptance, useTermsGate } from '@/features/profile';
+import { Screen } from '@/components/ambient-background';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 function ChatScreenContent() {
   const theme = useTheme();
@@ -271,11 +273,29 @@ const styles = StyleSheet.create({
   },
 });
 
+/** Sin Términos y Normas aceptados (versión vigente) no se entra a chatear. */
+function RequireTerms({ children }: { children: React.ReactNode }) {
+  const terms = useTermsGate();
+  if (terms.gate === 'checking') return null;
+  if (terms.gate === 'required') {
+    return (
+      <Screen ambient="plum">
+        <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+          <TermsAcceptance onAccepted={terms.refresh} />
+        </SafeAreaView>
+      </Screen>
+    );
+  }
+  return <>{children}</>;
+}
+
 /** Sin email confirmado no se ve nada de dentro: ver `RequireVerifiedEmail`. */
 export default function ChatScreen() {
   return (
     <RequireVerifiedEmail>
-      <ChatScreenContent />
+      <RequireTerms>
+        <ChatScreenContent />
+      </RequireTerms>
     </RequireVerifiedEmail>
   );
 }

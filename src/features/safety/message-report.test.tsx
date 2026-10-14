@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import ChatScreen from '@/app/chat/[matchId]';
 import { DataProvider } from '@/data';
 import { createMockRepositories, createMockStore } from '@/data/mock';
+import { TERMS_VERSION } from '@/constants/legal';
 import { buildProfileInput } from '@/data/test-fixtures';
 
 let mockMatchId = '';
@@ -21,6 +22,7 @@ describe('reportar un mensaje desde el chat', () => {
   async function setup() {
     const store = createMockStore();
     const repositories = createMockRepositories(store);
+    await repositories.session.acceptTerms(TERMS_VERSION);
     await repositories.profiles.saveCurrent(buildProfileInput());
     const { match } = await repositories.discovery.recordDecision('seed-nuria', 'like');
     mockMatchId = match!.id;
