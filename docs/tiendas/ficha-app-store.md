@@ -1,6 +1,6 @@
 # cofounder — ficha de App Store (español)
 
-Preparada el 9 de octubre de 2026 sobre `0cddbbbae3a894c64e2be04f2c74c081602db8e6`. Los textos de los bloques siguientes son para copiar en los campos de la consola; las notas de preparación no forman parte de la descripción.
+Revisada el 14 de octubre de 2026 tras el pivote del 12-oct-2026 (solo búsqueda de cofundador). Copiar únicamente el contenido de cada campo.
 
 ## Nombre
 
@@ -8,101 +8,89 @@ cofounder
 
 ## Subtítulo
 
-Cofundador o compañero de foco
+Encuentra con quién fundar
 
-## Descripción corta / texto promocional
+## Texto promocional
 
-Encuentra un cofundador o compañero de enfoque. Haz match, conversa y organiza sesiones con Pomodoro para avanzar juntos.
+Desliza perfiles de personas que quieren empezar algo, haz match cuando el interés es mutuo y conversa para ver si encajáis como cofundadores.
 
-Apple no tiene el mismo campo «descripción corta» que Google Play. Este texto se puede usar como texto promocional opcional.
+## Descripción
 
-## Descripción larga
+¿Tienes ganas de construir algo y te falta con quién? cofounder te ayuda a encontrar cofundador o cofundadora entre personas que están en un punto parecido al tuyo.
 
-Encuentra con quién empezar a construir o con quién concentrarte.
+No hace falta tener nada construido. Puedes no tener idea todavía, tener una idea sin empezar o haber probado algo pequeño. Aquí nadie contrata a nadie: la relación es entre pares, y ambos aportáis y decidís juntos.
 
-cofounder conecta a personas que buscan un cofundador o un compañero de trabajo concentrado. Puedes estar sin idea, tener una idea sin empezar o haber probado algo pequeño. La relación es entre pares: ambos aportáis y decidís juntos.
+TU PERFIL
+Cuenta quién eres y qué aportas: nombre, edad, ubicación y zona horaria, especialidades, punto de partida, disponibilidad y nivel de ambición. Responde a una o dos preguntas breves para que se note cómo piensas, no solo lo que sabes hacer. Si quieres, añade enlaces a GitHub, portfolio o LinkedIn.
 
-ELIGE TU MODO
+También puedes añadir una foto. Es opcional y solo se publica después de pasar una revisión automática de seguridad.
 
-Par: descubre personas por sus especialidades y lo que buscan complementar. Cuenta qué dominas, qué quieres construir, tu disponibilidad y tu nivel de compromiso.
+DESLIZA
+Los perfiles aparecen a pantalla completa, uno a uno. Desliza para indicar que te interesa una persona o para pasar a la siguiente.
 
-Lock-In: encuentra compañía para trabajar al mismo tiempo, aunque cada uno esté en lo suyo. También puedes elegir ambos modos.
+MATCH Y CHAT
+Cuando el interés es mutuo, hacéis match y se abre un chat privado entre los dos. Para romper el hielo, la app te sugiere algunas preguntas con las que empezar.
 
-DESLIZA Y CONVERSA
+GITHUB VERIFICADO
+Puedes vincular tu cuenta de GitHub para mostrar «GitHub verificado» en tu perfil. Indica que el enlace de GitHub pertenece a quien lo publica; no verifica la identidad de la persona ni sus conocimientos.
 
-Explora perfiles con nombre, edad, zona, disponibilidad y respuestas breves. Indica si te interesa una persona. Cuando el interés es recíproco, hacéis match y podéis hablar por chat.
+SEGURIDAD Y CONTROL
+Puedes bloquear o reportar a cualquier persona desde la app. Puedes eliminar tu cuenta y tus datos cuando quieras desde Perfil > Cuenta.
 
-ORGANIZA SESIONES DE ENFOQUE
+LO QUE NO ES
+cofounder no es una app de citas ni una bolsa de empleo. No ofrece asesoramiento legal ni financiación, ni garantiza resultados: te ayuda a conocer a personas con las que construir; lo que hagáis depende de vosotros.
 
-Propón una fecha y una duración de 1, 2 o 4 bloques. Cada bloque combina 25 minutos de trabajo y 5 de descanso. La otra persona acepta o rechaza la propuesta.
-
-Comparte el temporizador y ve si tu compañero está presente. En las sesiones individuales puedes usar una videollamada con permisos de cámara y micrófono. Activa los avisos locales para recibir un recordatorio cinco minutos antes.
-
-Al terminar una sesión compartida, puedes valorarla con un toque. Tu valoración es privada. Las rachas compartidas te ayudan a ver la continuidad de vuestras sesiones.
-
-TRABAJA EN GRUPO
-
-Convoca una sala con 2–4 de tus matches, hasta reunir 3–5 personas. Cada invitado decide si se une. Las salas comparten Pomodoro y presencia, sin vídeo ni chat de grupo.
-
-ABRE LAS CONVERSACIONES DIFÍCILES
-
-En tus matches Par, responde por separado a temas sobre dedicación, reparto y salida. Ves la respuesta de la otra persona a un tema después de dar la tuya. Es una conversación guiada; no genera un contrato ni sustituye el asesoramiento legal.
-
-TU PERFIL, A TU MANERA
-
-Añade enlaces a GitHub, portfolio o LinkedIn. Puedes verificar que tu enlace de GitHub pertenece a tu cuenta. El sello verifica la autoría de ese enlace.
-
-Empieza con lo que tienes y encuentra con quién dar el siguiente paso.
+Para personas de 16 años o más.
 
 ## Palabras clave
 
-socios,emprender,colaborar,coworking,pomodoro,proyectos,productividad,equipo,concentracion
+socio,emprender,startup,emprendedor,cofundadora,proyecto,equipo,idea,negocio,colaborar,github,pares
+
+## URLs
+
+- Política de privacidad: https://thejowe.github.io/lockin/privacidad
+- Soporte: https://thejowe.github.io/lockin/soporte
+- Términos de uso (EULA): https://thejowe.github.io/lockin/terminos
+- Normas de la comunidad: https://thejowe.github.io/lockin/normas
 
 ## Categoría
 
-Categoría decidida (D07): **Redes sociales (Social Networking)** como principal y **Productividad** como secundaria.
+Principal: **Redes sociales (Social Networking)** (D07). Secundaria: Productividad estaba justificada por las sesiones Lock-In, ya ocultas; valorar **Negocios** o dejarla vacía (pregunta abierta, ver INFORME.md).
 
 ## Clasificación de edad
 
-Decisión D06: edad mínima 16. Completar el cuestionario de App Store Connect declarando contenido generado por usuarios (chat y perfiles) con filtros de reporte y bloqueo; revisar el resultado por territorio antes de enviar.
+Edad mínima de uso: 16 años (D06), autodeclarada. En el cuestionario de App Store Connect declarar: contenido generado por usuarios (perfiles, fotos, respuestas y chat 1:1), mensajería entre usuarios, sin publicidad, compras, apuestas ni acceso web sin restricciones. No reducir la clasificación que calcule Apple; si es inferior a 16, elevarla.
 
-El código admite edades declaradas desde 16 años (formulario 16–99; SQL 16–120). No hay verificación documental, controles parentales ni un bloqueo de uso para mayores de 18. Si la clasificación calculada fuera inferior a la edad mínima de uso finalmente elegida, revisar la opción de aumentar la clasificación. No reducir una clasificación superior calculada por Apple.
-
-Datos para contestar el cuestionario:
-
-| Capacidad | Lo que implementa esta versión |
+| Capacidad | Esta versión |
 | --- | --- |
-| Contenido generado por usuarios | Sí: perfil, prompts, mensajes y notas del acuerdo |
-| Mensajería / chat | Sí, 1:1 después de match recíproco |
-| Funciones sociales | Sí: perfiles, matches, invitaciones y salas |
-| Publicidad / compras / apuestas | No se han encontrado SDK publicitario, cobros, apuestas o concursos en código |
-| Controles parentales / verificación de edad | No encontrados; edad autodeclarada |
-| Acceso web sin restricciones dentro de la app | Los enlaces externos se abren con Linking/navegador; no se ha encontrado un navegador general propio. Revisar cómo pregunta la consola sobre esta capacidad |
-| Contenido adulto/violento diseñado por la app | No se ha encontrado; los textos libres de usuarios no están moderados, por lo que no se garantiza ausencia de ese contenido |
+| Contenido generado por usuarios | Sí: perfil, foto opcional (moderada antes de publicarse), respuestas breves y mensajes |
+| Mensajería / chat | Sí, 1:1 tras match mutuo |
+| Bloquear / reportar | Sí, según D09/D11 (confirmar en la build) |
+| Publicidad / compras / apuestas | No |
+| Controles parentales / verificación de edad | No; edad autodeclarada |
 
-La escala actual incluye 4+, 9+, 13+, 16+ y 18+ en las plataformas recientes, con posibles diferencias regionales y versiones anteriores. No usar una cifra de otra plataforma como si fuera una clasificación ya emitida. Fuentes: [definiciones de edad](https://developer.apple.com/help/app-store-connect/reference/app-information/age-ratings-values-and-definitions/) y [cómo completar y elevar la clasificación](https://developer.apple.com/help/app-store-connect/manage-app-information/set-an-app-age-rating/).
+## Límites
 
-## Límites y datos administrativos
-
-| Campo | Texto preparado | Límite |
+| Campo | Texto | Límite |
 | --- | --- | --- |
-| Nombre | 6 caracteres | 30 caracteres |
-| Subtítulo | 30 caracteres | 30 caracteres |
-| Texto promocional | 121 caracteres | 170 caracteres |
-| Descripción | 2118 caracteres, incluidos saltos de línea | 4000 caracteres |
-| Palabras clave | 90 bytes UTF-8; texto ASCII | 100 bytes |
+| Nombre | 9 caracteres | 30 |
+| Subtítulo | 26 caracteres | 30 |
+| Texto promocional | 142 caracteres | 170 |
+| Descripción | 1770 caracteres | 4000 |
+| Palabras clave | 99 bytes | 100 |
 
-Fuentes: [información de la app](https://developer.apple.com/help/app-store-connect/reference/app-information/app-information/) y [campos de la versión](https://developer.apple.com/help/app-store-connect/reference/app-information/platform-version-information/). Bundle ID del repo: `app.cofounder.mobile`; versión configurada: `1.0.0`; nombre técnico en app.json: `lockin`.
+Las palabras clave no repiten el nombre ni la categoría (Apple ya los indexa) y no usan nombres de terceros salvo «github», que describe una función real (GitHub verificado). Bundle ID: `app.cofounder.mobile`; versión 1.0.0.
 
-- **D01 decidido:** Joel de Torres Sainz de la Maza, carrer Nou, 37, 25153 Lleida (España); copyright © 2026 Joel de Torres Sainz de la Maza.
-- **D02 decidido:** soporte y privacidad en cofounder.soporte@gmail.com.
-- **D08 decidido:** soporte https://thejowe.github.io/lockin/soporte y privacidad https://thejowe.github.io/lockin/privacidad (páginas por crear).
-- **D09:** validar una build nativa real con WebRTC y cámara en dispositivo antes de usar la descripción de videollamada; la cámara real sigue sin comprobar (`todo/video.md`).
+## Notas para la revisión (App Review Notes)
 
-## Evidencia y preparación de revisión
+Propuesta de texto: «cofounder sirve para encontrar cofundador entre pares. Funciones: perfil, deck de perfiles, match mutuo, chat 1:1 con preguntas sugeridas, bloqueo y reporte de usuarios, verificación de GitHub y eliminación de cuenta en Perfil > Cuenta. Las fotos de perfil se revisan automáticamente antes de publicarse. Cuenta de prueba: [usuario/contraseña].»
 
-Funciones descritas presentes en [tipos](../../src/data/types.ts), [perfil](../../src/features/profile/), [descubrimiento](../../src/features/discover/), [chat](../../src/features/chat/), [sesiones](../../src/features/session/), [acuerdo](../../src/features/agreement/) y [salas](../../src/features/room/). Las fases futuras del concepto no se presentan como implementadas: el código actual ya incluye sesiones, acuerdo y salas, pero no incluye Modo Talento o premium.
+## Comprobaciones previas al envío (no copiar en la consola)
 
-No se ha supuesto precio, «gratis para siempre», contratación, garantía de compatibilidad, identidad legal verificada ni contratos firmados. La llamada está implementada para la app nativa; no se da por probada una llamada en dos móviles por haber leído el código. Las salas no tienen vídeo.
-
-Preparar acceso para revisión y demostrar funcionalidades en la build enviada. Consultar [Lo que Apple/Google exigirán y la app aún no tiene](cuestionario-privacidad.md#lo-que-applegoogle-exigirán-y-la-app-aún-no-tiene), en especial baja de cuenta y bloqueo/reporte/moderación. Esta ficha no afirma que esas funciones ya existan.
+- **Bloquear/reportar y «Eliminar mi cuenta»:** comprobados en el código (`block_profile`, `report_profile`, panel de seguridad en deck y chat, `delete_my_account`) y dados por aplicados en producción el 10-oct-2026 (D09). Probarlos en la build final contra Supabase real. Reportar es de **perfiles**; reportar un mensaje concreto aún no existe (T3b).
+- **Aceptación de términos:** hoy la app no la pide. Apple 1.2 y la política UGC de Google la esperan: no enviar sin ella (T3a).
+- **Funciones ocultas (Lock-In):** sesiones, salas, vídeo, rachas, Pomodoro y acuerdo siguen en el código pero no en la UI (pivote del 12-oct-2026). No deben aparecer en la ficha, capturas ni vídeo de vista previa. Si el código sigue en el binario, conviene retirarlo o desactivarlo de verdad: las funciones ocultas o inactivas son motivo de rechazo en Apple (2.3.1) y las dependencias nativas que dejan (WebRTC, cámara/micrófono, alarmas exactas) generan permisos que hay que justificar. Ver INFORME.md.
+- **Capturas:** solo pantallas actuales (perfil, deck a pantalla completa, match, chat con sugerencias, GitHub verificado, bloqueo). Ninguna con temporizador, salas, vídeo o rachas.
+- **Cuenta de revisión:** preparar una cuenta de prueba con perfil completo y al menos un match con chat para que la revisión pueda ver las funciones.
+- **URLs públicas (D08):** privacidad, términos, normas, seguridad infantil, soporte y eliminar cuenta en https://thejowe.github.io/lockin/… (`/privacidad`, `/terminos`, `/normas`, `/seguridad-infantil`, `/soporte`, `/eliminar-cuenta`) deben estar publicadas y funcionando antes de enviar.
+- Responsable (D01): Joel de Torres Sainz de la Maza, carrer Nou, 37, 25153 Lleida (España). Contacto (D02): cofounder.soporte@gmail.com.
