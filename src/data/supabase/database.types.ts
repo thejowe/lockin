@@ -114,6 +114,9 @@ export type MessageRow = {
 
 export type MessageInsert = Pick<MessageRow, 'match_id' | 'sender_id' | 'body'>;
 
+/** Fila de `public.terms_acceptances`. Solo se leen las propias. */
+export type TermsAcceptanceRow = { user_id: string; version: string; accepted_at: string };
+
 export type UserBlockRow = { blocker_id: string; blocked_id: string; created_at: string };
 /** Tipo SQL para el contrato; la base no concede SELECT a ningún cliente. */
 export type UserReportRow = {
@@ -223,6 +226,12 @@ export type MatchAgreementRow = {
 export type Database = {
   public: {
     Tables: {
+      terms_acceptances: {
+        Row: TermsAcceptanceRow;
+        Insert: Record<string, never>;
+        Update: Record<string, never>;
+        Relationships: [];
+      };
       user_blocks: {
         Row: UserBlockRow;
         Insert: Record<string, never>;
@@ -379,6 +388,7 @@ export type Database = {
         Args: { p_profile_id: string; p_reason: string; p_details?: string | null };
         Returns: undefined;
       };
+      accept_terms: { Args: { p_version: string }; Returns: string };
       has_profile_block: { Args: { p_profile_id: string }; Returns: boolean };
       is_unblocked_match: { Args: { p_match_id: string }; Returns: boolean };
       delete_my_account: {

@@ -77,6 +77,7 @@ export interface MockRepositoriesOptions {
 }
 
 const MATCHES_TOPIC = 'matches';
+const TERMS_VERSION_FORMAT = /^\d{4}-\d{2}-\d{2}$/;
 const messagesTopic = (matchId: string) => `messages:${matchId}`;
 
 /**
@@ -174,6 +175,27 @@ export function createMockRepositories(
     async deleteMyAccount() {
       // El actor seleccionado, no siempre la cuenta de la app.
       store.deleteUser(actorId);
+    },
+
+    async getTermsAcceptance() {
+      const accepted = getState().termsAcceptances.get(actorId);
+      if (!accepted || accepted.size === 0) return null;
+      // Las versiones son fechas ISO: el orden de texto es el cronológico.
+      const [version, acceptedAt] = [...accepted.entries()].sort(([a], [b]) =>
+        a < b ? 1 : -1
+      )[0];
+      return { version, acceptedAt };
+    },
+
+    async acceptTerms(version) {
+      if (!TERMS_VERSION_FORMAT.test(version)) {
+        throw Object.assign(new Error('Versión de términos inválida.'), { code: '23514' });
+      }
+      const state = getState();
+      const accepted = state.termsAcceptances.get(actorId) ?? new Map<string, string>();
+      if (!accepted.has(version)) accepted.set(version, nowIso());
+      state.termsAcceptances.set(actorId, accepted);
+      return { version, acceptedAt: accepted.get(version) as string };
     },
   };
 

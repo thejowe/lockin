@@ -43,7 +43,7 @@ E después de fusionar B–D (toca rutas y `package.json`); F al final.
 ## Casillas
 
 - [ ] T1 documentos y páginas (A)
-- [ ] T3a aceptación y enlaces (B)
+- [x] T3a aceptación y enlaces (B) — hecho 2026-10-14; falta gate en chat y aplicar migración 20261014120000 (ver informe)
 - [ ] T3b reporte de mensajes y filtro (C)
 - [ ] T4 fotos: retención y bucket (D)
 - [ ] T5 app.json y binario (E)

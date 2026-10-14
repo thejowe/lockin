@@ -18,4 +18,5 @@ export { ProfileForm, type ProfileFormProps } from './profile-form';
 export { RegisterForm } from './register-form';
 export { RequireVerifiedEmail } from './require-verified-email';
 export { SignInForm } from './sign-in-form';
+export { LegalLinks, TermsAcceptance, useTermsGate, type TermsGate } from './terms';
 export { useRegistrationGate, type RegistrationGate } from './use-registration-gate';

@@ -13,7 +13,10 @@ import { useQuery, useRepositories, type ProfileInput } from '@/data';
 import {
   AccountSection,
   GithubVerification,
+  LegalLinks,
   PhotoSection,
+  TermsAcceptance,
+  useTermsGate,
   ProfileDetails,
   ProfileForm,
 } from '@/features/profile';
@@ -33,6 +36,7 @@ export default function ProfileScreen() {
   const [editing, setEditing] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const reduceMotion = useReduceMotion();
+  const terms = useTermsGate();
   const {
     data: profile,
     loading,
@@ -108,7 +112,20 @@ export default function ProfileScreen() {
     );
   }
 
-  if (editing) {
+  // Quien creó el perfil antes de esta versión de los textos vuelve a aceptar
+  // antes de publicar cambios.
+  if (editing && terms.gate === 'required') {
+    return (
+      <Screen ambient="plum">
+        <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+          <TermsAcceptance onAccepted={terms.refresh} />
+          <SecondaryButton label="Volver" onPress={() => setEditing(false)} />
+        </SafeAreaView>
+      </Screen>
+    );
+  }
+
+  if (editing && terms.gate === 'accepted') {
     return (
       <Screen ambient="plum">
         <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
@@ -159,6 +176,10 @@ export default function ProfileScreen() {
           {/* La cuenta va al final: es lo que menos se visita y donde vive la
             salida destructiva. Arriba está lo que se viene a mirar. */}
           <Animated.View entering={enterUp(4)}>
+            <LegalLinks />
+          </Animated.View>
+
+          <Animated.View entering={enterUp(5)}>
             <AccountSection
               onDeleted={() => router.replace('/')}
               onConfirmationShown={() =>

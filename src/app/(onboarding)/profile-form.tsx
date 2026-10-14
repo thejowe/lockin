@@ -6,7 +6,12 @@ import { Screen } from '@/components/ambient-background';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useRepositories, type ProfileInput } from '@/data';
-import { ProfileForm, useRegistrationGate } from '@/features/profile';
+import {
+  ProfileForm,
+  TermsAcceptance,
+  useRegistrationGate,
+  useTermsGate,
+} from '@/features/profile';
 
 /**
  * Paso 2 del onboarding: crear el perfil.
@@ -24,6 +29,7 @@ export default function ProfileFormScreen() {
   const repositories = useRepositories();
 
   const gate = useRegistrationGate();
+  const terms = useTermsGate();
 
   async function handleSubmit(input: ProfileInput) {
     await repositories.profiles.saveCurrent(input);
@@ -33,6 +39,18 @@ export default function ProfileFormScreen() {
 
   if (gate === 'checking') return null;
   if (gate === 'required') return <Redirect href="/register" />;
+  if (terms.gate === 'checking') return null;
+
+  // Sin Términos y Normas aceptados no se publica perfil.
+  if (terms.gate === 'required') {
+    return (
+      <Screen ambient="plum">
+        <SafeAreaView style={styles.root} edges={['top']}>
+          <TermsAcceptance onAccepted={terms.refresh} />
+        </SafeAreaView>
+      </Screen>
+    );
+  }
 
   return (
     <Screen ambient="plum">

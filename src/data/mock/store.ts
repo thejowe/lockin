@@ -58,6 +58,8 @@ export interface MockState {
   actorSessions: Map<string, Session>;
   actorDecisions: Map<string, Map<string, Decision>>;
   userBlocks: Map<string, Set<string>>;
+  /** Aceptaciones de Términos por persona: versión → fecha ISO. */
+  termsAcceptances: Map<string, Map<string, string>>;
   /**
    * Almacén privado; no se expone ningún método de lectura de reportes.
    *
@@ -95,6 +97,7 @@ function initialState(): MockState {
     actorSessions: new Map(),
     actorDecisions: new Map(),
     userBlocks: new Map(),
+    termsAcceptances: new Map(),
     userReports: [],
   };
 }
@@ -214,6 +217,7 @@ export function createMockStore(): MockStore {
       state.actorDecisions.delete(userId);
       for (const decisions of state.actorDecisions.values()) decisions.delete(userId);
       state.userBlocks.delete(userId);
+      state.termsAcceptances.delete(userId);
       for (const blocked of state.userBlocks.values()) blocked.delete(userId);
       for (const report of state.userReports) {
         if (report.reporterId === userId) report.reporterId = null;
