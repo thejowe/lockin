@@ -60,3 +60,6 @@ example
 
 # Salida de scripts/build-web.mjs (GitHub Pages)
 _site/
+
+# logs del túnel de Expo
+expo-tunnel.log
