@@ -429,3 +429,12 @@ Backend: **Supabase real** (logcat `[lockin] backend de datos: Supabase`). APK r
 - ⚠️ Con el campo «Detalles» oculto bajo las acciones (sin teclado) sigue haciendo falta scroll interior para alcanzarlo (comportamiento previo, no regresión).
 
 Casilla «Re-comprobar en emulador con hw.keyboard=no…» (línea «teclado sobre las acciones del reporte»): la evidencia la **confirma ✅**; no la marco.
+
+### 2026-10-14 — Guardar lleva al primer campo con error (commit 170945b)
+
+Backend: **Supabase real** (logcat `[lockin] backend de datos: Supabase`). APK release recompilado con `.env.local` y `EXPO_PUBLIC_REQUIRE_ACCOUNT=true` (`gradlew assembleRelease --rerun`), instalado con `adb install -r` sin `pm clear` (sesión de bigjoowe intacta). La puerta no se ejercitó (la sesión ya existía); el valor `true` no se ha verificado dentro del bundle. Evidencia: `e2e/artifacts/local/2026-10-14-guardar-primer-error/`.
+
+- [x] **✅ Caso B, solo la respuesta vacía (error abajo del todo).** Formulario desplazado al fondo, «Guardar cambios» pulsado (`B1-antes.png`): la pantalla sube sola a «Tus respuestas», con «Responde al menos a la primera pregunta.» visible arriba (y=249, `B2-despues.png`/`.xml`).
+- [x] **✅ Caso A, Nombre y respuesta vacíos.** Desde el fondo (`A1-antes.png`), «Guardar cambios»: sube hasta «Nombre» con «Escribe tu nombre.» en y≈225 y el campo debajo, no a la respuesta (`A2-despues.png`/`.xml`).
+- **Limpieza:** «Descartar cambios»; el perfil queda intacto (Jo, 18 · Bcn, `Z1-descartado.png`). No se guardó nada.
+- Nota: sin teclado en pantalla (AVD con `hw.keyboard=yes`); el BACK del sistema sale del formulario a Matches (no hay IME que cerrar), por eso no se usó.
