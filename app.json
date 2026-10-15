@@ -9,7 +9,10 @@
     "userInterfaceStyle": "dark",
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "app.cofounder.mobile"
+      "bundleIdentifier": "app.cofounder.mobile",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "app.cofounder.mobile",
@@ -22,9 +25,7 @@
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "android.permission.SCHEDULE_EXACT_ALARM",
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.CAMERA"
       ]
     },
     "web": {
@@ -34,7 +35,6 @@
     "plugins": [
       "expo-router",
       "./plugins/with-new-intent-initial-url",
-      "expo-notifications",
       [
         "expo-splash-screen",
         {
@@ -44,17 +44,11 @@
         }
       ],
       [
-        "@config-plugins/react-native-webrtc",
-        {
-          "cameraPermission": "cofounder necesita la cámara para la llamada de vídeo de la sesión Lock-In.",
-          "microphonePermission": "cofounder necesita el micrófono para la llamada de vídeo de la sesión Lock-In."
-        }
-      ],
-      [
         "expo-image-picker",
         {
           "photosPermission": "cofounder necesita tu galería para que elijas tu foto de perfil.",
-          "cameraPermission": "cofounder necesita la cámara para hacerte la foto de perfil."
+          "cameraPermission": "cofounder necesita la cámara para hacerte la foto de perfil.",
+          "microphonePermission": false
         }
       ],
       "expo-secure-store"

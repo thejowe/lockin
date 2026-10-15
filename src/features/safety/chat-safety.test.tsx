@@ -15,7 +15,6 @@ jest.mock('expo-router', () => ({
   },
   Link: ({ children }: { children: React.ReactNode }) => children,
 }));
-jest.mock('@/features/session', () => ({ SessionCard: () => null }));
 jest.mock('@/features/agreement', () => ({ AgreementCard: () => null }));
 
 describe('seguridad desde la cabecera del chat', () => {

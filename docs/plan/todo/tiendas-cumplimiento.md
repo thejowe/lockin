@@ -46,7 +46,7 @@ E después de fusionar B–D (toca rutas y `package.json`); F al final.
 - [x] T3a aceptación y enlaces (B) — hecho 2026-10-14; falta gate en chat y aplicar migración 20261014120000
 - [x] T3b reporte de mensajes y filtro (C) — migración 20261014130000 sin aplicar en producción; pendiente codex review
 - [ ] T4 fotos: retención y bucket (D)
-- [ ] T5 app.json y binario (E)
+- [x] T5 app.json y binario (E) — hecho 2026-10-15, ver «T5 hecho»
 - [ ] T6 declaraciones y cuenta de prueba de Apple (A, tras E)
 - [ ] T7 verificación en dispositivo (F)
 
@@ -102,3 +102,19 @@ publicación; (3) bucket `avatars` privado con URLs firmadas — diseño en `fot
 y aceptar ser contacto de seguridad infantil; (8) revisión jurídica de `terminos.md`;
 (9) gate duro en servidor (`send_message` exigiendo aceptación) — hoy solo en cliente; (10) categoría
 secundaria de App Store y condiciones/DPA de OpenAI.
+
+## T5 hecho (2026-10-15, arquitecto) — Lock-In fuera del binario por borrado
+
+- `app.json`: fuera `@config-plugins/react-native-webrtc`, `expo-notifications`, RECORD_AUDIO y SCHEDULE_EXACT_ALARM;
+  `expo-image-picker` con `microphonePermission: false` (por defecto el plugin AÑADE RECORD_AUDIO y NSMicrophoneUsageDescription);
+  `ios.infoPlist.ITSAppUsesNonExemptEncryption=false`. Permisos Android resultantes por app.json: solo CAMERA (+INTERNET y
+  los que traigan las librerías; `expo prebuild` no se ejecutó: razonado desde plugins, falta mirar el manifiesto del AAB).
+- `package.json`/lockfile: fuera `react-native-webrtc`, `@config-plugins/react-native-webrtc`, `expo-notifications`.
+- Borrados: `src/features/session`, `src/features/room`, `src/app/session`, `src/app/room`, sus entradas en `_layout.tsx`,
+  `ClearLockInReminders` del layout de tabs, mocks de webrtc/notifications en `jest.setup.js`, tests huérfanos
+  `test/app/{room-new,roomId,sessionId}.test.tsx`. `match-row.test` lleva copia local de los textos de racha.
+- Se queda (no se toca producción): capa `src/data` (repos sessions/rooms, mock y Supabase), migraciones, funciones Edge,
+  `video-signal.ts` (sin dependencia nativa).
+- Riesgo: ya no se cancelan avisos Lock-In programados en instalaciones antiguas (`ClearLockInReminders`); irrelevante en
+  primera publicación. Recuperar Lock-In = restaurar desde git (commit anterior) y reinstalar las 3 dependencias.
+- Fuera: auditar `src/data` Lock-In muerto (se puede podar luego), docs `.claude/agents/{salas,video,sesiones}.md`, e2e CI/Gradle comments.

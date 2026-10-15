@@ -15,9 +15,11 @@
 import { render, screen } from '@testing-library/react-native';
 
 import { buildProfile } from '@/data/test-fixtures';
-import { streakLine, streakTag } from '@/features/session/streak';
 
 import { MatchRow, NO_MESSAGES_HINT } from './match-row';
+
+const streakTag = (count: number) => `· Racha ${count}`;
+const streakLine = (count: number) => `Racha de ${count} sesiones seguidas`;
 
 import type { MatchWithProfile, Message } from '@/data';
 

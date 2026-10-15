@@ -98,10 +98,7 @@ export default function RootLayout() {
               <Stack.Screen name="(onboarding)" />
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="chat/[matchId]" options={stackHeader} />
-              <Stack.Screen name="session/[sessionId]" options={stackHeader} />
               <Stack.Screen name="agreement/[matchId]" options={stackHeader} />
-              <Stack.Screen name="room/new" options={stackHeader} />
-              <Stack.Screen name="room/[roomId]" options={stackHeader} />
             </Stack>
           </DataProvider>
         </ThemeProvider>
