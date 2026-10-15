@@ -1,9 +1,8 @@
 # TODO maestro — LockIn MVP
 
-## ▶ Al retomar (2026-10-14, tarde): envío a tiendas — bloque `tiendas-cumplimiento`
+## ▶ Al retomar (2026-10-15): `tiendas-cumplimiento` — solo quedan decisiones tuyas
 
-Parado a petición del usuario. T1, T3a, T3b, T4 y el gate de chat están fusionados **en local, sin push**; quedan 5 hallazgos de `codex review` por arreglar (2 P1), después T5 (`arquitecto`), T6 y T7 (`comprobador`). Detalle, migraciones sin aplicar y decisiones pendientes en `docs/plan/todo/tiendas-cumplimiento.md` → «Al retomar». No empujar hasta cerrar los marcadores de los documentos legales (`pages.yml` los publicaría).
-
+T1, T3a, T3b, T4, T5 y T6 hechas y revisadas (`3b0eea7`, `10f4ff5`, `cf18086`, `6ac99a8`, `ff1ef69`); Lock-In y WebRTC fuera del binario. **15 commits locales sin push** (`pages.yml` publicaría marcadores abiertos). Bloquean T7 y el push: permiso para aplicar `20261014120000/130000/140000` y desplegar `moderate-avatar` en producción; fecha de publicación, SMTP, titular/NIF, DPA de OpenAI, cuenta de prueba de Apple; qué hacer con las filas de prueba de Lock-In. Detalle en `docs/plan/todo/tiendas-cumplimiento.md`.
 
 Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>.md` — márcalo ahí, no aquí.
 
