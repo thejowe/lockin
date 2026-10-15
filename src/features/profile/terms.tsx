@@ -9,12 +9,12 @@
  * - `LegalLinks` son los enlaces fijos de la tab Perfil.
  */
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { LEGAL_URLS, TERMS_VERSION } from '@/constants/legal';
-import { Radii, Spacing, Stroke } from '@/constants/theme';
+import { BottomTabInset, Radii, Spacing, Stroke } from '@/constants/theme';
 import { useQuery, useRepositories } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -58,7 +58,14 @@ function LinkRow({ label, url }: { label: string; url: string }) {
   );
 }
 
-export function TermsAcceptance({ onAccepted }: { onAccepted: () => void }) {
+/** `footer` va dentro del scroll para que la barra flotante de tabs no lo tape. */
+export function TermsAcceptance({
+  onAccepted,
+  footer,
+}: {
+  onAccepted: () => void;
+  footer?: ReactNode;
+}) {
   const theme = useTheme();
   const repositories = useRepositories();
   const [checked, setChecked] = useState(false);
@@ -124,6 +131,7 @@ export function TermsAcceptance({ onAccepted }: { onAccepted: () => void }) {
         disabled={!checked || saving}
         onPress={() => void accept()}
       />
+      {footer}
     </ScrollView>
   );
 }
@@ -147,7 +155,7 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,
-    paddingBottom: Spacing.six,
+    paddingBottom: Spacing.six + BottomTabInset,
   },
   links: {
     gap: Spacing.one,

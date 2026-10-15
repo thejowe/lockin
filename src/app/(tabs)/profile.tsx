@@ -118,8 +118,10 @@ export default function ProfileScreen() {
     return (
       <Screen ambient="plum">
         <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
-          <TermsAcceptance onAccepted={terms.refresh} />
-          <SecondaryButton label="Volver" onPress={() => setEditing(false)} />
+          <TermsAcceptance
+            onAccepted={terms.refresh}
+            footer={<SecondaryButton label="Volver" onPress={() => setEditing(false)} />}
+          />
         </SafeAreaView>
       </Screen>
     );
