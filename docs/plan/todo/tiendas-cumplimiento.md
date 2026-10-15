@@ -47,7 +47,7 @@ E después de fusionar B–D (toca rutas y `package.json`); F al final.
 - [x] T3b reporte de mensajes y filtro (C) — migración 20261014130000 sin aplicar en producción; pendiente codex review
 - [ ] T4 fotos: retención y bucket (D)
 - [x] T5 app.json y binario (E) — hecho 2026-10-15, ver «T5 hecho»
-- [ ] T6 declaraciones y cuenta de prueba de Apple (A, tras E)
+- [x] T6 declaraciones y notas de revisor (A) — hecho 2026-10-15, ver «T6 hecho»; abiertos los marcadores `[pendiente: ...]`
 - [ ] T7 verificación en dispositivo (F)
 
 ## ▶ Al retomar — estado del 2026-10-14 (parado a petición del usuario)
@@ -118,3 +118,12 @@ secundaria de App Store y condiciones/DPA de OpenAI.
 - Riesgo: ya no se cancelan avisos Lock-In programados en instalaciones antiguas (`ClearLockInReminders`); irrelevante en
   primera publicación. Recuperar Lock-In = restaurar desde git (commit anterior) y reinstalar las 3 dependencias.
 - Fuera: auditar `src/data` Lock-In muerto (se puede podar luego), docs `.claude/agents/{salas,video,sesiones}.md`, e2e CI/Gradle comments.
+
+## T6 hecho (2026-10-15, docs-legal)
+
+- Actualizados contra el binario final tras T5: `cuestionario-privacidad.md` (inventario del binario, requisitos de tienda, marcadores abiertos), `datos-recopilados.md` (permisos, Lock-In fuera del binario), `ficha-app-store.md` (notas de revisor en inglés con UGC/moderación y cuenta de prueba como `[cuenta de prueba: pendiente]`, categoría secundaria), `ficha-google-play.md` (permisos, políticas UGC, trader) y la nota editorial de `privacidad.md`.
+- Texto publicado de `terminos`/`normas`/`privacidad` NO cambiado; `TERMS_VERSION` sin tocar.
+- Marcadores abiertos (usuario): fecha de publicación; proveedor SMTP; datos de titular/NIF (trader DSA); DPA y condiciones de OpenAI (de ello depende marcar Fotos como «compartidas» en Google); categoría secundaria de App Store; cuenta de prueba de Apple; permiso para aplicar migraciones `20261014120000/130000/140000` y desplegar `moderate-avatar`; confirmar job `purge_old_user_reports()`; datos de prueba de Lock-In en producción.
+- Pendiente de verificar en T7: manifiesto del AAB e Info.plist (solo CAMERA, sin micrófono).
+- Aviso: `privacidad.md` publicado aún dice que la foto puede quedar huérfana («mejor esfuerzo»); cambiarlo a «garantizado» solo tras aplicar `20261014140000`.
+

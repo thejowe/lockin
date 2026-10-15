@@ -1,6 +1,6 @@
 # cofounder — inventario de datos recopilados
 
-Revisado el 14 de octubre de 2026 sobre el inventario del 9-oct (commit `0cddbbb…`), tras el pivote del 12-oct-2026 (solo cofundador) y la foto de perfil del 12-oct. Describe lo que recoge la UI actual. No certifica la configuración de producción.
+Actualizado el 15 de octubre de 2026 tras T5 (binario sin Lock-In). Revisado el 14 de octubre de 2026 sobre el inventario del 9-oct (commit `0cddbbb…`), tras el pivote del 12-oct-2026 (solo cofundador) y la foto de perfil del 12-oct. Describe lo que recoge la UI actual. No certifica la configuración de producción.
 
 ## Cambios respecto a la versión anterior
 
@@ -144,19 +144,21 @@ Decisión D05: SMTP propio gratuito antes del lanzamiento; Supabase en `eu-centr
 - Expo/EAS: EAS-Client-ID, plataforma, runtime, IDs de actualización actual/incluida/fallida; IP en peticiones.
 - Supabase y OpenAI: IP y metadatos de peticiones en sus registros.
 
-## Permisos (app.json)
+## Permisos (app.json, tras T5)
 
-| Permiso | Uso visible actual | Acción |
+| Permiso | Uso visible actual | Estado |
 | --- | --- | --- |
-| Galería (iOS `photosPermission`) | Elegir foto de perfil | Mantener |
-| Cámara (`CAMERA`, image-picker) | Hacer la foto de perfil | Mantener; quitar el texto duplicado de WebRTC |
-| Micrófono (`RECORD_AUDIO`, WebRTC) | Ninguno (vídeo oculto) | **Retirar** |
-| `SCHEDULE_EXACT_ALARM` | Ninguno (recordatorios de sesiones ocultos) | **Retirar** |
-| Notificaciones (`expo-notifications`) | Solo el recordatorio local de Lock-In (`session-reminder-sync`), oculto; no hay push de match ni de mensaje | Retirar con Lock-In |
+| Galería (iOS `photosPermission`) | Elegir foto de perfil | Presente |
+| Cámara (`android.permission.CAMERA`, iOS `cameraPermission`) | Hacer la foto de perfil | Presente |
+| Micrófono (`RECORD_AUDIO`, `NSMicrophoneUsageDescription`) | Ninguno | **Retirado** (`microphonePermission: false` en `expo-image-picker`) |
+| `SCHEDULE_EXACT_ALARM` | Ninguno | **Retirado** |
+| Notificaciones (`expo-notifications`) | Ninguno | **Retirado** (no hay push ni recordatorios) |
 
-## Tablas y flujos inactivos (Lock-In, ocultos desde el 12-oct-2026)
+Plugins restantes: `expo-router`, `expo-splash-screen`, `expo-image-picker`, `expo-secure-store` y el plugin local `with-new-intent-initial-url`. `ITSAppUsesNonExemptEncryption=false` en iOS. Falta contrastar con el manifiesto del AAB generado (el prebuild no se ejecutó en T5).
 
-`lockin_sessions`, `session_attendance`, `session_ratings`, `agreement_answers`, `lockin_rooms`, `room_members`, presencia y señalización Realtime, vídeo/audio WebRTC, STUN de Google y recordatorios locales. El detalle columna a columna está en la versión anterior de este documento. Si la UI no los alcanza y no recogen datos, no se declaran. Si hay datos de pruebas, borrarlos o mantener la mención en la política.
+## Tablas y flujos inactivos (Lock-In, fuera del binario desde T5)
+
+`lockin_sessions`, `session_attendance`, `session_ratings`, `agreement_answers`, `lockin_rooms`, `room_members`, presencia y señalización Realtime. La app publicada **no** las lee ni escribe, y WebRTC, STUN de Google y recordatorios locales no están en el binario. Siguen en la base de datos de producción con datos de prueba (`lockin_sessions` 4, `session_attendance` 4, `lockin_rooms` 4, resto 0; lectura del 14-oct): [pendiente: decisión del usuario, borrarlas o mantener la mención en la política]. El detalle columna a columna está en la versión anterior de este documento.
 
 ## Decisiones (D01–D12)
 

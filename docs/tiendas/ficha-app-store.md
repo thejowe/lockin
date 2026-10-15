@@ -1,6 +1,6 @@
 # cofounder — ficha de App Store (español)
 
-Revisada el 14 de octubre de 2026 tras el pivote del 12-oct-2026 (solo búsqueda de cofundador). Copiar únicamente el contenido de cada campo.
+Revisada el 15 de octubre de 2026 contra el binario final tras T5 (solo búsqueda de cofundador; Lock-In fuera del binario). Copiar únicamente el contenido de cada campo.
 
 ## Nombre
 
@@ -55,7 +55,7 @@ socio,emprender,startup,emprendedor,cofundadora,proyecto,equipo,idea,negocio,col
 
 ## Categoría
 
-Principal: **Redes sociales (Social Networking)** (D07). Secundaria: Productividad estaba justificada por las sesiones Lock-In, ya ocultas; valorar **Negocios** o dejarla vacía (pregunta abierta, ver INFORME.md).
+Principal: **Redes sociales (Social Networking)** (D07). Secundaria: Productividad dejó de estar justificada al sacar Lock-In; valorar **Negocios** o dejarla vacía [pendiente: categoría secundaria, decisión del usuario].
 
 ## Clasificación de edad
 
@@ -65,7 +65,9 @@ Edad mínima de uso: 16 años (D06), autodeclarada. En el cuestionario de App St
 | --- | --- |
 | Contenido generado por usuarios | Sí: perfil, foto opcional (moderada antes de publicarse), respuestas breves y mensajes |
 | Mensajería / chat | Sí, 1:1 tras match mutuo |
-| Bloquear / reportar | Sí, según D09/D11 (confirmar en la build) |
+| Bloquear / reportar | Sí: perfiles y mensajes concretos (confirmar en la build) |
+| Filtro de contenido | Sí: filtro básico de texto en perfil y chat, más moderación de fotos |
+| Aceptación de Términos y Normas | Sí, obligatoria antes de publicar |
 | Publicidad / compras / apuestas | No |
 | Controles parentales / verificación de edad | No; edad autodeclarada |
 
@@ -83,14 +85,57 @@ Las palabras clave no repiten el nombre ni la categoría (Apple ya los indexa) y
 
 ## Notas para la revisión (App Review Notes)
 
-Propuesta de texto: «cofounder sirve para encontrar cofundador entre pares. Funciones: perfil, deck de perfiles, match mutuo, chat 1:1 con preguntas sugeridas, bloqueo y reporte de usuarios, verificación de GitHub y eliminación de cuenta en Perfil > Cuenta. Las fotos de perfil se revisan automáticamente antes de publicarse. Cuenta de prueba: [usuario/contraseña].»
+Texto para pegar en App Store Connect (en inglés, el revisor lo lee en ese idioma):
+
+```
+cofounder is a peer-to-peer app for finding a startup co-founder. Users create a
+profile, swipe through other profiles, and chat 1:1 after a mutual match.
+
+HOW TO TEST
+1. Sign in with the demo account below (or create an account; email is optional).
+2. Accept the Terms of Use and Community Guidelines when prompted.
+3. Open the Discover tab to see profiles, swipe to like/pass; the demo account
+   already has a match with a chat in the Matches tab.
+4. Profile > Account: Delete my account (in-app account deletion, Guideline 5.1.1(v)).
+
+DEMO ACCOUNT
+[cuenta de prueba: pendiente]
+
+USER-GENERATED CONTENT (Guideline 1.2)
+- Terms and Community Guidelines must be accepted (versioned, with date) before
+  publishing content or chatting; links to them are in Profile.
+- Report: any profile (Discover/chat safety panel) and any individual message
+  (message report panel in the chat). Reports go to a private table reviewed
+  by the operator; target response time is 24 h for severe content and 72 h otherwise.
+- Block: any user, from Discover or chat; blocking is mutual and immediate.
+- Filter: a basic objectionable-text filter (insults, threats, explicit sexual
+  content; Spanish and English) blocks submission of profile text and messages;
+  profile photos are moderated server-side with OpenAI's moderation API and are
+  only published after approval (fail-closed).
+- Account deletion: Profile > Account > Delete my account removes profile,
+  matches, messages and photo.
+- Contact: cofounder.soporte@gmail.com. Child-safety standards:
+  https://thejowe.github.io/lockin/seguridad-infantil
+
+PERMISSIONS
+- Camera / photo library: only to take or choose the optional profile photo.
+  No microphone, no location, no contacts, no push notifications, no tracking.
+- Encryption: standard HTTPS/TLS only (ITSAppUsesNonExemptEncryption = false).
+- Sign in with GitHub is optional and only used to show a "GitHub verified"
+  badge. The app also supports email/password and anonymous accounts, so GitHub
+  is not the only login option.
+
+AGE
+Minimum age 16, self-declared.
+```
+
+`[cuenta de prueba: pendiente]` es un marcador: no inventar credenciales. Antes de enviar, crear la cuenta en producción con perfil completo y un match con chat, y rellenar el bloque. Si se envía sin aplicar las migraciones `20261014120000` y `20261014130000`, las frases sobre aceptación y reporte de mensajes serían falsas: no enviar hasta aplicarlas.
 
 ## Comprobaciones previas al envío (no copiar en la consola)
 
-- **Bloquear/reportar y «Eliminar mi cuenta»:** comprobados en el código (`block_profile`, `report_profile`, panel de seguridad en deck y chat, `delete_my_account`) y dados por aplicados en producción el 10-oct-2026 (D09). Probarlos en la build final contra Supabase real. Reportar es de **perfiles**; reportar un mensaje concreto aún no existe (T3b).
-- **Aceptación de términos:** hoy la app no la pide. Apple 1.2 y la política UGC de Google la esperan: no enviar sin ella (T3a).
-- **Funciones ocultas (Lock-In):** sesiones, salas, vídeo, rachas, Pomodoro y acuerdo siguen en el código pero no en la UI (pivote del 12-oct-2026). No deben aparecer en la ficha, capturas ni vídeo de vista previa. Si el código sigue en el binario, conviene retirarlo o desactivarlo de verdad: las funciones ocultas o inactivas son motivo de rechazo en Apple (2.3.1) y las dependencias nativas que dejan (WebRTC, cámara/micrófono, alarmas exactas) generan permisos que hay que justificar. Ver INFORME.md.
-- **Capturas:** solo pantallas actuales (perfil, deck a pantalla completa, match, chat con sugerencias, GitHub verificado, bloqueo). Ninguna con temporizador, salas, vídeo o rachas.
-- **Cuenta de revisión:** preparar una cuenta de prueba con perfil completo y al menos un match con chat para que la revisión pueda ver las funciones.
-- **URLs públicas (D08):** privacidad, términos, normas, seguridad infantil, soporte y eliminar cuenta en https://thejowe.github.io/lockin/… (`/privacidad`, `/terminos`, `/normas`, `/seguridad-infantil`, `/soporte`, `/eliminar-cuenta`) deben estar publicadas y funcionando antes de enviar.
-- Responsable (D01): Joel de Torres Sainz de la Maza, carrer Nou, 37, 25153 Lleida (España). Contacto (D02): cofounder.soporte@gmail.com.
+- **Binario final (T5, `cf18086`):** sin Lock-In, WebRTC, `expo-notifications`, `RECORD_AUDIO` ni `SCHEDULE_EXACT_ALARM`; solo `CAMERA` y galería para la foto de perfil, `expo-secure-store` y `ITSAppUsesNonExemptEncryption=false`. Falta mirar el manifiesto del AAB y el Info.plist generado (T7).
+- **Bloquear, reportar perfiles y mensajes, aceptación de Términos y Normas, filtro, baja de cuenta:** implementados en el código (T3a, T3b). Las migraciones `20261014120000` (aceptación), `20261014130000` (reportar mensaje) y `20261014140000` (limpieza de fotos) **no están aplicadas en producción**: sin ellas, aceptar y reportar mensajes fallan contra Supabase real. [pendiente: permiso del usuario para aplicarlas]. Probarlo todo en la build final (T7).
+- **Capturas:** solo pantallas actuales (perfil, deck a pantalla completa, match, chat con sugerencias, GitHub verificado, bloqueo/reporte). Ninguna con temporizador, salas, vídeo o rachas (ya no existen en la app).
+- **Cuenta de revisión:** [cuenta de prueba: pendiente] con perfil completo y al menos un match con chat para que la revisión vea las funciones.
+- **URLs públicas (D08):** privacidad, términos, normas, seguridad infantil, soporte y eliminar cuenta en https://thejowe.github.io/lockin/… (`/privacidad`, `/terminos`, `/normas`, `/seguridad-infantil`, `/soporte`, `/eliminar-cuenta`) deben estar publicadas y funcionando antes de enviar [pendiente: fecha de publicación; no empujar `web/**` hasta cerrar marcadores].
+- Responsable (D01): Joel de Torres Sainz de la Maza, carrer Nou, 37, 25153 Lleida (España) [pendiente: datos de titular/NIF para el formulario de trader]. Contacto (D02): cofounder.soporte@gmail.com.

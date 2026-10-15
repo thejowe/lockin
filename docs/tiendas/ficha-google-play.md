@@ -1,6 +1,6 @@
 # cofounder — ficha de Google Play (español)
 
-Revisada el 14 de octubre de 2026 tras el pivote del 12-oct-2026. Copiar únicamente el contenido de cada campo.
+Revisada el 15 de octubre de 2026 contra el binario final tras T5 (Lock-In fuera del binario). Copiar únicamente el contenido de cada campo.
 
 ## Nombre de la aplicación
 
@@ -48,14 +48,17 @@ Tipo: **Aplicación**. Categoría: **Social** (D07). Implica cumplir las normas 
 
 ## Clasificación de contenido y público objetivo
 
-Público objetivo: 16–17 y 18+ (D06). En el cuestionario IARC declarar interacción entre usuarios, contenido generado por usuarios, intercambio de fotos (foto de perfil) y chat. No declarar vídeo ni voz si el código de videollamada se retira del binario. No afirmar una calificación concreta antes del resultado oficial.
+Público objetivo: 16–17 y 18+ (D06). En el cuestionario IARC declarar interacción entre usuarios, contenido generado por usuarios, intercambio de fotos (foto de perfil) y chat. No declarar vídeo ni voz: el código de videollamada ya no está en el binario (T5). No afirmar una calificación concreta antes del resultado oficial.
 
 ## Data safety, eliminación de cuenta y permisos
 
 - Respuestas de Data safety: ver `cuestionario-privacidad.md`.
 - Eliminación de cuenta: en la app (Perfil > Cuenta > Eliminar mi cuenta) y URL web https://thejowe.github.io/lockin/eliminar-cuenta (obligatoria y funcionando; explica cómo pedirla por correo sin la app).
 - Seguridad infantil (categoría Social): URL de los estándares https://thejowe.github.io/lockin/seguridad-infantil; contacto designado cofounder.soporte@gmail.com.
-- Permisos: con Lock-In oculto, **retirar** `RECORD_AUDIO` y `SCHEDULE_EXACT_ALARM` (y el plugin WebRTC) de app.json salvo que alguna función visible los use. Si se mantiene `SCHEDULE_EXACT_ALARM`, Play Console exige justificarlo y ya no hay función visible que lo justifique.
+- Permisos (binario final, T5): solo `CAMERA` declarado por la app, para la foto de perfil; la galería usa el selector del sistema. Sin `RECORD_AUDIO`, `SCHEDULE_EXACT_ALARM` ni notificaciones: no hay permisos sensibles que justificar. Confirmar en el manifiesto del AAB que ninguna librería añade otros (T7).
+- Políticas UGC de Google: Términos y Normas aceptados antes de publicar; reporte de perfiles y mensajes; bloqueo; filtro básico de texto y moderación de fotos; revisión de reportes (24 h / 72 h). [pendiente: aplicar migraciones `20261014120000` y `20261014130000` en producción antes de enviar].
+- Declaración de trader (DSA): [pendiente: datos de titular/NIF].
+- Cuenta de prueba por si Play pide acceso: [cuenta de prueba: pendiente].
 
 ## Límites
 
@@ -69,10 +72,9 @@ Package: `app.cofounder.mobile`; versión 1.0.0. Como persona física publicando
 
 ## Comprobaciones previas al envío (no copiar en la consola)
 
-- **Bloquear/reportar y «Eliminar mi cuenta»:** comprobados en el código (`block_profile`, `report_profile`, panel de seguridad en deck y chat, `delete_my_account`) y dados por aplicados en producción el 10-oct-2026 (D09). Probarlos en la build final contra Supabase real. Reportar es de **perfiles**; reportar un mensaje concreto aún no existe (T3b).
-- **Aceptación de términos:** hoy la app no la pide. Apple 1.2 y la política UGC de Google la esperan: no enviar sin ella (T3a).
-- **Funciones ocultas (Lock-In):** sesiones, salas, vídeo, rachas, Pomodoro y acuerdo siguen en el código pero no en la UI (pivote del 12-oct-2026). No deben aparecer en la ficha, capturas ni vídeo de vista previa. Si el código sigue en el binario, conviene retirarlo o desactivarlo de verdad: las funciones ocultas o inactivas son motivo de rechazo en Apple (2.3.1) y las dependencias nativas que dejan (WebRTC, cámara/micrófono, alarmas exactas) generan permisos que hay que justificar. Ver INFORME.md.
-- **Capturas:** solo pantallas actuales (perfil, deck a pantalla completa, match, chat con sugerencias, GitHub verificado, bloqueo). Ninguna con temporizador, salas, vídeo o rachas.
-- **Cuenta de revisión:** preparar una cuenta de prueba con perfil completo y al menos un match con chat para que la revisión pueda ver las funciones.
-- **URLs públicas (D08):** privacidad, términos, normas, seguridad infantil, soporte y eliminar cuenta en https://thejowe.github.io/lockin/… (`/privacidad`, `/terminos`, `/normas`, `/seguridad-infantil`, `/soporte`, `/eliminar-cuenta`) deben estar publicadas y funcionando antes de enviar.
-- Responsable (D01): Joel de Torres Sainz de la Maza, carrer Nou, 37, 25153 Lleida (España). Contacto (D02): cofounder.soporte@gmail.com.
+- **Binario final (T5, `cf18086`):** sin Lock-In, WebRTC, `expo-notifications`, `RECORD_AUDIO` ni `SCHEDULE_EXACT_ALARM`; solo `CAMERA` y galería para la foto de perfil, `expo-secure-store` y `ITSAppUsesNonExemptEncryption=false`. Falta mirar el manifiesto del AAB y el Info.plist generado (T7).
+- **Bloquear, reportar perfiles y mensajes, aceptación de Términos y Normas, filtro, baja de cuenta:** implementados en el código (T3a, T3b). Las migraciones `20261014120000` (aceptación), `20261014130000` (reportar mensaje) y `20261014140000` (limpieza de fotos) **no están aplicadas en producción**: sin ellas, aceptar y reportar mensajes fallan contra Supabase real. [pendiente: permiso del usuario para aplicarlas]. Probarlo todo en la build final (T7).
+- **Capturas:** solo pantallas actuales (perfil, deck a pantalla completa, match, chat con sugerencias, GitHub verificado, bloqueo/reporte). Ninguna con temporizador, salas, vídeo o rachas (ya no existen en la app).
+- **Cuenta de revisión:** [cuenta de prueba: pendiente] con perfil completo y al menos un match con chat para que la revisión vea las funciones.
+- **URLs públicas (D08):** privacidad, términos, normas, seguridad infantil, soporte y eliminar cuenta en https://thejowe.github.io/lockin/… (`/privacidad`, `/terminos`, `/normas`, `/seguridad-infantil`, `/soporte`, `/eliminar-cuenta`) deben estar publicadas y funcionando antes de enviar [pendiente: fecha de publicación; no empujar `web/**` hasta cerrar marcadores].
+- Responsable (D01): Joel de Torres Sainz de la Maza, carrer Nou, 37, 25153 Lleida (España) [pendiente: datos de titular/NIF para el formulario de trader]. Contacto (D02): cofounder.soporte@gmail.com.

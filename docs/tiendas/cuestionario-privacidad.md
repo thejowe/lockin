@@ -1,6 +1,25 @@
 # cofounder — cuestionario de privacidad de las tiendas
 
-Revisado el 14 de octubre de 2026 tras el pivote del 12-oct-2026 y la foto de perfil moderada con OpenAI. Fuente factual: [inventario](datos-recopilados.md). Asume que el binario enviado **no** recoge datos de las funciones Lock-In ocultas (sesiones, salas, vídeo, rachas, valoraciones, acuerdo, recordatorios). Si el código sigue activo en el binario, volver a añadir esos tipos (vídeo/audio, interacciones de sesión, IP a STUN de Google).
+Revisado el 15 de octubre de 2026 contra el **binario final tras T5** (commits `cf18086` y `10f4ff5`). Fuente factual: [inventario](datos-recopilados.md).
+
+El binario enviado **ya no contiene** Lock-In (sesiones, salas, rachas, valoraciones, acuerdo), WebRTC/vídeo/audio, STUN de Google ni `expo-notifications`: se borró el código, no solo se ocultó. Por tanto no se declaran audio, vídeo de llamada, interacciones de sesión ni recordatorios. Si alguna vez se restaura Lock-In (git, commit anterior a `cf18086`), reabrir este documento antes de publicar.
+
+### Inventario del binario final (app.json y package.json tras T5)
+
+| Elemento | Estado | Uso |
+| --- | --- | --- |
+| Permisos Android declarados | solo `android.permission.CAMERA` (más `INTERNET` y los que aporten librerías: comprobar en el manifiesto del AAB, ver pendientes) | Hacer la foto de perfil |
+| `RECORD_AUDIO`, `SCHEDULE_EXACT_ALARM` | **ausentes** | — |
+| iOS `NSCameraUsageDescription` / `NSPhotoLibraryUsageDescription` | presentes, texto «para tu foto de perfil» | Foto de perfil |
+| iOS `NSMicrophoneUsageDescription` | **ausente** (`expo-image-picker` con `microphonePermission: false`) | — |
+| `ITSAppUsesNonExemptEncryption` | `false` (solo HTTPS/TLS estándar del sistema) | Exportación de cifrado |
+| `expo-secure-store` | presente | Sesión Auth y copia de respaldo del dispositivo en Keychain/Keystore |
+| `expo-image-picker` | presente, solo galería y cámara | Foto de perfil opcional |
+| `expo-updates` / EAS | presente | Actualizaciones OTA (EAS-Client-ID, plataforma, runtime) |
+| `react-native-webrtc`, `expo-notifications` | **retirados** | — |
+| Anuncios, analítica, SDK de terceros de seguimiento | ninguno | — |
+
+Procesador adicional fuera del binario: la Edge Function `moderate-avatar` envía la foto a **OpenAI** (`omni-moderation-latest`) desde el servidor para moderarla antes de publicarla; la app no habla con OpenAI directamente.
 
 ## Apple — App Privacy
 
@@ -64,10 +83,22 @@ Fuente: [guía del formulario](https://support.google.com/googleplay/android-dev
 
 | Requisito | Estado según los docs | Pendiente |
 | --- | --- | --- |
-| Baja de cuenta en la app (Apple 5.1.1(v), Google) | Implementada: `delete_my_account()` + `deleteAvatar` previo (mejor esfuerzo); botón en Perfil > Cuenta. Aplicada en producción según D09 | Probar en la build final; el archivo de la foto puede quedar huérfano si falla (tarea T4) |
-| Bloquear y reportar **perfiles** (Apple 1.2, UGC de Google) | Implementado y comprobado en el código: `block_profile()`, `report_profile()` y panel con «Bloquear» y «Reportar» en el deck y el chat | Probar en la build. **No existe reportar un mensaje concreto** (tarea T3b) |
-| Filtrado de contenido objetable (Apple 1.2) | Fotos moderadas con OpenAI; textos de perfil y chat **sin filtrar** | Tarea T3b (filtro básico) o documentar revisión de reportes (72 h / 24 h, D11) en las notas de revisión |
-| Aceptación de términos/normas antes de publicar contenido (Apple 1.2) | **No existe aún en la app.** Términos, normas y seguridad infantil redactados (versión 1.0, 14-oct-2026) | Tarea T3a: aceptación obligatoria con versión y fecha. No enviar sin ella |
-| Política y normas públicas, enlace en la app | Páginas generadas por `scripts/build-web.mjs` (privacidad, términos, normas, seguridad infantil, soporte, eliminar cuenta). **Sin enlaces dentro de la app aún** | Publicar en Pages y enlazar desde Perfil (T3a) |
-| Seguridad infantil (Google, categoría Social) | Estándares publicados en `/seguridad-infantil/` (CSAE, vía de reporte, contacto, cumplimiento legal); contacto D11 | Completar la declaración en Play Console |
-| Cadenas de permisos coherentes (Apple 5.1.1) | app.json mantiene el texto de cámara/micrófono para «la llamada de vídeo de la sesión Lock-In» (comprobado) | Retirar el plugin WebRTC; dejar solo el texto de cámara/galería para la foto (tarea T5, fuera de este bloque) |
+| Baja de cuenta en la app (Apple 5.1.1(v), Google) | Implementada: `delete_my_account()` + borrado previo de la foto; botón en Perfil > Cuenta. Aplicada en producción según D09 | Probar en la build final (T7). Garantía de borrado de la foto en servidor depende de la migración `20261014140000` (sin aplicar) |
+| Bloquear y reportar **perfiles** y **mensajes** (Apple 1.2, UGC de Google) | Implementado en el código: `block_profile()`, `report_profile()`, `report_message` (panel de reporte de mensaje en el chat; migración `20261014130000`) | **Migración sin aplicar en producción**; probar en la build (T7) |
+| Filtrado de contenido objetable (Apple 1.2) | Filtro básico es/en en cliente para bio, textos de perfil y mensajes (`src/features/safety/content-filter.ts`) + fotos moderadas con OpenAI en servidor + revisión de reportes | Describirlo como complemento, no como moderación completa (ver notas de revisor) |
+| Aceptación de Términos y Normas antes de publicar (Apple 1.2) | Implementada: pantalla de aceptación con versión y fecha (`TERMS_VERSION` = 2026-10-14), puerta en onboarding, chat y foto; enlaces legales en Perfil | **Migración `20261014120000` sin aplicar en producción**; la puerta del servidor aún no existe (solo cliente, decisión 9) |
+| Política y normas públicas, enlace en la app | Páginas generadas por `scripts/build-web.mjs` (privacidad, términos, normas, seguridad infantil, soporte, eliminar cuenta); enlaces en Perfil | Publicar en Pages tras cerrar los marcadores [pendiente: fecha de publicación] |
+| Seguridad infantil (Google, categoría Social) | Estándares publicados en `/seguridad-infantil/` (CSAE, vía de reporte, contacto) | Completar la declaración en Play Console [pendiente: el titular acepta ser contacto designado] |
+| Cadenas de permisos coherentes (Apple 5.1.1) | **Resuelto en T5:** solo cámara y galería, con textos de foto de perfil; sin micrófono | Verificar el manifiesto del AAB y el Info.plist de la build (T7) |
+| Cifrado de exportación (Apple) | `ITSAppUsesNonExemptEncryption=false` | Responder «no» al cifrado propio en App Store Connect |
+
+## Marcadores abiertos (dependen del usuario)
+
+- [pendiente: fecha de publicación] — en privacidad, términos y normas.
+- [pendiente: proveedor SMTP] — nombrarlo en la sección 5 de privacidad y en D05; hasta entonces el límite de correo de Supabase por defecto aplica.
+- [pendiente: datos de titular/NIF] — razón social o persona física, NIF y dirección para el formulario de «trader» (DSA) de Apple y Google. Los docs usan hoy nombre y dirección de D01.
+- [pendiente: DPA y condiciones de OpenAI] — retención, uso para entrenamiento y si actúa como encargado; no afirmar nada hasta confirmarlo. De ello depende marcar Fotos como «compartidas» en Google.
+- [pendiente: categoría secundaria de App Store] — Negocios o vacía.
+- [pendiente: cuenta de prueba] — credenciales para el revisor de Apple.
+- [pendiente: aplicar migraciones en producción] — `20261014120000`, `20261014130000`, `20261014140000`, y desplegar `moderate-avatar` (requiere permiso del usuario).
+- [pendiente: job `purge_old_user_reports()`] — confirmar que existe en producción.
