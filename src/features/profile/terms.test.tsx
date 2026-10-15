@@ -9,7 +9,9 @@ import { LEGAL_URLS, TERMS_VERSION } from '@/constants/legal';
 import { DataProvider } from '@/data';
 import { createMockRepositories, resetState } from '@/data/mock';
 
-import { LegalLinks, TermsAcceptance } from './terms';
+import { Text } from 'react-native';
+
+import { LegalLinks, TermsAcceptance, useTermsGate } from './terms';
 
 beforeEach(() => resetState());
 
@@ -43,5 +45,31 @@ describe('LegalLinks', () => {
     expect(screen.getByLabelText('Términos de uso')).toBeTruthy();
     expect(screen.getByLabelText('Normas de la comunidad')).toBeTruthy();
     expect(LEGAL_URLS.terms).toMatch(/^https:\/\/.+\/terminos$/);
+  });
+});
+
+function GateProbe() {
+  const { gate } = useTermsGate();
+  return <Text>{`gate:${gate}`}</Text>;
+}
+
+describe('useTermsGate', () => {
+  it('sin aceptación exige aceptar; con una versión posterior a la vigente deja pasar', async () => {
+    const repositories = createMockRepositories();
+    const view = await render(
+      <DataProvider value={repositories}>
+        <GateProbe />
+      </DataProvider>
+    );
+    await waitFor(() => expect(screen.getByText('gate:required')).toBeTruthy());
+    view.unmount();
+
+    await repositories.session.acceptTerms('2999-01-01');
+    await render(
+      <DataProvider value={repositories}>
+        <GateProbe />
+      </DataProvider>
+    );
+    await waitFor(() => expect(screen.getByText('gate:accepted')).toBeTruthy());
   });
 });

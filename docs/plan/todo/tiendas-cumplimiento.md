@@ -60,7 +60,10 @@ Ningún worktree de agente retirado todavía (`.claude/worktrees/agent-a33ce…`
 sus ramas ya están fusionadas; comprobar con `git cherry` y retirar con la receta PowerShell de la memoria
 `worktree-remove-sigue-junctions`.
 
-**`codex review --base 7a1a7b0` — hallazgos abiertos (arreglar antes de empujar):**
+**`codex review --base 7a1a7b0` — hallazgos ARREGLADOS (agente perfil, 2026-10-15; pendiente de re-review):**
+Los 5 están resueltos: ScrollView en `terms.tsx`; pasos de aceptación en `full-journey.yaml` (`register-confirm.yaml`
+termina en la bienvenida y nunca llega al formulario, no necesita pasos; solo cambiarlo si la puerta se mueve); `PhotoSection`
+solo con términos aceptados; `useTermsGate` acepta versión >= vigente; `pages.yml` vigila los 3 docs. Lista original:
 1. [P1] `src/features/profile/terms.tsx`: pantalla de aceptación sin scroll; en pantallas cortas o con
    texto grande la casilla/botón quedan fuera. Envolver en `ScrollView`.
 2. [P1] `e2e/full-journey.yaml` (y `register-confirm`): no aceptan los términos; el gate rompe el

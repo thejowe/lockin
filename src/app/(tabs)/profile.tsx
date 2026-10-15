@@ -162,7 +162,13 @@ export default function ProfileScreen() {
           </Animated.View>
 
           <Animated.View entering={enterUp(1)}>
-            <PhotoSection profile={profile} onChange={refresh} />
+            {terms.gate === 'accepted' ? (
+              <PhotoSection profile={profile} onChange={refresh} />
+            ) : terms.gate === 'required' ? (
+              <ThemedText type="body" themeColor="textSecondary">
+                Para publicar una foto acepta antes los Términos y Normas: pulsa «Editar perfil».
+              </ThemedText>
+            ) : null}
           </Animated.View>
 
           <Animated.View entering={enterUp(2)}>

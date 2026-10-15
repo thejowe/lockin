@@ -18,6 +18,12 @@ name: Alta, perfil, deck, match, mensaje y persistencia
     visible: 'Encuentra con quién construir'
     timeout: 60000
 - tapOn: 'Continuar'
+# Términos y Normas: sin aceptarlos no se publica perfil (gate de profile-form).
+- extendedWaitUntil:
+    visible: 'Términos y Normas'
+    timeout: 30000
+- tapOn: 'He leído y acepto los Términos de uso y las Normas de la comunidad'
+- tapOn: 'Aceptar y continuar'
 - tapOn:
     text: 'Nombre|Cómo te llamas'
     below: 'Nombre'

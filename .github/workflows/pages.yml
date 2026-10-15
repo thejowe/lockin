@@ -11,6 +11,9 @@ on:
     paths:
       - 'web/**'
       - 'docs/tiendas/privacidad.md'
+      - 'docs/tiendas/terminos.md'
+      - 'docs/tiendas/normas.md'
+      - 'docs/tiendas/seguridad-infantil.md'
       - 'scripts/build-web.mjs'
       - '.github/workflows/pages.yml'
   workflow_dispatch:

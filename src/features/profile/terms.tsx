@@ -10,7 +10,7 @@
  */
 
 import { useState } from 'react';
-import { Linking, Pressable, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { LEGAL_URLS, TERMS_VERSION } from '@/constants/legal';
@@ -33,7 +33,11 @@ export function useTermsGate(): { gate: TermsGate; refresh: () => void } {
   } = useQuery(QUERY_KEY, () => repositories.session.getTermsAcceptance());
 
   if (loading) return { gate: 'checking', refresh };
-  return { gate: acceptance?.version === TERMS_VERSION ? 'accepted' : 'required', refresh };
+  // Versiones `AAAA-MM-DD`: el orden léxico es el cronológico. Una versión más
+  // nueva que la de este cliente cuenta como aceptada (no atrapar al cliente
+  // viejo en un bucle de aceptación).
+  const accepted = !!acceptance?.version && acceptance.version >= TERMS_VERSION;
+  return { gate: accepted ? 'accepted' : 'required', refresh };
 }
 
 function openLink(url: string) {
@@ -75,7 +79,7 @@ export function TermsAcceptance({ onAccepted }: { onAccepted: () => void }) {
   }
 
   return (
-    <View style={styles.root}>
+    <ScrollView contentContainerStyle={styles.root}>
       <ThemedText type="label" themeColor="textSecondary">
         Antes de continuar
       </ThemedText>
@@ -120,7 +124,7 @@ export function TermsAcceptance({ onAccepted }: { onAccepted: () => void }) {
         disabled={!checked || saving}
         onPress={() => void accept()}
       />
-    </View>
+    </ScrollView>
   );
 }
 
@@ -143,6 +147,7 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,
+    paddingBottom: Spacing.six,
   },
   links: {
     gap: Spacing.one,
