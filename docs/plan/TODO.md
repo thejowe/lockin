@@ -1,8 +1,19 @@
 # TODO maestro — LockIn MVP
 
-## ▶ Al retomar (2026-10-15): `tiendas-cumplimiento` — solo quedan decisiones tuyas
+## ▶ Al retomar (2026-10-15, cierre de sesión): `tiendas-cumplimiento` — solo quedan decisiones tuyas
 
-T1, T3a, T3b, T4, T5 y T6 hechas y revisadas (`3b0eea7`, `10f4ff5`, `cf18086`, `6ac99a8`, `ff1ef69`); Lock-In y WebRTC fuera del binario. **15 commits locales sin push** (`pages.yml` publicaría marcadores abiertos). Bloquean T7 y el push: permiso para aplicar `20261014120000/130000/140000` y desplegar `moderate-avatar` en producción; fecha de publicación, SMTP, titular/NIF, DPA de OpenAI, cuenta de prueba de Apple; qué hacer con las filas de prueba de Lock-In. Detalle en `docs/plan/todo/tiendas-cumplimiento.md`.
+**Hecho y revisado (local, 16 commits SIN push):** T1, T3a, T3b, T4, T5, T6 y los hallazgos de `codex review` (`ff1ef69`, `6ac99a8`, `cf18086`, `10f4ff5`, `3b0eea7`). Lock-In y WebRTC fuera del binario; `test:e2e` 94/94; jest 105 suites verdes.
+
+**T7 (`comprobador`, backend MOCK) quedó lanzado y sin cerrar al parar.** Antes de nada: `git log` y `docs/plan/todo/tiendas-cumplimiento.md` → sección T7. Si hay veredicto, léelo (evidencia en `e2e/artifacts/local/2026-10-15-tiendas-t7/`); si no, relánzalo: `Actúa como el agente comprobador… Comprueba T7 con mock, commit <HEAD>` (aceptación de términos, enlaces legales, reporte de mensaje + filtro, baja, y manifiesto sin RECORD_AUDIO/SCHEDULE_EXACT_ALARM/READ_MEDIA_*/AD_ID, anotar targetSdk). Ojo: `expo prebuild` no se había ejecutado nunca.
+
+**Bloquea T7 contra Supabase real y el push (decisiones del usuario, nada de esto se hace sin su orden):**
+1. Aplicar en producción `20261014120000_terms_acceptances`, `20261014130000_report_message`, `20261014140000_avatar_storage_cleanup` y desplegar `moderate-avatar`; después Schema drift y que `storage.protect_delete` no bloquee el borrado.
+2. Marcadores: fecha de publicación, SMTP, titular/NIF (DSA), DPA/condiciones de OpenAI, categoría secundaria, cuenta de prueba de Apple, confirmar cron `purge_old_user_reports()`. `pages.yml` publicaría `web/**` con marcadores: no empujar antes.
+3. Filas de prueba de Lock-In en producción (4 sesiones/4 salas): borrar o no.
+4. Revisión jurídica de `terminos.md`; subir `TERMS_VERSION` si cambia su fecha.
+5. Tras (1): pasar `privacidad.md`/`eliminar-cuenta` de «mejor esfuerzo» a «garantizado en servidor».
+
+**Sin podar (deuda menor):** código muerto de Lock-In en `src/data` (repos sessions/rooms), `.claude/agents/{salas,video,sesiones}.md`, comentarios de `e2e/run.mjs`; `docs/auditoria/` sin trackear (es de otra sesión, anterior a T1–T4: su `PROMPT-CLAUDE.md` duplicaría trabajo hecho). Worktrees `worktree-agent-*` fusionados pendientes de retirar con la receta PowerShell de `worktree-remove-sigue-junctions`.
 
 Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>.md` — márcalo ahí, no aquí.
 
