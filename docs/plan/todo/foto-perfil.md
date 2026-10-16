@@ -477,3 +477,22 @@ cuenta B `42e89a10-…` (REST). Evidencia: `e2e/artifacts/local/2026-10-16-tiend
   huérfanas (B1 borrada, y una creada por curl de red).
 - Incidencia: primer arranque tras `pm clear` falló dos veces en `signInAnonymously` (cayó al fallback de cuenta de
   dispositivo y mostró «No hay crypto.getRandomValues…»); a la tercera, tras force-stop, entró. Sin causa aclarada.
+
+### Hallazgos del comprobador — foto privada en el DECK de otra cuenta (2026-10-16, 20:18–20:26 UTC)
+
+Backend: **Supabase real** `grrzmzktrhksbttpbblg`, commit `f1fc340`, APK release `supabase.apk`, usuario Android 10.
+Cuenta A «AlfaDeck» `78cbf23d-21d7-44ff-8c87-ce6525302e3b` (creada por UI, marcada no anónima por el orquestador),
+cuenta B «BetaDeck» (UI, uid no extraído; localizar por nombre). Evidencia: `e2e/artifacts/local/2026-10-16-tiendas-t4-deck/`.
+
+- ✅ **A publica**: galería → recorte → 20:20:22Z (`photo-time.txt`); Perfil muestra la foto (círculo gris degradado, no iniciales) `23.png`.
+- ✅ **Deck de B pinta la foto privada de A** a las 20:25:00Z (`captura-time.txt`): `deck-A.png` y `deck-A-p2.png` —
+  la imagen cubre la tarjeta entera, no hay iniciales (las tarjetas sin foto de B sí las muestran, p. ej. `d1.png`/`e.png`);
+  nombre, chips, jornada y ambición legibles sobre el degradado en las páginas 1 y 2.
+  Limitación: la foto de prueba (`clara.jpg`) es un degradado gris, así que prueba que carga y cubre, no detalle.
+- ⚠️ **«Ninguna `/object/public/`» no demostrable por logcat**: el build release no registra URLs; `logcat-fase2.txt` tiene
+  0 coincidencias de `object/public` y 0 de `object/sign` (ausencia de log, no de petición). Lo que sí consta: la
+  foto carga con el bucket ya privado (el público devuelve 404, ver entrada anterior), así que la app usa URL firmada.
+- ⚠️ **Like/Matches/chat**: no probado (no habría match: A no ha dado like a B).
+- ✅ **Baja de B** por UI «Eliminar mi cuenta para siempre» 20:25:49Z (`baja-B-time.txt`) → vuelve a onboarding (`42.png`).
+  A queda viva para baja por SQL.
+- Nota: `ui.py fill` termina con BACK; sin teclado abierto saca del onboarding. Usé tap + `input text`.
