@@ -452,3 +452,28 @@ Valorado; no es acotado, se deja el diseño:
   inadivinable, y las fotos pasan moderación.
 - Coste estimado: migración + `mappers`, `avatar.ts`, la Edge Function (devolver
   ruta), deck/prefetch y tests de contrato: un bloque propio, no una tarea de T4.
+
+### Hallazgos del comprobador — bucket `avatars` privado (2026-10-16, 20:07–20:20 UTC)
+
+Backend: **Supabase real** `grrzmzktrhksbttpbblg`, commit `235ded6`, APK release recompilado
+(`supabase.apk`, sha256 `76985492…748b`), `EXPO_PUBLIC_REQUIRE_ACCOUNT=false`, usuario Android 10.
+Cuenta A `124eceba-11ab-433f-b8b8-e5bbdb9fb316` (UI, marcada no anónima por el orquestador),
+cuenta B `42e89a10-…` (REST). Evidencia: `e2e/artifacts/local/2026-10-16-tiendas-t4-privado/`.
+
+- ✅ **Publicar**: elegir galería → recorte → 20:11:43Z; el perfil pasa a «Quitar foto» disponible y pinta
+  la foto (degradado gris, no las iniciales) `21.png`, `22.png`; sobrevive a reinicio en frío `23-frio-perfil.png`.
+  `avatar_url` leído vía REST como B: `124eceba-…/e0108b99-df25-4fbb-bd72-84c6adf78ef6.jpg` (RUTA, no URL;
+  `avatar-url-via-B.txt`). No capturé el texto «Foto publicada» (desaparece antes de la captura): ⚠️ solo ese literal.
+- ✅ **Privado**: `GET /object/public/avatars/<ruta>` → 400 `{"statusCode":"404","error":"Bucket not found"}`;
+  URL firmada vigente → 200 `image/jpeg` 7715 bytes (`30-privado-http.txt`). La firmada la emití yo con el JWT de B
+  (no extraje la que usa la app del dispositivo).
+- ✅ **B firma la foto de A**: `POST /storage/v1/object/sign/avatars/<ruta>` con JWT de B → 200 (mismo archivo).
+- ✅/⚠️ **Quitar foto** 20:1xZ (`quitar-time.txt`): `avatar_url` pasa a null; firmar la ruta antigua desde B →
+  400 «Object not found» (`40-tras-quitar.txt`). Esa respuesta es la misma si el objeto no existe o si RLS lo oculta:
+  que el objeto haya desaparecido de `storage.objects` hay que confirmarlo por SQL.
+- ⚠️ **Deck de B**: no comprobable con UI (B es REST). A ya tenía like de B, no hubo match por UI.
+- ✅ **Bajas**: A por UI («Eliminar mi cuenta para siempre», `baja-time.txt`) → vuelve a onboarding;
+  perfil de A y de B inexistentes por REST (`41-A-tras-baja.txt`). Residuos a limpiar por SQL: cuentas anónimas
+  huérfanas (B1 borrada, y una creada por curl de red).
+- Incidencia: primer arranque tras `pm clear` falló dos veces en `signInAnonymously` (cayó al fallback de cuenta de
+  dispositivo y mostró «No hay crypto.getRandomValues…»); a la tercera, tras force-stop, entró. Sin causa aclarada.
