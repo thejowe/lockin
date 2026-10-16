@@ -13,7 +13,7 @@
 4. Revisión jurídica de `terminos.md`; subir `TERMS_VERSION` si cambia su fecha.
 5. Tras (1): pasar `privacidad.md`/`eliminar-cuenta` de «mejor esfuerzo» a «garantizado en servidor».
 
-**Sin podar (deuda menor):** código muerto de Lock-In en `src/data` (repos sessions/rooms), `.claude/agents/{salas,video,sesiones}.md`, comentarios de `e2e/run.mjs`; `docs/auditoria/` sin trackear (es de otra sesión, anterior a T1–T4: su `PROMPT-CLAUDE.md` duplicaría trabajo hecho). Worktrees `worktree-agent-*` fusionados pendientes de retirar con la receta PowerShell de `worktree-remove-sigue-junctions`.
+**Sin podar (deuda menor):** código muerto de Lock-In en `src/data` (repos sessions/rooms), `.claude/agents/{salas,video,sesiones}.md`, comentarios de `e2e/run.mjs`; `docs/auditoria/` sin trackear (es de otra sesión, anterior a T1–T4: su `PROMPT-CLAUDE.md` duplicaría trabajo hecho). Worktrees `worktree-agent-*` retirados el 2026-10-16 (fusionados, sin enlaces, `node_modules` principal intacto).
 
 Solo hitos de alto nivel. El detalle accionable vive en `docs/plan/todo/<bloque>.md` — márcalo ahí, no aquí.
 
