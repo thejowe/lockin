@@ -872,6 +872,24 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       [],
       'el sello se lee: es lo que pinta la insignia'
     );
+    // `avatar_url` guarda la RUTA del bucket privado (`<uid>/<uuid>.jpg`), nunca una URL.
+    await db.exec(`update public.profiles set avatar_url = '${ana}/a.jpg' where id = '${ana}';`);
+    for (const mala of [
+      `https://x.supabase.co/storage/v1/object/public/avatars/${ana}/a.jpg`,
+      `${bea}/a.jpg`,
+      `${ana}/sub/a.jpg`,
+      `${ana}/a.png`,
+      `${ana}/../${bea}/a.jpg`,
+    ]) {
+      await db.exec('savepoint ruta;');
+      await assert.rejects(
+        () => db.exec(`update public.profiles set avatar_url = '${mala}' where id = '${ana}';`),
+        /profiles_avatar_url_check/,
+        `la ruta ${mala} no debe valer`
+      );
+      await db.exec('rollback to savepoint ruta;');
+    }
+    await db.exec(`update public.profiles set avatar_url = null where id = '${ana}';`);
     await asActor(ana);
     await db.exec('set local role authenticated');
     const rechaza = async (sql, pattern, message) => {
@@ -890,7 +908,7 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       'authenticated no debe poder escribir el handle a mano'
     );
     await rechaza(
-      `update public.profiles set avatar_url = 'https://x.supabase.co/storage/v1/object/public/avatars/${ana}/a.jpg' where id = '${ana}';`,
+      `update public.profiles set avatar_url = '${ana}/a.jpg' where id = '${ana}';`,
       /permission denied|no privileges/i,
       'la foto solo la pone la función de moderación'
     );

@@ -56,7 +56,7 @@ Usamos los datos para mantener y recuperar tu cuenta, mostrar y editar tu perfil
 ## 4. Quién puede verlos
 
 - **Tu perfil (incluida la foto aprobada) puede verlo cualquier persona con cuenta en la app**, también las cuentas creadas sin email, no solo tus matches. No incluyas información que no quieras compartir.
-- **La foto aprobada se guarda en un espacio de lectura pública por URL**: quien conozca el enlace exacto de la imagen puede abrirla aunque no tenga cuenta.
+- **La foto aprobada se guarda en un espacio privado y solo se sirve con enlaces temporales** (caducan en una hora) a las personas con sesión iniciada en la app; no hay una dirección pública permanente. Un enlace temporal que alguien ya tuviera sigue funcionando hasta que caduque.
 - Solo tú ves tus decisiones al deslizar; el sistema las usa para detectar el interés mutuo.
 - Solo las dos personas de un match ven su conversación.
 - Los operadores con acceso administrativo y los proveedores pueden acceder a datos en la medida necesaria para prestar el servicio. El chat se guarda en la base de datos y no tiene cifrado de extremo a extremo.
@@ -81,7 +81,7 @@ Para completar el perfil, la app pide nombre, edad, zona, disponibilidad y al me
 
 ## 7. Cuánto tiempo se conservan
 
-Conservamos tus datos mientras tu cuenta exista. Al eliminar la cuenta desde la app (Perfil > Cuenta > Eliminar mi cuenta) se borran de inmediato tu perfil y los datos asociados. Al borrar la cuenta, el servidor elimina también tus fotos del almacenamiento (la publicada y cualquier subida pendiente), de modo que dejan de ser accesibles por su dirección. Los sistemas de copia del proveedor de almacenamiento pueden conservar un residuo técnico sin enlace ni metadatos; si necesitas una confirmación de retirada, escríbenos a cofounder.soporte@gmail.com.
+Conservamos tus datos mientras tu cuenta exista. Al eliminar la cuenta desde la app (Perfil > Cuenta > Eliminar mi cuenta) se borran de inmediato tu perfil y los datos asociados. Al borrar la cuenta, el servidor elimina también tus fotos del almacenamiento (la publicada y cualquier subida pendiente), de modo que dejan de ser accesibles. Los sistemas de copia del proveedor de almacenamiento pueden conservar un residuo técnico sin enlace ni metadatos; si necesitas una confirmación de retirada, escríbenos a cofounder.soporte@gmail.com.
 
 - **Cuentas inactivas:** nos reservamos eliminar las cuentas que lleven 24 meses sin acceso, sin aviso previo automático. Hoy no existe un proceso automático que lo haga.
 - **Copias de seguridad del proveedor:** pueden conservar datos eliminados hasta 30 días más.
@@ -116,6 +116,6 @@ Si cambiamos esta política de forma relevante, lo avisaremos en la app y, si ti
 
 Nota editorial, a retirar del texto publicado:
 
-- Se han retirado sesiones Lock-In, salas, videollamada, STUN de Google, rachas, valoraciones, acuerdo, recordatorios y alarmas exactas porque ya no están en la UI. El código y las tablas siguen en el repositorio y en la base de datos de producción (hay datos de prueba en `lockin_sessions`, `session_attendance` y `lockin_rooms`); mientras existan, o se borran o hay que mencionarlos.
+- Se han retirado sesiones Lock-In, salas, videollamada, STUN de Google, rachas, valoraciones, acuerdo, recordatorios y alarmas exactas porque ya no están en la UI. El código y las tablas siguen en el repositorio y en la base de datos de producción, vacías: los datos de prueba de `lockin_sessions`, `session_attendance` y `lockin_rooms` se borraron el 16-oct-2026.
 - **Cotejado con el código el 14-oct-2026:** los sugeridores de apertura del chat son reglas fijas, sin IA ni proveedor; la sesión se guarda con `expo-secure-store` en móvil; `expo-notifications`, WebRTC, `RECORD_AUDIO` y `SCHEDULE_EXACT_ALARM` ya no están en el binario desde T5 (no hay push ni recordatorios); `looking_for` y `active_mode` siguen escribiéndose en base de datos; `moderate-avatar` borra la subida pendiente tras cada revisión y la tarea `purge_stale_avatar_uploads()` (cada hora, aplicada en producción el 16-oct) retira las de más de 24 h; `delete_my_account` borra en servidor los objetos de la persona en `avatars` y `avatar-uploads` (límite: Supabase documenta que los bytes del backend S3 no se retiran con SQL; la dirección deja de resolver).
 - **Pendiente de decidir o confirmar:** (1) condiciones de la API de OpenAI aplicables (retención, entrenamiento, DPA): no afirmar nada hasta confirmarlo; (2) ~~plazo de las fotos rechazadas o pendientes~~ resuelto: borrado tras cada revisión y purga de restos a las 24 h; (3) proveedor de correo (Resend o Brevo); (4) fecha de publicación; (5) ~~job `purge_old_user_reports()`~~ confirmado activo en producción el 16-oct (03:20 diario); (6) los plazos de revisión de reportes (72 h / 24 h) son un compromiso operativo, no una regla del código.

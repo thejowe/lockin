@@ -39,6 +39,7 @@ test('ve las constraints de `alter table … add constraint`', () => {
   const names = real.constraints.map((c) => `${c.table}.${c.name} ${c.kind}`).sort();
   assert.deepEqual(names, [
     'lockin_rooms.lockin_rooms_host_id_fkey foreign',
+    'profiles.profiles_avatar_url_check check',
     'profiles.profiles_github_link_matches_handle check',
     'profiles.profiles_github_verification_complete check',
     'user_reports.user_reports_distinct_parties check',

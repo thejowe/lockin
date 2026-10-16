@@ -38,7 +38,7 @@ export function PhotoSection({ profile, onChange }: { profile: Profile; onChange
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const hasPhoto = Boolean(profile.avatar.imageUrl);
+  const hasPhoto = Boolean(profile.avatar.imageUrl || profile.avatar.hasPhoto);
 
   async function choose(source: 'library' | 'camera') {
     setError(null);

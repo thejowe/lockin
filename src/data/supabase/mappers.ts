@@ -84,7 +84,9 @@ export function toProfile(row: ProfileRow): Profile {
     avatar: {
       initials: row.avatar_initials,
       accent: row.avatar_accent,
-      ...(row.avatar_url ? { imageUrl: row.avatar_url } : {}),
+      // `avatar_url` guarda la RUTA en el bucket privado `avatars`; el repositorio la
+      // cambia por una URL firmada (`avatar-urls.ts`) antes de entregar el perfil.
+      ...(row.avatar_url ? { imageUrl: row.avatar_url, hasPhoto: true } : {}),
     },
     specialties: row.specialties,
     seekingSpecialties: row.seeking_specialties,

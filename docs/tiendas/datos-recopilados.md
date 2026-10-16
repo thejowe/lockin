@@ -4,7 +4,7 @@ Actualizado el 15 de octubre de 2026 tras T5 (binario sin Lock-In). Revisado el 
 
 ## Cambios respecto a la versión anterior
 
-- Añadida la **foto de perfil**: buckets `avatar-uploads` (privado) y `avatars` (público tras moderación), columna `profiles.avatar_url`, envío a **OpenAI** (Edge Function `moderate-avatar`, falla cerrado) y permisos de galería/cámara de `expo-image-picker` (la versión anterior decía que no había permiso de fotos).
+- Añadida la **foto de perfil**: buckets `avatar-uploads` (privado) y `avatars` (privado; se sirve con URL firmada tras moderación), columna `profiles.avatar_url`, envío a **OpenAI** (Edge Function `moderate-avatar`, falla cerrado) y permisos de galería/cámara de `expo-image-picker` (la versión anterior decía que no había permiso de fotos).
 - Añadidas las tablas de **bloqueo y reporte** (migraciones `20261009224000`, `20261009231000` y `20261010120000`; D09 las da por aplicadas en producción el 10-oct y D11 decía «pendientes de aplicar»: resuelto a favor de D09, **confirmar contra producción**). Columnas completadas desde las migraciones.
 - Corregido: la baja de cuenta **existe** (Perfil > Cuenta > Eliminar mi cuenta, D09). El texto anterior («no hay flujo de baja», «Borrarlo todo» sin efecto) estaba desactualizado.
 - Movidas a «inactivas» las tablas y flujos de Lock-In: `lockin_sessions`, `session_attendance`, `session_ratings`, `agreement_answers`, `lockin_rooms`, `room_members`, presencia, señalización WebRTC, vídeo/audio, STUN de Google y recordatorios locales.
@@ -38,7 +38,7 @@ Columnas añadidas: [especialidades buscadas](../../supabase/migrations/20260907
 | `timezone` | `timezone` | Zona horaria IANA declarada. | P | R1 |
 | `avatar_initials` | `avatar.initials` | Una o dos iniciales; se pueden derivar del nombre. | P | R1 |
 | `avatar_accent` | `avatar.accent` | Color brass o teal. | P | R1 |
-| `avatar_url` | `avatar.url` | URL pública de la foto aprobada (bucket `avatars`), o null. | P | R1; se borra con la cuenta |
+| `avatar_url` | `avatar.url` | Ruta del objeto de la foto aprobada en el bucket privado `avatars` (`<uid>/<uuid>.jpg`; no es una URL), o null. | P | R1; se borra con la cuenta |
 | `specialties` | `specialties` | Especialidades que declara dominar; 1–10 etiquetas. | P | R1 |
 | `looking_for` | `lookingFor` | par, lockin o ambos. Sigue existiendo y escribiéndose desde el formulario de perfil (comprobado en `src/data/supabase/mappers.ts`). | P | R1 |
 | `starting_point` | `startingPoint` | solo-ganas, idea-sin-empezar o algo-empezado. | P | R1 |
@@ -116,9 +116,9 @@ Fuente: [20261009224000_block_report.sql](../../supabase/migrations/202610092240
 | --- | --- | --- | --- |
 | `avatar-uploads` (privado, solo JPEG, 5 MB) | Imagen original subida | Titular (solo insertar y borrar en su carpeta), Edge Function y operador | Comportamiento actual de `moderate-avatar`: tras cada petición `set`, aprobada, rechazada o con error, intenta borrar el archivo pendiente; `remove` borra también lo que haya pendiente de la persona. Barrido horario `purge_stale_avatar_uploads()` (pg_cron) de lo que supere 24 h; `delete_my_account()` borra además los objetos de la persona. Aplicado en producción el 16-oct-2026 |
 | OpenAI (moderación, `omni-moderation-latest`) | Imagen enviada (data URL base64) para clasificarla; solo la imagen | OpenAI como encargado | **Pregunta abierta:** retención y uso según las condiciones aplicables a la cuenta; ¿DPA? No se declara nada sobre entrenamiento hasta confirmarlo. Transferencia fuera del EEE: CCT/DPF |
-| `avatars` (público) | Imagen aprobada (`<uid>/<uuid>.jpg`) | Cualquier persona con la URL (bucket público: no solo cuentas autenticadas) | Hasta que se quita o se sustituye (la anterior se retira, mejor esfuerzo) o se borra la cuenta |
+| `avatars` (privado) | Imagen aprobada (`<uid>/<uuid>.jpg`) | Cuentas con sesión (incluidas las anónimas), mediante URL firmada de 1 h; sin acceso anónimo | Hasta que se quita o se sustituye (la anterior se retira, mejor esfuerzo) o se borra la cuenta |
 
-Nota: un bucket público significa que la foto aprobada es accesible para quien tenga la URL, incluso fuera de la app; la política lo declara. Hacerlo privado con URLs firmadas es una decisión abierta (tarea T4). `delete_my_account()` borra en servidor los objetos de `avatars` y `avatar-uploads` de la persona (migración `20261014140000`, aplicada el 16-oct-2026); el cliente sigue llamando antes a `deleteAvatar`, que además retira los bytes por la Storage API. Límite: borrar por SQL elimina el objeto para la API (la URL deja de resolver), pero Supabase documenta que los bytes del backend S3 no se retiran con SQL.
+Nota: desde la migración `20261016120000` (sin aplicar en producción a fecha de este texto) el bucket es privado: la foto se sirve con URLs firmadas de 1 h a cualquier cuenta con sesión que pueda ver el perfil, y solo mientras esa foto sea la publicada; una URL ya firmada sigue valiendo hasta caducar. `delete_my_account()` borra en servidor los objetos de `avatars` y `avatar-uploads` de la persona (migración `20261014140000`, aplicada el 16-oct-2026); el cliente sigue llamando antes a `deleteAvatar`, que además retira los bytes por la Storage API. Límite: borrar por SQL elimina el objeto para la API (deja de poder firmarse y servirse), pero Supabase documenta que los bytes del backend S3 no se retiran con SQL.
 
 ## Identidad y credenciales
 
@@ -158,7 +158,7 @@ Plugins restantes: `expo-router`, `expo-splash-screen`, `expo-image-picker`, `ex
 
 ## Tablas y flujos inactivos (Lock-In, fuera del binario desde T5)
 
-`lockin_sessions`, `session_attendance`, `session_ratings`, `agreement_answers`, `lockin_rooms`, `room_members`, presencia y señalización Realtime. La app publicada **no** las lee ni escribe, y WebRTC, STUN de Google y recordatorios locales no están en el binario. Siguen en la base de datos de producción con datos de prueba (`lockin_sessions` 4, `session_attendance` 4, `lockin_rooms` 4, resto 0; lectura del 14-oct): [pendiente: decisión del usuario, borrarlas o mantener la mención en la política]. El detalle columna a columna está en la versión anterior de este documento.
+`lockin_sessions`, `session_attendance`, `session_ratings`, `agreement_answers`, `lockin_rooms`, `room_members`, presencia y señalización Realtime. La app publicada **no** las lee ni escribe, y WebRTC, STUN de Google y recordatorios locales no están en el binario. Siguen como tablas vacías en la base de datos de producción: las filas de prueba que había (`lockin_sessions` 4, `session_attendance` 4, `lockin_rooms` 4; lectura del 14-oct) se borraron el 16-oct-2026 a orden del usuario. El detalle columna a columna está en la versión anterior de este documento.
 
 ## Decisiones (D01–D12)
 

@@ -39,7 +39,7 @@ function fakeClient(opts: { uploadError?: boolean; invoke?: InvokeResult } = {})
   };
   const invoke = jest.fn(async (_name: string, init: { body: unknown }) => {
     calls.push(`invoke:${JSON.stringify(init.body)}`);
-    return opts.invoke ?? { data: { avatarUrl: 'https://x/avatars/u1/n.jpg' }, error: null };
+    return opts.invoke ?? { data: { avatarPath: 'u1/n.jpg' }, error: null };
   });
   const client = {
     storage: { from: jest.fn(() => bucket) },
@@ -52,9 +52,9 @@ describe('uploadAvatar', () => {
   it('sube a avatar-uploads/<uid>/<uuid>.jpg y pide a la función que la publique', async () => {
     const { client, calls } = fakeClient();
 
-    const url = await uploadAvatar(client, 'u1', 'file:///a.jpg');
+    const path = await uploadAvatar(client, 'u1', 'file:///a.jpg');
 
-    expect(url).toBe('https://x/avatars/u1/n.jpg');
+    expect(path).toBe('u1/n.jpg');
     expect(calls[0]).toMatch(/^upload:u1\/[\w-]+\.jpg$/);
     expect(calls[1]).toMatch(/^invoke:\{"action":"set","path":"u1\/[\w-]+\.jpg"\}$/);
   });
@@ -121,7 +121,7 @@ describe('uploadAvatar', () => {
     expect(failure.reason).toBe('unavailable');
   });
 
-  it('una respuesta sin avatarUrl no se da por buena', async () => {
+  it('una respuesta sin avatarPath no se da por buena', async () => {
     const { client } = fakeClient({ invoke: { data: {}, error: null } });
 
     const failure = await uploadAvatar(client, 'u1', 'file:///a.jpg').catch((e) => e);
@@ -132,7 +132,7 @@ describe('uploadAvatar', () => {
 
 describe('deleteAvatar', () => {
   it('deleteAvatar invoca la acción remove', async () => {
-    const { client, calls } = fakeClient({ invoke: { data: { avatarUrl: null }, error: null } });
+    const { client, calls } = fakeClient({ invoke: { data: { avatarPath: null }, error: null } });
 
     await deleteAvatar(client);
 

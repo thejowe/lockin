@@ -17,6 +17,7 @@ import {
 } from 'react';
 
 import { repositories as activeRepositories } from './active';
+import { onMediaStale } from './media-refresh';
 
 import type { Repositories } from './repositories';
 
@@ -31,6 +32,17 @@ export function DataProvider({
   value?: Repositories;
 }) {
   const resolved = useMemo(() => value ?? activeRepositories, [value]);
+
+  // Las URLs firmadas de las fotos caducan; los consumidores conservan los
+  // perfiles ya leídos. Al avisar el backend, se relee todo lo que está montado.
+  useEffect(
+    () =>
+      onMediaStale(() => {
+        const registry = registryFor(resolved);
+        for (const key of [...registry.keys()]) bumpNonce(registry, key);
+      }),
+    [resolved]
+  );
 
   return <RepositoriesContext.Provider value={resolved}>{children}</RepositoriesContext.Provider>;
 }

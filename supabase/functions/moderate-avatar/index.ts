@@ -1,6 +1,7 @@
 /**
  * Edge Function `moderate-avatar`: la única puerta por la que una foto llega a
- * `avatars` y a `profiles.avatar_url`. Sin lógica propia: la decisión vive en
+ * `avatars` (bucket PRIVADO) y a `profiles.avatar_url`, que guarda la RUTA del
+ * objeto (`<uid>/<uuid>.jpg`): el cliente la firma al leer. Sin lógica propia: la decisión vive en
  * `logic.mjs` (con tests); aquí solo se cablean Storage, `profiles` y OpenAI.
  *
  * Secretos: `OPENAI_API_KEY` (lo pone una persona en el dashboard; nunca está en
@@ -17,7 +18,6 @@ const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 
 const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
-const PUBLIC_PREFIX = `${SUPABASE_URL}/storage/v1/object/public/avatars/`;
 
 // La web llama con `Authorization` y JSON: el navegador hace un preflight
 // OPTIONS y bloquea la respuesta si no lleva estas cabeceras (en todas, errores
@@ -62,10 +62,6 @@ async function moderate(bytes: Uint8Array) {
   };
 }
 
-function pathOfPublicUrl(url: string | null | undefined): string | null {
-  return url?.startsWith(PUBLIC_PREFIX) ? url.slice(PUBLIC_PREFIX.length) : null;
-}
-
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
   if (request.method !== 'POST') return json(405, { error: 'method' });
@@ -94,7 +90,7 @@ Deno.serve(async (request) => {
           .from('avatars')
           .upload(path, bytes, { contentType: 'image/jpeg', upsert: false });
         if (error) throw error;
-        return { path, url: `${PUBLIC_PREFIX}${path}` };
+        return { path };
       },
       async currentAvatar(userId: string) {
         // Un error de lectura NO es «sin foto»: se propaga y la petición falla.
@@ -104,17 +100,16 @@ Deno.serve(async (request) => {
           .eq('id', userId)
           .maybeSingle();
         if (error) throw error;
-        const url = (data?.avatar_url as string | null | undefined) ?? null;
-        return { url, path: pathOfPublicUrl(url) };
+        return { path: (data?.avatar_url as string | null | undefined) ?? null };
       },
-      async setAvatarUrl(userId: string, url: string | null, expectedUrl?: string | null) {
-        let query = admin.from('profiles').update({ avatar_url: url }).eq('id', userId);
+      async setAvatarPath(userId: string, path: string | null, expectedPath?: string | null) {
+        let query = admin.from('profiles').update({ avatar_url: path }).eq('id', userId);
         // Condicional: solo si nadie ha cambiado la foto mientras tanto.
-        if (expectedUrl !== undefined) {
+        if (expectedPath !== undefined) {
           query =
-            expectedUrl === null
+            expectedPath === null
               ? query.is('avatar_url', null)
-              : query.eq('avatar_url', expectedUrl);
+              : query.eq('avatar_url', expectedPath);
         }
         const { data, error } = await query.select('id');
         if (error) throw error;

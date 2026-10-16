@@ -19,6 +19,7 @@
  */
 
 import { createSupabaseAgreementRepository } from './agreement';
+import { createAvatarSigner } from './avatar-urls';
 import {
   adoptLinkedGithubIdentity,
   deleteMyAccount,
@@ -47,6 +48,7 @@ import { GITHUB_VERIFICATION_CANCELLED } from '../repositories';
 
 import { deleteAvatar, uploadAvatar } from './avatar';
 import type { MatchRow, MessageRow, ProfileRow } from './database.types';
+import type { AvatarSigner } from './avatar-urls';
 import type { LockInSupabaseClient } from './client';
 import type {
   DiscoveryRepository,
@@ -281,7 +283,8 @@ async function liveScopesWith(
 async function resolveMatches(
   rows: MatchRow[],
   userId: string,
-  client: LockInSupabaseClient
+  client: LockInSupabaseClient,
+  signProfiles: AvatarSigner['signProfiles']
 ): Promise<MatchWithProfile[]> {
   if (rows.length === 0) return [];
 
@@ -298,7 +301,7 @@ async function resolveMatches(
 
   const profilesById = new Map(counterparts.data.map((row: ProfileRow) => [row.id, row]));
 
-  return rows
+  const matches = rows
     .map((row) => {
       const counterpart = profilesById.get(counterpartIdOf(row, userId));
       // Un match cuyo perfil no se puede leer (borrado a medias) se omite en vez
@@ -313,6 +316,10 @@ async function resolveMatches(
     })
     .filter((match): match is MatchWithProfile => match !== null)
     .sort(byRecentActivity);
+
+  // La foto del otro lado llega como ruta: se firma en un solo lote.
+  const signed = await signProfiles(matches.map((match) => match.counterpart));
+  return matches.map((match, index) => ({ ...match, counterpart: signed[index] }));
 }
 
 // ---------------------------------------------------------------------------
@@ -334,6 +341,7 @@ export function createSupabaseRepositories({
   getUserId?: () => Promise<string>;
 } = {}): Repositories {
   const hub = createNotifier(getClient);
+  const signer = createAvatarSigner(getClient);
   /** Lo rellena el repositorio de salas al crearse; hasta entonces no hay nadie a quien avisar. */
   let notifyRoomListeners: () => void = () => {};
   const notify = (topic: string) => hub.notify(topic);
@@ -500,7 +508,7 @@ export function createSupabaseRepositories({
         .maybeSingle();
       if (error) throw error;
 
-      return data ? toProfile(data) : null;
+      return data ? (await signer.signProfiles([toProfile(data)]))[0] : null;
     },
 
     async saveCurrent(input: ProfileInput) {
@@ -522,7 +530,7 @@ export function createSupabaseRepositories({
       // y en la propia pantalla de perfil: cambiarlo es un cambio visible.
       notify(MATCHES_TOPIC);
 
-      return toProfile(data);
+      return (await signer.signProfiles([toProfile(data)]))[0];
     },
 
     async setAvatarPhoto(localUri: string): Promise<Profile> {
@@ -559,7 +567,7 @@ export function createSupabaseRepositories({
       const { data, error } = await client.from('profiles').select('*').eq('id', id).maybeSingle();
       if (error) throw error;
 
-      return data ? toProfile(data) : null;
+      return data ? (await signer.signProfiles([toProfile(data)]))[0] : null;
     },
 
     async list(filter: ProfileFilter = {}) {
@@ -583,7 +591,7 @@ export function createSupabaseRepositories({
       const { data, error } = await query.order('created_at', { ascending: false });
       if (error) throw error;
 
-      return data.map(toProfile);
+      return signer.signProfiles(data.map(toProfile));
     },
   };
 
@@ -610,7 +618,7 @@ export function createSupabaseRepositories({
       });
       if (error) throw error;
 
-      return (data as ProfileRow[]).map(toProfile);
+      return signer.signProfiles((data as ProfileRow[]).map(toProfile));
     },
 
     async recordDecision(
@@ -686,7 +694,7 @@ export function createSupabaseRepositories({
         client.from('matches').select('*').order('id', { ascending: true }).range(from, to)
       );
 
-      return resolveMatches(rows, userId, client);
+      return resolveMatches(rows, userId, client, signer.signProfiles);
     },
 
     async getById(matchId) {
@@ -701,7 +709,7 @@ export function createSupabaseRepositories({
       if (error) throw error;
       if (!data) return null;
 
-      const [match] = await resolveMatches([data], userId, client);
+      const [match] = await resolveMatches([data], userId, client, signer.signProfiles);
       return match ?? null;
     },
 
@@ -833,6 +841,7 @@ export function createSupabaseRepositories({
     rooms: createSupabaseRoomRepository({
       getClient,
       getUserId,
+      signProfiles: signer.signProfiles,
       exposeNotify: (notifyRooms) => {
         notifyRoomListeners = notifyRooms;
       },

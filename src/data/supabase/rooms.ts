@@ -11,7 +11,7 @@ import { toSessionError } from './sessions';
 import type { LockInSupabaseClient } from './client';
 import type { RoomRow, RoomMemberRow } from './database.types';
 import type { RoomRepository } from '../repositories';
-import type { LockInRoom, RoomMember, RoomView } from '../types';
+import type { LockInRoom, Profile, RoomMember, RoomView } from '../types';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 const toIso = (value: string) => new Date(value).toISOString();
@@ -45,6 +45,8 @@ export function toRoomError(error: { code?: string; message: string }): unknown 
 export interface RoomRepositoryDeps {
   getClient(): LockInSupabaseClient;
   getUserId(): Promise<string>;
+  /** Cambia la ruta de la foto de cada perfil por una URL firmada (bucket privado). */
+  signProfiles?(profiles: Profile[]): Promise<Profile[]>;
   /**
    * Entrega a quien orquesta los repositorios la función que avisa a los
    * suscriptores de salas: `block_profile` la usa para que se relean las salas y
@@ -90,7 +92,9 @@ export function createSupabaseRoomRepository(
         : await fetchAllPages((from, to) =>
             client.from('profiles').select('*').in('id', profileIds).order('id').range(from, to)
           );
-    const profilesById = new Map(profiles.map((row) => [row.id, toProfile(row)]));
+    const mapped = profiles.map(toProfile);
+    const signed = deps.signProfiles ? await deps.signProfiles(mapped) : mapped;
+    const profilesById = new Map(signed.map((profile) => [profile.id, profile]));
     const membersByRoom = new Map<string, RoomMember[]>();
     for (const row of members) {
       const group = membersByRoom.get(row.room_id) ?? [];

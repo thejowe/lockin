@@ -60,7 +60,7 @@ async function reasonOf(error: unknown): Promise<AvatarRejectedReason> {
   return 'unavailable';
 }
 
-/** Sube la foto a pendientes y pide que se publique. Devuelve la URL pública. */
+/** Sube la foto a pendientes y pide que se publique. Devuelve la RUTA publicada (el bucket es privado: se firma al leer). */
 export async function uploadAvatar(
   client: LockInSupabaseClient,
   userId: string,
@@ -77,15 +77,15 @@ export async function uploadAvatar(
   const { data, error } = await client.functions.invoke(FUNCTION, {
     body: { action: 'set', path },
   });
-  if (error || typeof data?.avatarUrl !== 'string') {
+  if (error || typeof data?.avatarPath !== 'string') {
     // Falla cerrado: sea rechazo o caída, no hay foto nueva.
     throw new AvatarRejectedError(await reasonOf(error));
   }
 
-  return data.avatarUrl;
+  return data.avatarPath;
 }
 
-/** Quita la foto publicada (y apaga `avatar_url`): solo la función puede. */
+/** Quita la foto publicada (y apaga `avatar_url`, que guarda la ruta): solo la función puede. */
 export async function deleteAvatar(client: LockInSupabaseClient): Promise<void> {
   const { error } = await client.functions.invoke(FUNCTION, { body: { action: 'remove' } });
   if (error) throw new AvatarRejectedError('unavailable');

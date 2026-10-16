@@ -49,6 +49,22 @@ describe('PhotoSection', () => {
     expect(screen.queryByRole('button', { name: 'Quitar foto' })).toBeNull();
   });
 
+  it('si la URL firmada no está disponible pero la foto existe, sigue ofreciendo quitarla', async () => {
+    await setup();
+    const { avatar } = profile;
+    await render(
+      <DataProvider value={repositories}>
+        <PhotoSection
+          profile={{ ...profile, avatar: { ...avatar, hasPhoto: true } }}
+          onChange={onChange}
+        />
+      </DataProvider>
+    );
+
+    expect(screen.queryByText('Aún no tienes foto')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Quitar foto' })).toBeTruthy();
+  });
+
   it('elegir de la galería sube la foto y avisa con onChange', async () => {
     await setup();
     pick.mockResolvedValue({ status: 'picked', uri: 'file:///nueva.jpg' });

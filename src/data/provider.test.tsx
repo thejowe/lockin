@@ -20,6 +20,7 @@ import { Text } from 'react-native';
 
 import { DataProvider, useQuery, useRefreshQuery } from '@/data';
 import { createMockRepositories } from '@/data/mock';
+import { emitMediaStale } from '@/data/media-refresh';
 
 import type { Repositories } from '@/data';
 
@@ -415,5 +416,28 @@ describe('useRepositories', () => {
     const { result } = await renderHook(() => useQuery('activo', () => Promise.resolve('sí')));
 
     await waitFor(() => expect(result.current.data).toBe('sí'));
+  });
+});
+
+describe('DataProvider: URLs de fotos por caducar', () => {
+  it('al avisar el backend relee las consultas montadas sin vaciarlas', async () => {
+    repositories = createMockRepositories();
+    let reads = 0;
+    const { result } = await renderHook(
+      () =>
+        useQuery('media:test', async () => {
+          reads += 1;
+          return reads;
+        }),
+      { wrapper }
+    );
+    await waitFor(() => expect(result.current.data).toBe(1));
+
+    await act(async () => {
+      emitMediaStale();
+    });
+
+    await waitFor(() => expect(result.current.data).toBe(2));
+    expect(reads).toBe(2);
   });
 });

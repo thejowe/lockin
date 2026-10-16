@@ -301,8 +301,8 @@ describe('toProfile: foto', () => {
     expect('imageUrl' in profile.avatar).toBe(false);
   });
 
-  it('con avatar_url expone imageUrl', () => {
-    const url = `https://x.supabase.co/storage/v1/object/public/avatars/${ME}/a.jpg`;
+  it('con avatar_url expone la ruta en imageUrl (se firma después)', () => {
+    const url = `${ME}/a.jpg`;
 
     expect(toProfile(buildProfileRow({ avatar_url: url })).avatar.imageUrl).toBe(url);
   });

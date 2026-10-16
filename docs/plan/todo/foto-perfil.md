@@ -381,6 +381,23 @@ Evidencia local, ignorada: `e2e/artifacts/local/2026-10-14-avatar-fallo-cerrado/
 Comprobó y cerró Codex por encargo del usuario: ambos errores quedaron demostrados en dispositivo,
 con función y cliente reales, conservación verificable de la foto y límites del backend explícitos.
 
+### Bucket `avatars` privado — implementado 2026-10-16, SIN aplicar en producción
+
+- [x] **[datos]** Migración `supabase/migrations/20261016120000_avatars_private.sql`: `avatars.public = false`,
+  política `avatars_read_published` (select para `authenticated` solo si el objeto es el `avatar_url`
+  de algún perfil), `profiles.avatar_url` guarda la RUTA (CHECK `profiles_avatar_url_check` nuevo; el
+  original se llamaba `profiles_check`), filas con URL antigua a null, índice parcial en `avatar_url`.
+  `moderate-avatar` ya no usa `PUBLIC_PREFIX`/`pathOfPublicUrl`: `publish`→`{ path }`,
+  `setAvatarPath`, respuesta `{ avatarPath }` (hay que **redesplegarla junto con la migración**).
+  Cliente: `src/data/supabase/avatar-urls.ts` firma por lote (`createSignedUrls`, 1 h, caché en memoria
+  con renovación a 10 min del final) y `index.ts`/`rooms.ts` lo aplican en perfil, lista, deck,
+  matches y salas; `avatar.imageUrl` sigue siendo la URL a pintar. Mock sin cambios. Tests: jest,
+  `test:functions`, `test:schema` (111) en verde; contrato opt-in con dos negativos nuevos.
+  Pendiente tras aplicar: **orden de despliegue** (migración y función a la vez; entre una y otra
+  las fotos nuevas fallan cerrado), y con la clave de servicio comprobar a mano que una foto
+  publicada se firma y que la ruta pública da 400/404. `cacheKey` por ruta en `expo-image` queda
+  como mejora (la URL firmada es estable mientras dure la caché del signer).
+
 ## Auditoría de Storage y diseño de bucket privado (2026-10-14, T4 de tiendas-cumplimiento)
 
 Migración nueva, SIN aplicar: `supabase/migrations/20261014140000_avatar_storage_cleanup.sql`.

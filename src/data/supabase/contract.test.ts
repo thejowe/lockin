@@ -732,6 +732,29 @@ const supabaseBackend: ContractBackend = {
       expect(error).not.toBeNull();
     });
 
+    // `20261016120000_avatars_private.sql`: el bucket es privado y solo se firma
+    // la foto publicada de algún perfil. Publicar exige la service role (no
+    // disponible aquí), así que se comprueban los dos negativos.
+    it('el bucket avatars ya no sirve nada por la ruta pública', async () => {
+      const [a] = actors;
+      const { data } = a.client.storage.from('avatars').getPublicUrl(`${a.id}/x.jpg`);
+
+      const response = await fetch(data.publicUrl);
+
+      expect(response.ok).toBe(false);
+    });
+
+    it('no se firma un objeto que ningún perfil tiene publicado', async () => {
+      const [a] = actors;
+
+      const { data, error } = await a.client.storage
+        .from('avatars')
+        .createSignedUrl(`${a.id}/no-publicada.jpg`, 60);
+
+      expect(data).toBeNull();
+      expect(error).not.toBeNull();
+    });
+
     it('un cliente no puede escribir `avatar_url` en su perfil', async () => {
       const [a] = actors;
 
@@ -739,7 +762,7 @@ const supabaseBackend: ContractBackend = {
         .from('profiles')
         // `ProfileUpdate` no admite `avatar_url` a propósito: el cliente no la escribe.
         .update({
-          avatar_url: `${url}/storage/v1/object/public/avatars/${a.id}/x.jpg`,
+          avatar_url: `${a.id}/x.jpg`,
         } as never)
         .eq('id', a.id);
 

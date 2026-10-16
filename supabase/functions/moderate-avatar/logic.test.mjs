@@ -4,8 +4,8 @@ import { handleAvatarRequest, isComplete, isJpeg, ownsPath, verdict } from './lo
 
 const JPEG = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 0, 0]);
 const PNG = Uint8Array.from([0x89, 0x50, 0x4e, 0x47]);
-const OLD_URL = 'https://x/storage/v1/object/public/avatars/u1/old.jpg';
-const NEW_URL = 'https://x/storage/v1/object/public/avatars/u1/n.jpg';
+const OLD_PATH = 'u1/old.jpg';
+const NEW_PATH = 'u1/n.jpg';
 
 /** Una respuesta completa y limpia del proveedor. */
 const CLEAN = {
@@ -21,11 +21,11 @@ function deps(over = {}) {
     moderate: async () => CLEAN,
     publish: async (uid) => {
       calls.push('publish');
-      return { path: `${uid}/n.jpg`, url: NEW_URL };
+      return { path: `${uid}/n.jpg` };
     },
-    currentAvatar: async () => ({ url: OLD_URL, path: 'u1/old.jpg' }),
-    setAvatarUrl: async (_uid, url, expected) => {
-      calls.push(`setUrl:${url}:${expected === undefined ? 'any' : expected}`);
+    currentAvatar: async () => ({ path: OLD_PATH }),
+    setAvatarPath: async (_uid, path, expected) => {
+      calls.push(`setPath:${path}:${expected === undefined ? 'any' : expected}`);
       return true;
     },
     removePublic: async (p) => calls.push(`removePublic:${p}`),
@@ -93,10 +93,10 @@ test('set limpio: publica, apunta avatar_url con la anterior como esperada, borr
   const res = await run(set(), d);
 
   assert.equal(res.status, 200);
-  assert.equal(res.body.avatarUrl, NEW_URL);
+  assert.equal(res.body.avatarPath, NEW_PATH);
   assert.deepEqual(d.calls, [
     'publish',
-    `setUrl:${NEW_URL}:${OLD_URL}`,
+    `setPath:${NEW_PATH}:${OLD_PATH}`,
     'removePublic:u1/old.jpg',
     'removePending:u1/p.jpg',
   ]);
@@ -189,7 +189,7 @@ test('si no se puede leer la foto actual no se publica nada: 503', async () => {
 
 test('si apuntar avatar_url falla, retira lo publicado y la pendiente', async () => {
   const d = deps({
-    setAvatarUrl: async () => {
+    setAvatarPath: async () => {
       throw new Error('db caída');
     },
   });
@@ -200,7 +200,7 @@ test('si apuntar avatar_url falla, retira lo publicado y la pendiente', async ()
 });
 
 test('dos set a la vez: el que pierde la carrera retira su publicación y responde 409', async () => {
-  const d = deps({ setAvatarUrl: async () => false });
+  const d = deps({ setAvatarPath: async () => false });
   const res = await run(set(), d);
 
   assert.equal(res.status, 409);
@@ -217,7 +217,7 @@ test('borrar la foto anterior es de mejor esfuerzo: si falla, la nueva ya está 
   const res = await run(set(), d);
 
   assert.equal(res.status, 200);
-  assert.equal(res.body.avatarUrl, NEW_URL);
+  assert.equal(res.body.avatarPath, NEW_PATH);
 });
 
 test('remove: borra el archivo, luego pone avatar_url a null y barre las pendientes', async () => {
@@ -225,7 +225,7 @@ test('remove: borra el archivo, luego pone avatar_url a null y barre las pendien
   const res = await run({ action: 'remove' }, d);
 
   assert.equal(res.status, 200);
-  assert.deepEqual(d.calls, ['removePublic:u1/old.jpg', 'setUrl:null:any', 'removeAllPending:u1']);
+  assert.deepEqual(d.calls, ['removePublic:u1/old.jpg', 'setPath:null:any', 'removeAllPending:u1']);
 });
 
 test('remove: si Storage rechaza el borrado no se confirma y avatar_url sigue apuntando al archivo', async () => {
@@ -238,17 +238,17 @@ test('remove: si Storage rechaza el borrado no se confirma y avatar_url sigue ap
 
   assert.equal(res.status, 503);
   assert.deepEqual(
-    d.calls.filter((c) => c.startsWith('setUrl')),
+    d.calls.filter((c) => c.startsWith('setPath')),
     []
   );
 });
 
 test('remove sin foto no falla y también barre las pendientes', async () => {
-  const d = deps({ currentAvatar: async () => ({ url: null, path: null }) });
+  const d = deps({ currentAvatar: async () => ({ path: null }) });
   const res = await run({ action: 'remove' }, d);
 
   assert.equal(res.status, 200);
-  assert.deepEqual(d.calls, ['setUrl:null:any', 'removeAllPending:u1']);
+  assert.deepEqual(d.calls, ['setPath:null:any', 'removeAllPending:u1']);
 });
 
 test('la pendiente se borra en todos los desenlaces con path propio', async () => {
@@ -267,7 +267,7 @@ test('la pendiente se borra en todos los desenlaces con path propio', async () =
         throw new Error('db');
       },
     }),
-    deps({ setAvatarUrl: async () => false }),
+    deps({ setAvatarPath: async () => false }),
   ];
   for (const d of cases) {
     await run(set(), d);

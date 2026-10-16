@@ -9,9 +9,11 @@
  * `deps`:
  * - `downloadPending(path)` → bytes | null
  * - `moderate(bytes)` → `{ flagged, scores }` (lanza si el proveedor falla)
- * - `publish(userId, bytes)` → `{ path, url }`
- * - `currentAvatar(userId)` → `{ url, path }` (nulos sin foto; lanza si no se puede leer)
- * - `setAvatarUrl(userId, url, expectedUrl)` → boolean. Con `expectedUrl`
+ * - `publish(userId, bytes)` → `{ path }` (el bucket `avatars` es PRIVADO: no hay URL
+ *   pública; la referencia es la ruta y el cliente la firma al leer)
+ * - `currentAvatar(userId)` → `{ path }` (nulo sin foto; lanza si no se puede leer)
+ * - `setAvatarPath(userId, path, expectedPath)` → boolean. Escribe `profiles.avatar_url`,
+ *   que guarda la ruta. Con `expectedPath`
  *   definido es condicional (solo si `avatar_url` sigue siendo esa): `false`
  *   significa que otra petición se adelantó. Sin él, incondicional.
  * - `removePublic(path)` (lanza si Storage lo rechaza), `removePending(path)`,
@@ -73,10 +75,10 @@ async function remove(userId, deps) {
   // Primero el archivo, y solo si Storage lo confirma, la referencia: si el
   // borrado falla, `avatar_url` sigue apuntando y «quitar» se puede reintentar.
   if (current.path) await deps.removePublic(current.path);
-  await deps.setAvatarUrl(userId, null, undefined);
+  await deps.setAvatarPath(userId, null, undefined);
   // Lo que una subida cortada dejó en pendientes también se va con la foto.
   await quietly(deps.removeAllPending(userId));
-  return { status: 200, body: { avatarUrl: null } };
+  return { status: 200, body: { avatarPath: null } };
 }
 
 async function publishIfClean(userId, path, deps) {
@@ -100,13 +102,13 @@ async function publishIfClean(userId, path, deps) {
 
   let applied;
   try {
-    applied = await deps.setAvatarUrl(userId, published.url, previous.url);
+    applied = await deps.setAvatarPath(userId, published.path, previous.path);
   } catch {
     applied = null;
   }
   if (applied !== true) {
     // Lo publicado no quedó asociado a nadie: se retira para que no sea un
-    // archivo público huérfano.
+    // archivo huérfano en el bucket.
     await quietly(deps.removePublic(published.path));
     return applied === false ? { status: 409, body: { error: 'conflict' } } : UNAVAILABLE;
   }
@@ -114,7 +116,7 @@ async function publishIfClean(userId, path, deps) {
   if (previous.path && previous.path !== published.path) {
     await quietly(deps.removePublic(previous.path));
   }
-  return { status: 200, body: { avatarUrl: published.url } };
+  return { status: 200, body: { avatarPath: published.path } };
 }
 
 /**

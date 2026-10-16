@@ -17,7 +17,8 @@ jest.mock('./avatar-file', () => ({
     .mockResolvedValue({ bytes: new ArrayBuffer(4), contentType: 'image/jpeg' }),
 }));
 
-const PHOTO = 'https://x.supabase.co/storage/v1/object/public/avatars/u1/n.jpg';
+const PATH = 'u1/n.jpg';
+const SIGNED = 'https://x.supabase.co/storage/v1/object/sign/avatars/u1/n.jpg?token=t';
 
 function row(avatarUrl: string | null): ProfileRow {
   return {
@@ -52,13 +53,22 @@ function setup(opts: { profile: ProfileRow | null; afterInvoke?: ProfileRow | nu
   const upload = jest.fn().mockResolvedValue({ data: {}, error: null });
   const invoke = jest.fn(async () => {
     if (opts.afterInvoke !== undefined) current = opts.afterInvoke;
-    return { data: { avatarUrl: PHOTO }, error: null };
+    return { data: { avatarPath: PATH }, error: null };
   });
   const client = {
     from: jest.fn(() => ({
       select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: current, error: null }) }) }),
     })),
-    storage: { from: jest.fn(() => ({ upload, remove: jest.fn() })) },
+    storage: {
+      from: jest.fn(() => ({
+        upload,
+        remove: jest.fn(),
+        createSignedUrls: async (paths: string[]) => ({
+          data: paths.map((path) => ({ path, signedUrl: SIGNED, error: null })),
+          error: null,
+        }),
+      })),
+    },
     functions: { invoke },
   } as unknown as LockInSupabaseClient;
 
@@ -71,7 +81,7 @@ function setup(opts: { profile: ProfileRow | null; afterInvoke?: ProfileRow | nu
 
 describe('profiles.setAvatarPhoto', () => {
   it('sube, pide la publicación y devuelve el perfil con la foto', async () => {
-    const { repositories, upload, invoke } = setup({ profile: row(null), afterInvoke: row(PHOTO) });
+    const { repositories, upload, invoke } = setup({ profile: row(null), afterInvoke: row(PATH) });
 
     const profile = await repositories.profiles.setAvatarPhoto('file:///a.jpg');
 
@@ -79,7 +89,7 @@ describe('profiles.setAvatarPhoto', () => {
     expect(invoke).toHaveBeenCalledWith('moderate-avatar', {
       body: { action: 'set', path: expect.stringMatching(/^u1\/.+\.jpg$/) },
     });
-    expect(profile.avatar.imageUrl).toBe(PHOTO);
+    expect(profile.avatar.imageUrl).toBe(SIGNED);
   });
 
   it('sin perfil no sube nada', async () => {
@@ -95,7 +105,7 @@ describe('profiles.setAvatarPhoto', () => {
 
 describe('profiles.removeAvatarPhoto', () => {
   it('pide quitarla y devuelve el perfil sin foto', async () => {
-    const { repositories, invoke } = setup({ profile: row(PHOTO), afterInvoke: row(null) });
+    const { repositories, invoke } = setup({ profile: row(PATH), afterInvoke: row(null) });
 
     const profile = await repositories.profiles.removeAvatarPhoto();
 

@@ -118,11 +118,16 @@ export interface Avatar {
   /** Token de acento con el que pintar el fondo. */
   accent: 'brass' | 'teal';
   /**
-   * Foto de perfil: URL pública del bucket `avatars` (Supabase) o URI local en
-   * el mock. Ausente si la persona no ha puesto ninguna. No entra en
+   * Foto de perfil: URL firmada y temporal del bucket privado `avatars` (Supabase)
+   * o URI local en el mock; las pantallas no deben guardarla ni compararla. Ausente si la persona no ha puesto ninguna. No entra en
    * `ProfileInput`: se mueve solo con `setAvatarPhoto()`/`removeAvatarPhoto()`.
    */
   imageUrl?: string;
+  /**
+   * Hay una foto publicada aunque no haya `imageUrl` (p. ej. la URL firmada no se
+   * pudo obtener). Sin él, `imageUrl` presente ya implica foto.
+   */
+  hasPhoto?: boolean;
 }
 
 /** Ficha de una persona. */
