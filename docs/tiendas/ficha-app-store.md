@@ -129,12 +129,12 @@ AGE
 Minimum age 16, self-declared.
 ```
 
-`[cuenta de prueba: pendiente]` es un marcador: no inventar credenciales. Antes de enviar, crear la cuenta en producción con perfil completo y un match con chat, y rellenar el bloque. Si se envía sin aplicar las migraciones `20261014120000` y `20261014130000`, las frases sobre aceptación y reporte de mensajes serían falsas: no enviar hasta aplicarlas.
+`[cuenta de prueba: pendiente]` es un marcador: no inventar credenciales. Antes de enviar, crear la cuenta en producción con perfil completo y un match con chat, y rellenar el bloque. Las migraciones de aceptación y reporte de mensajes ya están aplicadas (16-oct); aun así, no enviar sin haber probado esas dos funciones contra Supabase real (T7).
 
 ## Comprobaciones previas al envío (no copiar en la consola)
 
 - **Binario final (T5, `cf18086`):** sin Lock-In, WebRTC, `expo-notifications`, `RECORD_AUDIO` ni `SCHEDULE_EXACT_ALARM`; solo `CAMERA` y galería para la foto de perfil, `expo-secure-store` y `ITSAppUsesNonExemptEncryption=false`. Falta mirar el manifiesto del AAB y el Info.plist generado (T7).
-- **Bloquear, reportar perfiles y mensajes, aceptación de Términos y Normas, filtro, baja de cuenta:** implementados en el código (T3a, T3b). Las migraciones `20261014120000` (aceptación), `20261014130000` (reportar mensaje) y `20261014140000` (limpieza de fotos) **no están aplicadas en producción**: sin ellas, aceptar y reportar mensajes fallan contra Supabase real. [pendiente: permiso del usuario para aplicarlas]. Probarlo todo en la build final (T7).
+- **Bloquear, reportar perfiles y mensajes, aceptación de Términos y Normas, filtro, baja de cuenta:** implementados en el código (T3a, T3b). Las migraciones `20261014120000` (aceptación), `20261014130000` (reportar mensaje) y `20261014140000` (limpieza de fotos) están aplicadas en producción desde el 16-oct-2026. Falta probarlo todo contra Supabase real en la build final (T7).
 - **Capturas:** solo pantallas actuales (perfil, deck a pantalla completa, match, chat con sugerencias, GitHub verificado, bloqueo/reporte). Ninguna con temporizador, salas, vídeo o rachas (ya no existen en la app).
 - **Cuenta de revisión:** [cuenta de prueba: pendiente] con perfil completo y al menos un match con chat para que la revisión vea las funciones.
 - **URLs públicas (D08):** privacidad, términos, normas, seguridad infantil, soporte y eliminar cuenta en https://thejowe.github.io/lockin/… (`/privacidad`, `/terminos`, `/normas`, `/seguridad-infantil`, `/soporte`, `/eliminar-cuenta`) deben estar publicadas y funcionando antes de enviar [pendiente: fecha de publicación; no empujar `web/**` hasta cerrar marcadores].

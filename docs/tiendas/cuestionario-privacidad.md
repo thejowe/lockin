@@ -83,7 +83,7 @@ Fuente: [guía del formulario](https://support.google.com/googleplay/android-dev
 
 | Requisito | Estado según los docs | Pendiente |
 | --- | --- | --- |
-| Baja de cuenta en la app (Apple 5.1.1(v), Google) | Implementada: `delete_my_account()` + borrado previo de la foto; botón en Perfil > Cuenta. Aplicada en producción según D09 | Probar en la build final (T7). Garantía de borrado de la foto en servidor depende de la migración `20261014140000` (sin aplicar) |
+| Baja de cuenta en la app (Apple 5.1.1(v), Google) | Implementada: `delete_my_account()` + borrado previo de la foto; botón en Perfil > Cuenta. Aplicada en producción según D09; el borrado de fotos en servidor (`20261014140000`) se aplicó el 16-oct | Probar en la build final (T7), incluido que `storage.protect_delete` no bloquee el borrado y que la URL de la foto dé 404 |
 | Bloquear y reportar **perfiles** y **mensajes** (Apple 1.2, UGC de Google) | Implementado en el código: `block_profile()`, `report_profile()`, `report_message` (panel de reporte de mensaje en el chat; migración `20261014130000`) | **Migración sin aplicar en producción**; probar en la build (T7) |
 | Filtrado de contenido objetable (Apple 1.2) | Filtro básico es/en en cliente para bio, textos de perfil y mensajes (`src/features/safety/content-filter.ts`) + fotos moderadas con OpenAI en servidor + revisión de reportes | Describirlo como complemento, no como moderación completa (ver notas de revisor) |
 | Aceptación de Términos y Normas antes de publicar (Apple 1.2) | Implementada: pantalla de aceptación con versión y fecha (`TERMS_VERSION` = 2026-10-14), puerta en onboarding, chat y foto; enlaces legales en Perfil | **Migración `20261014120000` sin aplicar en producción**; la puerta del servidor aún no existe (solo cliente, decisión 9) |
@@ -100,5 +100,5 @@ Fuente: [guía del formulario](https://support.google.com/googleplay/android-dev
 - [pendiente: DPA y condiciones de OpenAI] — retención, uso para entrenamiento y si actúa como encargado; no afirmar nada hasta confirmarlo. De ello depende marcar Fotos como «compartidas» en Google.
 - [pendiente: categoría secundaria de App Store] — Negocios o vacía.
 - [pendiente: cuenta de prueba] — credenciales para el revisor de Apple.
-- [pendiente: aplicar migraciones en producción] — `20261014120000`, `20261014130000`, `20261014140000`, y desplegar `moderate-avatar` (requiere permiso del usuario).
-- [pendiente: job `purge_old_user_reports()`] — confirmar que existe en producción.
+- Migraciones `20261014120000`, `20261014130000` y `20261014140000` aplicadas en producción el 16-oct-2026; `moderate-avatar` v2 ya estaba desplegada (confirmar que coincide con el código del repo).
+- Job `purge_old_user_reports()` confirmado activo en producción (03:20 diario); también `lockin-purge-stale-avatar-uploads` (cada hora).

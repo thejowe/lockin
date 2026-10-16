@@ -181,9 +181,7 @@ export function createMockRepositories(
       const accepted = getState().termsAcceptances.get(actorId);
       if (!accepted || accepted.size === 0) return null;
       // Las versiones son fechas ISO: el orden de texto es el cronológico.
-      const [version, acceptedAt] = [...accepted.entries()].sort(([a], [b]) =>
-        a < b ? 1 : -1
-      )[0];
+      const [version, acceptedAt] = [...accepted.entries()].sort(([a], [b]) => (a < b ? 1 : -1))[0];
       return { version, acceptedAt };
     },
 

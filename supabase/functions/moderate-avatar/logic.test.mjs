@@ -283,7 +283,7 @@ test('si borrar la pendiente falla, el resultado no cambia (huérfano que purga 
   assert.equal(ok.status, 200);
   const rejected = await run(
     set(),
-    deps({ removePending: failing, moderate: async () => ({ ...CLEAN, flagged: true }) }),
+    deps({ removePending: failing, moderate: async () => ({ ...CLEAN, flagged: true }) })
   );
   assert.equal(rejected.status, 422);
 });
@@ -291,5 +291,8 @@ test('si borrar la pendiente falla, el resultado no cambia (huérfano que purga 
 test('path ajeno: no se borra nada (no es una pendiente propia)', async () => {
   const d = deps();
   await run(set('u2/p.jpg'), d);
-  assert.equal(d.calls.some((c) => c.startsWith('removePending')), false);
+  assert.equal(
+    d.calls.some((c) => c.startsWith('removePending')),
+    false
+  );
 });

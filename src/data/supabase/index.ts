@@ -412,7 +412,8 @@ export function createSupabaseRepositories({
     async acceptTerms(version) {
       await getUserId();
       const { data, error } = await getClient().rpc('accept_terms', { p_version: version });
-      if (error) throw error;
+      // Un Error de verdad, como el del mock: el PostgrestError es un objeto plano.
+      if (error) throw Object.assign(new Error(error.message), { code: error.code });
       return { version, acceptedAt: new Date(data as string).toISOString() };
     },
   };
