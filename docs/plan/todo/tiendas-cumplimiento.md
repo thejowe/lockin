@@ -208,3 +208,8 @@ Hallazgo menor: en Perfil, con `is_anonymous=false` y sin email en sesión, la t
 - ℹ️ `storage.protect_delete` SÍ bloquea el borrado directo desde una sesión SQL normal («Direct deletion from storage tables is not allowed»); `delete_my_account()` y la purga lo evitan con `storage.allow_delete_query`, y funcionan (probado). No borrar a mano `storage.objects` sin ese ajuste.
 - Limpieza hecha: cuentas A y B, sus fotos y las 2 filas de `user_reports` de prueba borradas; producción vuelve a 1 fila en `user_reports` (la preexistente).
 - Hallazgo menor: con `is_anonymous=false` forzado y sin correo, la tarjeta Cuenta muestra «Te hemos mandado un correo a .»: artefacto de forzar el flag.
+
+### Info.plist real de iOS (Claude, 2026-10-16) — workflow `ios-plist.yml`, run 38942726635 verde
+
+- `expo prebuild --platform ios --no-install` en Ubuntu genera `ios/cofounder/Info.plist`. Contiene **solo** `NSCameraUsageDescription` («cofounder necesita la cámara para hacerte la foto de perfil.») y `NSPhotoLibraryUsageDescription` (galería, foto de perfil). Sin micrófono ni Face ID. `NSAllowsArbitraryLoads = false`. `ITSAppUsesNonExemptEncryption` presente.
+- ⚠️ Decisión abierta: `expo-dev-client` deja `NSLocalNetworkUsageDescription` («Expo Dev Launcher uses the local network…») y `NSBonjourServices` en el plist de release, y `SYSTEM_ALERT_WINDOW` en el manifiesto Android. Quitarlo del build de tienda afecta a los builds E2E (que son release con dev-client). El workflow avisa de ello sin fallar y falla ante cualquier otro permiso `NS*UsageDescription`.
