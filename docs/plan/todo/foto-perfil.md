@@ -496,3 +496,32 @@ cuenta B «BetaDeck» (UI, uid no extraído; localizar por nombre). Evidencia: `
 - ✅ **Baja de B** por UI «Eliminar mi cuenta para siempre» 20:25:49Z (`baja-B-time.txt`) → vuelve a onboarding (`42.png`).
   A queda viva para baja por SQL.
 - Nota: `ui.py fill` termina con BACK; sin teclado abierto saca del onboarding. Usé tap + `input text`.
+
+### Hallazgos del comprobador — foto privada en Matches/chat (2026-10-16, 20:38–20:57 UTC)
+
+Backend: **Supabase real** `grrzmzktrhksbttpbblg`, commit `9015583`, APK release `supabase.apk`, usuario Android 10.
+R «RetoFoto» `19c33711-6dbb-4f8d-b45d-ea09fba3f218` (REST, marcada no anónima por el orquestador), P «PruebaMatch»
+`4a48d5dd-7552-4ae6-91fd-c59dbc941e21` (UI). Evidencia: `e2e/artifacts/local/2026-10-16-tiendas-t4-match/`.
+
+- ✅ **moderate-avatar**: R sube `reto.jpg` (800x800, cara dibujada) a `avatar-uploads/<uid>/reto.jpg` (200) y
+  `moderate-avatar {action:'set'}` con su JWT → 200 `{avatarPath:'19c33711-…/9ec584f0-….jpg'}` 20:39Z (`R-photo.txt`).
+- ✅ **Deck de P pinta la foto de R** 20:42Z: `d3.png` (cubre la tarjeta, no iniciales; nombre y chips legibles).
+- ❌/⚠️ **Error mío del comprobador**: pulsé «Pasar» sobre R justo después de capturarla, al recorrer el deck para
+  localizarla. `decisions` registra el pass y `discovery_deck` excluye para siempre a quien ya tiene decisión
+  (`20261009224000_block_report.sql:185`), así que R ya no vuelve al deck de P: puntos 2–4 (swipe → match, Matches,
+  chat) quedan pendientes. R ya dio like a P (200, sin match por no haber like de vuelta). Para reanudar hace falta
+  borrar por SQL la decisión `actor_id=P, target_id=R` (o crear otra R). P sigue viva en el dispositivo.
+- Nota de producto: no hay forma en la app de deshacer un «Pasar» (sin rewind), por diseño o carencia.
+
+**Reanudación** (tras borrar el orquestador por SQL la decisión de P sobre R; R ya tenía like a P):
+
+- ✅ **Swipe a la derecha de P sobre R** 20:52:56Z → pantalla «¡Match!» con la foto de R en el círculo (`f2.png`).
+- ✅ **Lista de Matches** 20:53Z: la fila de RetoFoto pinta su foto (cara dibujada, no iniciales) `f3.png`; tras reinicio
+  en frío sigue pintándola 20:56Z (`h1.png`).
+- ✅ **Chat**: abierto desde la fila, la cabecera del hilo muestra la foto de R en grande bajo el nombre, con
+  «desarrollo · Madrid», «Match · Hoy» (`f4.png`). La barra superior solo lleva el nombre (sin avatar pequeño): es el diseño.
+- ✅ Logcat sin errores fatales ni `object/public` (`logcat-final.txt`).
+- ⚠️ Punto 5 (5 min quietos) no ejecutado. Backend usado: Supabase real; el compañero de pruebas fue R, de una sola cuenta de P.
+- ✅ **Baja de P** por UI 20:57:09Z (`baja-P-time.txt`); `profiles?name=PruebaMatch` → `[]`. R `19c33711-6dbb-4f8d-b45d-ea09fba3f218` queda viva
+  (borrar por SQL); P era `4a48d5dd-7552-4ae6-91fd-c59dbc941e21`.
+- Nota de producto (no es bug): no existe rewind de «Pasar»; una decisión excluye a ese perfil del deck para siempre.
