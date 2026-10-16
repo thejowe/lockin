@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="360" viewBox="5 14 54 36">
+  <!-- Símbolo de cofounder: dos círculos iguales (r 18, centros a 16) de los que
+       quedan las medias lunas exteriores, separadas 2 unidades, y un punto en
+       el hueco común, todo en blanco #F5F5F7. Rejilla de 64 unidades; el viewBox recorta a la caja del símbolo. -->
+  <path d="M32 15.88 A18 18 0 1 0 32 48.12 A18 18 0 0 1 32 15.88 Z" transform="translate(-1 0)" fill="#F5F5F7"/>
+  <path d="M32 15.88 A18 18 0 1 1 32 48.12 A18 18 0 0 0 32 15.88 Z" transform="translate(1 0)" fill="#F5F5F7"/>
+  <circle cx="32" cy="32" r="5" fill="#F5F5F7"/>
+</svg>
