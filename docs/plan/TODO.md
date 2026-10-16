@@ -1,6 +1,20 @@
 # TODO maestro — LockIn MVP
 
-## ▶ Al retomar (2026-10-15, cierre de sesión): `tiendas-cumplimiento` — solo quedan decisiones tuyas
+## ▶ Al retomar (2026-10-16, cierre de sesión): `tiendas-cumplimiento` hecho; solo quedan datos y decisiones del usuario
+
+**Estado:** todo empujado (`c5829d9`); CI, Schema drift, E2E Android, Web pública e Info.plist iOS verdes sobre `235ded6`. Producción limpia (15 perfiles, 3 matches, 1 `user_reports`, 0 objetos de fotos, 0 cuentas de prueba, Lock-In de prueba borrado). Migraciones `20261014120000/130000/140000` y `20261016120000_avatars_private` aplicadas; `moderate-avatar` v3 desplegada. T1–T7 cerradas (`todo/tiendas-cumplimiento.md`); bucket `avatars` privado con URLs firmadas comprobado en emulador (deck, match, Matches, chat; `todo/foto-perfil.md`). `expo-dev-client` y su perfil EAS fuera del proyecto.
+
+**Solo quedan cosas del usuario (con ellas, Claude rellena marcadores `[pendiente: …]` en `docs/tiendas/*` y publica):** fecha de publicación; proveedor SMTP (Resend/Brevo); titular/NIF para el formulario de trader (DSA); aceptar o confirmar el DPA de OpenAI (`privacy.openai.com`; hasta entonces no afirmar nada sobre entrenamiento más allá de su documentación pública); categoría secundaria de App Store; cuenta de prueba de Apple (crear con perfil y un match con chat, no inventar credenciales); revisión jurídica de `terminos.md` (subir `TERMS_VERSION` si cambia su fecha); crear las cuentas de desarrollador de Apple y Google (Gmail no muestra altas).
+
+**Sin hacer, por decisión de parar:** prueba de 65 min de renovación de la URL firmada en dispositivo (la lógica tiene tests con temporizadores simulados; falta verla en emulador; ver `todo/foto-perfil.md`, "caducidad"); `ios/` real solo se ha generado en CI, nunca en macOS; AAB de tienda sin generar (`eas build`) — el manifiesto se leyó de un `expo prebuild` local.
+
+**Sin commitear y ajeno a este cierre (otra sesión):** `app.json` (permisos Android reducidos a CAMERA) y `assets/` (iconos, `assets/brand/`, `cofounder-symbol.svg`); `docs/auditoria/` y `docs/legal-borradores/` (de otra sesión, anteriores a T1–T4; su `PROMPT-CLAUDE.md` duplicaría trabajo hecho). No commitear sin revisarlos.
+
+**Lecciones para el siguiente agente:** (1) al aplicar migraciones por MCP, pegar los cuerpos de función byte a byte con comentarios, o Schema drift sale rojo por md5 (memoria `aplicar-migraciones-por-mcp-byte-a-byte`); (2) `storage.protect_delete` bloquea `delete from storage.objects` a mano: usar `set_config('storage.allow_delete_query','true',true)` en la misma sentencia; (3) `moderate-avatar` rechaza cuentas anónimas: para probar fotos hay que poner `is_anonymous=false` a la cuenta de prueba por SQL y borrarla luego; (4) «Pasar» no se puede deshacer (una decisión excluye al perfil del deck para siempre); (5) `apply_migration`/`execute_sql` devuelven a veces «Invalid or expired requestState»: reintentar.
+
+**Siguiente pilar:** el que elija el usuario. Con los datos de arriba cerrados, lo siguiente natural es el envío: `eas build` (iOS/Android), subir fichas (`docs/tiendas/ficha-*.md`), App Privacy/Data safety (`cuestionario-privacidad.md`) y notas del revisor de Apple. Deuda menor sin podar: código muerto de Lock-In en `src/data` (repos sessions/rooms) y `.claude/agents/{salas,video,sesiones}.md`.
+
+### (histórico) Al retomar (2026-10-15, cierre de sesión): `tiendas-cumplimiento` — solo quedan decisiones tuyas
 
 **Hecho y revisado (local, 16 commits SIN push):** T1, T3a, T3b, T4, T5, T6 y los hallazgos de `codex review` (`ff1ef69`, `6ac99a8`, `cf18086`, `10f4ff5`, `3b0eea7`). Lock-In y WebRTC fuera del binario; `test:e2e` 94/94; jest 105 suites verdes.
 
