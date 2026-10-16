@@ -64,7 +64,7 @@ Usamos los datos para mantener y recuperar tu cuenta, mostrar y editar tu perfil
 ## 5. Servicios externos y transferencias
 
 - **Supabase** (encargado): autenticación, base de datos, almacenamiento de fotos y comunicación en tiempo real. Alojado en la región UE Centro (Fráncfort).
-- **OpenAI** (encargado, EE. UU.): revisión automática de las fotos de perfil, solo si subes una. Recibe la imagen desde nuestro servidor. Es una transferencia fuera del EEE (ver más abajo). Las condiciones de conservación de la imagen por OpenAI son las de su servicio: [pendiente de confirmar con las condiciones aplicables a nuestra cuenta].
+- **OpenAI** (encargado, EE. UU.): revisión automática de las fotos de perfil, solo si subes una. Recibe la imagen desde nuestro servidor. Es una transferencia fuera del EEE (ver más abajo). Usamos su servicio de moderación (`omni-moderation-latest`). Según la documentación pública de OpenAI (consultada el 16-oct-2026), los datos enviados a su API no se usan para entrenar sus modelos salvo que el cliente lo autorice, y el servicio de moderación no conserva el contenido para monitorización de abuso; una imagen que se detecte como material de abuso sexual infantil puede conservarse para revisión manual. Estas condiciones son las de OpenAI y pueden cambiar. [pendiente de confirmar: aceptación del acuerdo de tratamiento de datos (DPA) de OpenAI en nuestra cuenta y su mecanismo de transferencia.]
 - **Expo / EAS** (encargado): distribución de actualizaciones de la app.
 - **GitHub** (responsable independiente): solo si verificas tu enlace.
 - **Servicio de correo de autenticación** (encargado): emails de confirmación y recuperación. [Proveedor de correo: pendiente de decidir; nombrarlo aquí.]
