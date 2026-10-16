@@ -48,7 +48,7 @@ E después de fusionar B–D (toca rutas y `package.json`); F al final.
 - [x] T4 fotos: retención (D) — migración `20261014140000` aplicada en producción el 2026-10-16 (cron horario `lockin-purge-stale-avatar-uploads`); docs de privacidad ya dicen «borrado en servidor». Sigue abierto, como bloque propio: bucket `avatars` privado con URLs firmadas, y probar que `storage.protect_delete` no bloquea el borrado (T7 contra Supabase real)
 - [x] T5 app.json y binario (E) — hecho 2026-10-15, ver «T5 hecho»
 - [x] T6 declaraciones y notas de revisor (A) — hecho 2026-10-15, ver «T6 hecho»; abiertos los marcadores `[pendiente: ...]`
-- [ ] T7 verificación en dispositivo (F)
+- [x] T7 verificación en dispositivo (F) — cerrada el 2026-10-16: mock + Supabase real, ver «T7 veredicto» y «T7 cierre». Abierto fuera de T7: Info.plist real en macOS/CI, bucket `avatars` privado
 
 ## ▶ Estado del 2026-10-16: push hecho, migraciones aplicadas, CI verde
 
@@ -185,3 +185,26 @@ Pendiente del usuario/MCP para cerrar 1b, 1c, 2 y 3a: (a) leer `terms_acceptance
 - ✅ `storage.protect_delete` no bloquea: tras `delete_my_account()` de B2, 0 objetos en `storage.objects` con su uid y el usuario no existe.
 - ⚠️ Restos de prueba en producción: cuentas A (`d1a9a739…`) y B (`924e376c…`) vivas, 2 huérfanos de A y 1 `diag.jpg` de B en `avatar-uploads` (la purga horaria los retira a las 24 h), 1 fila nueva de `user_reports`.
 - ⚠️ Abiertos: perfil existente SIN fila de términos exige aceptar en chat y Perfil (hay que borrar la fila de A; el clasificador bloqueó el `delete` sin orden expresa del usuario); baja con foto publicada y URL 404 (exige cuenta con correo confirmado, `moderate-avatar` rechaza anónimas); hallazgo de UX: con la puerta de cuenta apagada una anónima ve «Elegir de la galería» y recibe «No hemos podido revisar la foto» (engañoso), sin efecto con la puerta activa.
+
+### T7 — segunda pasada, Supabase real (2026-10-16, comprobador, commit b6d17b6)
+
+Cuenta A `d1a9a739-b6ce-4ce9-9dcd-2e61618377e9` (sin fila de términos, `is_anonymous=false` puesto por el usuario). Evidencia: `e2e/artifacts/local/2026-10-16-tiendas-t7-supabase/r2/`. Backend: Supabase `grrzmzktrhksbttpbblg`.
+
+| Punto | Veredicto | Evidencia |
+|---|---|---|
+| 1. Perfil existente SIN aceptación: pide Términos en Chat y en Perfil; aceptar desbloquea | PASS | `04-chat` y `07-editar` (pantalla «Antes de continuar», checkbox + «Aceptar y continuar»), `09-tras-aceptar` (abre el formulario), `20-chat` (chat sin gate tras aceptar). Aceptación a las 2026-10-16T17:38:53Z (`accept-time-A2.txt`). Matiz: al abrir la app el deck y la lista de Matches cargan sin gate; el gate sale al abrir un chat y al pulsar «Editar perfil» (Perfil muestra el aviso «Para publicar una foto acepta antes…»). Lectura de `terms_acceptances` pendiente del usuario |
+| 2. Publicar foto (galería → recorte) | PASS | `16.png` (avatar + «Quitar foto»). `avatar_url` leído con la sesión de B: `.../storage/v1/object/public/avatars/d1a9a739-.../e5997c6d-1bb6-4264-bc79-2834cc9eed06.jpg`; `avatar-url.txt`; GET público 200 `image/jpeg` 7715 B (`avatar-http-antes.txt`, `avatar-before.jpg`). Publicada ≈17:42:10Z (`photo-time.txt`). Imagen: degradado gris |
+| 4. Reporte con «Contenido inapropiado» | PASS en cliente; fila pendiente de lectura | `22-seleccion.png` (✓ en «Contenido inapropiado»; xml: checked=true solo en esa) y `23-tras` («Reporte enviado.»). Enviado 2026-10-16T17:44:28Z (`report-time2.txt`). Esperado `reason` de «contenido inapropiado» (la vez anterior salió `spam`) sobre mensaje `d2bcd679-24df-46d7-a809-cba60ce7a0a4` |
+| 3. Baja con foto publicada: URL pública → 404 | PASS | «Eliminar mi cuenta para siempre» a las 17:45:39Z (`baja-time.txt`); la app vuelve al onboarding (`32-tras-baja`). La URL guardada devuelve cuerpo `{"statusCode":"404","error":"not_found","message":"Object not found"}` pero **HTTP 400** (`avatar-http-despues.txt`, `avatar-despues-completo.txt`); una ruta inexistente cualquiera da también 400: es el comportamiento de Storage, no un fallo. Con sesión de B: perfil de A y match ya no existen (`[]`) |
+
+Hallazgo menor: en Perfil, con `is_anonymous=false` y sin email en sesión, la tarjeta Cuenta dice «Te hemos mandado un correo a .» (email vacío) — artefacto de forzar el flag por servidor, no del flujo real.
+
+### T7 cierre (Claude, 2026-10-16, a orden expresa del usuario)
+
+- Preparación: borrada la fila de términos de la cuenta A y puesta `is_anonymous=false` (solo para que `moderate-avatar` la aceptase).
+- ✅ Perfil existente sin aceptación: pide aceptar en chat y en «Editar perfil»; aviso en Perfil antes de publicar foto. Aceptación 17:38:53Z. Matiz: deck y Matches cargan sin gate (el gate está donde se publica o se chatea).
+- ✅ Foto publicada (200, image/jpeg, 7715 B) y baja con foto: de la cuenta A no quedó NINGÚN objeto en `avatars` ni `avatar-uploads` (los huérfanos antiguos también), perfil y match desaparecen. La URL pública responde cuerpo 404 con HTTP **400** (así responde Storage a un objeto inexistente; una ruta cualquiera da lo mismo).
+- ✅ Reporte con «Contenido inapropiado» marcado: fila con `reason = contenido-inapropiado`. El `spam` anterior fue un toque equivocado del agente, no un bug.
+- ℹ️ `storage.protect_delete` SÍ bloquea el borrado directo desde una sesión SQL normal («Direct deletion from storage tables is not allowed»); `delete_my_account()` y la purga lo evitan con `storage.allow_delete_query`, y funcionan (probado). No borrar a mano `storage.objects` sin ese ajuste.
+- Limpieza hecha: cuentas A y B, sus fotos y las 2 filas de `user_reports` de prueba borradas; producción vuelve a 1 fila en `user_reports` (la preexistente).
+- Hallazgo menor: con `is_anonymous=false` forzado y sin correo, la tarjeta Cuenta muestra «Te hemos mandado un correo a .»: artefacto de forzar el flag.
