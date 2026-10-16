@@ -100,5 +100,5 @@ Fuente: [guía del formulario](https://support.google.com/googleplay/android-dev
 - [pendiente: DPA y condiciones de OpenAI] — retención, uso para entrenamiento y si actúa como encargado; no afirmar nada hasta confirmarlo. De ello depende marcar Fotos como «compartidas» en Google.
 - [pendiente: categoría secundaria de App Store] — Negocios o vacía.
 - [pendiente: cuenta de prueba] — credenciales para el revisor de Apple.
-- Migraciones `20261014120000`, `20261014130000` y `20261014140000` aplicadas en producción el 16-oct-2026; `moderate-avatar` v2 ya estaba desplegada (confirmar que coincide con el código del repo).
+- Migraciones `20261014120000`, `20261014130000` y `20261014140000` aplicadas en producción el 16-oct-2026; `moderate-avatar` v2 ya estaba desplegada y coincide con el código del repo (cotejado el 16-oct: `index.ts` y `logic.mjs` sin cambios desde su despliegue).
 - Job `purge_old_user_reports()` confirmado activo en producción (03:20 diario); también `lockin-purge-stale-avatar-uploads` (cada hora).
