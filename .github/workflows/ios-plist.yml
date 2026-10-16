@@ -41,12 +41,7 @@ jobs:
         run: |
           plist=$(ls ios/*/Info.plist | head -n1)
           # Permitidos: cámara y fototeca (expo-image-picker).
-          # NSLocalNetwork* viene de expo-dev-client y queda en el plist de release:
-          # se avisa, no se falla (decisión abierta: quitar expo-dev-client del build de tienda).
-          if grep -q "NSLocalNetworkUsageDescription" "$plist"; then
-            echo "::warning::Info.plist declara NSLocalNetworkUsageDescription (expo-dev-client)"
-          fi
-          unexpected=$(grep -oE "NS[A-Za-z]+UsageDescription" "$plist" | sort -u | grep -vE "^NS(Camera|PhotoLibrary|LocalNetwork)UsageDescription$" || true)
+          unexpected=$(grep -oE "NS[A-Za-z]+UsageDescription" "$plist" | sort -u | grep -vE "^NS(Camera|PhotoLibrary)UsageDescription$" || true)
           if [ -n "$unexpected" ]; then
             echo "::error::Permisos de iOS inesperados en Info.plist:"
             echo "$unexpected"
