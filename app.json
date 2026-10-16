@@ -49,7 +49,12 @@
           "microphonePermission": false
         }
       ],
-      "expo-secure-store"
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
