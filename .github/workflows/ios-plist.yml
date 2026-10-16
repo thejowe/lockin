@@ -1,0 +1,50 @@
+name: Info.plist iOS
+
+# Genera el proyecto nativo de iOS (`expo prebuild`, sin instalar pods) y lee el
+# Info.plist real: las tiendas se juzgan por el binario, y en Windows no se puede
+# generar. Falla si reaparecen permisos que la app no usa (micrófono, Face ID,
+# Bluetooth, ubicación) o si falta la declaración de cifrado.
+on:
+  push:
+    branches: [claude/startup-cofounder-matching-app-tfeai1]
+    paths:
+      - 'app.json'
+      - 'package.json'
+      - 'plugins/**'
+      - '.github/workflows/ios-plist.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  plist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx expo prebuild --platform ios --no-install --clean
+        env:
+          EXPO_NO_TELEMETRY: 1
+      - name: Info.plist generado
+        run: |
+          plist=$(ls ios/*/Info.plist | head -n1)
+          echo "Archivo: $plist"
+          cat "$plist"
+          echo '---- claves de uso (Usage) y excepciones ----'
+          grep -E "UsageDescription|NSAllowsArbitraryLoads|NSBonjourServices|ITSAppUsesNonExemptEncryption" -A1 "$plist" || true
+      - name: Solo permisos de la foto de perfil
+        run: |
+          plist=$(ls ios/*/Info.plist | head -n1)
+          # Permitidos: cámara y fototeca (expo-image-picker).
+          unexpected=$(grep -oE "NS[A-Za-z]+UsageDescription" "$plist" | sort -u | grep -vE "^NS(Camera|PhotoLibrary)UsageDescription$" || true)
+          if [ -n "$unexpected" ]; then
+            echo "::error::Permisos de iOS inesperados en Info.plist:"
+            echo "$unexpected"
+            exit 1
+          fi
+          grep -q "ITSAppUsesNonExemptEncryption" "$plist" || { echo "::error::Falta ITSAppUsesNonExemptEncryption"; exit 1; }
