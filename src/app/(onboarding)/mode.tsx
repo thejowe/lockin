@@ -1,7 +1,7 @@
 import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
-import Animated, { Easing, FadeIn, FadeInUp } from 'react-native-reanimated';
+import Animated, { Easing, FadeInUp } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/ambient-background';
@@ -78,9 +78,12 @@ export default function WelcomeScreen() {
           </Animated.View>
         </View>
 
-        <Animated.View
-          entering={FadeIn.duration(Duration.slow).delay(ACTIONS_DELAY_MS)}
-          style={styles.actions}>
+        {/*
+          Sin fundido en el contenedor: en iOS 26 los botones son Liquid Glass y
+          un `opacity` en un padre los deja sin pintar («Iniciar sesión» no se
+          veía hasta pulsarlo). Cada botón aparece solo con `revealDelay`.
+        */}
+        <View style={styles.actions}>
           {error ? (
             <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
               {error}
@@ -92,16 +95,18 @@ export default function WelcomeScreen() {
             <GlassButton
               label="Iniciar sesión"
               tint="light"
+              revealDelay={ACTIONS_DELAY_MS}
               onPress={() => router.push('/sign-in')}
             />
           ) : null}
           <GlassButton
             label={saving ? 'Un momento…' : 'Registrarse'}
             tint="dark"
+            revealDelay={ACTIONS_DELAY_MS}
             disabled={saving}
             onPress={() => void handleRegister()}
           />
-        </Animated.View>
+        </View>
       </SafeAreaView>
     </Screen>
   );

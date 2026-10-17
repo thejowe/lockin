@@ -15,16 +15,35 @@
  *
  * Los tintes son literales a propósito, igual que `FROST_FILL`: son el color
  * del vidrio, no tinta de la paleta.
+ *
+ * ## Liquid Glass no se anima con `opacity`
+ *
+ * Un `opacity` por debajo de 1 en el `GlassView` o en un padre lo deja sin
+ * pintar hasta que algo lo repinta (ya avisado en `glass.tsx`). En la
+ * bienvenida el botón entraba con un fundido desde 0 y en iOS 26 «Iniciar
+ * sesión» no se veía hasta pulsarlo (2026-10-17). Por eso aquí la aparición la
+ * hace el propio cristal (`revealDelay`: `glassEffectStyle` pasa de `none` a
+ * `regular` con la animación del sistema), el fundido es solo del texto, y ni
+ * pulsar ni deshabilitar tocan la opacidad del vidrio.
  */
 
 import { BlurView } from 'expo-blur';
 import { GlassView } from 'expo-glass-effect';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import Animated from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { hasNativeGlass } from '@/components/glass';
 import { ThemedText } from '@/components/themed-text';
-import { BlurIntensity, Control, Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
+import {
+  BlurIntensity,
+  Control,
+  Duration,
+  Opacity,
+  Radii,
+  Spacing,
+  Stroke,
+} from '@/constants/theme';
 import { usePressScale } from '@/hooks/use-press-scale';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -53,6 +72,7 @@ export function GlassButton({
   onPress,
   disabled = false,
   accessibilityHint,
+  revealDelay,
   style,
 }: {
   label: string;
@@ -60,18 +80,37 @@ export function GlassButton({
   onPress: () => void;
   disabled?: boolean;
   accessibilityHint?: string;
+  /**
+   * Con valor, el botón aparece solo pasados esos ms: el cristal se
+   * materializa y el texto se funde. Quien lo monte NO debe envolverlo en un
+   * fundido de opacidad (ver la cabecera).
+   */
+  revealDelay?: number;
   style?: StyleProp<ViewStyle>;
 }) {
   const theme = useTheme();
   const press = usePressScale();
   const colors = TINT[tint];
   const ink = tint === 'light' ? theme.background : theme.text;
+  const native = hasNativeGlass();
+  const [revealed, setRevealed] = useState(revealDelay === undefined);
 
-  const content = (
-    <ThemedText type="bodyStrong" style={{ color: ink }}>
-      {label}
-    </ThemedText>
-  );
+  useEffect(() => {
+    if (revealDelay === undefined) return;
+    const timer = setTimeout(() => setRevealed(true), revealDelay);
+    return () => clearTimeout(timer);
+  }, [revealDelay]);
+
+  const content = revealed ? (
+    <Animated.View
+      entering={revealDelay === undefined ? undefined : FadeIn.duration(Duration.slow)}>
+      <ThemedText
+        type="bodyStrong"
+        style={{ color: ink, opacity: native && disabled ? Opacity.disabled : 1 }}>
+        {label}
+      </ThemedText>
+    </Animated.View>
+  ) : null;
 
   return (
     <Animated.View style={[press.style, style]}>
@@ -87,21 +126,32 @@ export function GlassButton({
         {({ pressed }) => {
           const opacity = disabled ? Opacity.disabled : pressed ? Opacity.pressed : 1;
 
-          if (hasNativeGlass()) {
+          if (native) {
+            // Sin `opacity`: ni al pulsar (`isInteractive` ya da la respuesta
+            // del sistema) ni deshabilitado (se apaga el texto).
             return (
               <GlassView
-                glassEffectStyle="regular"
+                glassEffectStyle={{
+                  style: revealed ? 'regular' : 'none',
+                  animate: revealDelay !== undefined,
+                  animationDuration: Duration.slow / 1000,
+                }}
                 colorScheme={tint}
-                tintColor={colors.native}
+                tintColor={revealed ? colors.native : undefined}
                 isInteractive
-                style={[styles.button, { opacity }]}>
+                style={styles.button}>
                 {content}
               </GlassView>
             );
           }
 
+          // Sin cristal del sistema sí vale el fundido: hasta que toca, solo el
+          // hueco (la fila no salta al aparecer).
+          if (!revealed) return <View style={styles.button} />;
+
           return (
-            <View
+            <Animated.View
+              entering={revealDelay === undefined ? undefined : FadeIn.duration(Duration.slow)}
               collapsable={false}
               style={[
                 styles.button,
@@ -119,7 +169,7 @@ export function GlassButton({
               />
               <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.fill }]} />
               {content}
-            </View>
+            </Animated.View>
           );
         }}
       </Pressable>
