@@ -63,6 +63,7 @@ import { useTheme, useThemeName } from '@/hooks/use-theme';
 
 import { BlackCross, DECK_ACTIONS_SPACE, DeckActions } from './deck-actions';
 import { ProfileCard } from './profile-card';
+import { useTapHint } from './tap-hint';
 
 import type { SharedValue } from 'react-native-reanimated';
 import type { Decision, Profile, Specialty } from '@/data';
@@ -178,6 +179,7 @@ export function SwipeDeck({
   /** Bloquea nuevas decisiones mientras la tarjeta actual sale de pantalla. */
   const exiting = useSharedValue(false);
 
+  const tapHint = useTapHint();
   const top = profiles.length > 0 ? profiles[0] : null;
   const topId = top?.id ?? null;
   const exitDistance = width + 160;
@@ -211,6 +213,8 @@ export function SwipeDeck({
   /** Cierra la decisión. La tarjeta ya está oculta: aquí solo se avisa al padre. */
   function settle(profile: Profile, decision: Decision) {
     exiting.set(false);
+    // Quien ya decide una tarjeta no necesita la pista de tocarla.
+    tapHint.dismiss();
     onDecide(profile, decision);
   }
 
@@ -350,6 +354,8 @@ export function SwipeDeck({
                 onSafetyOpenChange={setSafetyOpen}
                 // Bloquear retira el perfil del deck: se cuenta como un pase.
                 onBlocked={() => swipeAway('pass')}
+                tapHint={tapHint.visible && !safetyOpen}
+                onPageChange={tapHint.dismiss}
               />
             </GestureDetector>
           )
@@ -384,6 +390,8 @@ function TopCard({
   safetyOpen,
   onSafetyOpenChange,
   onBlocked,
+  tapHint,
+  onPageChange,
 }: {
   profile: Profile;
   turnKey: string | null;
@@ -394,6 +402,8 @@ function TopCard({
   safetyOpen: boolean;
   onSafetyOpenChange: (open: boolean) => void;
   onBlocked: () => void;
+  tapHint: boolean;
+  onPageChange: () => void;
 }) {
   const theme = useTheme();
   const elevation = Elevation[useThemeName()];
@@ -457,6 +467,8 @@ function TopCard({
         onSafetyOpenChange={onSafetyOpenChange}
         onBlocked={onBlocked}
         bottomInset={DECK_ACTIONS_SPACE}
+        tapHint={tapHint}
+        onPageChange={onPageChange}
       />
 
       <Animated.View testID="swipe-veil" style={[styles.mark, veilStyle]}>

@@ -12,9 +12,9 @@ import '@/global.css';
 import { Platform, StyleSheet, type TextStyle } from 'react-native';
 
 /**
- * Paleta. La app es solo oscura (decisión del 2026-10-03): fondo grafito con
- * luz ambiental difusa detrás (`AmbientBackground`) y superficies de cristal
- * translúcido encima.
+ * Paleta. La app es solo oscura (decisión del 2026-10-03): fondo negro liso
+ * (desde el 2026-10-17 sin la luz ambiental difusa que hubo detrás, ver
+ * `AmbientBackground`) y superficies de cristal translúcido encima.
  *
  * Las superficies (`backgroundElement`, `backgroundSelected`) y los rellenos
  * suaves (`*Soft`) llevan alfa en hex de 8 dígitos: son vidrio, no pintura, y
@@ -23,8 +23,8 @@ import { Platform, StyleSheet, type TextStyle } from 'react-native';
  * contraste.
  */
 const Dark = {
-  /** Fondo de pantalla, por debajo de la luz ambiental. */
-  background: '#0A0A0B',
+  /** Fondo de pantalla: negro (decisión del usuario del 2026-10-17). */
+  background: '#000000',
   /** Cristal: tarjetas, filas, campos. */
   backgroundElement: '#FFFFFF14',
   /** Cristal en estado activo/seleccionado, o más elevado. */
@@ -76,11 +76,12 @@ export const Colors = {
 } as const;
 
 /**
- * Color del punto más luminoso de las imágenes de luz ambiental
- * (`assets/images/ambient-*.jpg`). Es el peor caso de contraste para la tinta
- * clara: el test compone cada superficie también sobre él.
+ * El punto más luminoso de lo que hay detrás del cristal. Hubo luz ambiental
+ * (`assets/images/ambient-*.jpg`, pico `#351C10`) hasta el 2026-10-17; desde
+ * entonces el fondo es negro liso y el pico es el propio fondo. Se conserva
+ * para que `theme.test.ts` siga midiendo contraste si algún día vuelve.
  */
-export const AmbientPeak = '#351C10';
+export const AmbientPeak = Dark.background;
 
 export type ThemeName = keyof typeof Colors;
 export type ThemeColor = keyof typeof Dark;

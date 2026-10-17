@@ -14,14 +14,11 @@
  */
 
 import { useRef, useState } from 'react';
+import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  View,
-  type LayoutChangeEvent,
-} from 'react-native';
+  KeyboardAwareScrollView,
+  type KeyboardAwareScrollViewRef,
+} from 'react-native-keyboard-controller';
 
 import { ThemedText } from '@/components/themed-text';
 import { OBJECTIONABLE_MESSAGE, isObjectionable } from '@/features/safety/content-filter';
@@ -88,6 +85,9 @@ const FIELD_ORDER: (keyof Draft)[] = [
   'prompts',
   'github',
 ];
+
+/** Aire entre el campo enfocado y el borde del teclado. */
+const KEYBOARD_GAP = Spacing.five;
 
 /** Aire por encima del campo al llevarlo a la vista, para que se vea su etiqueta. */
 const SCROLL_MARGIN = Spacing.three;
@@ -228,7 +228,7 @@ export function ProfileForm({
   const [errors, setErrors] = useState<Errors>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<KeyboardAwareScrollViewRef>(null);
   /** Posición vertical de cada campo dentro del contenido, rellenada por `onLayout`. */
   const [fieldY] = useState<Partial<Record<keyof Draft, number>>>(() => ({}));
 
@@ -284,11 +284,15 @@ export function ProfileForm({
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.root}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView
+    // El campo enfocado sube por encima del teclado. `KeyboardAvoidingView` no
+    // servía: en Android, con edge-to-edge (obligatorio desde Expo SDK 54), la
+    // ventana ya no se redimensiona al abrir el teclado y no se entera (ver la
+    // nota de `KeyboardProvider` en `src/app/_layout.tsx`); la mitad baja del
+    // formulario quedaba tapada mientras se escribía.
+    <View style={styles.root}>
+      <KeyboardAwareScrollView
         ref={scrollRef}
+        bottomOffset={KEYBOARD_GAP}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag">
@@ -526,8 +530,8 @@ export function ProfileForm({
           />
           {onCancel ? <SecondaryButton label={cancelLabel} onPress={onCancel} /> : null}
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
+    </View>
   );
 }
 

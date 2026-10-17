@@ -326,3 +326,7 @@ tamaño completo. Detalle en `visual.md` → «Hallazgos del comprobador»,
   a `discovery_deck` con `CREATE OR REPLACE` sin borrar la firma vieja, así que
   probablemente conviven dos sobrecargas en la base. PostgREST las distingue por
   nombre de argumentos; conviene revisarlo.
+
+## Mano guía en la primera tarjeta (2026-10-17)
+
+- [x] **[Claude]** Decisión del usuario: la primera vez en Descubrir, una mano que pulsa sobre la información de la primera tarjeta enseña que un toque pasa al siguiente bloque. `tap-hint.tsx` (`TapHint` + `useTapHint`): SVG «touch_app» con pulsación y onda en bucle (quieta con «reducir movimiento»), etiqueta «Toca para ver más», `pointerEvents="none"` para que el toque llegue a la tarjeta. Se retira al pasar de bloque (`ProfileCard.onPageChange`) o al decidir (`settle` del deck), y se recuerda en `AsyncStorage` (`cofounder.hint.card-tap.seen`). No sale con el panel de seguridad abierto. Test en `tap-hint.test.tsx`. Sin comprobar en dispositivo: lo mira el usuario.

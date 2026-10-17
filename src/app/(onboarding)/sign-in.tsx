@@ -1,5 +1,6 @@
 import { Redirect, useRouter } from 'expo-router';
-import { ScrollView, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/ambient-background';
@@ -28,9 +29,13 @@ export default function SignInScreen() {
   return (
     <Screen ambient="ember">
       <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        {/* El campo enfocado sube por encima del teclado: ver `profile-form.tsx`. */}
+        <KeyboardAwareScrollView
+          bottomOffset={Spacing.five}
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled">
           <SignInForm onSignedIn={() => router.replace('/')} onCancel={() => router.back()} />
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </SafeAreaView>
     </Screen>
   );

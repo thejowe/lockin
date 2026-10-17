@@ -43,6 +43,7 @@ import { SafetyMenuButton, SafetyPanel } from '@/features/safety/safety-panel';
 
 import { Chip } from './chip';
 import { complementWith } from './complement';
+import { TapHint } from './tap-hint';
 
 import type { ChipTone } from './chip';
 
@@ -52,6 +53,9 @@ import type { Profile, Specialty } from '@/data';
 type Page = 'about' | 'schedule' | 'prompt';
 
 /** Nombre de cada página para el lector de pantalla: dice adónde lleva el toque. */
+/** Altura de la mano sobre el borde inferior: encima del nombre y su bloque. */
+const TAP_HINT_LIFT = 150;
+
 const PAGE_NAMES: Record<Page, string> = {
   about: 'quién es',
   schedule: 'cuándo trabaja',
@@ -83,6 +87,10 @@ export function ProfileCard({
    * de Pasar/Like del deck). Sin él el texto quedaría debajo de los botones.
    */
   bottomInset = 0,
+  /** Enseña la mano que invita a tocar (primera vez en Descubrir: `tap-hint.tsx`). */
+  tapHint = false,
+  /** Se llama al pasar de bloque con un toque. */
+  onPageChange,
 }: {
   profile: Profile;
   viewerSpecialties?: Specialty[];
@@ -91,6 +99,8 @@ export function ProfileCard({
   onSafetyOpenChange?: (open: boolean) => void;
   onBlocked?: () => void;
   bottomInset?: number;
+  tapHint?: boolean;
+  onPageChange?: (index: number) => void;
 }) {
   const theme = useTheme();
   const [localSafetyOpen, setLocalSafetyOpen] = useState(false);
@@ -144,7 +154,10 @@ export function ProfileCard({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Ver ${PAGE_NAMES[pages[nextIndex]]}`}
-        onPress={() => setPageIndex(nextIndex)}
+        onPress={() => {
+          setPageIndex(nextIndex);
+          onPageChange?.(nextIndex);
+        }}
         style={StyleSheet.absoluteFill}
       />
 
@@ -272,6 +285,9 @@ export function ProfileCard({
           ))}
         </View>
       </View>
+
+      {/* Encima de la información y sin tocar nada: el toque llega a la tarjeta. */}
+      {tapHint ? <TapHint bottom={bottomInset + TAP_HINT_LIFT} /> : null}
     </View>
   );
 }

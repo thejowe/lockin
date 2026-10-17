@@ -16,3 +16,6 @@ docs
 
 e2e/.runtime/
 e2e/artifacts/
+
+# Lo escribe scripts/build-legal.mjs desde docs/tiendas/*.md.
+src/features/legal/texts.generated.ts

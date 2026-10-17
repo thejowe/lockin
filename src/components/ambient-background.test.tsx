@@ -1,35 +1,32 @@
 /**
- * Luz ambiental: tiene que llenar la pantalla entera, sea del tamaño que sea.
+ * Lienzo de pantalla: negro liso, sin la luz ambiental de antes del 2026-10-17.
  */
 
 import { render, screen } from '@testing-library/react-native';
-import { StyleSheet, Text } from 'react-native';
+import { Text } from 'react-native';
 
 import { AmbientBackground, Screen } from '@/components/ambient-background';
 import { Colors } from '@/constants/theme';
 
 describe('AmbientBackground', () => {
-  it('la imagen ocupa el 100 % de un contenedor a pantalla completa, no su tamaño propio', async () => {
+  it('ya no pinta ninguna luz de color', async () => {
     await render(<AmbientBackground variant="teal" />);
 
-    // Decorativa: oculta a la accesibilidad, así que hay que pedirla aparte.
-    const image = screen.getByTestId('ambient-background', { includeHiddenElements: true });
-    // Solo `absoluteFill` en la imagen dejaba franjas negras en Android.
-    expect(image).toHaveStyle({ width: '100%', height: '100%' });
-    expect(image.parent).toHaveStyle(StyleSheet.absoluteFill);
+    expect(screen.toJSON()).toBeNull();
   });
 });
 
 describe('Screen', () => {
-  it('pinta el fondo grafito, la luz y el contenido encima', async () => {
+  it('pinta el fondo negro y el contenido encima, sin imagen detrás', async () => {
     await render(
       <Screen testID="screen" ambient="plum">
         <Text>Contenido</Text>
       </Screen>
     );
 
-    expect(screen.getByTestId('screen')).toHaveStyle({ backgroundColor: Colors.dark.background });
-    expect(screen.getByTestId('ambient-background', { includeHiddenElements: true })).toBeTruthy();
+    expect(Colors.dark.background).toBe('#000000');
+    expect(screen.getByTestId('screen')).toHaveStyle({ backgroundColor: '#000000' });
+    expect(screen.queryByTestId('ambient-background', { includeHiddenElements: true })).toBeNull();
     expect(screen.getByText('Contenido')).toBeTruthy();
   });
 });

@@ -812,3 +812,7 @@ Backend: **Supabase real**, APK release recompilado con `--rerun` (log en `e2e/a
 - Observación (no regresión): en Perfil la barra translúcida se superpone al texto de fondo («Puedes pr…»), igual con y sin reducir animaciones.
 
 Casilla `[comprobador]` de esta sección: la evidencia la **confirma ✅**; no la marco.
+
+## Fondo negro, sin luz ambiental (2026-10-17)
+
+- [x] **[Claude]** Decisión del usuario: fuera el difuminado de color, fondo negro. `theme.background` pasa a `#000000`; `AmbientBackground` ya no pinta nada (la API se conserva para no tocar las 13 pantallas que lo montan) y se borran `assets/images/ambient-*.jpg`. `AmbientPeak` = fondo, así que el test de contraste sigue midiendo sobre lo único que hay detrás. Splash a `#000000`; el fondo del icono adaptativo de Android se queda en grafito (es marca). Sin comprobar en dispositivo: lo mira el usuario.
