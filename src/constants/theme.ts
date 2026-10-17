@@ -48,9 +48,9 @@ const Dark = {
    * conserva del sistema anterior para no renombrar 35 pantallas; el color es
    * el naranja de la dirección cristal.
    */
-  brass: '#FF8645',
+  brass: '#FFFFFF',
   /** Brasa como relleno suave (fondo de chip/badge). */
-  brassSoft: '#FF86451F',
+  brassSoft: '#FFFFFF1F',
   /** Acento verde-azulado: confirmación, presencia, modo Lock-In. */
   teal: '#7FC3B0',
   /** Verde-azulado como relleno suave. */
