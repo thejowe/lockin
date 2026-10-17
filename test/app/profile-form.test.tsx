@@ -21,6 +21,12 @@ import { buildProfileInput } from '@/data/test-fixtures';
 
 import { renderRoute, repositories, resetRepositories, resetRouter, router } from '../routes';
 
+import {
+  clearSignupBasics,
+  readSignupBasics,
+  saveSignupBasics,
+} from '@/features/profile/signup-draft';
+
 import ProfileFormScreen from '../../src/app/(onboarding)/profile-form';
 
 import type { ProfileFormProps } from '@/features/profile';
@@ -69,6 +75,7 @@ beforeEach(() => {
   mockTerms.value = 'accepted';
   resetRepositories();
   resetRouter();
+  return clearSignupBasics();
 });
 
 describe('ProfileFormScreen', () => {
@@ -114,6 +121,20 @@ describe('ProfileFormScreen', () => {
     await renderRoute(<ProfileFormScreen />);
 
     await waitFor(() => expect(mockForm.props).not.toBeNull());
+  });
+
+  it('arranca con lo que se tecleó en «Sobre ti» y lo olvida al crear el perfil', async () => {
+    await saveSignupBasics({ name: 'Ana', age: 30, location: 'Vigo' });
+    await renderRoute(<ProfileFormScreen />);
+
+    await waitFor(() =>
+      expect(mockForm.props?.seed).toEqual({ name: 'Ana', age: 30, location: 'Vigo' })
+    );
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Crear perfil' }));
+
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/discover'));
+    await expect(readSignupBasics()).resolves.toBeNull();
   });
 
   it('guarda el perfil y sustituye la ruta: atrás no vuelve al onboarding', async () => {

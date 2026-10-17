@@ -1,32 +1,29 @@
 # Registro obligatorio con email, segunda mitad: la vuelta del enlace, la
-# contraseña y la puerta abierta. Lo lanza run.mjs DESPUÉS de abrir el enlace del
-# correo con `am start`, así que la app ya está en `/auth/callback` canjeando el
-# código. Sin `launchApp` al principio a propósito: relanzar la app mataría ese
-# canje a medias.
+# contraseña que se pone sola y la puerta abierta. Lo lanza run.mjs DESPUÉS de
+# abrir el enlace del correo con `am start`, así que la app ya está en
+# `/auth/callback` canjeando el código. Sin `launchApp` al principio a propósito:
+# relanzar la app mataría ese canje a medias.
 appId: app.cofounder.mobile
-name: Registro con email (2/2) — volver del correo, elegir contraseña y pasar la puerta
+name: Registro con email (2/2) — volver del correo, contraseña aplicada y perfil relleno
 ---
 - assertTrue: ${EMAIL && PASSWORD}
-# El callback, sin perfil todavía, devuelve a `/register`, que ya cae en el paso
-# de la contraseña porque la cuenta es recuperable.
+# El callback, sin perfil todavía, devuelve a `/register`: la cuenta ya es
+# recuperable, así que pone la contraseña elegida en la primera mitad (la que
+# esperaba en el almacén seguro) y sigue al formulario de perfil. run.mjs
+# comprueba después contra GoTrue que esa contraseña entra.
 - extendedWaitUntil:
-    visible: 'Elige tu contraseña'
+    visible: 'Paso 4 de 4'
     timeout: 60000
-- assertVisible: 'Email confirmado: ${EMAIL}'
-- tapOn: 'Contraseña de tu cuenta|Tu contraseña'
-- inputText: ${PASSWORD}
-- hideKeyboard
-- tapOn: 'Guardar y continuar'
-# La puerta abierta: el onboarding sigue en la bienvenida.
-- extendedWaitUntil:
-    visible: 'Encuentra con quién construir'
-    timeout: 30000
-# Y sigue abierta tras reiniciar: la puerta pregunta al servidor en cada montaje,
+- assertNotVisible: 'Elige tu contraseña'
+# «Sobre ti» llega ya puesto en el formulario.
+- assertVisible: 'Ana E2E'
+- assertVisible: 'Barcelona'
+# Y la puerta sigue abierta tras reiniciar: pregunta al servidor en cada montaje,
 # así que esto no lo puede sostener ningún estado en memoria de la app.
 - stopApp
 - launchApp:
     clearState: false
 - extendedWaitUntil:
-    visible: 'Encuentra con quién construir'
+    visible: 'Paso 4 de 4'
     timeout: 60000
 - assertNotVisible: 'Crea tu cuenta'

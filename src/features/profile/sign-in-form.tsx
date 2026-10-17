@@ -51,6 +51,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { describeAccountError } from './account-copy';
 import { readAccountState, sendPasswordReset, signInWithEmail } from './account-gateway';
 import { Field, PrimaryButton, SecondaryButton, TextField } from './controls';
+import { clearPendingPassword } from './pending-password';
 
 /** Qué se le está pidiendo al servidor ahora mismo, si es que se le pide algo. */
 type Busy = 'entrar' | 'recuperar' | null;
@@ -99,6 +100,8 @@ export function SignInForm({
 
     try {
       await signInWithEmail(address, password);
+      // Una contraseña de un alta a medias en este teléfono ya no es de nadie.
+      await clearPendingPassword();
       onSignedIn();
     } catch (cause) {
       setNotice({ text: describeAccountError(cause), tone: 'danger' });

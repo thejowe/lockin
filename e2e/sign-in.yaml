@@ -6,10 +6,11 @@ name: Entrar en la cuenta existente desde una instalación limpia
 - assertTrue: ${EMAIL && PASSWORD && PROFILE_NAME}
 - launchApp:
     clearState: true
+# Instalación limpia: la bienvenida, con sus dos salidas.
 - extendedWaitUntil:
-    visible: 'Crea tu cuenta'
+    visible: 'Registrarse'
     timeout: 60000
-- tapOn: 'Ya tengo cuenta'
+- tapOn: 'Iniciar sesión'
 - extendedWaitUntil:
     visible: 'Vuelve a tu cuenta'
     timeout: 30000
@@ -24,7 +25,7 @@ name: Entrar en la cuenta existente desde una instalación limpia
     visible: 'Matches'
     timeout: 60000
 - assertNotVisible: 'Crea tu cuenta'
-- assertNotVisible: 'Continuar'
+- assertNotVisible: 'Registrarse'
 - tapOn: 'Perfil'
 - extendedWaitUntil:
     visible: ${PROFILE_NAME}

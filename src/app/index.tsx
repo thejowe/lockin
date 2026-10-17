@@ -7,6 +7,8 @@ import { Button } from '@/components/button';
 import { LoadingState, MessageState } from '@/components/state-view';
 import { useQuery, useRepositories } from '@/data';
 import { useRegistrationGate } from '@/features/profile';
+import { registrationRequired } from '@/features/profile/account-gateway';
+import { hasPendingPassword } from '@/features/profile/pending-password';
 import { useTheme } from '@/hooks/use-theme';
 
 /** Recupera el perfil antes de decidir si hace falta onboarding. */
@@ -20,12 +22,19 @@ export default function IndexRoute() {
     error,
     refresh,
   } = useQuery('session:onboarded', () => repositories.session.isOnboarded());
+  // La contraseña del alta se aplica en `/register`; quien confirma el correo
+  // fuera de la app y vuelve por el icono tiene que pasar por allí.
+  const { data: pendingPassword, loading: pendingLoading } = useQuery(
+    'signup:pending-password',
+    hasPendingPassword
+  );
 
   // Nunca en blanco: con Supabase esta consulta cruza la red, y una pantalla
   // vacía no distingue «tarda» de «se ha colgado».
-  // Con perfil de antes, esperar también a la puerta: no se enseña `/discover`
-  // a quien luego tendrá que confirmar el correo.
-  if (loading || (onboarded && gate === 'checking')) {
+  // Esperar también a la puerta: con perfil, no se enseña `/discover` a quien
+  // luego tendrá que confirmar el correo; sin él, decide entre la bienvenida y
+  // el formulario.
+  if (loading || pendingLoading || gate === 'checking') {
     return <LoadingState label="Abriendo cofounder…" />;
   }
 
@@ -51,10 +60,16 @@ export default function IndexRoute() {
     );
   }
 
-  // Sin perfil sigue la bienvenida (`/mode`, que ya manda a `/register`). Con
+  // Sin perfil: con la cuenta ya creada y confirmada solo falta el formulario;
+  // si no, la bienvenida (`/mode`), que empieza el alta por «Sobre ti». Con
   // perfil pero sin email confirmado —cuenta anónima anterior al registro
   // obligatorio— se asciende en `/register`: conserva perfil y matches.
-  if (!onboarded) return <Redirect href="/mode" />;
+  if (registrationRequired && gate === 'open' && pendingPassword) {
+    return <Redirect href="/register" />;
+  }
+  if (!onboarded) {
+    return <Redirect href={registrationRequired && gate === 'open' ? '/profile-form' : '/mode'} />;
+  }
   return <Redirect href={gate === 'required' ? '/register' : '/discover'} />;
 }
 

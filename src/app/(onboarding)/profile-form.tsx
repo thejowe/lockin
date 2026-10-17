@@ -1,24 +1,29 @@
 import { Redirect, useRouter } from 'expo-router';
+import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/ambient-background';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
-import { useRepositories, type ProfileInput } from '@/data';
+import { useQuery, useRepositories, type ProfileInput } from '@/data';
 import {
   ProfileForm,
   TermsAcceptance,
   useRegistrationGate,
   useTermsGate,
 } from '@/features/profile';
+import { registrationRequired } from '@/features/profile/account-gateway';
+import { clearSignupBasics, readSignupBasics } from '@/features/profile/signup-draft';
 
 /**
- * Paso 2 del onboarding: crear el perfil.
+ * Último paso del onboarding: crear el perfil.
  *
  * El formulario es el mismo componente que usa la tab Perfil para editar. Aquí
- * arranca vacío. No pregunta qué busca la persona: desde el 2026-10-12 el
- * producto es solo buscar cofundador.
+ * arranca con nombre, edad y ubicación de «Sobre ti», el primer paso del alta
+ * (`signup-draft.ts`), y ese borrador se borra al crear el perfil. No pregunta
+ * qué busca la persona: desde el 2026-10-12 el producto es solo buscar
+ * cofundador.
  *
  * Con el registro obligatorio (2026-09-20) tampoco se llega aquí sin cuenta: la
  * puerta manda a `/register`, igual que `mode`, para que una URL directa no la
@@ -33,6 +38,7 @@ export default function ProfileFormScreen() {
 
   async function handleSubmit(input: ProfileInput) {
     await repositories.profiles.saveCurrent(input);
+    await clearSignupBasics();
     // `replace`: una vez creado el perfil, volver al onboarding no tiene sentido.
     router.replace('/discover');
   }
@@ -55,13 +61,12 @@ export default function ProfileFormScreen() {
   return (
     <Screen ambient="plum">
       <SafeAreaView style={styles.root} edges={['top']}>
-        <ProfileForm
-          submitLabel="Crear perfil"
+        <SeededProfileForm
           onSubmit={handleSubmit}
           header={
             <View style={styles.header}>
               <ThemedText type="label" themeColor="textSecondary">
-                Paso 2 de 2
+                {registrationRequired ? 'Paso 4 de 4' : 'Paso 2 de 2'}
               </ThemedText>
               <ThemedText type="title">Cuéntate</ThemedText>
               <ThemedText type="body" themeColor="textSecondary">
@@ -73,6 +78,25 @@ export default function ProfileFormScreen() {
         />
       </SafeAreaView>
     </Screen>
+  );
+}
+
+/**
+ * El formulario, una vez leído el borrador de «Sobre ti». Aparte para que la
+ * lectura no empiece hasta que la puerta y los Términos dejan pasar: con ella
+ * arriba, la pantalla se repintaría (y repetiría su `Redirect`) al resolverla.
+ */
+function SeededProfileForm({
+  onSubmit,
+  header,
+}: {
+  onSubmit: (input: ProfileInput) => Promise<void>;
+  header: ReactNode;
+}) {
+  const { data: basics, loading } = useQuery('signup:basics', readSignupBasics);
+  if (loading) return null;
+  return (
+    <ProfileForm submitLabel="Crear perfil" seed={basics} onSubmit={onSubmit} header={header} />
   );
 }
 

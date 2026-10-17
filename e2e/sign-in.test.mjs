@@ -8,6 +8,7 @@ const reset = read('password-reset.yaml');
 const form = read('../src/features/profile/sign-in-form.tsx');
 const account = read('../src/features/profile/account-section.tsx');
 const register = read('../src/features/profile/register-form.tsx');
+const welcome = read('../src/app/(onboarding)/mode.tsx');
 const tabs = read('../src/components/app-tabs.tsx');
 const details = read('../src/features/profile/profile-details.tsx');
 const runner = read('run.mjs');
@@ -18,21 +19,17 @@ describe('entrada y recuperación desde instalación limpia', () => {
     ['password-reset', reset],
   ]) {
     it(`${name}: etiquetas de entrada fijadas contra producto`, () => {
-      for (const text of [
-        'Ya tengo cuenta',
-        'Vuelve a tu cuenta',
-        'Email de tu cuenta',
-        'tu@email.com',
-      ]) {
+      for (const text of ['Vuelve a tu cuenta', 'Email de tu cuenta', 'tu@email.com']) {
         assert(flow.includes(text), text);
         assert(form.includes(text), text);
       }
       assert(register.includes('Ya tengo cuenta'));
       assert.match(flow, /launchApp:\r?\n\s+clearState: true/);
-      assert.match(
-        flow,
-        /extendedWaitUntil:\r?\n\s+visible: 'Crea tu cuenta'\r?\n\s+timeout: 60000/
-      );
+      assert.match(flow, /extendedWaitUntil:\r?\n\s+visible: 'Registrarse'\r?\n\s+timeout: 60000/);
+      // Instalación limpia: la bienvenida, y desde ella «Iniciar sesión».
+      assert(flow.includes("tapOn: 'Iniciar sesión'"));
+      assert(welcome.includes('label="Iniciar sesión"'));
+      assert(welcome.includes(": 'Registrarse'}"));
       assert(flow.includes("assertNotVisible: 'Crea tu cuenta'"));
       assert(flow.includes('visible: ${PROFILE_NAME}'));
       assert(details.includes('{profile.name}'));

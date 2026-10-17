@@ -24,11 +24,29 @@ const second = read('register-confirm.yaml');
 const runner = read('run.mjs');
 const workflow = read('../.github/workflows/e2e.yml');
 const form = read('../src/features/profile/register-form.tsx');
+const welcome = read('../src/app/(onboarding)/mode.tsx');
+const aboutYou = read('../src/features/profile/about-you-form.tsx');
+const terms = read('../src/features/profile/terms.tsx');
+const profileFormRoute = read('../src/app/(onboarding)/profile-form.tsx');
 const auth = read('../src/data/supabase/auth.ts');
 const callbackRoute = read('../src/app/auth/callback.tsx');
 const app = JSON.parse(read('../app.json'));
 
 describe('register.yaml y register-confirm.yaml', () => {
+  it('tocan etiquetas que existen en la bienvenida y en «Sobre ti»', () => {
+    assert.match(first, /tapOn: 'Registrarse'/);
+    assert.match(welcome, /: 'Registrarse'\}/);
+    assert.match(first, /visible: 'Sobre ti'/);
+    assert.match(aboutYou, /<ThemedText type="title">Sobre ti<\/ThemedText>/);
+    assert.match(aboutYou, /accessibilityLabel="Nombre"/);
+    assert.match(aboutYou, /placeholder="Cómo te llamas"/);
+    assert.match(aboutYou, /accessibilityLabel="Edad"/);
+    assert.match(first, /tapOn: 'De dónde eres\|Barcelona'/);
+    assert.match(aboutYou, /accessibilityLabel="De dónde eres"/);
+    assert.match(first, /tapOn: 'Continuar'/);
+    assert.match(aboutYou, /: 'Continuar'\}/);
+  });
+
   it('tocan etiquetas que existen en el formulario de registro', () => {
     assert.match(first, /visible: 'Crea tu cuenta'/);
     assert.match(form, /<ThemedText type="title">Crea tu cuenta<\/ThemedText>/);
@@ -37,18 +55,29 @@ describe('register.yaml y register-confirm.yaml', () => {
     assert.match(form, /placeholder="tu@email\.com"/);
     assert.match(first, /tapOn: 'Crear cuenta'/);
     assert.match(form, /: 'Crear cuenta'\}/);
-    assert.match(first, /visible: 'Confirma tu email'/);
-    assert.match(form, /<ThemedText type="title">Confirma tu email<\/ThemedText>/);
-
-    assert.match(second, /visible: 'Elige tu contraseña'/);
-    assert.match(form, /<ThemedText type="title">Elige tu contraseña<\/ThemedText>/);
-    assert.match(second, /assertVisible: 'Email confirmado: \$\{EMAIL\}'/);
-    assert.match(form, /accessibilityLabel=\{`Email confirmado: \$\{account\.email/);
-    assert.match(second, /tapOn: 'Contraseña de tu cuenta\|Tu contraseña'/);
+    assert.match(first, /tapOn: 'Contraseña de tu cuenta\|Tu contraseña'/);
     assert.match(form, /accessibilityLabel="Contraseña de tu cuenta"/);
     assert.match(form, /placeholder="Tu contraseña"/);
-    assert.match(second, /tapOn: 'Guardar y continuar'/);
-    assert.match(form, /: 'Guardar y continuar'\}/);
+    assert.match(first, /tapOn: 'Repite la contraseña\|Otra vez'/);
+    assert.match(form, /accessibilityLabel="Repite la contraseña"/);
+    assert.match(form, /placeholder="Otra vez"/);
+    assert.equal(first.match(/inputText: \$\{PASSWORD\}/g)?.length, 2);
+    const consent = 'He leído y acepto los Términos de uso y las Normas de la comunidad';
+    assert(first.includes("tapOn: '" + consent + "'"));
+    assert(terms.includes('accessibilityLabel="' + consent + '"'));
+    assert.match(form, /<TermsCheckbox/);
+    assert.match(first, /visible: 'Verifica tu email'/);
+    assert.match(form, /<ThemedText type="title">Verifica tu email<\/ThemedText>/);
+
+    // La segunda mitad no teclea la contraseña: la pone sola la que esperaba.
+    assert.match(second, /visible: 'Paso 4 de 4'/);
+    assert.match(profileFormRoute, /'Paso 4 de 4'/);
+    assert.match(second, /assertNotVisible: 'Elige tu contraseña'/);
+    assert.match(form, /<ThemedText type="title">Elige tu contraseña<\/ThemedText>/);
+    assert.doesNotMatch(second, /inputText: \$\{PASSWORD\}/);
+    assert.match(form, /await setAccountPassword\(stashed, userId\)/);
+    assert.match(second, /assertVisible: 'Ana E2E'/);
+    assert.match(first, /inputText: 'Ana E2E'/);
   });
 
   it('la primera mitad parte de cero y la segunda no relanza la app antes del canje', () => {
@@ -58,8 +87,18 @@ describe('register.yaml y register-confirm.yaml', () => {
     assert.match(second, /- stopApp\r?\n- launchApp:\r?\n\s+clearState: false/);
   });
 
-  it('el callback sin perfil vuelve a /register, que es donde se pide la contraseña', () => {
-    assert.match(callbackRoute, /router\.replace\(onboarded \? '\/profile' : '\/register'\)/);
+  it('run.mjs pasa la contraseña ya a la primera mitad', () => {
+    assert.match(
+      runner,
+      /maestroFlow\(dir, registerFile, \{ EMAIL: email, PASSWORD: password \}\)/
+    );
+  });
+
+  it('el callback sin perfil vuelve a /register, que es donde se pone la contraseña', () => {
+    assert.match(
+      callbackRoute,
+      /router\.replace\(onboarded && !pending \? '\/profile' : '\/register'\)/
+    );
   });
 });
 

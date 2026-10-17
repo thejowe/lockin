@@ -1083,11 +1083,11 @@ if (command === 'test') {
   /**
    * Un intento de la variante `registro`: el alta con email de punta a punta.
    *
-   *   register.yaml          → «Crea tu cuenta», email, «Confirma tu email»
+   *   register.yaml          → bienvenida, «Sobre ti», cuenta, «Verifica tu email»
    *   oráculo                → la cuenta anónima espera ese email (su uid)
    *   Mailpit → GoTrue       → el enlace del correo, resuelto a cofounder://…?code=
    *   am start               → el enlace entra en la app por el esquema
-   *   register-confirm.yaml  → contraseña, la puerta se abre y sigue abierta
+   *   register-confirm.yaml  → contraseña aplicada sola, perfil relleno, sigue abierta
    *   oráculo                → mismo uid, email confirmado, la contraseña entra
    *   perfil fixture         → ficha única en ese uid, antes de borrar el estado
    *   sign-in.yaml           → instalación limpia, entrar y recuperar esa ficha
@@ -1111,7 +1111,7 @@ if (command === 'test') {
     writeFileSync(join(dir, 'clock.json'), JSON.stringify(clock, null, 2));
     spawnSync('adb', ['logcat', '-c'], { timeout: 10000 });
     try {
-      if (maestroFlow(dir, registerFile, { EMAIL: email }) !== 0) {
+      if (maestroFlow(dir, registerFile, { EMAIL: email, PASSWORD: password }) !== 0) {
         const diagnosis = diagnose(dir);
         return { outcome: diagnosis.kind, why: 'register.yaml: ' + diagnosis.why };
       }
@@ -1149,7 +1149,7 @@ if (command === 'test') {
       }
       await verifyRegistration(status, email, password, userId);
 
-      // El alta acaba en modo, sin ficha. Este fixture prepara la precondición
+      // El alta acaba en el formulario de perfil, sin ficha. Este fixture prepara la precondición
       // «ya tiene perfil», sin convertir este caso en otro full-journey.
       assert.equal(status.API_URL, 'http://127.0.0.1:54321');
       const admin = createClient(status.API_URL, status.SERVICE_ROLE_KEY, {

@@ -1,27 +1,63 @@
-# Registro obligatorio con email, primera mitad: la puerta, el email y el correo
-# pedido. Solo en la variante `registro`, la única cuyo APK lleva la puerta
-# encendida (`buildEnv` en run.mjs). Lo lanza run.mjs, que a continuación lee el
-# correo de Mailpit, resuelve el enlace de verificación contra GoTrue y abre el
+# Registro obligatorio con email, primera mitad: la bienvenida, «Sobre ti», la
+# cuenta (email, contraseña dos veces y Términos) y el correo pedido. Solo en la
+# variante `registro`, la única cuyo APK lleva la puerta encendida (`buildEnv` en
+# run.mjs). Lo lanza run.mjs, que a continuación lee el correo de Mailpit,
+# resuelve el enlace de verificación contra GoTrue y abre el
 # `cofounder://auth/callback?code=…` que devuelve con `am start`. La segunda mitad
 # es register-confirm.yaml. `e2e/register.test.mjs` fija las etiquetas contra el
 # código.
 appId: app.cofounder.mobile
-name: Registro con email (1/2) — crear la cuenta y quedar a la espera del correo
+name: Registro con email (1/2) — sobre ti, crear la cuenta y quedar a la espera del correo
 ---
-- assertTrue: ${EMAIL}
-# Estado limpio: sin sesión guardada, la app abre una anónima al arrancar y la
-# puerta la manda a `/register`. Es la cuenta que se asciende, no otra.
+- assertTrue: ${EMAIL && PASSWORD}
+# Estado limpio: sin sesión guardada, la app abre una anónima al arrancar y
+# enseña la bienvenida. Esa cuenta anónima es la que se asciende, no otra.
 - launchApp:
     clearState: true
 - extendedWaitUntil:
-    visible: 'Crea tu cuenta'
+    visible: 'Registrarse'
     timeout: 60000
+- tapOn: 'Registrarse'
+- extendedWaitUntil:
+    visible: 'Sobre ti'
+    timeout: 30000
+# El campo y no su etiqueta, que se llama igual: como en full-journey.yaml.
+- tapOn:
+    text: 'Nombre|Cómo te llamas'
+    below: 'Nombre'
+- inputText: 'Ana E2E'
+- hideKeyboard
+- tapOn:
+    text: 'Edad|28'
+    below: 'Edad'
+- inputText: '28'
+- hideKeyboard
+- tapOn: 'De dónde eres|Barcelona'
+- inputText: 'Barcelona'
+- hideKeyboard
+- tapOn: 'Continuar'
+- extendedWaitUntil:
+    visible: 'Crea tu cuenta'
+    timeout: 30000
 - tapOn: 'Email de tu cuenta|tu@email.com'
 - inputText: ${EMAIL}
 # Justo tras teclear: el teclado está delante seguro, así que esto no es un
 # `pressBack` que saque a la app de la pantalla (ver hide-keyboard.test.mjs).
 - hideKeyboard
+- tapOn: 'Contraseña de tu cuenta|Tu contraseña'
+- inputText: ${PASSWORD}
+- hideKeyboard
+- tapOn: 'Repite la contraseña|Otra vez'
+- inputText: ${PASSWORD}
+- hideKeyboard
+- scrollUntilVisible:
+    element: 'He leído y acepto los Términos de uso y las Normas de la comunidad'
+    direction: DOWN
+- tapOn: 'He leído y acepto los Términos de uso y las Normas de la comunidad'
+- scrollUntilVisible:
+    element: 'Crear cuenta'
+    direction: DOWN
 - tapOn: 'Crear cuenta'
 - extendedWaitUntil:
-    visible: 'Confirma tu email'
+    visible: 'Verifica tu email'
     timeout: 30000

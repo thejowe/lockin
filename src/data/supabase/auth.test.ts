@@ -781,6 +781,42 @@ describe('setAccountPassword', () => {
     expect(auth.updateUser).toHaveBeenCalledWith({ password: 'contraseña-larga' });
   });
 
+  it('con la cuenta esperada, la pone', async () => {
+    const current = signedInAs({
+      email: 'ana@example.com',
+      email_confirmed_at: '2026-09-17T10:00:00Z',
+    });
+    auth.updateUser.mockResolvedValueOnce({ data: { user: null }, error: null });
+    await expect(setAccountPassword('contraseña-larga', current.id)).resolves.toBeUndefined();
+    expect(auth.updateUser).toHaveBeenCalledWith({ password: 'contraseña-larga' });
+  });
+
+  it('a otra cuenta no se la pone', async () => {
+    signedInAs({ email: 'ana@example.com', email_confirmed_at: '2026-09-17T10:00:00Z' });
+    await expect(setAccountPassword('contraseña-larga', 'uid-de-otra')).rejects.toMatchObject({
+      reason: 'no-session',
+    });
+    expect(auth.updateUser).not.toHaveBeenCalled();
+  });
+
+  it('si la sesión cambia de cuenta mientras comprueba, no escribe sobre la nueva', async () => {
+    const before = signedInAs({
+      email: 'ana@example.com',
+      email_confirmed_at: '2026-09-17T10:00:00Z',
+    });
+    const after = user({ id: 'uid-de-otra', email: 'b@example.com' });
+    // La primera lectura (estado) ve la cuenta de antes; la de justo antes de
+    // escribir, ya la otra.
+    auth.getSession
+      .mockResolvedValueOnce({ data: { session: { user: before } }, error: null })
+      .mockResolvedValueOnce({ data: { session: { user: after } }, error: null });
+
+    await expect(setAccountPassword('contraseña-larga', before.id)).rejects.toMatchObject({
+      reason: 'no-session',
+    });
+    expect(auth.updateUser).not.toHaveBeenCalled();
+  });
+
   it('traduce una contraseña débil', async () => {
     signedInAs({ email: 'ana@example.com', email_confirmed_at: '2026-09-17T10:00:00Z' });
     auth.updateUser.mockResolvedValueOnce({

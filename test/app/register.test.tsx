@@ -5,13 +5,13 @@
  * comprueba lo que saben las rutas, que es lo que la decisión del 2026-09-20
  * —el registro es **obligatorio**— exige que no se rompa:
  *
- * - que `mode` no se enseña a quien no tiene la cuenta confirmada, y manda a
- *   `/register`; y que la deja pasar en cuanto la tiene,
- * - que si no se puede comprobar la cuenta no se deja pasar (fallar abierto
+ * - que la bienvenida (`mode`) es la entrada del alta para quien no tiene la
+ *   cuenta confirmada, y que quien ya la tiene salta directo al formulario,
+ * - que si no se puede comprobar la cuenta no se salta nada (fallar abierto
  *   sería el fallo que la regla existe para evitar),
  * - que sin capa de cuentas (mock) o con la puerta apagada no hay puerta, y la
  *   pantalla de registro devuelve al principio,
- * - que al terminar el onboarding vuelve a `/` con `replace` (que decide `/mode` o `/discover`), y que
+ * - que al terminar el registro vuelve a `/` con `replace` (que decide `/profile-form` o `/discover`), y que
  *   «Ya tengo cuenta» abre el formulario de entrar con `push`.
  *
  * Ojo: en RNTL 14 `render` y `fireEvent` son asíncronos.
@@ -71,15 +71,19 @@ beforeEach(() => {
   mockSetPassword.mockReset().mockResolvedValue(undefined);
 });
 
-describe('la puerta en la bienvenida', () => {
-  it('sin la cuenta confirmada manda a /register y no enseña el paso', async () => {
+describe('la bienvenida y la puerta', () => {
+  // Desde el 2026-10-17 la bienvenida es la entrada del alta: se enseña a quien
+  // aún no tiene cuenta (empieza por «Sobre ti») y solo se salta a quien ya la
+  // tiene confirmada, que va directo al formulario.
+  it('sin la cuenta confirmada enseña la bienvenida, con sus dos salidas', async () => {
     await renderRoute(<ModeScreen />);
 
-    await waitFor(() => expect(router.redirects).toEqual(['/register']));
-    expect(screen.queryByText('Encuentra con quién construir')).toBeNull();
+    expect(await screen.findByRole('button', { name: 'Registrarse' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Iniciar sesión' })).toBeTruthy();
+    expect(router.redirects).toEqual([]);
   });
 
-  it('con una cuenta pendiente de confirmar tampoco pasa', async () => {
+  it('con una cuenta pendiente de confirmar también: el alta sigue desde «Registrarse»', async () => {
     mockReadAccountState.mockResolvedValue({
       ...ANONIMA,
       kind: 'pending-email',
@@ -88,34 +92,35 @@ describe('la puerta en la bienvenida', () => {
 
     await renderRoute(<ModeScreen />);
 
-    await waitFor(() => expect(router.redirects).toEqual(['/register']));
+    expect(await screen.findByRole('button', { name: 'Registrarse' })).toBeTruthy();
+    expect(router.redirects).toEqual([]);
   });
 
-  it('con el email confirmado deja pasar', async () => {
+  it('con el email confirmado y sin perfil, directo al formulario', async () => {
     mockReadAccountState.mockResolvedValue(CONFIRMADA);
 
     await renderRoute(<ModeScreen />);
 
-    expect(await screen.findByText('Encuentra con quién construir')).toBeTruthy();
-    expect(router.redirects).toEqual([]);
+    await waitFor(() => expect(router.redirects).toEqual(['/profile-form']));
+    expect(screen.queryByRole('button', { name: 'Registrarse' })).toBeNull();
   });
 
-  it('mientras lee la cuenta no enseña el paso ni redirige: no parpadea', async () => {
+  it('mientras lee la cuenta no enseña nada ni redirige: no parpadea', async () => {
     mockReadAccountState.mockReturnValue(new Promise(() => {}));
 
     await renderRoute(<ModeScreen />);
 
-    expect(screen.queryByText('Encuentra con quién construir')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Registrarse' })).toBeNull();
     expect(router.redirects).toEqual([]);
   });
 
-  it('si no se puede leer la cuenta no deja pasar: falla cerrado', async () => {
+  it('si no se puede leer la cuenta no salta al formulario: falla cerrado', async () => {
     mockReadAccountState.mockRejectedValue(new Error('Sin conexión.'));
 
     await renderRoute(<ModeScreen />);
 
-    await waitFor(() => expect(router.redirects).toEqual(['/register']));
-    expect(screen.queryByText('Encuentra con quién construir')).toBeNull();
+    expect(await screen.findByRole('button', { name: 'Registrarse' })).toBeTruthy();
+    expect(router.redirects).toEqual([]);
   });
 
   it('sin capa de cuentas (mock) o con la puerta apagada no hay puerta', async () => {
@@ -123,7 +128,7 @@ describe('la puerta en la bienvenida', () => {
 
     await renderRoute(<ModeScreen />);
 
-    expect(screen.getByText('Encuentra con quién construir')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Registrarse' })).toBeTruthy();
     expect(router.redirects).toEqual([]);
   });
 });
@@ -162,6 +167,7 @@ describe('RegisterScreen', () => {
     await screen.findByText('Elige tu contraseña');
 
     await fireEvent.changeText(screen.getByLabelText('Contraseña de tu cuenta'), 'secreta-123');
+    await fireEvent.changeText(screen.getByLabelText('Repite la contraseña'), 'secreta-123');
     await fireEvent.press(screen.getByRole('button', { name: 'Guardar y continuar' }));
     await act(async () => {});
 

@@ -13,10 +13,31 @@ name: Alta, perfil, deck, match, mensaje y persistencia
 # Registro actual: Auth anónimo automático; no existe pantalla de login.
 - launchApp:
     clearState: true
-# Bienvenida: desde el 2026-10-12 no se elige modo, todo perfil es de cofundador.
+# Bienvenida (desde el 2026-10-17): logo y dos salidas. Desde el 2026-10-12 no
+# se elige modo, todo perfil es de cofundador. Sin la puerta del registro (mock,
+# o `REQUIRE_ACCOUNT=false` en la variante supabase) «Registrarse» va de «Sobre
+# ti» directo al perfil, sin cuenta ni correo.
 - extendedWaitUntil:
-    visible: 'Encuentra con quién construir'
+    visible: 'Registrarse'
     timeout: 60000
+- tapOn: 'Registrarse'
+# «Sobre ti»: nombre, edad y de dónde eres, antes que nada.
+- extendedWaitUntil:
+    visible: 'Sobre ti'
+    timeout: 30000
+- tapOn:
+    text: 'Nombre|Cómo te llamas'
+    below: 'Nombre'
+- inputText: ${PROFILE_NAME}
+- hideKeyboard
+- tapOn:
+    text: 'Edad|28'
+    below: 'Edad'
+- inputText: '28'
+- hideKeyboard
+- tapOn: 'De dónde eres|Barcelona'
+- inputText: 'Barcelona'
+- hideKeyboard
 - tapOn: 'Continuar'
 # Términos y Normas: sin aceptarlos no se publica perfil (gate de profile-form).
 - extendedWaitUntil:
@@ -24,25 +45,11 @@ name: Alta, perfil, deck, match, mensaje y persistencia
     timeout: 30000
 - tapOn: 'He leído y acepto los Términos de uso y las Normas de la comunidad'
 - tapOn: 'Aceptar y continuar'
-- tapOn:
-    text: 'Nombre|Cómo te llamas'
-    below: 'Nombre'
-- inputText: ${PROFILE_NAME}
-- tapOn:
-    text: 'Edad|28'
-    below: 'Edad'
-- inputText: '28'
-- hideKeyboard
-- scrollUntilVisible:
-    element:
-      text: 'Ubicación|Barcelona'
-      below: 'Ubicación'
-    direction: DOWN
-- tapOn:
-    text: 'Ubicación|Barcelona'
-    below: 'Ubicación'
-- inputText: 'Barcelona'
-- hideKeyboard
+# Nombre, edad y ubicación ya vienen de «Sobre ti»: no se vuelven a teclear.
+- extendedWaitUntil:
+    visible: ${PROFILE_NAME}
+    timeout: 30000
+- assertVisible: 'Barcelona'
 - scrollUntilVisible:
     element: 'Desarrollo'
     direction: DOWN
@@ -147,7 +154,7 @@ name: Alta, perfil, deck, match, mensaje y persistencia
 - extendedWaitUntil:
     visible: 'Descubrir'
     timeout: 60000
-- assertNotVisible: 'Encuentra con quién construir'
+- assertNotVisible: 'Registrarse'
 - tapOn: 'Perfil'
 - extendedWaitUntil:
     visible: ${PROFILE_NAME}

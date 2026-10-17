@@ -468,12 +468,22 @@ export async function linkEmailToCurrentUser(email: string): Promise<AccountStat
  *
  * Exige el email ya confirmado: sin eso GoTrue rechaza la contraseña y la
  * cuenta se quedaría a medias, con un email que no abre nada.
+ *
+ * Con `expectedUserId`, solo se la pone a esa cuenta: el alta guarda la
+ * contraseña antes de confirmar el correo y la aplica después, y si entre medias
+ * la sesión cambió de cuenta (alguien entró en otra), `updateUser` escribiría
+ * sobre la sesión nueva. Se comprueba al leer el estado y otra vez justo antes
+ * de escribir, porque `getAccountState` cruza la red y la sesión puede cambiar
+ * mientras tanto.
  */
-export async function setAccountPassword(password: string): Promise<void> {
+export async function setAccountPassword(password: string, expectedUserId?: string): Promise<void> {
   const state = await getAccountState();
   if (state.kind === 'none') {
     throw new AccountError('no-session', 'No hay ninguna sesión abierta.');
   }
+  const sessionChanged = () =>
+    new AccountError('no-session', 'La sesión ha cambiado de cuenta. Vuelve a intentarlo.');
+  if (expectedUserId !== undefined && state.userId !== expectedUserId) throw sessionChanged();
   if (!state.recoverable) {
     throw new AccountError(
       'needs-confirmed-email',
@@ -481,7 +491,13 @@ export async function setAccountPassword(password: string): Promise<void> {
     );
   }
 
-  const { error } = await getSupabaseClient().auth.updateUser({ password });
+  const client = getSupabaseClient();
+  if (expectedUserId !== undefined) {
+    const { data } = await client.auth.getSession();
+    if (data.session?.user.id !== expectedUserId) throw sessionChanged();
+  }
+
+  const { error } = await client.auth.updateUser({ password });
   if (error) throw toAccountError(error);
 }
 

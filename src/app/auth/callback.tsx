@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Screen } from '@/components/ambient-background';
 import { useRepositories } from '@/data';
 import { AuthCallback, authLinkFromParams } from '@/features/profile';
+import { hasPendingPassword } from '@/features/profile/pending-password';
 
 /**
  * Ruta `cofounder://auth/callback`: donde caen los enlaces de los correos de
@@ -17,8 +18,11 @@ import { AuthCallback, authLinkFromParams } from '@/features/profile';
  *
  * Depende de quién sea: con perfil viene de Perfil (asegurar la cuenta o
  * cambiar la contraseña) y vuelve allí; sin perfil está en pleno alta, y lo que
- * le falta es elegir la contraseña, que se pide en `/register` — mandarla a
+ * le falta es la contraseña, que se pone en `/register` — mandarla a
  * `/profile` la dejaría en una tab vacía, con la puerta del registro a medias.
+ * Con una contraseña elegida antes de confirmar (`pending-password.ts`) también
+ * va a `/register`, tenga perfil o no: es allí donde se aplica, y una cuenta con
+ * perfil que asciende la eligió en ese mismo formulario.
  */
 export default function AuthCallbackRoute() {
   const router = useRouter();
@@ -30,8 +34,8 @@ export default function AuthCallbackRoute() {
   // `replace` y no `push`: la pantalla del enlace no es un sitio al que se
   // pueda volver con el botón atrás — su código es de un solo uso.
   const goNext = useCallback(() => {
-    repositories.session.isOnboarded().then(
-      (onboarded) => router.replace(onboarded ? '/profile' : '/register'),
+    Promise.all([repositories.session.isOnboarded(), hasPendingPassword()]).then(
+      ([onboarded, pending]) => router.replace(onboarded && !pending ? '/profile' : '/register'),
       // Sin poder saber si hay perfil, la puerta de entrada ya sabe enseñar el fallo.
       () => router.replace('/')
     );

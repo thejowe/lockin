@@ -66,7 +66,6 @@ export function TermsAcceptance({
   onAccepted: () => void;
   footer?: ReactNode;
 }) {
-  const theme = useTheme();
   const repositories = useRepositories();
   const [checked, setChecked] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -100,25 +99,7 @@ export function TermsAcceptance({
       <LinkRow label="Leer las Normas de la comunidad" url={LEGAL_URLS.guidelines} />
       <LinkRow label="Política de privacidad" url={LEGAL_URLS.privacy} />
 
-      <Pressable
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked }}
-        accessibilityLabel="He leído y acepto los Términos de uso y las Normas de la comunidad"
-        onPress={() => setChecked((value) => !value)}
-        style={[
-          styles.check,
-          {
-            borderColor: checked ? theme.brass : theme.border,
-            backgroundColor: checked ? theme.backgroundSelected : theme.backgroundElement,
-          },
-        ]}>
-        <View style={[styles.box, { borderColor: checked ? theme.brass : theme.textMuted }]}>
-          {checked ? <View style={[styles.dot, { backgroundColor: theme.brass }]} /> : null}
-        </View>
-        <ThemedText type="body" style={styles.checkText}>
-          He leído y acepto los Términos de uso y las Normas de la comunidad.
-        </ThemedText>
-      </Pressable>
+      <TermsCheckbox checked={checked} onToggle={() => setChecked((value) => !value)} />
 
       {failed ? (
         <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
@@ -133,6 +114,46 @@ export function TermsAcceptance({
       />
       {footer}
     </ScrollView>
+  );
+}
+
+/**
+ * La casilla de aceptación: nada premarcado, y la frase entera es el blanco del
+ * toque. La usan esta pantalla y el paso de cuenta del alta (`RegisterForm`).
+ */
+export function TermsCheckbox({ checked, onToggle }: { checked: boolean; onToggle: () => void }) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked }}
+      accessibilityLabel="He leído y acepto los Términos de uso y las Normas de la comunidad"
+      onPress={onToggle}
+      style={[
+        styles.check,
+        {
+          borderColor: checked ? theme.brass : theme.border,
+          backgroundColor: checked ? theme.backgroundSelected : theme.backgroundElement,
+        },
+      ]}>
+      <View style={[styles.box, { borderColor: checked ? theme.brass : theme.textMuted }]}>
+        {checked ? <View style={[styles.dot, { backgroundColor: theme.brass }]} /> : null}
+      </View>
+      <ThemedText type="body" style={styles.checkText}>
+        He leído y acepto los Términos de uso y las Normas de la comunidad.
+      </ThemedText>
+    </Pressable>
+  );
+}
+
+/** Los tres documentos a un toque, compactos: para el paso de cuenta del alta. */
+export function TermsLinks() {
+  return (
+    <View style={styles.links}>
+      <LinkRow label="Leer los Términos de uso" url={LEGAL_URLS.terms} />
+      <LinkRow label="Leer las Normas de la comunidad" url={LEGAL_URLS.guidelines} />
+      <LinkRow label="Política de privacidad" url={LEGAL_URLS.privacy} />
+    </View>
   );
 }
 

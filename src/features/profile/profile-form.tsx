@@ -101,16 +101,19 @@ function deviceTimezone(): string {
   }
 }
 
-function initialDraft(profile: Profile | null): Draft {
+/** Lo que el alta ya sabe antes del formulario (ver `signup-draft.ts`). */
+export type ProfileSeed = Pick<Profile, 'name' | 'age' | 'location'>;
+
+function initialDraft(profile: Profile | null, seed: ProfileSeed | null): Draft {
   const prompts = [0, 1].map((index) => ({
     question: profile?.prompts[index]?.question ?? PROMPT_QUESTIONS[index],
     answer: profile?.prompts[index]?.answer ?? '',
   }));
 
   return {
-    name: profile?.name ?? '',
-    age: profile ? String(profile.age) : '',
-    location: profile?.location ?? '',
+    name: profile?.name ?? seed?.name ?? '',
+    age: profile ? String(profile.age) : seed ? String(seed.age) : '',
+    location: profile?.location ?? seed?.location ?? '',
     timezone: profile?.timezone ?? deviceTimezone(),
     specialties: profile?.specialties ?? [],
     seekingSpecialties: profile?.seekingSpecialties ?? [],
@@ -200,6 +203,8 @@ function toInput(draft: Draft): ProfileInput {
 export interface ProfileFormProps {
   /** Perfil a editar, o `null` para un alta. */
   initial?: Profile | null;
+  /** Sin `initial`: nombre, edad y ubicación ya recogidos en el alta. */
+  seed?: ProfileSeed | null;
   submitLabel: string;
   /** Guarda. Si lanza, el formulario enseña el error y no se cierra. */
   onSubmit: (input: ProfileInput) => Promise<void>;
@@ -212,13 +217,14 @@ export interface ProfileFormProps {
 
 export function ProfileForm({
   initial = null,
+  seed = null,
   submitLabel,
   onSubmit,
   onCancel,
   cancelLabel = 'Cancelar',
   header,
 }: ProfileFormProps) {
-  const [draft, setDraft] = useState<Draft>(() => initialDraft(initial));
+  const [draft, setDraft] = useState<Draft>(() => initialDraft(initial, seed));
   const [errors, setErrors] = useState<Errors>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);

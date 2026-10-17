@@ -25,6 +25,8 @@ import { buildProfileInput } from '@/data/test-fixtures';
 
 import { renderRoute, repositories, resetRepositories, resetRouter, router } from '../routes';
 
+import { clearPendingPassword, stashPendingPassword } from '@/features/profile/pending-password';
+
 import AuthCallbackRoute from '../../src/app/auth/callback';
 
 jest.mock('expo-router', () => require('../routes').expoRouterMock());
@@ -46,6 +48,7 @@ jest.mock('@/features/profile', () => {
 beforeEach(() => {
   resetRepositories();
   resetRouter();
+  return clearPendingPassword();
 });
 
 describe('AuthCallbackRoute', () => {
@@ -68,6 +71,18 @@ describe('AuthCallbackRoute', () => {
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/register'));
     expect(router.replace).not.toHaveBeenCalledWith('/profile');
     expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it('con perfil pero con la contraseña del alta esperando, va al registro, que la pone', async () => {
+    await repositories.session.setActiveMode('par');
+    await repositories.profiles.saveCurrent(buildProfileInput());
+    await stashPendingPassword('una-clave-larga', 'uid-1');
+    await renderRoute(<AuthCallbackRoute />);
+
+    await fireEvent.press(screen.getByRole('button', { name: 'terminado' }));
+
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/register'));
+    expect(router.replace).not.toHaveBeenCalledWith('/profile');
   });
 
   it('si no se puede saber si hay perfil, va a la puerta de entrada', async () => {

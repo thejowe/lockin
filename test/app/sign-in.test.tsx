@@ -4,7 +4,7 @@
  * El formulario tiene sus propios tests en `src/features/profile/`. Aquí se
  * comprueba lo que sabe la ruta:
  *
- * - que el enlace del paso 1 solo existe si hay capa de cuentas: sin
+ * - que «Iniciar sesión» de la bienvenida solo existe si hay capa de cuentas: sin
  *   credenciales de Supabase no hay servidor al que entrar,
  * - que la pantalla, si alguien llega sin capa de cuentas, vuelve al principio,
  * - y que al entrar se va a la puerta de entrada (`/`) con `replace`, que es
@@ -56,11 +56,11 @@ beforeEach(() => {
   mockReadAccountState.mockReset().mockResolvedValue(null);
 });
 
-describe('enlace «Ya tengo cuenta» del paso 1', () => {
+describe('«Iniciar sesión» en la bienvenida', () => {
   it('con capa de cuentas lo ofrece y lleva al formulario', async () => {
     await renderRoute(<ModeScreen />);
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Ya tengo cuenta' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Iniciar sesión' }));
 
     expect(router.push).toHaveBeenCalledWith('/sign-in');
   });
@@ -70,16 +70,16 @@ describe('enlace «Ya tengo cuenta» del paso 1', () => {
 
     await renderRoute(<ModeScreen />);
 
-    expect(screen.getByText('Encuentra con quién construir')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Ya tengo cuenta' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Registrarse' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Iniciar sesión' })).toBeNull();
   });
 
   it('no es un muro: el onboarding sigue pudiéndose completar sin pulsarlo', async () => {
     await renderRoute(<ModeScreen />);
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Registrarse' }));
 
-    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/profile-form'));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/about-you'));
   });
 });
 

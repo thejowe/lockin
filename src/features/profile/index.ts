@@ -14,9 +14,17 @@ export { GithubVerification } from './github-verification';
 export { PhotoSection } from './photo-section';
 export { ProfileAvatar } from './profile-avatar';
 export { ProfileDetails } from './profile-details';
-export { ProfileForm, type ProfileFormProps } from './profile-form';
+export { ProfileForm, type ProfileFormProps, type ProfileSeed } from './profile-form';
 export { RegisterForm } from './register-form';
 export { RequireVerifiedEmail } from './require-verified-email';
 export { SignInForm } from './sign-in-form';
-export { LegalLinks, TermsAcceptance, useTermsGate, type TermsGate } from './terms';
+export {
+  LegalLinks,
+  TermsAcceptance,
+  TermsCheckbox,
+  TermsLinks,
+  useTermsGate,
+  type TermsGate,
+} from './terms';
+export { AboutYouForm } from './about-you-form';
 export { useRegistrationGate, type RegistrationGate } from './use-registration-gate';

@@ -11,6 +11,7 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { buildProfileInput } from '@/data/test-fixtures';
+import { clearPendingPassword, stashPendingPassword } from '@/features/profile/pending-password';
 
 import { renderRoute, repositories, resetRepositories, resetRouter, router } from '../routes';
 
@@ -47,6 +48,7 @@ beforeEach(() => {
   resetRouter();
   mockRequired = false;
   mockReadAccountState.mockReset().mockResolvedValue(CONFIRMADA);
+  return clearPendingPassword();
 });
 
 describe('IndexRoute', () => {
@@ -95,6 +97,34 @@ describe('IndexRoute con la puerta del correo', () => {
     await renderRoute(<IndexRoute />);
 
     await waitFor(() => expect(router.redirects).toEqual(['/register']));
+  });
+
+  it('con el email confirmado fuera de la app y la contraseña del alta esperando, va a ponerla', async () => {
+    await stashPendingPassword('una-clave-larga', 'u');
+
+    await renderRoute(<IndexRoute />);
+
+    await waitFor(() => expect(router.redirects).toEqual(['/register']));
+  });
+});
+
+describe('IndexRoute en pleno alta (sin perfil)', () => {
+  beforeEach(() => {
+    mockRequired = true;
+  });
+
+  it('con la cuenta confirmada y sin contraseña pendiente, al formulario', async () => {
+    await renderRoute(<IndexRoute />);
+
+    await waitFor(() => expect(router.redirects).toEqual(['/profile-form']));
+  });
+
+  it('sin la cuenta confirmada, a la bienvenida', async () => {
+    mockReadAccountState.mockResolvedValue(ANONIMA);
+
+    await renderRoute(<IndexRoute />);
+
+    await waitFor(() => expect(router.redirects).toEqual(['/mode']));
   });
 });
 
