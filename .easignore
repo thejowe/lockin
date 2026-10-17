@@ -1,0 +1,74 @@
+# EAS no lee los .gitignore anidados: copia del raíz + lo que ignoran e2e/ y otros.
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+example
+
+# generated native folders
+/ios
+/android
+
+# Informes de cobertura de Jest: se regeneran con `npm run test:coverage`.
+/coverage
+
+# Archivos temporales del CLI de Supabase.
+/supabase/.temp/
+
+# Descargas del toolchain nativo de Android para compilar en local
+# (`expo run:android`): son de la máquina de quien compila, no del repo, y
+# pesan decenas de MB. Las carpetas que generan ya están arriba (/android).
+/android-ndk-*.zip
+/commandlinetools-*.zip
+
+# Copias de trabajo temporales que crean los agentes de Claude Code
+# (isolation: worktree): son de la sesión, no del repo.
+/.claude/worktrees/
+
+# Salida de scripts/build-web.mjs (GitHub Pages)
+_site/
+
+# logs del túnel de Expo
+expo-tunnel.log
+
+# De e2e/.gitignore y extras que no hacen falta para compilar
+e2e/artifacts/
+.claude/
+supabase/evidence/
+docs/
+e2e/.runtime/
+.superpowers/
