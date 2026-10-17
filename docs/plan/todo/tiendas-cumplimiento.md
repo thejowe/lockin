@@ -83,20 +83,13 @@ solo con términos aceptados; `useTermsGate` acepta versión >= vigente; `pages.
 5. [P2] `.github/workflows/pages.yml`: paths solo vigilan `privacidad.md`; añadir `docs/tiendas/{terminos,normas,seguridad-infantil}.md`.
 
 **Casillas que siguen abiertas:**
-- [ ] T5 `app.json`/binario (agente `arquitecto`, tras arreglar lo de arriba): quitar
-  `@config-plugins/react-native-webrtc`, RECORD_AUDIO, SCHEDULE_EXACT_ALARM, `expo-notifications`
-  (solo sirve al recordatorio de Lock-In; `expo-secure-store` SE USA, se queda); dejar solo los textos de
-  `expo-image-picker`; sacar Lock-In/WebRTC de la build de tienda (Apple 2.3.1) o apagarlo de verdad;
-  revisar manifiesto del AAB.
-- [ ] T6 declaraciones: actualizar cuestionario/Data safety contra el binario final (incluida foto);
-  cuenta de prueba y notas de revisor de Apple.
-- [ ] T7 `comprobador` en emulador: aceptación de términos (onboarding, chat, perfil existente), enlaces
-  legales, reportar mensaje, filtro, baja de cuenta con fotos. Necesita APK nuevo y migraciones aplicadas.
-- [ ] Texto de `privacidad.md`/`eliminar-cuenta` sobre borrado de fotos: pasar de «mejor esfuerzo» a
-  «garantizado en servidor» una vez aplicada `20261014140000`.
+- [x] T5 `app.json`/binario — hecho 2026-10-15 (ver «T5 hecho»); manifiesto leído en T7 (solo CAMERA).
+- [x] T6 declaraciones — hecho 2026-10-15 (ver «T6 hecho»); quedan solo los marcadores `[pendiente: …]` del usuario.
+- [x] T7 `comprobador` — cerrada 2026-10-16 con mock y Supabase real (ver «T7 veredicto» y «T7 cierre»).
+- [x] Texto de `privacidad.md`/`eliminar-cuenta` sobre fotos — ya dice «borrado en servidor» (migración `20261014140000` aplicada el 2026-10-16; ver T4).
 - [ ] Subir `TERMS_VERSION` si cambia la fecha final de `terminos.md` (hoy ambas 2026-10-14).
 
-**Migraciones SIN aplicar en producción** (`grrzmzktrhksbttpbblg`; requieren permiso del usuario):
+**Migraciones (aplicadas en producción el 2026-10-16; lista histórica)** (`grrzmzktrhksbttpbblg`; requieren permiso del usuario):
 `20261014120000_terms_acceptances`, `20261014130000_report_message`, `20261014140000_avatar_storage_cleanup`.
 Tras aplicar: Schema drift, comprobar que `storage.protect_delete` no bloquea el borrado y que la URL da 404.
 
