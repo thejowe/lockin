@@ -12,6 +12,7 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 
+import { Colors } from '@/constants/theme';
 import { buildProfile } from '@/data/test-fixtures';
 
 import { ProfileCard } from './profile-card';
@@ -36,6 +37,8 @@ function contrastRatio(ink: string, background: string, scrim?: string, opacity 
   const b = luminance(mixed);
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
+
+const HIDDEN = { includeHiddenElements: true };
 
 describe('ProfileCard', () => {
   it('ofrece Bloquear y Reportar desde las opciones de la tarjeta', async () => {
@@ -199,7 +202,7 @@ describe('ProfileCard', () => {
       expect(screen.queryByText('Hacer algo que dure')).toBeNull();
     });
 
-    it('el toque a la derecha avanza y el de la izquierda vuelve', async () => {
+    it('un toque en la tarjeta avanza de bloque y tras el último vuelve al primero', async () => {
       await render(<ProfileCard profile={profile} />);
 
       await fireEvent.press(screen.getByRole('button', { name: 'Ver cuándo trabaja' }));
@@ -210,19 +213,31 @@ describe('ProfileCard', () => {
 
       await fireEvent.press(screen.getByRole('button', { name: 'Ver su respuesta' }));
       expect(screen.getByText('Hacer algo que dure')).toBeTruthy();
-      expect(screen.getByRole('button', { name: 'Final' })).toBeDisabled();
 
-      await fireEvent.press(screen.getByRole('button', { name: 'Ver cuándo trabaja' }));
       await fireEvent.press(screen.getByRole('button', { name: 'Ver quién es' }));
       expect(screen.getByText('Domina')).toBeTruthy();
-      expect(screen.getByRole('button', { name: 'Inicio' })).toBeDisabled();
+    });
+
+    it('los puntos de abajo marcan en qué bloque estás', async () => {
+      await render(<ProfileCard profile={profile} />);
+      const dot = (page: string) =>
+        StyleSheet.flatten(screen.getByTestId(`profile-card-dot-${page}`, HIDDEN).props.style)
+          .backgroundColor;
+      const lit = Colors.dark.text;
+
+      expect(dot('about')).toBe(lit);
+      expect(dot('schedule')).not.toBe(lit);
+
+      await fireEvent.press(screen.getByRole('button', { name: 'Ver cuándo trabaja' }));
+      expect(dot('about')).not.toBe(lit);
+      expect(dot('schedule')).toBe(lit);
     });
 
     it('sin prompt no hay página de respuesta', async () => {
       await render(<ProfileCard profile={buildProfile({ prompts: [] })} />);
 
       await fireEvent.press(screen.getByRole('button', { name: 'Ver cuándo trabaja' }));
-      expect(screen.getByRole('button', { name: 'Final' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Ver quién es' })).toBeTruthy();
     });
   });
 });
@@ -237,7 +252,7 @@ describe('ProfileCard: foto de fondo', () => {
     ['negro', '#000000'],
     ['foto clara', '#E0E0E0'],
     ['foto oscura', '#231C18'],
-  ])('protege barras y menú sobre %s con al menos 3:1', async (_name, background) => {
+  ])('protege el menú sobre %s con al menos 3:1', async (_name, background) => {
     const base = buildProfile({ name: 'Núria' });
     const profile = { ...base, avatar: { ...base.avatar, imageUrl: 'https://x/a.jpg' } };
     await render(<ProfileCard profile={profile} />);
@@ -248,23 +263,13 @@ describe('ProfileCard: foto de fondo', () => {
     expect(scrim.props.accessibilityElementsHidden).toBe(true);
     expect(scrim.props.importantForAccessibility).toBe('no-hide-descendants');
     const veil = StyleSheet.flatten(scrim.props.style).backgroundColor;
-    const active = StyleSheet.flatten(screen.getByTestId('profile-card-page-about').props.style);
-    const idle = StyleSheet.flatten(screen.getByTestId('profile-card-page-schedule').props.style);
     const menu = StyleSheet.flatten(screen.getByText('⋯', HIDDEN).props.style);
 
-    for (const { color, opacity } of [
-      { color: active.backgroundColor, opacity: active.opacity },
-      { color: idle.backgroundColor, opacity: idle.opacity },
-      { color: menu.color, opacity: menu.opacity },
-    ]) {
-      expect(contrastRatio(color, background, veil, opacity)).toBeGreaterThanOrEqual(3);
-    }
-    // La activa destaca también frente a las inactivas, no solo frente a la foto.
-    expect(contrastRatio(active.backgroundColor, idle.backgroundColor)).toBeGreaterThanOrEqual(2);
+    expect(contrastRatio(menu.color, background, veil, menu.opacity)).toBeGreaterThanOrEqual(3);
+    // Una sola imagen: no hay barras de página.
+    expect(screen.queryByTestId('profile-card-page-about', HIDDEN)).toBeNull();
 
     await fireEvent.press(screen.getByRole('button', { name: 'Ver cuándo trabaja' }));
-    expect(screen.getByTestId('profile-card-page-schedule')).toHaveStyle(active);
-    expect(screen.getByTestId('profile-card-page-about')).toHaveStyle(idle);
     // El velo no altera la apertura ni el retorno del panel de seguridad.
     await fireEvent.press(screen.getByRole('button', { name: 'Opciones de Núria' }));
     expect(screen.getByRole('button', { name: 'Reportar a Núria' })).toBeTruthy();

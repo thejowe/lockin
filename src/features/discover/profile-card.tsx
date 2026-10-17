@@ -6,9 +6,10 @@
  * con las iniciales en grande. La información va abajo, sobre un fundido a
  * negro, empezando por el nombre y la edad.
  *
- * Como Tinder con las fotos, la ficha se reparte en páginas que se pasan
- * tocando la mitad derecha (siguiente) o la izquierda (anterior), con las
- * barras de arriba diciendo en cuál estás. El orden de lectura sigue siendo el
+ * La ficha se reparte en páginas que se pasan tocando en cualquier parte de la
+ * tarjeta (tras la última vuelve a la primera). Hay una sola imagen, así que no hay
+ * barras de progreso arriba: unos puntos bajo la información dicen en qué bloque
+ * estás y que hay más. El orden de lectura sigue siendo el
  * que decide el swipe (ver `CONCEPTO.md`): primero quién es, qué aporta y qué le
  * falta; luego cuándo trabaja y desde dónde parte; y el prompt al final. Las
  * páginas sustituyen al scroll, que pelearía con el gesto horizontal.
@@ -20,12 +21,13 @@
  */
 
 import { Image } from 'expo-image';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { ThemedText } from '@/components/themed-text';
-import { FontFamily, Radii, ScrimAlpha, Spacing } from '@/constants/theme';
+import { FontFamily, Radii, ScrimAlpha, Spacing, Springs } from '@/constants/theme';
 import {
   DayStrip,
   GithubSeal,
@@ -35,6 +37,7 @@ import {
   startingPointLabel,
   type DaySchedule,
 } from '@/features/profile';
+import { useReduceMotion } from '@/hooks/use-reduce-motion';
 import { useTheme } from '@/hooks/use-theme';
 import { SafetyMenuButton, SafetyPanel } from '@/features/safety/safety-panel';
 
@@ -103,8 +106,7 @@ export function ProfileCard({
 
   const pages: Page[] = prompt ? ['about', 'schedule', 'prompt'] : ['about', 'schedule'];
   const page = pages[Math.min(pageIndex, pages.length - 1)];
-  const hasPrevious = pageIndex > 0;
-  const hasNext = pageIndex < pages.length - 1;
+  const nextIndex = (pageIndex + 1) % pages.length;
 
   if (blocked)
     return (
@@ -135,28 +137,16 @@ export function ProfileCard({
       <Portrait profile={profile} />
 
       {/*
-        Las dos mitades de la tarjeta pasan de página, como las fotos en Tinder.
-        Debajo de todo lo demás: el botón de opciones y el texto quedan encima.
+        Toda la tarjeta pasa al siguiente bloque, y desde el último vuelve al
+        primero. Debajo de todo lo demás: el botón de opciones queda encima.
         Si el dedo arrastra, el gesto del deck cancela el toque.
       */}
-      <View style={styles.tapZones}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={hasPrevious ? `Ver ${PAGE_NAMES[pages[pageIndex - 1]]}` : 'Inicio'}
-          accessibilityState={{ disabled: !hasPrevious }}
-          disabled={!hasPrevious}
-          onPress={() => setPageIndex(pageIndex - 1)}
-          style={styles.tapZone}
-        />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={hasNext ? `Ver ${PAGE_NAMES[pages[pageIndex + 1]]}` : 'Final'}
-          accessibilityState={{ disabled: !hasNext }}
-          disabled={!hasNext}
-          onPress={() => setPageIndex(pageIndex + 1)}
-          style={styles.tapZone}
-        />
-      </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Ver ${PAGE_NAMES[pages[nextIndex]]}`}
+        onPress={() => setPageIndex(nextIndex)}
+        style={StyleSheet.absoluteFill}
+      />
 
       <View style={styles.top} pointerEvents="box-none">
         {/* El velo cubre toda la zona de controles; solo se desvanece debajo.
@@ -184,18 +174,6 @@ export function ProfileCard({
             </Defs>
             <Rect width="100%" height="100%" fill={`url(#top-fade-${profile.id})`} />
           </Svg>
-        </View>
-        <View style={styles.bars} pointerEvents="none">
-          {pages.map((entry, index) => (
-            <View
-              key={entry}
-              testID={`profile-card-page-${entry}`}
-              style={[
-                styles.bar,
-                { backgroundColor: index === pageIndex ? theme.text : theme.textMuted },
-              ]}
-            />
-          ))}
         </View>
         <View style={styles.menu}>
           <SafetyMenuButton name={profile.name} onPress={() => setSafetyOpen(true)} />
@@ -282,10 +260,53 @@ export function ProfileCard({
             </ThemedText>
           </View>
         ) : null}
+
+        {/* Un punto por bloque de información; el encendido es en el que estás. */}
+        <View style={styles.dots} accessibilityElementsHidden>
+          {pages.map((entry, index) => (
+            <PageDot
+              key={entry}
+              testID={`profile-card-dot-${entry}`}
+              active={index === pageIndex}
+            />
+          ))}
+        </View>
       </View>
     </View>
   );
 }
+
+/** Punto de página: el activo es más grande y crece con un muelle al encenderse. */
+function PageDot({ active, testID }: { active: boolean; testID: string }) {
+  const theme = useTheme();
+  const reduceMotion = useReduceMotion();
+  const grown = useSharedValue(active ? 1 : 0);
+
+  // Solo anima los cambios: al montar el punto ya nace en su sitio.
+  const mounted = useRef(false);
+  useEffect(() => {
+    if (!mounted.current) {
+      mounted.current = true;
+      return;
+    }
+    grown.set(reduceMotion ? (active ? 1 : 0) : withSpring(active ? 1 : 0, Springs.glide));
+  }, [active, reduceMotion, grown]);
+
+  const style = useAnimatedStyle(() => ({
+    opacity: 0.7 + 0.3 * grown.get(),
+    transform: [{ scale: 1 + DOT_GROWTH * grown.get() }],
+  }));
+
+  return (
+    <Animated.View
+      testID={testID}
+      style={[styles.dot, { backgroundColor: active ? theme.text : theme.textMuted }, style]}
+    />
+  );
+}
+
+/** Cuánto más grande que un punto apagado es el activo. */
+const DOT_GROWTH = 0.6;
 
 /**
  * El «retrato» que ocupa la tarjeta entera. Con foto, la foto a pantalla
@@ -443,13 +464,6 @@ const styles = StyleSheet.create({
     letterSpacing: -6,
     opacity: 0.9,
   },
-  tapZones: {
-    ...StyleSheet.absoluteFill,
-    flexDirection: 'row',
-  },
-  tapZone: {
-    flex: 1,
-  },
   top: {
     position: 'absolute',
     top: 0,
@@ -465,13 +479,15 @@ const styles = StyleSheet.create({
     right: 0,
     left: 0,
   },
-  bars: {
+  dots: {
     flexDirection: 'row',
-    gap: Spacing.one,
+    justifyContent: 'center',
+    gap: Spacing.two,
+    paddingTop: Spacing.three,
   },
-  bar: {
-    flex: 1,
-    height: 3,
+  dot: {
+    width: 7,
+    height: 7,
     borderRadius: Radii.pill,
   },
   menu: {

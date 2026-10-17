@@ -39,8 +39,9 @@
  * eso es manipulación directa y quitarla dejaría el deck sin feedback.
  */
 
+import { BlurView } from 'expo-blur';
 import { useState } from 'react';
-import { StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
@@ -49,17 +50,18 @@ import Animated, {
   runOnJS,
   runOnUI,
   useAnimatedStyle,
+  useDerivedValue,
   useSharedValue,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
 
-import { ThemedText } from '@/components/themed-text';
-import { Curves, Duration, Elevation, Radii, Spacing, Springs, Stroke } from '@/constants/theme';
+import { Icon } from '@/components/icon';
+import { Curves, Duration, Elevation, Radii, Spacing, Springs } from '@/constants/theme';
 import { useReduceMotion } from '@/hooks/use-reduce-motion';
 import { useTheme, useThemeName } from '@/hooks/use-theme';
 
-import { DECK_ACTIONS_SPACE, DeckActions } from './deck-actions';
+import { BlackCross, DECK_ACTIONS_SPACE, DeckActions } from './deck-actions';
 import { ProfileCard } from './profile-card';
 
 import type { SharedValue } from 'react-native-reanimated';
@@ -78,6 +80,10 @@ const STAMP_FADE = SWIPE_THRESHOLD / 3;
 const FLICK_VELOCITY = 800;
 /** Inclinación máxima de la tarjeta, en grados. */
 const MAX_ROTATION = 12;
+/** Tamaño del corazón o la cruz que aparece al arrastrar. */
+const MARK_SIZE = 120;
+/** Intensidad del desenfoque del fondo cuando la tarjeta llega al umbral. */
+const VEIL_BLUR = 40;
 /** Cuántas tarjetas se pintan a la vez. Las demás no se ven. */
 const VISIBLE_CARDS = 3;
 /** Cuánto encoge y baja cada tarjeta por cada puesto que tiene delante. */
@@ -188,6 +194,19 @@ export function SwipeDeck({
     if (safetyOpen) setSafetyOpen(false);
   }
   const turnKey = topId === null ? null : `${turn.count}:${topId}`;
+
+  // Cuánto va la tarjeta superior hacia un lado, de -1 (pasar) a 1 (like): lo
+  // leen los botones de abajo para crecer y rellenarse. Vuelve a 0 en cuanto la
+  // tarjeta sale, para que la siguiente empiece con los iconos en reposo.
+  const swipeProgress = useDerivedValue(() => {
+    if (turnKey === null || owner.get() !== turnKey || exited.get()) return 0;
+    return interpolate(
+      translateX.get(),
+      [-SWIPE_THRESHOLD, 0, SWIPE_THRESHOLD],
+      [-1, 0, 1],
+      Extrapolation.CLAMP
+    );
+  });
 
   /** Cierra la decisión. La tarjeta ya está oculta: aquí solo se avisa al padre. */
   function settle(profile: Profile, decision: Decision) {
@@ -344,7 +363,7 @@ export function SwipeDeck({
       */}
       {safetyOpen ? null : (
         <View style={styles.actions} pointerEvents="box-none">
-          <DeckActions onDecide={swipeAway} disabled={top === null} />
+          <DeckActions onDecide={swipeAway} disabled={top === null} progress={swipeProgress} />
         </View>
       )}
     </View>
@@ -399,15 +418,22 @@ function TopCard({
     };
   });
 
-  // El sello crece un poco a la vez que aparece: se lee como un tampón que baja
-  // sobre la tarjeta, no como un texto que se enciende.
+  // La marca crece a la vez que aparece: se lee como algo que se forma bajo el
+  // dedo, no como un icono que se enciende.
   const likeStyle = useAnimatedStyle(() => {
     const x = owner.get() === turnKey ? translateX.get() : 0;
     const progress = interpolate(x, [0, SWIPE_THRESHOLD], [0, 1], Extrapolation.CLAMP);
     return {
       opacity: interpolate(x, [0, STAMP_FADE], [0, 1], Extrapolation.CLAMP),
-      transform: [{ rotate: '-10deg' }, { scale: 0.85 + 0.15 * progress }],
+      transform: [{ scale: 0.6 + 0.4 * progress }],
     };
+  });
+
+  // El fondo de la tarjeta se difumina y oscurece a medida que se arrastra hacia
+  // cualquiera de los dos lados, para que el corazón o la cruz se lean encima.
+  const veilStyle = useAnimatedStyle(() => {
+    const x = owner.get() === turnKey ? translateX.get() : 0;
+    return { opacity: interpolate(Math.abs(x), [0, SWIPE_THRESHOLD], [0, 1], Extrapolation.CLAMP) };
   });
 
   const passStyle = useAnimatedStyle(() => {
@@ -415,7 +441,7 @@ function TopCard({
     const progress = interpolate(x, [-SWIPE_THRESHOLD, 0], [1, 0], Extrapolation.CLAMP);
     return {
       opacity: interpolate(x, [-STAMP_FADE, 0], [1, 0], Extrapolation.CLAMP),
-      transform: [{ rotate: '10deg' }, { scale: 0.85 + 0.15 * progress }],
+      transform: [{ scale: 0.6 + 0.4 * progress }],
     };
   });
 
@@ -433,30 +459,28 @@ function TopCard({
         bottomInset={DECK_ACTIONS_SPACE}
       />
 
-      <Animated.View
-        style={[
-          styles.badge,
-          styles.badgeLike,
-          stampFill(theme.surfaceOpaque, theme.tealSoft),
-          { borderColor: theme.teal },
-          likeStyle,
-        ]}>
-        <ThemedText type="title" style={[styles.stampText, { color: theme.teal }]}>
-          LIKE
-        </ThemedText>
+      <Animated.View testID="swipe-veil" style={[styles.mark, veilStyle]}>
+        {Platform.OS === 'android' ? (
+          // `BlurView` en Android exige un `BlurTargetView`; aquí basta un velo oscuro.
+          <View style={[StyleSheet.absoluteFill, styles.androidVeil]} />
+        ) : (
+          <BlurView tint="dark" intensity={VEIL_BLUR} style={StyleSheet.absoluteFill} />
+        )}
       </Animated.View>
 
-      <Animated.View
-        style={[
-          styles.badge,
-          styles.badgePass,
-          stampFill(theme.surfaceOpaque, theme.dangerSoft),
-          { borderColor: theme.danger },
-          passStyle,
-        ]}>
-        <ThemedText type="title" style={[styles.stampText, { color: theme.danger }]}>
-          NOPE
-        </ThemedText>
+      {/* Corazón o cruz que van apareciendo en el centro a medida que se arrastra. */}
+      <Animated.View testID="swipe-mark-like" style={[styles.mark, likeStyle]}>
+        <Icon
+          name="heart"
+          size={MARK_SIZE}
+          color={theme.brass}
+          fill={theme.brass}
+          strokeWidth={2.4}
+        />
+      </Animated.View>
+
+      <Animated.View testID="swipe-mark-pass" style={[styles.mark, passStyle]}>
+        <BlackCross size={MARK_SIZE} edge={theme.text} />
       </Animated.View>
     </Animated.View>
   );
@@ -544,15 +568,6 @@ function BehindCard({
   );
 }
 
-/**
- * Fondo de un sello: base opaca y el tinte encima. El tinte solo es
- * translúcido y el sello cae sobre el avatar, arriba a la izquierda: sin base
- * se leían a la vez las iniciales y el «Like», y no se entendía ninguno.
- */
-function stampFill(base: string, tint: string) {
-  return { backgroundColor: base, boxShadow: `inset 0px 0px 0px 999px ${tint}` };
-}
-
 const styles = StyleSheet.create({
   root: {
     flex: 1,
@@ -578,24 +593,19 @@ const styles = StyleSheet.create({
   cardTop: {
     borderRadius: Radii.card,
   },
-  // Sellos de Tinder: rectángulo de canto grueso, girado, bajo las barras de página.
-  badge: {
+  // Corazón / cruz del gesto: centrados sobre la tarjeta, sin recibir toques.
+  mark: {
     position: 'absolute',
     pointerEvents: 'none',
-    top: Spacing.six,
-    paddingVertical: Spacing.one,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Radii.medium,
-    borderWidth: Stroke.strong * 2,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  badgeLike: {
-    left: Spacing.four,
-  },
-  badgePass: {
-    right: Spacing.four,
-  },
-  stampText: {
-    letterSpacing: 1,
+  androidVeil: {
+    backgroundColor: 'rgba(10, 10, 11, 0.7)',
   },
   actions: {
     position: 'absolute',

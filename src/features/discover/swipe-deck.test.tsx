@@ -26,7 +26,6 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { act, useState } from 'react';
 import { AccessibilityInfo, StyleSheet } from 'react-native';
 
-import { Colors } from '@/constants/theme';
 import { DataProvider } from '@/data';
 import { createMockRepositories, createMockStore } from '@/data/mock';
 import { buildProfile, buildProfileInput } from '@/data/test-fixtures';
@@ -135,19 +134,12 @@ describe('SwipeDeck', () => {
     expect(screen.getByText('Núria Bosch')).toBeOnTheScreen();
   });
 
-  it('los sellos LIKE y NOPE tienen base opaca: caen encima del retrato', async () => {
+  it('pinta un corazón y una cruz que aparecen al arrastrar, sin recibir toques', async () => {
     await renderDeck();
 
-    for (const label of ['LIKE', 'NOPE']) {
-      const stamps = screen
-        .getAllByText(label, { includeHiddenElements: true })
-        .map((text) => StyleSheet.flatten(text.parent?.props.style ?? {}))
-        // Los sellos flotan sobre la tarjeta; los botones de acción, no.
-        .filter((style) => style.position === 'absolute');
-      expect(stamps.length).toBeGreaterThan(0);
-      for (const stamp of stamps) {
-        expect(stamp.backgroundColor).toBe(Colors.dark.surfaceOpaque);
-      }
+    for (const id of ['swipe-mark-like', 'swipe-mark-pass']) {
+      const mark = screen.getByTestId(id, { includeHiddenElements: true });
+      expect(StyleSheet.flatten(mark.props.style).pointerEvents).toBe('none');
     }
   });
 

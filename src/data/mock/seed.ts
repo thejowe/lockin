@@ -88,6 +88,35 @@ export const SEED_PROFILES: Profile[] = [
     updatedAt: now,
   },
   {
+    id: 'seed-sara',
+    name: 'Sara Vidal',
+    age: 31,
+    location: 'Madrid',
+    timezone: 'Europe/Madrid',
+    // Con foto, para ver la tarjeta de una sola imagen con su fundido.
+    avatar: {
+      initials: 'SV',
+      accent: 'brass',
+      imageUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&q=80',
+    },
+    specialties: ['contenido', 'producto'],
+    seekingSpecialties: ['legal'],
+    lookingFor: 'par',
+    startingPoint: 'algo-empezado',
+    availability: { hoursPerWeek: 20, bands: ['manana', 'tarde'] },
+    ambition: 'equilibrado',
+    links: {},
+    githubVerification: null,
+    prompts: [
+      {
+        question: 'Mi mejor sesión de trabajo empieza…',
+        answer: 'Con la pizarra en blanco y una idea que todavía da un poco de miedo.',
+      },
+    ],
+    createdAt: now,
+    updatedAt: now,
+  },
+  {
     id: 'seed-marc',
     name: 'Marc Oller',
     age: 34,
@@ -295,7 +324,13 @@ export const SEED_PROFILES: Profile[] = [
  * necesita que quien quede delante pueda cerrar match — igual que
  * `e2e/incoming-likes.sql` lo garantiza del lado de Postgres.
  */
-export const SEED_RECIPROCAL_IDS: string[] = ['seed-nuria', 'seed-marc', 'seed-alba', 'seed-lucia'];
+export const SEED_RECIPROCAL_IDS: string[] = [
+  'seed-nuria',
+  'seed-sara',
+  'seed-marc',
+  'seed-alba',
+  'seed-lucia',
+];
 
 /**
  * Respuestas del acuerdo de socios que trae de fábrica un perfil semilla. Se

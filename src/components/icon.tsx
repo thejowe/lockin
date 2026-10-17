@@ -36,18 +36,21 @@ export function Icon({
   size = 22,
   color,
   strokeWidth = 1.8,
+  fill = 'none',
 }: {
   name: IconName;
   size?: number;
   color: string;
   strokeWidth?: number;
+  /** Relleno de las formas cerradas (el corazón lleno del Like). Por defecto, solo trazo. */
+  fill?: string;
 }) {
   const stroke = {
     stroke: color,
     strokeWidth,
     strokeLinecap: 'round' as const,
     strokeLinejoin: 'round' as const,
-    fill: 'none',
+    fill,
   };
 
   return (
