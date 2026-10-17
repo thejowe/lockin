@@ -28,8 +28,11 @@ export {
   completeAuthLink,
   deleteMyAccount,
   linkEmailToCurrentUser,
+  changeAccountPassword,
+  isRecoveringPassword,
   sendPasswordReset,
   setAccountPassword,
+  setRecoveredPassword,
   signInWithEmail,
   signOut,
 } from '@/data/supabase';

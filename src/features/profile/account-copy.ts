@@ -59,6 +59,7 @@ const COPY: Record<AccountErrorReason, string | null> = {
   'weak-password': null,
   'invalid-email': null,
   'same-password': null,
+  'wrong-password': null,
   'too-many-emails': null,
   'needs-confirmed-email': null,
   'unrecoverable-account':

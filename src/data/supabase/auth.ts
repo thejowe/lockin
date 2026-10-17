@@ -112,6 +112,7 @@ export type AccountErrorReason =
   | 'weak-password'
   | 'invalid-email'
   | 'same-password'
+  | 'wrong-password'
   | 'too-many-emails'
   | 'needs-confirmed-email'
   | 'unrecoverable-account'
@@ -499,6 +500,110 @@ export async function setAccountPassword(password: string, expectedUserId?: stri
 
   const { error } = await client.auth.updateUser({ password });
   if (error) throw toAccountError(error);
+  await clearPasswordRecovery();
+}
+
+/**
+ * Cambia la contraseña sabiendo la actual: Perfil → «Gestionar contraseña» →
+ * «Cambiar contraseña» (decisión del usuario del 2026-10-17).
+ *
+ * GoTrue no pide la actual para `updateUser({ password })`: con la sesión
+ * abierta basta. Aquí sí se pide, para que un teléfono desbloqueado en manos de
+ * otro no sirva para quedarse la cuenta. Se comprueba entrando con ella
+ * (`signInWithPassword`) en el mismo email, que deja la misma cuenta abierta;
+ * si devolviera otra, no se toca nada.
+ */
+export async function changeAccountPassword(current: string, next: string): Promise<void> {
+  const state = await getAccountState();
+  if (state.kind === 'none' || !state.userId) {
+    throw new AccountError('no-session', 'No hay ninguna sesión abierta.');
+  }
+  if (!state.recoverable || !state.email) {
+    throw new AccountError(
+      'needs-confirmed-email',
+      'Falta confirmar el email: pincha el enlace que te hemos mandado y vuelve aquí.'
+    );
+  }
+
+  const { data, error } = await getSupabaseClient().auth.signInWithPassword({
+    email: state.email,
+    password: current,
+  });
+  if (error) {
+    if (errorField(error, 'code') === 'invalid_credentials') {
+      throw new AccountError('wrong-password', 'La contraseña actual no es correcta.', error);
+    }
+    throw toAccountError(error);
+  }
+  if (data.user?.id !== state.userId) {
+    throw new AccountError('no-session', 'La sesión ha cambiado de cuenta. Vuelve a intentarlo.');
+  }
+
+  await setAccountPassword(next, state.userId);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Recuperación: elegir contraseña nueva sin saber la actual                  */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Quien vuelve del correo de «He olvidado mi contraseña» no sabe la actual: es
+ * justo lo que ha olvidado. `completeAuthLink` apunta aquí que el enlace era de
+ * recuperación (y de qué cuenta), y Perfil pide entonces solo la nueva. Caduca
+ * pronto, y se borra al poner la contraseña: no es un permiso para siempre de
+ * saltarse la actual.
+ */
+const PASSWORD_RECOVERY_KEY = 'lockin.supabase.password-recovery';
+const PASSWORD_RECOVERY_TTL_MS = 30 * 60 * 1000;
+
+async function markPasswordRecovery(userId: string | null): Promise<void> {
+  if (!userId) return;
+  // Cuando se llama, el enlace ya está canjeado y la sesión abierta: un fallo
+  // aquí no puede tumbar eso (el enlace no se puede volver a usar). Sin marca,
+  // Perfil pide la actual, y queda «He olvidado mi contraseña» para otro correo.
+  await AsyncStorage.setItem(
+    PASSWORD_RECOVERY_KEY,
+    JSON.stringify({ userId, at: Date.now() })
+  ).catch(() => undefined);
+}
+
+async function clearPasswordRecovery(): Promise<void> {
+  await AsyncStorage.removeItem(PASSWORD_RECOVERY_KEY).catch(() => undefined);
+}
+
+/**
+ * Pone la contraseña nueva sin la actual, solo si la sesión sigue viniendo de
+ * un enlace de recuperación vigente. Se vuelve a comprobar aquí, al guardar, y
+ * no solo al abrir el formulario: abierto, podría quedarse en pantalla más allá
+ * de la media hora.
+ */
+export async function setRecoveredPassword(password: string): Promise<void> {
+  if (!(await isRecoveringPassword())) {
+    throw new AccountError(
+      'unknown',
+      'El enlace para cambiar la contraseña ha caducado. Pide otro correo o cámbiala con la actual.'
+    );
+  }
+  const userId = await currentUserId();
+  await setAccountPassword(password, userId ?? undefined);
+}
+
+/** Si la sesión actual viene de un enlace de recuperación de contraseña reciente. */
+export async function isRecoveringPassword(): Promise<boolean> {
+  try {
+    const raw = await AsyncStorage.getItem(PASSWORD_RECOVERY_KEY);
+    if (!raw) return false;
+    const { userId, at } = JSON.parse(raw) as { userId?: unknown; at?: unknown };
+    const fresh = typeof at === 'number' && Date.now() - at <= PASSWORD_RECOVERY_TTL_MS;
+    const current = await currentUserId();
+    if (!fresh || typeof userId !== 'string' || userId !== current) {
+      await clearPasswordRecovery();
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -590,8 +695,16 @@ export async function completeAuthLink(url: string): Promise<AccountState> {
     // saltaría en silencio una confirmación de correo o una recuperación
     // caducadas (codex review del 2026-10-02). El único code gastado que se
     // perdona es el que se puede correlacionar: el apuntado arriba.
-    const { error } = await client.auth.exchangeCodeForSession(code);
+    const { data: exchanged, error } = await client.auth.exchangeCodeForSession(code);
     if (error) throw toAccountError(error);
+    // `resetPasswordForEmail` deja el verificador PKCE marcado como recuperación
+    // y el canje lo devuelve: Perfil pedirá la nueva sin la actual.
+    // Los tipos de `auth-js` no lo declaran; el canje sí lo devuelve
+    // (`GoTrueClient._exchangeCodeForSession`).
+    const redirectType = (exchanged as { redirectType?: string | null } | null)?.redirectType;
+    if (redirectType === 'recovery') {
+      await markPasswordRecovery(exchanged.user?.id ?? null);
+    }
 
     // Vuelta en frío: el proceso que abrió GitHub ya no existe, así que nadie
     // más va a poner el sello. Lo dice el servidor, no una marca local: solo si
@@ -616,10 +729,11 @@ export async function completeAuthLink(url: string): Promise<AccountState> {
           'otro correo desde tu perfil.'
       );
     }
-    const { error } = await client.auth.verifyOtp({
+    const { data: verified, error } = await client.auth.verifyOtp({
       token_hash: tokenHash,
       type: type as EmailOtpType,
     });
+    if (!error && type === 'recovery') await markPasswordRecovery(verified?.user?.id ?? null);
     // La petición no se borra: con «Secure email change» llegan dos enlaces (el
     // correo viejo y el nuevo) para una sola petición. Caduca por su cuenta.
     if (error) throw toAccountError(error);

@@ -42,8 +42,17 @@ import { ThemedText } from '@/components/themed-text';
 import { Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-import { AccountError, deleteMyAccount, signOut } from './account-gateway';
+import { useQuery } from '@/data';
+
+import {
+  AccountError,
+  accountsAvailable,
+  deleteMyAccount,
+  isRecoveringPassword,
+  signOut,
+} from './account-gateway';
 import { Field, PrimaryButton, SecondaryButton, TextField } from './controls';
+import { PASSWORD_MIN_LENGTH } from './register-form';
 import { useAccountActions } from './use-account-actions';
 
 export interface AccountSectionProps {
@@ -58,6 +67,25 @@ export interface AccountSectionProps {
   onConfirmationShown?: () => void;
 }
 
+/** Qué falta para poder guardar una contraseña nueva, o `null` si nada. */
+export function newPasswordProblem(next: string, repeat: string): string | null {
+  if (next.length < PASSWORD_MIN_LENGTH) {
+    return `La contraseña nueva necesita al menos ${PASSWORD_MIN_LENGTH} caracteres.`;
+  }
+  if (next !== repeat) return 'Las dos contraseñas nuevas no coinciden.';
+  return null;
+}
+
+/**
+ * «Gestionar contraseña»: cerrado, el menú (cambiar / la he olvidado), cambiarla
+ * sabiendo la actual, o elegir una nueva al volver del correo de recuperación.
+ */
+type PasswordPanel = 'closed' | 'menu' | 'change' | 'recovery';
+
+function readRecovering(): Promise<boolean> {
+  return accountsAvailable ? isRecoveringPassword() : Promise.resolve(false);
+}
+
 export function AccountSection({ onDeleted, onConfirmationShown }: AccountSectionProps = {}) {
   const theme = useTheme();
   const {
@@ -69,12 +97,26 @@ export function AccountSection({ onDeleted, onConfirmationShown }: AccountSectio
     run,
     link,
     resend,
-    savePassword,
+    changePassword,
+    saveRecoveredPassword,
     resetPassword,
   } = useAccountActions();
+  const { data: recovering, refresh: refreshRecovering } = useQuery(
+    'account:recovering',
+    readRecovering
+  );
 
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [chosenPanel, setPanel] = useState<PasswordPanel>('closed');
+  /** Cerrado a mano: aunque siga la recuperación, no se vuelve a abrir solo. */
+  const [recoveryDismissed, setRecoveryDismissed] = useState(false);
+  // De vuelta del correo de «He olvidado mi contraseña» se abre directamente el
+  // paso de elegir la nueva, sin pedir la actual (es la que se ha olvidado).
+  const panel: PasswordPanel =
+    recovering && !recoveryDismissed && chosenPanel === 'closed' ? 'recovery' : chosenPanel;
+  const [current, setCurrent] = useState('');
+  const [next, setNext] = useState('');
+  const [repeat, setRepeat] = useState('');
   /** Cierto cuando se pide otro email estando ya a la espera de confirmar uno. */
   const [changingEmail, setChangingEmail] = useState(false);
   const [confirmingLeave, setConfirmingLeave] = useState(false);
@@ -83,6 +125,14 @@ export function AccountSection({ onDeleted, onConfirmationShown }: AccountSectio
   // Sin cuenta que enseñar no hay sección: o todavía está cargando, o esta
   // ejecución corre contra el mock en memoria, o no hay sesión abierta.
   if (!account || account.kind === 'none') return null;
+
+  function closePanel() {
+    setPanel('closed');
+    setRecoveryDismissed(true);
+    setCurrent('');
+    setNext('');
+    setRepeat('');
+  }
 
   function handleLink() {
     link(email, () => {
@@ -96,13 +146,21 @@ export function AccountSection({ onDeleted, onConfirmationShown }: AccountSectio
   }
 
   function handleSavePassword() {
-    savePassword(password, () => {
-      setPassword('');
+    const problem = newPasswordProblem(next, repeat);
+    if (problem) {
+      setNotice({ text: problem, tone: 'danger' });
+      return;
+    }
+    const saved = () => {
+      closePanel();
+      refreshRecovering();
       setNotice({
         text: 'Contraseña guardada. Ya puedes entrar con ella desde otro teléfono.',
         tone: 'textSecondary',
       });
-    });
+    };
+    if (panel === 'recovery') saveRecoveredPassword(next, saved);
+    else changePassword(current, next, saved);
   }
 
   function handlePasswordReset() {
@@ -146,16 +204,12 @@ export function AccountSection({ onDeleted, onConfirmationShown }: AccountSectio
       </ThemedText>
 
       {account.recoverable ? (
-        <>
-          <ThemedText type="bodyStrong">Tu cuenta está asegurada</ThemedText>
-          <ThemedText type="mono" accessibilityLabel={`Email de tu cuenta: ${account.email}`}>
-            {account.email}
-          </ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            Con este email vuelves a entrar desde cualquier teléfono, con tu perfil, tus matches y
-            tus conversaciones.
-          </ThemedText>
-        </>
+        // Desde el 2026-10-17 abajo solo queda lo que se gestiona: la
+        // contraseña, cerrar sesión y eliminar la cuenta. El email se queda en
+        // una línea para saber en qué cuenta se está.
+        <ThemedText type="mono" accessibilityLabel={`Email de tu cuenta: ${account.email}`}>
+          {account.email}
+        </ThemedText>
       ) : account.kind === 'pending-email' ? (
         <>
           <ThemedText type="bodyStrong">Falta confirmar tu email</ThemedText>
@@ -214,16 +268,67 @@ export function AccountSection({ onDeleted, onConfirmationShown }: AccountSectio
         </>
       ) : null}
 
-      {account.recoverable ? (
-        <>
-          <Field label="Contraseña" hint="Es con la que entrarás desde otro teléfono.">
+      {account.recoverable && panel === 'closed' ? (
+        <SecondaryButton label="Gestionar contraseña" onPress={() => setPanel('menu')} />
+      ) : null}
+
+      {account.recoverable && panel === 'menu' ? (
+        <View style={[styles.panel, { borderColor: theme.border }]}>
+          <ThemedText type="bodyStrong">Gestionar contraseña</ThemedText>
+          <PrimaryButton label="Cambiar contraseña" onPress={() => setPanel('change')} />
+          <SecondaryButton
+            label={busy === 'recuperar' ? 'Mandando…' : 'He olvidado mi contraseña'}
+            onPress={handlePasswordReset}
+          />
+          <SecondaryButton label="Cancelar" onPress={closePanel} />
+        </View>
+      ) : null}
+
+      {account.recoverable && (panel === 'change' || panel === 'recovery') ? (
+        <View style={[styles.panel, { borderColor: theme.border }]}>
+          <ThemedText type="bodyStrong">
+            {panel === 'recovery' ? 'Elige tu nueva contraseña' : 'Cambiar contraseña'}
+          </ThemedText>
+
+          {panel === 'change' ? (
+            <Field label="Contraseña actual">
+              <TextField
+                value={current}
+                onChangeText={setCurrent}
+                accessibilityLabel="Contraseña actual"
+                placeholder="La que usas ahora"
+                secureTextEntry
+                textContentType="password"
+                autoComplete="current-password"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </Field>
+          ) : null}
+
+          <Field label="Nueva contraseña" hint={`Al menos ${PASSWORD_MIN_LENGTH} caracteres.`}>
             <TextField
-              value={password}
-              onChangeText={setPassword}
-              accessibilityLabel="Contraseña de tu cuenta"
-              placeholder="Tu contraseña"
+              value={next}
+              onChangeText={setNext}
+              accessibilityLabel="Nueva contraseña"
+              placeholder="La nueva"
               secureTextEntry
               textContentType="newPassword"
+              autoComplete="new-password"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </Field>
+
+          <Field label="Repite la nueva contraseña">
+            <TextField
+              value={repeat}
+              onChangeText={setRepeat}
+              accessibilityLabel="Repite la nueva contraseña"
+              placeholder="Otra vez"
+              secureTextEntry
+              textContentType="newPassword"
+              autoComplete="new-password"
               autoCapitalize="none"
               autoCorrect={false}
             />
@@ -231,14 +336,11 @@ export function AccountSection({ onDeleted, onConfirmationShown }: AccountSectio
 
           <PrimaryButton
             label={busy === 'contrasena' ? 'Guardando…' : 'Guardar contraseña'}
+            disabled={busy !== null}
             onPress={handleSavePassword}
           />
-
-          <SecondaryButton
-            label={busy === 'recuperar' ? 'Mandando…' : 'No me acuerdo: mándame un correo'}
-            onPress={handlePasswordReset}
-          />
-        </>
+          <SecondaryButton label="Cancelar" onPress={closePanel} />
+        </View>
       ) : null}
 
       {confirmingLeave ? (
@@ -336,6 +438,12 @@ export function AccountSection({ onDeleted, onConfirmationShown }: AccountSectio
 const styles = StyleSheet.create({
   root: {
     gap: Spacing.two,
+  },
+  panel: {
+    gap: Spacing.two,
+    padding: Spacing.three,
+    borderRadius: Radii.medium,
+    borderWidth: Stroke.hairline,
   },
   confirm: {
     gap: Spacing.two,

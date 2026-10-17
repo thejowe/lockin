@@ -35,9 +35,15 @@ jest.mock('./account-gateway', () => ({
   readAccountState: jest.fn(),
   linkEmailToCurrentUser: jest.fn(),
   setAccountPassword: jest.fn(),
+  setRecoveredPassword: jest.fn(),
+  changeAccountPassword: jest.fn(),
+  isRecoveringPassword: jest.fn(),
   sendPasswordReset: jest.fn(),
   signOut: jest.fn(),
   deleteMyAccount: jest.fn(),
+  // Sin capa de cuentas la pregunta de «¿vienes del correo de recuperación?» no
+  // llega a hacerse: aquí sí, para poder contestarla.
+  accountsAvailable: true,
 }));
 
 const gateway = jest.requireMock('./account-gateway') as {
@@ -45,6 +51,9 @@ const gateway = jest.requireMock('./account-gateway') as {
   readAccountState: jest.Mock;
   linkEmailToCurrentUser: jest.Mock;
   setAccountPassword: jest.Mock;
+  setRecoveredPassword: jest.Mock;
+  changeAccountPassword: jest.Mock;
+  isRecoveringPassword: jest.Mock;
   sendPasswordReset: jest.Mock;
   signOut: jest.Mock;
   deleteMyAccount: jest.Mock;
@@ -87,6 +96,9 @@ beforeEach(() => {
   gateway.readAccountState.mockResolvedValue(ANONIMA);
   gateway.linkEmailToCurrentUser.mockResolvedValue(PENDIENTE);
   gateway.setAccountPassword.mockResolvedValue(undefined);
+  gateway.changeAccountPassword.mockResolvedValue(undefined);
+  gateway.setRecoveredPassword.mockResolvedValue(undefined);
+  gateway.isRecoveringPassword.mockResolvedValue(false);
   gateway.sendPasswordReset.mockResolvedValue(undefined);
   gateway.signOut.mockResolvedValue(undefined);
   gateway.deleteMyAccount.mockResolvedValue(undefined);
@@ -202,53 +214,136 @@ describe('AccountSection', () => {
   });
 
   describe('cuenta asegurada', () => {
-    it('enseña el email y ofrece ponerle contraseña', async () => {
+    it('abajo solo deja el email, gestionar la contraseña, cerrar sesión y eliminar', async () => {
       await renderSection(ASEGURADA);
 
-      await waitFor(() => expect(screen.getByText('Tu cuenta está asegurada')).toBeTruthy());
-      expect(screen.getByLabelText('Email de tu cuenta: ana@example.com')).toBeTruthy();
-      expect(screen.getByLabelText('Contraseña de tu cuenta')).toBeTruthy();
+      await waitFor(() =>
+        expect(screen.getByLabelText('Email de tu cuenta: ana@example.com')).toBeTruthy()
+      );
+      expect(screen.getByRole('button', { name: 'Gestionar contraseña' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Cerrar sesión' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Eliminar mi cuenta' })).toBeTruthy();
+      expect(screen.queryByText('Tu cuenta está asegurada')).toBeNull();
+      expect(screen.queryByText(/No me acuerdo/)).toBeNull();
+      expect(screen.queryByLabelText('Nueva contraseña')).toBeNull();
       expect(screen.queryByLabelText('Email con el que asegurar tu cuenta')).toBeNull();
     });
 
-    it('con la contraseña vacía no se llama al servidor: se dice qué falta', async () => {
+    it('«Gestionar contraseña» ofrece cambiarla o decir que se ha olvidado', async () => {
       await renderSection(ASEGURADA);
-      await waitFor(() => expect(screen.getByText('Guardar contraseña')).toBeTruthy());
+      await screen.findByRole('button', { name: 'Gestionar contraseña' });
 
-      await press('Guardar contraseña');
+      await press('Gestionar contraseña');
 
-      await waitFor(() => expect(screen.getByText(/Escribe la contraseña/i)).toBeTruthy());
-      expect(gateway.setAccountPassword).not.toHaveBeenCalled();
+      expect(screen.getByRole('button', { name: 'Cambiar contraseña' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'He olvidado mi contraseña' })).toBeTruthy();
     });
 
-    it('guardar la contraseña la manda y lo confirma', async () => {
+    it('cambiarla pide la actual y la nueva dos veces, y lo confirma', async () => {
       await renderSection(ASEGURADA);
-      await waitFor(() => expect(screen.getByText('Guardar contraseña')).toBeTruthy());
+      await screen.findByRole('button', { name: 'Gestionar contraseña' });
+      await press('Gestionar contraseña');
+      await press('Cambiar contraseña');
 
+      await fireEvent.changeText(screen.getByLabelText('Contraseña actual'), 'la-de-antes-1');
+      await fireEvent.changeText(screen.getByLabelText('Nueva contraseña'), 'hola-que-tal-9');
       await fireEvent.changeText(
-        screen.getByLabelText('Contraseña de tu cuenta'),
+        screen.getByLabelText('Repite la nueva contraseña'),
         'hola-que-tal-9'
       );
       await press('Guardar contraseña');
 
       await waitFor(() =>
-        expect(gateway.setAccountPassword).toHaveBeenCalledWith('hola-que-tal-9')
+        expect(gateway.changeAccountPassword).toHaveBeenCalledWith(
+          'la-de-antes-1',
+          'hola-que-tal-9'
+        )
       );
+      expect(gateway.setAccountPassword).not.toHaveBeenCalled();
       expect(screen.getByText(/Contraseña guardada/i)).toBeTruthy();
+      expect(screen.queryByLabelText('Contraseña actual')).toBeNull();
     });
 
-    it('recuperar la contraseña manda el correo a la dirección de la cuenta', async () => {
+    it.each([
+      ['sin la actual', '', 'hola-que-tal-9', 'hola-que-tal-9', /Escribe tu contraseña actual/],
+      ['con una nueva corta', 'la-de-antes-1', 'corta', 'corta', /al menos 8/],
+      [
+        'con las nuevas distintas',
+        'la-de-antes-1',
+        'hola-que-tal-9',
+        'otra-cosa-99',
+        /no coinciden/,
+      ],
+    ])('%s no se llama al servidor: se dice qué falta', async (_, actual, nueva, otra, message) => {
       await renderSection(ASEGURADA);
-      await waitFor(() =>
-        expect(screen.getByText('No me acuerdo: mándame un correo')).toBeTruthy()
-      );
+      await screen.findByRole('button', { name: 'Gestionar contraseña' });
+      await press('Gestionar contraseña');
+      await press('Cambiar contraseña');
 
-      await press('No me acuerdo: mándame un correo');
+      await fireEvent.changeText(screen.getByLabelText('Contraseña actual'), actual);
+      await fireEvent.changeText(screen.getByLabelText('Nueva contraseña'), nueva);
+      await fireEvent.changeText(screen.getByLabelText('Repite la nueva contraseña'), otra);
+      await press('Guardar contraseña');
+
+      await waitFor(() => expect(screen.getByText(message)).toBeTruthy());
+      expect(gateway.changeAccountPassword).not.toHaveBeenCalled();
+    });
+
+    it('una actual equivocada se dice y no se cierra el formulario', async () => {
+      gateway.changeAccountPassword.mockRejectedValue(
+        new AccountError('wrong-password', 'La contraseña actual no es correcta.')
+      );
+      await renderSection(ASEGURADA);
+      await screen.findByRole('button', { name: 'Gestionar contraseña' });
+      await press('Gestionar contraseña');
+      await press('Cambiar contraseña');
+
+      await fireEvent.changeText(screen.getByLabelText('Contraseña actual'), 'mala-mala-1');
+      await fireEvent.changeText(screen.getByLabelText('Nueva contraseña'), 'hola-que-tal-9');
+      await fireEvent.changeText(
+        screen.getByLabelText('Repite la nueva contraseña'),
+        'hola-que-tal-9'
+      );
+      await press('Guardar contraseña');
+
+      await waitFor(() =>
+        expect(screen.getByText('La contraseña actual no es correcta.')).toBeTruthy()
+      );
+      expect(screen.getByLabelText('Contraseña actual')).toBeTruthy();
+    });
+
+    it('«He olvidado mi contraseña» manda el correo a la dirección de la cuenta', async () => {
+      await renderSection(ASEGURADA);
+      await screen.findByRole('button', { name: 'Gestionar contraseña' });
+      await press('Gestionar contraseña');
+
+      await press('He olvidado mi contraseña');
 
       await waitFor(() =>
         expect(gateway.sendPasswordReset).toHaveBeenCalledWith('ana@example.com')
       );
       expect(screen.getByText(/correo para cambiar la contraseña/i)).toBeTruthy();
+    });
+
+    it('de vuelta del correo de recuperación pide solo la nueva, sin la actual', async () => {
+      gateway.isRecoveringPassword.mockResolvedValue(true);
+      await renderSection(ASEGURADA);
+
+      expect(await screen.findByText('Elige tu nueva contraseña')).toBeTruthy();
+      expect(screen.queryByLabelText('Contraseña actual')).toBeNull();
+
+      await fireEvent.changeText(screen.getByLabelText('Nueva contraseña'), 'hola-que-tal-9');
+      await fireEvent.changeText(
+        screen.getByLabelText('Repite la nueva contraseña'),
+        'hola-que-tal-9'
+      );
+      await press('Guardar contraseña');
+
+      await waitFor(() =>
+        expect(gateway.setRecoveredPassword).toHaveBeenCalledWith('hola-que-tal-9')
+      );
+      expect(gateway.changeAccountPassword).not.toHaveBeenCalled();
+      expect(screen.getByText(/Contraseña guardada/i)).toBeTruthy();
     });
 
     it('cerrar sesión no pide confirmación: aquí no se pierde nada', async () => {
@@ -422,13 +517,20 @@ describe('AccountSection', () => {
     });
 
     it('sin conexión se dice, y el fallo no es mudo', async () => {
-      gateway.setAccountPassword.mockRejectedValue(
+      gateway.changeAccountPassword.mockRejectedValue(
         new AccountError('offline', 'No hay conexión con el servidor. Inténtalo otra vez.')
       );
       await renderSection(ASEGURADA);
-      await waitFor(() => expect(screen.getByText('Guardar contraseña')).toBeTruthy());
+      await screen.findByRole('button', { name: 'Gestionar contraseña' });
+      await press('Gestionar contraseña');
+      await press('Cambiar contraseña');
 
-      await fireEvent.changeText(screen.getByLabelText('Contraseña de tu cuenta'), 'una-clave');
+      await fireEvent.changeText(screen.getByLabelText('Contraseña actual'), 'la-de-antes-1');
+      await fireEvent.changeText(screen.getByLabelText('Nueva contraseña'), 'una-clave-9');
+      await fireEvent.changeText(
+        screen.getByLabelText('Repite la nueva contraseña'),
+        'una-clave-9'
+      );
       await press('Guardar contraseña');
 
       await waitFor(() => expect(screen.getByText(/No hay conexión con el servidor/)).toBeTruthy());

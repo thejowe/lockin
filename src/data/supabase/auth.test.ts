@@ -5,12 +5,15 @@ import * as WebBrowser from 'expo-web-browser';
 import {
   AccountError,
   adoptLinkedGithubIdentity,
+  changeAccountPassword,
   completeAuthLink,
   currentUserId,
   deleteMyAccount,
   ensureUserId,
   getAccountState,
+  isRecoveringPassword,
   linkEmailToCurrentUser,
+  setRecoveredPassword,
   linkGithubIdentity,
   sendPasswordReset,
   setAccountPassword,
@@ -26,6 +29,7 @@ const auth = {
   getSession: jest.fn(),
   getUser: jest.fn(),
   signInAnonymously: jest.fn(),
+  signInWithPassword: jest.fn(),
   signOut: jest.fn(),
   updateUser: jest.fn(),
   resetPasswordForEmail: jest.fn(),
@@ -824,6 +828,129 @@ describe('setAccountPassword', () => {
       error: gotrueError('weak_password'),
     });
     await expect(setAccountPassword('1234')).rejects.toMatchObject({ reason: 'weak-password' });
+  });
+});
+
+describe('changeAccountPassword', () => {
+  const CONFIRMADA = { email: 'ana@example.com', email_confirmed_at: '2026-09-17T10:00:00Z' };
+
+  it('comprueba la actual entrando con ella y luego pone la nueva', async () => {
+    const current = signedInAs(CONFIRMADA);
+    auth.signInWithPassword.mockResolvedValueOnce({ data: { user: current }, error: null });
+    auth.updateUser.mockResolvedValueOnce({ data: { user: null }, error: null });
+
+    await expect(changeAccountPassword('la-de-antes', 'la-nueva-1')).resolves.toBeUndefined();
+
+    expect(auth.signInWithPassword).toHaveBeenCalledWith({
+      email: 'ana@example.com',
+      password: 'la-de-antes',
+    });
+    expect(auth.updateUser).toHaveBeenCalledWith({ password: 'la-nueva-1' });
+  });
+
+  it('con la actual equivocada no cambia nada', async () => {
+    signedInAs(CONFIRMADA);
+    auth.signInWithPassword.mockResolvedValueOnce({
+      data: { user: null, session: null },
+      error: gotrueError('invalid_credentials'),
+    });
+
+    await expect(changeAccountPassword('mala', 'la-nueva-1')).rejects.toMatchObject({
+      reason: 'wrong-password',
+    });
+    expect(auth.updateUser).not.toHaveBeenCalled();
+  });
+
+  it('si entrar devuelve otra cuenta, no toca la contraseña', async () => {
+    signedInAs(CONFIRMADA);
+    auth.signInWithPassword.mockResolvedValueOnce({
+      data: { user: user({ id: 'otra' }) },
+      error: null,
+    });
+
+    await expect(changeAccountPassword('la-de-antes', 'la-nueva-1')).rejects.toMatchObject({
+      reason: 'no-session',
+    });
+    expect(auth.updateUser).not.toHaveBeenCalled();
+  });
+
+  it('sin email confirmado no hay contraseña actual que comprobar', async () => {
+    signedInAs({ is_anonymous: true, new_email: 'ana@example.com' });
+
+    await expect(changeAccountPassword('x', 'la-nueva-1')).rejects.toMatchObject({
+      reason: 'needs-confirmed-email',
+    });
+    expect(auth.signInWithPassword).not.toHaveBeenCalled();
+  });
+});
+
+describe('recuperación de contraseña', () => {
+  const CONFIRMADA = { email: 'ana@example.com', email_confirmed_at: '2026-09-17T10:00:00Z' };
+
+  it('un enlace de recuperación deja pedir la nueva sin la actual, hasta ponerla', async () => {
+    const current = signedInAs(CONFIRMADA);
+    auth.exchangeCodeForSession.mockResolvedValueOnce({
+      data: { user: current, session: {}, redirectType: 'recovery' },
+      error: null,
+    });
+
+    await completeAuthLink('cofounder://auth/callback?code=recuperar');
+    expect(await isRecoveringPassword()).toBe(true);
+
+    auth.updateUser.mockResolvedValueOnce({ data: { user: null }, error: null });
+    await setAccountPassword('la-nueva-1');
+    expect(await isRecoveringPassword()).toBe(false);
+  });
+
+  it('confirmar un email no cuenta como recuperación', async () => {
+    const current = signedInAs(CONFIRMADA);
+    auth.exchangeCodeForSession.mockResolvedValueOnce({
+      data: { user: current, session: {}, redirectType: null },
+      error: null,
+    });
+
+    await completeAuthLink('cofounder://auth/callback?code=confirmar');
+    expect(await isRecoveringPassword()).toBe(false);
+  });
+
+  it('la marca de otra cuenta no vale para la sesión actual', async () => {
+    signedInAs(CONFIRMADA);
+    await AsyncStorage.setItem(
+      'lockin.supabase.password-recovery',
+      JSON.stringify({ userId: 'otra', at: Date.now() })
+    );
+
+    expect(await isRecoveringPassword()).toBe(false);
+  });
+
+  it('sin recuperación vigente no se pone la nueva sin la actual', async () => {
+    signedInAs(CONFIRMADA);
+
+    await expect(setRecoveredPassword('la-nueva-1')).rejects.toThrow(/caducado/);
+    expect(auth.updateUser).not.toHaveBeenCalled();
+  });
+
+  it('si no se puede apuntar la recuperación, el canje sigue valiendo', async () => {
+    const current = signedInAs(CONFIRMADA);
+    auth.exchangeCodeForSession.mockResolvedValueOnce({
+      data: { user: current, session: {}, redirectType: 'recovery' },
+      error: null,
+    });
+    jest.mocked(AsyncStorage.setItem).mockRejectedValueOnce(new Error('disco lleno'));
+
+    await expect(
+      completeAuthLink('cofounder://auth/callback?code=recuperar')
+    ).resolves.toMatchObject({ recoverable: true });
+  });
+
+  it('caduca a la media hora', async () => {
+    const current = signedInAs(CONFIRMADA);
+    await AsyncStorage.setItem(
+      'lockin.supabase.password-recovery',
+      JSON.stringify({ userId: current.id, at: Date.now() - 31 * 60 * 1000 })
+    );
+
+    expect(await isRecoveringPassword()).toBe(false);
   });
 });
 

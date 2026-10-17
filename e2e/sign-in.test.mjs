@@ -71,8 +71,11 @@ describe('entrada y recuperación desde instalación limpia', () => {
       [
         account,
         [
-          'Contraseña de tu cuenta',
-          'Tu contraseña',
+          'Elige tu nueva contraseña',
+          'Nueva contraseña',
+          'La nueva',
+          'Repite la nueva contraseña',
+          'Otra vez',
           'Guardar contraseña',
           'Contraseña guardada. Ya puedes entrar con ella desde otro teléfono.',
         ],
@@ -83,7 +86,8 @@ describe('entrada y recuperación desde instalación limpia', () => {
         assert(source.includes(label), label);
       }
     }
-    assert.match(reset, /inputText: \$\{NEW_PASSWORD\}/);
+    assert.equal(reset.match(/inputText: \$\{NEW_PASSWORD\}/g)?.length, 2);
+    assert(reset.includes("assertNotVisible: 'Contraseña actual'"));
     assert.match(reset, /PHASE == 'request' \|\| PHASE == 'confirm'/);
     const confirm = reset.slice(reset.lastIndexOf("true: ${PHASE == 'confirm'}"));
     assert.doesNotMatch(confirm, /launchApp|clearState/);

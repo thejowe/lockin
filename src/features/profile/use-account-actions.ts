@@ -22,6 +22,8 @@ import { useQuery } from '@/data';
 
 import { describeAccountError } from './account-copy';
 import {
+  changeAccountPassword,
+  setRecoveredPassword,
   linkEmailToCurrentUser,
   readAccountState,
   sendPasswordReset,
@@ -108,6 +110,21 @@ export function useAccountActions() {
     void run('contrasena', () => setAccountPassword(password), done);
   }
 
+  /** Pone la nueva sin la actual: solo vale de vuelta de un correo de recuperación. */
+  function saveRecoveredPassword(password: string, done?: () => void) {
+    void run('contrasena', () => setRecoveredPassword(password), done);
+  }
+
+  /** Cambia la contraseña comprobando antes la actual. */
+  function changePassword(current: string, next: string, done?: () => void) {
+    if (!current) {
+      setNotice({ text: 'Escribe tu contraseña actual.', tone: 'danger' });
+      return;
+    }
+
+    void run('contrasena', () => changeAccountPassword(current, next), done);
+  }
+
   /** Manda el correo para cambiar la contraseña al email de la cuenta. */
   function resetPassword(done?: () => void) {
     const address = account?.email;
@@ -128,6 +145,8 @@ export function useAccountActions() {
     link,
     resend,
     savePassword,
+    changePassword,
+    saveRecoveredPassword,
     resetPassword,
   };
 }
