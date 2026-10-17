@@ -57,7 +57,7 @@ Público objetivo: 16–17 y 18+ (D06). En el cuestionario IARC declarar interac
 - Seguridad infantil (categoría Social): URL de los estándares https://thejowe.github.io/lockin/seguridad-infantil; contacto designado cofounder.soporte@gmail.com.
 - Permisos (binario final, T5): solo `CAMERA` declarado por la app, para la foto de perfil; la galería usa el selector del sistema. Sin `RECORD_AUDIO`, `SCHEDULE_EXACT_ALARM` ni notificaciones: no hay permisos sensibles que justificar. Confirmar en el manifiesto del AAB que ninguna librería añade otros (T7).
 - Políticas UGC de Google: Términos y Normas aceptados antes de publicar; reporte de perfiles y mensajes; bloqueo; filtro básico de texto y moderación de fotos; revisión de reportes (24 h / 72 h). Migraciones aplicadas en producción el 16-oct-2026; falta probarlo contra Supabase real (T7).
-- Declaración de trader (DSA): [pendiente: datos de titular/NIF].
+- Declaración de trader (DSA): **no trader** (decidido el 16-oct-2026: app gratuita, sin anuncios, compras ni ingresos); revisarlo si se monetiza.
 - Cuenta de prueba por si Play pide acceso: [cuenta de prueba: pendiente].
 
 ## Límites
@@ -68,7 +68,7 @@ Público objetivo: 16–17 y 18+ (D06). En el cuestionario IARC declarar interac
 | Descripción breve | 78 caracteres | 80 |
 | Descripción completa | 1770 caracteres | 4000 |
 
-Package: `app.cofounder.mobile`; versión 1.0.0. Como persona física publicando en la UE, Play mostrará nombre y dirección del editor (estado de «trader», DSA).
+Package: `app.cofounder.mobile`; versión 1.0.0. Cuenta personal declarada no trader (DSA) y sin monetización: Play muestra el nombre del desarrollador y el país, no la dirección.
 
 ## Comprobaciones previas al envío (no copiar en la consola)
 
@@ -77,4 +77,4 @@ Package: `app.cofounder.mobile`; versión 1.0.0. Como persona física publicando
 - **Capturas:** solo pantallas actuales (perfil, deck a pantalla completa, match, chat con sugerencias, GitHub verificado, bloqueo/reporte). Ninguna con temporizador, salas, vídeo o rachas (ya no existen en la app).
 - **Cuenta de revisión:** [cuenta de prueba: pendiente] con perfil completo y al menos un match con chat para que la revisión vea las funciones.
 - **URLs públicas (D08):** privacidad, términos, normas, seguridad infantil, soporte y eliminar cuenta en https://thejowe.github.io/lockin/… (`/privacidad`, `/terminos`, `/normas`, `/seguridad-infantil`, `/soporte`, `/eliminar-cuenta`) deben estar publicadas y funcionando antes de enviar [pendiente: fecha de publicación; no empujar `web/**` hasta cerrar marcadores].
-- Responsable (D01): Joel de Torres Sainz de la Maza, carrer Nou, 37, 25153 Lleida (España) [pendiente: datos de titular/NIF para el formulario de trader]. Contacto (D02): cofounder.soporte@gmail.com.
+- Responsable (D01): Joel de Torres Sainz de la Maza, carrer Nou, 37, 25153 Lleida (España). DSA: no trader. Contacto (D02): cofounder.soporte@gmail.com.

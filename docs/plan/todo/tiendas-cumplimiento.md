@@ -40,6 +40,15 @@ E después de fusionar B–D (toca rutas y `package.json`); F al final.
 6. Aplicar en producción las migraciones nuevas y desplegar la función.
 7. Correo de contacto: hoy `cofounder.soporte@gmail.com`.
 
+## ▶ Decisiones del usuario del 2026-10-16
+
+- **SMTP: Brevo** (gratis, 300/día), sin dominio propio, remitente `cofounder.soporte@gmail.com`. Ya nombrado en `privacidad.md` §5, D05 y el cuestionario. **No empujar** `docs/tiendas/privacidad.md` hasta que el usuario lo haya configurado en Supabase Auth → SMTP (la página diría Brevo mientras aún envía Supabase). Al configurarlo, desactivar en Brevo el seguimiento de aperturas y clics: la política lo promete.
+- **DSA: no trader** en Apple y Google (app gratuita, sin ingresos). El NIF solo hace falta para el aviso legal; nunca en el repo.
+- **Categoría secundaria de App Store: Negocios.**
+- **Fecha de publicación:** la del día en que se cierren los últimos marcadores (DPA de OpenAI, NIF); ese día, subir `TERMS_VERSION` a esa fecha.
+- **Spec de salas:** aplazada mientras Lock-In siga fuera del binario (`todo/salas.md`).
+- Siguen siendo solo del usuario: cuentas de desarrollador (Google primero: 12 testers × 14 días), DPA de OpenAI, NIF, revisión jurídica de `terminos.md`, un iPhone con iOS 26 (vale el TestFlight de un tester) y crear la cuenta de prueba de Apple desde la app (Claude siembra después perfiles, match y mensajes demo, con permiso).
+
 ## Casillas
 
 - [x] T1 documentos y páginas (A) — hecho; páginas públicas 200 el 2026-10-16 (Web pública verde sobre `0f32094`); siguen visibles los `[pendiente: …]` (6 en privacidad)

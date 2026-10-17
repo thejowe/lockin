@@ -55,7 +55,7 @@ socio,emprender,startup,emprendedor,cofundadora,proyecto,equipo,idea,negocio,col
 
 ## Categoría
 
-Principal: **Redes sociales (Social Networking)** (D07). Secundaria: Productividad dejó de estar justificada al sacar Lock-In; valorar **Negocios** o dejarla vacía [pendiente: categoría secundaria, decisión del usuario].
+Principal: **Redes sociales (Social Networking)** (D07). Secundaria: **Negocios (Business)** (decidido el 16-oct-2026; Productividad dejó de estar justificada al sacar Lock-In).
 
 ## Clasificación de edad
 
@@ -138,4 +138,4 @@ Minimum age 16, self-declared.
 - **Capturas:** solo pantallas actuales (perfil, deck a pantalla completa, match, chat con sugerencias, GitHub verificado, bloqueo/reporte). Ninguna con temporizador, salas, vídeo o rachas (ya no existen en la app).
 - **Cuenta de revisión:** [cuenta de prueba: pendiente] con perfil completo y al menos un match con chat para que la revisión vea las funciones.
 - **URLs públicas (D08):** privacidad, términos, normas, seguridad infantil, soporte y eliminar cuenta en https://thejowe.github.io/lockin/… (`/privacidad`, `/terminos`, `/normas`, `/seguridad-infantil`, `/soporte`, `/eliminar-cuenta`) deben estar publicadas y funcionando antes de enviar [pendiente: fecha de publicación; no empujar `web/**` hasta cerrar marcadores].
-- Responsable (D01): Joel de Torres Sainz de la Maza, carrer Nou, 37, 25153 Lleida (España) [pendiente: datos de titular/NIF para el formulario de trader]. Contacto (D02): cofounder.soporte@gmail.com.
+- Responsable (D01): Joel de Torres Sainz de la Maza, carrer Nou, 37, 25153 Lleida (España). DSA (Business → Compliance): **no trader** (decidido el 16-oct-2026: app gratuita, sin anuncios, compras ni ingresos); revisarlo si se monetiza. Contacto (D02): cofounder.soporte@gmail.com.

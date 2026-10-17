@@ -85,7 +85,10 @@ El resto, en orden.
 
 ## Pendiente del usuario
 
-- [ ] Revisar las decisiones tomadas sin el usuario (spec, primera sección). Las
+- [ ] **Aplazado el 2026-10-16, a decisión del usuario:** Lock-In salió del binario con el
+      pivote a solo cofundador (T5 de `tiendas-cumplimiento`); esta revisión se retoma
+      solo si Lock-In vuelve. Texto original:
+      Revisar las decisiones tomadas sin el usuario (spec, primera sección). Las
       que más cuesta deshacer una vez empezada la Tarea 2: cómo se forma la sala
       (desde matches) y el ciego de invitados.
 - [x] Aplicar `supabase/migrations/20261002000100_lockin_rooms.sql` en

@@ -95,10 +95,10 @@ Fuente: [guía del formulario](https://support.google.com/googleplay/android-dev
 ## Marcadores abiertos (dependen del usuario)
 
 - [pendiente: fecha de publicación] — en privacidad, términos y normas.
-- [pendiente: proveedor SMTP] — nombrarlo en la sección 5 de privacidad y en D05; hasta entonces el límite de correo de Supabase por defecto aplica.
-- [pendiente: datos de titular/NIF] — razón social o persona física, NIF y dirección para el formulario de «trader» (DSA) de Apple y Google. Los docs usan hoy nombre y dirección de D01.
+- ~~proveedor SMTP~~ — Brevo (decidido el 16-oct-2026), ya nombrado en la sección 5 de privacidad y en D05. [pendiente: configurarlo en Supabase Auth → SMTP]; hasta entonces aplica el límite de correo de Supabase por defecto.
+- ~~trader (DSA)~~ — no trader en Apple y Google (decidido el 16-oct-2026). [pendiente: NIF del titular persona física] solo para el aviso legal (LSSI art. 10); nunca en el repo, que es público.
 - [pendiente: DPA y condiciones de OpenAI] — retención, uso para entrenamiento y si actúa como encargado; no afirmar nada hasta confirmarlo. De ello depende marcar Fotos como «compartidas» en Google.
-- [pendiente: categoría secundaria de App Store] — Negocios o vacía.
+- ~~categoría secundaria de App Store~~ — Negocios (decidido el 16-oct-2026).
 - [pendiente: cuenta de prueba] — credenciales para el revisor de Apple.
 - Migraciones `20261014120000`, `20261014130000` y `20261014140000` aplicadas en producción el 16-oct-2026; `moderate-avatar` v2 ya estaba desplegada y coincide con el código del repo (cotejado el 16-oct: `index.ts` y `logic.mjs` sin cambios desde su despliegue).
 - Job `purge_old_user_reports()` confirmado activo en producción (03:20 diario); también `lockin-purge-stale-avatar-uploads` (cada hora).

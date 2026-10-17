@@ -134,7 +134,7 @@ Fuente: [auth.ts](../../src/data/supabase/auth.ts) y [client.ts](../../src/data/
 | Identidad OAuth de GitHub, datos devueltos por el proveedor | Supabase Auth, auth.identities; user_name origina el sello público | Titular y servicios de autenticación; handle y fecha publicados en profiles | La identidad se puede desvincular; sync_github_verification elimina handle, fecha y link_github. Sin plazo general |
 | Sesión Auth, access token, refresh token y datos de usuario del SDK | Supabase Auth y AsyncStorage de la app; PKCE también usa almacenamiento del SDK | App/Auth; mantiene la sesión entre reinicios | El SDK renueva/limpia la sesión; cierre de sesión no borra filas de producto |
 
-Decisión D05: SMTP propio gratuito antes del lanzamiento; Supabase en `eu-central-1`. Auth puede conservar más metadatos del OAuth que el handle, y así se declara en la política.
+Decisión D05: SMTP propio gratuito antes del lanzamiento — Brevo (plan gratuito, 300 correos/día; decidido el 16-oct-2026), remitente cofounder.soporte@gmail.com; Supabase en `eu-central-1`. Auth puede conservar más metadatos del OAuth que el handle, y así se declara en la política.
 
 
 ## Datos locales y técnicos activos
