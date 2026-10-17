@@ -586,7 +586,19 @@ export function createSupabaseRepositories({
 
     async getById(id) {
       const client = getClient();
-      await getUserId();
+      const me = await getUserId();
+
+      // Con un bloqueo, en cualquier sentido, la ficha ajena no existe para ti.
+      // La política SELECT de `profiles` deja leer cualquier fila; el deck y los
+      // matches ya filtran los bloqueos, y esta lectura suelta tiene que hacerlo
+      // también (lo pide `/person/[id]`, codex review del 2026-10-17).
+      if (id !== me) {
+        const { data: blocked, error: blockError } = await client.rpc('has_profile_block', {
+          p_profile_id: id,
+        });
+        if (blockError) throw blockError;
+        if (blocked) return null;
+      }
 
       const { data, error } = await client.from('profiles').select('*').eq('id', id).maybeSingle();
       if (error) throw error;

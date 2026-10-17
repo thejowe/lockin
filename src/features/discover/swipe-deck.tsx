@@ -40,6 +40,7 @@
  */
 
 import { BlurView } from 'expo-blur';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -407,6 +408,7 @@ function TopCard({
 }) {
   const theme = useTheme();
   const elevation = Elevation[useThemeName()];
+  const router = useRouter();
   const { width } = useWindowDimensions();
   const id = profile.id;
   const { translateX, translateY, owner, exited } = drag;
@@ -469,6 +471,7 @@ function TopCard({
         bottomInset={DECK_ACTIONS_SPACE}
         tapHint={tapHint}
         onPageChange={onPageChange}
+        onOpenProfile={() => router.push({ pathname: '/person/[id]', params: { id } })}
       />
 
       <Animated.View testID="swipe-veil" style={[styles.mark, veilStyle]}>

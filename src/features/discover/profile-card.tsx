@@ -27,7 +27,15 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { ThemedText } from '@/components/themed-text';
-import { FontFamily, Radii, ScrimAlpha, Spacing, Springs } from '@/constants/theme';
+import {
+  Control,
+  FontFamily,
+  HitSlop,
+  Radii,
+  ScrimAlpha,
+  Spacing,
+  Springs,
+} from '@/constants/theme';
 import {
   DayStrip,
   GithubSeal,
@@ -88,6 +96,8 @@ export function ProfileCard({
    * de Pasar/Like del deck). Sin él el texto quedaría debajo de los botones.
    */
   bottomInset = 0,
+  /** Abre el perfil completo (botón «i» arriba a la derecha). Sin él no sale. */
+  onOpenProfile,
   /** Enseña la mano que invita a tocar (primera vez en Descubrir: `tap-hint.tsx`). */
   tapHint = false,
   /** Se llama al pasar de bloque con un toque. */
@@ -102,6 +112,7 @@ export function ProfileCard({
   bottomInset?: number;
   tapHint?: boolean;
   onPageChange?: (index: number) => void;
+  onOpenProfile?: () => void;
 }) {
   const theme = useTheme();
   const [localSafetyOpen, setLocalSafetyOpen] = useState(false);
@@ -190,6 +201,26 @@ export function ProfileCard({
           </Svg>
         </View>
         <View style={styles.menu}>
+          {/* «i»: el perfil completo, con sus redes (2026-10-17). */}
+          {onOpenProfile ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Ver el perfil de ${profile.name}`}
+              hitSlop={HitSlop.inline}
+              onPress={(event) => {
+                event.stopPropagation();
+                onOpenProfile();
+              }}
+              // El blanco del toque mide 44 × 44 (el mínimo del repo); el
+              // círculo de dentro es más pequeño.
+              style={({ pressed }) => [styles.infoTarget, { opacity: pressed ? 0.6 : 1 }]}>
+              <View style={[styles.infoButton, { borderColor: theme.text }]}>
+                <ThemedText type="smallBold" accessible={false} style={styles.infoGlyph}>
+                  i
+                </ThemedText>
+              </View>
+            </Pressable>
+          ) : null}
           <SafetyMenuButton name={profile.name} onPress={() => setSafetyOpen(true)} />
         </View>
       </View>
@@ -512,6 +543,27 @@ const styles = StyleSheet.create({
   },
   menu: {
     alignSelf: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  infoTarget: {
+    width: Control.minTouch,
+    height: Control.minTouch,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoGlyph: {
+    fontFamily: FontFamily.sansBold,
+    lineHeight: 18,
   },
   info: {
     position: 'absolute',

@@ -387,6 +387,14 @@ Decisión del usuario: al abrir por primera vez, el logo de cofounder en grande 
 - [x] **`codex review`** (dos pasadas, solo lectura). Cinco hallazgos, todos corregidos con test: (1) la contraseña pendiente no tenía dueño → se guarda con el `auth.uid()` y una ajena se borra al leerla; (2) un usuario legado con perfil que asciende volvía del correo a `/profile` sin aplicarla → el callback va a `/register` si hay una pendiente; (3) confirmar fuera de la app y volver por el icono saltaba a `/profile-form` → `/` manda a `/register` con la puerta abierta y una pendiente; (4) si `SecureStore` fallaba al guardar la nueva, la vieja seguía en disco → se borra; (5) si la sesión cambiaba de cuenta durante la petición, `updateUser` escribía en la nueva → `setAccountPassword(password, expectedUserId)` comprueba la cuenta al leer el estado y justo antes de escribir. Además, entrar con «Iniciar sesión» borra cualquier contraseña pendiente.
 - [ ] Comprobación en dispositivo: la hace el usuario (decisión del 2026-10-17), no el `comprobador`.
 
+## Ver el perfil de otra persona y apps conectadas (2026-10-17)
+
+- [x] **[Claude]** `ConnectedApps` (`connected-apps.tsx`): las redes como logos SVG propios (GitHub, LinkedIn, Instagram, TikTok, web) que abren la cuenta con `Linking.openURL` (la app nativa si está instalada); solo `http(s)`. Sustituye a la lista de enlaces de `ProfileDetails`.
+- [x] **[Claude]** `/person/[id]` (modal con «Cerrar»): la ficha completa de otra persona. Se abre con el botón «i» (blanco de 44 × 44) arriba a la derecha de la tarjeta del deck, junto al «⋯», y tocando avatar y nombre en la cabecera del chat. Detrás de `RequireVerifiedEmail`, como el chat.
+- [x] **[Claude]** `profiles.getById` de una ficha ajena devuelve `null` con un bloqueo en cualquier sentido (mock: `isBlocked`; Supabase: `has_profile_block`), con test en el contrato de los dos backends. La política SELECT de `profiles` sigue abierta; el deck y los matches ya filtraban.
+- [x] **`codex review`**: tres hallazgos corregidos (bloqueos en la ficha suelta, puerta del correo en la ruta, blanco del «i»).
+- [ ] Comprobación en dispositivo: el usuario.
+
 ## Vincular cuentas, entrar con Google/Apple y redes (2026-10-17)
 
 Decisiones del usuario: «Verificación» pasa a «Vincular cuentas» con GitHub y LinkedIn (LinkedIn con sello, como GitHub); entrar o registrarse con Google, y también con Apple porque la norma 4.8 de la App Store lo exige al ofrecer Google en iOS; enlaces a Instagram y TikTok.

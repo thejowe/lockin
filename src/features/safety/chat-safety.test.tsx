@@ -7,11 +7,21 @@ import { TERMS_VERSION } from '@/constants/legal';
 import { buildProfileInput } from '@/data/test-fixtures';
 
 let mockMatchId = '';
+const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ matchId: mockMatchId }),
+  useRouter: () => ({ push: mockPush, back: jest.fn(), replace: jest.fn() }),
   Stack: {
-    Screen: ({ options }: { options: { headerRight?: () => React.ReactNode } }) =>
-      options.headerRight?.() ?? null,
+    Screen: ({
+      options,
+    }: {
+      options: { headerTitle?: () => React.ReactNode; headerRight?: () => React.ReactNode };
+    }) => (
+      <>
+        {options.headerTitle?.() ?? null}
+        {options.headerRight?.() ?? null}
+      </>
+    ),
   },
   Link: ({ children }: { children: React.ReactNode }) => children,
 }));
@@ -32,6 +42,18 @@ describe('seguridad desde la cabecera del chat', () => {
     const menu = await screen.findByRole('button', { name: 'Opciones de Núria Bosch' });
     return { repositories, menu };
   }
+
+  it('tocar a la persona en la cabecera abre su perfil completo', async () => {
+    await setup();
+    mockPush.mockClear();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Ver el perfil de Núria Bosch' }));
+
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/person/[id]',
+      params: { id: 'seed-nuria' },
+    });
+  });
 
   it('abre las opciones desde la cabecera y vuelve al chat al cerrar', async () => {
     const { menu } = await setup();

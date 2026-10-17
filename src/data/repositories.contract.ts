@@ -2275,6 +2275,17 @@ function describeSafetyContract(backend: ContractBackend): void {
       expect((await b.discovery.getDeck()).map((p) => p.id)).not.toContain(aId);
     });
 
+    it('la ficha suelta (profiles.getById) desaparece en los dos sentidos', async () => {
+      expect((await a.profiles.getById(bId))?.id).toBe(bId);
+      await a.profiles.block(bId);
+      expect(await a.profiles.getById(bId)).toBeNull();
+      expect(await b.profiles.getById(aId)).toBeNull();
+      // La propia sigue: el bloqueo es entre dos, no contra uno mismo.
+      expect((await a.profiles.getById(aId))?.id).toBe(aId);
+      // Y la de un tercero no se toca.
+      expect((await a.profiles.getById(cId))?.id).toBe(cId);
+    });
+
     it('el match existente desaparece de las dos listas y de getById', async () => {
       const matchId = await matchPair();
       expect((await a.matches.list()).map((m) => m.id)).toContain(matchId);

@@ -6,30 +6,25 @@
  * mezclan, se lee un perfil que dice lo contrario de lo que dice. Eso es lo que
  * se comprueba aquí, más la invariante de lock-in (que no busca skills).
  *
- * `ExternalLink` se sustituye porque abrir el navegador no es asunto de esta
- * ficha y arrastra `expo-router` sin necesidad. El doble apunta el `href` que
- * recibe: así el test puede comprobar que cada etiqueta lleva a su enlace y no
- * solo que se pintan tres textos.
+ * Los enlaces son logos de las apps conectadas (`ConnectedApps`, 2026-10-17)
+ * que abren con `Linking.openURL`: se espía para comprobar que cada logo lleva
+ * a su enlace y no solo que se pinta.
  */
 
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
+import { Linking } from 'react-native';
 
 import { buildProfile } from '@/data/test-fixtures';
 
 import { ProfileDetails } from './profile-details';
 
-const mockLinkHrefs: string[] = [];
-
-jest.mock('@/components/external-link', () => ({
-  ExternalLink: ({ href, children }: { href: string; children: React.ReactNode }) => {
-    mockLinkHrefs.push(href);
-    return children;
-  },
-}));
+let openURL: jest.SpyInstance;
 
 beforeEach(() => {
-  mockLinkHrefs.length = 0;
+  openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
 });
+
+afterEach(() => openURL.mockRestore());
 
 describe('ProfileDetails', () => {
   it('separa lo que domina de lo que busca', async () => {
@@ -66,53 +61,54 @@ describe('ProfileDetails', () => {
     expect(screen.queryByText('Abierto a cualquier especialidad.')).toBeNull();
   });
 
-  describe('enlaces', () => {
-    it('pinta solo los que el perfil tiene, cada uno con su href', async () => {
-      await render(
-        <ProfileDetails
-          profile={buildProfile({
-            links: {
-              github: 'https://github.com/nuria',
-              linkedin: 'https://linkedin.com/in/nuria',
-            },
-          })}
-        />
-      );
+  describe('apps conectadas', () => {
+    it('pinta un logo por cada app con enlace, y cada uno abre su cuenta', async () => {
+      const profile = buildProfile({
+        links: {
+          github: 'https://github.com/nuria',
+          linkedin: 'https://linkedin.com/in/nuria',
+          instagram: 'https://instagram.com/nuria',
+          tiktok: 'https://tiktok.com/@nuria',
+        },
+      });
+      await render(<ProfileDetails profile={profile} />);
 
-      expect(screen.getByText('Enlaces')).toBeTruthy();
-      expect(screen.getByText('GitHub')).toBeTruthy();
-      expect(screen.getByText('LinkedIn')).toBeTruthy();
-      // El portfolio no está en el perfil: no puede aparecer con un href vacío.
-      expect(screen.queryByText('Portfolio')).toBeNull();
-      expect(mockLinkHrefs).toEqual(['https://github.com/nuria', 'https://linkedin.com/in/nuria']);
+      expect(screen.getByText('Redes y enlaces')).toBeTruthy();
+      for (const [app, url] of [
+        ['GitHub', 'https://github.com/nuria'],
+        ['LinkedIn', 'https://linkedin.com/in/nuria'],
+        ['Instagram', 'https://instagram.com/nuria'],
+        ['TikTok', 'https://tiktok.com/@nuria'],
+      ]) {
+        await fireEvent.press(screen.getByLabelText(`Abrir el ${app} de ${profile.name}`));
+        expect(openURL).toHaveBeenLastCalledWith(url);
+      }
+      // La web no está en el perfil: no puede aparecer un logo que no lleva a nada.
+      expect(screen.queryByLabelText(`Abrir el Web de ${profile.name}`)).toBeNull();
     });
 
     it('no abre esquemas que no sean http(s), aunque lleguen en la fila', async () => {
-      await render(
-        <ProfileDetails
-          profile={buildProfile({
-            links: {
-              github: 'javascript:alert(1)',
-              portfolio: 'intent://scan#Intent;scheme=zxing;end',
-              linkedin: 'https://linkedin.com/in/nuria',
-            },
-          })}
-        />
-      );
+      const profile = buildProfile({
+        links: {
+          github: 'javascript:alert(1)',
+          portfolio: 'intent://scan#Intent;scheme=zxing;end',
+          instagram: 'https://instagram.com/nuria',
+        },
+      });
+      await render(<ProfileDetails profile={profile} />);
 
-      expect(screen.queryByText('GitHub')).toBeNull();
-      expect(screen.queryByText('Portfolio')).toBeNull();
-      expect(mockLinkHrefs).toEqual(['https://linkedin.com/in/nuria']);
+      expect(screen.queryByLabelText(`Abrir el GitHub de ${profile.name}`)).toBeNull();
+      expect(screen.queryByLabelText(`Abrir el Web de ${profile.name}`)).toBeNull();
+      expect(screen.getByLabelText(`Abrir el Instagram de ${profile.name}`)).toBeTruthy();
     });
 
-    it('se calla la sección entera cuando no hay ningún enlace', async () => {
+    it('se calla la fila entera cuando no hay ningún enlace', async () => {
       await render(<ProfileDetails profile={buildProfile({ links: {} })} />);
 
-      expect(screen.queryByText('Enlaces')).toBeNull();
-      expect(mockLinkHrefs).toEqual([]);
+      expect(screen.queryByText('Redes y enlaces')).toBeNull();
     });
 
-    it('sella el GitHub verificado junto a su enlace', async () => {
+    it('sella el GitHub verificado junto a su logo', async () => {
       await render(
         <ProfileDetails
           profile={buildProfile({
@@ -135,7 +131,7 @@ describe('ProfileDetails', () => {
         />
       );
 
-      expect(screen.getByText('GitHub')).toBeTruthy();
+      expect(screen.getByLabelText(/^Abrir el GitHub de /)).toBeTruthy();
       expect(screen.queryByLabelText(/GitHub verificado/)).toBeNull();
       expect(screen.queryByText(/sin verificar/i)).toBeNull();
     });

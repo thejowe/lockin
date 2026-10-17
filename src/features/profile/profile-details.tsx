@@ -8,35 +8,21 @@
 
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { ExternalLink } from '@/components/external-link';
 import { ThemedText } from '@/components/themed-text';
 import { Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { ambitionLabel, seeksComplement, specialtyLabel, startingPointSentence } from './catalog';
+import { ConnectedApps } from './connected-apps';
 import { DayStrip } from './day-strip';
 import { GithubSeal } from './github-seal';
 import { LinkedinSeal } from './linkedin-verification';
 import { ProfileAvatar } from './profile-avatar';
 
-import type { Href } from 'expo-router';
-
 import type { Profile, Specialty } from '@/data';
 
 export function ProfileDetails({ profile }: { profile: Profile }) {
   const theme = useTheme();
-  const links = [
-    { label: 'GitHub', href: profile.links.github },
-    { label: 'Portfolio', href: profile.links.portfolio },
-    { label: 'LinkedIn', href: profile.links.linkedin },
-    { label: 'Instagram', href: profile.links.instagram },
-    { label: 'TikTok', href: profile.links.tiktok },
-  ].filter(
-    // El servidor y el formulario ya exigen http(s); aquí se vuelve a exigir porque
-    // `href` acaba en `openBrowserAsync` y viene de la fila de otra persona.
-    (link): link is { label: string; href: string } =>
-      Boolean(link.href) && /^https?:\/\//i.test(link.href ?? '')
-  );
 
   return (
     <View style={styles.root}>
@@ -146,25 +132,14 @@ export function ProfileDetails({ profile }: { profile: Profile }) {
         </View>
       ))}
 
-      {links.length > 0 ? (
-        <Section title="Enlaces">
-          {links.map((link) => (
-            <ExternalLink key={link.label} href={link.href as Href & string}>
-              <ThemedText type="link" themeColor="brass">
-                {link.label}
-              </ThemedText>
-            </ExternalLink>
-          ))}
-
-          {/*
-            Junto al enlace y no junto al nombre: lo que está verificado es el
-            enlace, y ponerlo arriba lo convertiría en «perfil verificado», que
-            es justo lo que este sello no dice.
-          */}
-          {profile.githubVerification ? (
-            <GithubSeal handle={profile.githubVerification.handle} />
-          ) : null}
-        </Section>
+      {/*
+        Las apps conectadas, como logos que llevan a su cuenta (2026-10-17). El
+        sello de GitHub va junto a ellas y no junto al nombre: lo que certifica
+        es ese enlace, no «perfil verificado».
+      */}
+      <ConnectedApps profile={profile} />
+      {profile.githubVerification ? (
+        <GithubSeal handle={profile.githubVerification.handle} />
       ) : null}
 
       {/* El de LinkedIn no certifica ningún enlace (no hay URL en OIDC): va aparte. */}

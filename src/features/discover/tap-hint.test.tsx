@@ -58,3 +58,24 @@ it('retirada antes de que llegue la lectura, no reaparece y queda recordada', as
   await waitFor(async () => expect(await AsyncStorage.getItem(TAP_HINT_KEY)).toBe('1'));
   expect(screen.queryByTestId('tap-hint')).toBeNull();
 });
+
+it('el botón «i» abre el perfil sin pasar de bloque', async () => {
+  const onOpenProfile = jest.fn();
+  const onPageChange = jest.fn();
+  const profile = buildProfile();
+  await render(
+    <ProfileCard profile={profile} onOpenProfile={onOpenProfile} onPageChange={onPageChange} />
+  );
+
+  await fireEvent.press(screen.getByRole('button', { name: `Ver el perfil de ${profile.name}` }));
+
+  expect(onOpenProfile).toHaveBeenCalledTimes(1);
+  expect(onPageChange).not.toHaveBeenCalled();
+});
+
+it('sin onOpenProfile no hay botón «i»', async () => {
+  const profile = buildProfile();
+  await render(<ProfileCard profile={profile} />);
+
+  expect(screen.queryByRole('button', { name: `Ver el perfil de ${profile.name}` })).toBeNull();
+});

@@ -11,9 +11,16 @@
  * suscribe a los cambios.
  */
 
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Fragment, useCallback, useMemo, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, TextInput, View, type LayoutChangeEvent } from 'react-native';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
+  type LayoutChangeEvent,
+} from 'react-native';
 import {
   KeyboardAvoidingView,
   useWindowDimensions as useKeyboardWindowDimensions,
@@ -41,12 +48,18 @@ import { ObjectionableContentError } from '@/features/safety/content-filter';
 import { MessageReportPanel } from '@/features/safety/message-report-panel';
 import { SafetyMenuButton, SafetyPanel } from '@/features/safety/safety-panel';
 import { useTheme } from '@/hooks/use-theme';
-import { RequireVerifiedEmail, TermsAcceptance, useTermsGate } from '@/features/profile';
+import {
+  ProfileAvatar,
+  RequireVerifiedEmail,
+  TermsAcceptance,
+  useTermsGate,
+} from '@/features/profile';
 import { Screen } from '@/components/ambient-background';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 function ChatScreenContent() {
   const theme = useTheme();
+  const router = useRouter();
   const params = useLocalSearchParams<{ matchId: string }>();
   const matchId = Array.isArray(params.matchId) ? params.matchId[0] : (params.matchId ?? '');
 
@@ -89,6 +102,7 @@ function ChatScreenContent() {
   };
 
   const title = match?.counterpart.name ?? 'Conversación';
+  const counterpartId = match?.counterpart.id ?? null;
 
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
@@ -96,6 +110,27 @@ function ChatScreenContent() {
       <Stack.Screen
         options={{
           title,
+          // Tocar a la persona abre su perfil completo (2026-10-17): foto y
+          // nombre en la cabecera, como un botón.
+          headerTitle: () =>
+            match && counterpartId && !blocked ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Ver el perfil de ${title}`}
+                onPress={() =>
+                  router.push({ pathname: '/person/[id]', params: { id: counterpartId } })
+                }
+                style={({ pressed }) => [styles.headerTitle, pressed && { opacity: 0.6 }]}>
+                <ProfileAvatar avatar={match.counterpart.avatar} size="small" />
+                <ThemedText type="bodyStrong" numberOfLines={1} style={styles.headerName}>
+                  {title}
+                </ThemedText>
+              </Pressable>
+            ) : (
+              <ThemedText type="bodyStrong" numberOfLines={1}>
+                {title}
+              </ThemedText>
+            ),
           headerRight: () =>
             match && !blocked ? (
               <SafetyMenuButton name={match.counterpart.name} onPress={() => setSafetyOpen(true)} />
@@ -246,6 +281,15 @@ function MissingMatch({ error }: { error: Error | null }) {
 }
 
 const styles = StyleSheet.create({
+  headerTitle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    maxWidth: 240,
+  },
+  headerName: {
+    flexShrink: 1,
+  },
   safety: { padding: Spacing.three, width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center' },
   root: {
     flex: 1,

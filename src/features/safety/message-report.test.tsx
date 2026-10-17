@@ -8,6 +8,7 @@ import { buildProfileInput } from '@/data/test-fixtures';
 
 let mockMatchId = '';
 jest.mock('expo-router', () => ({
+  useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
   useLocalSearchParams: () => ({ matchId: mockMatchId }),
   Stack: {
     Screen: ({ options }: { options: { headerRight?: () => React.ReactNode } }) =>

@@ -312,6 +312,8 @@ export function createMockRepositories(
     },
 
     async getById(id) {
+      // Con un bloqueo, en cualquier sentido, la ficha ajena no existe para ti.
+      if (id !== actorId && isBlocked(actorId, id)) return null;
       return getState().profiles.get(id) ?? null;
     },
 
