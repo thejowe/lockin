@@ -9,6 +9,7 @@
 import type { MatchRow, MessageRow, ProfileInsert, ProfileRow } from './database.types';
 import type {
   GithubVerification,
+  LinkedinVerification,
   Match,
   Message,
   Profile,
@@ -60,6 +61,8 @@ function toLinks(row: ProfileRow): ProfileLinks {
   if (row.link_github) links.github = row.link_github;
   if (row.link_portfolio) links.portfolio = row.link_portfolio;
   if (row.link_linkedin) links.linkedin = row.link_linkedin;
+  if (row.link_instagram) links.instagram = row.link_instagram;
+  if (row.link_tiktok) links.tiktok = row.link_tiktok;
   return links;
 }
 
@@ -72,6 +75,12 @@ function toLinks(row: ProfileRow): ProfileLinks {
 function toGithubVerification(row: ProfileRow): GithubVerification | null {
   if (!row.github_handle || !row.github_verified_at) return null;
   return { handle: row.github_handle, verifiedAt: row.github_verified_at };
+}
+
+/** Como el de GitHub: las dos columnas o ninguna (`profiles_linkedin_verification_complete`). */
+function toLinkedinVerification(row: ProfileRow): LinkedinVerification | null {
+  if (!row.linkedin_name || !row.linkedin_verified_at) return null;
+  return { name: row.linkedin_name, verifiedAt: row.linkedin_verified_at };
 }
 
 export function toProfile(row: ProfileRow): Profile {
@@ -99,6 +108,7 @@ export function toProfile(row: ProfileRow): Profile {
     ambition: row.ambition,
     links: toLinks(row),
     githubVerification: toGithubVerification(row),
+    linkedinVerification: toLinkedinVerification(row),
     prompts: row.prompts,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -144,6 +154,8 @@ export function toProfileInsert(
     link_github: input.links.github ?? null,
     link_portfolio: input.links.portfolio ?? null,
     link_linkedin: input.links.linkedin ?? null,
+    link_instagram: input.links.instagram ?? null,
+    link_tiktok: input.links.tiktok ?? null,
     prompts: input.prompts,
   };
 }

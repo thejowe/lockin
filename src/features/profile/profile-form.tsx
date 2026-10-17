@@ -66,6 +66,8 @@ interface Draft {
   github: string;
   portfolio: string;
   linkedin: string;
+  instagram: string;
+  tiktok: string;
   /** Siempre dos huecos: el primero obligatorio, el segundo opcional. */
   prompts: { question: string; answer: string }[];
 }
@@ -124,6 +126,8 @@ function initialDraft(profile: Profile | null, seed: ProfileSeed | null): Draft 
     github: profile?.links.github ?? '',
     portfolio: profile?.links.portfolio ?? '',
     linkedin: profile?.links.linkedin ?? '',
+    instagram: profile?.links.instagram ?? '',
+    tiktok: profile?.links.tiktok ?? '',
     prompts,
   };
 }
@@ -163,9 +167,9 @@ function validate(draft: Draft): Errors {
     errors.prompts = OBJECTIONABLE_MESSAGE;
   }
 
-  const invalidLink = ([draft.github, draft.portfolio, draft.linkedin] as const).some(
-    (link) => link.trim().length > 0 && !/^https?:\/\/\S+$/.test(link.trim())
-  );
+  const invalidLink = (
+    [draft.github, draft.portfolio, draft.linkedin, draft.instagram, draft.tiktok] as const
+  ).some((link) => link.trim().length > 0 && !/^https?:\/\/\S+$/.test(link.trim()));
   if (invalidLink) errors.github = 'Los enlaces deben empezar por http:// o https://';
 
   return errors;
@@ -193,6 +197,8 @@ function toInput(draft: Draft): ProfileInput {
       github: link(draft.github),
       portfolio: link(draft.portfolio),
       linkedin: link(draft.linkedin),
+      instagram: link(draft.instagram),
+      tiktok: link(draft.tiktok),
     },
     prompts: draft.prompts
       .filter((prompt) => prompt.answer.trim().length > 0)
@@ -475,11 +481,11 @@ export function ProfileForm({
         </Field>
 
         <Field
-          label="Enlaces (opcional)"
+          label="Enlaces y redes (opcional)"
           hint={
             githubLocked
-              ? 'Tu GitHub está verificado: lo lleva el sello, no este campo. Para cambiarlo, quita la verificación desde tu perfil.'
-              : 'Lo que enseñe qué has hecho, si tienes algo.'
+              ? 'Tu GitHub está verificado: lo lleva el sello, no este campo. Para cambiarlo, desvincúlalo desde tu perfil.'
+              : 'Lo que enseñe qué has hecho y dónde estás: portfolio, LinkedIn, Instagram, TikTok.'
           }
           error={errors.github}
           onLayout={track('github')}>
@@ -513,6 +519,24 @@ export function ProfileForm({
             autoCorrect={false}
             inputMode="url"
             accessibilityLabel="LinkedIn"
+          />
+          <TextField
+            value={draft.instagram}
+            onChangeText={(value) => update('instagram', value)}
+            placeholder="https://instagram.com/tuusuario"
+            autoCapitalize="none"
+            autoCorrect={false}
+            inputMode="url"
+            accessibilityLabel="Instagram"
+          />
+          <TextField
+            value={draft.tiktok}
+            onChangeText={(value) => update('tiktok', value)}
+            placeholder="https://tiktok.com/@tuusuario"
+            autoCapitalize="none"
+            autoCorrect={false}
+            inputMode="url"
+            accessibilityLabel="TikTok"
           />
         </Field>
 

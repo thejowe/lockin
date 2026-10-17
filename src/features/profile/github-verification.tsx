@@ -90,8 +90,10 @@ export function GithubVerification({
 
   return (
     <View style={styles.root}>
+      {/* «Vincular cuentas» desde el 2026-10-17: GitHub aquí y LinkedIn debajo
+          (`linkedin-verification.tsx`), los dos con sello en la tarjeta. */}
       <ThemedText type="label" themeColor="textSecondary">
-        Verificación
+        Vincular cuentas
       </ThemedText>
 
       {seal ? <GithubSeal handle={seal.handle} /> : null}
@@ -131,12 +133,12 @@ export function GithubVerification({
 
       {seal ? (
         <SecondaryButton
-          label={busy === 'quitar' ? 'Quitando…' : 'Quitar verificación'}
+          label={busy === 'quitar' ? 'Quitando…' : 'Desvincular GitHub'}
           onPress={() => void run('quitar', () => repositories.profiles.unverifyGithub())}
         />
       ) : confirming ? null : (
         <PrimaryButton
-          label={busy === 'verificar' ? 'Abriendo GitHub…' : 'Verificar con GitHub'}
+          label={busy === 'verificar' ? 'Abriendo GitHub…' : 'Vincular GitHub'}
           onPress={handleVerify}
           disabled={busy !== null}
         />

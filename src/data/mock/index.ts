@@ -275,6 +275,7 @@ export function createMockRepositories(
         // NO sale de `input` — `ProfileInput` no lo tiene, y ese es el diseño.
         // Se hereda del perfil que ya estaba: editar la ficha no desverifica.
         githubVerification: existing?.githubVerification ?? null,
+        linkedinVerification: existing?.linkedinVerification ?? null,
       };
 
       state.profiles.set(profile.id, profile);
@@ -349,6 +350,33 @@ export function createMockRepositories(
         },
       };
 
+      state.profiles.set(profile.id, profile);
+      return profile;
+    },
+
+    /** Simulación, como `verifyGithub()`: el nombre del perfil hace de cuenta de LinkedIn. */
+    async verifyLinkedin() {
+      const state = getState();
+      const existing = currentProfile();
+      if (!existing) throw new Error('No hay perfil que verificar todavía.');
+
+      const profile: Profile = {
+        ...existing,
+        linkedinVerification: {
+          name: existing.name.trim(),
+          verifiedAt: existing.linkedinVerification?.verifiedAt ?? nowIso(),
+        },
+      };
+      state.profiles.set(profile.id, profile);
+      return profile;
+    },
+
+    async unverifyLinkedin() {
+      const state = getState();
+      const existing = currentProfile();
+      if (!existing) throw new Error('No hay perfil que desverificar todavía.');
+
+      const profile: Profile = { ...existing, linkedinVerification: null };
       state.profiles.set(profile.id, profile);
       return profile;
     },

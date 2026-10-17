@@ -61,6 +61,11 @@ export type ProfileRow = {
   github_verified_at: string | null;
   link_portfolio: string | null;
   link_linkedin: string | null;
+  link_instagram: string | null;
+  link_tiktok: string | null;
+  /** Sello de LinkedIn: solo lo escribe `sync_linkedin_verification()`. */
+  linkedin_name: string | null;
+  linkedin_verified_at: string | null;
   /** `ProfilePrompt[]` serializado como jsonb. Máximo 2 elementos. */
   prompts: ProfilePrompt[];
   created_at: string;
@@ -70,7 +75,13 @@ export type ProfileRow = {
 /** Lo que se envía al crear o actualizar un perfil. */
 export type ProfileInsert = Omit<
   ProfileRow,
-  'created_at' | 'updated_at' | 'github_handle' | 'github_verified_at' | 'avatar_url'
+  | 'created_at'
+  | 'updated_at'
+  | 'github_handle'
+  | 'github_verified_at'
+  | 'linkedin_name'
+  | 'linkedin_verified_at'
+  | 'avatar_url'
 >;
 
 /** Fila de `public.user_settings`. */
@@ -400,6 +411,10 @@ export type Database = {
         Returns: undefined;
       };
       sync_github_verification: {
+        Args: Record<string, never>;
+        Returns: undefined;
+      };
+      sync_linkedin_verification: {
         Args: Record<string, never>;
         Returns: undefined;
       };

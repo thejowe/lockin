@@ -31,6 +31,13 @@ import AuthCallbackRoute from '../../src/app/auth/callback';
 
 jest.mock('expo-router', () => require('../routes').expoRouterMock());
 
+const mockProvider = { value: null as string | null };
+jest.mock('@/features/profile/account-gateway', () => ({
+  ...jest.requireActual('@/features/profile/account-gateway'),
+  accountsAvailable: true,
+  currentSignInProvider: () => Promise.resolve(mockProvider.value),
+}));
+
 jest.mock('@/features/profile', () => {
   const { Pressable, Text } = require('react-native');
 
@@ -48,6 +55,7 @@ jest.mock('@/features/profile', () => {
 beforeEach(() => {
   resetRepositories();
   resetRouter();
+  mockProvider.value = null;
   return clearPendingPassword();
 });
 
@@ -83,6 +91,16 @@ describe('AuthCallbackRoute', () => {
 
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/register'));
     expect(router.replace).not.toHaveBeenCalledWith('/profile');
+  });
+
+  it('de vuelta de Google sin perfil va a la puerta de entrada, no a pedir contraseña', async () => {
+    mockProvider.value = 'google';
+    await renderRoute(<AuthCallbackRoute />);
+
+    await fireEvent.press(screen.getByRole('button', { name: 'terminado' }));
+
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/'));
+    expect(router.replace).not.toHaveBeenCalledWith('/register');
   });
 
   it('si no se puede saber si hay perfil, va a la puerta de entrada', async () => {

@@ -45,6 +45,10 @@ function buildProfileRow(overrides: Partial<ProfileRow> = {}): ProfileRow {
     github_verified_at: null,
     link_portfolio: null,
     link_linkedin: null,
+    link_instagram: null,
+    link_tiktok: null,
+    linkedin_name: null,
+    linkedin_verified_at: null,
     prompts: [{ question: 'Lo que quiero construir es…', answer: 'Herramientas pequeñas.' }],
     created_at: '2026-01-01T09:00:00.000Z',
     updated_at: '2026-01-02T09:00:00.000Z',
@@ -110,6 +114,38 @@ describe('toProfile', () => {
     });
 
     expect(profile.githubVerification).toBeNull();
+  });
+
+  it('mapea el sello de LinkedIn solo con las dos columnas', () => {
+    expect(
+      toProfile(
+        buildProfileRow({
+          linkedin_name: 'Núria Bosch',
+          linkedin_verified_at: '2026-10-17T10:00:00Z',
+        })
+      ).linkedinVerification
+    ).toEqual({ name: 'Núria Bosch', verifiedAt: '2026-10-17T10:00:00Z' });
+    expect(toProfile(buildProfileRow({ linkedin_name: 'Núria' })).linkedinVerification).toBeNull();
+  });
+
+  it('lee y escribe Instagram y TikTok como los demás enlaces', () => {
+    const profile = toProfile(
+      buildProfileRow({
+        link_instagram: 'https://instagram.com/nuria',
+        link_tiktok: 'https://tiktok.com/@nuria',
+      })
+    );
+    expect(profile.links).toMatchObject({
+      instagram: 'https://instagram.com/nuria',
+      tiktok: 'https://tiktok.com/@nuria',
+    });
+    const insert = toProfileInsert(
+      ME,
+      buildProfileInput({ links: { instagram: 'https://instagram.com/x' } }),
+      null
+    );
+    expect(insert).toMatchObject({ link_instagram: 'https://instagram.com/x', link_tiktok: null });
+    expect(insert).not.toHaveProperty('linkedin_name');
   });
 
   it('reconstruye availability y avatar desde columnas planas', () => {

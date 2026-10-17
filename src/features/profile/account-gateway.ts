@@ -33,10 +33,13 @@ export {
   sendPasswordReset,
   setAccountPassword,
   setRecoveredPassword,
+  enabledAuthProviders,
+  signInWithProvider,
+  currentSignInProvider,
   signInWithEmail,
   signOut,
 } from '@/data/supabase';
-export type { AccountErrorReason, AccountKind, AccountState } from '@/data/supabase';
+export type { AccountErrorReason, AccountKind, AccountState, AuthProvider } from '@/data/supabase';
 
 /**
  * Si esta ejecución tiene capa de cuentas que ofrecer.

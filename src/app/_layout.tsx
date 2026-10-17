@@ -2,6 +2,7 @@ import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import * as WebBrowser from 'expo-web-browser';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
@@ -12,6 +13,11 @@ import { DataProvider } from '@/data';
 import { useThemeName } from '@/hooks/use-theme';
 
 SplashScreen.preventAutoHideAsync();
+
+// En web, la vuelta de OAuth (GitHub, LinkedIn, Google, Apple) llega a una
+// ventana emergente: esto la cierra y devuelve el resultado a la que la abrió.
+// En nativo no hace nada.
+WebBrowser.maybeCompleteAuthSession();
 
 /** Tema de navegación derivado de la paleta de marca. */
 function navigationTheme(scheme: 'light' | 'dark') {

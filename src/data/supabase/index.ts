@@ -25,7 +25,9 @@ import {
   deleteMyAccount,
   ensureUserId,
   linkGithubIdentity,
+  linkLinkedinIdentity,
   unlinkGithubIdentity,
+  unlinkLinkedinIdentity,
 } from './auth';
 import { getSupabaseClient } from './client';
 import {
@@ -44,7 +46,7 @@ import { closeLiveChannels } from './live-channels';
 import { createSupabaseRoomRepository } from './rooms';
 import { subscribeResyncingOnRejoin } from './realtime';
 import { createSupabaseSessionRepository } from './sessions';
-import { GITHUB_VERIFICATION_CANCELLED } from '../repositories';
+import { GITHUB_VERIFICATION_CANCELLED, LINKEDIN_VERIFICATION_CANCELLED } from '../repositories';
 
 import { deleteAvatar, uploadAvatar } from './avatar';
 import type { MatchRow, MessageRow, ProfileRow } from './database.types';
@@ -86,11 +88,14 @@ export {
   changeAccountPassword,
   isRecoveringPassword,
   setRecoveredPassword,
+  enabledAuthProviders,
+  signInWithProvider,
+  currentSignInProvider,
   signInWithEmail,
   signOut,
   signUpWithEmail,
 } from './auth';
-export type { AccountErrorReason, AccountKind, AccountState } from './auth';
+export type { AccountErrorReason, AccountKind, AccountState, AuthProvider } from './auth';
 
 const MATCHES_TOPIC = 'matches';
 const messagesTopic = (matchId: string) => `messages:${matchId}`;
@@ -477,6 +482,22 @@ export function createSupabaseRepositories({
       const { error } = await getClient().rpc('sync_github_verification');
       if (error) throw error;
 
+      const profile = await profiles.getCurrent();
+      if (!profile) throw new Error('No hay perfil que desverificar todavía.');
+      return profile;
+    },
+
+    async verifyLinkedin() {
+      // El sello lo pone `linkLinkedinIdentity` (`sync_linkedin_verification`,
+      // que lee auth.identities): aquí no viaja ningún nombre.
+      if (!(await linkLinkedinIdentity())) throw new Error(LINKEDIN_VERIFICATION_CANCELLED);
+      const profile = await profiles.getCurrent();
+      if (!profile) throw new Error('No hay perfil que verificar todavía.');
+      return profile;
+    },
+
+    async unverifyLinkedin() {
+      await unlinkLinkedinIdentity();
       const profile = await profiles.getCurrent();
       if (!profile) throw new Error('No hay perfil que desverificar todavía.');
       return profile;

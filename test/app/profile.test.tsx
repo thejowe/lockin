@@ -199,8 +199,8 @@ describe('ProfileScreen', () => {
 
         await renderRoute(<ProfileScreen />);
 
-        await waitFor(() => expect(screen.getByText('Quitar verificación')).toBeTruthy());
-        expect(screen.queryByText('Verificar con GitHub')).toBeNull();
+        await waitFor(() => expect(screen.getByText('Desvincular GitHub')).toBeTruthy());
+        expect(screen.queryByText('Vincular GitHub')).toBeNull();
       });
 
       it('la ficha ofrece verificar sin salir de la tab', async () => {
@@ -208,7 +208,7 @@ describe('ProfileScreen', () => {
 
         await renderRoute(<ProfileScreen />);
 
-        await waitFor(() => expect(screen.getByText('Verificar con GitHub')).toBeTruthy());
+        await waitFor(() => expect(screen.getByText('Vincular GitHub')).toBeTruthy());
       });
     });
 

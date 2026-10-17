@@ -14,12 +14,14 @@ import {
   AccountSection,
   GithubVerification,
   LegalLinks,
+  LinkedinVerification,
   PhotoSection,
   TermsAcceptance,
   useTermsGate,
   ProfileDetails,
   ProfileForm,
 } from '@/features/profile';
+import { accountsAvailable, enabledAuthProviders } from '@/features/profile/account-gateway';
 import { PrimaryButton, SecondaryButton } from '@/features/profile/controls';
 import { useReduceMotion } from '@/hooks/use-reduce-motion';
 
@@ -175,6 +177,11 @@ export default function ProfileScreen() {
 
           <Animated.View entering={enterUp(2)}>
             <GithubVerification profile={profile} onChange={refresh} />
+            {linkedinAvailable ? (
+              <View style={styles.linkedin}>
+                <LinkedinVerification profile={profile} onChange={refresh} />
+              </View>
+            ) : null}
           </Animated.View>
 
           <Animated.View entering={enterUp(3)}>
@@ -201,9 +208,18 @@ export default function ProfileScreen() {
   );
 }
 
+/**
+ * LinkedIn solo si esta compilación lo tiene configurado
+ * (`EXPO_PUBLIC_AUTH_PROVIDERS`); con el mock, siempre, que lo simula.
+ */
+const linkedinAvailable = !accountsAvailable || enabledAuthProviders.has('linkedin');
+
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+  },
+  linkedin: {
+    marginTop: Spacing.three,
   },
   content: {
     gap: Spacing.four,

@@ -61,7 +61,7 @@ describe('GithubVerification', () => {
   it('sin sello, ofrece verificar', async () => {
     await renderOwnProfile(buildProfile({ githubVerification: null }));
 
-    expect(screen.getByText('Verificar con GitHub')).toBeTruthy();
+    expect(screen.getByText('Vincular GitHub')).toBeTruthy();
   });
 
   it('con sello, lo anuncia y ofrece quitarlo', async () => {
@@ -69,8 +69,8 @@ describe('GithubVerification', () => {
 
     // No puede ser solo un icono: sin label, un lector de pantalla no lo lee.
     expect(screen.getByLabelText('GitHub verificado: anagarcia')).toBeTruthy();
-    expect(screen.getByText('Quitar verificación')).toBeTruthy();
-    expect(screen.queryByText('Verificar con GitHub')).toBeNull();
+    expect(screen.getByText('Desvincular GitHub')).toBeTruthy();
+    expect(screen.queryByText('Vincular GitHub')).toBeNull();
   });
 
   it('el sello dice de qué es: certifica el enlace, no a la persona', async () => {
@@ -89,7 +89,7 @@ describe('GithubVerification', () => {
       })
     );
 
-    await fireEvent.press(screen.getByText('Verificar con GitHub'));
+    await fireEvent.press(screen.getByText('Vincular GitHub'));
 
     // En la pantalla, no en un diálogo del sistema: un modal bloqueante deja la
     // app sin responder a nada más.
@@ -104,7 +104,7 @@ describe('GithubVerification', () => {
         githubVerification: null,
       })
     );
-    await fireEvent.press(screen.getByText('Verificar con GitHub'));
+    await fireEvent.press(screen.getByText('Vincular GitHub'));
 
     await fireEvent.press(screen.getByText('Continuar y sobrescribir'));
 
@@ -118,7 +118,7 @@ describe('GithubVerification', () => {
         githubVerification: null,
       })
     );
-    await fireEvent.press(screen.getByText('Verificar con GitHub'));
+    await fireEvent.press(screen.getByText('Vincular GitHub'));
 
     await fireEvent.press(screen.getByText('Dejarlo como está'));
 
@@ -133,7 +133,7 @@ describe('GithubVerification', () => {
     });
     await renderOwnProfile(buildProfile({ links: {}, githubVerification: null }));
 
-    await fireEvent.press(screen.getByText('Verificar con GitHub'));
+    await fireEvent.press(screen.getByText('Vincular GitHub'));
 
     await waitFor(() => expect(verifyGithub).toHaveBeenCalled());
     // Quien monta el panel es quien relee el perfil: el panel no guarda estado
@@ -145,7 +145,7 @@ describe('GithubVerification', () => {
     verifyGithub.mockRejectedValue(new Error('Verificación cancelada.'));
     await renderOwnProfile(buildProfile({ githubVerification: null }));
 
-    await fireEvent.press(screen.getByText('Verificar con GitHub'));
+    await fireEvent.press(screen.getByText('Vincular GitHub'));
 
     expect(await screen.findByText(/no se completó/i)).toBeTruthy();
     expect(screen.queryByText(/error/i)).toBeNull();
@@ -157,7 +157,7 @@ describe('GithubVerification', () => {
     );
     await renderOwnProfile(buildProfile({ githubVerification: null }));
 
-    await fireEvent.press(screen.getByText('Verificar con GitHub'));
+    await fireEvent.press(screen.getByText('Vincular GitHub'));
 
     expect(
       await screen.findByText(
@@ -170,7 +170,7 @@ describe('GithubVerification', () => {
     unverifyGithub.mockResolvedValue(buildProfile({ links: {}, githubVerification: null }));
     await renderOwnProfile(SELLADO);
 
-    await fireEvent.press(screen.getByText('Quitar verificación'));
+    await fireEvent.press(screen.getByText('Desvincular GitHub'));
 
     await waitFor(() => expect(unverifyGithub).toHaveBeenCalled());
     await waitFor(() => expect(onChange).toHaveBeenCalled());
@@ -185,7 +185,7 @@ describe('GithubVerification', () => {
     );
     await renderOwnProfile(buildProfile({ githubVerification: null }));
 
-    await fireEvent.press(screen.getByText('Verificar con GitHub'));
+    await fireEvent.press(screen.getByText('Vincular GitHub'));
     // Mientras el navegador está abierto el botón cambia de texto Y se
     // deshabilita: sin lo segundo, dos toques abrirían dos flujos de OAuth.
     await fireEvent.press(screen.getByText('Abriendo GitHub…'));
@@ -196,6 +196,6 @@ describe('GithubVerification', () => {
     // dejarla resolver después del test: si no, el `setState` final cae fuera
     // del árbol montado y React lo avisa por consola en cada pasada.
     resolve(buildProfile());
-    await waitFor(() => expect(screen.getByText('Verificar con GitHub')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Vincular GitHub')).toBeTruthy());
   });
 });

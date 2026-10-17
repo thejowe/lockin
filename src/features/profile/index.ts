@@ -11,6 +11,7 @@ export { AuthCallback, authLinkFromParams } from './auth-callback';
 export { DayStrip, timezoneCity, type DaySchedule } from './day-strip';
 export { GithubSeal } from './github-seal';
 export { GithubVerification } from './github-verification';
+export { LinkedinSeal, LinkedinVerification } from './linkedin-verification';
 export { PhotoSection } from './photo-section';
 export { ProfileAvatar } from './profile-avatar';
 export { ProfileDetails } from './profile-details';

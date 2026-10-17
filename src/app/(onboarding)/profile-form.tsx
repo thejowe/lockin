@@ -37,6 +37,11 @@ export default function ProfileFormScreen() {
   const terms = useTermsGate();
 
   async function handleSubmit(input: ProfileInput) {
+    // El modo lo guarda la bienvenida, pero no siempre se pasa por ella con esta
+    // sesión: con Google/Apple, si Android mató el proceso con el navegador
+    // abierto, la sesión nueva nace en `/auth/callback`. Sin modo, `isOnboarded()`
+    // seguiría en `false` y cada arranque volvería aquí.
+    await repositories.session.setActiveMode('par');
     await repositories.profiles.saveCurrent(input);
     await clearSignupBasics();
     // `replace`: una vez creado el perfil, volver al onboarding no tiene sentido.

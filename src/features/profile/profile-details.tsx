@@ -16,6 +16,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { ambitionLabel, seeksComplement, specialtyLabel, startingPointSentence } from './catalog';
 import { DayStrip } from './day-strip';
 import { GithubSeal } from './github-seal';
+import { LinkedinSeal } from './linkedin-verification';
 import { ProfileAvatar } from './profile-avatar';
 
 import type { Href } from 'expo-router';
@@ -28,6 +29,8 @@ export function ProfileDetails({ profile }: { profile: Profile }) {
     { label: 'GitHub', href: profile.links.github },
     { label: 'Portfolio', href: profile.links.portfolio },
     { label: 'LinkedIn', href: profile.links.linkedin },
+    { label: 'Instagram', href: profile.links.instagram },
+    { label: 'TikTok', href: profile.links.tiktok },
   ].filter(
     // El servidor y el formulario ya exigen http(s); aquí se vuelve a exigir porque
     // `href` acaba en `openBrowserAsync` y viene de la fila de otra persona.
@@ -162,6 +165,11 @@ export function ProfileDetails({ profile }: { profile: Profile }) {
             <GithubSeal handle={profile.githubVerification.handle} />
           ) : null}
         </Section>
+      ) : null}
+
+      {/* El de LinkedIn no certifica ningún enlace (no hay URL en OIDC): va aparte. */}
+      {profile.linkedinVerification ? (
+        <LinkedinSeal name={profile.linkedinVerification.name} />
       ) : null}
     </View>
   );

@@ -68,6 +68,7 @@ import * as WebBrowser from 'expo-web-browser';
 
 import { deleteAvatar } from './avatar';
 import { getSupabaseClient, peekSupabaseClient } from './client';
+import { oauthCompletionFor, runOAuth } from './oauth';
 import { secureAuthStorage } from './secure-storage';
 
 import type { LockInSupabaseClient } from './client';
@@ -673,6 +674,14 @@ export async function completeAuthLink(url: string): Promise<AccountState> {
   const type = params.get('type');
 
   if (code) {
+    // La vuelta de LinkedIn, Google o Apple de este proceso: su canje ya está en
+    // marcha en `runOAuth` (ver `oauth.ts`), y el code no se canjea dos veces.
+    const oauth = await oauthCompletionFor(code);
+    if (oauth) {
+      await oauth.completion;
+      return getAccountState();
+    }
+
     // La vuelta de GitHub comparte esta URL (ver `githubCompletions`): ese code
     // se canjea una sola vez, y aquí se espera ese mismo canje. No toca el
     // dispositivo: vincular GitHub no hace la cuenta recuperable.
@@ -713,6 +722,23 @@ export async function completeAuthLink(url: string): Promise<AccountState> {
     if (githubPending) {
       await adoptGithubReturn(code).catch((cause: unknown) => {
         throw githubFailure(cause);
+      });
+    }
+
+    // Vuelta en frío de LinkedIn: GoTrue ya vinculó la identidad antes de
+    // devolver el code; falta el sello. Solo con un intento abierto, como
+    // GitHub: un enlace de correo no tiene por qué preguntar por identidades.
+    if (await readLinkedinAttempt()) {
+      await AsyncStorage.removeItem(LINKEDIN_ATTEMPT_KEY).catch(() => undefined);
+      // El canje ya está hecho: si el sello falla, se dice, y «Vincular
+      // LinkedIn» lo vuelve a intentar (empieza por `adoptLinkedinIdentity`).
+      await adoptLinkedinIdentity().catch((cause: unknown) => {
+        throw new AccountError(
+          'unknown',
+          'LinkedIn ha quedado vinculado, pero no hemos podido poner el sello. Pulsa «Vincular ' +
+            'LinkedIn» en tu perfil para terminar.',
+          cause
+        );
       });
     }
   } else if (tokenHash && type) {
@@ -1083,4 +1109,161 @@ export async function unlinkGithubIdentity(): Promise<void> {
 
   const { error: unlinkError } = await client.auth.unlinkIdentity(github);
   if (unlinkError) throw unlinkError;
+}
+
+/* -------------------------------------------------------------------------- */
+/* LinkedIn (vincular, con sello) y Google/Apple (entrar o registrarse)       */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Con qué entró la sesión actual: `google`, `apple`, `email`… (el
+ * `app_metadata.provider` de GoTrue). `null` sin sesión.
+ */
+export async function currentSignInProvider(): Promise<string | null> {
+  const { data } = await getSupabaseClient().auth.getSession();
+  const provider = data.session?.user.app_metadata?.provider;
+  return typeof provider === 'string' ? provider : null;
+}
+
+/** Proveedores de OAuth que esta app sabe usar, además de GitHub. */
+export type AuthProvider = 'google' | 'apple' | 'linkedin';
+
+/**
+ * Los que esta compilación ofrece: `EXPO_PUBLIC_AUTH_PROVIDERS=google,apple,linkedin`.
+ *
+ * Cada uno exige su app de OAuth creada y el proveedor activado en
+ * Authentication → Providers del dashboard; sin eso el navegador abriría una
+ * página de error de Supabase. Por eso un botón solo existe si su proveedor
+ * está en la lista: se encienden en cuanto estén configurados, sin tocar código.
+ */
+export const enabledAuthProviders: ReadonlySet<AuthProvider> = new Set(
+  (process.env.EXPO_PUBLIC_AUTH_PROVIDERS ?? '')
+    .split(',')
+    .map((value) => value.trim().toLowerCase())
+    .filter((value): value is AuthProvider => ['google', 'apple', 'linkedin'].includes(value))
+);
+
+const LINKEDIN = 'linkedin_oidc';
+
+/** Intento de LinkedIn abierto, por si Android mata el proceso con el navegador delante. */
+const LINKEDIN_ATTEMPT_KEY = 'lockin.supabase.linkedin-attempt';
+const LINKEDIN_ATTEMPT_TTL_MS = 10 * 60 * 1000;
+
+async function readLinkedinAttempt(): Promise<boolean> {
+  try {
+    const startedAt = Number(await AsyncStorage.getItem(LINKEDIN_ATTEMPT_KEY));
+    return (
+      Number.isFinite(startedAt) &&
+      startedAt > 0 &&
+      Date.now() - startedAt <= LINKEDIN_ATTEMPT_TTL_MS
+    );
+  } catch {
+    return false;
+  }
+}
+
+async function hasIdentity(provider: string): Promise<boolean> {
+  const { data, error } = await getSupabaseClient().auth.getUserIdentities();
+  if (error) throw error;
+  return data.identities.some((identity) => identity.provider === provider);
+}
+
+/**
+ * Pone el sello de LinkedIn si la cuenta tiene LinkedIn vinculado. La verdad la
+ * lee Postgres de `auth.identities` (`sync_linkedin_verification`): aquí no
+ * viaja ningún nombre.
+ *
+ * @returns `false` si la cuenta no tiene LinkedIn vinculado.
+ */
+export async function adoptLinkedinIdentity(): Promise<boolean> {
+  if (!(await hasIdentity(LINKEDIN))) return false;
+  const { error } = await getSupabaseClient().rpc('sync_linkedin_verification');
+  if (error) throw error;
+  return true;
+}
+
+/**
+ * Abre LinkedIn en el navegador integrado, vincula esa identidad a la cuenta
+ * actual (el `auth.uid()` no cambia) y pone el sello. Como GitHub, exige
+ * "Enable Manual Linking" en el dashboard.
+ *
+ * @returns `true` si el usuario completó el flujo; `false` si lo canceló.
+ */
+export async function linkLinkedinIdentity(): Promise<boolean> {
+  // Ya vinculado (una vuelta anterior perdida): basta con sellarlo.
+  if (await adoptLinkedinIdentity()) return true;
+
+  const client = getSupabaseClient();
+  const redirectTo = authRedirectUrl();
+  const { data, error } = await client.auth.linkIdentity({
+    provider: LINKEDIN,
+    options: { redirectTo, skipBrowserRedirect: true },
+  });
+  if (error) {
+    if (/manual linking/i.test(error.message)) {
+      throw new Error(
+        'Falta activar "Enable Manual Linking" en Authentication → Settings del ' +
+          'dashboard de Supabase: sin él no se puede vincular LinkedIn.'
+      );
+    }
+    if (/already/i.test(error.message)) {
+      throw new Error('Esa cuenta de LinkedIn ya está vinculada a otro perfil de cofounder.');
+    }
+    throw error;
+  }
+
+  await AsyncStorage.setItem(LINKEDIN_ATTEMPT_KEY, String(Date.now()));
+  try {
+    const outcome = await runOAuth(data.url, redirectTo, async (code) => {
+      const { error: exchangeError } = await client.auth.exchangeCodeForSession(code);
+      if (exchangeError) throw exchangeError;
+      if (!(await adoptLinkedinIdentity())) {
+        throw new Error('LinkedIn no ha quedado vinculado a tu cuenta. Vuelve a intentarlo.');
+      }
+    });
+    return outcome === 'done';
+  } finally {
+    await AsyncStorage.removeItem(LINKEDIN_ATTEMPT_KEY).catch(() => undefined);
+  }
+}
+
+/** Desvincula LinkedIn y apaga el sello (la misma función lo apaga sin identidad). */
+export async function unlinkLinkedinIdentity(): Promise<void> {
+  const client = getSupabaseClient();
+  const { data, error } = await client.auth.getUserIdentities();
+  if (error) throw error;
+
+  const linkedin = data.identities.find((identity) => identity.provider === LINKEDIN);
+  if (linkedin) {
+    const { error: unlinkError } = await client.auth.unlinkIdentity(linkedin);
+    if (unlinkError) throw unlinkError;
+  }
+  const { error: syncError } = await client.rpc('sync_linkedin_verification');
+  if (syncError) throw syncError;
+}
+
+/**
+ * Entrar o registrarse con Google o Apple: una sola puerta para las dos cosas.
+ * Si la cuenta no existe, GoTrue la crea con el email ya verificado por el
+ * proveedor, así que el alta salta el paso de confirmar el correo.
+ *
+ * Abre una sesión NUEVA (no asciende la anónima del arranque): solo se ofrece en
+ * la bienvenida, donde todavía no hay perfil que perder.
+ *
+ * @returns `true` si se entró; `false` si se canceló.
+ */
+export async function signInWithProvider(provider: 'google' | 'apple'): Promise<boolean> {
+  const client = getSupabaseClient();
+  const redirectTo = authRedirectUrl();
+  const { data, error } = await client.auth.signInWithOAuth({
+    provider,
+    options: { redirectTo, skipBrowserRedirect: true },
+  });
+  if (error) throw toAccountError(error);
+
+  const outcome = await runOAuth(data.url, redirectTo, async (code) => {
+    const { error: exchangeError } = await client.auth.exchangeCodeForSession(code);
+    if (exchangeError) throw toAccountError(exchangeError);
+  });
+  return outcome === 'done';
 }

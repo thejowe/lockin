@@ -80,6 +80,9 @@ export interface ProfileLinks {
   github?: string;
   portfolio?: string;
   linkedin?: string;
+  /** Redes sociales (2026-10-17): campos libres, como el portfolio. */
+  instagram?: string;
+  tiktok?: string;
 }
 
 /**
@@ -96,6 +99,21 @@ export interface ProfileLinks {
 export interface GithubVerification {
   /** El `user_name` de la identidad. `github.com/<handle>` es su perfil. */
   handle: string;
+  /** Cuándo se verificó, en ISO. */
+  verifiedAt: string;
+}
+
+/**
+ * Prueba de que quien tiene el perfil controla esa cuenta de LinkedIn: se
+ * obtiene vinculando la identidad OAuth (`linkedin_oidc`) y la escribe Postgres
+ * (`sync_linkedin_verification`), igual que el sello de GitHub.
+ *
+ * LinkedIn con OpenID Connect no da la URL del perfil: el sello lleva el nombre
+ * de la cuenta y NO certifica `links.linkedin`, que sigue siendo texto libre.
+ */
+export interface LinkedinVerification {
+  /** El nombre de la cuenta de LinkedIn. */
+  name: string;
   /** Cuándo se verificó, en ISO. */
   verifiedAt: string;
 }
@@ -173,6 +191,12 @@ export interface Profile {
    * `unverifyGithub()`.
    */
   githubVerification: GithubVerification | null;
+  /**
+   * Sello de LinkedIn, o `null`/ausente sin verificar. Fuera de `ProfileInput`
+   * por lo mismo que el de GitHub. Solo lo mueven `verifyLinkedin()` y
+   * `unverifyLinkedin()`.
+   */
+  linkedinVerification?: LinkedinVerification | null;
   /** 1-2 prompts de texto libre. */
   prompts: ProfilePrompt[];
   createdAt: string;
@@ -184,7 +208,13 @@ export interface Profile {
  */
 export type ProfileInput = Omit<
   Profile,
-  'id' | 'createdAt' | 'updatedAt' | 'avatar' | 'seekingSpecialties' | 'githubVerification'
+  | 'id'
+  | 'createdAt'
+  | 'updatedAt'
+  | 'avatar'
+  | 'seekingSpecialties'
+  | 'githubVerification'
+  | 'linkedinVerification'
 > & {
   /** Opcional: si no se envía, el repositorio deriva las iniciales del nombre. */
   avatar?: Partial<Avatar>;

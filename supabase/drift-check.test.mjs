@@ -13,7 +13,7 @@ import { migrationSql, stripComments, parseMigrations } from './drift-check.mjs'
 
 const real = parseMigrations(stripComments(migrationSql()));
 
-test('ve el sello de GitHub y la foto cerrados a authenticated, en INSERT y en UPDATE', () => {
+test('ve los sellos de GitHub y LinkedIn y la foto cerrados a authenticated, en INSERT y en UPDATE', () => {
   const sealed = real.sealed
     .filter((s) => s.table === 'profiles' && s.role === 'authenticated')
     .map((s) => `${s.privilege} ${s.column}`)
@@ -24,9 +24,13 @@ test('ve el sello de GitHub y la foto cerrados a authenticated, en INSERT y en U
     'insert avatar_url',
     'insert github_handle',
     'insert github_verified_at',
+    'insert linkedin_name',
+    'insert linkedin_verified_at',
     'update avatar_url',
     'update github_handle',
     'update github_verified_at',
+    'update linkedin_name',
+    'update linkedin_verified_at',
   ]);
 });
 
@@ -42,6 +46,7 @@ test('ve las constraints de `alter table … add constraint`', () => {
     'profiles.profiles_avatar_url_check check',
     'profiles.profiles_github_link_matches_handle check',
     'profiles.profiles_github_verification_complete check',
+    'profiles.profiles_linkedin_verification_complete check',
     'user_reports.user_reports_distinct_parties check',
     'user_reports.user_reports_reported_id_fkey foreign',
     'user_reports.user_reports_reporter_id_fkey foreign',
@@ -77,6 +82,20 @@ test('revoke ancho + grant por columna: cerrado es lo que no vuelve', () => {
     create table public.cosas (id uuid, nombre text, sello timestamptz);
     revoke insert, update on public.cosas from authenticated;
     grant update (id, nombre) on public.cosas to authenticated;
+  `;
+  const parsed = parseMigrations(sql);
+  assert.deepEqual(parsed.sealed, [
+    { table: 'cosas', column: 'sello', privilege: 'update', role: 'authenticated' },
+  ]);
+});
+
+test('dos grants por columna se suman, como en PostgreSQL', () => {
+  const sql = `
+    create table public.cosas (id uuid, nombre text, sello timestamptz);
+    revoke insert, update on public.cosas from authenticated;
+    grant update (id) on public.cosas to authenticated;
+    alter table public.cosas add column red text;
+    grant update (nombre, red) on public.cosas to authenticated;
   `;
   const parsed = parseMigrations(sql);
   assert.deepEqual(parsed.sealed, [

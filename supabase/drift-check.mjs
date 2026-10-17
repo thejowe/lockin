@@ -320,7 +320,11 @@ export function parseMigrations(sql) {
     const priv = m[1].toLowerCase();
     const granted = splitTopLevel(m[2]).map((c) => c.trim());
     for (const role of splitTopLevel(m[4])) {
-      columnGrants.set(`${m[3]}.${priv}.${role.trim().toLowerCase()}`, granted);
+      // Los `grant` se SUMAN: una migración posterior que concede columnas nuevas
+      // no le quita a nadie las que ya tenía (p. ej. `link_instagram` en
+      // `20261017120000`, sobre la lista de `20260916000100`).
+      const key = `${m[3]}.${priv}.${role.trim().toLowerCase()}`;
+      columnGrants.set(key, [...new Set([...(columnGrants.get(key) ?? []), ...granted])]);
     }
   }
 

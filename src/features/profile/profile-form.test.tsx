@@ -64,6 +64,8 @@ const KEYBOARD_BEHAVIOUR: { placeholder: string; autoCapitalize: string }[] = [
   { placeholder: 'https://github.com/tuusuario', autoCapitalize: 'none' },
   { placeholder: 'https://tuportfolio.com', autoCapitalize: 'none' },
   { placeholder: 'https://linkedin.com/in/tuusuario', autoCapitalize: 'none' },
+  { placeholder: 'https://instagram.com/tuusuario', autoCapitalize: 'none' },
+  { placeholder: 'https://tiktok.com/@tuusuario', autoCapitalize: 'none' },
 ];
 
 const TEXT_FIELD_LABELS = [
@@ -421,7 +423,7 @@ describe('ProfileForm', () => {
       await render(<ProfileForm initial={VERIFICADA} submitLabel="Guardar" onSubmit={jest.fn()} />);
 
       // Un campo gris sin explicación se lee como una avería.
-      expect(screen.getByText(/quita la verificación/i)).toBeTruthy();
+      expect(screen.getByText(/desvincúlalo desde tu perfil/i)).toBeTruthy();
     });
 
     it('sin sello el campo sigue siendo editable', async () => {

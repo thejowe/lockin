@@ -31,6 +31,7 @@ import { FontFamily, Radii, ScrimAlpha, Spacing, Springs } from '@/constants/the
 import {
   DayStrip,
   GithubSeal,
+  LinkedinSeal,
   ambitionLabel,
   seeksComplement,
   specialtyLabel,
@@ -211,7 +212,7 @@ export function ProfileCard({
 
         {page === 'about' ? (
           <View style={styles.section}>
-            {complement.length > 0 || profile.githubVerification ? (
+            {complement.length > 0 || profile.githubVerification || profile.linkedinVerification ? (
               <View style={styles.badges}>
                 {complement.length > 0 ? <Chip label="✓ Encajas" tone="match" /> : null}
                 {/*
@@ -221,6 +222,9 @@ export function ProfileCard({
                 */}
                 {profile.githubVerification ? (
                   <GithubSeal handle={profile.githubVerification.handle} compact />
+                ) : null}
+                {profile.linkedinVerification ? (
+                  <LinkedinSeal name={profile.linkedinVerification.name} compact />
                 ) : null}
               </View>
             ) : null}

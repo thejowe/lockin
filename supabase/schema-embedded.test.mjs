@@ -864,8 +864,14 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       order by a.attnum`);
     assert.deepEqual(
       permisos.rows.filter((c) => !c.inserta || !c.actualiza).map((c) => c.attname),
-      ['github_handle', 'github_verified_at', 'avatar_url'],
-      'el sello y la foto, y solo ellos, están cerrados a authenticated'
+      [
+        'github_handle',
+        'github_verified_at',
+        'avatar_url',
+        'linkedin_name',
+        'linkedin_verified_at',
+      ],
+      'los sellos y la foto, y solo ellos, están cerrados a authenticated'
     );
     assert.deepEqual(
       permisos.rows.filter((c) => !c.lee).map((c) => c.attname),
@@ -906,6 +912,11 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       `update public.profiles set github_handle = 'torvalds' where id = '${ana}';`,
       /permission denied|no privileges/i,
       'authenticated no debe poder escribir el handle a mano'
+    );
+    await rechaza(
+      `update public.profiles set linkedin_verified_at = now(), linkedin_name = 'Ana' where id = '${ana}';`,
+      /permission denied|no privileges/i,
+      'authenticated no debe poder encenderse el sello de LinkedIn a mano'
     );
     await rechaza(
       `update public.profiles set avatar_url = '${ana}/a.jpg' where id = '${ana}';`,
@@ -958,6 +969,36 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       sello.rows[0].github_verified_at.getTime(),
       'el `coalesce` de la función: la fecha es la del primer sello'
     );
+    // LinkedIn, por el mismo camino: sin identidad no hay sello; con ella, el
+    // nombre de la cuenta y la fecha, sin tocar el enlace libre del formulario.
+    await db.exec('select public.sync_linkedin_verification();');
+    const sinLinkedin = await db.query(
+      `select linkedin_name, linkedin_verified_at from public.profiles where id = '${ana}';`
+    );
+    assert.equal(sinLinkedin.rows[0].linkedin_name, null);
+    assert.equal(sinLinkedin.rows[0].linkedin_verified_at, null);
+    await db.exec('reset role');
+    await db.exec(`insert into auth.identities (provider_id, user_id, identity_data, provider)
+      values ('li-1', '${ana}', '{"given_name":"Ana","family_name":"García"}'::jsonb, 'linkedin_oidc');`);
+    await db.exec('set local role authenticated');
+    await db.exec('select public.sync_linkedin_verification();');
+    const selloLinkedin = await db.query(
+      `select linkedin_name, linkedin_verified_at from public.profiles where id = '${ana}';`
+    );
+    assert.equal(selloLinkedin.rows[0].linkedin_name, 'Ana García');
+    assert.ok(selloLinkedin.rows[0].linkedin_verified_at, 'la fecha del sello de LinkedIn');
+    // Desvincular apaga el sello por el mismo sitio.
+    await db.exec('reset role');
+    await db.exec(
+      `delete from auth.identities where provider = 'linkedin_oidc' and user_id = '${ana}';`
+    );
+    await db.exec('set local role authenticated');
+    await db.exec('select public.sync_linkedin_verification();');
+    const linkedinApagado = await db.query(
+      `select linkedin_name, linkedin_verified_at from public.profiles where id = '${ana}';`
+    );
+    assert.equal(linkedinApagado.rows[0].linkedin_name, null);
+    assert.equal(linkedinApagado.rows[0].linkedin_verified_at, null);
     // Con el sello puesto, vaciar el enlace tampoco vale. Es el caso que la
     // lógica de tres valores se come si la constraint se escribe sin el
     // `link_github is not null`: la igualdad daría NULL, `false or null` es NULL

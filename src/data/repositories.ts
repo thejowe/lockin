@@ -49,6 +49,9 @@ export type Unsubscribe = () => void;
  */
 export const GITHUB_VERIFICATION_CANCELLED = 'Verificación cancelada.';
 
+/** Igual que `GITHUB_VERIFICATION_CANCELLED`, para LinkedIn. */
+export const LINKEDIN_VERIFICATION_CANCELLED = 'Vinculación de LinkedIn cancelada.';
+
 /** Quién es el usuario y bajo qué modo navega. */
 export interface SessionRepository {
   get(): Promise<Session>;
@@ -113,6 +116,16 @@ export interface ProfileRepository {
    * por el navegador, y eso es `verifyGithub()`.
    */
   refreshGithubVerification(): Promise<Profile>;
+
+  /**
+   * Abre el OAuth de LinkedIn y, al volver, pone el sello de LinkedIn del perfil
+   * propio (`linkedinVerification`). No toca `links.linkedin`. Lanza
+   * `LINKEDIN_VERIFICATION_CANCELLED` si la persona cierra LinkedIn.
+   */
+  verifyLinkedin(): Promise<Profile>;
+
+  /** Desvincula LinkedIn y apaga su sello. */
+  unverifyLinkedin(): Promise<Profile>;
 
   /**
    * Pone la foto de perfil propia a partir de un archivo local ya reducido

@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Screen } from '@/components/ambient-background';
 import { useRepositories } from '@/data';
 import { AuthCallback, authLinkFromParams } from '@/features/profile';
+import { accountsAvailable, currentSignInProvider } from '@/features/profile/account-gateway';
 import { hasPendingPassword } from '@/features/profile/pending-password';
 
 /**
@@ -34,8 +35,20 @@ export default function AuthCallbackRoute() {
   // `replace` y no `push`: la pantalla del enlace no es un sitio al que se
   // pueda volver con el botón atrás — su código es de un solo uso.
   const goNext = useCallback(() => {
-    Promise.all([repositories.session.isOnboarded(), hasPendingPassword()]).then(
-      ([onboarded, pending]) => router.replace(onboarded && !pending ? '/profile' : '/register'),
+    Promise.all([
+      repositories.session.isOnboarded(),
+      hasPendingPassword(),
+      accountsAvailable ? currentSignInProvider() : Promise.resolve(null),
+    ]).then(
+      ([onboarded, pending, provider]) => {
+        // Entrar con Google o Apple no pasa por contraseña: a la puerta de
+        // entrada, igual que la bienvenida, para que haya una sola decisión.
+        if (!pending && (provider === 'google' || provider === 'apple')) {
+          router.replace('/');
+          return;
+        }
+        router.replace(onboarded && !pending ? '/profile' : '/register');
+      },
       // Sin poder saber si hay perfil, la puerta de entrada ya sabe enseñar el fallo.
       () => router.replace('/')
     );
