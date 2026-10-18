@@ -1,6 +1,6 @@
 # Política de privacidad de cofounder
 
-> Revisada el 18 de octubre de 2026: acceso con Google y Apple, tablón personal de fotos moderado con OpenAI, enlaces a Instagram y TikTok, y envío de correo por Supabase mientras Brevo no esté configurado. Publicada ese día en la URL pública.
+> Revisada el 18 de octubre de 2026: acceso con Google y Apple, tablón personal de fotos moderado con OpenAI, enlaces a Instagram y TikTok, y envío de correo por Supabase mientras Brevo no esté configurado. Publicada ese día en la URL pública. Ese mismo día, tras aplicar `20261018120000_profiles_block_visibility` en producción, §4 vuelve a decir que el bloqueo impide ver el perfil (antes: «la app deja de mostrar»).
 
 **Versión:** 1.1.
 
@@ -59,7 +59,7 @@ Usamos los datos para mantener y recuperar tu cuenta, mostrar y editar tu perfil
 
 ## 4. Quién puede verlos
 
-- **Tu perfil (incluidas la foto aprobada, las fotos del tablón y tus enlaces) puede verlo cualquier persona con cuenta en la app**, también las cuentas creadas sin email, no solo tus matches. No incluyas información que no quieras compartir. Si hay un bloqueo entre dos personas, en cualquier sentido, la app deja de mostrar a cada una el perfil y el tablón de la otra.
+- **Tu perfil (incluidas la foto aprobada, las fotos del tablón y tus enlaces) puede verlo cualquier persona con cuenta en la app**, también las cuentas creadas sin email, no solo tus matches. No incluyas información que no quieras compartir. Si hay un bloqueo entre dos personas, en cualquier sentido, ninguna de las dos puede ver el perfil, la foto ni el tablón de la otra: no solo deja de mostrarlos la app, el servidor tampoco los entrega.
 - **Las fotos aprobadas (de perfil y del tablón) se guardan en un espacio privado y solo se sirven con enlaces temporales** (caducan en una hora) a las personas con sesión iniciada en la app; no hay una dirección pública permanente. Un enlace temporal que alguien ya tuviera sigue funcionando hasta que caduque.
 - Solo tú ves tus decisiones al deslizar; el sistema las usa para detectar el interés mutuo.
 - Solo las dos personas de un match ven su conversación.

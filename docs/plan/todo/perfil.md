@@ -412,8 +412,8 @@ Hueco que salió al revisar privacidad 1.1: el bloqueo solo lo aplicaba la inter
 - [x] **[Claude]** Migración `20261018120000_profiles_block_visibility.sql`: la política SELECT de `profiles` pasa a «profiles: se leen sin bloqueo» (`id = auth.uid() or not has_profile_block(id)`, como `board_posts`) y `avatars_read_published` exige lo mismo del dueño de la foto. Idempotente. Las funciones SECURITY DEFINER (`record_decision`, `delete_my_account`, salas…) no pasan por la política; `discovery_deck`, matches, chat y salas ya filtraban, y el cliente omite el perfil que no puede leer. Controles negativos de `schema-ci.mjs` y `schema-embedded.test.mjs` con el nombre nuevo.
 - [x] **[Claude]** Tests PGlite: el perfil del otro desaparece en los dos sentidos (también por id), el propio se lee y se edita; con `storage` simulado y la migración reejecutada, ninguno firma la foto del otro y cada uno la suya. `test:schema` 118/118, `jest` verde, `drift-check` sin cambios necesarios (no sondea políticas).
 - [x] **`codex exec -s read-only`**: sin hallazgos (lo comprobó además con Storage simulado, un tercero sin bloqueo y `delete_my_account` tras bloquear).
-- [ ] **Usuario:** aplicar la migración en producción (Schema drift saldrá rojo hasta entonces).
-- [ ] Tras aplicarla: `docs/tiendas/privacidad.md` §4 puede volver a decir que el bloqueo impide ver el perfil y el tablón (hoy: «la app deja de mostrar»), y publicar el texto en `cofounder-web`.
+- [x] **Aplicada en producción (2026-10-18)** por MCP (`profiles_block_visibility`), con el archivo entero. Comprobado en `pg_policies` y con una prueba en transacción deshecha sobre dos perfiles reales: antes del bloqueo 1 visible, después 0 en los dos sentidos, el propio 1.
+- [x] `docs/tiendas/privacidad.md` §4 dice ya que, con un bloqueo, el servidor no entrega el perfil, la foto ni el tablón; `texts.generated.ts` regenerado y publicado en `cofounder-web` (`c6b4e09`).
 
 ## Vincular cuentas, entrar con Google/Apple y redes (2026-10-17)
 
