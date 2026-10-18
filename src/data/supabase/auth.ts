@@ -63,8 +63,10 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
+import { Platform } from 'react-native';
 
 import { deleteAvatar } from './avatar';
 import { getSupabaseClient, peekSupabaseClient } from './client';
@@ -1256,9 +1258,14 @@ export async function unlinkLinkedinIdentity(): Promise<void> {
  * Abre una sesión NUEVA (no asciende la anónima del arranque): solo se ofrece en
  * la bienvenida, donde todavía no hay perfil que perder.
  *
+ * Apple en iOS va por la hoja nativa del sistema (`signInWithAppleNative`), no
+ * por el navegador.
+ *
  * @returns `true` si se entró; `false` si se canceló.
  */
 export async function signInWithProvider(provider: 'google' | 'apple'): Promise<boolean> {
+  if (provider === 'apple' && Platform.OS === 'ios') return signInWithAppleNative();
+
   const client = getSupabaseClient();
   const redirectTo = authRedirectUrl();
   const { data, error } = await client.auth.signInWithOAuth({
@@ -1272,4 +1279,35 @@ export async function signInWithProvider(provider: 'google' | 'apple'): Promise<
     if (exchangeError) throw toAccountError(exchangeError);
   });
   return outcome === 'done';
+}
+
+/**
+ * Apple con la hoja nativa de iOS: Face ID o la contraseña del Apple ID, sin
+ * salir de la app. El token de identidad que firma Apple se canjea en GoTrue
+ * (`signInWithIdToken`), que lo valida contra el bundle ID de la app; por eso
+ * en el dashboard basta con poner `app.cofounder.mobile` en «Client IDs» del
+ * proveedor Apple, sin Services ID ni clave secreta que caduque.
+ *
+ * @returns `true` si se entró; `false` si la persona cerró la hoja.
+ */
+async function signInWithAppleNative(): Promise<boolean> {
+  let credential: AppleAuthentication.AppleAuthenticationCredential;
+  try {
+    credential = await AppleAuthentication.signInAsync({
+      requestedScopes: [AppleAuthentication.AppleAuthenticationScope.EMAIL],
+    });
+  } catch (cause) {
+    if ((cause as { code?: unknown }).code === 'ERR_REQUEST_CANCELED') return false;
+    throw cause;
+  }
+  if (!credential.identityToken) {
+    throw new Error('Apple no ha devuelto tu identificación. Vuelve a intentarlo.');
+  }
+
+  const { error } = await getSupabaseClient().auth.signInWithIdToken({
+    provider: 'apple',
+    token: credential.identityToken,
+  });
+  if (error) throw toAccountError(error);
+  return true;
 }

@@ -10,6 +10,7 @@
     "ios": {
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "app.cofounder.mobile",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -33,6 +34,7 @@
     "plugins": [
       "expo-router",
       "./plugins/with-new-intent-initial-url",
+      "expo-apple-authentication",
       [
         "expo-splash-screen",
         {

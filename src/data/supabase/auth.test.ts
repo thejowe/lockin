@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
+import { Platform } from 'react-native';
 
 import {
   AccountError,
@@ -17,6 +19,7 @@ import {
   linkGithubIdentity,
   sendPasswordReset,
   setAccountPassword,
+  signInWithProvider,
   signOut,
   unlinkGithubIdentity,
 } from './auth';
@@ -25,6 +28,10 @@ import { getSupabaseClient, peekSupabaseClient } from './client';
 jest.mock('./client', () => ({ getSupabaseClient: jest.fn(), peekSupabaseClient: jest.fn() }));
 jest.mock('expo-linking', () => ({ createURL: jest.fn() }));
 jest.mock('expo-web-browser', () => ({ openAuthSessionAsync: jest.fn() }));
+jest.mock('expo-apple-authentication', () => ({
+  signInAsync: jest.fn(),
+  AppleAuthenticationScope: { FULL_NAME: 0, EMAIL: 1 },
+}));
 const auth = {
   getSession: jest.fn(),
   getUser: jest.fn(),
@@ -38,6 +45,8 @@ const auth = {
   exchangeCodeForSession: jest.fn(),
   getUserIdentities: jest.fn(),
   unlinkIdentity: jest.fn(),
+  signInWithIdToken: jest.fn(),
+  signInWithOAuth: jest.fn(),
 };
 const rpc = jest.fn();
 
@@ -1163,5 +1172,61 @@ describe('deleteMyAccount', () => {
 
     expect(auth.signOut).not.toHaveBeenCalled();
     expect(AsyncStorage.removeItem).not.toHaveBeenCalled();
+  });
+});
+
+describe('signInWithProvider con Apple', () => {
+  const originalOS = Platform.OS;
+  afterEach(() => {
+    Platform.OS = originalOS;
+  });
+
+  it('en iOS usa la hoja nativa y canjea su token en GoTrue, sin navegador', async () => {
+    Platform.OS = 'ios';
+    jest
+      .mocked(AppleAuthentication.signInAsync)
+      .mockResolvedValue({ identityToken: 'jwt-de-apple' } as never);
+    auth.signInWithIdToken.mockResolvedValue({ data: {}, error: null });
+
+    await expect(signInWithProvider('apple')).resolves.toBe(true);
+    expect(auth.signInWithIdToken).toHaveBeenCalledWith({
+      provider: 'apple',
+      token: 'jwt-de-apple',
+    });
+    expect(auth.signInWithOAuth).not.toHaveBeenCalled();
+    expect(WebBrowser.openAuthSessionAsync).not.toHaveBeenCalled();
+  });
+
+  it('cerrar la hoja de Apple es cancelar, no un error', async () => {
+    Platform.OS = 'ios';
+    jest
+      .mocked(AppleAuthentication.signInAsync)
+      .mockRejectedValue(Object.assign(new Error('canceled'), { code: 'ERR_REQUEST_CANCELED' }));
+
+    await expect(signInWithProvider('apple')).resolves.toBe(false);
+    expect(auth.signInWithIdToken).not.toHaveBeenCalled();
+  });
+
+  it('sin token de Apple no se abre sesión', async () => {
+    Platform.OS = 'ios';
+    jest
+      .mocked(AppleAuthentication.signInAsync)
+      .mockResolvedValue({ identityToken: null } as never);
+
+    await expect(signInWithProvider('apple')).rejects.toThrow(/Apple no ha devuelto/);
+    expect(auth.signInWithIdToken).not.toHaveBeenCalled();
+  });
+
+  it('si GoTrue rechaza el token, el error sube', async () => {
+    Platform.OS = 'ios';
+    jest
+      .mocked(AppleAuthentication.signInAsync)
+      .mockResolvedValue({ identityToken: 'jwt-de-apple' } as never);
+    auth.signInWithIdToken.mockResolvedValue({
+      data: {},
+      error: gotrueError('provider_disabled', 'Unsupported provider'),
+    });
+
+    await expect(signInWithProvider('apple')).rejects.toThrow();
   });
 });
