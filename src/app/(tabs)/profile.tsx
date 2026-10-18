@@ -13,9 +13,8 @@ import { useQuery, useRepositories, type ProfileInput } from '@/data';
 import {
   AccountSection,
   Board,
-  GithubVerification,
   LegalLinks,
-  LinkedinVerification,
+  LinkAccounts,
   PhotoSection,
   TermsAcceptance,
   useTermsGate,
@@ -182,12 +181,11 @@ export default function ProfileScreen() {
           </Animated.View>
 
           <Animated.View entering={enterUp(2)}>
-            <GithubVerification profile={profile} onChange={refresh} />
-            {linkedinAvailable ? (
-              <View style={styles.linkedin}>
-                <LinkedinVerification profile={profile} onChange={refresh} />
-              </View>
-            ) : null}
+            <LinkAccounts
+              profile={profile}
+              onChange={refresh}
+              available={{ github: true, linkedin: linkedinAvailable }}
+            />
           </Animated.View>
 
           <Animated.View entering={enterUp(3)}>
@@ -223,9 +221,6 @@ const linkedinAvailable = !accountsAvailable || enabledAuthProviders.has('linked
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-  },
-  linkedin: {
-    marginTop: Spacing.three,
   },
   content: {
     gap: Spacing.four,

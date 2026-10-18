@@ -43,7 +43,18 @@ export function connectedApps(profile: Profile): { app: ConnectedApp; url: strin
   });
 }
 
-function Glyph({ app, color, size }: { app: ConnectedApp; color: string; size: number }) {
+export function Glyph({
+  app,
+  color,
+  size,
+  /** El hueco de dentro del logo de LinkedIn: negro sobre el fondo, blanco en su azul. */
+  cutout = '#000000',
+}: {
+  app: ConnectedApp;
+  color: string;
+  size: number;
+  cutout?: string;
+}) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
       {app === 'github' ? (
@@ -55,10 +66,10 @@ function Glyph({ app, color, size }: { app: ConnectedApp; color: string; size: n
       {app === 'linkedin' ? (
         <>
           <Rect x={2} y={2} width={20} height={20} rx={4} fill={color} />
-          <Circle cx={7.2} cy={7.4} r={1.5} fill="#000000" />
-          <Rect x={5.9} y={9.8} width={2.6} height={8.2} rx={0.4} fill="#000000" />
+          <Circle cx={7.2} cy={7.4} r={1.5} fill={cutout} />
+          <Rect x={5.9} y={9.8} width={2.6} height={8.2} rx={0.4} fill={cutout} />
           <Path
-            fill="#000000"
+            fill={cutout}
             d="M10.6 9.8h2.5V11c.4-.8 1.4-1.4 2.7-1.4 2.2 0 3 1.4 3 3.6V18h-2.6v-4.2c0-1-.3-1.8-1.3-1.8s-1.7.7-1.7 1.9V18h-2.6z"
           />
         </>

@@ -199,8 +199,10 @@ describe('ProfileScreen', () => {
 
         await renderRoute(<ProfileScreen />);
 
-        await waitFor(() => expect(screen.getByText('Desvincular GitHub')).toBeTruthy());
-        expect(screen.queryByText('Vincular GitHub')).toBeNull();
+        await waitFor(() =>
+          expect(screen.getByRole('button', { name: 'GitHub vinculado' })).toBeTruthy()
+        );
+        expect(screen.queryByRole('button', { name: 'Vincular GitHub' })).toBeNull();
       });
 
       it('la ficha ofrece verificar sin salir de la tab', async () => {
@@ -208,7 +210,9 @@ describe('ProfileScreen', () => {
 
         await renderRoute(<ProfileScreen />);
 
-        await waitFor(() => expect(screen.getByText('Vincular GitHub')).toBeTruthy());
+        await waitFor(() =>
+          expect(screen.getByRole('button', { name: 'Vincular GitHub' })).toBeTruthy()
+        );
       });
     });
 

@@ -16,7 +16,7 @@ import { ambitionLabel, seeksComplement, specialtyLabel, startingPointSentence }
 import { ConnectedApps } from './connected-apps';
 import { DayStrip } from './day-strip';
 import { GithubSeal } from './github-seal';
-import { LinkedinSeal } from './linkedin-verification';
+import { LinkedinSeal } from './linkedin-seal';
 import { ProfileAvatar } from './profile-avatar';
 
 import type { Profile, Specialty } from '@/data';
