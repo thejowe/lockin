@@ -151,8 +151,7 @@ if (command === 'local') {
   const mutations = {
     column: 'alter table public.profiles add column schema_drift_probe text;',
     index: 'create index schema_drift_probe on public.profiles (name);',
-    policy:
-      'alter policy "profiles: cualquier autenticado puede leer" on public.profiles using (false);',
+    policy: 'alter policy "profiles: se leen sin bloqueo" on public.profiles using (false);',
     function:
       "create or replace function public.is_valid_prompts(prompts jsonb) returns boolean language sql immutable set search_path = '' as $$ select true; $$;",
   };

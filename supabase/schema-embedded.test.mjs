@@ -1491,7 +1491,7 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
     const mutations = [
       'alter table public.profiles add column schema_drift_probe text;',
       'create index schema_drift_probe on public.profiles (name);',
-      'alter policy "profiles: cualquier autenticado puede leer" on public.profiles using (false);',
+      'alter policy "profiles: se leen sin bloqueo" on public.profiles using (false);',
       "create or replace function public.is_valid_prompts(prompts jsonb) returns boolean language sql immutable set search_path = '' as $$ select true; $$;",
       // Reabrir el sello. Es la mutación que demuestra que la línea `grantcol`
       // de la huella sirve para algo: sin ella este `grant` no movería ni un
@@ -1985,6 +1985,80 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
         }
         await db.exec('reset role;');
         assert.deepEqual((await db.query('select id from public.matches')).rows, [{ id: matchId }]);
+      })
+    );
+    // `20261018120000`: el bloqueo ya no es solo de interfaz. Con la API, quien
+    // bloquea y quien es bloqueado dejan de leerse el perfil; el propio, siempre.
+    const visibleProfiles = async (actor) => {
+      await actingAs(actor);
+      return (await db.query('select id from public.profiles order by id')).rows.map((r) => r.id);
+    };
+    await t.test('bloquear esconde el perfil en los dos sentidos, nunca el propio', () =>
+      withSafetyPair(async () => {
+        assert.ok((await visibleProfiles(safetyA)).includes(safetyB), 'sin bloqueo, A ve a B');
+        assert.ok((await visibleProfiles(safetyB)).includes(safetyA), 'sin bloqueo, B ve a A');
+        await blockB();
+        for (const [actor, other] of [
+          [safetyA, safetyB],
+          [safetyB, safetyA],
+        ]) {
+          const visible = await visibleProfiles(actor);
+          assert.ok(visible.includes(actor), 'el propio perfil se sigue leyendo');
+          assert.ok(!visible.includes(other), 'el perfil del otro ya no se lee');
+          assert.deepEqual(
+            (await db.query(`select id from public.profiles where id = '${other}'`)).rows,
+            [],
+            'ni pidiéndolo por id'
+          );
+        }
+        // El propio perfil sigue editable y devuelve la fila (upsert + select).
+        await actingAs(safetyB);
+        assert.deepEqual(
+          (
+            await db.query(
+              `update public.profiles set location = 'Bilbao' where id = '${safetyB}' returning id`
+            )
+          ).rows,
+          [{ id: safetyB }]
+        );
+        await db.exec('reset role;');
+        assert.equal(
+          (await db.query('select count(*)::int as n from public.profiles')).rows[0].n >= 2,
+          true,
+          'el bloqueo no borra nada'
+        );
+      })
+    );
+    // PGlite no tiene `storage`: se simula lo mínimo y se vuelve a ejecutar la
+    // migración entera, que es idempotente, para que cree la política de verdad.
+    await t.test('bloquear impide firmar la foto del otro, no la propia', () =>
+      withSafetyPair(async () => {
+        await db.exec(`create schema storage;
+          create table storage.objects (bucket_id text not null, name text not null);
+          alter table storage.objects enable row level security;
+          grant usage on schema storage to authenticated;
+          grant select on storage.objects to authenticated;
+          insert into storage.objects (bucket_id, name) values
+            ('avatars', '${safetyA}/a.jpg'), ('avatars', '${safetyB}/b.jpg'),
+            ('avatars', '${safetyB}/vieja.jpg');
+          update public.profiles set avatar_url = '${safetyA}/a.jpg' where id = '${safetyA}';
+          update public.profiles set avatar_url = '${safetyB}/b.jpg' where id = '${safetyB}';`);
+        await db.exec(
+          readFileSync(
+            join(here, 'migrations', '20261018120000_profiles_block_visibility.sql'),
+            'utf8'
+          )
+        );
+        const signable = async (actor) => {
+          await actingAs(actor);
+          return (await db.query('select name from storage.objects order by name')).rows.map(
+            (r) => r.name
+          );
+        };
+        assert.deepEqual(await signable(safetyA), [`${safetyA}/a.jpg`, `${safetyB}/b.jpg`]);
+        await blockB();
+        assert.deepEqual(await signable(safetyA), [`${safetyA}/a.jpg`], 'A ya no firma la de B');
+        assert.deepEqual(await signable(safetyB), [`${safetyB}/b.jpg`], 'ni B la de A');
       })
     );
     await t.test('messages INSERT rechaza los dos sentidos tras el bloqueo', () =>

@@ -405,6 +405,16 @@ Decisión del usuario: en el perfil, un pequeño tablón donde subir fotos del t
 - [x] **`codex review`**: tres hallazgos corregidos (bloqueos en la ficha suelta, puerta del correo en la ruta, blanco del «i»).
 - [ ] Comprobación en dispositivo: el usuario.
 
+## El bloqueo esconde el perfil y la foto en servidor (2026-10-18)
+
+Hueco que salió al revisar privacidad 1.1: el bloqueo solo lo aplicaba la interfaz para `profiles` (`using (true)`) y la foto (`avatars_read_published` no miraba bloqueos); por API, la persona bloqueada aún leía el perfil y firmaba la foto.
+
+- [x] **[Claude]** Migración `20261018120000_profiles_block_visibility.sql`: la política SELECT de `profiles` pasa a «profiles: se leen sin bloqueo» (`id = auth.uid() or not has_profile_block(id)`, como `board_posts`) y `avatars_read_published` exige lo mismo del dueño de la foto. Idempotente. Las funciones SECURITY DEFINER (`record_decision`, `delete_my_account`, salas…) no pasan por la política; `discovery_deck`, matches, chat y salas ya filtraban, y el cliente omite el perfil que no puede leer. Controles negativos de `schema-ci.mjs` y `schema-embedded.test.mjs` con el nombre nuevo.
+- [x] **[Claude]** Tests PGlite: el perfil del otro desaparece en los dos sentidos (también por id), el propio se lee y se edita; con `storage` simulado y la migración reejecutada, ninguno firma la foto del otro y cada uno la suya. `test:schema` 118/118, `jest` verde, `drift-check` sin cambios necesarios (no sondea políticas).
+- [x] **`codex exec -s read-only`**: sin hallazgos (lo comprobó además con Storage simulado, un tercero sin bloqueo y `delete_my_account` tras bloquear).
+- [ ] **Usuario:** aplicar la migración en producción (Schema drift saldrá rojo hasta entonces).
+- [ ] Tras aplicarla: `docs/tiendas/privacidad.md` §4 puede volver a decir que el bloqueo impide ver el perfil y el tablón (hoy: «la app deja de mostrar»), y publicar el texto en `cofounder-web`.
+
 ## Vincular cuentas, entrar con Google/Apple y redes (2026-10-17)
 
 Decisiones del usuario: «Verificación» pasa a «Vincular cuentas» con GitHub y LinkedIn (LinkedIn con sello, como GitHub); entrar o registrarse con Google, y también con Apple porque la norma 4.8 de la App Store lo exige al ofrecer Google en iOS; enlaces a Instagram y TikTok.
