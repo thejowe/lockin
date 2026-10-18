@@ -53,7 +53,7 @@ Público objetivo: 16–17 y 18+ (D06). En el cuestionario IARC declarar interac
 ## Data safety, eliminación de cuenta y permisos
 
 - Respuestas de Data safety: ver `cuestionario-privacidad.md`.
-- Eliminación de cuenta: en la app (Perfil > Cuenta > Eliminar mi cuenta) y URL web https://thejowe.github.io/lockin/eliminar-cuenta (obligatoria y funcionando).
+- Eliminación de cuenta: en la app (Perfil > Cuenta > Eliminar mi cuenta) y URL web https://thejowe.github.io/cofounder-web/eliminar-cuenta (obligatoria y funcionando).
 - Permisos: con Lock-In oculto, **retirar** `RECORD_AUDIO` y `SCHEDULE_EXACT_ALARM` (y el plugin WebRTC) de app.json salvo que alguna función visible los use. Si se mantiene `SCHEDULE_EXACT_ALARM`, Play Console exige justificarlo y ya no hay función visible que lo justifique.
 
 ## Límites
@@ -72,5 +72,5 @@ Package: `app.cofounder.mobile`; versión 1.0.0. Como persona física publicando
 - **Funciones ocultas (Lock-In):** sesiones, salas, vídeo, rachas, Pomodoro y acuerdo siguen en el código pero no en la UI (pivote del 12-oct-2026). No deben aparecer en la ficha, capturas ni vídeo de vista previa. Si el código sigue en el binario, conviene retirarlo o desactivarlo de verdad: las funciones ocultas o inactivas son motivo de rechazo en Apple (2.3.1) y las dependencias nativas que dejan (WebRTC, cámara/micrófono, alarmas exactas) generan permisos que hay que justificar. Ver INFORME.md.
 - **Capturas:** solo pantallas actuales (perfil, deck a pantalla completa, match, chat con sugerencias, GitHub verificado, bloqueo). Ninguna con temporizador, salas, vídeo o rachas.
 - **Cuenta de revisión:** preparar una cuenta de prueba con perfil completo y al menos un match con chat para que la revisión pueda ver las funciones.
-- **URLs públicas (D08):** privacidad, soporte, eliminar cuenta y normas en https://thejowe.github.io/lockin/… deben estar publicadas y funcionando antes de enviar.
+- **URLs públicas (D08):** privacidad, soporte, eliminar cuenta y normas en https://thejowe.github.io/cofounder-web/… deben estar publicadas y funcionando antes de enviar.
 - Responsable (D01): Joel de Torres Sainz de la Maza, carrer Nou, 37, 25153 Lleida (España). Contacto (D02): cofounder.soporte@gmail.com.

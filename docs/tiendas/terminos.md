@@ -14,7 +14,7 @@ cofounder es una app para conocer a otras personas que quieren empezar algo y va
 
 Lo ofrece **Joel de Torres Sainz de la Maza**, con domicilio en carrer Nou, 37, 25153 Lleida (Catalunya, España). Contacto: **cofounder.soporte@gmail.com**.
 
-Al crear una cuenta o usar la app aceptas estos términos, las [normas de la comunidad](https://thejowe.github.io/lockin/normas) y la [política de privacidad](https://thejowe.github.io/lockin/privacidad).
+Al crear una cuenta o usar la app aceptas estos términos, las [normas de la comunidad](https://thejowe.github.io/cofounder-web/normas) y la [política de privacidad](https://thejowe.github.io/cofounder-web/privacidad).
 
 ## 2. Lo que cofounder no es
 
@@ -32,7 +32,7 @@ Debes tener **16 años o más**. La edad es autodeclarada. Si indicas una edad q
 - Eres responsable de la actividad de tu cuenta y de la veracidad de la información de tu perfil.
 - Solo puedes tener una cuenta activa para ti. No puedes crear perfiles falsos ni suplantar a nadie.
 - Una cuenta creada sin email se pierde si cierras sesión o desinstalas la app. Añadir y confirmar un email permite recuperarla.
-- Puedes eliminar tu cuenta cuando quieras desde Perfil > Cuenta > Eliminar mi cuenta, o siguiendo las instrucciones de https://thejowe.github.io/lockin/eliminar-cuenta.
+- Puedes eliminar tu cuenta cuando quieras desde Perfil > Cuenta > Eliminar mi cuenta, o siguiendo las instrucciones de https://thejowe.github.io/cofounder-web/eliminar-cuenta.
 
 ## 5. Contenido que publicas
 
@@ -53,7 +53,7 @@ cofounder tiene **tolerancia cero con el contenido y las conductas abusivas**. E
 - Compartir datos personales de terceros sin su permiso.
 - Cualquier actividad ilegal.
 
-El detalle está en las [normas de la comunidad](https://thejowe.github.io/lockin/normas).
+El detalle está en las [normas de la comunidad](https://thejowe.github.io/cofounder-web/normas).
 
 ## 7. Moderación, bloqueos y reportes
 

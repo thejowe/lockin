@@ -27,7 +27,7 @@ El incumplimiento supone la retirada inmediata del contenido y la eliminación d
 - Las fotos de perfil se revisan automáticamente antes de publicarse. La revisión rechaza las imágenes con contenido sexual o con indicios de contenido sexual con menores y, si no puede hacerse, la foto no se publica.
 - El chat solo se abre entre dos personas tras un match mutuo.
 - Cualquier persona puede bloquear a otra: el bloqueo impide verse y escribirse en las dos direcciones.
-- Las [normas de la comunidad](https://thejowe.github.io/lockin/normas) y los [términos de uso](https://thejowe.github.io/lockin/terminos) prohíben este contenido de forma expresa.
+- Las [normas de la comunidad](https://thejowe.github.io/cofounder-web/normas) y los [términos de uso](https://thejowe.github.io/cofounder-web/terminos) prohíben este contenido de forma expresa.
 
 ## Cómo reportar
 

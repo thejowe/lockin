@@ -215,3 +215,8 @@ Hallazgo menor: en Perfil, con `is_anonymous=false` y sin email en sesión, la t
 
 - `expo prebuild --platform ios --no-install` en Ubuntu genera `ios/cofounder/Info.plist`. Contiene **solo** `NSCameraUsageDescription` («cofounder necesita la cámara para hacerte la foto de perfil.») y `NSPhotoLibraryUsageDescription` (galería, foto de perfil). Sin micrófono ni Face ID. `NSAllowsArbitraryLoads = false`. `ITSAppUsesNonExemptEncryption` presente.
 - ⚠️ Decisión abierta: `expo-dev-client` deja `NSLocalNetworkUsageDescription` («Expo Dev Launcher uses the local network…») y `NSBonjourServices` en el plist de release, y `SYSTEM_ALERT_WINDOW` en el manifiesto Android. Quitarlo del build de tienda afecta a los builds E2E (que son release con dev-client). El workflow avisa de ello sin fallar y falla ante cualquier otro permiso `NS*UsageDescription`.
+
+## Web pública movida a `cofounder-web` (2026-10-18)
+
+- [x] **[Claude]** El repo `lockin` es privado y en el plan gratuito eso apagó GitHub Pages: todas las URLs de `thejowe.github.io/lockin/` daban 404. Decisión del usuario: un repo público aparte solo con la web. `thejowe/cofounder-web` (rama `main`, Pages desde la raíz) lleva lo que genera `node scripts/build-web.mjs` (`_site/`); responden 200 `/`, `/privacidad/`, `/terminos/`, `/soporte/` y `/eliminar-cuenta/`. Las URLs del repo (`LEGAL_BASE_URL`, fichas, cuestionario, textos legales) apuntan ya a `thejowe.github.io/cofounder-web`.
+- [ ] `pages.yml` sigue intentando publicar desde `lockin` y fallará mientras sea privado. Hasta automatizarlo (token con permiso sobre `cofounder-web`), al cambiar la web: `node scripts/build-web.mjs`, copiar `_site/` al clon de `cofounder-web`, commit y push.

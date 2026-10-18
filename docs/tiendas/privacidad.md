@@ -98,7 +98,7 @@ Cerrar sesión o desinstalar la app no borra los datos del servidor. Cerrar sesi
 
 Puedes editar tu perfil, quitar tu foto y desvincular GitHub (se retiran el distintivo y el enlace derivado). La app no permite editar ni borrar mensajes individuales.
 
-Puedes eliminar tu cuenta desde la app o pedirlo en cofounder.soporte@gmail.com o en https://thejowe.github.io/lockin/eliminar-cuenta; respondemos en un máximo de 30 días. Tienes además derecho de acceso, rectificación, supresión, oposición, limitación y portabilidad, que puedes ejercer por el mismo correo, y a reclamar ante la AEPD.
+Puedes eliminar tu cuenta desde la app o pedirlo en cofounder.soporte@gmail.com o en https://thejowe.github.io/cofounder-web/eliminar-cuenta; respondemos en un máximo de 30 días. Tienes además derecho de acceso, rectificación, supresión, oposición, limitación y portabilidad, que puedes ejercer por el mismo correo, y a reclamar ante la AEPD.
 
 ## 9. Menores
 
@@ -108,7 +108,7 @@ cofounder es para personas de **16 años o más**. La edad es autodeclarada y no
 
 El servidor aplica controles de acceso por cuenta y por pertenencia a un match. Las conexiones con nuestros proveedores usan TLS. No prometemos cifrado de extremo a extremo ni certificaciones de seguridad.
 
-Puedes **bloquear y reportar** a otra persona desde la app. Revisamos los reportes y actuamos sobre el contenido o las cuentas que incumplan las [normas de la comunidad](https://thejowe.github.io/lockin/normas) y los [términos de uso](https://thejowe.github.io/lockin/terminos). Nuestros estándares de seguridad infantil están en https://thejowe.github.io/lockin/seguridad-infantil.
+Puedes **bloquear y reportar** a otra persona desde la app. Revisamos los reportes y actuamos sobre el contenido o las cuentas que incumplan las [normas de la comunidad](https://thejowe.github.io/cofounder-web/normas) y los [términos de uso](https://thejowe.github.io/cofounder-web/terminos). Nuestros estándares de seguridad infantil están en https://thejowe.github.io/cofounder-web/seguridad-infantil.
 
 Si cambiamos esta política de forma relevante, lo avisaremos en la app y, si tienes email, por correo, al menos 30 días antes de que entre en vigor.
 

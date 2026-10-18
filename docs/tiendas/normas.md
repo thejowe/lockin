@@ -6,7 +6,7 @@
 
 **Fecha de la versión:** 14 de octubre de 2026
 
-cofounder conecta a personas para valorar si pueden fundar algo juntas. Para que sea un sitio seguro, estas normas valen en perfiles, fotos, respuestas, enlaces y mensajes. Forman parte de los [términos de uso](https://thejowe.github.io/lockin/terminos).
+cofounder conecta a personas para valorar si pueden fundar algo juntas. Para que sea un sitio seguro, estas normas valen en perfiles, fotos, respuestas, enlaces y mensajes. Forman parte de los [términos de uso](https://thejowe.github.io/cofounder-web/terminos).
 
 ## Tolerancia cero
 
@@ -38,7 +38,7 @@ La foto de perfil es opcional. Se revisa automáticamente antes de publicarse y 
 
 ## Seguridad infantil
 
-Tolerancia cero con el abuso y la explotación sexual infantil (CSAE). Cualquier contenido o conducta que ponga en riesgo a una persona menor se retira, se suspende la cuenta y se comunica a las autoridades competentes. Los detalles están en nuestros [estándares de seguridad infantil](https://thejowe.github.io/lockin/seguridad-infantil).
+Tolerancia cero con el abuso y la explotación sexual infantil (CSAE). Cualquier contenido o conducta que ponga en riesgo a una persona menor se retira, se suspende la cuenta y se comunica a las autoridades competentes. Los detalles están en nuestros [estándares de seguridad infantil](https://thejowe.github.io/cofounder-web/seguridad-infantil).
 
 ## Cómo bloquear y reportar
 

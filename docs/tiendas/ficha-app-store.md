@@ -48,10 +48,10 @@ socio,emprender,startup,emprendedor,cofundadora,proyecto,equipo,idea,negocio,col
 
 ## URLs
 
-- Política de privacidad: https://thejowe.github.io/lockin/privacidad
-- Soporte: https://thejowe.github.io/lockin/soporte
-- Términos de uso (EULA): https://thejowe.github.io/lockin/terminos
-- Normas de la comunidad: https://thejowe.github.io/lockin/normas
+- Política de privacidad: https://thejowe.github.io/cofounder-web/privacidad
+- Soporte: https://thejowe.github.io/cofounder-web/soporte
+- Términos de uso (EULA): https://thejowe.github.io/cofounder-web/terminos
+- Normas de la comunidad: https://thejowe.github.io/cofounder-web/normas
 
 ## Categoría
 
@@ -115,7 +115,7 @@ USER-GENERATED CONTENT (Guideline 1.2)
 - Account deletion: Profile > Account > Delete my account removes profile,
   matches, messages and photo.
 - Contact: cofounder.soporte@gmail.com. Child-safety standards:
-  https://thejowe.github.io/lockin/seguridad-infantil
+  https://thejowe.github.io/cofounder-web/seguridad-infantil
 
 PERMISSIONS
 - Camera / photo library: only to take or choose the optional profile photo.
@@ -137,5 +137,5 @@ Minimum age 16, self-declared.
 - **Bloquear, reportar perfiles y mensajes, aceptación de Términos y Normas, filtro, baja de cuenta:** implementados en el código (T3a, T3b). Las migraciones `20261014120000` (aceptación), `20261014130000` (reportar mensaje) y `20261014140000` (limpieza de fotos) están aplicadas en producción desde el 16-oct-2026. Falta probarlo todo contra Supabase real en la build final (T7).
 - **Capturas:** solo pantallas actuales (perfil, deck a pantalla completa, match, chat con sugerencias, GitHub verificado, bloqueo/reporte). Ninguna con temporizador, salas, vídeo o rachas (ya no existen en la app).
 - **Cuenta de revisión:** [cuenta de prueba: pendiente] con perfil completo y al menos un match con chat para que la revisión vea las funciones.
-- **URLs públicas (D08):** privacidad, términos, normas, seguridad infantil, soporte y eliminar cuenta en https://thejowe.github.io/lockin/… (`/privacidad`, `/terminos`, `/normas`, `/seguridad-infantil`, `/soporte`, `/eliminar-cuenta`) deben estar publicadas y funcionando antes de enviar [pendiente: fecha de publicación; no empujar `web/**` hasta cerrar marcadores].
+- **URLs públicas (D08):** privacidad, términos, normas, seguridad infantil, soporte y eliminar cuenta en https://thejowe.github.io/cofounder-web/… (`/privacidad`, `/terminos`, `/normas`, `/seguridad-infantil`, `/soporte`, `/eliminar-cuenta`) deben estar publicadas y funcionando antes de enviar [pendiente: fecha de publicación; no empujar `web/**` hasta cerrar marcadores].
 - Responsable (D01): Joel de Torres Sainz de la Maza, carrer Nou, 37, 25153 Lleida (España). DSA (Business → Compliance): **no trader** (decidido el 16-oct-2026: app gratuita, sin anuncios, compras ni ingresos); revisarlo si se monetiza. Contacto (D02): cofounder.soporte@gmail.com.

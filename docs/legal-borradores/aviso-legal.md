@@ -10,7 +10,7 @@ En cumplimiento del artículo 10 de la Ley 34/2002, de 11 de julio, de servicios
 - **NIF:** [PENDIENTE: NIF]
 - **Domicilio:** carrer Nou, 37, 25153 Lleida (Catalunya, España)
 - **Email de contacto:** cofounder.soporte@gmail.com
-- **Sitio web:** https://thejowe.github.io/lockin/
+- **Sitio web:** https://thejowe.github.io/cofounder-web/
 - **App:** cofounder (iOS y Android), identificador técnico `app.cofounder.mobile`
 
 El titular actúa como persona física (no como sociedad mercantil) en la explotación de este sitio y de la aplicación.
@@ -21,7 +21,7 @@ Este aviso regula el acceso y uso del sitio web y de la información asociada a 
 
 ## 3. Condiciones de uso
 
-El acceso al sitio es gratuito. Quien lo use se compromete a no emplearlo de forma ilícita, a no dañar sistemas ni a intentar acceder a datos ajenos. El uso de la app se rige además por los [Términos de uso](terminos.md), las [Normas de la comunidad](https://thejowe.github.io/lockin/normas/) y la [Política de privacidad](https://thejowe.github.io/lockin/privacidad/).
+El acceso al sitio es gratuito. Quien lo use se compromete a no emplearlo de forma ilícita, a no dañar sistemas ni a intentar acceder a datos ajenos. El uso de la app se rige además por los [Términos de uso](terminos.md), las [Normas de la comunidad](https://thejowe.github.io/cofounder-web/normas/) y la [Política de privacidad](https://thejowe.github.io/cofounder-web/privacidad/).
 
 ## 4. Propiedad intelectual
 
@@ -33,7 +33,7 @@ El titular procura que la información del sitio sea exacta y esté actualizada,
 
 ## 6. Protección de datos
 
-El tratamiento de datos personales se describe en la [Política de privacidad](https://thejowe.github.io/lockin/privacidad/).
+El tratamiento de datos personales se describe en la [Política de privacidad](https://thejowe.github.io/cofounder-web/privacidad/).
 
 ## 7. Legislación y jurisdicción
 

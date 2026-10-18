@@ -11,7 +11,7 @@ Fuente: [App Privacy Details](https://developer.apple.com/app-store/app-privacy-
 | ¿Recoge datos? | **Sí** |
 | ¿Tracking? | **No**. Sin SDK publicitario, IDFA ni intermediarios de datos. No hace falta ATT |
 | ¿Vinculados a la identidad? | **Sí** (el UUID de cuenta une perfil y actividad aunque la cuenta sea anónima) |
-| URL de privacidad | https://thejowe.github.io/lockin/privacidad (debe estar publicada) |
+| URL de privacidad | https://thejowe.github.io/cofounder-web/privacidad (debe estar publicada) |
 
 | Tipo de Apple | Datos | Vinculado | Finalidad |
 | --- | --- | --- | --- |
@@ -40,7 +40,7 @@ Fuente: [guía del formulario](https://support.google.com/googleplay/android-dev
 | ¿Cifrado en tránsito? | **Sí** (HTTPS/WSS a Supabase, HTTPS a Expo y OpenAI). Confirmar que la URL de Supabase de la build es `https://` |
 | Métodos de creación de cuenta | Usuario y contraseña (email), OAuth (GitHub, solo para verificar), Otros (anónima) |
 | ¿Eliminación de cuenta desde la app? | **Sí**: Perfil > Cuenta > Eliminar mi cuenta (aplicado en producción el 10-oct-2026 según D09; probar en la build final) |
-| URL web de eliminación | https://thejowe.github.io/lockin/eliminar-cuenta (obligatoria, debe funcionar sin instalar la app) |
+| URL web de eliminación | https://thejowe.github.io/cofounder-web/eliminar-cuenta (obligatoria, debe funcionar sin instalar la app) |
 | ¿Revisión de seguridad independiente? | No |
 
 | Categoría / tipo | Datos | Opcional | Finalidad |

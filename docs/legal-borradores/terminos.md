@@ -2,7 +2,7 @@
 
 **Entrada en vigor:** [fecha de publicación].
 
-Estos términos regulan el uso de la aplicación móvil cofounder y del sitio asociado https://thejowe.github.io/lockin/. Al crear una cuenta o usar la app, aceptas estos términos, las [Normas de la comunidad](https://thejowe.github.io/lockin/normas/) y la [Política de privacidad](https://thejowe.github.io/lockin/privacidad/).
+Estos términos regulan el uso de la aplicación móvil cofounder y del sitio asociado https://thejowe.github.io/cofounder-web/. Al crear una cuenta o usar la app, aceptas estos términos, las [Normas de la comunidad](https://thejowe.github.io/cofounder-web/normas/) y la [Política de privacidad](https://thejowe.github.io/cofounder-web/privacidad/).
 
 El responsable del servicio es **Joel de Torres Sainz de la Maza**, con domicilio en carrer Nou, 37, 25153 Lleida (España). Contacto: cofounder.soporte@gmail.com. Más datos en el [Aviso legal](aviso-legal.md).
 
