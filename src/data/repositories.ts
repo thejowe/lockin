@@ -13,6 +13,7 @@
 import type {
   AgreementAnswerInput,
   AgreementTopicView,
+  BoardPost,
   Decision,
   DecisionResult,
   LockInRoom,
@@ -48,6 +49,30 @@ export type Unsubscribe = () => void;
  * cada backend invente el suyo y la UI adivine cuál es cuál.
  */
 export const GITHUB_VERIFICATION_CANCELLED = 'Verificación cancelada.';
+
+/** Fotos como mucho en un tablón (lo fija también el servidor). */
+export const BOARD_MAX_POSTS = 12;
+
+/** Motivo por el que una foto del tablón no se ha publicado. */
+export type BoardRejectedReason = 'flagged' | 'invalid-image' | 'board-full' | 'unavailable';
+
+const BOARD_MESSAGES: Record<BoardRejectedReason, string> = {
+  flagged: 'Esta foto o su texto no cumplen las normas de la comunidad. Prueba con otra.',
+  'invalid-image': 'No hemos podido usar esa imagen. Prueba con otra foto.',
+  'board-full': `Tu tablón ya tiene ${BOARD_MAX_POSTS} fotos. Quita alguna para subir otra.`,
+  unavailable: 'No hemos podido revisar la foto ahora mismo. Inténtalo más tarde.',
+};
+
+/** La foto del tablón no se ha publicado. `message` ya está listo para enseñarse. */
+export class BoardRejectedError extends Error {
+  readonly reason: BoardRejectedReason;
+
+  constructor(reason: BoardRejectedReason) {
+    super(BOARD_MESSAGES[reason]);
+    this.name = 'BoardRejectedError';
+    this.reason = reason;
+  }
+}
 
 /** Igual que `GITHUB_VERIFICATION_CANCELLED`, para LinkedIn. */
 export const LINKEDIN_VERIFICATION_CANCELLED = 'Vinculación de LinkedIn cancelada.';
@@ -126,6 +151,21 @@ export interface ProfileRepository {
 
   /** Desvincula LinkedIn y apaga su sello. */
   unverifyLinkedin(): Promise<Profile>;
+
+  /**
+   * El tablón de `ownerId`, de lo más nuevo a lo más viejo. Vacío si no tiene
+   * fotos o si hay un bloqueo de por medio.
+   */
+  listBoard(ownerId: string): Promise<BoardPost[]>;
+
+  /**
+   * Sube una foto al tablón propio con su pie. Se publica solo si pasa la
+   * moderación del servidor; si no, lanza `BoardRejectedError` con el motivo.
+   */
+  addBoardPost(localUri: string, caption: string): Promise<BoardPost>;
+
+  /** Quita una foto del tablón propio. */
+  removeBoardPost(postId: string): Promise<void>;
 
   /**
    * Pone la foto de perfil propia a partir de un archivo local ya reducido

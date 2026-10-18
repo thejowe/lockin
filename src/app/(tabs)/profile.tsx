@@ -12,6 +12,7 @@ import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useQuery, useRepositories, type ProfileInput } from '@/data';
 import {
   AccountSection,
+  Board,
   GithubVerification,
   LegalLinks,
   LinkedinVerification,
@@ -173,6 +174,11 @@ export default function ProfileScreen() {
                 Para publicar una foto acepta antes los Términos y Normas: pulsa «Editar perfil».
               </ThemedText>
             ) : null}
+          </Animated.View>
+
+          {/* El tablón propio: fotos del trabajo y de una misma (2026-10-17). */}
+          <Animated.View entering={enterUp(2)}>
+            <Board ownerId={profile.id} ownerName={profile.name} editable />
           </Animated.View>
 
           <Animated.View entering={enterUp(2)}>

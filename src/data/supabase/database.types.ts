@@ -128,6 +128,15 @@ export type MessageInsert = Pick<MessageRow, 'match_id' | 'sender_id' | 'body'>;
 /** Fila de `public.terms_acceptances`. Solo se leen las propias. */
 export type TermsAcceptanceRow = { user_id: string; version: string; accepted_at: string };
 
+/** Fila de `public.board_posts` (tablón). Solo la escribe `moderate-board`. */
+export type BoardPostRow = {
+  id: string;
+  owner_id: string;
+  image_path: string;
+  caption: string;
+  created_at: string;
+};
+
 export type UserBlockRow = { blocker_id: string; blocked_id: string; created_at: string };
 /** Tipo SQL para el contrato; la base no concede SELECT a ningún cliente. */
 export type UserReportRow = {
@@ -237,6 +246,12 @@ export type MatchAgreementRow = {
 export type Database = {
   public: {
     Tables: {
+      board_posts: {
+        Row: BoardPostRow;
+        Insert: Record<string, never>;
+        Update: Record<string, never>;
+        Relationships: [];
+      };
       terms_acceptances: {
         Row: TermsAcceptanceRow;
         Insert: Record<string, never>;

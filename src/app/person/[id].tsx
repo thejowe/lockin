@@ -7,7 +7,7 @@ import { LoadingState, MessageState } from '@/components/state-view';
 import { ThemedText } from '@/components/themed-text';
 import { HitSlop, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useQuery, useRepositories } from '@/data';
-import { ProfileDetails, RequireVerifiedEmail } from '@/features/profile';
+import { Board, ProfileDetails, RequireVerifiedEmail } from '@/features/profile';
 import { useTheme } from '@/hooks/use-theme';
 
 /**
@@ -87,6 +87,7 @@ function Person() {
           style={{ backgroundColor: theme.background }}
           contentContainerStyle={[styles.content, { paddingBottom: Spacing.six + insets.bottom }]}>
           <ProfileDetails profile={profile} />
+          <Board ownerId={profile.id} ownerName={profile.name} />
         </ScrollView>
       )}
     </>

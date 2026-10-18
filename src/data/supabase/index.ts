@@ -48,6 +48,8 @@ import { subscribeResyncingOnRejoin } from './realtime';
 import { createSupabaseSessionRepository } from './sessions';
 import { GITHUB_VERIFICATION_CANCELLED, LINKEDIN_VERIFICATION_CANCELLED } from '../repositories';
 
+import { addBoardPost, listBoardPosts, removeBoardPost } from './board';
+
 import { deleteAvatar, uploadAvatar } from './avatar';
 import type { MatchRow, MessageRow, ProfileRow } from './database.types';
 import type { AvatarSigner } from './avatar-urls';
@@ -485,6 +487,21 @@ export function createSupabaseRepositories({
       const profile = await profiles.getCurrent();
       if (!profile) throw new Error('No hay perfil que desverificar todavía.');
       return profile;
+    },
+
+    async listBoard(ownerId) {
+      await getUserId();
+      return listBoardPosts(getClient(), ownerId);
+    },
+
+    async addBoardPost(localUri, caption) {
+      const userId = await getUserId();
+      return addBoardPost(getClient(), userId, localUri, caption);
+    },
+
+    async removeBoardPost(postId) {
+      await getUserId();
+      await removeBoardPost(getClient(), postId);
     },
 
     async verifyLinkedin() {

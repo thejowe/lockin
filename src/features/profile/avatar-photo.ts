@@ -23,7 +23,14 @@ const OPTIONS: ImagePicker.ImagePickerOptions = {
   quality: 1,
 };
 
-export async function pickAvatarPhoto(source: 'library' | 'camera'): Promise<PickedPhoto> {
+/**
+ * `aspect`: el recorte. 4:5 para la foto de perfil (la tarjeta del deck); el
+ * tablón usa 1:1 (2026-10-17).
+ */
+export async function pickAvatarPhoto(
+  source: 'library' | 'camera',
+  aspect: [number, number] = [4, 5]
+): Promise<PickedPhoto> {
   const permission =
     source === 'camera'
       ? await ImagePicker.requestCameraPermissionsAsync()
@@ -32,8 +39,8 @@ export async function pickAvatarPhoto(source: 'library' | 'camera'): Promise<Pic
 
   const result =
     source === 'camera'
-      ? await ImagePicker.launchCameraAsync(OPTIONS)
-      : await ImagePicker.launchImageLibraryAsync(OPTIONS);
+      ? await ImagePicker.launchCameraAsync({ ...OPTIONS, aspect })
+      : await ImagePicker.launchImageLibraryAsync({ ...OPTIONS, aspect });
   const asset = result.canceled ? null : result.assets[0];
   if (!asset) return { status: 'cancelled' };
 

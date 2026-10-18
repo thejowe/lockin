@@ -19,6 +19,7 @@ import {
 import { SEED_RECIPROCAL_IDS } from './seed';
 import { createMockRoomRepository, roomsTopic } from './rooms';
 import { createMockSessionRepository } from './sessions';
+import { BOARD_MAX_POSTS, BoardRejectedError } from '../repositories';
 import { REPORT_MAX_LENGTH, REPORT_REASONS } from '../types';
 
 import type { MockStore } from './store';
@@ -32,6 +33,7 @@ import type {
   SessionRepository,
 } from '../repositories';
 import type {
+  BoardPost,
   Decision,
   DecisionResult,
   Match,
@@ -354,6 +356,40 @@ export function createMockRepositories(
 
       state.profiles.set(profile.id, profile);
       return profile;
+    },
+
+    async listBoard(ownerId) {
+      if (ownerId !== actorId && isBlocked(actorId, ownerId)) return [];
+      return getState()
+        .boardPosts.filter((post) => post.ownerId === ownerId)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    },
+
+    /** Sin moderación: en el mock la foto se publica tal cual, con su URI local. */
+    async addBoardPost(localUri, caption) {
+      const existing = currentProfile();
+      if (!existing) throw new Error('No hay perfil al que añadir fotos todavía.');
+      const mine = getState().boardPosts.filter((post) => post.ownerId === existing.id);
+      if (mine.length >= BOARD_MAX_POSTS) throw new BoardRejectedError('board-full');
+      const trimmed = caption.trim();
+      if (trimmed.length > 280) throw new BoardRejectedError('flagged');
+
+      const post: BoardPost = {
+        id: createId('board'),
+        ownerId: existing.id,
+        imageUrl: localUri,
+        caption: trimmed,
+        createdAt: nowIso(),
+      };
+      getState().boardPosts.push(post);
+      return post;
+    },
+
+    async removeBoardPost(postId) {
+      const state = getState();
+      const post = state.boardPosts.find((entry) => entry.id === postId);
+      if (!post || post.ownerId !== actorId) throw new Error('Esa foto no está en tu tablón.');
+      state.boardPosts = state.boardPosts.filter((entry) => entry.id !== postId);
     },
 
     /** Simulación, como `verifyGithub()`: el nombre del perfil hace de cuenta de LinkedIn. */

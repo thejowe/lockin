@@ -1131,8 +1131,8 @@ describe('deleteMyAccount', () => {
     const order: string[] = [];
     const other = {
       functions: {
-        invoke: jest.fn(async () => {
-          order.push('foto');
+        invoke: jest.fn(async (name: string) => {
+          order.push(name === 'moderate-board' ? 'tablón' : 'foto');
           return { data: null, error: new Error('función caída') };
         }),
       },
@@ -1150,7 +1150,10 @@ describe('deleteMyAccount', () => {
     expect(other.functions.invoke).toHaveBeenCalledWith('moderate-avatar', {
       body: { action: 'remove' },
     });
-    expect(order).toEqual(['foto', 'rpc']);
+    expect(other.functions.invoke).toHaveBeenCalledWith('moderate-board', {
+      body: { action: 'remove-all' },
+    });
+    expect(order).toEqual(['foto', 'tablón', 'rpc']);
   });
 
   it('si el servidor falla no toca la sesión local', async () => {

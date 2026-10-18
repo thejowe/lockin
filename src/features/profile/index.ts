@@ -7,6 +7,7 @@
 
 export * from './catalog';
 export { AccountSection } from './account-section';
+export { Board } from './board';
 export { AuthCallback, authLinkFromParams } from './auth-callback';
 export { DayStrip, timezoneCity, type DaySchedule } from './day-strip';
 export { GithubSeal } from './github-seal';

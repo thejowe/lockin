@@ -387,6 +387,16 @@ Decisión del usuario: al abrir por primera vez, el logo de cofounder en grande 
 - [x] **`codex review`** (dos pasadas, solo lectura). Cinco hallazgos, todos corregidos con test: (1) la contraseña pendiente no tenía dueño → se guarda con el `auth.uid()` y una ajena se borra al leerla; (2) un usuario legado con perfil que asciende volvía del correo a `/profile` sin aplicarla → el callback va a `/register` si hay una pendiente; (3) confirmar fuera de la app y volver por el icono saltaba a `/profile-form` → `/` manda a `/register` con la puerta abierta y una pendiente; (4) si `SecureStore` fallaba al guardar la nueva, la vieja seguía en disco → se borra; (5) si la sesión cambiaba de cuenta durante la petición, `updateUser` escribía en la nueva → `setAccountPassword(password, expectedUserId)` comprueba la cuenta al leer el estado y justo antes de escribir. Además, entrar con «Iniciar sesión» borra cualquier contraseña pendiente.
 - [ ] Comprobación en dispositivo: la hace el usuario (decisión del 2026-10-17), no el `comprobador`.
 
+## Tablón personal (2026-10-17)
+
+Decisión del usuario: en el perfil, un pequeño tablón donde subir fotos del trabajo o más fotos de una misma, visible al abrir el perfil de otra persona.
+
+- [x] **[Claude]** Migración `20261017130000_board_posts.sql`: `board_posts` (dueño, ruta `<uid>/<uuid>.jpg`, pie ≤ 280), solo SELECT para `authenticated` con RLS que esconde lo de alguien con bloqueo (`has_profile_block`); tope de 12 por trigger con candado por dueño (`LI010`); bucket privado `board` que solo firma lo que tiene fila; `delete_my_account` borra también `board`. Tests en PGlite.
+- [x] **[Claude]** Edge Function `moderate-board` (`logic.mjs` con tests, reutiliza la de `moderate-avatar`): `add` modera foto y pie juntos con OpenAI y publica; `remove` (archivo y luego fila); `remove-all` (lo llama «Eliminar mi cuenta» antes del RPC). Umbral propio de `sexual/minors` (0,01) porque con texto nunca es cero exacto.
+- [x] **[Claude]** Cliente: `src/data/supabase/board.ts`, mock, `ProfileRepository.listBoard/addBoardPost/removeBoardPost`, `BoardRejectedError`. UI `board.tsx`: rejilla 3 × N, visor en grande, «Añadir una foto» (recorte 1:1, pie opcional, filtro de contenido) y «Quitar esta foto»; en la tab Perfil (editable) y en `/person/[id]`. Se refresca cada 45 min (URLs firmadas de 1 h).
+- [x] **`codex review`** (dos pasadas): siete hallazgos corregidos con test (umbral de texto, carrera del tope, huérfano al quitar, bytes tras borrar cuenta, URLs sin renovar, mock que no borraba, tests de `deleteMyAccount`).
+- [ ] Comprobación en dispositivo: el usuario.
+
 ## Ver el perfil de otra persona y apps conectadas (2026-10-17)
 
 - [x] **[Claude]** `ConnectedApps` (`connected-apps.tsx`): las redes como logos SVG propios (GitHub, LinkedIn, Instagram, TikTok, web) que abren la cuenta con `Linking.openURL` (la app nativa si está instalada); solo `http(s)`. Sustituye a la lista de enlaces de `ProfileDetails`.

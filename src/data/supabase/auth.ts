@@ -861,6 +861,12 @@ export async function deleteMyAccount(client?: LockInSupabaseClient): Promise<vo
   // se borra por la API (la función) y antes de que la sesión deje de valer.
   // Mejor esfuerzo: un archivo huérfano es el mal menor, y no debe impedir borrar.
   await deleteAvatar(target).catch(() => undefined);
+  // Igual con las fotos del tablón: el SQL borra filas y metadatos, no los bytes.
+  // Dentro de una promesa: un cliente sin `functions` (o que lance al llamarlo)
+  // tampoco puede impedir el borrado.
+  await Promise.resolve()
+    .then(() => target.functions.invoke('moderate-board', { body: { action: 'remove-all' } }))
+    .catch(() => undefined);
 
   const { error } = await target.rpc('delete_my_account');
   if (error) throw toAccountError(error);

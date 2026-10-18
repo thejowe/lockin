@@ -1026,6 +1026,55 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
     assert.equal(apagado.rows[0].github_verified_at, null);
     assert.equal(apagado.rows[0].link_github, null);
     await db.exec('reset role');
+    // Tablón (`20261017130000`): solo la función (service role) escribe; el
+    // cliente lee. La ruta es la del dueño y el pie tiene tope.
+    await db.exec(`insert into public.board_posts (owner_id, image_path, caption)
+      values ('${ana}', '${ana}/p1.jpg', 'Mi primer prototipo');`);
+    await rechaza(
+      `insert into public.board_posts (owner_id, image_path) values ('${ana}', 'otra/p2.jpg');`,
+      /board_posts_image_path_check/,
+      'la foto del tablón vive en la carpeta de su dueño'
+    );
+    await rechaza(
+      `insert into public.board_posts (owner_id, image_path, caption)
+        values ('${ana}', '${ana}/p3.jpg', repeat('x', 281));`,
+      /board_posts_caption_check/,
+      'el pie tiene tope de 280'
+    );
+    // El tope de 12 lo pone la base, no solo la función: el 13.º no entra.
+    await db.exec(`insert into public.board_posts (owner_id, image_path)
+      select '${ana}', '${ana}/lleno' || g || '.jpg' from generate_series(2, 12) g;`);
+    await rechaza(
+      `insert into public.board_posts (owner_id, image_path) values ('${ana}', '${ana}/trece.jpg');`,
+      /12 fotos/,
+      'el tablón no pasa de 12 fotos'
+    );
+    await db.exec(`delete from public.board_posts where image_path like '${ana}/lleno%';`);
+    await db.exec('set local role authenticated');
+    const tablon = await db.query(
+      `select caption from public.board_posts where owner_id = '${ana}';`
+    );
+    assert.deepEqual(
+      tablon.rows.map((r) => r.caption),
+      ['Mi primer prototipo'],
+      'el dueño ve su tablón'
+    );
+    await rechaza(
+      `insert into public.board_posts (owner_id, image_path) values ('${ana}', '${ana}/p4.jpg');`,
+      /permission denied|no privileges/i,
+      'el cliente no publica en el tablón sin pasar por la moderación'
+    );
+    await rechaza(
+      `update public.board_posts set caption = 'cambiado' where owner_id = '${ana}';`,
+      /permission denied|no privileges/i,
+      'ni cambia el pie a mano'
+    );
+    await rechaza(
+      `delete from public.board_posts where owner_id = '${ana}';`,
+      /permission denied|no privileges/i,
+      'ni borra por su cuenta: quitar también pasa por la función'
+    );
+    await db.exec('reset role');
     // Un sello a medias no debe poder existir ni desde postgres.
     await rechaza(
       `update public.profiles set github_handle = 'solo-handle' where id = '${ana}';`,

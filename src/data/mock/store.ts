@@ -15,6 +15,7 @@ import { SEED_PROFILES, SEED_RECIPROCAL_IDS } from './seed';
 
 import type { StoredAgreementAnswer } from '../agreement';
 import type {
+  BoardPost,
   Decision,
   LockInRoom,
   LockInSession,
@@ -60,6 +61,8 @@ export interface MockState {
   userBlocks: Map<string, Set<string>>;
   /** Aceptaciones de Términos por persona: versión → fecha ISO. */
   termsAcceptances: Map<string, Map<string, string>>;
+  /** Tablones personales. En el mock no hay moderación: se publica tal cual. */
+  boardPosts: BoardPost[];
   /**
    * Almacén privado; no se expone ningún método de lectura de reportes.
    *
@@ -102,6 +105,7 @@ function initialState(): MockState {
     actorDecisions: new Map(),
     userBlocks: new Map(),
     termsAcceptances: new Map(),
+    boardPosts: [],
     userReports: [],
   };
 }
@@ -217,6 +221,7 @@ export function createMockStore(): MockStore {
       );
 
       state.profiles.delete(userId);
+      state.boardPosts = state.boardPosts.filter((post) => post.ownerId !== userId);
       state.actorSessions.delete(userId);
       state.actorDecisions.delete(userId);
       for (const decisions of state.actorDecisions.values()) decisions.delete(userId);

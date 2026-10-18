@@ -118,6 +118,21 @@ export interface LinkedinVerification {
   verifiedAt: string;
 }
 
+/**
+ * Una foto del tablón personal (2026-10-17): el trabajo de la persona, más
+ * fotos suyas. Solo se publica tras la moderación del servidor
+ * (`moderate-board`); el cliente no escribe ninguna directamente.
+ */
+export interface BoardPost {
+  id: string;
+  ownerId: string;
+  /** URL firmada y temporal (Supabase) o URI local (mock). No guardarla. */
+  imageUrl: string | null;
+  /** Pie de foto, hasta 280 caracteres. Puede ir vacío. */
+  caption: string;
+  createdAt: string;
+}
+
 /** Respuesta corta de texto libre, estilo Hinge. Es lo que hace el perfil "swipeable". */
 export interface ProfilePrompt {
   /** La pregunta mostrada, p. ej. "Lo que quiero construir es…". */
