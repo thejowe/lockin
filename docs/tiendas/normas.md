@@ -2,11 +2,11 @@
 
 > Documento redactado el 14 de octubre de 2026 a partir de las normas que ya publicaba la web. La versión y la fecha son las que registrará la aceptación dentro de la app.
 
-**Versión:** 1.0
+**Versión:** 1.1
 
-**Fecha de la versión:** 14 de octubre de 2026
+**Fecha de la versión:** 18 de octubre de 2026
 
-cofounder conecta a personas para valorar si pueden fundar algo juntas. Para que sea un sitio seguro, estas normas valen en perfiles, fotos, respuestas, enlaces y mensajes. Forman parte de los [términos de uso](https://thejowe.github.io/cofounder-web/terminos).
+cofounder conecta a personas para valorar si pueden fundar algo juntas. Para que sea un sitio seguro, estas normas valen en perfiles, fotos, tablones, respuestas, enlaces y mensajes. Forman parte de los [términos de uso](https://thejowe.github.io/cofounder-web/terminos).
 
 ## Tolerancia cero
 
@@ -34,7 +34,7 @@ Hay que tener 16 años o más. Eliminamos las cuentas de personas menores de esa
 
 ## Fotos
 
-La foto de perfil es opcional. Se revisa automáticamente antes de publicarse y no se publica si no supera esa revisión o si no se puede hacer. Solo puedes subir una foto tuya o sobre la que tengas permiso.
+La foto de perfil y las fotos del tablón son opcionales. Se revisan automáticamente antes de publicarse, junto con el texto de cada foto del tablón, y no se publican si no superan esa revisión o si no se puede hacer. Solo puedes subir fotos tuyas o sobre las que tengas permiso, y en el tablón no muestres a otras personas sin su permiso.
 
 ## Seguridad infantil
 
@@ -42,7 +42,7 @@ Tolerancia cero con el abuso y la explotación sexual infantil (CSAE). Cualquier
 
 ## Cómo bloquear y reportar
 
-Desde el perfil de cualquier persona, en el deck o en el chat, puedes **bloquearla** (deja de poder verte y escribirte) o **reportarla**, eligiendo un motivo y, si quieres, añadiendo un texto. También puedes escribirnos a cofounder.soporte@gmail.com.
+Desde el perfil de cualquier persona, en el deck o en el chat, puedes **bloquearla** (deja de poder verte y escribirte) o **reportarla**, eligiendo un motivo y, si quieres, añadiendo un texto. En el chat también puedes reportar un mensaje concreto. También puedes escribirnos a cofounder.soporte@gmail.com.
 
 ## Qué hacemos con un reporte
 
@@ -58,5 +58,5 @@ Si estás en peligro inmediato, llama al 112. Si eres menor y necesitas ayuda, e
 Nota editorial, a retirar del texto publicado:
 
 - Los plazos de 72 h y 24 h son un compromiso operativo del responsable (D11), no una regla del código. La conservación de 12 meses sí la impone `purge_old_user_reports()`.
-- Reportar existe para perfiles (`report_profile`); no existe reportar un mensaje concreto aún (T3b). Por eso el texto habla de reportar a una persona.
+- Reportar existe para perfiles (`report_profile`) y, desde el 14-oct, para un mensaje concreto (`report_message`, `message-report-panel.tsx`).
 - El bloqueo funciona en las dos direcciones: comprobado en `has_profile_block` (20261009224000).

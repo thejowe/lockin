@@ -86,7 +86,7 @@ Fuente: [guía del formulario](https://support.google.com/googleplay/android-dev
 | Baja de cuenta en la app (Apple 5.1.1(v), Google) | Implementada: `delete_my_account()` + borrado previo de la foto; botón en Perfil > Cuenta. Aplicada en producción según D09; el borrado de fotos en servidor (`20261014140000`) se aplicó el 16-oct | Probar en la build final (T7), incluido que `storage.protect_delete` no bloquee el borrado y que la foto ya no se pueda firmar ni abrir |
 | Bloquear y reportar **perfiles** y **mensajes** (Apple 1.2, UGC de Google) | Implementado en el código: `block_profile()`, `report_profile()`, `report_message` (panel de reporte de mensaje en el chat; migración `20261014130000`) | **Migración sin aplicar en producción**; probar en la build (T7) |
 | Filtrado de contenido objetable (Apple 1.2) | Filtro básico es/en en cliente para bio, textos de perfil y mensajes (`src/features/safety/content-filter.ts`) + fotos moderadas con OpenAI en servidor + revisión de reportes | Describirlo como complemento, no como moderación completa (ver notas de revisor) |
-| Aceptación de Términos y Normas antes de publicar (Apple 1.2) | Implementada: pantalla de aceptación con versión y fecha (`TERMS_VERSION` = 2026-10-14), puerta en onboarding, chat y foto; enlaces legales en Perfil | **Migración `20261014120000` sin aplicar en producción**; la puerta del servidor aún no existe (solo cliente, decisión 9) |
+| Aceptación de Términos y Normas antes de publicar (Apple 1.2) | Implementada: pantalla de aceptación con versión y fecha (`TERMS_VERSION` = 2026-10-18), puerta en onboarding, chat y foto; enlaces legales en Perfil | **Migración `20261014120000` sin aplicar en producción**; la puerta del servidor aún no existe (solo cliente, decisión 9) |
 | Política y normas públicas, enlace en la app | Páginas generadas por `scripts/build-web.mjs` (privacidad, términos, normas, seguridad infantil, soporte, eliminar cuenta); enlaces en Perfil | Publicar en Pages tras cerrar los marcadores [pendiente: fecha de publicación] |
 | Seguridad infantil (Google, categoría Social) | Estándares publicados en `/seguridad-infantil/` (CSAE, vía de reporte, contacto) | Completar la declaración en Play Console [pendiente: el titular acepta ser contacto designado] |
 | Cadenas de permisos coherentes (Apple 5.1.1) | **Resuelto en T5:** solo cámara y galería, con textos de foto de perfil; sin micrófono | Verificar el manifiesto del AAB y el Info.plist de la build (T7) |
@@ -94,10 +94,10 @@ Fuente: [guía del formulario](https://support.google.com/googleplay/android-dev
 
 ## Marcadores abiertos (dependen del usuario)
 
-- [pendiente: fecha de publicación] — en privacidad, términos y normas.
+- ~~fecha de publicación~~ — 18-oct-2026 en privacidad, términos y normas (publicadas en `cofounder-web`).
 - ~~proveedor SMTP~~ — Brevo (decidido el 16-oct-2026), ya nombrado en la sección 5 de privacidad y en D05. [pendiente: configurarlo en Supabase Auth → SMTP]; hasta entonces aplica el límite de correo de Supabase por defecto.
 - ~~trader (DSA)~~ — no trader en Apple y Google (decidido el 16-oct-2026). [pendiente: NIF del titular persona física] solo para el aviso legal (LSSI art. 10); nunca en el repo, que es público.
-- [pendiente: DPA y condiciones de OpenAI] — retención, uso para entrenamiento y si actúa como encargado; no afirmar nada hasta confirmarlo. De ello depende marcar Fotos como «compartidas» en Google.
+- ~~DPA y condiciones de OpenAI~~ — 18-oct-2026: la política cita el DPA como parte de las condiciones de la API (incorporado por referencia); conviene además firmar el formulario de DPA de OpenAI. De ello depende marcar Fotos como «compartidas» en Google.
 - ~~categoría secundaria de App Store~~ — Negocios (decidido el 16-oct-2026).
 - [pendiente: cuenta de prueba] — credenciales para el revisor de Apple.
 - Migraciones `20261014120000`, `20261014130000` y `20261014140000` aplicadas en producción el 16-oct-2026; `moderate-avatar` v2 ya estaba desplegada y coincide con el código del repo (cotejado el 16-oct: `index.ts` y `logic.mjs` sin cambios desde su despliegue).

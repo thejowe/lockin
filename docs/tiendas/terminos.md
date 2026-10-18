@@ -2,11 +2,11 @@
 
 > Documento redactado el 14 de octubre de 2026 para su revisión por el responsable antes de publicarlo. No es asesoramiento legal: conviene que lo revise una persona con formación jurídica. La versión y la fecha de este texto son las que registrará la aceptación dentro de la app.
 
-**Versión:** 1.0
+**Versión:** 1.1
 
-**Fecha de la versión:** 14 de octubre de 2026
+**Fecha de la versión:** 18 de octubre de 2026
 
-**Entrada en vigor:** [fecha de publicación — pendiente de fijar al publicar].
+**Entrada en vigor:** 18 de octubre de 2026.
 
 ## 1. Qué es cofounder y quién lo ofrece
 
@@ -31,14 +31,14 @@ Debes tener **16 años o más**. La edad es autodeclarada. Si indicas una edad q
 
 - Eres responsable de la actividad de tu cuenta y de la veracidad de la información de tu perfil.
 - Solo puedes tener una cuenta activa para ti. No puedes crear perfiles falsos ni suplantar a nadie.
-- Una cuenta creada sin email se pierde si cierras sesión o desinstalas la app. Añadir y confirmar un email permite recuperarla.
+- Una cuenta creada sin email se pierde si cierras sesión o desinstalas la app. Añadir y confirmar un email permite recuperarla. Una cuenta creada con Google o Apple se recupera entrando otra vez con ese mismo servicio.
 - Puedes eliminar tu cuenta cuando quieras desde Perfil > Cuenta > Eliminar mi cuenta, o siguiendo las instrucciones de https://thejowe.github.io/cofounder-web/eliminar-cuenta.
 
 ## 5. Contenido que publicas
 
-Eres responsable de lo que publicas: perfil, foto, respuestas, enlaces y mensajes. Nos concedes el permiso, no exclusivo y limitado a lo necesario para prestar el servicio, de almacenar y mostrar ese contenido a otras personas de la app según se describe en la política de privacidad. Conservas los derechos sobre tu contenido, y no puedes publicar contenido del que no seas titular o sobre el que no tengas permiso.
+Eres responsable de lo que publicas: perfil, foto, fotos y textos del tablón, respuestas, enlaces y mensajes. Nos concedes el permiso, no exclusivo y limitado a lo necesario para prestar el servicio, de almacenar y mostrar ese contenido a otras personas de la app según se describe en la política de privacidad. Conservas los derechos sobre tu contenido, y no puedes publicar contenido del que no seas titular o sobre el que no tengas permiso.
 
-Tu perfil, incluida la foto aprobada, puede verlo cualquier persona con cuenta en la app. Las conversaciones solo las ven las dos personas del match.
+Tu perfil, incluidos la foto aprobada, el tablón y tus enlaces, puede verlo cualquier persona con cuenta en la app. Las conversaciones solo las ven las dos personas del match.
 
 ## 6. Conducta y tolerancia cero
 
@@ -59,7 +59,7 @@ El detalle está en las [normas de la comunidad](https://thejowe.github.io/cofou
 
 - Puedes **bloquear** y **reportar** a cualquier persona desde la app.
 - Revisamos los reportes y podemos retirar contenido, avisar, suspender o eliminar cuentas, sin previo aviso cuando la gravedad lo justifique.
-- Las fotos de perfil se revisan automáticamente antes de publicarse con un servicio de un tercero. Si no se puede revisar o no supera la revisión, no se publica.
+- Las fotos de perfil y las del tablón, con su texto, se revisan automáticamente antes de publicarse con un servicio de un tercero. Si no se pueden revisar o no superan la revisión, no se publican.
 - Podemos comunicar a las autoridades competentes los contenidos y conductas que lo exijan, en especial los que afecten a menores.
 
 ## 8. «GitHub verificado»
@@ -95,5 +95,5 @@ Para cualquier duda o aviso sobre estos términos: cofounder.soporte@gmail.com.
 Nota editorial, a retirar del texto publicado:
 
 - Cotejado con el código el 14-oct-2026: edad mínima 16 (restricción SQL 16-120 y formulario 16-99); bloquear y reportar perfiles existen (`block_profile`, `report_profile`); la foto se modera con OpenAI en la función `moderate-avatar`; el perfil lo lee cualquier cuenta autenticada.
-- **Aún no implementado en la app:** la aceptación obligatoria de estos términos con versión y fecha (tarea T3a) y el reporte de un mensaje concreto (T3b). El texto de §12 describe lo que la app hará; no publicar antes de que exista.
-- Pendiente de revisión jurídica y de fijar la fecha de entrada en vigor. No se incluye ningún precio ni plan de pago porque no existen.
+- 18-oct-2026: versión 1.1 (tablón, enlaces y acceso con Google o Apple). La aceptación con versión y fecha ya existe (`TERMS_VERSION`, `accept_terms`); al subir la versión todo el mundo vuelve a aceptar. El reporte de un mensaje concreto también existe (`report_message`, 20261014130000).
+- Pendiente de revisión jurídica. No se incluye ningún precio ni plan de pago porque no existen.

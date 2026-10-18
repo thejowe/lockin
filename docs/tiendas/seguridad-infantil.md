@@ -16,7 +16,7 @@ cofounder es para personas de **16 años o más**. La edad es autodeclarada: no 
 
 ## Qué prohibimos
 
-- Cualquier contenido que sexualice a menores o represente abuso o explotación sexual infantil, en perfiles, fotos, enlaces o mensajes.
+- Cualquier contenido que sexualice a menores o represente abuso o explotación sexual infantil, en perfiles, fotos, tablones, enlaces o mensajes.
 - Captar, contactar o intentar contactar con una persona menor con fines sexuales o de explotación.
 - Pedir, compartir o ofrecer material de este tipo.
 
@@ -24,7 +24,7 @@ El incumplimiento supone la retirada inmediata del contenido y la eliminación d
 
 ## Cómo prevenimos
 
-- Las fotos de perfil se revisan automáticamente antes de publicarse. La revisión rechaza las imágenes con contenido sexual o con indicios de contenido sexual con menores y, si no puede hacerse, la foto no se publica.
+- Las fotos de perfil y las del tablón se revisan automáticamente antes de publicarse. La revisión rechaza las imágenes con contenido sexual o con indicios de contenido sexual con menores y, si no puede hacerse, la foto no se publica.
 - El chat solo se abre entre dos personas tras un match mutuo.
 - Cualquier persona puede bloquear a otra: el bloqueo impide verse y escribirse en las dos direcciones.
 - Las [normas de la comunidad](https://thejowe.github.io/cofounder-web/normas) y los [términos de uso](https://thejowe.github.io/cofounder-web/terminos) prohíben este contenido de forma expresa.
