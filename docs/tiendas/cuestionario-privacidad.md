@@ -96,8 +96,8 @@ Fuente: [guía del formulario](https://support.google.com/googleplay/android-dev
 
 - ~~fecha de publicación~~ — 18-oct-2026 en privacidad, términos y normas (publicadas en `cofounder-web`).
 - ~~proveedor SMTP~~ — Brevo (decidido el 16-oct-2026), ya nombrado en la sección 5 de privacidad y en D05. [pendiente: configurarlo en Supabase Auth → SMTP]; hasta entonces aplica el límite de correo de Supabase por defecto.
-- ~~trader (DSA)~~ — no trader en Apple y Google (decidido el 16-oct-2026). [pendiente: NIF del titular persona física] solo para el aviso legal (LSSI art. 10); nunca en el repo, que es público.
-- ~~DPA y condiciones de OpenAI~~ — 18-oct-2026: la política cita el DPA como parte de las condiciones de la API (incorporado por referencia); conviene además firmar el formulario de DPA de OpenAI. De ello depende marcar Fotos como «compartidas» en Google.
+- ~~trader (DSA)~~ — no trader en Apple y Google (decidido el 16-oct-2026). Sin NIF publicado (20-oct-2026): el titular no lo aporta y no se publica aviso legal con NIF mientras la app sea gratuita y sin actividad económica; confirmarlo en la revisión jurídica de `terminos.md` y reabrir si se monetiza. Si algún día se publica, el NIF nunca entra en el repo, que es público.
+- ~~DPA y condiciones de OpenAI~~ — 18-oct-2026: la política cita el DPA como parte de las condiciones de la API (incorporado por referencia); el titular firmó además el DPA de OpenAI por el formulario de Ironclad el 20-oct-2026 (titular persona física, entidad contratante OpenAI Ireland por estar en el EEE). De ello dependía marcar Fotos como «compartidas» en Google: ya se puede.
 - ~~categoría secundaria de App Store~~ — Negocios (decidido el 16-oct-2026).
 - [pendiente: cuenta de prueba] — credenciales para el revisor de Apple.
 - Migraciones `20261014120000`, `20261014130000` y `20261014140000` aplicadas en producción el 16-oct-2026; `moderate-avatar` v2 ya estaba desplegada y coincide con el código del repo (cotejado el 16-oct: `index.ts` y `logic.mjs` sin cambios desde su despliegue).

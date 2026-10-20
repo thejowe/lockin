@@ -1,5 +1,16 @@
 # TODO maestro — LockIn MVP
 
+## ▶ Al retomar (2026-10-20, noche): lista de pendientes del usuario — qué está HECHO y qué no repetir
+
+**No volver a proponer lo marcado como hecho.** Detalle de SMTP en la memoria `brevo-smtp-535-bloqueo-ip`.
+
+- **NIF (punto 3): cerrado.** El titular no aporta NIF; no hay aviso legal con NIF mientras la app sea gratuita y sin actividad económica (decidido 2026-10-20; no es asesoramiento jurídico: confirmarlo en la revisión de `terminos.md`, punto 8). El NIF **no** va a las tiendas: Apple y Google están declaradas *no trader*. Marcador cerrado en `docs/tiendas/cuestionario-privacidad.md`.
+- **DPA de OpenAI (punto 4): hecho y firmado el 2026-10-20.** `privacy.openai.com` no sirve (excluye la API); se firma por el formulario de Ironclad enlazado desde la página del DPA de OpenAI. Org «Personal», titular persona física, Lleida, España, EEE = sí, entidad contratante OpenAI Ireland (esto último no se verificó en el contrato firmado). No repetir el formulario. Con ello ya se puede marcar *Fotos* como «compartidas» en Google.
+- **SMTP Brevo (punto 2): NO está resuelto, esperando a Brevo.** Hecho: SMTP configurado en Supabase (host `smtp-relay.brevo.com`, 587, login `bf38e3001@smtp-brevo.com`), bloqueo de IP para claves SMTP desactivado en Brevo, clave `supabase2.0` guardada. Sigue el `535 Authentication failed` en `POST /auth/v1/signup`; las claves salen con «Utilizado por última vez: --». Hipótesis: SMTP sin activar en la cuenta. **Ticket abierto en soporte de Brevo: 5628409** (https://help.brevo.com/hc/es/requests/5628409). Al retomar: ver si contestó y repetir el alta de prueba con `joeldetorres123+brevotestN@gmail.com` (las 5 pruebas fallidas no dejaron usuarios en `auth.users`). Pendiente aparte: el remitente es un Gmail, hace falta dominio propio con DKIM/DMARC antes de lanzar (el usuario tiene un dominio de una web anterior, sin decidir si usarlo o un subdominio); Resend queda como alternativa. Las claves las pega siempre el usuario.
+- **Cuentas de desarrollador de Apple y Google:** el usuario ya está pasando la verificación; no preocuparse de ellas.
+- **Pendientes (no hechos), por orden:** 5 cuenta de prueba de Apple (con `comprobador`, mejor tras el SMTP por el límite de correo); 6 categoría secundaria de App Store; 7 declaración de seguridad infantil en Play Console; 8 revisión jurídica de `terminos.md` (subir `TERMS_VERSION` si cambia su fecha); 9 fecha de publicación.
+- **Sin commitear y ajeno a esto:** `src/features/discover/action-button.tsx`, `src/features/discover/use-deck.test.tsx` y `docs/plan/todo/foto-perfil.md`.
+
 ## ▶ Al retomar (2026-10-16, cierre de sesión): `tiendas-cumplimiento` hecho; solo quedan datos y decisiones del usuario
 
 **Estado:** todo empujado (`c5829d9`); CI, Schema drift, E2E Android, Web pública e Info.plist iOS verdes sobre `235ded6`. Producción limpia (15 perfiles, 3 matches, 1 `user_reports`, 0 objetos de fotos, 0 cuentas de prueba, Lock-In de prueba borrado). Migraciones `20261014120000/130000/140000` y `20261016120000_avatars_private` aplicadas; `moderate-avatar` v3 desplegada. T1–T7 cerradas (`todo/tiendas-cumplimiento.md`); bucket `avatars` privado con URLs firmadas comprobado en emulador (deck, match, Matches, chat; `todo/foto-perfil.md`). `expo-dev-client` y su perfil EAS fuera del proyecto.
