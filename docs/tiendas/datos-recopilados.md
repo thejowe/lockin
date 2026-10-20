@@ -11,7 +11,7 @@ Actualizado el 15 de octubre de 2026 tras T5 (binario sin Lock-In). Revisado el 
 
 ## Retención
 
-Datos de producto hasta la baja, que los borra de inmediato; cuentas con 24 meses sin acceso pueden eliminarse (sin proceso automático); backups hasta 30 días; registros de proveedores máx. 90 días; reportes máx. 12 meses con purga automática (D04).
+Datos de producto hasta la baja, que los borra de inmediato; backups hasta 30 días; registros de proveedores máx. 90 días; reportes máx. 12 meses con purga automática (D04).
 
 | Código | Comportamiento |
 | --- | --- |

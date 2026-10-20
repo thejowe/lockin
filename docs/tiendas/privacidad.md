@@ -1,10 +1,12 @@
 # Política de privacidad de cofounder
 
+> Revisada el 20 de octubre de 2026 (versión 1.2): vía de revisión humana para las fotos que rechaza la revisión automática (art. 22 RGPD), aclaración de que las personas de 16 y 17 años son menores de edad, y retirada de la reserva de borrar cuentas inactivas, que no tiene proceso detrás.
+>
 > Revisada el 18 de octubre de 2026: acceso con Google y Apple, tablón personal de fotos moderado con OpenAI, enlaces a Instagram y TikTok, y envío de correo por Supabase mientras Brevo no esté configurado. Publicada ese día en la URL pública. Ese mismo día, tras aplicar `20261018120000_profiles_block_visibility` en producción, §4 vuelve a decir que el bloqueo impide ver el perfil (antes: «la app deja de mostrar»).
 
-**Versión:** 1.1.
+**Versión:** 1.2.
 
-**Entrada en vigor:** 18 de octubre de 2026.
+**Entrada en vigor:** 20 de octubre de 2026.
 
 ## 1. Quién es responsable de tus datos
 
@@ -32,9 +34,9 @@ Guardamos el nombre y la edad que indicas, tu ciudad o zona y zona horaria, inic
 
 La ubicación se escribe como texto; la app no usa GPS.
 
-**Foto de perfil (opcional).** Si subes una foto, se guarda primero en un espacio privado y nuestro servidor la envía a **OpenAI** (solo la imagen, sin tu nombre ni el resto del perfil) con el único fin de comprobar que es apropiada. La revisión es automática. Solo se publica, visible para otras personas de la app, si supera esa revisión. Si el servicio de revisión no está disponible, la foto no se publica. Puedes quitarla cuando quieras y se retira al borrar tu cuenta (ver §7).
+**Foto de perfil (opcional).** Si subes una foto, se guarda primero en un espacio privado y nuestro servidor la envía a **OpenAI** (solo la imagen, sin tu nombre ni el resto del perfil) con el único fin de comprobar que es apropiada. La revisión es automática. Solo se publica, visible para otras personas de la app, si supera esa revisión. Si el servicio de revisión no está disponible, la foto no se publica. Si crees que se ha rechazado por error, escríbenos a cofounder.soporte@gmail.com y una persona la revisará (ver §8). Puedes quitarla cuando quieras y se retira al borrar tu cuenta (ver §7).
 
-**Tablón (opcional).** Puedes publicar en tu perfil hasta 12 fotos, por ejemplo de tu trabajo, cada una con un texto opcional de hasta 280 caracteres. Antes de publicarse, nuestro servidor envía la foto y su texto a **OpenAI** (sin tu nombre ni el resto del perfil) para comprobar que son apropiados; si no superan la revisión o no se puede hacer, no se publican. Puedes quitar cada foto cuando quieras.
+**Tablón (opcional).** Puedes publicar en tu perfil hasta 12 fotos, por ejemplo de tu trabajo, cada una con un texto opcional de hasta 280 caracteres. Antes de publicarse, nuestro servidor envía la foto y su texto a **OpenAI** (sin tu nombre ni el resto del perfil) para comprobar que son apropiados; si no superan la revisión o no se puede hacer, no se publican. Si crees que se ha rechazado una foto por error, escríbenos a cofounder.soporte@gmail.com y una persona la revisará (ver §8). Puedes quitar cada foto cuando quieras.
 
 ### Tu actividad y conversaciones
 
@@ -89,7 +91,7 @@ Para completar el perfil, la app pide nombre, edad, zona, disponibilidad y al me
 
 Conservamos tus datos mientras tu cuenta exista. Al eliminar la cuenta desde la app (Perfil > Cuenta > Eliminar mi cuenta) se borran de inmediato tu perfil y los datos asociados. Al borrar la cuenta, el servidor intenta eliminar también tus fotos del almacenamiento (la de perfil, las del tablón y cualquier subida pendiente) y, en todo caso, dejan de ser accesibles. Si alguna de esas retiradas falla, puede quedar un archivo sin enlace ni metadatos en el almacenamiento hasta que lo retiremos, y los sistemas de copia del proveedor pueden conservar un residuo técnico; si necesitas una confirmación de retirada, escríbenos a cofounder.soporte@gmail.com.
 
-- **Cuentas inactivas:** nos reservamos eliminar las cuentas que lleven 24 meses sin acceso, sin aviso previo automático. Hoy no existe un proceso automático que lo haga.
+- **Cuentas inactivas:** no las eliminamos por inactividad. Si en el futuro lo hacemos, lo indicaremos aquí con el plazo y avisaremos antes a quien tenga email.
 - **Copias de seguridad del proveedor:** pueden conservar datos eliminados hasta 30 días más.
 - **Registros técnicos** (IP, peticiones): según la configuración de cada proveedor, sin superar 90 días en nuestra operación.
 - **Reportes de abuso:** se conservan como máximo 12 meses desde su creación y se borran automáticamente. Si una de las cuentas implicadas se elimina, el reporte se mantiene hasta ese plazo, con el identificador interno como referencia.
@@ -105,11 +107,15 @@ Cerrar sesión o desinstalar la app no borra los datos del servidor. Cerrar sesi
 
 Puedes editar tu perfil, quitar tu foto y las fotos del tablón y desvincular GitHub (se retiran el distintivo y el enlace derivado). La app no permite editar ni borrar mensajes individuales.
 
+La revisión de las fotos de perfil y del tablón es automática (§2). Tienes derecho a que una persona revise un rechazo, a expresar tu punto de vista y a impugnar la decisión: escribe a cofounder.soporte@gmail.com y respondemos en el mismo plazo de 30 días.
+
 Puedes eliminar tu cuenta desde la app o pedirlo en cofounder.soporte@gmail.com o en https://thejowe.github.io/cofounder-web/eliminar-cuenta; respondemos en un máximo de 30 días. Tienes además derecho de acceso, rectificación, supresión, oposición, limitación y portabilidad, que puedes ejercer por el mismo correo, y a reclamar ante la AEPD.
 
 ## 9. Menores
 
 cofounder es para personas de **16 años o más**. La edad es autodeclarada y no hay verificación documental ni controles parentales. Si detectamos una cuenta de una persona menor de 16 años, la eliminaremos. Si crees que ocurre, escríbenos.
+
+Las personas de 16 y 17 años son menores de edad y pueden usar la app. Su perfil, como el de cualquier otra persona, es visible para cualquier cuenta de la app (ver §4), y pueden bloquear y reportar a otras personas en cualquier momento. No incluyas en tu perfil datos que no quieras que vea un adulto desconocido.
 
 ## 10. Seguridad, moderación y cambios
 
@@ -126,4 +132,4 @@ Nota editorial, a retirar del texto publicado:
 - Se han retirado sesiones Lock-In, salas, videollamada, STUN de Google, rachas, valoraciones, acuerdo, recordatorios y alarmas exactas porque ya no están en la UI. El código y las tablas siguen en el repositorio y en la base de datos de producción, vacías: los datos de prueba de `lockin_sessions`, `session_attendance` y `lockin_rooms` se borraron el 16-oct-2026.
 - **Cotejado con el código el 14-oct-2026:** los sugeridores de apertura del chat son reglas fijas, sin IA ni proveedor; la sesión se guarda con `expo-secure-store` en móvil; `expo-notifications`, WebRTC, `RECORD_AUDIO` y `SCHEDULE_EXACT_ALARM` ya no están en el binario desde T5 (no hay push ni recordatorios); `looking_for` y `active_mode` siguen escribiéndose en base de datos; `moderate-avatar` borra la subida pendiente tras cada revisión y la tarea `purge_stale_avatar_uploads()` (cada hora, aplicada en producción el 16-oct) retira las de más de 24 h; `delete_my_account` borra en servidor los objetos de la persona en `avatars` y `avatar-uploads` (límite: Supabase documenta que los bytes del backend S3 no se retiran con SQL; la dirección deja de resolver).
 - **18-oct-2026:** publicada en `cofounder-web`. El DPA de OpenAI se cita como parte de sus condiciones (el texto de feb-2024 dice que se incorpora por referencia al acuerdo que rige la API); firmar el formulario de DPA de OpenAI sigue siendo recomendable. El SMTP de Brevo no está configurado en Supabase Auth (comprobado ese día), así que el texto nombra a Supabase como emisor del correo; al configurar Brevo, volver a nombrarlo en §5.
-- **Pendiente de decidir o confirmar:** (1) ~~condiciones de la API de OpenAI (DPA)~~ ver la línea anterior; (2) ~~plazo de las fotos rechazadas o pendientes~~ resuelto: borrado tras cada revisión y purga de restos a las 24 h; (3) ~~proveedor de correo~~ decidido el 16-oct: Brevo, remitente cofounder.soporte@gmail.com; no empujar este texto hasta que el SMTP de Brevo esté configurado en Supabase Auth; (4) fecha de publicación; (5) ~~job `purge_old_user_reports()`~~ confirmado activo en producción el 16-oct (03:20 diario); (6) los plazos de revisión de reportes (72 h / 24 h) son un compromiso operativo, no una regla del código.
+- **Pendiente de decidir o confirmar:** (1) ~~condiciones de la API de OpenAI (DPA)~~ ver la línea anterior; (2) ~~plazo de las fotos rechazadas o pendientes~~ resuelto: borrado tras cada revisión y purga de restos a las 24 h; (3) ~~proveedor de correo~~ decidido el 16-oct: Brevo, remitente cofounder.soporte@gmail.com; no empujar este texto hasta que el SMTP de Brevo esté configurado en Supabase Auth; (4) ~~fecha de publicación~~ v1.2 con entrada en vigor el 20-oct-2026, pendiente de subir a `cofounder-web`; (5) ~~job `purge_old_user_reports()`~~ confirmado activo en producción el 16-oct (03:20 diario); (6) los plazos de revisión de reportes (72 h / 24 h) son un compromiso operativo, no una regla del código.
