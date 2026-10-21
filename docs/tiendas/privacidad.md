@@ -1,12 +1,14 @@
 # Política de privacidad de cofounder
 
+> Revisada el 21 de octubre de 2026 (versión 1.3): los emails de cuenta pasan a enviarse con Brevo.
+>
 > Revisada el 20 de octubre de 2026 (versión 1.2): vía de revisión humana para las fotos que rechaza la revisión automática (art. 22 RGPD), aclaración de que las personas de 16 y 17 años son menores de edad, y retirada de la reserva de borrar cuentas inactivas, que no tiene proceso detrás.
 >
 > Revisada el 18 de octubre de 2026: acceso con Google y Apple, tablón personal de fotos moderado con OpenAI, enlaces a Instagram y TikTok, y envío de correo por Supabase mientras Brevo no esté configurado. Publicada ese día en la URL pública. Ese mismo día, tras aplicar `20261018120000_profiles_block_visibility` en producción, §4 vuelve a decir que el bloqueo impide ver el perfil (antes: «la app deja de mostrar»).
 
-**Versión:** 1.2.
+**Versión:** 1.3.
 
-**Entrada en vigor:** 20 de octubre de 2026.
+**Entrada en vigor:** 21 de octubre de 2026.
 
 ## 1. Quién es responsable de tus datos
 
@@ -71,11 +73,10 @@ Usamos los datos para mantener y recuperar tu cuenta, mostrar y editar tu perfil
 
 - **Supabase** (encargado): autenticación, base de datos, almacenamiento de fotos y comunicación en tiempo real. Alojado en la región UE Centro (Fráncfort).
 - **OpenAI** (encargado, EE. UU.): revisión automática de las fotos de perfil y de las fotos del tablón con su texto, solo si las subes. Recibe la imagen (y, en el tablón, el texto) desde nuestro servidor. Es una transferencia fuera del EEE (ver más abajo). Usamos su servicio de moderación (`omni-moderation-latest`). Según la documentación pública de OpenAI (consultada el 16-oct-2026), los datos enviados a su API no se usan para entrenar sus modelos salvo que el cliente lo autorice, y el servicio de moderación no conserva el contenido para monitorización de abuso; una imagen que se detecte como material de abuso sexual infantil puede conservarse para revisión manual. Estas condiciones son las de OpenAI y pueden cambiar. El acuerdo de tratamiento de datos (DPA) de OpenAI forma parte de las condiciones que rigen el uso de su API.
+- **Brevo** (encargado, Sendinblue SAS, Francia): envío de los emails de confirmación y recuperación de cuenta. Recibe tu dirección de email y el contenido de ese mensaje. Brevo registra, sin asociarlo a un contacto, si el email se abre y si se pulsa su enlace, y el enlace de confirmación pasa por un servidor de Brevo antes de llegar a nosotros. Pediremos a Brevo que desactive ese seguimiento y actualizaremos este punto cuando lo haga.
 - **Expo / EAS** (encargado): distribución de actualizaciones de la app.
 - **GitHub** (responsable independiente): solo si verificas tu enlace.
 - **Google** y **Apple** (responsables independientes): solo si entras con su cuenta. Cada uno trata ese inicio de sesión según su propia política de privacidad.
-
-Los emails de confirmación y recuperación de cuenta los envía el servicio de autenticación de Supabase. Si pasamos a otro proveedor de correo, lo indicaremos aquí.
 
 OpenAI trata datos fuera del Espacio Económico Europeo (EE. UU.). Esa transferencia se apoya en las cláusulas contractuales tipo de la Comisión Europea o en el Marco de Privacidad de Datos UE-EE. UU. (DPF), según el caso. Puedes pedir información sobre estas garantías en cofounder.soporte@gmail.com.
 
@@ -132,4 +133,5 @@ Nota editorial, a retirar del texto publicado:
 - Se han retirado sesiones Lock-In, salas, videollamada, STUN de Google, rachas, valoraciones, acuerdo, recordatorios y alarmas exactas porque ya no están en la UI. El código y las tablas siguen en el repositorio y en la base de datos de producción, vacías: los datos de prueba de `lockin_sessions`, `session_attendance` y `lockin_rooms` se borraron el 16-oct-2026.
 - **Cotejado con el código el 14-oct-2026:** los sugeridores de apertura del chat son reglas fijas, sin IA ni proveedor; la sesión se guarda con `expo-secure-store` en móvil; `expo-notifications`, WebRTC, `RECORD_AUDIO` y `SCHEDULE_EXACT_ALARM` ya no están en el binario desde T5 (no hay push ni recordatorios); `looking_for` y `active_mode` siguen escribiéndose en base de datos; `moderate-avatar` borra la subida pendiente tras cada revisión y la tarea `purge_stale_avatar_uploads()` (cada hora, aplicada en producción el 16-oct) retira las de más de 24 h; `delete_my_account` borra en servidor los objetos de la persona en `avatars` y `avatar-uploads` (límite: Supabase documenta que los bytes del backend S3 no se retiran con SQL; la dirección deja de resolver).
 - **18-oct-2026:** publicada en `cofounder-web`. El DPA de OpenAI se cita como parte de sus condiciones (el texto de feb-2024 dice que se incorpora por referencia al acuerdo que rige la API); firmar el formulario de DPA de OpenAI sigue siendo recomendable. El SMTP de Brevo no está configurado en Supabase Auth (comprobado ese día), así que el texto nombra a Supabase como emisor del correo; al configurar Brevo, volver a nombrarlo en §5.
+- **21-oct-2026 (v1.3):** SMTP de Brevo configurado en Supabase Auth y comprobado (alta de prueba entregada en bandeja de entrada). §5 nombra a Brevo y quita la frase de Supabase como emisor. El correo de prueba llevaba píxel de apertura y el enlace de confirmación reescrito por Brevo (`sendibt3.com/tr/cl/…`); en el panel solo existe «seguimiento anónimo» (activado el 21-oct), no apagarlo. §5 lo declara tal cual. Pedido a soporte de Brevo que lo apague; cuando esté apagado y comprobado en un correo real, cambiar §5 a «no se usa su seguimiento». Publicada el 21-oct en `cofounder-web` porque la 1.2 publicada nombraba a Supabase como emisor, ya falso.
 - **Pendiente de decidir o confirmar:** (1) ~~condiciones de la API de OpenAI (DPA)~~ ver la línea anterior; (2) ~~plazo de las fotos rechazadas o pendientes~~ resuelto: borrado tras cada revisión y purga de restos a las 24 h; (3) ~~proveedor de correo~~ decidido el 16-oct: Brevo, remitente cofounder.soporte@gmail.com; no empujar este texto hasta que el SMTP de Brevo esté configurado en Supabase Auth; (4) ~~fecha de publicación~~ v1.2 con entrada en vigor el 20-oct-2026, pendiente de subir a `cofounder-web`; (5) ~~job `purge_old_user_reports()`~~ confirmado activo en producción el 16-oct (03:20 diario); (6) los plazos de revisión de reportes (72 h / 24 h) son un compromiso operativo, no una regla del código.

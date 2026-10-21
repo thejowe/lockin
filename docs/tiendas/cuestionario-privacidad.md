@@ -95,7 +95,7 @@ Fuente: [guía del formulario](https://support.google.com/googleplay/android-dev
 ## Marcadores abiertos (dependen del usuario)
 
 - ~~fecha de publicación~~ — 18-oct-2026 en privacidad, términos y normas (publicadas en `cofounder-web`).
-- ~~proveedor SMTP~~ — Brevo (decidido el 16-oct-2026), ya nombrado en la sección 5 de privacidad y en D05. [pendiente: configurarlo en Supabase Auth → SMTP]; hasta entonces aplica el límite de correo de Supabase por defecto.
+- ~~proveedor SMTP~~ — Brevo (decidido el 16-oct-2026), ya nombrado en la sección 5 de privacidad y en D05. Configurado en Supabase Auth → SMTP y comprobado el 21-oct-2026. Su seguimiento anónimo de aperturas y clics del correo no es «tracking» en el sentido de las tiendas (no cruza apps ni sitios de terceros), pero se declara en §5.
 - ~~trader (DSA)~~ — no trader en Apple y Google (decidido el 16-oct-2026). Sin NIF publicado (20-oct-2026): el titular no lo aporta y no se publica aviso legal con NIF mientras la app sea gratuita y sin actividad económica; confirmarlo en la revisión jurídica de `terminos.md` y reabrir si se monetiza. Si algún día se publica, el NIF nunca entra en el repo, que es público.
 - ~~DPA y condiciones de OpenAI~~ — 18-oct-2026: la política cita el DPA como parte de las condiciones de la API (incorporado por referencia); el titular firmó además el DPA de OpenAI por el formulario de Ironclad el 20-oct-2026 (titular persona física, entidad contratante OpenAI Ireland por estar en el EEE). De ello dependía marcar Fotos como «compartidas» en Google: ya se puede.
 - ~~categoría secundaria de App Store~~ — Negocios (decidido el 16-oct-2026).
