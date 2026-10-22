@@ -525,3 +525,21 @@ R «RetoFoto» `19c33711-6dbb-4f8d-b45d-ea09fba3f218` (REST, marcada no anónima
 - ✅ **Baja de P** por UI 20:57:09Z (`baja-P-time.txt`); `profiles?name=PruebaMatch` → `[]`. R `19c33711-6dbb-4f8d-b45d-ea09fba3f218` queda viva
   (borrar por SQL); P era `4a48d5dd-7552-4ae6-91fd-c59dbc941e21`.
 - Nota de producto (no es bug): no existe rewind de «Pasar»; una decisión excluye a ese perfil del deck para siempre.
+
+### Hallazgos del comprobador — renovación de la URL firmada tras ~65 min (2026-10-20) — NO EJECUTADO
+
+Veredicto: **⚠️ no comprobado (bloqueado), ni PASS ni FAIL.** Commit `63afec5`, AVD `lockin`, backend previsto
+Supabase real `grrzmzktrhksbttpbblg`. Evidencia: `e2e/artifacts/local/2026-10-20-url-firmada-65min/`.
+
+- Hecho: emulador arrancado (`emulator-5554`); APK release del HEAD recompilado en `C:\lk` con
+  `EXPO_PUBLIC_*` de `.env.local` y `--rerun-tasks` (`supabase.apk`, sha256 `bf24fb5b…8844`, `build.log` EXIT 0)
+  e instalado con `-r` sobre el usuario Android 0 (no se tocaron datos).
+- Bloqueo 1: el clasificador de permisos denegó un script que iniciaba sesión anónima en producción y leía
+  `profiles` para localizar cuentas de prueba con foto (motivo «Production Reads»). No se esquivó.
+- Bloqueo 2: faltan cuentas con foto. `moderate-avatar` solo acepta cuentas no anónimas y no hay acceso SQL/MCP
+  de administración desde este agente para marcar `is_anonymous=false` ni para limpiar después. Hacen falta dos
+  perfiles con foto (R emparejado con P para Matches/chat y R2 sin decidir para el deck) y que P esté abierta
+  en el AVD con la pantalla encendida durante >65 min (el temporizador del signer salta a los ~51 min).
+- Para retomar: el orquestador (con SQL) prepara R, R2 y P no anónimas y autoriza lecturas de producción; luego
+  se instala `supabase.apk`, se captura deck/Matches/chat a T0, T0+55 y T0+66 min y se compara con `onStale`
+  en el logcat. No se creó ni modificó nada en producción: no hay residuos que limpiar.
