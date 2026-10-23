@@ -8,7 +8,7 @@ pegando el asunto y el HTML («Source»). Si cambias una aquí, cámbiala allí,
 |---|---|---|---|---|
 | `confirmation.html` | Confirm sign up | Confirma tu correo en cofounder | Alta con correo | Aplicada 2026-10-22 |
 | `email_change.html` | Change email address | Confirma tu correo en cofounder | Sí: vincular correo a la cuenta anónima (`linkEmailToCurrentUser`) | Pendiente |
-| `recovery.html` | Reset password | Restablece tu contraseña de cofounder | Sí: `sendPasswordReset` | Pendiente |
+| `recovery.html` | Reset password | Restablece tu contraseña de cofounder | Sí: `sendPasswordReset` | Aplicada 2026-10-23 |
 | `magic_link.html` | Magic link or OTP | Tu enlace para entrar en cofounder | No | Pendiente |
 | `invite.html` | Invite user | Te han invitado a cofounder | No | Pendiente |
 | `reauthentication.html` | Reauthentication | Tu código de cofounder | No | Pendiente |
