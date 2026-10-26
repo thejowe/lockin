@@ -17,7 +17,14 @@
 import { BlurView } from 'expo-blur';
 import { GlassView, isGlassEffectAPIAvailable, isLiquidGlassAvailable } from 'expo-glass-effect';
 import type { RefObject } from 'react';
-import { Platform, StyleSheet, View, type ViewProps, type ViewStyle } from 'react-native';
+import {
+  Platform,
+  StyleSheet,
+  View,
+  type ViewProps,
+  type ViewStyle,
+  type ViewInstance,
+} from 'react-native';
 
 import { BlurIntensity, Radii, Stroke, type ThemePalette } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -83,7 +90,7 @@ export function Frosted({
   radius?: number;
   intensity?: number;
   /** Solo Android: el contenido que hay que desenfocar debajo. */
-  blurTarget?: RefObject<View | null>;
+  blurTarget?: RefObject<ViewInstance | null>;
   floating?: boolean;
 }) {
   const theme = useTheme();

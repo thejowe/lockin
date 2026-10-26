@@ -35,7 +35,7 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react';
-import { Pressable, StyleSheet, View, type LayoutRectangle } from 'react-native';
+import { Pressable, StyleSheet, View, type LayoutRectangle, type ViewInstance } from 'react-native';
 import Animated, {
   FadeIn,
   FadeOut,
@@ -75,7 +75,7 @@ const IndicatorContext = createContext<(layout: LayoutRectangle) => void>(() => 
 
 export default function AppTabs() {
   // Solo Android lo usa: es el contenido que el esmerilado de la barra desenfoca.
-  const blurTarget = useRef<View>(null);
+  const blurTarget = useRef<ViewInstance>(null);
 
   return (
     <Tabs style={styles.root}>
@@ -116,7 +116,7 @@ function TabBar({
   children,
   style: _style,
   ...props
-}: TabListProps & { blurTarget: RefObject<View | null>; children?: ReactNode }) {
+}: TabListProps & { blurTarget: RefObject<ViewInstance | null>; children?: ReactNode }) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReduceMotion();
@@ -165,61 +165,60 @@ function TabBar({
   );
 }
 
-const TabButton = forwardRef<View, TabTriggerSlotProps & { icon: IconName }>(function TabButton(
-  { children, isFocused, icon, ...props },
-  ref
-) {
-  const theme = useTheme();
-  const report = useContext(IndicatorContext);
-  const reduceMotion = useReduceMotion();
-  const layout = useRef<LayoutRectangle | null>(null);
-  const label = typeof children === 'string' ? children : undefined;
+const TabButton = forwardRef<ViewInstance, TabTriggerSlotProps & { icon: IconName }>(
+  function TabButton({ children, isFocused, icon, ...props }, ref) {
+    const theme = useTheme();
+    const report = useContext(IndicatorContext);
+    const reduceMotion = useReduceMotion();
+    const layout = useRef<LayoutRectangle | null>(null);
+    const label = typeof children === 'string' ? children : undefined;
 
-  // Al cambiar de pestaña el botón ya está medido: avisa al resalte.
-  useEffect(() => {
-    if (isFocused && layout.current) report(layout.current);
-  }, [isFocused, report]);
+    // Al cambiar de pestaña el botón ya está medido: avisa al resalte.
+    useEffect(() => {
+      if (isFocused && layout.current) report(layout.current);
+    }, [isFocused, report]);
 
-  return (
-    <Animated.View
-      // Con «reducir movimiento» no hay transición de layout: con las escalas de
-      // animación del sistema a 0 Reanimated deja el botón congelado a medio
-      // camino (barra con el ancho viejo, icono recortado, resalte en otra tab).
-      // Sin transición, el botón salta a su medida final y `onLayout` la reporta.
-      layout={
-        reduceMotion
-          ? undefined
-          : LinearTransition.springify()
-              .damping(Springs.glide.damping)
-              .stiffness(Springs.glide.stiffness)
-      }
-      onLayout={(event) => {
-        layout.current = event.nativeEvent.layout;
-        if (isFocused) report(event.nativeEvent.layout);
-      }}>
-      <Pressable
-        ref={ref}
-        {...props}
-        accessibilityRole="tab"
-        accessibilityLabel={label}
-        accessibilityState={{ selected: isFocused }}
-        style={({ pressed }) => [
-          styles.item,
-          isFocused ? styles.itemFocused : styles.itemIdle,
-          pressed && styles.pressed,
-        ]}>
-        <Icon name={icon} size={21} color={isFocused ? theme.text : theme.textSecondary} />
-        {isFocused ? (
-          <Animated.View
-            entering={reduceMotion ? undefined : FadeIn.duration(Duration.base)}
-            exiting={reduceMotion ? undefined : FadeOut.duration(Duration.fast)}>
-            <ThemedText type="smallBold">{children}</ThemedText>
-          </Animated.View>
-        ) : null}
-      </Pressable>
-    </Animated.View>
-  );
-});
+    return (
+      <Animated.View
+        // Con «reducir movimiento» no hay transición de layout: con las escalas de
+        // animación del sistema a 0 Reanimated deja el botón congelado a medio
+        // camino (barra con el ancho viejo, icono recortado, resalte en otra tab).
+        // Sin transición, el botón salta a su medida final y `onLayout` la reporta.
+        layout={
+          reduceMotion
+            ? undefined
+            : LinearTransition.springify()
+                .damping(Springs.glide.damping)
+                .stiffness(Springs.glide.stiffness)
+        }
+        onLayout={(event) => {
+          layout.current = event.nativeEvent.layout;
+          if (isFocused) report(event.nativeEvent.layout);
+        }}>
+        <Pressable
+          ref={ref}
+          {...props}
+          accessibilityRole="tab"
+          accessibilityLabel={label}
+          accessibilityState={{ selected: isFocused }}
+          style={({ pressed }) => [
+            styles.item,
+            isFocused ? styles.itemFocused : styles.itemIdle,
+            pressed && styles.pressed,
+          ]}>
+          <Icon name={icon} size={21} color={isFocused ? theme.text : theme.textSecondary} />
+          {isFocused ? (
+            <Animated.View
+              entering={reduceMotion ? undefined : FadeIn.duration(Duration.base)}
+              exiting={reduceMotion ? undefined : FadeOut.duration(Duration.fast)}>
+              <ThemedText type="smallBold">{children}</ThemedText>
+            </Animated.View>
+          ) : null}
+        </Pressable>
+      </Animated.View>
+    );
+  }
+);
 
 const styles = StyleSheet.create({
   root: {
