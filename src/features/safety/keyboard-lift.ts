@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import type { View } from 'react-native';
+import type { ViewInstance } from 'react-native';
 import { useKeyboardState, useWindowDimensions } from 'react-native-keyboard-controller';
 
 /**
@@ -43,7 +43,7 @@ export function reportKeyboardLift(
  * «reducir movimiento» no necesita tratamiento especial.
  */
 export function useReportKeyboardLift() {
-  const ref = useRef<View>(null);
+  const ref = useRef<ViewInstance>(null);
   const [bottomEdge, setBottomEdge] = useState(0);
   const keyboardHeight = useKeyboardState((state) => (state.isVisible ? state.height : 0));
   const { height: windowHeight } = useWindowDimensions();

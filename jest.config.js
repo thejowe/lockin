@@ -10,9 +10,10 @@
 module.exports = {
   preset: 'jest-expo',
   // Worklets resuelve `.native.ts` primero y ese fichero busca el TurboModule
-  // real; bajo Jest no existe. Su resolver oficial descarta esa extensión y deja
-  // que Reanimated cargue su implementación JS.
-  resolver: 'react-native-worklets/jest/resolver.js',
+  // real; bajo Jest no existe. El resolver oficial de Reanimated (desde SDK 58)
+  // envuelve el de Worklets y además fuerza la versión web de los módulos de
+  // Reanimated que en nativo exigen el hilo de UI.
+  resolver: 'react-native-reanimated/jest/resolver.js',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js', '<rootDir>/test/native-hosts.js'],
   moduleNameMapper: {
     '\\.css$': '<rootDir>/test/style-stub.js',

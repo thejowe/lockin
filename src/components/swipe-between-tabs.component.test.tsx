@@ -4,9 +4,9 @@
  * tarjetas. La matemática pura vive en `swipe-between-tabs.test.ts`.
  */
 
-import { act, render, screen } from '@testing-library/react-native';
+import { act, render as rtlRender, screen } from '@testing-library/react-native';
 import { Text } from 'react-native';
-import { State, type PanGesture } from 'react-native-gesture-handler';
+import { GestureHandlerRootView, State, type LegacyPanGesture } from 'react-native-gesture-handler';
 import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-handler/jest-utils';
 
 import {
@@ -15,6 +15,11 @@ import {
   SwipeBetweenTabs,
   useLockTabSwipe,
 } from '@/components/swipe-between-tabs';
+
+// gesture-handler 3 exige un `GestureHandlerRootView` por encima de cada
+// `GestureDetector`, también bajo Jest. En la app lo pone `src/app/_layout.tsx`.
+const render: typeof rtlRender = (ui, options) =>
+  rtlRender(ui, { wrapper: GestureHandlerRootView, ...options });
 
 const mockNavigate = jest.fn();
 let mockPathname = '/discover';
@@ -33,7 +38,7 @@ function Locker({ locked }: { locked: boolean }) {
 }
 
 function drag(translationX: number, velocityX = 0) {
-  fireGestureHandler<PanGesture>(getByGestureTestId(PAGER_PAN_TEST_ID), [
+  fireGestureHandler<LegacyPanGesture>(getByGestureTestId(PAGER_PAN_TEST_ID), [
     { state: State.BEGAN, translationX: 0, translationY: 0 },
     { state: State.ACTIVE, translationX: translationX / 2, translationY: 0 },
     { translationX, translationY: 0 },

@@ -8,6 +8,11 @@
  * importe el deck de swipe revienta al montar.
  */
 
+// Desde SDK 58, gesture-handler 3 llama a `getUIRuntimeHolder` y `runOnUISync`
+// de Worklets al cargarse. Bajo Jest Worklets resuelve su versión web, que
+// lanza "not supported on web": su mock oficial los resuelve en el propio hilo.
+jest.mock('react-native-worklets', () => require('react-native-worklets/src/mock'));
+
 require('react-native-gesture-handler/jestSetup');
 
 jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));

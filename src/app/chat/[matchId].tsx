@@ -17,9 +17,10 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  TextInput,
   View,
   type LayoutChangeEvent,
+  type ScrollViewInstance,
+  type TextInputInstance,
 } from 'react-native';
 import {
   KeyboardAvoidingView,
@@ -70,8 +71,8 @@ function ChatScreenContent() {
   const [safetyOpen, setSafetyOpen] = useState(false);
   const [blocked, setBlocked] = useState(false);
   const [reportingMessageId, setReportingMessageId] = useState<string | null>(null);
-  const inputRef = useRef<TextInput>(null);
-  const scrollRef = useRef<ScrollView>(null);
+  const inputRef = useRef<TextInputInstance>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
 
   const icebreakers = useMemo(
     () => (match ? suggestIcebreakers(match.counterpart, me, match.mode) : []),

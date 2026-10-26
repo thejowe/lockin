@@ -294,7 +294,7 @@ de producto. Es suficiente para este recorrido y mantiene el alcance del
 bloque; no hace falta introducir Detox ni modificar componentes/hooks.
 Se usa el botón accesible Like; la mecánica del gesto tiene sus tests propios.
 
-- [Expo SDK 57](https://docs.expo.dev/versions/v57.0.0/).
+- [Expo SDK 58](https://docs.expo.dev/versions/v58.0.0/).
 - [Builds locales de Expo](https://docs.expo.dev/guides/local-app-development/).
 - [Android emulator runner y KVM](https://github.com/ReactiveCircus/android-emulator-runner).
 - [Maestro launchApp y clearState](https://docs.maestro.dev/api-reference/commands/launchapp).

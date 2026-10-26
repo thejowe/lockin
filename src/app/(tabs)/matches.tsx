@@ -53,7 +53,7 @@ export default function MatchesScreen() {
           }
           // Sin datos todavía no enseñamos el estado vacío: diría "no tienes
           // matches" cuando en realidad aún no lo sabemos.
-          ListEmptyComponent={loading || error ? null : <MatchesEmpty />}
+          ListEmptyComponent={loading || error ? undefined : <MatchesEmpty />}
           refreshControl={
             <RefreshControl refreshing={loading} onRefresh={refresh} tintColor={theme.brass} />
           }

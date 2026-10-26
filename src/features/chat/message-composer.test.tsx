@@ -10,7 +10,7 @@
  */
 
 import { createRef } from 'react';
-import { TextInput } from 'react-native';
+import type { TextInputInstance } from 'react-native';
 
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
@@ -105,7 +105,7 @@ describe('MessageComposer', () => {
   });
 
   it('expone el TextInput por ref para que la pantalla devuelva el foco', async () => {
-    const ref = createRef<TextInput>();
+    const ref = createRef<TextInputInstance>();
     await render(
       <MessageComposer ref={ref} value="" onChangeText={jest.fn()} onSend={jest.fn()} />
     );

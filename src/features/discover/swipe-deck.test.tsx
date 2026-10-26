@@ -21,8 +21,8 @@
  */
 
 import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-handler/jest-utils';
-import { State } from 'react-native-gesture-handler';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { GestureHandlerRootView, State } from 'react-native-gesture-handler';
+import { fireEvent, render as rtlRender, screen } from '@testing-library/react-native';
 import { act, useState } from 'react';
 import { AccessibilityInfo, StyleSheet } from 'react-native';
 
@@ -32,8 +32,13 @@ import { buildProfile, buildProfileInput } from '@/data/test-fixtures';
 
 import { cardTestId, PAN_TEST_ID, SwipeDeck } from './swipe-deck';
 
-import type { PanGesture } from 'react-native-gesture-handler';
+import type { LegacyPanGesture } from 'react-native-gesture-handler';
 import type { Profile } from '@/data';
+
+// gesture-handler 3 exige un `GestureHandlerRootView` por encima de cada
+// `GestureDetector`, también bajo Jest. En la app lo pone `src/app/_layout.tsx`.
+const render: typeof rtlRender = (ui, options) =>
+  rtlRender(ui, { wrapper: GestureHandlerRootView, ...options });
 
 /** Se llama cada vez que el deck pide una animación. `mock*` por el izado de `jest.mock`. */
 const mockWithTiming = jest.fn();
@@ -108,7 +113,7 @@ function systemReduceMotion(enabled: boolean) {
  * ese evento intermedio, el gesto se cierra con la tarjeta todavía en el centro.
  */
 function swipe({ translationX, velocityX = 0 }: { translationX: number; velocityX?: number }) {
-  fireGestureHandler<PanGesture>(getByGestureTestId(PAN_TEST_ID), [
+  fireGestureHandler<LegacyPanGesture>(getByGestureTestId(PAN_TEST_ID), [
     { state: State.BEGAN, translationX: 0, translationY: 0 },
     { state: State.ACTIVE, translationX: translationX / 2, translationY: 0 },
     { translationX, translationY: 0 },

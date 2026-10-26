@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
+  type ScrollViewInstance,
+} from 'react-native';
 
 import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themed-text';
@@ -46,7 +53,7 @@ export function ReportForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
   const submitting = useRef(false);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
   const detailsFocused = useRef(false);
   const length = Array.from(details).length;
   const valid = reason !== null && length <= REPORT_MAX_LENGTH;
@@ -180,7 +187,7 @@ function AnchoredLayout({
   actions,
   children,
 }: {
-  scrollRef: RefObject<ScrollView | null>;
+  scrollRef: RefObject<ScrollViewInstance | null>;
   detailsFocused: RefObject<boolean>;
   actions: ReactNode;
   children: ReactNode;
