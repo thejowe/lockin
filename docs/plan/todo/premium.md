@@ -2,7 +2,7 @@
 
 Pedido por el usuario el 2026-10-26: monetizar como Tinder, con un solo nivel de pago, sin
 anuncios y con 25 likes al día gratis. Spec: `docs/superpowers/specs/2026-10-26-premium-design.md`.
-Plan de tareas: sin escribir todavía (se hace con `superpowers:writing-plans` antes de la fase 1).
+Plan de tareas: `docs/superpowers/plans/2026-10-26-premium.md` (Tareas 1–10; cubre las fases 1 y 2, con el contrato y el mock antes que el SQL).
 
 Adelanta la Fase 5 de `CONCEPTO.md`. Las fases 1 y 2 tocan los archivos de `datos` y
 `descubrir`, así que no se lanzan a la vez que esos bloques ni que `visual`. Todo agente que
@@ -15,8 +15,10 @@ escriba código pasa por `codex review` antes de commitear en la rama principal.
 
 ## Fase 0 — plan
 
-- [ ] [Claude] Plan de implementación por tareas en `docs/superpowers/plans/2026-10-26-premium.md`,
-  a partir de la spec (§9).
+- [x] Plan de implementación por tareas en `docs/superpowers/plans/2026-10-26-premium.md`,
+  a partir de la spec (§9). Lo escribió Claude el 2026-10-26 (era diseño). Dos desvíos de la spec,
+  anotados en el plan: hacer falta Premium da `LQ005` y no `42501`, y el filtro de disponibilidad
+  es `minHoursPerWeek` + `timeBands`, porque `Availability` no es un enum.
 
 ## Fase 1 — servidor (Supabase)
 
