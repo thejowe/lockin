@@ -1,5 +1,8 @@
 # TODO maestro — LockIn MVP
 
+## ▶ Nuevo bloque (2026-10-26): Premium — spec lista, plan sin escribir
+
+El usuario pidió monetizar como Tinder: **un solo nivel Premium, sin anuncios y 25 likes al día gratis**. Spec en `docs/superpowers/specs/2026-10-26-premium-design.md` (`d35711a`). El checklist accionable, con las casillas etiquetadas, está en `todo/premium.md`. Siguiente paso: el plan de tareas (fase 0, `[Claude]`). La fase 3 (cobro real) está bloqueada hasta que existan las cuentas de Apple, Google y RevenueCat. Faltan dos decisiones del usuario: los precios y si hay prueba gratis.
 ## ▶ Al retomar (2026-10-20, noche): lista de pendientes del usuario — qué está HECHO y qué no repetir
 
 **No volver a proponer lo marcado como hecho.** Detalle de SMTP en la memoria `brevo-smtp-535-bloqueo-ip`.
