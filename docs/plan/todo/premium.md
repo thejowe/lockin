@@ -55,7 +55,7 @@ Bloqueada hasta que el usuario tenga la membresía de Apple pagada con el Paid A
 perfil de pagos de Google, el proyecto de RevenueCat y los productos creados en las dos tiendas.
 Las claves y los secretos los pega siempre el usuario.
 
-- [ ] `react-native-purchases`, con su versión verificada contra SDK 57; `logIn`/`logOut` con el uid.
+- [ ] `react-native-purchases`, con su versión verificada contra SDK 58; `logIn`/`logOut` con el uid.
 - [ ] Edge Functions `revenuecat-webhook` y `sync-entitlement`, con sus tests (spec §8).
 - [ ] [comprobador] Compra de prueba con *license tester* en un track interno de Play.
 - [ ] Compra en el sandbox de iOS (la hace el usuario: no hay macOS ni iPhone en el emulador).

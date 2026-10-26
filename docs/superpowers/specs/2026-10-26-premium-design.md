@@ -210,8 +210,8 @@ valida los recibos en su servidor y manda webhooks, lo que nos ahorra escribir y
 mantener la validación de StoreKit 2 y de Play Billing. Es gratis hasta 2.500 $
 de ingresos al mes. Expo lo documenta como camino soportado. **No funciona en
 Expo Go**, solo en development build, y el proyecto ya compila APK propio.
-Antes de instalar, verificar la versión compatible con SDK 57 contra
-https://docs.expo.dev/versions/v57.0.0/ y la guía
+Antes de instalar, verificar la versión compatible con SDK 58 contra
+https://docs.expo.dev/versions/v58.0.0/ y la guía
 https://docs.expo.dev/guides/in-app-purchases/.
 
 - **Identidad:** `app_user_id` de RevenueCat = `auth.uid()` de Supabase.
