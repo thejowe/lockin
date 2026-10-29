@@ -1288,6 +1288,33 @@ describe('signInWithProvider con Apple', () => {
       expect(warn).toHaveBeenCalledTimes(3);
     });
 
+    it('borrar la cuenta espera al canje en vuelo antes de revocar', async () => {
+      appleSheet('code-de-apple');
+      let finishExchange: (value: unknown) => void = () => undefined;
+      invoke.mockImplementation(async (_name: string, { body }: { body: { action: string } }) => {
+        if (body.action === 'exchange') {
+          await new Promise((resolve) => {
+            finishExchange = resolve;
+          });
+        }
+        return { data: { ok: true }, error: null };
+      });
+      rpc.mockResolvedValue({ error: null });
+      auth.signOut.mockResolvedValue({ error: null });
+
+      await expect(signInWithProvider('apple')).resolves.toBe(true);
+      const deleting = deleteMyAccount();
+      await flush();
+      expect(invoke).not.toHaveBeenCalledWith('apple-token', { body: { action: 'revoke' } });
+
+      finishExchange(undefined);
+      await deleting;
+      const actions = invoke.mock.calls
+        .filter(([name]) => name === 'apple-token')
+        .map(([, { body }]) => body.action);
+      expect(actions).toEqual(['exchange', 'revoke']);
+    });
+
     it('sin authorizationCode no llama a la función', async () => {
       appleSheet(null);
       await expect(signInWithProvider('apple')).resolves.toBe(true);

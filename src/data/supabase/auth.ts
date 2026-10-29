@@ -876,7 +876,15 @@ export async function deleteMyAccount(client?: LockInSupabaseClient): Promise<vo
   // (norma 5.1.1(v)): después ya no queda sesión con la que pedirlo. Sin token
   // guardado la función no hace nada. Si Apple falla, se registra y el borrado
   // sigue: la fila del token cae en cascada con la cuenta.
-  await Promise.resolve()
+  // Un canje colgado no puede retener el borrado: se espera como mucho 10 s.
+  let giveUp: ReturnType<typeof setTimeout> | undefined;
+  await Promise.race([
+    pendingAppleExchange,
+    new Promise<void>((resolve) => {
+      giveUp = setTimeout(resolve, 10_000);
+    }),
+  ])
+    .finally(() => clearTimeout(giveUp))
     .then(() => target.functions.invoke(APPLE_TOKEN_FUNCTION, { body: { action: 'revoke' } }))
     .then(({ error }) => {
       if (error) console.warn('[lockin] no se ha podido revocar el token de Apple', error);
@@ -1339,11 +1347,16 @@ async function signInWithAppleNative(): Promise<boolean> {
 function storeAppleRefreshToken(client: LockInSupabaseClient, code: string): void {
   const warn = (detail: unknown) =>
     console.warn('[lockin] no se ha podido guardar el token de Apple', detail);
-  try {
-    client.functions
-      .invoke(APPLE_TOKEN_FUNCTION, { body: { action: 'exchange', code } })
-      .then(({ error }) => error && warn(error), warn);
-  } catch (cause) {
-    warn(cause);
-  }
+  // Se recuerda el canje en vuelo: si la cuenta se borra antes de que acabe,
+  // `deleteMyAccount` lo espera para que haya token que revocar.
+  pendingAppleExchange = Promise.resolve()
+    .then(() =>
+      client.functions.invoke(APPLE_TOKEN_FUNCTION, { body: { action: 'exchange', code } })
+    )
+    .then(({ error }) => {
+      if (error) warn(error);
+    }, warn);
 }
+
+/** El último canje de `storeAppleRefreshToken`, ya resuelto o en vuelo. Nunca rechaza. */
+let pendingAppleExchange: Promise<void> = Promise.resolve();

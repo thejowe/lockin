@@ -172,7 +172,10 @@ describe('ensureUserId sin sesión', () => {
   it('si el alta no deja sesión, entra con las credenciales recién creadas', async () => {
     noSession();
     anonymousDisabled();
-    auth.signUp.mockResolvedValue({ data: { user: { id: 'device-1' }, session: null }, error: null });
+    auth.signUp.mockResolvedValue({
+      data: { user: { id: 'device-1' }, session: null },
+      error: null,
+    });
     auth.signInWithPassword.mockResolvedValue({ data: { user: { id: 'device-1' } }, error: null });
 
     await expect(ensureUserId()).resolves.toBe('device-1');
@@ -182,7 +185,10 @@ describe('ensureUserId sin sesión', () => {
   it('si ese login falla, el error sube', async () => {
     noSession();
     anonymousDisabled();
-    auth.signUp.mockResolvedValue({ data: { user: { id: 'device-1' }, session: null }, error: null });
+    auth.signUp.mockResolvedValue({
+      data: { user: { id: 'device-1' }, session: null },
+      error: null,
+    });
     const failure = gotrueError('invalid_credentials');
     auth.signInWithPassword.mockResolvedValue({ data: { user: null }, error: failure });
 
@@ -340,9 +346,9 @@ describe('email y contraseña', () => {
     auth.signUp.mockResolvedValue({ data: { user: { id: 'u-nueva' } }, error: null });
 
     await expect(signUpWithEmail('nueva@example.com', 'pw')).resolves.toBe('u-nueva');
-    expect(Number(await AsyncStorage.getItem('lockin.supabase.email-link-request'))).toBeGreaterThan(
-      0
-    );
+    expect(
+      Number(await AsyncStorage.getItem('lockin.supabase.email-link-request'))
+    ).toBeGreaterThan(0);
   });
 
   it('signUpWithEmail sin usuario devuelto da null, y un rechazo se traduce', async () => {
@@ -502,7 +508,9 @@ describe('LinkedIn', () => {
     });
 
     it('cerrar el navegador es cancelar y no sella nada', async () => {
-      jest.mocked(WebBrowser.openAuthSessionAsync).mockResolvedValue({ type: WebBrowser.WebBrowserResultType.CANCEL });
+      jest
+        .mocked(WebBrowser.openAuthSessionAsync)
+        .mockResolvedValue({ type: 'cancel' as WebBrowser.WebBrowserResultType });
 
       await expect(linkLinkedinIdentity()).resolves.toBe(false);
       expect(auth.exchangeCodeForSession).not.toHaveBeenCalled();
@@ -577,9 +585,9 @@ describe('LinkedIn', () => {
       await AsyncStorage.setItem(LINKEDIN_ATTEMPT_KEY, String(Date.now()));
       identities('email', 'linkedin_oidc');
 
-      await expect(completeAuthLink(`cofounder://auth/callback?code=${code}`)).resolves.toMatchObject(
-        { userId: 'u1' }
-      );
+      await expect(
+        completeAuthLink(`cofounder://auth/callback?code=${code}`)
+      ).resolves.toMatchObject({ userId: 'u1' });
 
       expect(auth.exchangeCodeForSession).toHaveBeenCalledWith(code);
       expect(rpc).toHaveBeenCalledWith('sync_linkedin_verification');
@@ -685,7 +693,10 @@ describe('signInWithProvider por el navegador', () => {
       data: { session: { user: { id: 'u-google', email: null } } },
       error: null,
     });
-    auth.getUser.mockResolvedValue({ data: { user: { id: 'u-google', email: null } }, error: null });
+    auth.getUser.mockResolvedValue({
+      data: { user: { id: 'u-google', email: null } },
+      error: null,
+    });
 
     await signInWithProvider('google');
     await expect(completeAuthLink(`cofounder://auth/callback?code=${code}`)).resolves.toMatchObject(
@@ -705,7 +716,9 @@ describe('signInWithProvider por el navegador', () => {
   });
 
   it('cerrar el navegador es cancelar', async () => {
-    jest.mocked(WebBrowser.openAuthSessionAsync).mockResolvedValue({ type: WebBrowser.WebBrowserResultType.DISMISS });
+    jest
+      .mocked(WebBrowser.openAuthSessionAsync)
+      .mockResolvedValue({ type: 'dismiss' as WebBrowser.WebBrowserResultType });
 
     await expect(signInWithProvider('google')).resolves.toBe(false);
     expect(auth.exchangeCodeForSession).not.toHaveBeenCalled();
