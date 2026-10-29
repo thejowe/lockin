@@ -4,6 +4,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/ambient-background';
+import { BackArrow } from '@/components/back-arrow';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useQuery, useRepositories } from '@/data';
 import { RegisterForm } from '@/features/profile';
@@ -43,6 +44,7 @@ function Register() {
   return (
     <Screen ambient="ember">
       <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+        {router.canGoBack() ? <BackArrow onPress={() => router.back()} /> : null}
         {/* El campo enfocado sube por encima del teclado: ver `profile-form.tsx`. */}
         <KeyboardAwareScrollView
           bottomOffset={Spacing.five}

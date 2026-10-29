@@ -1,9 +1,11 @@
 import { Redirect, useRouter } from 'expo-router';
+import { useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/ambient-background';
+import { BackArrow } from '@/components/back-arrow';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { SignInForm } from '@/features/profile';
 import { accountsAvailable } from '@/features/profile/account-gateway';
@@ -23,18 +25,30 @@ import { accountsAvailable } from '@/features/profile/account-gateway';
  */
 export default function SignInScreen() {
   const router = useRouter();
+  // Aquí y no en el formulario: la flecha cierra primero «Reinicia tu
+  // contraseña» y, solo desde «Vuelve a tu cuenta», la pantalla.
+  const [forgot, setForgot] = useState(false);
 
   if (!accountsAvailable) return <Redirect href="/mode" />;
 
   return (
     <Screen ambient="ember">
       <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+        <BackArrow
+          onPress={() =>
+            forgot ? setForgot(false) : router.canGoBack() ? router.back() : router.replace('/')
+          }
+        />
         {/* El campo enfocado sube por encima del teclado: ver `profile-form.tsx`. */}
         <KeyboardAwareScrollView
           bottomOffset={Spacing.five}
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled">
-          <SignInForm onSignedIn={() => router.replace('/')} onCancel={() => router.back()} />
+          <SignInForm
+            onSignedIn={() => router.replace('/')}
+            forgot={forgot}
+            onForgotChange={setForgot}
+          />
         </KeyboardAwareScrollView>
       </SafeAreaView>
     </Screen>

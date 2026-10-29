@@ -66,11 +66,17 @@ interface Notice {
 export function SignInForm({
   /** La sesión ya es la de la otra cuenta: a dónde sigue la persona lo decide el llamador. */
   onSignedIn,
-  /** Volver sin haber entrado. */
-  onCancel,
+  forgot: forgotProp,
+  onForgotChange,
 }: {
   onSignedIn: () => void;
-  onCancel: () => void;
+  /**
+   * «¿Has olvidado la contraseña?» abre su propia vista: solo el email y el
+   * enlace. Quien monta la pantalla puede llevarla él, porque su flecha de
+   * volver (`BackArrow`) tiene que saber si cierra esa vista o la pantalla.
+   */
+  forgot?: boolean;
+  onForgotChange?: (next: boolean) => void;
 }) {
   const theme = useTheme();
   const repositories = useRepositories();
@@ -78,8 +84,9 @@ export function SignInForm({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmingLeave, setConfirmingLeave] = useState(false);
-  /** «¿Has olvidado la contraseña?» abre su propia vista: solo el email y el enlace. */
-  const [forgot, setForgot] = useState(false);
+  const [ownForgot, setOwnForgot] = useState(false);
+  const forgot = forgotProp ?? ownForgot;
+  const setForgot = onForgotChange ?? setOwnForgot;
   const [busy, setBusy] = useState<Busy>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
 
@@ -218,8 +225,6 @@ export function SignInForm({
             {notice.text}
           </ThemedText>
         ) : null}
-
-        <SecondaryButton label="Volver" onPress={() => showForgot(false)} />
       </View>
     );
   }
@@ -324,8 +329,6 @@ export function SignInForm({
       {confirmingLeave ? null : (
         <ProviderButtons onSignedIn={onSignedIn} disabled={busy !== null} />
       )}
-
-      <SecondaryButton label="Volver" onPress={onCancel} />
     </View>
   );
 }

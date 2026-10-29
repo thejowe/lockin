@@ -4,6 +4,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/ambient-background';
+import { BackArrow } from '@/components/back-arrow';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useQuery } from '@/data';
 import { AboutYouForm, ProviderButtons } from '@/features/profile';
@@ -27,6 +28,7 @@ export default function AboutYouScreen() {
   return (
     <Screen ambient="ember">
       <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+        {router.canGoBack() ? <BackArrow onPress={() => router.back()} /> : null}
         {/* El campo enfocado sube por encima del teclado: ver `profile-form.tsx`. */}
         <KeyboardAwareScrollView
           bottomOffset={Spacing.five}
@@ -39,7 +41,6 @@ export default function AboutYouScreen() {
               await saveSignupBasics(next);
               router.push(registrationRequired ? '/register' : '/profile-form');
             }}
-            onBack={router.canGoBack() ? () => router.back() : undefined}
             // Registrarse con Google o Apple sin pasar por aquí: los datos los
             // pide igualmente el formulario de perfil, y con cuenta ya existente
             // `/` lleva directa al deck.

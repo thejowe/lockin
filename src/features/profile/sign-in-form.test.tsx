@@ -64,7 +64,6 @@ const ASEGURADA: AccountState = {
 };
 
 const onSignedIn = jest.fn();
-const onCancel = jest.fn();
 
 let repositories: Repositories;
 
@@ -82,7 +81,7 @@ beforeEach(() => {
 async function renderForm() {
   return render(
     <DataProvider value={repositories}>
-      <SignInForm onSignedIn={onSignedIn} onCancel={onCancel} />
+      <SignInForm onSignedIn={onSignedIn} />
     </DataProvider>
   );
 }
@@ -299,7 +298,7 @@ describe('SignInForm', () => {
   });
 
   describe('he olvidado mi contraseña', () => {
-    it('el enlace pequeño abre «Reinicia tu contraseña» y Volver regresa a entrar', async () => {
+    it('el enlace pequeño abre «Reinicia tu contraseña» con el email ya escrito', async () => {
       await renderForm();
 
       await fireEvent.changeText(screen.getByLabelText('Email de tu cuenta'), 'ana@example.com');
@@ -308,10 +307,20 @@ describe('SignInForm', () => {
       expect(screen.getByText('Reinicia tu contraseña')).toBeTruthy();
       expect(screen.getByLabelText('Email de tu cuenta').props.value).toBe('ana@example.com');
       expect(screen.queryByLabelText('Contraseña de tu cuenta')).toBeNull();
+    });
 
-      await press('Volver');
-      expect(screen.getByRole('button', { name: 'Entrar' })).toBeTruthy();
-      expect(onCancel).not.toHaveBeenCalled();
+    it('con la vista llevada desde fuera, avisa en vez de cambiarla sola', async () => {
+      const onForgotChange = jest.fn();
+      await render(
+        <DataProvider value={repositories}>
+          <SignInForm onSignedIn={onSignedIn} forgot={false} onForgotChange={onForgotChange} />
+        </DataProvider>
+      );
+
+      await press('¿Has olvidado la contraseña?');
+
+      expect(onForgotChange).toHaveBeenCalledWith(true);
+      expect(screen.queryByText('Reinicia tu contraseña')).toBeNull();
     });
 
     it('manda el correo y no dice si el email existe', async () => {
@@ -364,13 +373,10 @@ describe('SignInForm', () => {
       expect(screen.queryByText(/crear cuenta|reg[íi]strate|registrarte/i)).toBeNull();
     });
 
-    it('«Volver» sale sin haber entrado', async () => {
+    it('no lleva «Volver» abajo: vuelve la flecha de arriba de la pantalla', async () => {
       await renderForm();
 
-      await press('Volver');
-
-      expect(onCancel).toHaveBeenCalledTimes(1);
-      expect(gateway.signInWithEmail).not.toHaveBeenCalled();
+      expect(screen.queryByRole('button', { name: 'Volver' })).toBeNull();
     });
   });
 });
