@@ -44,7 +44,6 @@ import {
   suggestIcebreakers,
   useConversation,
 } from '@/features/chat';
-import { AgreementCard } from '@/features/agreement';
 import { ObjectionableContentError } from '@/features/safety/content-filter';
 import { MessageReportPanel } from '@/features/safety/message-report-panel';
 import { SafetyMenuButton, SafetyPanel } from '@/features/safety/safety-panel';
@@ -204,10 +203,10 @@ function ChatScreenContent() {
           </ScrollView>
         ) : (
           <View style={styles.content}>
-            <View style={styles.lockIn}>
-              <AgreementCard match={match} />
-            </View>
-
+            {/*
+              Sin la tarjeta del acuerdo de socios desde el 2026-10-30 (decisión
+              del usuario): `src/features/agreement` sigue en el repo por si vuelve.
+            */}
             <ScrollView
               ref={scrollRef}
               contentContainerStyle={styles.thread}
@@ -300,12 +299,6 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
-  },
-  lockIn: {
-    paddingHorizontal: Spacing.three,
-    paddingTop: Spacing.two,
-    paddingBottom: Spacing.one,
-    gap: Spacing.two,
   },
   thread: {
     gap: Spacing.two,

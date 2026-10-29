@@ -69,7 +69,7 @@ describe('agreement.yaml', () => {
 
   it('el runner lo encadena después de session-streak.yaml, con siembra y oráculo', () => {
     assert.match(runner, /e2e\/agreement\.yaml/);
-    assert.match(runner, /agreement: 'verified'/);
+    assert.match(runner, /agreement: AGREEMENT_FLOWS \? 'verified' : 'skipped'/);
     // Anclado en los argumentos del spawn, como los demás encadenados.
     const streakRun = runner.indexOf('streakFile,');
     const seeded = runner.indexOf('await prepareAgreement(status, profileName);');

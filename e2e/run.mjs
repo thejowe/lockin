@@ -56,6 +56,11 @@ const journeyFile = join(root, 'e2e/full-journey.yaml');
  * 2026-10-12: la app se centra solo en buscar cofundador y su UI ya no se ve.
  */
 const LOCKIN_FLOWS = false;
+/**
+ * El acuerdo de socios desde el chat. Apagado desde el 2026-10-30: la tarjeta
+ * ya no sale en el chat, así que el flujo no tiene por dónde entrar.
+ */
+const AGREEMENT_FLOWS = false;
 const sessionFile = join(root, 'e2e/session.yaml');
 // Tercer caso, encadenado al anterior: valora de un toque esa misma sesión, ya
 // terminada por `prepareSessionRating`. Ver la cabecera de ese `.yaml`.
@@ -883,37 +888,40 @@ if (command === 'test') {
         }
       }
 
-      // Después de la racha y en el mismo match: la contraparte ya ha respondido
-      // un tema, y el recorrido responde lo mismo para ver la revelación.
-      await prepareAgreement(status, profileName);
+      // Fuera con la tarjeta del chat (`AGREEMENT_FLOWS`).
+      if (AGREEMENT_FLOWS) {
+        // Después de la racha y en el mismo match: la contraparte ya ha respondido
+        // un tema, y el recorrido responde lo mismo para ver la revelación.
+        await prepareAgreement(status, profileName);
 
-      const agreementDir = join(dir, 'agreement');
-      mkdirSync(agreementDir, { recursive: true });
-      const agreementRun = spawnSync(
-        'maestro',
-        [
-          'test',
-          '--format',
-          'junit',
-          '--output',
-          join(agreementDir, 'maestro.xml'),
-          '--debug-output',
-          agreementDir,
-          '--test-output-dir',
-          agreementDir,
-          '--flatten-debug-output',
-          '-e',
-          'MESSAGE=' + message,
-          agreementFile,
-        ],
-        { cwd: root, stdio: 'inherit' }
-      );
-      if (agreementRun.error) throw agreementRun.error;
-      if (agreementRun.status !== 0) {
-        const diagnosis = diagnose(agreementDir);
-        return { outcome: diagnosis.kind, why: 'agreement.yaml: ' + diagnosis.why };
+        const agreementDir = join(dir, 'agreement');
+        mkdirSync(agreementDir, { recursive: true });
+        const agreementRun = spawnSync(
+          'maestro',
+          [
+            'test',
+            '--format',
+            'junit',
+            '--output',
+            join(agreementDir, 'maestro.xml'),
+            '--debug-output',
+            agreementDir,
+            '--test-output-dir',
+            agreementDir,
+            '--flatten-debug-output',
+            '-e',
+            'MESSAGE=' + message,
+            agreementFile,
+          ],
+          { cwd: root, stdio: 'inherit' }
+        );
+        if (agreementRun.error) throw agreementRun.error;
+        if (agreementRun.status !== 0) {
+          const diagnosis = diagnose(agreementDir);
+          return { outcome: diagnosis.kind, why: 'agreement.yaml: ' + diagnosis.why };
+        }
+        await verifyAgreementAnswer(status, profileName);
       }
-      await verifyAgreementAnswer(status, profileName);
 
       // La sala grupal también es Lock-In: fuera con el resto (`LOCKIN_FLOWS`).
       if (LOCKIN_FLOWS) {
@@ -1032,7 +1040,7 @@ if (command === 'test') {
             session: LOCKIN_FLOWS ? 'verified' : 'skipped',
             rating: LOCKIN_FLOWS ? 'verified' : 'skipped',
             streak: LOCKIN_FLOWS ? 'verified' : 'skipped',
-            agreement: 'verified',
+            agreement: AGREEMENT_FLOWS ? 'verified' : 'skipped',
             room: LOCKIN_FLOWS ? 'verified' : 'skipped',
             signInAbandon: 'verified',
           },
