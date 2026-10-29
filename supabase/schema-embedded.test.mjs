@@ -2727,7 +2727,10 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
         ('${roomEmpezada}', '${delBea}', 'aceptada', now()),
         ('${roomDeBea}', '${delBea}', 'aceptada', now()),
         ('${roomDeBea}', '${delAna}', 'aceptada', now()),
-        ('${roomDeBea}', '${delCarla}', 'invitada', null);`);
+        ('${roomDeBea}', '${delCarla}', 'invitada', null);
+      -- Refresh tokens de Apple (20261029120000): el de Ana cae con su cuenta.
+      insert into public.apple_refresh_tokens (user_id, refresh_token) values
+        ('${delAna}', 'rt-ana'), ('${delBea}', 'rt-bea');`);
     const countOf = async (table) =>
       Number((await db.query(`select count(*)::int as n from ${table}`)).rows[0].n);
     const roomOf = async (id) =>
@@ -2763,6 +2766,41 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       { anon: false, authenticated: true, public: false }
     );
 
+    // Los refresh tokens de Apple son una credencial: ni anon ni authenticated
+    // los ven ni los tocan, ni siquiera la fila propia. Solo la service role
+    // (la Edge Function `apple-token`).
+    assert.deepEqual(
+      (
+        await db.query(`select
+          bool_or(has_table_privilege(r, 'public.apple_refresh_tokens', p)) as alguno,
+          (select relrowsecurity from pg_class
+            where oid = 'public.apple_refresh_tokens'::regclass) as rls
+          from unnest(array['anon', 'authenticated']) r,
+               unnest(array['SELECT', 'INSERT', 'UPDATE', 'DELETE']) p`)
+      ).rows[0],
+      { alguno: false, rls: true }
+    );
+    await actingAs(delAna);
+    assert.equal(await sonda('select * from public.apple_refresh_tokens'), '42501');
+    assert.equal(
+      await sonda(
+        `insert into public.apple_refresh_tokens (user_id, refresh_token) values ('${delAna}', 'x')`
+      ),
+      '42501'
+    );
+    assert.equal(
+      await sonda(`delete from public.apple_refresh_tokens where user_id = '${delAna}'`),
+      '42501'
+    );
+    await db.exec('reset role;');
+    assert.equal(
+      await sonda(
+        `insert into public.apple_refresh_tokens (user_id, refresh_token) values ('${delCarla}', '')`
+      ),
+      '23514',
+      'un refresh token vacío no se guarda'
+    );
+
     // Ana borra su cuenta: desaparece ella y lo que cuelga de ella.
     await actingAs(delAna);
     await db.query('select public.delete_my_account()');
@@ -2790,6 +2828,13 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
     );
     assert.equal(await countOf('public.session_ratings'), 1, 'valoración de la sesión que sigue');
     assert.equal(await countOf('public.agreement_answers'), 1, 'acuerdo del match que sigue');
+    assert.deepEqual(
+      (await db.query('select user_id from public.apple_refresh_tokens')).rows.map(
+        (row) => row.user_id
+      ),
+      [delBea],
+      'el refresh token de Apple de Ana cae con su cuenta; el de Bea sigue'
+    );
 
     // La sala futura de Ana NO cae con ella: queda cancelada y sin convocante,
     // con Bea y Carla dentro. Es lo que ven en pantalla en vez de verla desaparecer.

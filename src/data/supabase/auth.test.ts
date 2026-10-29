@@ -1141,7 +1141,9 @@ describe('deleteMyAccount', () => {
     const other = {
       functions: {
         invoke: jest.fn(async (name: string) => {
-          order.push(name === 'moderate-board' ? 'tablón' : 'foto');
+          order.push(
+            { 'moderate-board': 'tablón', 'apple-token': 'apple' }[name as string] ?? 'foto'
+          );
           return { data: null, error: new Error('función caída') };
         }),
       },
@@ -1151,6 +1153,7 @@ describe('deleteMyAccount', () => {
       }),
       auth: { signOut: jest.fn().mockResolvedValue({ error: null }) },
     };
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
 
     await expect(
       deleteMyAccount(other as unknown as Parameters<typeof deleteMyAccount>[0])
@@ -1162,7 +1165,39 @@ describe('deleteMyAccount', () => {
     expect(other.functions.invoke).toHaveBeenCalledWith('moderate-board', {
       body: { action: 'remove-all' },
     });
-    expect(order).toEqual(['foto', 'tablón', 'rpc']);
+    expect(other.functions.invoke).toHaveBeenCalledWith('apple-token', {
+      body: { action: 'revoke' },
+    });
+    // La revocación de Apple va ANTES del RPC (después ya no hay sesión), y
+    // su fallo se registra pero no impide borrar.
+    expect(order).toEqual(['foto', 'tablón', 'apple', 'rpc']);
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('revocar el token de Apple'),
+      expect.any(Error)
+    );
+    warn.mockRestore();
+  });
+
+  it('si la revocación de Apple lanza, la cuenta se borra igual', async () => {
+    const other = {
+      functions: {
+        invoke: jest.fn(async (name: string) => {
+          if (name === 'apple-token') throw new Error('sin red');
+          return { data: null, error: null };
+        }),
+      },
+      rpc: jest.fn().mockResolvedValue({ error: null }),
+      auth: { signOut: jest.fn().mockResolvedValue({ error: null }) },
+    };
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    await expect(
+      deleteMyAccount(other as unknown as Parameters<typeof deleteMyAccount>[0])
+    ).resolves.toBeUndefined();
+
+    expect(other.rpc).toHaveBeenCalledWith('delete_my_account');
+    expect(warn).toHaveBeenCalledTimes(1);
+    warn.mockRestore();
   });
 
   it('si el servidor falla no toca la sesión local', async () => {
@@ -1195,6 +1230,80 @@ describe('signInWithProvider con Apple', () => {
     });
     expect(auth.signInWithOAuth).not.toHaveBeenCalled();
     expect(WebBrowser.openAuthSessionAsync).not.toHaveBeenCalled();
+  });
+
+  describe('refresh token para revocarlo al borrar la cuenta', () => {
+    const invoke = jest.fn();
+    let warn: jest.SpyInstance;
+    beforeEach(() => {
+      Platform.OS = 'ios';
+      invoke.mockReset();
+      warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+      jest.mocked(getSupabaseClient).mockReturnValue({
+        auth,
+        rpc,
+        functions: { invoke },
+      } as unknown as ReturnType<typeof getSupabaseClient>);
+      auth.signInWithIdToken.mockResolvedValue({ data: {}, error: null });
+    });
+    afterEach(() => warn.mockRestore());
+    const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+    const appleSheet = (authorizationCode: string | null) =>
+      jest
+        .mocked(AppleAuthentication.signInAsync)
+        .mockResolvedValue({ identityToken: 'jwt-de-apple', authorizationCode } as never);
+
+    it('manda el authorizationCode a `apple-token` después de entrar', async () => {
+      appleSheet('code-de-apple');
+      invoke.mockResolvedValue({ data: { ok: true }, error: null });
+
+      await expect(signInWithProvider('apple')).resolves.toBe(true);
+      await flush();
+
+      expect(invoke).toHaveBeenCalledWith('apple-token', {
+        body: { action: 'exchange', code: 'code-de-apple' },
+      });
+      expect(auth.signInWithIdToken.mock.invocationCallOrder[0]).toBeLessThan(
+        invoke.mock.invocationCallOrder[0]
+      );
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it('si el canje falla, se registra y el login sigue', async () => {
+      appleSheet('code-de-apple');
+      invoke.mockResolvedValue({ data: null, error: new Error('502') });
+      await expect(signInWithProvider('apple')).resolves.toBe(true);
+      await flush();
+      expect(warn).toHaveBeenCalledTimes(1);
+
+      invoke.mockRejectedValue(new Error('sin red'));
+      await expect(signInWithProvider('apple')).resolves.toBe(true);
+      await flush();
+      expect(warn).toHaveBeenCalledTimes(2);
+
+      invoke.mockImplementation(() => {
+        throw new Error('cliente sin funciones');
+      });
+      await expect(signInWithProvider('apple')).resolves.toBe(true);
+      expect(warn).toHaveBeenCalledTimes(3);
+    });
+
+    it('sin authorizationCode no llama a la función', async () => {
+      appleSheet(null);
+      await expect(signInWithProvider('apple')).resolves.toBe(true);
+      await flush();
+      expect(invoke).not.toHaveBeenCalled();
+    });
+
+    it('si GoTrue rechaza el token, no se manda el code', async () => {
+      appleSheet('code-de-apple');
+      auth.signInWithIdToken.mockResolvedValue({
+        data: {},
+        error: gotrueError('provider_disabled', 'Unsupported provider'),
+      });
+      await expect(signInWithProvider('apple')).rejects.toThrow();
+      expect(invoke).not.toHaveBeenCalled();
+    });
   });
 
   it('cerrar la hoja de Apple es cancelar, no un error', async () => {

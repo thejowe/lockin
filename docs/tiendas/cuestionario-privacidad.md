@@ -49,6 +49,8 @@ Fuente: [App Privacy Details](https://developer.apple.com/app-store/app-privacy-
 
 Apple considera recogidos los datos que reciben los proveedores (OpenAI, Supabase, Expo), así que no se pueden omitir por ser encargados. Ya no se declaran Audio Data ni datos de vídeo de llamada.
 
+Entrar con Apple (iOS, desde el 29-oct-2026 en el código): el servidor guarda el **refresh token de Apple** en `apple_refresh_tokens` (tabla solo de service role, Edge Function `apple-token`) con el único fin de revocarlo en `appleid.apple.com/auth/revoke` al eliminar la cuenta (5.1.1(v)). Es una credencial técnica de autenticación, no un dato que la app use ni muestre; queda cubierto por «Identifiers → User ID» (App Functionality) y no cambia ninguna respuesta. No afecta a Google Play: el botón de Apple solo sale en iOS.
+
 ## Google Play — Seguridad de los datos
 
 Fuente: [guía del formulario](https://support.google.com/googleplay/android-developer/answer/10787469?hl=es).
@@ -83,7 +85,7 @@ Fuente: [guía del formulario](https://support.google.com/googleplay/android-dev
 
 | Requisito | Estado según los docs | Pendiente |
 | --- | --- | --- |
-| Baja de cuenta en la app (Apple 5.1.1(v), Google) | Implementada: `delete_my_account()` + borrado previo de la foto; botón en Perfil > Cuenta. Aplicada en producción según D09; el borrado de fotos en servidor (`20261014140000`) se aplicó el 16-oct | Probar en la build final (T7), incluido que `storage.protect_delete` no bloquee el borrado y que la foto ya no se pueda firmar ni abrir |
+| Baja de cuenta en la app (Apple 5.1.1(v), Google) | Implementada: `delete_my_account()` + borrado previo de la foto; botón en Perfil > Cuenta. Aplicada en producción según D09; el borrado de fotos en servidor (`20261014140000`) se aplicó el 16-oct. Cuentas de Apple: el token se revoca antes del borrado (`apple-token` + `20261029120000`, en el código el 29-oct) | Probar en la build final (T7), incluido que `storage.protect_delete` no bloquee el borrado y que la foto ya no se pueda firmar ni abrir. **Apple:** aplicar `20261029120000`, desplegar `apple-token` con sus cuatro secretos y probar en iPhone que tras borrar la app desaparece de Ajustes > Iniciar sesión con Apple |
 | Bloquear y reportar **perfiles** y **mensajes** (Apple 1.2, UGC de Google) | Implementado en el código: `block_profile()`, `report_profile()`, `report_message` (panel de reporte de mensaje en el chat; migración `20261014130000`) | **Migración sin aplicar en producción**; probar en la build (T7) |
 | Filtrado de contenido objetable (Apple 1.2) | Filtro básico es/en en cliente para bio, textos de perfil y mensajes (`src/features/safety/content-filter.ts`) + fotos moderadas con OpenAI en servidor + revisión de reportes | Describirlo como complemento, no como moderación completa (ver notas de revisor) |
 | Aceptación de Términos y Normas antes de publicar (Apple 1.2) | Implementada: pantalla de aceptación con versión y fecha (`TERMS_VERSION` = 2026-10-18), puerta en onboarding, chat y foto; enlaces legales en Perfil | **Migración `20261014120000` sin aplicar en producción**; la puerta del servidor aún no existe (solo cliente, decisión 9) |

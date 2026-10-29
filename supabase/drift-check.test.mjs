@@ -34,6 +34,23 @@ test('ve los sellos de GitHub y LinkedIn y la foto cerrados a authenticated, en 
   ]);
 });
 
+test('ve las tablas cerradas a authenticated (solo service role)', () => {
+  // Para estas, el 42501 al leer es lo esperado; un 200 sería la deriva.
+  assert.deepEqual([...real.closed].sort(), ['apple_refresh_tokens', 'user_reports']);
+});
+
+test('`revoke all` seguido de `grant select` de tabla NO cierra la tabla', () => {
+  const sql = `
+    create table public.cosas (id uuid);
+    revoke all on table public.cosas from public, anon, authenticated;
+    grant select on table public.cosas to authenticated;
+    create table public.secretos (id uuid);
+    revoke all on table public.secretos from public, anon, authenticated;
+    grant update (id) on public.secretos to authenticated;
+  `;
+  assert.deepEqual(parseMigrations(sql).closed, ['secretos']);
+});
+
 test('link_github NO está cerrado: sin sello es un campo del formulario', () => {
   const cerradas = real.sealed.filter((s) => s.column === 'link_github');
   assert.deepEqual(cerradas, []);

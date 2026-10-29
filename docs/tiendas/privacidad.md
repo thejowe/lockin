@@ -1,5 +1,7 @@
 # Política de privacidad de cofounder
 
+> Revisada el 29 de octubre de 2026 (sin cambiar de versión; decidir si pide 1.4): §2 y §7 explican el token técnico de Apple que se guarda para revocar el acceso al eliminar la cuenta (App Store 5.1.1(v)). Hasta que la migración `20261029120000_apple_refresh_tokens` y la función `apple-token` estén en producción con sus secretos, el servidor no guarda ni revoca nada.
+>
 > Revisada el 21 de octubre de 2026 (versión 1.3): los emails de cuenta pasan a enviarse con Brevo.
 >
 > Revisada el 20 de octubre de 2026 (versión 1.2): vía de revisión humana para las fotos que rechaza la revisión automática (art. 22 RGPD), aclaración de que las personas de 16 y 17 años son menores de edad, y retirada de la reserva de borrar cuentas inactivas, que no tiene proceso detrás.
@@ -26,7 +28,7 @@ La app puede crear una cuenta sin pedirte un correo. Aunque el acceso sea «anó
 
 Puedes añadir y confirmar un email y una contraseña para recuperar la cuenta desde otro dispositivo; también existen alta y acceso por email. El email no forma parte del perfil que ven otras personas.
 
-**Acceso con Google o Apple (opcional).** Si entras con Google o con Apple, ese servicio nos confirma tu email y el servicio de autenticación guarda los datos básicos que envía: con Google, tu email, tu nombre y la dirección de la foto de tu cuenta; con Apple, tu email (que puede ser una dirección de reenvío de Apple si eliges ocultarlo). Los usamos solo para identificar tu cuenta; no se publican en tu perfil.
+**Acceso con Google o Apple (opcional).** Si entras con Google o con Apple, ese servicio nos confirma tu email y el servicio de autenticación guarda los datos básicos que envía: con Google, tu email, tu nombre y la dirección de la foto de tu cuenta; con Apple, tu email (que puede ser una dirección de reenvío de Apple si eliges ocultarlo). Los usamos solo para identificar tu cuenta; no se publican en tu perfil. Si entras con Apple desde un iPhone, nuestro servidor guarda además un código técnico que emite Apple (un token de actualización) con un único fin: pedir a Apple que retire el acceso de la app a tu Apple ID cuando eliminas la cuenta. No se usa para nada más, no sale del servidor y se borra con la cuenta.
 
 Si verificas tu enlace de GitHub, se vincula tu identidad de GitHub y se publica el nombre de esa cuenta y la fecha de verificación junto al distintivo «GitHub verificado». El distintivo indica que el enlace de GitHub te pertenece; no acredita tu identidad ni tus conocimientos. El servicio de autenticación puede recibir otros metadatos de GitHub según la configuración del proveedor.
 
@@ -90,7 +92,7 @@ Para completar el perfil, la app pide nombre, edad, zona, disponibilidad y al me
 
 ## 7. Cuánto tiempo se conservan
 
-Conservamos tus datos mientras tu cuenta exista. Al eliminar la cuenta desde la app (Perfil > Cuenta > Eliminar mi cuenta) se borran de inmediato tu perfil y los datos asociados. Al borrar la cuenta, el servidor intenta eliminar también tus fotos del almacenamiento (la de perfil, las del tablón y cualquier subida pendiente) y, en todo caso, dejan de ser accesibles. Si alguna de esas retiradas falla, puede quedar un archivo sin enlace ni metadatos en el almacenamiento hasta que lo retiremos, y los sistemas de copia del proveedor pueden conservar un residuo técnico; si necesitas una confirmación de retirada, escríbenos a cofounder.soporte@gmail.com.
+Conservamos tus datos mientras tu cuenta exista. Al eliminar la cuenta desde la app (Perfil > Cuenta > Eliminar mi cuenta) se borran de inmediato tu perfil y los datos asociados. Al borrar la cuenta, el servidor intenta eliminar también tus fotos del almacenamiento (la de perfil, las del tablón y cualquier subida pendiente) y, en todo caso, dejan de ser accesibles. Si alguna de esas retiradas falla, puede quedar un archivo sin enlace ni metadatos en el almacenamiento hasta que lo retiremos, y los sistemas de copia del proveedor pueden conservar un residuo técnico; si necesitas una confirmación de retirada, escríbenos a cofounder.soporte@gmail.com. Si entraste con Apple desde un iPhone, antes de borrar la cuenta pedimos a Apple que retire el acceso de la app a tu Apple ID; si Apple no responde, la cuenta se borra igualmente y puedes retirar ese acceso tú en Ajustes > tu nombre > Iniciar sesión con Apple.
 
 - **Cuentas inactivas:** no las eliminamos por inactividad. Si en el futuro lo hacemos, lo indicaremos aquí con el plazo y avisaremos antes a quien tenga email.
 - **Copias de seguridad del proveedor:** pueden conservar datos eliminados hasta 30 días más.

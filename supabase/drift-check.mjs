@@ -368,6 +368,30 @@ export function parseMigrations(sql) {
     }
   }
 
+  // --- Tablas CERRADAS a authenticated -------------------------------------
+  //
+  // `revoke all` (o `select`) a `authenticated` sin un `grant select` de TABLA
+  // que lo devuelva: solo la service role las lee (`user_reports`,
+  // `apple_refresh_tokens`). Para estas el 42501 al leer es lo esperado, no
+  // deriva, y lo que sería deriva es un 200.
+  const tableGrants = new Set();
+  for (const m of sql.matchAll(
+    /grant\s+([a-z\s,]+?)\s+on\s+(?:table\s+)?public\.(\w+)\s+to\s+([^;]+);/gi
+  )) {
+    for (const priv of splitTopLevel(m[1])) {
+      for (const role of splitTopLevel(m[3])) {
+        tableGrants.add(`${m[2]}.${priv.trim().toLowerCase()}.${role.trim().toLowerCase()}`);
+      }
+    }
+  }
+  const closed = [...tables.keys()].filter(
+    (table) =>
+      (wideRevokes.has(`${table}.all.authenticated`) ||
+        wideRevokes.has(`${table}.select.authenticated`)) &&
+      !tableGrants.has(`${table}.select.authenticated`) &&
+      !tableGrants.has(`${table}.all.authenticated`)
+  );
+
   const functions = [];
   for (const m of sql.matchAll(/create (?:or replace )?function public\.(\w+)\s*\(/gi)) {
     const open = m.index + m[0].length - 1;
@@ -391,7 +415,7 @@ export function parseMigrations(sql) {
     ...sql.matchAll(/create policy "([^"]+)"\s+on\s+realtime\.messages/gi),
   ].map((m) => m[1]);
 
-  return { enums, tables, functions, constraints, sealed, realtimePolicies };
+  return { enums, tables, functions, constraints, sealed, closed, realtimePolicies };
 }
 
 // ---------------------------------------------------------------------------
@@ -607,6 +631,19 @@ if (isMain) {
       drift(`falta la tabla public.${table}`);
       continue;
     }
+    if (expected.closed.includes(table)) {
+      // Cerrada a authenticated: sus columnas no se pueden sondear desde aquí
+      // (las coteja la huella), pero sí que siga cerrada.
+      if (head.code === '42501') {
+        ok(`public.${table} — existe y está cerrada a authenticated (solo service role)`);
+      } else {
+        drift(
+          `public.${table} debería estar cerrada a authenticated y responde ` +
+            `${head.status} ${head.code ?? ''} ${head.message}`
+        );
+      }
+      continue;
+    }
     if (head.status !== 200) {
       drift(
         `public.${table} no es legible por un usuario autenticado: ${head.code} ${head.message}`
@@ -730,6 +767,7 @@ if (isMain) {
   console.log('\nValores de los enums');
   const enumColumn = new Map();
   for (const [table, columns] of expected.tables) {
+    if (expected.closed.includes(table)) continue; // no se lee: no sirve de sonda
     for (const column of columns) {
       const isArray = column.type.endsWith('[]');
       const base = isArray ? column.type.slice(0, -2) : column.type;

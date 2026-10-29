@@ -502,7 +502,7 @@ describe('LinkedIn', () => {
     });
 
     it('cerrar el navegador es cancelar y no sella nada', async () => {
-      jest.mocked(WebBrowser.openAuthSessionAsync).mockResolvedValue({ type: 'cancel' });
+      jest.mocked(WebBrowser.openAuthSessionAsync).mockResolvedValue({ type: WebBrowser.WebBrowserResultType.CANCEL });
 
       await expect(linkLinkedinIdentity()).resolves.toBe(false);
       expect(auth.exchangeCodeForSession).not.toHaveBeenCalled();
@@ -705,7 +705,7 @@ describe('signInWithProvider por el navegador', () => {
   });
 
   it('cerrar el navegador es cancelar', async () => {
-    jest.mocked(WebBrowser.openAuthSessionAsync).mockResolvedValue({ type: 'dismiss' });
+    jest.mocked(WebBrowser.openAuthSessionAsync).mockResolvedValue({ type: WebBrowser.WebBrowserResultType.DISMISS });
 
     await expect(signInWithProvider('google')).resolves.toBe(false);
     expect(auth.exchangeCodeForSession).not.toHaveBeenCalled();

@@ -45,7 +45,7 @@ function fakeClient(
   } = {}
 ) {
   const calls: string[] = [];
-  const query = {
+  const query: Record<string, jest.Mock> = {
     select: jest.fn(() => query),
     eq: jest.fn(() => query),
     order: jest.fn(async () => ({

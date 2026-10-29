@@ -80,6 +80,9 @@ import type { EmailOtpType, User } from '@supabase/supabase-js';
 /** Credenciales de la cuenta de dispositivo del paso 3. */
 const DEVICE_ACCOUNT_KEY = 'lockin.supabase.device-account';
 
+/** Edge Function que guarda y revoca el refresh token de Apple (norma 5.1.1(v)). */
+const APPLE_TOKEN_FUNCTION = 'apple-token';
+
 /**
  * Los emails que fabrica el paso 3. Se reconocen por su forma porque son la
  * diferencia entre "tienes email, estás a salvo" y "tienes un email que no
@@ -869,6 +872,16 @@ export async function deleteMyAccount(client?: LockInSupabaseClient): Promise<vo
   await Promise.resolve()
     .then(() => target.functions.invoke('moderate-board', { body: { action: 'remove-all' } }))
     .catch(() => undefined);
+  // Si la cuenta entró con Apple, su token se revoca en Apple ANTES de borrar
+  // (norma 5.1.1(v)): después ya no queda sesión con la que pedirlo. Sin token
+  // guardado la función no hace nada. Si Apple falla, se registra y el borrado
+  // sigue: la fila del token cae en cascada con la cuenta.
+  await Promise.resolve()
+    .then(() => target.functions.invoke(APPLE_TOKEN_FUNCTION, { body: { action: 'revoke' } }))
+    .then(({ error }) => {
+      if (error) console.warn('[lockin] no se ha podido revocar el token de Apple', error);
+    })
+    .catch((cause) => console.warn('[lockin] no se ha podido revocar el token de Apple', cause));
 
   const { error } = await target.rpc('delete_my_account');
   if (error) throw toAccountError(error);
@@ -1304,10 +1317,33 @@ async function signInWithAppleNative(): Promise<boolean> {
     throw new Error('Apple no ha devuelto tu identificación. Vuelve a intentarlo.');
   }
 
-  const { error } = await getSupabaseClient().auth.signInWithIdToken({
+  const client = getSupabaseClient();
+  const { error } = await client.auth.signInWithIdToken({
     provider: 'apple',
     token: credential.identityToken,
   });
   if (error) throw toAccountError(error);
+  if (credential.authorizationCode) storeAppleRefreshToken(client, credential.authorizationCode);
   return true;
+}
+
+/**
+ * Guarda el refresh token de Apple en el servidor para poder revocarlo al borrar
+ * la cuenta (norma 5.1.1(v)): en este flujo GoTrue no se queda con ninguno. La
+ * Edge Function `apple-token` canjea el `authorizationCode` (de un solo uso y
+ * que caduca en minutos, por eso se manda ya) con la clave .p8.
+ *
+ * No se espera ni puede fallar el login: si el canje no sale, se deja rastro y
+ * la sesión sigue. La siguiente entrada con Apple lo vuelve a intentar.
+ */
+function storeAppleRefreshToken(client: LockInSupabaseClient, code: string): void {
+  const warn = (detail: unknown) =>
+    console.warn('[lockin] no se ha podido guardar el token de Apple', detail);
+  try {
+    client.functions
+      .invoke(APPLE_TOKEN_FUNCTION, { body: { action: 'exchange', code } })
+      .then(({ error }) => error && warn(error), warn);
+  } catch (cause) {
+    warn(cause);
+  }
 }
