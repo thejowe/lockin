@@ -1,6 +1,6 @@
 import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, { Easing, FadeInUp } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -11,13 +11,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Curves, Duration, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useRepositories } from '@/data';
 import { useRegistrationGate } from '@/features/profile';
-import { describeAccountError } from '@/features/profile/account-copy';
-import {
-  accountsAvailable,
-  enabledAuthProviders,
-  registrationRequired,
-  signInWithProvider,
-} from '@/features/profile/account-gateway';
+import { accountsAvailable, registrationRequired } from '@/features/profile/account-gateway';
 
 const easeOut = Easing.bezier(...Curves.out);
 
@@ -25,15 +19,6 @@ const easeOut = Easing.bezier(...Curves.out);
 const WORDMARK_DELAY_MS = 900;
 /** Y los botones, cuando el nombre ya se lee. */
 const ACTIONS_DELAY_MS = 1250;
-
-/**
- * «Continuar con Google / Apple» (2026-10-17): entra o crea la cuenta en un
- * paso. Solo si la compilación los tiene configurados (`EXPO_PUBLIC_AUTH_PROVIDERS`).
- * Apple solo en iOS: es donde la norma 4.8 de la App Store lo exige al ofrecer
- * Google, y en Android no aporta nada.
- */
-const offerGoogle = accountsAvailable && enabledAuthProviders.has('google');
-const offerApple = accountsAvailable && enabledAuthProviders.has('apple') && Platform.OS === 'ios';
 
 /**
  * La bienvenida: lo primero que ve quien abre cofounder sin perfil.
@@ -51,9 +36,8 @@ const offerApple = accountsAvailable && enabledAuthProviders.has('apple') && Pla
  * Quien ya tiene la cuenta confirmada y aún no tiene perfil no pinta nada aquí:
  * lo que le falta es el formulario.
  *
- * Con Google o Apple no hay «Sobre ti» ni correo que confirmar (el proveedor
- * ya lo verificó): al volver, `/` decide entre el formulario (cuenta nueva) y el
- * deck (cuenta con perfil).
+ * «Continuar con Google / Apple» vive desde el 2026-10-29 dentro de «Iniciar
+ * sesión» y de «Registrarse» (`provider-buttons.tsx`), no aquí.
  */
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -63,24 +47,6 @@ export default function WelcomeScreen() {
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [provider, setProvider] = useState<'google' | 'apple' | null>(null);
-
-  async function handleProvider(next: 'google' | 'apple') {
-    if (provider) return;
-    setProvider(next);
-    setError(null);
-    try {
-      if (!(await signInWithProvider(next))) return;
-      // La sesión es otra (la del proveedor): el modo se guarda en ella.
-      await repositories.session.setActiveMode('par');
-      router.replace('/');
-    } catch (cause) {
-      setError(describeAccountError(cause));
-    } finally {
-      setProvider(null);
-    }
-  }
-
   async function handleRegister() {
     setSaving(true);
     setError(null);
@@ -139,27 +105,9 @@ export default function WelcomeScreen() {
             label={saving ? 'Un momento…' : 'Registrarse'}
             tint="dark"
             revealDelay={ACTIONS_DELAY_MS}
-            disabled={saving || provider !== null}
+            disabled={saving}
             onPress={() => void handleRegister()}
           />
-          {offerGoogle ? (
-            <GlassButton
-              label={provider === 'google' ? 'Abriendo Google…' : 'Continuar con Google'}
-              tint="dark"
-              revealDelay={ACTIONS_DELAY_MS}
-              disabled={provider !== null}
-              onPress={() => void handleProvider('google')}
-            />
-          ) : null}
-          {offerApple ? (
-            <GlassButton
-              label={provider === 'apple' ? 'Abriendo Apple…' : 'Continuar con Apple'}
-              tint="dark"
-              revealDelay={ACTIONS_DELAY_MS}
-              disabled={provider !== null}
-              onPress={() => void handleProvider('apple')}
-            />
-          ) : null}
         </View>
       </SafeAreaView>
     </Screen>

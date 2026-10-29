@@ -29,7 +29,7 @@
 
 import { BlurView } from 'expo-blur';
 import { GlassView } from 'expo-glass-effect';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
@@ -68,6 +68,8 @@ const TINT = {
 
 export function GlassButton({
   label,
+  icon,
+  accessibilityLabel,
   tint,
   onPress,
   disabled = false,
@@ -76,6 +78,10 @@ export function GlassButton({
   style,
 }: {
   label: string;
+  /** Marca a la derecha del texto («Continuar con» + logo). Va con `accessibilityLabel`. */
+  icon?: ReactNode;
+  /** Lo que lee el lector de pantalla cuando el texto solo no lo cuenta todo. */
+  accessibilityLabel?: string;
   tint: GlassTint;
   onPress: () => void;
   disabled?: boolean;
@@ -103,12 +109,12 @@ export function GlassButton({
 
   const content = revealed ? (
     <Animated.View
-      entering={revealDelay === undefined ? undefined : FadeIn.duration(Duration.slow)}>
-      <ThemedText
-        type="bodyStrong"
-        style={{ color: ink, opacity: native && disabled ? Opacity.disabled : 1 }}>
+      entering={revealDelay === undefined ? undefined : FadeIn.duration(Duration.slow)}
+      style={[styles.content, { opacity: native && disabled ? Opacity.disabled : 1 }]}>
+      <ThemedText type="bodyStrong" style={{ color: ink }}>
         {label}
       </ThemedText>
+      {icon}
     </Animated.View>
   ) : null;
 
@@ -116,7 +122,7 @@ export function GlassButton({
     <Animated.View style={[press.style, style]}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={label}
+        accessibilityLabel={accessibilityLabel ?? label}
         accessibilityHint={accessibilityHint}
         accessibilityState={{ disabled }}
         disabled={disabled}
@@ -184,6 +190,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: Spacing.four,
     borderRadius: Radii.pill,
+  },
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
   },
   frost: {
     overflow: 'hidden',

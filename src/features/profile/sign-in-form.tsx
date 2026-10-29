@@ -52,6 +52,7 @@ import { describeAccountError } from './account-copy';
 import { readAccountState, sendPasswordReset, signInWithEmail } from './account-gateway';
 import { Field, PrimaryButton, SecondaryButton, TextField } from './controls';
 import { clearPendingPassword } from './pending-password';
+import { ProviderButtons } from './provider-buttons';
 
 /** Qué se le está pidiendo al servidor ahora mismo, si es que se le pide algo. */
 type Busy = 'entrar' | 'recuperar' | null;
@@ -180,6 +181,10 @@ export function SignInForm({
           perfil, tus matches y tus conversaciones.
         </ThemedText>
       </View>
+
+      {confirmingLeave ? null : (
+        <ProviderButtons onSignedIn={onSignedIn} disabled={busy !== null} />
+      )}
 
       <Field label="Email">
         <TextField

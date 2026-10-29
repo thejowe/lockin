@@ -55,6 +55,7 @@ import {
   readPendingPassword,
   stashPendingPassword,
 } from './pending-password';
+import { ProviderButtons } from './provider-buttons';
 import { TermsCheckbox, TermsLinks } from './terms';
 import { useAccountActions } from './use-account-actions';
 
@@ -314,6 +315,8 @@ export function RegisterForm({
 
       {step === 'account' ? (
         <>
+          <ProviderButtons onSignedIn={onDone} disabled={busy !== null} />
+
           <Field label="Email">
             <TextField
               value={email}
