@@ -21,7 +21,9 @@ import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const journey = readFileSync(join(here, 'full-journey.yaml'), 'utf8');
+// Sin CRLF: en un checkout de Windows el .yaml llega con `\r\n` y las agujas de
+// varias líneas (`launchApp:\n    clearState: false`) no casarían.
+const journey = readFileSync(join(here, 'full-journey.yaml'), 'utf8').replace(/\r\n/g, '\n');
 const fixture = readFileSync(join(here, 'incoming-likes.sql'), 'utf8');
 const verify = readFileSync(join(here, 'verify.mjs'), 'utf8');
 
