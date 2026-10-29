@@ -39,6 +39,14 @@ export default function AuthCallbackRoute() {
   // `replace` y no `push`: la pantalla del enlace no es un sitio al que se
   // pueda volver con el botón atrás — su código es de un solo uso.
   const goNext = useCallback(() => {
+    // El enlace abre esta ruta ENCIMA de lo que hubiera (la bienvenida, «Iniciar
+    // sesión», «Reinicia tu contraseña»…). Sin vaciar la pila, deslizar atrás
+    // desde la app devolvía a esas pantallas como si no hubiera sesión
+    // (2026-10-30). `replace` solo cambia la de arriba.
+    const leave = (href: Parameters<typeof router.replace>[0]) => {
+      if (router.canDismiss()) router.dismissAll();
+      router.replace(href);
+    };
     Promise.all([
       repositories.session.isOnboarded(),
       hasPendingPassword(),
@@ -49,19 +57,19 @@ export default function AuthCallbackRoute() {
         // Del correo de «¿Has olvidado la contraseña?»: directa a elegir la
         // nueva, no a Perfil a buscar el panel (decisión del 2026-10-30).
         if (recovering) {
-          router.replace('/reset-password');
+          leave('/reset-password');
           return;
         }
         // Entrar con Google o Apple no pasa por contraseña: a la puerta de
         // entrada, igual que la bienvenida, para que haya una sola decisión.
         if (!pending && (provider === 'google' || provider === 'apple')) {
-          router.replace('/');
+          leave('/');
           return;
         }
-        router.replace(onboarded && !pending ? '/profile' : '/register');
+        leave(onboarded && !pending ? '/profile' : '/register');
       },
       // Sin poder saber si hay perfil, la puerta de entrada ya sabe enseñar el fallo.
-      () => router.replace('/')
+      () => leave('/')
     );
   }, [router, repositories]);
 
