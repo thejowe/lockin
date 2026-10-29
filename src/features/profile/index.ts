@@ -17,6 +17,7 @@ export { PhotoSection } from './photo-section';
 export { ProfileAvatar } from './profile-avatar';
 export { ProfileDetails } from './profile-details';
 export { ProfileForm, type ProfileFormProps, type ProfileSeed } from './profile-form';
+export { NewPasswordForm } from './new-password-form';
 export { ProviderButtons } from './provider-buttons';
 export { RegisterForm } from './register-form';
 export { RequireVerifiedEmail } from './require-verified-email';

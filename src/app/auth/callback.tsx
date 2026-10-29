@@ -6,7 +6,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Screen } from '@/components/ambient-background';
 import { useRepositories } from '@/data';
 import { AuthCallback, authLinkFromParams } from '@/features/profile';
-import { accountsAvailable, currentSignInProvider } from '@/features/profile/account-gateway';
+import {
+  accountsAvailable,
+  currentSignInProvider,
+  isRecoveringPassword,
+} from '@/features/profile/account-gateway';
 import { hasPendingPassword } from '@/features/profile/pending-password';
 
 /**
@@ -39,8 +43,15 @@ export default function AuthCallbackRoute() {
       repositories.session.isOnboarded(),
       hasPendingPassword(),
       accountsAvailable ? currentSignInProvider() : Promise.resolve(null),
+      accountsAvailable ? isRecoveringPassword() : Promise.resolve(false),
     ]).then(
-      ([onboarded, pending, provider]) => {
+      ([onboarded, pending, provider, recovering]) => {
+        // Del correo de «¿Has olvidado la contraseña?»: directa a elegir la
+        // nueva, no a Perfil a buscar el panel (decisión del 2026-10-30).
+        if (recovering) {
+          router.replace('/reset-password');
+          return;
+        }
         // Entrar con Google o Apple no pasa por contraseña: a la puerta de
         // entrada, igual que la bienvenida, para que haya una sola decisión.
         if (!pending && (provider === 'google' || provider === 'apple')) {

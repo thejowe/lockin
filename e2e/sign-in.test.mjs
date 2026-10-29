@@ -7,6 +7,7 @@ const signIn = read('sign-in.yaml');
 const reset = read('password-reset.yaml');
 const form = read('../src/features/profile/sign-in-form.tsx');
 const account = read('../src/features/profile/account-section.tsx');
+const newPassword = read('../src/features/profile/new-password-form.tsx');
 const register = read('../src/features/profile/register-form.tsx');
 const welcome = read('../src/app/(onboarding)/mode.tsx');
 const tabs = read('../src/components/app-tabs.tsx');
@@ -71,7 +72,7 @@ describe('entrada y recuperación desde instalación limpia', () => {
         ],
       ],
       [
-        account,
+        newPassword,
         [
           'Elige tu nueva contraseña',
           'Nueva contraseña',
@@ -80,6 +81,7 @@ describe('entrada y recuperación desde instalación limpia', () => {
           'Otra vez',
           'Guardar contraseña',
           'Contraseña guardada. Ya puedes entrar con ella desde otro teléfono.',
+          'Seguir',
         ],
       ],
     ]) {

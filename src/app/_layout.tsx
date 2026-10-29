@@ -115,6 +115,8 @@ export default function RootLayout() {
                 name="legal/[doc]"
                 options={{ ...stackHeader, presentation: 'modal' }}
               />
+              {/* El enlace del correo de recuperación abre aquí la nueva contraseña. */}
+              <Stack.Screen name="reset-password" options={{ presentation: 'modal' }} />
             </Stack>
           </DataProvider>
         </ThemeProvider>
