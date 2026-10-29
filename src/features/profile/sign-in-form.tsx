@@ -41,10 +41,10 @@
  */
 
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radii, Spacing, Stroke } from '@/constants/theme';
+import { Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
 import { useRepositories } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -78,6 +78,8 @@ export function SignInForm({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmingLeave, setConfirmingLeave] = useState(false);
+  /** «¿Has olvidado la contraseña?» abre su propia vista: solo el email y el enlace. */
+  const [forgot, setForgot] = useState(false);
   const [busy, setBusy] = useState<Busy>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
 
@@ -169,6 +171,59 @@ export function SignInForm({
     }
   }
 
+  /** Entra o sale de «Reinicia tu contraseña» con el email que ya hubiera escrito. */
+  function showForgot(next: boolean) {
+    if (busy) return;
+    setNotice(null);
+    setConfirmingLeave(false);
+    setForgot(next);
+  }
+
+  if (forgot) {
+    return (
+      <View style={styles.root}>
+        <View style={styles.header}>
+          <ThemedText type="label" themeColor="textSecondary">
+            Ya tengo cuenta
+          </ThemedText>
+          <ThemedText type="title">Reinicia tu contraseña</ThemedText>
+          <ThemedText type="body" themeColor="textSecondary">
+            Escribe el email de tu cuenta y te mandamos un enlace para elegir una contraseña nueva.
+          </ThemedText>
+        </View>
+
+        <Field label="Email">
+          <TextField
+            value={email}
+            onChangeText={setEmail}
+            accessibilityLabel="Email de tu cuenta"
+            placeholder="tu@email.com"
+            keyboardType="email-address"
+            inputMode="email"
+            textContentType="emailAddress"
+            autoComplete="email"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+        </Field>
+
+        <PrimaryButton
+          label={busy === 'recuperar' ? 'Mandando…' : 'Mandar enlace'}
+          disabled={busy !== null}
+          onPress={() => void handleForgot()}
+        />
+
+        {notice ? (
+          <ThemedText type="small" themeColor={notice.tone} accessibilityRole="alert">
+            {notice.text}
+          </ThemedText>
+        ) : null}
+
+        <SecondaryButton label="Volver" onPress={() => showForgot(false)} />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.root}>
       <View style={styles.header}>
@@ -244,11 +299,24 @@ export function SignInForm({
           <SecondaryButton label="Mejor no" onPress={() => setConfirmingLeave(false)} />
         </View>
       ) : (
-        <PrimaryButton
-          label={busy === 'entrar' ? 'Entrando…' : 'Entrar'}
-          disabled={busy !== null}
-          onPress={() => void handleEnter()}
-        />
+        <>
+          <PrimaryButton
+            label={busy === 'entrar' ? 'Entrando…' : 'Entrar'}
+            disabled={busy !== null}
+            onPress={() => void handleEnter()}
+          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="¿Has olvidado la contraseña?"
+            hitSlop={Spacing.two}
+            disabled={busy !== null}
+            onPress={() => showForgot(true)}
+            style={({ pressed }) => [styles.forgot, { opacity: pressed ? Opacity.pressed : 1 }]}>
+            <ThemedText type="small" themeColor="textSecondary">
+              ¿Has olvidado la contraseña?
+            </ThemedText>
+          </Pressable>
+        </>
       )}
 
       {notice ? (
@@ -257,10 +325,6 @@ export function SignInForm({
         </ThemedText>
       ) : null}
 
-      <SecondaryButton
-        label={busy === 'recuperar' ? 'Mandando…' : 'He olvidado mi contraseña'}
-        onPress={() => void handleForgot()}
-      />
       <SecondaryButton label="Volver" onPress={onCancel} />
     </View>
   );
@@ -269,6 +333,9 @@ export function SignInForm({
 const styles = StyleSheet.create({
   root: {
     gap: Spacing.three,
+  },
+  forgot: {
+    alignSelf: 'center',
   },
   header: {
     gap: Spacing.two,

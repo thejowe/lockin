@@ -64,7 +64,9 @@ describe('entrada y recuperación desde instalación limpia', () => {
       [
         form,
         [
-          'He olvidado mi contraseña',
+          '¿Has olvidado la contraseña?',
+          'Reinicia tu contraseña',
+          'Mandar enlace',
           'Si ese email tiene una cuenta, te hemos mandado un correo para cambiar la contraseña.',
         ],
       ],

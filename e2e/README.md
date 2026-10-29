@@ -562,7 +562,7 @@ el estado, pulsa «Ya tengo cuenta», entra con el email y la contraseña del al
 y comprueba las tabs, la ficha única y el email de la cuenta recuperada.
 
 `password-reset.yaml` corre en dos fases (`request` y `confirm`). La primera
-borra otra vez el estado y pide el correo desde «He olvidado mi contraseña».
+borra otra vez el estado y pide el correo desde «¿Has olvidado la contraseña?» → «Mandar enlace».
 Entre ambas el runner usa `mailpitUrl`, `waitForVerifyLink` y `resolveVerifyLink`
 de `mail.mjs`, exige `type=recovery` y abre el callback con `am start`. Antes de
 pedirlo retira solo el correo de alta ya consumido de ese intento, porque el

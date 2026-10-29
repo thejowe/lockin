@@ -299,11 +299,27 @@ describe('SignInForm', () => {
   });
 
   describe('he olvidado mi contraseña', () => {
+    it('el enlace pequeño abre «Reinicia tu contraseña» y Volver regresa a entrar', async () => {
+      await renderForm();
+
+      await fireEvent.changeText(screen.getByLabelText('Email de tu cuenta'), 'ana@example.com');
+      await press('¿Has olvidado la contraseña?');
+
+      expect(screen.getByText('Reinicia tu contraseña')).toBeTruthy();
+      expect(screen.getByLabelText('Email de tu cuenta').props.value).toBe('ana@example.com');
+      expect(screen.queryByLabelText('Contraseña de tu cuenta')).toBeNull();
+
+      await press('Volver');
+      expect(screen.getByRole('button', { name: 'Entrar' })).toBeTruthy();
+      expect(onCancel).not.toHaveBeenCalled();
+    });
+
     it('manda el correo y no dice si el email existe', async () => {
       await renderForm();
 
       await fireEvent.changeText(screen.getByLabelText('Email de tu cuenta'), ' ana@example.com ');
-      await press('He olvidado mi contraseña');
+      await press('¿Has olvidado la contraseña?');
+      await press('Mandar enlace');
 
       expect(gateway.sendPasswordReset).toHaveBeenCalledWith('ana@example.com');
       expect(screen.getByText(/Si ese email tiene una cuenta/)).toBeTruthy();
@@ -313,7 +329,8 @@ describe('SignInForm', () => {
     it('sin email pide que lo escriba y no manda nada', async () => {
       await renderForm();
 
-      await press('He olvidado mi contraseña');
+      await press('¿Has olvidado la contraseña?');
+      await press('Mandar enlace');
 
       expect(screen.getByText(/Escribe tu email y te mandamos un correo/)).toBeTruthy();
       expect(gateway.sendPasswordReset).not.toHaveBeenCalled();
@@ -326,7 +343,8 @@ describe('SignInForm', () => {
       await renderForm();
 
       await fireEvent.changeText(screen.getByLabelText('Email de tu cuenta'), 'ana@example.com');
-      await press('He olvidado mi contraseña');
+      await press('¿Has olvidado la contraseña?');
+      await press('Mandar enlace');
 
       expect(screen.getByText('Se han mandado demasiados correos.')).toBeTruthy();
     });
