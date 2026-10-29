@@ -89,8 +89,14 @@ function causeCode(cause: unknown): string | undefined {
 function looksOffline(cause: unknown): boolean {
   if (typeof cause !== 'object' || cause === null) return false;
 
-  const { name, message } = cause as { name?: unknown; message?: unknown };
-  if (name === 'AuthRetryableFetchError') return true;
+  const { name, message, status } = cause as {
+    name?: unknown;
+    message?: unknown;
+    status?: unknown;
+  };
+  // supabase-js también llama así a los 5xx: con status hubo respuesta, y eso
+  // no es «sin red» (el «no hay conexión» al entrar con Google, 2026-10-30).
+  if (name === 'AuthRetryableFetchError') return typeof status !== 'number' || status === 0;
 
   return (
     typeof message === 'string' &&

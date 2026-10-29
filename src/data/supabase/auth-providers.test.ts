@@ -745,6 +745,37 @@ describe('signInWithProvider por el navegador', () => {
     await expect(signInWithProvider('google')).rejects.toMatchObject({ reason: 'offline' });
   });
 
+  it('un 500 del servidor no se cuenta como falta de red', async () => {
+    auth.exchangeCodeForSession.mockResolvedValue({
+      data: {},
+      error: Object.assign(new Error('Internal Server Error'), {
+        name: 'AuthRetryableFetchError',
+        status: 500,
+      }),
+    });
+
+    await expect(signInWithProvider('google')).rejects.toMatchObject({ reason: 'unknown' });
+  });
+
+  it('un email repartido entre dos cuentas dice qué pasa, venga del canje o de la vuelta', async () => {
+    const conflict =
+      'Multiple accounts with the same email address in the same linking domain detected: default';
+    auth.exchangeCodeForSession.mockResolvedValue({
+      data: {},
+      error: Object.assign(new Error(conflict), { name: 'AuthRetryableFetchError', status: 500 }),
+    });
+    await expect(signInWithProvider('google')).rejects.toMatchObject({
+      reason: 'email-in-use',
+      message: expect.stringMatching(/otra cuenta de cofounder/),
+    });
+
+    jest.mocked(WebBrowser.openAuthSessionAsync).mockResolvedValue({
+      type: 'success',
+      url: `cofounder://auth/callback?error=server_error&error_description=${encodeURIComponent(conflict)}`,
+    });
+    await expect(signInWithProvider('google')).rejects.toMatchObject({ reason: 'email-in-use' });
+  });
+
   it('una vuelta sin code es un error, no una sesión', async () => {
     jest.mocked(WebBrowser.openAuthSessionAsync).mockResolvedValue({
       type: 'success',

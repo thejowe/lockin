@@ -315,8 +315,6 @@ export function RegisterForm({
 
       {step === 'account' ? (
         <>
-          <ProviderButtons onSignedIn={onDone} disabled={busy !== null} />
-
           <Field label="Email">
             <TextField
               value={email}
@@ -350,6 +348,8 @@ export function RegisterForm({
             disabled={busy !== null}
             onPress={submitAccount}
           />
+
+          <ProviderButtons onSignedIn={onDone} disabled={busy !== null} />
         </>
       ) : null}
 

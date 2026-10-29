@@ -8,7 +8,7 @@
  * después el formulario largo.
  */
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -43,7 +43,10 @@ export function AboutYouForm({
   step,
   onNext,
   onBack,
+  alternatives,
 }: {
+  /** Otras formas de seguir bajo «Continuar» (Google / Apple). */
+  alternatives?: ReactNode;
   initial?: SignupBasics | null;
   /** «Paso 1 de 4», o nada si quien lo monta no cuenta pasos. */
   step?: string;
@@ -134,6 +137,7 @@ export function AboutYouForm({
         disabled={saving}
         onPress={() => void handleNext()}
       />
+      {alternatives}
       {onBack ? <SecondaryButton label="Atrás" onPress={onBack} /> : null}
     </View>
   );

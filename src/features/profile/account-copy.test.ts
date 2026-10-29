@@ -120,6 +120,21 @@ describe('describeAccountError', () => {
       expect(text).toMatch(/No hay conexión con el servidor/);
     });
 
+    it('un 5xx no es falta de red aunque supabase-js lo llame igual', () => {
+      const text = describeAccountError(
+        new AccountError(
+          'unknown',
+          'Internal Server Error',
+          Object.assign(new Error('Internal Server Error'), {
+            name: 'AuthRetryableFetchError',
+            status: 500,
+          })
+        )
+      );
+
+      expect(text).not.toMatch(/conexión/);
+    });
+
     it('lo que `auth.ts` sí escribió en español para la pantalla se respeta', () => {
       // Los dos casos de `completeAuthLink`: van sin `cause` justamente porque
       // el mensaje lo redactó ahí alguien pensando en quien lo va a leer.

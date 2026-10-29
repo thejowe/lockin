@@ -1,6 +1,7 @@
 /**
- * «Continuar con» + el logo de Google o de Apple, dentro de «Ya tengo cuenta» y
- * de «Crea tu cuenta» (2026-10-29; antes estaban sueltos en la bienvenida).
+ * «Continuar con» + el logo de Google o de Apple, dentro de «Ya tengo cuenta»,
+ * de «Sobre ti» y de «Crea tu cuenta» (2026-10-29; antes estaban sueltos en la
+ * bienvenida). Va debajo del formulario de email, tras un «o» (2026-10-30).
  *
  * Es el mismo botón en las dos pantallas porque hace lo mismo: el proveedor no
  * distingue entre entrar y registrarse. Si la persona ya tiene cuenta con ese
@@ -114,6 +115,14 @@ export function ProviderButtons({
 
   return (
     <View style={styles.root}>
+      <View style={styles.divider}>
+        <View style={[styles.line, { backgroundColor: theme.border }]} />
+        <ThemedText type="small" themeColor="textSecondary">
+          o
+        </ThemedText>
+        <View style={[styles.line, { backgroundColor: theme.border }]} />
+      </View>
+
       {providers.map((provider) => (
         <GlassButton
           key={provider}
@@ -137,14 +146,6 @@ export function ProviderButtons({
           {error}
         </ThemedText>
       ) : null}
-
-      <View style={styles.divider}>
-        <View style={[styles.line, { backgroundColor: theme.border }]} />
-        <ThemedText type="small" themeColor="textSecondary">
-          o con tu email
-        </ThemedText>
-        <View style={[styles.line, { backgroundColor: theme.border }]} />
-      </View>
     </View>
   );
 }

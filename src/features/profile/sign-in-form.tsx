@@ -237,10 +237,6 @@ export function SignInForm({
         </ThemedText>
       </View>
 
-      {confirmingLeave ? null : (
-        <ProviderButtons onSignedIn={onSignedIn} disabled={busy !== null} />
-      )}
-
       <Field label="Email">
         <TextField
           value={email}
@@ -324,6 +320,10 @@ export function SignInForm({
           {notice.text}
         </ThemedText>
       ) : null}
+
+      {confirmingLeave ? null : (
+        <ProviderButtons onSignedIn={onSignedIn} disabled={busy !== null} />
+      )}
 
       <SecondaryButton label="Volver" onPress={onCancel} />
     </View>

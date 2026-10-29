@@ -151,6 +151,13 @@ function errorField(error: unknown, field: 'code' | 'name'): string | undefined 
   return typeof value === 'string' ? value : undefined;
 }
 
+/** El status HTTP que trae un error de supabase-js; 0 o `undefined` si no hubo respuesta. */
+function httpStatus(error: unknown): number | undefined {
+  if (typeof error !== 'object' || error === null) return undefined;
+  const value = (error as Record<string, unknown>).status;
+  return typeof value === 'number' ? value : undefined;
+}
+
 /**
  * Traduce un error de GoTrue a un `AccountError`.
  *
@@ -160,6 +167,19 @@ function errorField(error: unknown, field: 'code' | 'name'): string | undefined 
  */
 function toAccountError(error: unknown): AccountError {
   if (error instanceof AccountError) return error;
+
+  // Google o Apple traen un email que ya está en dos cuentas distintas (p. ej.
+  // la de email y otra que vinculó GitHub con él): GoTrue no sabe en cuál
+  // entrar y responde 500 sin `code` propio (2026-10-30). Solo se reconoce por
+  // el texto, venga de `/token` o de la redirección del proveedor.
+  const text = error instanceof Error ? error.message : '';
+  if (/multiple accounts with the same email/i.test(text)) {
+    return new AccountError(
+      'email-in-use',
+      'Ese email ya está en otra cuenta de cofounder. Entra con tu email y tu contraseña.',
+      error
+    );
+  }
 
   switch (errorField(error, 'code')) {
     case 'LI007':
@@ -206,8 +226,9 @@ function toAccountError(error: unknown): AccountError {
       break;
   }
 
-  // Sin código y sin respuesta HTTP: la petición no llegó a salir.
-  if (errorField(error, 'name') === 'AuthRetryableFetchError') {
+  // Sin código y sin respuesta HTTP: la petición no llegó a salir. Ojo:
+  // supabase-js usa el mismo nombre para los 5xx, y eso no es falta de red.
+  if (errorField(error, 'name') === 'AuthRetryableFetchError' && !httpStatus(error)) {
     return new AccountError(
       'offline',
       'No hay conexión con el servidor. Inténtalo otra vez cuando vuelvas a tener red.',
@@ -1295,9 +1316,13 @@ export async function signInWithProvider(provider: 'google' | 'apple'): Promise<
   });
   if (error) throw toAccountError(error);
 
+  // La redirección del proveedor también puede traer el fallo de GoTrue (como
+  // texto en `error_description`): que pase por la misma traducción.
   const outcome = await runOAuth(data.url, redirectTo, async (code) => {
     const { error: exchangeError } = await client.auth.exchangeCodeForSession(code);
     if (exchangeError) throw toAccountError(exchangeError);
+  }).catch((cause: unknown) => {
+    throw toAccountError(cause);
   });
   return outcome === 'done';
 }

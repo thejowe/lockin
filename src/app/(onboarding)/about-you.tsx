@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Screen } from '@/components/ambient-background';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useQuery } from '@/data';
-import { AboutYouForm } from '@/features/profile';
+import { AboutYouForm, ProviderButtons } from '@/features/profile';
 import { registrationRequired } from '@/features/profile/account-gateway';
 import { readSignupBasics, saveSignupBasics } from '@/features/profile/signup-draft';
 
@@ -40,6 +40,14 @@ export default function AboutYouScreen() {
               router.push(registrationRequired ? '/register' : '/profile-form');
             }}
             onBack={router.canGoBack() ? () => router.back() : undefined}
+            // Registrarse con Google o Apple sin pasar por aquí: los datos los
+            // pide igualmente el formulario de perfil, y con cuenta ya existente
+            // `/` lleva directa al deck.
+            alternatives={
+              registrationRequired ? (
+                <ProviderButtons onSignedIn={() => router.replace('/')} />
+              ) : null
+            }
           />
         </KeyboardAwareScrollView>
       </SafeAreaView>
