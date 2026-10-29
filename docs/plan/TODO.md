@@ -1,5 +1,26 @@
 # TODO maestro — LockIn MVP
 
+## ▶ Al retomar (2026-10-29): envío a iOS, con la cuenta de Apple Developer ya activa
+
+**Hecho:**
+- App ID `app.cofounder.mobile` con Sign In with Apple.
+- Clave de Sign in with Apple creada: Team `KMZW9658GJ`, Key `2J7PQSKJR9`.
+- `apple` añadido a `EXPO_PUBLIC_AUTH_PROVIDERS`.
+- Revocación del token de Apple (5.1.1(v)): migración `apple_refresh_tokens` aplicada, `apple-token` desplegada y `codex review` cerrado (detalle en `todo/perfil.md`).
+- Codex CLI 0.166 instalado en este equipo.
+
+**Bloqueado en el usuario, por orden:**
+1. Aceptar los Términos de App Store Connect, que salen al entrar.
+2. Descargar el `.p8` de la clave `2J7PQSKJR9`; solo se puede una vez.
+3. Pegar en Supabase → Edge Functions → Secrets `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_CLIENT_ID` y `APPLE_PRIVATE_KEY`.
+4. Activar Google en Supabase → Providers con el Client ID y el secreto. Si no, el botón de Google de la build falla.
+
+**Después (Claude):**
+- Crear la app «cofounder» en App Store Connect (bundle `app.cofounder.mobile`, idioma español).
+- Poner su `ascAppId` en `submit.production.ios` de `eas.json`.
+- El usuario lanza `npx eas-cli build -p ios --profile production --auto-submit`, porque el login de Apple pide doble factor.
+- Prueba en TestFlight.
+
 ## ▶ Nuevo bloque (2026-10-26): Premium — spec y plan listos
 
 **Al retomar con `pilar` (parado el 2026-10-26 por decisión del usuario, sin código escrito):** ejecutar `docs/superpowers/plans/2026-10-26-premium.md` con `superpowers:subagent-driven-development` **desde la Tarea 1** (contrato y mock). No hay ledger de Premium en `.superpowers/sdd/` ni commits de producto: empezar de cero, con el escaneo previo de conflictos. Antes de nada, comprobar que `Write`/`Edit` funcionan. Los hooks de GSD (`gsd-*-guard.js`, matcher `Write|Edit` en `~/.claude/settings.json`) los bloqueaban porque no encontraban Git Bash. Se añadió `env.CLAUDE_CODE_GIT_BASH_PATH` en ese archivo (copia en `settings.json.bak-2026-10-26`), pero solo carga en una sesión nueva o tras reiniciar la app. Si sigue fallando, no escribir código por PowerShell sin permiso del usuario. La sesión «Premium: ejecutar plan desde la Tarea 1» se paró antes de hacer nada: se puede archivar. El repo está ya en **Expo SDK 58** (`89fd304`); spec, plan y checklist corregidos a 58. `src/features/discover/action-button.tsx` y `use-deck.test.tsx` llevan cambios sin commitear de otra sesión, que toca la Tarea 6: preguntar antes.
