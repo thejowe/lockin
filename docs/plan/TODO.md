@@ -9,17 +9,14 @@
 - Revocación del token de Apple (5.1.1(v)): migración `apple_refresh_tokens` aplicada, `apple-token` desplegada y `codex review` cerrado (detalle en `todo/perfil.md`).
 - Codex CLI 0.166 instalado en este equipo.
 
-**Bloqueado en el usuario, por orden:**
-1. Aceptar los Términos de App Store Connect, que salen al entrar.
-2. Descargar el `.p8` de la clave `2J7PQSKJR9`; solo se puede una vez.
-3. Pegar en Supabase → Edge Functions → Secrets `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_CLIENT_ID` y `APPLE_PRIVATE_KEY`.
-4. Activar Google en Supabase → Providers con el Client ID y el secreto. Si no, el botón de Google de la build falla.
+- Términos de App Store Connect aceptados; app creada (`ascAppId 6828604279`, en `eas.json`).
+- Secretos `APPLE_*` en Supabase (según el usuario); Google y Apple activos (`/auth/v1/settings`).
+- Primera build de producción iOS: build 3, commit `1299aed`, enviada a App Store Connect el 2026-10-29 (EAS build `43956fbe`, submission `c93804c8`). Credenciales de distribución creadas en EAS en modo interactivo; las siguientes builds ya no lo necesitan. La build 2 falló por correr sin terminal interactiva.
 
-**Después (Claude):**
-- Crear la app «cofounder» en App Store Connect (bundle `app.cofounder.mobile`, idioma español).
-- Poner su `ascAppId` en `submit.production.ios` de `eas.json`.
-- El usuario lanza `npx eas-cli build -p ios --profile production --auto-submit`, porque el login de Apple pide doble factor.
-- Prueba en TestFlight.
+**Siguiente (usuario):**
+1. TestFlight: Export Compliance, añadirse como tester interno, instalar.
+2. Probar en iPhone: entrar con Apple, entrar con Google (que vuelva a la app), borrar cuenta de Apple de prueba y mirar los logs de `apple-token`.
+3. Ficha para revisión: capturas, descripción, URL de privacidad, cuestionario (`docs/tiendas/cuestionario-privacidad.md`) y cuenta demo para el revisor.
 
 ## ▶ Nuevo bloque (2026-10-26): Premium — spec y plan listos
 
