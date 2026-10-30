@@ -43,8 +43,10 @@ export type Blocked =
  * fijan delante del deck. Mientras el deck no se relea, se enseña la copia que
  * se tenía (`restoredCards`, que puede faltar si la decisión se tomó antes de
  * que esta pantalla se montara). En cuanto llega una lectura nueva
- * (`data !== restoredBase`) manda ella: la tarjeta se toma de ahí, con su foto
- * renovada, y si el servidor ya no la devuelve (bloqueada, borrada) desaparece.
+ * (`deck !== restoredBase`) manda ella: la tarjeta se toma de ahí, con su foto
+ * renovada. Que no aparezca no prueba nada (el deck es una página de 50): se
+ * pregunta por ella aparte, y solo si el servidor ya no la da (`getById` nulo,
+ * que es lo que pasa con un bloqueo o un borrado) se retira (`gone`).
  */
 interface Session {
   mode: ModePreference;
@@ -52,6 +54,7 @@ interface Session {
   restored: string[];
   restoredCards: DeckProfile[];
   restoredBase: DeckProfile[] | null;
+  gone: string[];
 }
 
 export interface DeckState {
@@ -83,7 +86,7 @@ export interface DeckState {
 }
 
 function emptySession(mode: ModePreference): Session {
-  return { mode, decided: [], restored: [], restoredCards: [], restoredBase: null };
+  return { mode, decided: [], restored: [], restoredCards: [], restoredBase: null, gone: [] };
 }
 
 /** La causa de un rechazo de cupo o de Premium, o `null` si es otro fallo. */
@@ -96,9 +99,16 @@ function blockedBy(cause: unknown): Exclude<Blocked, null> | null {
 export function useDeck(mode: ModePreference): DeckState {
   const repositories = useRepositories();
   const { quotas, refresh: refreshQuotas } = usePremium();
-  const { data, loading, error, refresh } = useQuery(`deck:${mode}`, () =>
-    repositories.discovery.getDeck({ mode })
-  );
+  const query = useQuery(`deck:${mode}`, () => repositories.discovery.getDeck({ mode }));
+  const { loading, refresh } = query;
+
+  // El último deck bueno de este modo: si una relectura falla, `useQuery` suelta
+  // el dato, y el deck usable no puede desaparecer por eso. Se ajusta en render
+  // (patrón de React para estado derivado), sin un efecto.
+  const [kept, setKept] = useState<{ mode: ModePreference; deck: DeckProfile[] } | null>(null);
+  if (query.data !== null && kept?.deck !== query.data) setKept({ mode, deck: query.data });
+  const data = query.data ?? (kept?.mode === mode ? kept.deck : null);
+  const error = query.data === null && data !== null ? null : query.error;
 
   const [session, setSession] = useState<Session>(emptySession(mode));
   const [match, setMatch] = useState<MatchEvent | null>(null);
@@ -112,9 +122,9 @@ export function useDeck(mode: ModePreference): DeckState {
   const freshRead = data !== null && current.restoredBase !== data;
   const pinned = data
     ? current.restored.flatMap((id) => {
-        const card = freshRead
-          ? data.find((profile) => profile.id === id)
-          : current.restoredCards.find((profile) => profile.id === id);
+        if (current.gone.includes(id)) return [];
+        const stale = current.restoredCards.find((profile) => profile.id === id);
+        const card = freshRead ? (data.find((profile) => profile.id === id) ?? stale) : stale;
         return card ? [card] : [];
       })
     : [];
@@ -127,13 +137,49 @@ export function useDeck(mode: ModePreference): DeckState {
     : null;
 
   // Lo último pintado, para los callbacks: así no cierran sobre un deck viejo.
-  const latest = useRef<{ data: DeckProfile[] | null; cards: DeckProfile[] | null }>({
-    data: null,
-    cards: null,
-  });
+  const latest = useRef<{
+    data: DeckProfile[] | null;
+    cards: DeckProfile[] | null;
+    session: Session;
+  }>({ data: null, cards: null, session: current });
   useEffect(() => {
-    latest.current = { data, cards };
+    latest.current = { data, cards, session: current };
   });
+
+  // Tras una lectura nueva, las cartas deshechas que no salen en la página se
+  // comprueban una a una: se quedan salvo que el servidor diga que ya no existen
+  // para quien mira (bloqueo, borrado). Un fallo de red no es evidencia de nada.
+  useEffect(() => {
+    if (data === null) return;
+    const { session: seen } = latest.current;
+    if (seen.restoredBase === data) return;
+    const missing = seen.restored.filter(
+      (id) => !seen.gone.includes(id) && !data.some((profile) => profile.id === id)
+    );
+    let cancelled = false;
+    for (const id of missing) {
+      repositories.profiles.getById(id).then(
+        (profile) => {
+          if (cancelled) return;
+          setSession((previous) => {
+            if (previous.mode !== mode) return previous;
+            if (profile === null) return { ...previous, gone: [...previous.gone, id] };
+            const card: DeckProfile = { ...profile, superLikedMe: false };
+            return {
+              ...previous,
+              restoredCards: [card, ...previous.restoredCards.filter((other) => other.id !== id)],
+            };
+          });
+        },
+        () => {
+          // Sin red no se sabe nada: la carta se queda.
+        }
+      );
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [data, mode, repositories]);
 
   const submit = useCallback(
     (profile: DeckProfile, decision: Decision, options?: { super?: boolean }) => {

@@ -570,5 +570,76 @@ describe('useDeck', () => {
 
       expect(result.current.blocked).toBeNull();
     });
+
+    it('si la carta deshecha no cabe en la página releída, se queda mientras exista', async () => {
+      setMockPremium(true);
+      const { result } = await renderDeck('par');
+      const target = result.current.cards![0];
+      const real = repositories.discovery.getDeck.bind(repositories.discovery);
+      // El deck real devuelve una página: la releída ya no incluye a `target`.
+      jest
+        .spyOn(repositories.discovery, 'getDeck')
+        .mockImplementation(async (filter) =>
+          (await real(filter)).filter((profile) => profile.id !== target.id)
+        );
+
+      await act(async () => {
+        result.current.decide(target, 'pass');
+      });
+      await act(async () => {
+        await result.current.undo();
+      });
+
+      await waitFor(() => expect(repositories.discovery.getDeck).toHaveBeenCalledTimes(1));
+      await act(async () => {});
+      expect(result.current.cards![0].id).toBe(target.id);
+    });
+
+    it('si la releída falla tras deshacer, conserva el deck y la carta, sin error', async () => {
+      setMockPremium(true);
+      const { result } = await renderDeck('par');
+      const before = result.current.cards!.map((profile) => profile.id);
+      const target = result.current.cards![0];
+      jest.spyOn(repositories.discovery, 'getDeck').mockRejectedValue(new Error('sin red'));
+
+      await act(async () => {
+        result.current.decide(target, 'pass');
+      });
+      await act(async () => {
+        await result.current.undo();
+      });
+
+      await waitFor(() => expect(repositories.discovery.getDeck).toHaveBeenCalledTimes(1));
+      await act(async () => {});
+      expect(result.current.loading).toBe(false);
+      expect(result.current.error).toBeNull();
+      expect(result.current.cards!.map((profile) => profile.id)).toEqual(before);
+    });
+
+    it('si no se puede comprobar una carta deshecha por falta de red, se queda', async () => {
+      setMockPremium(true);
+      const { result } = await renderDeck('par');
+      const target = result.current.cards![0];
+      const real = repositories.discovery.getDeck.bind(repositories.discovery);
+      jest
+        .spyOn(repositories.discovery, 'getDeck')
+        .mockImplementation(async (filter) =>
+          (await real(filter)).filter((profile) => profile.id !== target.id)
+        );
+      const getById = jest
+        .spyOn(repositories.profiles, 'getById')
+        .mockRejectedValue(new Error('sin red'));
+
+      await act(async () => {
+        result.current.decide(target, 'pass');
+      });
+      await act(async () => {
+        await result.current.undo();
+      });
+
+      await waitFor(() => expect(getById).toHaveBeenCalledWith(target.id));
+      await act(async () => {});
+      expect(result.current.cards![0].id).toBe(target.id);
+    });
   });
 });
