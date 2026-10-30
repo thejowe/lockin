@@ -4,7 +4,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
-import { useRefreshQuery, useRepositories } from '@/data';
+import { useRefreshQuery, useRefreshQueryPrefix, useRepositories } from '@/data';
 
 import { ReportForm } from './report-form';
 
@@ -47,9 +47,9 @@ export function SafetyPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
   const submitting = useRef(false);
-  const refreshPar = useRefreshQuery('deck:par');
-  const refreshLockin = useRefreshQuery('deck:lockin');
-  const refreshBoth = useRefreshQuery('deck:ambos');
+  const refreshPar = useRefreshQueryPrefix('deck:par');
+  const refreshLockin = useRefreshQueryPrefix('deck:lockin');
+  const refreshBoth = useRefreshQueryPrefix('deck:ambos');
   const refreshMatches = useRefreshQuery('matches');
   const refreshMatch = useRefreshQuery(`match:${matchId ?? ''}`);
 

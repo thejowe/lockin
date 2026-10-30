@@ -18,7 +18,7 @@ import { render, renderHook, screen, waitFor } from '@testing-library/react-nati
 import { act } from 'react';
 import { Text } from 'react-native';
 
-import { DataProvider, useQuery, useRefreshQuery } from '@/data';
+import { DataProvider, useQuery, useRefreshQuery, useRefreshQueryPrefix } from '@/data';
 import { createMockRepositories } from '@/data/mock';
 import { emitMediaStale } from '@/data/media-refresh';
 
@@ -408,6 +408,34 @@ describe('useRefreshQuery', () => {
     const lector = await renderHook(() => useQuery('rooms:live', run), { wrapper });
     await waitFor(() => expect(lector.result.current.data).toBe('un dato'));
     expect(run).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('useRefreshQueryPrefix', () => {
+  it('relee la key exacta y las que cuelgan de ella, y no otras que solo empiezan igual', async () => {
+    const runA = jest.fn(() => Promise.resolve('a'));
+    const runB = jest.fn(() => Promise.resolve('b'));
+    const runC = jest.fn(() => Promise.resolve('c'));
+
+    const { result } = await renderHook(
+      () => ({
+        a: useQuery('deck:par', runA),
+        b: useQuery('deck:par:[["specialties",["dev"]]]', runB),
+        c: useQuery('deck:parity', runC),
+        refrescar: useRefreshQueryPrefix('deck:par'),
+      }),
+      { wrapper }
+    );
+    await waitFor(() => expect(result.current.b.data).toBe('b'));
+    await waitFor(() => expect(result.current.c.data).toBe('c'));
+
+    await act(async () => {
+      result.current.refrescar();
+    });
+
+    await waitFor(() => expect(runA).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(runB).toHaveBeenCalledTimes(2));
+    expect(runC).toHaveBeenCalledTimes(1);
   });
 });
 

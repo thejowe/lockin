@@ -15,7 +15,7 @@
  * hoja. Un cupo agotado no es un error de guardado.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { PremiumRequiredError, QuotaExceededError, useQuery, useRepositories } from '@/data';
 import { usePremium } from '@/features/premium';
@@ -60,6 +60,8 @@ export type Blocked =
  */
 interface Session {
   mode: ModePreference;
+  /** El filtro con el que se ancló lo restaurado (`filterSignature`). */
+  signature: string;
   decided: DeckProfile[];
   restored: string[];
   restoredCards: DeckProfile[];
@@ -95,8 +97,27 @@ export interface DeckState {
   refresh: () => void;
 }
 
-function emptySession(mode: ModePreference): Session {
-  return { mode, decided: [], restored: [], restoredCards: [], restoredBase: null, gone: [] };
+function emptySession(mode: ModePreference, signature: string): Session {
+  return {
+    mode,
+    signature,
+    decided: [],
+    restored: [],
+    restoredCards: [],
+    restoredBase: null,
+    gone: [],
+  };
+}
+
+/**
+ * La sesión que vale para este modo y este filtro. Con otro modo se descarta
+ * todo; con otro filtro solo se sueltan las cartas ancladas por deshacer (el
+ * filtro nuevo puede excluirlas), y lo decidido se conserva.
+ */
+function fit(session: Session, mode: ModePreference, signature: string): Session {
+  if (session.mode !== mode) return emptySession(mode, signature);
+  if (session.signature === signature) return session;
+  return { ...session, signature, restored: [], restoredCards: [], restoredBase: null, gone: [] };
 }
 
 /** La causa de un rechazo de cupo o de Premium, o `null` si es otro fallo. */
@@ -133,7 +154,7 @@ export function useDeck(
 ): DeckState {
   const repositories = useRepositories();
   const { quotas, refresh: refreshQuotas } = usePremium();
-  const signature = filterSignature(filter);
+  const signature = useMemo(() => filterSignature(filter), [filter]);
   // Sin filtro la clave sigue siendo `deck:${mode}`, la que releen otras pantallas.
   const deckKey = signature === '' ? `deck:${mode}` : `deck:${mode}:${signature}`;
   const query = useQuery(deckKey, () => repositories.discovery.getDeck({ ...filter, mode }));
@@ -147,7 +168,12 @@ export function useDeck(
   const handled = useRef<string | null>(null);
   const rejected = query.error instanceof PremiumRequiredError && hasPremiumFilters(filter);
   useEffect(() => {
-    if (!rejected || handled.current === deckKey) return;
+    // Fuera de un rechazo el episodio termina: el mismo filtro puede volver a rechazarse.
+    if (!rejected) {
+      handled.current = null;
+      return;
+    }
+    if (handled.current === deckKey) return;
     handled.current = deckKey;
     onRemoved.current?.(withoutPremiumFilters(filter));
   }, [rejected, deckKey, filter]);
@@ -165,14 +191,14 @@ export function useDeck(
   // stack para enseñar un spinner en cada relectura tras un fallo.
   const loading = data === null && query.loading;
 
-  const [session, setSession] = useState<Session>(emptySession(mode));
+  const [session, setSession] = useState<Session>(emptySession(mode, signature));
   const [match, setMatch] = useState<MatchEvent | null>(null);
   const [failure, setFailure] = useState<Error | null>(null);
   const [blocked, setBlocked] = useState<Blocked>(null);
 
   // Cambiar de modo relee el deck, así que lo decidido con el modo anterior ya
   // no aplica: se descarta comparando en render, sin un efecto de reinicio.
-  const current = session.mode === mode ? session : emptySession(mode);
+  const current = fit(session, mode, signature);
   const decidedIds = new Set(current.decided.map((profile) => profile.id));
   const freshRead = data !== null && current.restoredBase !== data;
   const pinned = data
@@ -221,7 +247,7 @@ export function useDeck(
         (profile) => {
           if (cancelled) return;
           setSession((previous) => {
-            if (previous.mode !== mode) return previous;
+            if (previous.mode !== mode || previous.signature !== signature) return previous;
             if (profile === null) return { ...previous, gone: [...previous.gone, id] };
             // `getById` no sabe de Super Likes: se conserva lo que ya se sabía de la carta.
             const known = previous.restoredCards.find((other) => other.id === id);
@@ -240,7 +266,7 @@ export function useDeck(
     return () => {
       cancelled = true;
     };
-  }, [data, mode, repositories]);
+  }, [data, mode, signature, repositories]);
 
   const submit = useCallback(
     (profile: DeckProfile, decision: Decision, options?: { super?: boolean }) => {
@@ -248,7 +274,7 @@ export function useDeck(
       // La tarjeta ya ha salido de pantalla: descartarla antes de que responda
       // el repositorio evita un hueco en blanco mientras se resuelve la promesa.
       setSession((previous) => {
-        const base = previous.mode === mode ? previous : emptySession(mode);
+        const base = fit(previous, mode, signature);
         return { ...base, decided: [...base.decided, profile] };
       });
 
@@ -275,7 +301,7 @@ export function useDeck(
         }
       );
     },
-    [mode, repositories]
+    [mode, signature, repositories]
   );
 
   const decide = useCallback(
@@ -299,7 +325,7 @@ export function useDeck(
       setFailure(null);
       const readNow = latest.current.data;
       setSession((previous) => {
-        const base = previous.mode === mode ? previous : emptySession(mode);
+        const base = fit(previous, mode, signature);
         const profile = base.decided.find((other) => other.id === id);
         return {
           ...base,
@@ -322,7 +348,7 @@ export function useDeck(
       else setFailure(cause instanceof Error ? cause : new Error(String(cause)));
       return null;
     }
-  }, [mode, refresh, repositories]);
+  }, [mode, signature, refresh, repositories]);
 
   const boost = useCallback(async (): Promise<string | null> => {
     try {

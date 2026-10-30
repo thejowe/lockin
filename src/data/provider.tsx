@@ -320,3 +320,18 @@ export function useRefreshQuery(key: string): () => void {
     if (registry.has(key)) bumpNonce(registry, key);
   }, [registry, key]);
 }
+
+/**
+ * Como `useRefreshQuery`, pero para la key `prefix` y todas las que cuelgan de
+ * ella (`prefix:...`): un deck filtrado tiene su propia key, y quien invalida
+ * «el deck» no conoce los filtros que haya puestos.
+ */
+export function useRefreshQueryPrefix(prefix: string): () => void {
+  const repositories = useRepositories();
+  const registry = useMemo(() => registryFor(repositories), [repositories]);
+  return useCallback(() => {
+    for (const key of [...registry.keys()]) {
+      if (key === prefix || key.startsWith(`${prefix}:`)) bumpNonce(registry, key);
+    }
+  }, [registry, prefix]);
+}

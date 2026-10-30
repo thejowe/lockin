@@ -20,6 +20,7 @@ import {
 } from '@/data/mock';
 import { SEED_RECIPROCAL_IDS } from '@/data/mock/seed';
 import { buildProfileInput } from '@/data/test-fixtures';
+import { SPECIALTY_OPTIONS } from '@/features/profile';
 
 import { useDeck } from './use-deck';
 
@@ -794,5 +795,53 @@ describe('useDeck con filtros', () => {
     await waitFor(() => expect(view.result.current.error).not.toBeNull());
 
     expect(onPremiumFiltersRemoved).not.toHaveBeenCalled();
+  });
+
+  it('al cambiar el filtro se sueltan las cartas ancladas por deshacer que ya no encajan', async () => {
+    setMockPremium(true);
+    const view = await renderHook(
+      (props: { filter: ProfileFilter }) => useDeck('par', props.filter),
+      {
+        initialProps: { filter: {} as ProfileFilter },
+        wrapper,
+      }
+    );
+    await waitFor(() => expect(view.result.current.cards).not.toBeNull());
+    const target = view.result.current.cards![0];
+    const other = SPECIALTY_OPTIONS.map((option) => option.value).find(
+      (value) => !target.specialties.includes(value)
+    )!;
+
+    await act(async () => {
+      view.result.current.decide(target, 'pass');
+    });
+    await act(async () => {
+      await view.result.current.undo();
+    });
+    await waitFor(() => expect(view.result.current.cards![0].id).toBe(target.id));
+
+    await view.rerender({ filter: { specialties: [other] } });
+    await waitFor(() => expect(view.result.current.loading).toBe(false));
+    await act(async () => {});
+
+    expect(view.result.current.cards!.some((card) => card.id === target.id)).toBe(false);
+  });
+
+  it('avisa otra vez si el mismo filtro vuelve a rechazarse en un episodio nuevo', async () => {
+    const onPremiumFiltersRemoved = jest.fn();
+    const rejectedFilter: ProfileFilter = { ambition: ['todo-o-nada'] };
+
+    const view = await renderHook(
+      (props: { filter: ProfileFilter }) =>
+        useDeck('par', props.filter, { onPremiumFiltersRemoved }),
+      { initialProps: { filter: rejectedFilter }, wrapper }
+    );
+    await waitFor(() => expect(onPremiumFiltersRemoved).toHaveBeenCalledTimes(1));
+
+    await view.rerender({ filter: {} });
+    await waitFor(() => expect(view.result.current.cards).not.toBeNull());
+
+    await view.rerender({ filter: { ambition: ['todo-o-nada'] } });
+    await waitFor(() => expect(onPremiumFiltersRemoved).toHaveBeenCalledTimes(2));
   });
 });
