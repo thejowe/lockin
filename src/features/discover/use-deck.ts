@@ -15,7 +15,7 @@
  * hoja. Un cupo agotado no es un error de guardado.
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { PremiumRequiredError, QuotaExceededError, useQuery, useRepositories } from '@/data';
 import { usePremium } from '@/features/premium';
@@ -37,12 +37,21 @@ export type Blocked =
 
 /**
  * Lo decidido en esta sesión de swipe, atado al modo con el que se leyó el
- * deck. `restored` son las tarjetas deshechas, con la última arriba.
+ * deck.
+ *
+ * `restored` son los ids de las tarjetas deshechas, con la última arriba: se
+ * fijan delante del deck. Mientras el deck no se relea, se enseña la copia que
+ * se tenía (`restoredCards`, que puede faltar si la decisión se tomó antes de
+ * que esta pantalla se montara). En cuanto llega una lectura nueva
+ * (`data !== restoredBase`) manda ella: la tarjeta se toma de ahí, con su foto
+ * renovada, y si el servidor ya no la devuelve (bloqueada, borrada) desaparece.
  */
 interface Session {
   mode: ModePreference;
   decided: DeckProfile[];
-  restored: DeckProfile[];
+  restored: string[];
+  restoredCards: DeckProfile[];
+  restoredBase: DeckProfile[] | null;
 }
 
 export interface DeckState {
@@ -74,7 +83,7 @@ export interface DeckState {
 }
 
 function emptySession(mode: ModePreference): Session {
-  return { mode, decided: [], restored: [] };
+  return { mode, decided: [], restored: [], restoredCards: [], restoredBase: null };
 }
 
 /** La causa de un rechazo de cupo o de Premium, o `null` si es otro fallo. */
@@ -100,13 +109,31 @@ export function useDeck(mode: ModePreference): DeckState {
   // no aplica: se descarta comparando en render, sin un efecto de reinicio.
   const current = session.mode === mode ? session : emptySession(mode);
   const decidedIds = new Set(current.decided.map((profile) => profile.id));
+  const freshRead = data !== null && current.restoredBase !== data;
+  const pinned = data
+    ? current.restored.flatMap((id) => {
+        const card = freshRead
+          ? data.find((profile) => profile.id === id)
+          : current.restoredCards.find((profile) => profile.id === id);
+        return card ? [card] : [];
+      })
+    : [];
   const cards = data
-    ? [...current.restored, ...data]
+    ? [...pinned, ...data]
         .filter(
           (profile, index, all) => all.findIndex((other) => other.id === profile.id) === index
         )
         .filter((profile) => !decidedIds.has(profile.id))
     : null;
+
+  // Lo último pintado, para los callbacks: así no cierran sobre un deck viejo.
+  const latest = useRef<{ data: DeckProfile[] | null; cards: DeckProfile[] | null }>({
+    data: null,
+    cards: null,
+  });
+  useEffect(() => {
+    latest.current = { data, cards };
+  });
 
   const submit = useCallback(
     (profile: DeckProfile, decision: Decision, options?: { super?: boolean }) => {
@@ -149,15 +176,12 @@ export function useDeck(mode: ModePreference): DeckState {
     [submit]
   );
 
-  const topIds = cards?.map((card) => card.id).join(',');
   const superLike = useCallback(
     (profileId: string) => {
-      const profile = cards?.find((card) => card.id === profileId);
+      const profile = latest.current.cards?.find((card) => card.id === profileId);
       if (profile) submit(profile, 'like', { super: true });
     },
-    // `cards` se recalcula en cada render: su contenido lo resume `topIds`.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [topIds, submit]
+    [submit]
   );
 
   const undo = useCallback(async (): Promise<string | null> => {
@@ -166,17 +190,24 @@ export function useDeck(mode: ModePreference): DeckState {
       if (id === null) return null;
 
       setFailure(null);
+      const readNow = latest.current.data;
       setSession((previous) => {
         const base = previous.mode === mode ? previous : emptySession(mode);
         const profile = base.decided.find((other) => other.id === id);
         return {
           ...base,
           decided: base.decided.filter((other) => other.id !== id),
-          restored: profile
-            ? [profile, ...base.restored.filter((other) => other.id !== id)]
-            : base.restored,
+          restored: [id, ...base.restored.filter((other) => other !== id)],
+          restoredCards: profile
+            ? [profile, ...base.restoredCards.filter((other) => other.id !== id)]
+            : base.restoredCards,
+          restoredBase: readNow,
         };
       });
+      // Se relee el deck: trae la carta si esta sesión no la conocía (la
+      // pantalla se remontó dentro de la ventana de deshacer) y renueva la
+      // copia de las demás. Si el servidor ya no la devuelve, no se enseña.
+      refresh();
       return id;
     } catch (cause) {
       const reason = blockedBy(cause);
@@ -184,7 +215,7 @@ export function useDeck(mode: ModePreference): DeckState {
       else setFailure(cause instanceof Error ? cause : new Error(String(cause)));
       return null;
     }
-  }, [mode, repositories]);
+  }, [mode, refresh, repositories]);
 
   const boost = useCallback(async (): Promise<string | null> => {
     try {

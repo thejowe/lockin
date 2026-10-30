@@ -16,9 +16,15 @@ import { ActionButton } from './action-button';
 export function DeckEmpty({
   onOpenMatches,
   onRefresh,
+  onUndo,
 }: {
   onOpenMatches: () => void;
   onRefresh: () => void;
+  /**
+   * Deshacer la última decisión (solo Premium): al decidir la última carta el
+   * deck se sustituye por esto, y sin esta salida no quedaría dónde deshacer.
+   */
+  onUndo?: () => void;
 }) {
   const theme = useTheme();
 
@@ -41,6 +47,7 @@ export function DeckEmpty({
 
       <View style={styles.actions}>
         <ActionButton label="Ver mis matches" onPress={onOpenMatches} />
+        {onUndo ? <ActionButton label="Deshacer" variant="secondary" onPress={onUndo} /> : null}
         <ActionButton label="Volver a comprobar" variant="secondary" onPress={onRefresh} />
       </View>
     </View>

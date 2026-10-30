@@ -29,26 +29,28 @@ export interface PremiumState {
 }
 
 export function usePremium(): PremiumState {
-  const { premium } = useRepositories();
+  // `repositories.premium` solo se toca en efectos y callbacks, nunca al renderizar:
+  // el export estático de la web renderiza sin backend y el acceso lanzaría.
+  const repositories = useRepositories();
   const [quotas, setQuotas] = useState<PremiumQuotas | null>(null);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
     try {
-      setQuotas(await premium.getQuotas());
+      setQuotas(await repositories.premium.getQuotas());
     } catch {
       // Sin cupos conocidos no se frena nada en el cliente: el servidor manda.
     } finally {
       setLoading(false);
     }
-  }, [premium]);
+  }, [repositories]);
 
   useEffect(() => {
     let cancelled = false;
-    const unsubscribe = premium.subscribeQuotas((next) => {
+    const unsubscribe = repositories.premium.subscribeQuotas((next) => {
       if (!cancelled) setQuotas(next);
     });
-    void premium.getQuotas().then(
+    void repositories.premium.getQuotas().then(
       (first) => {
         if (cancelled) return;
         // Un aviso puede haber llegado antes que la primera lectura: manda el más nuevo.
@@ -64,10 +66,10 @@ export function usePremium(): PremiumState {
       cancelled = true;
       unsubscribe();
     };
-  }, [premium]);
+  }, [repositories]);
 
-  const undo = useCallback(() => premium.undoLastDecision(), [premium]);
-  const boost = useCallback(() => premium.activateBoost(), [premium]);
+  const undo = useCallback(() => repositories.premium.undoLastDecision(), [repositories]);
+  const boost = useCallback(() => repositories.premium.activateBoost(), [repositories]);
 
   return { quotas, loading, undo, boost, refresh };
 }

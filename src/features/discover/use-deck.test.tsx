@@ -10,7 +10,7 @@
 import { renderHook, waitFor } from '@testing-library/react-native';
 import { act } from 'react';
 
-import { DataProvider } from '@/data';
+import { DataProvider, QuotaExceededError } from '@/data';
 import {
   createMockRepositories,
   CURRENT_USER_ID,
@@ -19,6 +19,7 @@ import {
   setMockPremium,
 } from '@/data/mock';
 import { SEED_RECIPROCAL_IDS } from '@/data/mock/seed';
+import { buildProfileInput } from '@/data/test-fixtures';
 
 import { useDeck } from './use-deck';
 
@@ -337,6 +338,237 @@ describe('useDeck', () => {
       });
 
       expect(result.current.blocked).toBe('premium');
+    });
+
+    it('al refrescar, la carta deshecha se reconcilia con lo que devuelve el servidor', async () => {
+      setMockPremium(true);
+      const { result } = await renderDeck('par');
+      const target = result.current.cards![0];
+
+      await act(async () => {
+        result.current.decide(target, 'pass');
+      });
+      await act(async () => {
+        await result.current.undo();
+      });
+      await waitFor(() => expect(result.current.cards![0].id).toBe(target.id));
+
+      // Tras bloquearla, una relectura no puede mantenerla arriba por su copia vieja.
+      await repositories.profiles.saveCurrent(buildProfileInput());
+      await repositories.profiles.block(target.id);
+      await act(async () => {
+        result.current.refresh();
+      });
+
+      await waitFor(() =>
+        expect(result.current.cards!.map((profile) => profile.id)).not.toContain(target.id)
+      );
+    });
+
+    it('al refrescar, la carta deshecha toma los datos nuevos (p. ej. la foto)', async () => {
+      setMockPremium(true);
+      const { result } = await renderDeck('par');
+      const target = result.current.cards![0];
+      const real = repositories.discovery.getDeck.bind(repositories.discovery);
+      jest
+        .spyOn(repositories.discovery, 'getDeck')
+        .mockImplementation(async (filter) =>
+          (await real(filter)).map((profile) => ({ ...profile, location: 'Otra ciudad' }))
+        );
+
+      await act(async () => {
+        result.current.decide(target, 'pass');
+      });
+      await act(async () => {
+        await result.current.undo();
+      });
+
+      await waitFor(() => expect(result.current.cards![0].location).toBe('Otra ciudad'));
+      expect(result.current.cards![0].id).toBe(target.id);
+    });
+
+    it('si la pantalla se remonta, deshacer trae de vuelta una carta que esta sesión no conocía', async () => {
+      setMockPremium(true);
+      // Se decide fuera del hook, como antes de que la pantalla se remontara.
+      const first = (await repositories.discovery.getDeck({ mode: 'par' }))[0];
+      await repositories.discovery.recordDecision(first.id, 'pass', 'par');
+      const { result } = await renderDeck('par');
+      expect(result.current.cards!.map((profile) => profile.id)).not.toContain(first.id);
+
+      await act(async () => {
+        await result.current.undo();
+      });
+
+      await waitFor(() => expect(result.current.cards![0]?.id).toBe(first.id));
+    });
+
+    it('el Super Like usa la tarjeta actual aunque el deck se refresque con los mismos ids', async () => {
+      const real = repositories.discovery.getDeck.bind(repositories.discovery);
+      let name = 'Antes';
+      jest
+        .spyOn(repositories.discovery, 'getDeck')
+        .mockImplementation(async (filter) =>
+          (await real(filter)).map((profile) => ({ ...profile, name }))
+        );
+      const { result } = await renderDeck('par');
+      expect(cardWithId(result.current.cards, RECIPROCAL_ID).name).toBe('Antes');
+
+      name = 'Después';
+      await act(async () => {
+        result.current.refresh();
+      });
+      await waitFor(() =>
+        expect(cardWithId(result.current.cards, RECIPROCAL_ID).name).toBe('Después')
+      );
+
+      await act(async () => {
+        result.current.superLike(RECIPROCAL_ID);
+      });
+
+      await waitFor(() => expect(result.current.match).not.toBeNull());
+      expect(result.current.match!.profile.name).toBe('Después');
+    });
+
+    it('deshacer dos veces seguidas devuelve las dos, la última arriba', async () => {
+      setMockPremium(true);
+      const { result } = await renderDeck('par');
+      const [first, second] = result.current.cards!;
+
+      await act(async () => {
+        result.current.decide(first, 'pass');
+      });
+      await act(async () => {
+        result.current.decide(second, 'pass');
+      });
+      await act(async () => {
+        await result.current.undo();
+      });
+      await act(async () => {
+        await result.current.undo();
+      });
+
+      await waitFor(() =>
+        expect(result.current.cards!.slice(0, 2).map((profile) => profile.id)).toEqual([
+          first.id,
+          second.id,
+        ])
+      );
+    });
+
+    it('deshacer la misma carta otra vez no la duplica', async () => {
+      setMockPremium(true);
+      const { result } = await renderDeck('par');
+      const target = result.current.cards![0];
+
+      for (let round = 0; round < 2; round += 1) {
+        await act(async () => {
+          result.current.decide(target, 'pass');
+        });
+        await act(async () => {
+          await result.current.undo();
+        });
+      }
+
+      const ids = result.current.cards!.map((profile) => profile.id);
+      expect(ids.filter((id) => id === target.id)).toHaveLength(1);
+      expect(ids[0]).toBe(target.id);
+    });
+
+    it('un Super Like sobre una tarjeta que no está en el deck no hace nada', async () => {
+      const recordDecision = jest.spyOn(repositories.discovery, 'recordDecision');
+      const { result } = await renderDeck('par');
+
+      await act(async () => {
+        result.current.superLike('no-existe');
+      });
+
+      expect(recordDecision).not.toHaveBeenCalled();
+    });
+
+    it('decidir tras cambiar de modo empieza una sesión nueva', async () => {
+      const { result, rerender } = await renderDeck('par');
+      await act(async () => {
+        result.current.decide(result.current.cards![0], 'pass');
+      });
+
+      await rerender({ mode: 'lockin' });
+      await waitFor(() => expect(result.current.cards).not.toBeNull());
+      const target = result.current.cards![0];
+      await act(async () => {
+        result.current.decide(target, 'pass');
+      });
+
+      expect(result.current.cards!.map((profile) => profile.id)).not.toContain(target.id);
+    });
+
+    it('un fallo ajeno al cupo al deshacer o al hacer Boost se expone como error', async () => {
+      setMockPremium(true);
+      const { result } = await renderDeck('par');
+      const failure = new Error('Sin conexión.');
+      jest.spyOn(repositories.premium, 'undoLastDecision').mockRejectedValue(failure);
+      jest.spyOn(repositories.premium, 'activateBoost').mockRejectedValue('texto suelto');
+
+      await act(async () => {
+        await result.current.undo();
+      });
+      expect(result.current.error).toBe(failure);
+
+      await act(async () => {
+        await result.current.boost();
+      });
+      expect(result.current.error?.message).toBe('texto suelto');
+      expect(result.current.blocked).toBeNull();
+    });
+
+    it('un cupo agotado al deshacer abre la hoja con su causa', async () => {
+      setMockPremium(true);
+      const { result } = await renderDeck('par');
+      jest
+        .spyOn(repositories.premium, 'undoLastDecision')
+        .mockRejectedValue(new QuotaExceededError('abuse', null));
+
+      await act(async () => {
+        await result.current.undo();
+      });
+
+      expect(result.current.blocked).toEqual({ kind: 'abuse', resetsAt: null });
+    });
+
+    it('un Boost ya usado abre la hoja con la hora del servidor', async () => {
+      setMockPremium(true);
+      const { result } = await renderDeck('par');
+      await act(async () => {
+        await result.current.boost();
+      });
+
+      await act(async () => {
+        await result.current.boost();
+      });
+
+      expect(result.current.blocked).toMatchObject({ kind: 'boost' });
+    });
+
+    it('un fallo al guardar que no es de cupo sigue siendo un error de guardado', async () => {
+      jest.spyOn(repositories.discovery, 'recordDecision').mockRejectedValue('texto suelto');
+      const { result } = await renderDeck('par');
+
+      await act(async () => {
+        result.current.decide(result.current.cards![0], 'like');
+      });
+
+      await waitFor(() => expect(result.current.error?.message).toBe('texto suelto'));
+      expect(result.current.blocked).toBeNull();
+    });
+
+    it('si no se pueden leer los cupos, comprobar el límite no bloquea nada', async () => {
+      const { result } = await renderDeck('par');
+      jest.spyOn(repositories.premium, 'getQuotas').mockRejectedValue(new Error('sin red'));
+
+      await act(async () => {
+        await result.current.checkLikeLimit();
+      });
+
+      expect(result.current.blocked).toBeNull();
     });
   });
 });

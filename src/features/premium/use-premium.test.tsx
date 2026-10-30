@@ -17,6 +17,11 @@ import { usePremium } from './use-premium';
 
 import type { Repositories } from '@/data';
 
+// Sin tipos propios en el repo (no hay `@types/react-dom`): se pide por `requireActual`.
+const { renderToString } = jest.requireActual<{
+  renderToString: (element: React.ReactElement) => string;
+}>('react-dom/server');
+
 let repositories: Repositories;
 
 function wrapper({ children }: { children: React.ReactNode }) {
@@ -110,5 +115,97 @@ describe('usePremium', () => {
     const { result } = await renderPremium();
 
     await expect(result.current.boost()).rejects.toBeInstanceOf(PremiumRequiredError);
+  });
+
+  it('no toca repositories.premium al renderizar: el export estático no tiene backend', () => {
+    // `src/data/active.ts` lanza al primer uso real si faltan las credenciales, y
+    // `expo export` renderiza las rutas sin ninguna. Solo valen efectos y callbacks.
+    const premiumGetter = jest.fn(() => {
+      throw new Error('cofounder no puede arrancar sin backend');
+    });
+    const guarded = { ...repositories };
+    Object.defineProperty(guarded, 'premium', { get: premiumGetter });
+
+    function Probe() {
+      usePremium();
+      return null;
+    }
+
+    expect(() =>
+      renderToString(
+        <DataProvider value={guarded as Repositories}>
+          <Probe />
+        </DataProvider>
+      )
+    ).not.toThrow();
+    expect(premiumGetter).not.toHaveBeenCalled();
+  });
+
+  it('si los cupos no se pueden leer, deja de cargar sin romper', async () => {
+    jest.spyOn(repositories.premium, 'getQuotas').mockRejectedValue(new Error('sin red'));
+
+    const view = await renderHook(() => usePremium(), { wrapper });
+    await waitFor(() => expect(view.result.current.loading).toBe(false));
+    expect(view.result.current.quotas).toBeNull();
+
+    await act(async () => {
+      await view.result.current.refresh();
+    });
+    expect(view.result.current.quotas).toBeNull();
+    expect(view.result.current.loading).toBe(false);
+  });
+
+  it('si se desmonta antes de que respondan los cupos, no actualiza nada', async () => {
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const real = await repositories.premium.getQuotas();
+    jest.spyOn(repositories.premium, 'getQuotas').mockImplementation(async () => {
+      await gate;
+      return real;
+    });
+    const errors = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    const view = await renderHook(() => usePremium(), { wrapper });
+    await view.unmount();
+    await act(async () => release());
+
+    expect(errors).not.toHaveBeenCalled();
+    errors.mockRestore();
+  });
+
+  it('un fallo de lectura tras desmontar tampoco actualiza nada', async () => {
+    let fail: (reason: Error) => void = () => {};
+    const gate = new Promise<never>((_resolve, reject) => (fail = reject));
+    jest.spyOn(repositories.premium, 'getQuotas').mockReturnValue(gate);
+    const errors = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    const view = await renderHook(() => usePremium(), { wrapper });
+    await view.unmount();
+    await act(async () => fail(new Error('tarde')));
+
+    expect(errors).not.toHaveBeenCalled();
+    errors.mockRestore();
+  });
+
+  it('un aviso que llega antes que la primera lectura gana a la lectura', async () => {
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const stale = await repositories.premium.getQuotas();
+    jest.spyOn(repositories.premium, 'getQuotas').mockImplementation(async () => {
+      await gate;
+      return stale;
+    });
+    let push: (quotas: typeof stale) => void = () => {};
+    jest.spyOn(repositories.premium, 'subscribeQuotas').mockImplementation((cb) => {
+      push = cb;
+      return () => {};
+    });
+
+    const view = await renderHook(() => usePremium(), { wrapper });
+    await act(async () => push({ ...stale, likesLeft: 7 }));
+    await act(async () => release());
+
+    await waitFor(() => expect(view.result.current.loading).toBe(false));
+    expect(view.result.current.quotas?.likesLeft).toBe(7);
   });
 });

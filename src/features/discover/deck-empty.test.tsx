@@ -50,4 +50,20 @@ describe('DeckEmpty', () => {
     await fireEvent.press(screen.getByText('Volver a comprobar'));
     expect(onRefresh).toHaveBeenCalledTimes(1);
   });
+
+  it('sin onUndo no ofrece Deshacer', async () => {
+    const { ui } = setup();
+    await render(ui);
+
+    expect(screen.queryByRole('button', { name: 'Deshacer' })).toBeNull();
+  });
+
+  it('con onUndo deja deshacer la última decisión aunque no queden tarjetas', async () => {
+    const onUndo = jest.fn();
+    await render(<DeckEmpty onOpenMatches={jest.fn()} onRefresh={jest.fn()} onUndo={onUndo} />);
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Deshacer' }));
+
+    expect(onUndo).toHaveBeenCalledTimes(1);
+  });
 });

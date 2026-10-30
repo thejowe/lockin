@@ -18,6 +18,7 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { act } from 'react';
 
+import { seedMockLikeEvents, setMockPremium } from '@/data/mock';
 import { SEED_RECIPROCAL_IDS } from '@/data/mock/seed';
 
 import { renderRoute, repositories, resetRepositories, resetRouter, router } from '../routes';
@@ -29,9 +30,14 @@ import type { Decision, Profile } from '@/data';
 jest.mock('expo-router', () => require('../routes').expoRouterMock());
 
 /** Lo último que recibió el doble de `SwipeDeck`. */
-const mockDeck: { profiles: Profile[]; decide: ((p: Profile, d: Decision) => void) | null } = {
+const mockDeck: {
+  profiles: Profile[];
+  decide: ((p: Profile, d: Decision) => void) | null;
+  props: Record<string, unknown>;
+} = {
   profiles: [],
   decide: null,
+  props: {},
 };
 
 jest.mock('@/features/discover', () => {
@@ -40,15 +46,14 @@ jest.mock('@/features/discover', () => {
 
   return {
     ...actual,
-    SwipeDeck: ({
-      profiles,
-      onDecide,
-    }: {
+    SwipeDeck: (props: {
       profiles: Profile[];
       onDecide: (profile: Profile, decision: Decision) => void;
     }) => {
+      const { profiles, onDecide } = props;
       mockDeck.profiles = profiles;
       mockDeck.decide = onDecide;
+      mockDeck.props = props;
       return (
         <Pressable accessibilityRole="button" onPress={() => onDecide(profiles[0], 'pass')}>
           <Text>Deck de {profiles.length}</Text>
@@ -68,6 +73,7 @@ async function renderDiscover() {
 beforeEach(() => {
   mockDeck.profiles = [];
   mockDeck.decide = null;
+  mockDeck.props = {};
   resetRepositories();
   resetRouter();
 });
@@ -100,6 +106,28 @@ describe('DiscoverScreen', () => {
 
     await fireEvent.press(screen.getByText('Ver mis matches'));
     expect(router.push).toHaveBeenCalledWith('/matches');
+  });
+
+  it('con el deck agotado, Premium puede deshacer la última decisión', async () => {
+    setMockPremium(true);
+    await repositories.discovery.recordDecision('seed-diego', 'pass');
+    jest.spyOn(repositories.discovery, 'getDeck').mockResolvedValueOnce([]);
+
+    await renderDiscover();
+    expect(screen.getByText('Ya has visto a todo el mundo')).toBeTruthy();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Deshacer' }));
+
+    await waitFor(() => expect(screen.queryByText('Ya has visto a todo el mundo')).toBeNull());
+    expect(mockDeck.profiles[0]?.id).toBe('seed-diego');
+  });
+
+  it('con el deck agotado y sin Premium no ofrece Deshacer', async () => {
+    jest.spyOn(repositories.discovery, 'getDeck').mockResolvedValue([]);
+
+    await renderDiscover();
+
+    expect(screen.queryByRole('button', { name: 'Deshacer' })).toBeNull();
   });
 
   it('si el deck no carga lo dice y deja reintentar', async () => {
@@ -168,5 +196,71 @@ describe('DiscoverScreen', () => {
 
     expect(screen.queryByText('¡Match!')).toBeNull();
     expect(router.push).not.toHaveBeenCalled();
+  });
+
+  describe('Premium', () => {
+    it('sin Premium y con el cupo agotado, frena el like del deck y lo dice', async () => {
+      seedMockLikeEvents('like', 25, 1);
+      await renderDiscover();
+      await waitFor(() => expect(mockDeck.props.likeLocked).toBe(true));
+      expect(mockDeck.props.likesLeft).toBe(0);
+
+      await act(async () => {
+        (mockDeck.props.onLikeLocked as () => void)();
+      });
+
+      await waitFor(() => expect(screen.getByText(/^Sin likes hasta las /)).toBeTruthy());
+    });
+
+    it('«Hazte Premium» cierra la hoja y abre el paywall', async () => {
+      seedMockLikeEvents('like', 25, 1);
+      await renderDiscover();
+      await waitFor(() => expect(mockDeck.props.likeLocked).toBe(true));
+      await act(async () => {
+        (mockDeck.props.onLikeLocked as () => void)();
+      });
+      await waitFor(() => expect(screen.getByText('Hazte Premium')).toBeTruthy());
+
+      await fireEvent.press(screen.getByText('Hazte Premium'));
+
+      expect(router.push).toHaveBeenCalledWith('/premium');
+      await waitFor(() => expect(screen.queryByText('Hazte Premium')).toBeNull());
+    });
+
+    it('con Premium, el deck recibe los cupos y no se frena', async () => {
+      setMockPremium(true);
+      await renderDiscover();
+
+      await waitFor(() => expect(mockDeck.props.isPremium).toBe(true));
+      expect(mockDeck.props.likeLocked).toBe(false);
+      expect(mockDeck.props.likesLeft).toBeNull();
+    });
+
+    it('el Super Like del deck decide la tarjeta con la bandera super', async () => {
+      const recordDecision = jest.spyOn(repositories.discovery, 'recordDecision');
+      await renderDiscover();
+      const top = mockDeck.profiles[0];
+
+      await act(async () => {
+        (mockDeck.props.onSuperLike as (profile: Profile) => void)(top);
+      });
+
+      expect(recordDecision).toHaveBeenCalledWith(top.id, 'like', 'par', { super: true });
+    });
+
+    it('deshacer y Boost del deck llegan al servidor', async () => {
+      setMockPremium(true);
+      const undo = jest.spyOn(repositories.premium, 'undoLastDecision');
+      const boost = jest.spyOn(repositories.premium, 'activateBoost');
+      await renderDiscover();
+
+      await act(async () => {
+        (mockDeck.props.onUndo as () => void)();
+        (mockDeck.props.onBoost as () => void)();
+      });
+
+      expect(undo).toHaveBeenCalledTimes(1);
+      expect(boost).toHaveBeenCalledTimes(1);
+    });
   });
 });

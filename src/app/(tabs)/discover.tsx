@@ -112,7 +112,11 @@ export default function DiscoverScreen() {
                 onBoost={() => void boost()}
               />
             ) : (
-              <DeckEmpty onOpenMatches={() => router.push('/matches')} onRefresh={refresh} />
+              <DeckEmpty
+                onOpenMatches={() => router.push('/matches')}
+                onRefresh={refresh}
+                onUndo={quotas?.isPremium ? () => void undo() : undefined}
+              />
             )}
           </View>
 
