@@ -42,6 +42,15 @@ import type {
   TermsAcceptance,
 } from './types';
 
+/**
+ * Cursor de `listIncomingLikes` para pedir la página que sigue a `like`. La lista
+ * se ordena por Super Like, `likedAt` descendente e id, así que el cursor lleva
+ * las tres claves; una marca ISO suelta solo pagina por `likedAt`.
+ */
+export function incomingLikeCursor(like: IncomingLike): string {
+  return `${like.isSuper ? 1 : 0}|${like.likedAt}|${like.profile.id}`;
+}
+
 /** Cancela una suscripción. */
 export type Unsubscribe = () => void;
 
@@ -376,7 +385,10 @@ export interface PremiumRepository {
   activateBoost(): Promise<string>;
   /** Cuánta gente te ha dado like y está sin responder. Lo ve cualquiera. */
   countIncomingLikes(): Promise<number>;
-  /** Quién. Los Super Likes primero. Lanza `PremiumRequiredError` sin Premium. */
+  /**
+   * Quién. Los Super Likes primero. `page.before` es `incomingLikeCursor()` de la
+   * última que ya tienes. Lanza `PremiumRequiredError` sin Premium.
+   */
   listIncomingLikes(page?: { before?: string; limit?: number }): Promise<IncomingLike[]>;
   /** Pide al servidor que relea la suscripción de la tienda. El mock no hace nada. */
   syncEntitlement(): Promise<void>;

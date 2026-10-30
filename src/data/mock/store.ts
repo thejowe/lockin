@@ -54,7 +54,9 @@ export interface MockState {
   likeEvents: { actorId: string; targetId: string; kind: 'like' | 'super'; atMs: number }[];
   boosts: { userId: string; startsAtMs: number; endsAtMs: number }[];
   /** Cuándo y cómo se tomó la decisión vigente: actor -> perfil -> metadatos. */
-  decisionMeta: Map<string, Map<string, { atMs: number; isSuper: boolean }>>;
+  decisionMeta: Map<string, Map<string, { atMs: number; seq: number; isSuper: boolean }>>;
+  /** Contador monotónico de decisiones: ordena las que caen en el mismo milisegundo. */
+  decisionSeq: number;
   matches: Match[];
   messages: Message[];
   lockInSessions: LockInSession[];
@@ -115,6 +117,7 @@ function initialState(): MockState {
     likeEvents: [],
     boosts: [],
     decisionMeta: new Map(),
+    decisionSeq: 0,
     matches: [],
     messages: [],
     lockInSessions: [],

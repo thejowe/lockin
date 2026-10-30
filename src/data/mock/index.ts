@@ -532,7 +532,8 @@ export function createMockRepositories(
       // Después el cupo, y solo después el registro: un rechazo no escribe nada.
       if (decision === 'like' && !unchanged) chargeLike(store, actorId, profileId, isSuper);
       actorDecisions().set(profileId, decision);
-      if (!unchanged) meta.set(profileId, { atMs: store.nowMs(), isSuper });
+      if (!unchanged)
+        meta.set(profileId, { atMs: store.nowMs(), seq: (state.decisionSeq += 1), isSuper });
       if (decision === 'like' && !unchanged) notifyQuotas(store, actorId);
 
       const other = state.profiles.get(profileId);

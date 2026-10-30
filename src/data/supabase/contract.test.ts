@@ -348,6 +348,8 @@ async function waitUntilChannelsJoined(): Promise<void> {
 const supabaseBackend: ContractBackend = {
   name: 'supabase',
   canTimeTravel: false,
+  // La Tarea 5 del plan de Premium implementa el repositorio y reactiva el bloque.
+  skipPremium: true,
   // Un OAuth real necesita un navegador y un humano del otro lado: esta suite
   // no puede completar verifyGithub()/unverifyGithub() sola.
   canLinkIdentityWithoutBrowser: false,

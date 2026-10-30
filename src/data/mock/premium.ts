@@ -47,10 +47,15 @@ export function notifyQuotas(store: MockStore, actorId: string): void {
   store.notify(premiumTopic(actorId));
 }
 
-/** Cuándo se libera el primer hueco de una ventana: el evento más viejo + la ventana. */
-function resetOf(events: { atMs: number }[], windowMs: number): string | null {
+/**
+ * Cuándo el conteo de la ventana baja del tope: caen primero los más viejos, así
+ * que hay que esperar a que salgan `events.length - cap + 1` (el más viejo si aún
+ * no se ha llegado al tope). Con el tope de AHORA, no el que había al gastarlos.
+ */
+function resetOf(events: { atMs: number }[], windowMs: number, cap: number): string | null {
   if (events.length === 0) return null;
-  return iso(Math.min(...events.map((event) => event.atMs)) + windowMs);
+  const sorted = events.map((event) => event.atMs).sort((a, b) => a - b);
+  return iso(sorted[Math.max(0, sorted.length - cap)] + windowMs);
 }
 
 function quotasOf(store: MockStore, actorId: string): PremiumQuotas {
@@ -73,9 +78,9 @@ function quotasOf(store: MockStore, actorId: string): PremiumQuotas {
     isPremium: premium,
     premiumUntil: premium ? iso(state.premium.get(actorId) as number) : null,
     likesLeft: premium ? null : Math.max(0, FREE_LIKES_PER_DAY - today.length),
-    likesResetAt: resetOf(today, DAY_MS),
+    likesResetAt: resetOf(today, DAY_MS, FREE_LIKES_PER_DAY),
     supersLeft: Math.max(0, superCap - supers.length),
-    supersResetAt: resetOf(supers, WEEK_MS),
+    supersResetAt: resetOf(supers, WEEK_MS, superCap),
     boostAvailableAt: cooldownEnd > now ? iso(cooldownEnd) : null,
     boostActiveUntil: lastBoost && lastBoost.endsAtMs > now ? iso(lastBoost.endsAtMs) : null,
   };
@@ -99,7 +104,7 @@ export function chargeLike(
   const today = mine.filter((event) => event.atMs > now - DAY_MS);
 
   if (today.length >= ABUSE_LIKES_PER_DAY) {
-    throw new QuotaExceededError('abuse', resetOf(today, DAY_MS));
+    throw new QuotaExceededError('abuse', resetOf(today, DAY_MS, ABUSE_LIKES_PER_DAY));
   }
   if (!quotas.isPremium && (quotas.likesLeft ?? 0) <= 0) {
     throw new QuotaExceededError('likes', quotas.likesResetAt);
@@ -265,10 +270,12 @@ export function createMockPremiumRepository(
 
       let lastId: string | null = null;
       let lastAt = -Infinity;
+      let lastSeq = -Infinity;
       for (const [id, entry] of meta) {
-        if (decisions.has(id) && entry.atMs > lastAt) {
+        if (decisions.has(id) && entry.seq > lastSeq) {
           lastId = id;
           lastAt = entry.atMs;
+          lastSeq = entry.seq;
         }
       }
       if (lastId === null) return null;
@@ -306,16 +313,27 @@ export function createMockPremiumRepository(
 
     async listIncomingLikes(page = {}) {
       requireMockPremium(store, actorId);
-      const before = page.before === undefined ? Infinity : Date.parse(page.before);
       const limit = page.limit ?? 50;
+      type Entry = ReturnType<typeof incoming>[number];
+      const order = (a: Entry, b: Entry): number =>
+        Number(b.isSuper) - Number(a.isSuper) ||
+        b.atMs - a.atMs ||
+        (a.profile.id < b.profile.id ? -1 : a.profile.id > b.profile.id ? 1 : 0);
+      // El cursor lleva las tres claves del orden; una marca ISO suelta pagina por fecha.
+      const [flag, stamp, ...rest] = (page.before ?? '').split('|');
+      const cursor: { isSuper: boolean; atMs: number; id: string } | null =
+        page.before === undefined
+          ? null
+          : stamp === undefined
+            ? { isSuper: false, atMs: Date.parse(page.before), id: '' }
+            : { isSuper: flag === '1', atMs: Date.parse(stamp), id: rest.join('|') };
       return incoming()
-        .filter((entry) => entry.atMs < before)
-        .sort(
-          (a, b) =>
-            Number(b.isSuper) - Number(a.isSuper) ||
-            b.atMs - a.atMs ||
-            (a.profile.id < b.profile.id ? -1 : 1)
-        )
+        .sort(order)
+        .filter((entry) => {
+          if (!cursor) return true;
+          if (stamp === undefined) return entry.atMs < cursor.atMs;
+          return order({ ...entry, ...cursor, profile: { id: cursor.id } as Profile }, entry) < 0;
+        })
         .slice(0, limit)
         .map((entry): IncomingLike => ({
           profile: entry.profile,
@@ -361,9 +379,9 @@ export function seedMockLikeEvents(kind: 'like' | 'super', count: number, ageHou
 /** Retrasa `minutes` minutos la última decisión del usuario de la app. */
 export function ageMockLastDecision(minutes: number): void {
   const meta = defaultMockStore.state.decisionMeta.get(CURRENT_USER_ID);
-  let last: { atMs: number; isSuper: boolean } | null = null;
+  let last: { atMs: number; seq: number } | null = null;
   for (const entry of meta?.values() ?? []) {
-    if (!last || entry.atMs > last.atMs) last = entry;
+    if (!last || entry.seq > last.seq) last = entry;
   }
   if (last) last.atMs -= minutes * MINUTE_MS;
 }

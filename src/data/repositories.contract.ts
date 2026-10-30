@@ -43,6 +43,7 @@ import {
   SessionWindowError,
 } from './session-errors';
 import { PremiumRequiredError, QuotaExceededError } from './premium-errors';
+import { incomingLikeCursor } from './repositories';
 import { RoomInviteError } from './rooms';
 import { buildProfileInput } from './test-fixtures';
 
@@ -149,6 +150,8 @@ export interface ContractBackend {
    * persona del otro lado, así que Supabase declara `false`.
    */
   canLinkIdentityWithoutBrowser: boolean;
+  /** `true` mientras el backend no implemente `PremiumRepository`: salta `describe('premium')`. */
+  skipPremium?: boolean;
   /**
    * Corta la conexión de realtime del usuario, como una caída de red, y la
    * devuelve con `restoreRealtime()`.
@@ -699,7 +702,9 @@ export function describeRepositoryContract(backend: ContractBackend): void {
       });
     });
 
-    describe('premium', () => {
+    // Hasta la Tarea 5 del plan de Premium, Supabase no implementa el contrato.
+    const describePremium = backend.skipPremium ? describe.skip : describe;
+    describePremium('premium', () => {
       const HOUR_MS = 3_600_000;
       const MINUTE_MS = 60_000;
 
@@ -864,6 +869,47 @@ export function describeRepositoryContract(backend: ContractBackend): void {
 
         await repositories.discovery.recordDecision(fixture.reciprocalAId, 'pass');
         expect(await repositories.premium.countIncomingLikes()).toBe(count - 1);
+      });
+
+      it('la paginación de likes recibidos sigue el orden completo y no pierde a nadie', async () => {
+        await fixture.setPremium(true);
+        await fixture.superLikeFrom(fixture.reciprocalBId);
+        const all = await repositories.premium.listIncomingLikes();
+        expect(all.length).toBeGreaterThanOrEqual(2);
+
+        const seen: string[] = [];
+        let before: string | undefined;
+        for (let guard = 0; guard < all.length + 2; guard += 1) {
+          const page = await repositories.premium.listIncomingLikes({ before, limit: 1 });
+          if (page.length === 0) break;
+          seen.push(page[0].profile.id);
+          before = incomingLikeCursor(page[0]);
+        }
+
+        expect(seen).toEqual(all.map((entry) => entry.profile.id));
+      });
+
+      it('resetsAt es cuando el conteo baja del tope, no el evento más antiguo', async () => {
+        await fixture.seedLikeEvents('like', 1, 23);
+        await fixture.seedLikeEvents('like', 25, 1);
+
+        const error = await expectQuota(like(fixture.nonReciprocalId), 'likes');
+
+        // Hay 26: para bajar de 25 tiene que caer también uno de hace 1 h (a las 23 h).
+        expect(Date.parse(error.resetsAt ?? '') - Date.now()).toBeGreaterThan(22 * HOUR_MS);
+        const quotas = await repositories.premium.getQuotas();
+        expect(Date.parse(quotas.likesResetAt ?? '') - Date.now()).toBeGreaterThan(22 * HOUR_MS);
+      });
+
+      it('al perder Premium, el reset de Super Likes usa el tope de ahora', async () => {
+        await fixture.setPremium(true);
+        await fixture.seedLikeEvents('super', 1, 100);
+        await fixture.seedLikeEvents('super', 1, 1);
+        await fixture.setPremium(false);
+
+        const error = await expectQuota(like(fixture.nonReciprocalId, { super: true }), 'supers');
+
+        expect(Date.parse(error.resetsAt ?? '') - Date.now()).toBeGreaterThan(6 * 24 * HOUR_MS);
       });
 
       it('quien me bloquea no sale en likes recibidos ni en el deck con insignia', async () => {

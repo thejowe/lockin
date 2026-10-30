@@ -278,3 +278,20 @@ describe('foto de perfil (mock)', () => {
     await expect(profiles.removeAvatarPhoto()).resolves.toMatchObject({ id: removed.id });
   });
 });
+
+describe('Premium: deshacer con el reloj parado', () => {
+  it('con dos decisiones en el mismo milisegundo deshace la última', async () => {
+    resetState();
+    const { discovery, premium } = createMockRepositories();
+    setMockPremium(true);
+    const spy = jest.spyOn(Date, 'now').mockReturnValue(Date.now());
+    try {
+      await discovery.recordDecision('seed-diego', 'pass');
+      await discovery.recordDecision('seed-lucia', 'pass');
+
+      await expect(premium.undoLastDecision()).resolves.toBe('seed-lucia');
+    } finally {
+      spy.mockRestore();
+    }
+  });
+});
