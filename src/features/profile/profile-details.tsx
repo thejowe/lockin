@@ -10,7 +10,7 @@ import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'rea
 
 import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
-import { Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
+import { Control, Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { ambitionLabel, seeksComplement, specialtyLabel, startingPointSentence } from './catalog';
@@ -20,11 +20,14 @@ import { GithubSeal } from './github-seal';
 import { LinkedinSeal } from './linkedin-seal';
 import { ProfileAvatar } from './profile-avatar';
 
+import type { ProfileSection } from './profile-form';
+
 import type { Profile, Specialty } from '@/data';
 
 export function ProfileDetails({
   profile,
   onAvatarPress,
+  onEdit,
 }: {
   profile: Profile;
   /**
@@ -32,8 +35,15 @@ export function ProfileDetails({
    * al pulsarla, quien la monta abre la hoja de cambiar la foto (2026-10-30).
    */
   onAvatarPress?: () => void;
+  /**
+   * Solo en el perfil propio: cada bloque lleva un lápiz arriba a la derecha (y
+   * el nombre, uno al lado) que abre la hoja de editar solo ese bloque.
+   */
+  onEdit?: (section: ProfileSection) => void;
 }) {
   const theme = useTheme();
+  const pencil = (section: ProfileSection, style?: StyleProp<ViewStyle>) =>
+    onEdit ? <EditPencil section={section} onPress={() => onEdit(section)} style={style} /> : null;
 
   return (
     <View style={styles.root}>
@@ -54,7 +64,12 @@ export function ProfileDetails({
         )}
 
         <View style={styles.identityText}>
-          <ThemedText type="title">{profile.name}</ThemedText>
+          <View style={styles.nameRow}>
+            <ThemedText type="title" style={styles.name}>
+              {profile.name}
+            </ThemedText>
+            {pencil('basics')}
+          </View>
           <ThemedText type="body" themeColor="textSecondary">
             {profile.age} · {profile.location}
           </ThemedText>
@@ -106,6 +121,7 @@ export function ProfileDetails({
             )}
           </View>
         ) : null}
+        {pencil('specialties', styles.corner)}
       </View>
 
       {/*
@@ -136,6 +152,7 @@ export function ProfileDetails({
         <Section title="Ambición" bare>
           <ThemedText type="bodyStrong">{ambitionLabel(profile.ambition)}</ThemedText>
         </Section>
+        {pencil('work', styles.corner)}
       </View>
 
       {profile.prompts.map((prompt) => (
@@ -153,14 +170,24 @@ export function ProfileDetails({
             {prompt.question}
           </ThemedText>
           <ThemedText type="subtitle">{prompt.answer}</ThemedText>
+          {pencil('prompts', styles.corner)}
         </View>
       ))}
 
       {/*
         Las apps conectadas, como logos que llevan a su cuenta (2026-10-17). El
         sello de GitHub va junto a ellas y no junto al nombre: lo que certifica
-        es ese enlace, no «perfil verificado».
+        es ese enlace, no «perfil verificado». En el perfil propio, con su
+        rótulo y su lápiz: sin enlaces no habría dónde pulsar para añadirlos.
       */}
+      {onEdit ? (
+        <View style={styles.linksHeader}>
+          <ThemedText type="small" themeColor="textSecondary">
+            Enlaces y redes
+          </ThemedText>
+          {pencil('links')}
+        </View>
+      ) : null}
       <ConnectedApps profile={profile} />
       {profile.githubVerification ? (
         <GithubSeal handle={profile.githubVerification.handle} />
@@ -201,6 +228,36 @@ function SpecialtyTags({ values, tone }: { values: Specialty[]; tone: 'have' | '
   );
 }
 
+const EDIT_LABELS: Record<ProfileSection, string> = {
+  basics: 'Editar nombre, edad y ubicación',
+  specialties: 'Editar lo que dominas y lo que buscas',
+  work: 'Editar cómo trabajas',
+  prompts: 'Editar tus respuestas',
+  links: 'Editar enlaces y redes',
+};
+
+/** Lápiz de editar un bloque: pequeño, pero con los 44 táctiles de siempre. */
+function EditPencil({
+  section,
+  onPress,
+  style,
+}: {
+  section: ProfileSection;
+  onPress: () => void;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={EDIT_LABELS[section]}
+      onPress={onPress}
+      style={({ pressed }) => [styles.pencil, { opacity: pressed ? Opacity.pressed : 1 }, style]}>
+      <Icon name="pencil" size={18} color={theme.textSecondary} />
+    </Pressable>
+  );
+}
+
 /** Baldosa de cristal con su título pequeño arriba, como los paneles de la referencia. */
 function Section({
   title,
@@ -238,6 +295,30 @@ function Section({
 const styles = StyleSheet.create({
   root: {
     gap: Spacing.two + Spacing.half,
+  },
+  pencil: {
+    width: Control.minTouch,
+    height: Control.minTouch,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  /** El lápiz de una baldosa, en su esquina de arriba a la derecha. */
+  corner: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  name: {
+    flexShrink: 1,
+  },
+  linksHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   /** Cámara de cristal oscuro sobre la esquina de la foto: se ve la foto a través. */
   camera: {

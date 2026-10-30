@@ -30,7 +30,8 @@ export type IconName =
   | 'document'
   | 'chevrons'
   | 'back'
-  | 'camera';
+  | 'camera'
+  | 'pencil';
 
 export function Icon({
   name,
@@ -147,6 +148,13 @@ export function Icon({
             );
           case 'back':
             return <Path d="M15 5l-7 7 7 7" {...stroke} />;
+          case 'pencil':
+            return (
+              <>
+                <Path d="M15.5 5.5l3 3L8 19H5v-3z" {...stroke} />
+                <Path d="M13.5 7.5l3 3" {...stroke} />
+              </>
+            );
           case 'camera':
             return (
               <>

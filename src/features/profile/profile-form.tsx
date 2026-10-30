@@ -219,7 +219,25 @@ export interface ProfileFormProps {
   cancelLabel?: string;
   /** Cabecera propia de la pantalla que lo monta. */
   header?: React.ReactNode;
+  /**
+   * Solo esa parte de la ficha: la hoja que abre el lápiz de cada bloque del
+   * perfil (2026-10-30). Lo demás no se pinta, pero viaja intacto en el
+   * guardado: el borrador sigue siendo la ficha entera.
+   */
+  section?: ProfileSection;
 }
+
+/** Los bloques de la ficha que se editan por separado. */
+export type ProfileSection = 'basics' | 'specialties' | 'work' | 'prompts' | 'links';
+
+/** Qué campos (con error propio) pinta cada bloque. */
+const SECTION_FIELDS: Record<ProfileSection, (keyof Draft)[]> = {
+  basics: ['name', 'age', 'location'],
+  specialties: ['specialties'],
+  work: ['timezone', 'startingPoint', 'bands', 'ambition'],
+  prompts: ['prompts'],
+  links: ['github'],
+};
 
 export function ProfileForm({
   initial = null,
@@ -229,7 +247,9 @@ export function ProfileForm({
   onCancel,
   cancelLabel = 'Cancelar',
   header,
+  section,
 }: ProfileFormProps) {
+  const show = (part: ProfileSection) => section === undefined || section === part;
   const [draft, setDraft] = useState<Draft>(() => initialDraft(initial, seed));
   const [errors, setErrors] = useState<Errors>({});
   const [saving, setSaving] = useState(false);
@@ -267,6 +287,17 @@ export function ProfileForm({
   async function handleSubmit() {
     const found = validate(draft);
     setErrors(found);
+    // Editando un solo bloque, un fallo en otro no se puede corregir aquí:
+    // se dice, en vez de dejar el botón sin hacer nada.
+    if (
+      section &&
+      (Object.keys(found) as (keyof Draft)[]).some(
+        (key) => found[key] && !SECTION_FIELDS[section].includes(key)
+      )
+    ) {
+      setSaveError('Hay algo en otra parte de tu ficha que no cuadra. Revísala desde su lápiz.');
+      return;
+    }
     if (Object.values(found).some(Boolean)) {
       // En un formulario largo el error puede quedar fuera de pantalla: sin
       // esto el botón «no hace nada» y hay que buscar qué falta a mano.
@@ -304,241 +335,259 @@ export function ProfileForm({
         keyboardDismissMode="on-drag">
         {header}
 
-        <Field label="Nombre" error={errors.name} onLayout={track('name')}>
-          <TextField
-            value={draft.name}
-            onChangeText={(value) => update('name', value)}
-            placeholder="Cómo te llamas"
-            autoCapitalize="words"
-            autoCorrect={false}
-            autoComplete="name"
-            accessibilityLabel="Nombre"
-          />
-        </Field>
-
-        <Field label="Edad" error={errors.age} onLayout={track('age')}>
-          <TextField
-            value={draft.age}
-            onChangeText={(value) => update('age', value.replace(/[^0-9]/g, ''))}
-            placeholder="28"
-            autoCapitalize="none"
-            autoCorrect={false}
-            inputMode="numeric"
-            maxLength={2}
-            accessibilityLabel="Edad"
-          />
-        </Field>
-
-        <Field label="Ubicación" error={errors.location} onLayout={track('location')}>
-          <TextField
-            value={draft.location}
-            onChangeText={(value) => update('location', value)}
-            placeholder="Barcelona"
-            autoCapitalize="words"
-            autoCorrect={false}
-            accessibilityLabel="Ubicación"
-          />
-        </Field>
-
-        <Field
-          label="Zona horaria"
-          hint="La detectamos de tu dispositivo. Cámbiala si no es la tuya."
-          error={errors.timezone}
-          onLayout={track('timezone')}>
-          <TextField
-            value={draft.timezone}
-            onChangeText={(value) => update('timezone', value)}
-            placeholder="Europe/Madrid"
-            autoCapitalize="none"
-            autoCorrect={false}
-            accessibilityLabel="Zona horaria"
-          />
-        </Field>
-
-        <Field
-          label="Lo que domino"
-          hint="Lo que sabes hacer. Elige todas las que apliquen."
-          error={errors.specialties}
-          onLayout={track('specialties')}>
-          <ChipRow>
-            {SPECIALTY_OPTIONS.map((option) => (
-              <Chip
-                key={option.value}
-                label={option.label}
-                multiple
-                selected={draft.specialties.includes(option.value)}
-                onPress={() => update('specialties', toggle(draft.specialties, option.value))}
+        {show('basics') ? (
+          <>
+            <Field label="Nombre" error={errors.name} onLayout={track('name')}>
+              <TextField
+                value={draft.name}
+                onChangeText={(value) => update('name', value)}
+                placeholder="Cómo te llamas"
+                autoCapitalize="words"
+                autoCorrect={false}
+                autoComplete="name"
+                accessibilityLabel="Nombre"
               />
-            ))}
-          </ChipRow>
-        </Field>
+            </Field>
 
-        <Field
-          label="Lo que debe dominar quien busco"
-          hint="Lo que a ti te falta. Si lo dejas vacío, te enseñamos a todo el mundo.">
-          <ChipRow>
-            {SPECIALTY_OPTIONS.map((option) => (
-              <Chip
-                key={option.value}
-                label={option.label}
-                // Sin esto, "Desarrollo" nombraría dos chips distintos del
-                // mismo formulario: el que domino y el que busco.
-                accessibilityLabel={`Busco ${option.label}`}
-                multiple
-                selected={draft.seekingSpecialties.includes(option.value)}
-                onPress={() =>
-                  update('seekingSpecialties', toggle(draft.seekingSpecialties, option.value))
-                }
+            <Field label="Edad" error={errors.age} onLayout={track('age')}>
+              <TextField
+                value={draft.age}
+                onChangeText={(value) => update('age', value.replace(/[^0-9]/g, ''))}
+                placeholder="28"
+                autoCapitalize="none"
+                autoCorrect={false}
+                inputMode="numeric"
+                maxLength={2}
+                accessibilityLabel="Edad"
               />
-            ))}
-          </ChipRow>
-        </Field>
+            </Field>
 
-        <Field
-          label="Punto de partida"
-          error={errors.startingPoint}
-          onLayout={track('startingPoint')}>
-          {STARTING_POINT_OPTIONS.map((option) => (
-            <OptionCard
-              key={option.value}
-              option={option}
-              selected={draft.startingPoint === option.value}
-              onPress={() => update('startingPoint', option.value)}
+            <Field label="Ubicación" error={errors.location} onLayout={track('location')}>
+              <TextField
+                value={draft.location}
+                onChangeText={(value) => update('location', value)}
+                placeholder="Barcelona"
+                autoCapitalize="words"
+                autoCorrect={false}
+                accessibilityLabel="Ubicación"
+              />
+            </Field>
+          </>
+        ) : null}
+
+        {show('work') ? (
+          <Field
+            label="Zona horaria"
+            hint="La detectamos de tu dispositivo. Cámbiala si no es la tuya."
+            error={errors.timezone}
+            onLayout={track('timezone')}>
+            <TextField
+              value={draft.timezone}
+              onChangeText={(value) => update('timezone', value)}
+              placeholder="Europe/Madrid"
+              autoCapitalize="none"
+              autoCorrect={false}
+              accessibilityLabel="Zona horaria"
             />
-          ))}
-        </Field>
+          </Field>
+        ) : null}
 
-        <Field label="Disponibilidad" hint="Horas reales, no las que te gustaría tener.">
-          <Stepper
-            value={draft.hoursPerWeek}
-            onChange={(value) => update('hoursPerWeek', value)}
-            min={HOURS_MIN}
-            max={HOURS_MAX}
-            step={HOURS_STEP}
-            formatValue={(value) => `${value} h/semana`}
-          />
-        </Field>
-
-        <Field label="Cuándo sueles trabajar" error={errors.bands} onLayout={track('bands')}>
-          <ChipRow>
-            {TIME_BAND_OPTIONS.map((option) => (
-              <Chip
-                key={option.value}
-                label={`${option.label} · ${option.description}`}
-                multiple
-                selected={draft.bands.includes(option.value)}
-                onPress={() => update('bands', toggle(draft.bands, option.value))}
-              />
-            ))}
-          </ChipRow>
-        </Field>
-
-        <Field label="Ambición" error={errors.ambition} onLayout={track('ambition')}>
-          {AMBITION_OPTIONS.map((option) => (
-            <OptionCard
-              key={option.value}
-              option={option}
-              selected={draft.ambition === option.value}
-              onPress={() => update('ambition', option.value)}
-            />
-          ))}
-        </Field>
-
-        <Field
-          label="Tus respuestas"
-          hint="La primera es obligatoria. Cortas: es lo que hace que un perfil se lea."
-          error={errors.prompts}
-          onLayout={track('prompts')}>
-          {draft.prompts.map((prompt, index) => (
-            <View key={index} style={styles.prompt}>
+        {show('specialties') ? (
+          <>
+            <Field
+              label="Lo que domino"
+              hint="Lo que sabes hacer. Elige todas las que apliquen."
+              error={errors.specialties}
+              onLayout={track('specialties')}>
               <ChipRow>
-                {PROMPT_QUESTIONS.map((question) => (
+                {SPECIALTY_OPTIONS.map((option) => (
                   <Chip
-                    key={question}
-                    label={question}
-                    selected={prompt.question === question}
-                    onPress={() => updatePrompt(index, { question })}
+                    key={option.value}
+                    label={option.label}
+                    multiple
+                    selected={draft.specialties.includes(option.value)}
+                    onPress={() => update('specialties', toggle(draft.specialties, option.value))}
                   />
                 ))}
               </ChipRow>
+            </Field>
 
-              {/* Prosa, no un nombre propio: el teclado solo levanta la primera
+            <Field
+              label="Lo que debe dominar quien busco"
+              hint="Lo que a ti te falta. Si lo dejas vacío, te enseñamos a todo el mundo.">
+              <ChipRow>
+                {SPECIALTY_OPTIONS.map((option) => (
+                  <Chip
+                    key={option.value}
+                    label={option.label}
+                    // Sin esto, "Desarrollo" nombraría dos chips distintos del
+                    // mismo formulario: el que domino y el que busco.
+                    accessibilityLabel={`Busco ${option.label}`}
+                    multiple
+                    selected={draft.seekingSpecialties.includes(option.value)}
+                    onPress={() =>
+                      update('seekingSpecialties', toggle(draft.seekingSpecialties, option.value))
+                    }
+                  />
+                ))}
+              </ChipRow>
+            </Field>
+          </>
+        ) : null}
+
+        {show('work') ? (
+          <>
+            <Field
+              label="Punto de partida"
+              error={errors.startingPoint}
+              onLayout={track('startingPoint')}>
+              {STARTING_POINT_OPTIONS.map((option) => (
+                <OptionCard
+                  key={option.value}
+                  option={option}
+                  selected={draft.startingPoint === option.value}
+                  onPress={() => update('startingPoint', option.value)}
+                />
+              ))}
+            </Field>
+
+            <Field label="Disponibilidad" hint="Horas reales, no las que te gustaría tener.">
+              <Stepper
+                value={draft.hoursPerWeek}
+                onChange={(value) => update('hoursPerWeek', value)}
+                min={HOURS_MIN}
+                max={HOURS_MAX}
+                step={HOURS_STEP}
+                formatValue={(value) => `${value} h/semana`}
+              />
+            </Field>
+
+            <Field label="Cuándo sueles trabajar" error={errors.bands} onLayout={track('bands')}>
+              <ChipRow>
+                {TIME_BAND_OPTIONS.map((option) => (
+                  <Chip
+                    key={option.value}
+                    label={`${option.label} · ${option.description}`}
+                    multiple
+                    selected={draft.bands.includes(option.value)}
+                    onPress={() => update('bands', toggle(draft.bands, option.value))}
+                  />
+                ))}
+              </ChipRow>
+            </Field>
+
+            <Field label="Ambición" error={errors.ambition} onLayout={track('ambition')}>
+              {AMBITION_OPTIONS.map((option) => (
+                <OptionCard
+                  key={option.value}
+                  option={option}
+                  selected={draft.ambition === option.value}
+                  onPress={() => update('ambition', option.value)}
+                />
+              ))}
+            </Field>
+          </>
+        ) : null}
+
+        {show('prompts') ? (
+          <Field
+            label="Tus respuestas"
+            hint="La primera es obligatoria. Cortas: es lo que hace que un perfil se lea."
+            error={errors.prompts}
+            onLayout={track('prompts')}>
+            {draft.prompts.map((prompt, index) => (
+              <View key={index} style={styles.prompt}>
+                <ChipRow>
+                  {PROMPT_QUESTIONS.map((question) => (
+                    <Chip
+                      key={question}
+                      label={question}
+                      selected={prompt.question === question}
+                      onPress={() => updatePrompt(index, { question })}
+                    />
+                  ))}
+                </ChipRow>
+
+                {/* Prosa, no un nombre propio: el teclado solo levanta la primera
                   letra y el corrector no entra. Con los defectos de Android la
                   respuesta se guardaba capitalizada palabra por palabra. */}
-              <TextField
-                value={prompt.answer}
-                onChangeText={(answer) => updatePrompt(index, { answer })}
-                placeholder={index === 0 ? 'Tu respuesta' : 'Opcional'}
-                autoCapitalize="sentences"
-                autoCorrect={false}
-                multiline
-                maxLength={PROMPT_MAX_LENGTH}
-                showCount
-                accessibilityLabel={prompt.question}
-              />
-            </View>
-          ))}
-        </Field>
+                <TextField
+                  value={prompt.answer}
+                  onChangeText={(answer) => updatePrompt(index, { answer })}
+                  placeholder={index === 0 ? 'Tu respuesta' : 'Opcional'}
+                  autoCapitalize="sentences"
+                  autoCorrect={false}
+                  multiline
+                  maxLength={PROMPT_MAX_LENGTH}
+                  showCount
+                  accessibilityLabel={prompt.question}
+                />
+              </View>
+            ))}
+          </Field>
+        ) : null}
 
-        <Field
-          label="Enlaces y redes (opcional)"
-          hint={
-            githubLocked
-              ? 'Tu GitHub está verificado: lo lleva el sello, no este campo. Para cambiarlo, desvincúlalo desde tu perfil.'
-              : 'Lo que enseñe qué has hecho y dónde estás: portfolio, LinkedIn, Instagram, TikTok.'
-          }
-          error={errors.github}
-          onLayout={track('github')}>
-          <TextField
-            value={draft.github}
-            onChangeText={(value) => update('github', value)}
-            placeholder="https://github.com/tuusuario"
-            autoCapitalize="none"
-            autoCorrect={false}
-            inputMode="url"
-            accessibilityLabel="GitHub"
-            // Con sello, el enlace lo deriva el servidor de la identidad. Dejarlo
-            // editable devolvería el ataque que cierra la verificación entera:
-            // verifico como `alice` y enseño el GitHub de otro.
-            editable={!githubLocked}
-          />
-          <TextField
-            value={draft.portfolio}
-            onChangeText={(value) => update('portfolio', value)}
-            placeholder="https://tuportfolio.com"
-            autoCapitalize="none"
-            autoCorrect={false}
-            inputMode="url"
-            accessibilityLabel="Portfolio"
-          />
-          <TextField
-            value={draft.linkedin}
-            onChangeText={(value) => update('linkedin', value)}
-            placeholder="https://linkedin.com/in/tuusuario"
-            autoCapitalize="none"
-            autoCorrect={false}
-            inputMode="url"
-            accessibilityLabel="LinkedIn"
-          />
-          <TextField
-            value={draft.instagram}
-            onChangeText={(value) => update('instagram', value)}
-            placeholder="https://instagram.com/tuusuario"
-            autoCapitalize="none"
-            autoCorrect={false}
-            inputMode="url"
-            accessibilityLabel="Instagram"
-          />
-          <TextField
-            value={draft.tiktok}
-            onChangeText={(value) => update('tiktok', value)}
-            placeholder="https://tiktok.com/@tuusuario"
-            autoCapitalize="none"
-            autoCorrect={false}
-            inputMode="url"
-            accessibilityLabel="TikTok"
-          />
-        </Field>
+        {show('links') ? (
+          <Field
+            label="Enlaces y redes (opcional)"
+            hint={
+              githubLocked
+                ? 'Tu GitHub está verificado: lo lleva el sello, no este campo. Para cambiarlo, desvincúlalo desde tu perfil.'
+                : 'Lo que enseñe qué has hecho y dónde estás: portfolio, LinkedIn, Instagram, TikTok.'
+            }
+            error={errors.github}
+            onLayout={track('github')}>
+            <TextField
+              value={draft.github}
+              onChangeText={(value) => update('github', value)}
+              placeholder="https://github.com/tuusuario"
+              autoCapitalize="none"
+              autoCorrect={false}
+              inputMode="url"
+              accessibilityLabel="GitHub"
+              // Con sello, el enlace lo deriva el servidor de la identidad. Dejarlo
+              // editable devolvería el ataque que cierra la verificación entera:
+              // verifico como `alice` y enseño el GitHub de otro.
+              editable={!githubLocked}
+            />
+            <TextField
+              value={draft.portfolio}
+              onChangeText={(value) => update('portfolio', value)}
+              placeholder="https://tuportfolio.com"
+              autoCapitalize="none"
+              autoCorrect={false}
+              inputMode="url"
+              accessibilityLabel="Portfolio"
+            />
+            <TextField
+              value={draft.linkedin}
+              onChangeText={(value) => update('linkedin', value)}
+              placeholder="https://linkedin.com/in/tuusuario"
+              autoCapitalize="none"
+              autoCorrect={false}
+              inputMode="url"
+              accessibilityLabel="LinkedIn"
+            />
+            <TextField
+              value={draft.instagram}
+              onChangeText={(value) => update('instagram', value)}
+              placeholder="https://instagram.com/tuusuario"
+              autoCapitalize="none"
+              autoCorrect={false}
+              inputMode="url"
+              accessibilityLabel="Instagram"
+            />
+            <TextField
+              value={draft.tiktok}
+              onChangeText={(value) => update('tiktok', value)}
+              placeholder="https://tiktok.com/@tuusuario"
+              autoCapitalize="none"
+              autoCorrect={false}
+              inputMode="url"
+              accessibilityLabel="TikTok"
+            />
+          </Field>
+        ) : null}
 
         {saveError ? (
           <ThemedText type="small" themeColor="danger">

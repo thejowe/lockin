@@ -79,6 +79,29 @@ const TEXT_FIELD_LABELS = [
 ];
 
 describe('ProfileForm', () => {
+  it('con section pinta solo ese bloque y guarda la ficha entera', async () => {
+    const onSubmit = jest.fn().mockResolvedValue(undefined);
+    const profile = buildProfile();
+    await render(
+      <ProfileForm initial={profile} section="basics" submitLabel="Guardar" onSubmit={onSubmit} />
+    );
+
+    expect(screen.getByLabelText('Nombre')).toBeTruthy();
+    expect(screen.getByLabelText('Edad')).toBeTruthy();
+    expect(screen.getByLabelText('Ubicación')).toBeTruthy();
+    expect(screen.queryByLabelText('Zona horaria')).toBeNull();
+    expect(screen.queryByLabelText('GitHub')).toBeNull();
+
+    await fireEvent.changeText(screen.getByLabelText('Nombre'), 'Otro Nombre');
+    await fireEvent.press(screen.getByRole('button', { name: 'Guardar' }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    const saved = onSubmit.mock.calls[0][0] as ProfileInput;
+    expect(saved.name).toBe('Otro Nombre');
+    expect(saved.specialties).toEqual(profile.specialties);
+    expect(saved.ambition).toBe(profile.ambition);
+  });
+
   it('pinta todos los campos de texto con etiqueta accesible', async () => {
     await render(<ProfileForm submitLabel="Guardar" onSubmit={jest.fn()} />);
 

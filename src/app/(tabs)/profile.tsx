@@ -20,6 +20,8 @@ import {
   useTermsGate,
   ProfileDetails,
   ProfileForm,
+  SectionEditSheet,
+  type ProfileSection,
 } from '@/features/profile';
 import { accountsAvailable, enabledAuthProviders } from '@/features/profile/account-gateway';
 import { PrimaryButton, SecondaryButton } from '@/features/profile/controls';
@@ -38,6 +40,8 @@ export default function ProfileScreen() {
   const [editing, setEditing] = useState(false);
   /** La hoja de cambiar la foto, que abre la cámara de la foto de arriba. */
   const [photoOpen, setPhotoOpen] = useState(false);
+  /** El bloque que se edita en su hoja, desde el lápiz de ese bloque. */
+  const [editSection, setEditSection] = useState<ProfileSection | null>(null);
   const scrollRef = useRef<ScrollViewInstance>(null);
   const reduceMotion = useReduceMotion();
   const terms = useTermsGate();
@@ -123,7 +127,11 @@ export default function ProfileScreen() {
       <Screen ambient="plum">
         <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
           <TermsAcceptance
-            onAccepted={terms.refresh}
+            // Aceptados, de vuelta a la ficha: se edita bloque a bloque con su lápiz.
+            onAccepted={() => {
+              terms.refresh();
+              setEditing(false);
+            }}
             footer={<SecondaryButton label="Volver" onPress={() => setEditing(false)} />}
           />
         </SafeAreaView>
@@ -167,21 +175,36 @@ export default function ProfileScreen() {
             <ProfileDetails
               profile={profile}
               onAvatarPress={terms.gate === 'accepted' ? () => setPhotoOpen(true) : undefined}
+              onEdit={terms.gate === 'accepted' ? setEditSection : undefined}
             />
           </Animated.View>
 
           {terms.gate === 'accepted' ? (
-            <PhotoSection
-              profile={profile}
-              onChange={refresh}
-              visible={photoOpen}
-              onClose={() => setPhotoOpen(false)}
-            />
+            <>
+              <PhotoSection
+                profile={profile}
+                onChange={refresh}
+                visible={photoOpen}
+                onClose={() => setPhotoOpen(false)}
+              />
+              <SectionEditSheet
+                profile={profile}
+                section={editSection}
+                onSave={async (input) => {
+                  await repositories.profiles.saveCurrent(input);
+                  refresh();
+                }}
+                onClose={() => setEditSection(null)}
+              />
+            </>
           ) : terms.gate === 'required' ? (
-            <Animated.View entering={enterUp(1)}>
+            // Quien creó el perfil antes de esta versión de los textos los
+            // acepta primero; luego ya edita cada bloque con su lápiz.
+            <Animated.View entering={enterUp(1)} style={styles.termsGate}>
               <ThemedText type="body" themeColor="textSecondary">
-                Para publicar una foto acepta antes los Términos y Normas: pulsa «Editar perfil».
+                Para editar tu perfil o publicar una foto acepta antes los Términos y Normas.
               </ThemedText>
+              <SecondaryButton label="Revisar y aceptar" onPress={() => setEditing(true)} />
             </Animated.View>
           ) : null}
 
@@ -196,10 +219,6 @@ export default function ProfileScreen() {
               onChange={refresh}
               available={{ github: true, linkedin: linkedinAvailable }}
             />
-          </Animated.View>
-
-          <Animated.View entering={enterUp(3)}>
-            <SecondaryButton label="Editar perfil" onPress={() => setEditing(true)} />
           </Animated.View>
 
           {/* La cuenta va al final: es lo que menos se visita y donde vive la
@@ -229,6 +248,9 @@ export default function ProfileScreen() {
 const linkedinAvailable = !accountsAvailable || enabledAuthProviders.has('linkedin');
 
 const styles = StyleSheet.create({
+  termsGate: {
+    gap: Spacing.two,
+  },
   root: {
     flex: 1,
   },

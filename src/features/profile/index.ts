@@ -16,7 +16,13 @@ export { LinkedinSeal } from './linkedin-seal';
 export { PhotoSection } from './photo-section';
 export { ProfileAvatar } from './profile-avatar';
 export { ProfileDetails } from './profile-details';
-export { ProfileForm, type ProfileFormProps, type ProfileSeed } from './profile-form';
+export {
+  ProfileForm,
+  type ProfileFormProps,
+  type ProfileSection,
+  type ProfileSeed,
+} from './profile-form';
+export { SectionEditSheet } from './section-edit-sheet';
 export { NewPasswordForm } from './new-password-form';
 export { ProviderButtons } from './provider-buttons';
 export { RegisterForm } from './register-form';

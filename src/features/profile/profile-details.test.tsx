@@ -38,6 +38,27 @@ describe('ProfileDetails', () => {
     expect(screen.queryByRole('button', { name: 'Cambiar foto de perfil' })).toBeNull();
   });
 
+  it('cada bloque propio lleva su lápiz y abre su sección', async () => {
+    const onEdit = jest.fn();
+    await render(<ProfileDetails profile={buildProfile()} onEdit={onEdit} />);
+
+    for (const [name, section] of [
+      ['Editar nombre, edad y ubicación', 'basics'],
+      ['Editar lo que dominas y lo que buscas', 'specialties'],
+      ['Editar cómo trabajas', 'work'],
+      ['Editar enlaces y redes', 'links'],
+    ] as const) {
+      await fireEvent.press(screen.getByRole('button', { name }));
+      expect(onEdit).toHaveBeenLastCalledWith(section);
+    }
+    expect(screen.getAllByRole('button', { name: 'Editar tus respuestas' }).length).toBeGreaterThan(
+      0
+    );
+
+    await render(<ProfileDetails profile={buildProfile()} />);
+    expect(screen.queryByRole('button', { name: /^Editar / })).toBeNull();
+  });
+
   it('separa lo que domina de lo que busca', async () => {
     await render(
       <ProfileDetails
