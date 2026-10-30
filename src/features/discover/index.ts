@@ -11,6 +11,7 @@ export { complementWith } from './complement';
 export { DeckActions } from './deck-actions';
 export { DeckEmpty } from './deck-empty';
 export { MatchModal } from './match-modal';
+export { OutOfLikesSheet } from './out-of-likes-sheet';
 export { ProfileCard } from './profile-card';
 export { SwipeDeck } from './swipe-deck';
-export { useDeck, type DeckState, type MatchEvent } from './use-deck';
+export { useDeck, type Blocked, type DeckState, type MatchEvent } from './use-deck';

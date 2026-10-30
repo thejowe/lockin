@@ -60,7 +60,7 @@ import { TapHint } from './tap-hint';
 
 import type { ChipTone } from './chip';
 
-import type { Profile, Specialty } from '@/data';
+import type { DeckProfile, Profile, Specialty } from '@/data';
 
 /**
  * Páginas de la ficha, en orden de lectura. El prompt solo si lo hay, y las
@@ -119,7 +119,8 @@ export function ProfileCard({
   /** Se llama al pasar de bloque con un toque. */
   onPageChange,
 }: {
-  profile: Profile;
+  /** Del deck llega con `superLikedMe`; en el resto de sitios es un `Profile` a secas. */
+  profile: Profile | DeckProfile;
   viewerSpecialties?: Specialty[];
   viewerSchedule?: DaySchedule;
   safetyOpen?: boolean;
@@ -141,6 +142,7 @@ export function ProfileCard({
   const [pageIndex, setPageIndex] = useState(0);
   const prompt = profile.prompts[0];
   const complement = complementWith(profile, viewerSpecialties);
+  const superLiked = 'superLikedMe' in profile && profile.superLikedMe;
 
   const socials = connectedApps(profile);
   const pages: Page[] = [
@@ -271,8 +273,13 @@ export function ProfileCard({
 
         {page === 'about' ? (
           <View style={styles.section}>
-            {complement.length > 0 || profile.githubVerification || profile.linkedinVerification ? (
+            {superLiked ||
+            complement.length > 0 ||
+            profile.githubVerification ||
+            profile.linkedinVerification ? (
               <View style={styles.badges}>
+                {/* Va primero: es lo que más cambia lo que haces con la tarjeta. */}
+                {superLiked ? <Chip label="Te ha dado un Super Like" tone="match" /> : null}
                 {complement.length > 0 ? <Chip label="✓ Encajas" tone="match" /> : null}
                 {/*
                   Sin sello no se pinta nada: marcar lo no verificado castigaría a

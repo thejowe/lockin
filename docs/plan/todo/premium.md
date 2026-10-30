@@ -56,8 +56,12 @@ escriba código pasa por `codex review` antes de commitear en la rama principal.
   Supabase, con tests unitarios del mapeo; `describe('premium')` ya no se salta en Supabase. **Casilla
   abierta hasta que el job «Contrato Supabase» de CI (`LOCKIN_SUPABASE_CONTRACT=1`, con migraciones y
   `seed.sql` del repo) la pase en verde: aquí no hay Docker y esa suite no se ha ejecutado.**
-- [ ] [Claude] Deck: deshacer, Super Like y Boost; aviso de likes restantes; hoja «sin likes»;
-  insignia de Super Like.
+- [x] [Claude] Deck: deshacer, Super Like y Boost; aviso de likes restantes; hoja «sin likes»;
+  insignia de Super Like. Hecho el 2026-10-30 (Tarea 6): `usePremium`, `OutOfLikesSheet`, cinco botones
+  en `DeckActions`, `useDeck` con `blocked`/`superLike`/`undo`/`boost`, y el gesto a la derecha sin cupo
+  que devuelve la tarjeta (`likeLocked` en `SwipeDeck`, que no figuraba en los archivos de la tarea).
+  `/premium` es un stub (`src/app/premium.tsx`) hasta la Tarea 9. Solo probado con Jest: **sin ver en
+  dispositivo** (lo cubre la casilla `[comprobador]`) y `codex review` pendiente.
 - [ ] [Claude] Matches: fila «Te han dado like (N)» y la cuadrícula premium (gratis ve relleno
   genérico, nunca fotos reales).
 - [ ] [Claude] Filtros avanzados con candado; paywall (`src/lib/purchases.ts` con ofertas falsas en

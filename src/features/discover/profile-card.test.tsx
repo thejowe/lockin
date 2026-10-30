@@ -318,4 +318,23 @@ describe('ProfileCard: foto de fondo', () => {
     expect(screen.queryByTestId('portrait-photo', HIDDEN)).toBeNull();
     expect(screen.getByText(profile.avatar.initials, HIDDEN)).toBeTruthy();
   });
+
+  it('si la otra persona te ha dado un Super Like, la tarjeta lo dice', async () => {
+    const profile = { ...buildProfile({ name: 'Núria' }), superLikedMe: true };
+
+    await render(<ProfileCard profile={profile} />);
+
+    expect(screen.getByText('Te ha dado un Super Like')).toBeTruthy();
+  });
+
+  it('sin Super Like no hay insignia', async () => {
+    const profile = { ...buildProfile({ name: 'Núria' }), superLikedMe: false };
+
+    await render(<ProfileCard profile={profile} />);
+    expect(screen.queryByText('Te ha dado un Super Like')).toBeNull();
+
+    // Y un perfil que no viene del deck (sin el campo) tampoco la lleva.
+    await render(<ProfileCard profile={buildProfile()} />);
+    expect(screen.queryByText('Te ha dado un Super Like')).toBeNull();
+  });
 });

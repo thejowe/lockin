@@ -11,7 +11,13 @@ import { renderHook, waitFor } from '@testing-library/react-native';
 import { act } from 'react';
 
 import { DataProvider } from '@/data';
-import { createMockRepositories, CURRENT_USER_ID, resetState } from '@/data/mock';
+import {
+  createMockRepositories,
+  CURRENT_USER_ID,
+  resetState,
+  seedMockLikeEvents,
+  setMockPremium,
+} from '@/data/mock';
 import { SEED_RECIPROCAL_IDS } from '@/data/mock/seed';
 
 import { useDeck } from './use-deck';
@@ -174,5 +180,163 @@ describe('useDeck', () => {
     });
 
     await waitFor(() => expect(getDeck).toHaveBeenCalledTimes(2));
+  });
+
+  describe('Premium', () => {
+    it('con el cupo agotado, el like no descarta la tarjeta y abre la hoja', async () => {
+      seedMockLikeEvents('like', 25, 1);
+      const { result } = await renderDeck('par');
+      const target = result.current.cards![0];
+
+      await act(async () => {
+        result.current.decide(target, 'like');
+      });
+
+      await waitFor(() => expect(result.current.blocked).not.toBeNull());
+      expect(result.current.blocked).toMatchObject({ kind: 'likes' });
+      expect((result.current.blocked as { resetsAt: string }).resetsAt).toEqual(expect.any(String));
+      // La carta sigue siendo la de arriba y el fallo no se cuenta como error de guardado.
+      expect(result.current.cards![0].id).toBe(target.id);
+      expect(result.current.error).toBeNull();
+    });
+
+    it('cerrar la hoja la deja en null', async () => {
+      seedMockLikeEvents('like', 25, 1);
+      const { result } = await renderDeck('par');
+
+      await act(async () => {
+        result.current.decide(result.current.cards![0], 'like');
+      });
+      await waitFor(() => expect(result.current.blocked).not.toBeNull());
+
+      await act(async () => {
+        result.current.dismissBlocked();
+      });
+
+      expect(result.current.blocked).toBeNull();
+    });
+
+    it('expone los cupos para que la pantalla sepa cuándo frenar el gesto', async () => {
+      seedMockLikeEvents('like', 25, 1);
+      const { result } = await renderDeck('par');
+
+      await waitFor(() => expect(result.current.quotas?.likesLeft).toBe(0));
+    });
+
+    it('el Super Like manda la bandera super y descarta la tarjeta', async () => {
+      const recordDecision = jest.spyOn(repositories.discovery, 'recordDecision');
+      const { result } = await renderDeck('par');
+      const target = result.current.cards![0];
+
+      await act(async () => {
+        result.current.superLike(target.id);
+      });
+
+      expect(recordDecision).toHaveBeenCalledWith(target.id, 'like', 'par', { super: true });
+      expect(result.current.cards!.map((profile) => profile.id)).not.toContain(target.id);
+    });
+
+    it('el segundo Super Like de la semana abre la hoja y devuelve la tarjeta', async () => {
+      const { result } = await renderDeck('par');
+      const [first, second] = result.current.cards!;
+
+      await act(async () => {
+        result.current.superLike(first.id);
+      });
+      await act(async () => {
+        result.current.superLike(second.id);
+      });
+
+      await waitFor(() => expect(result.current.blocked).toMatchObject({ kind: 'supers' }));
+      expect(result.current.cards![0].id).toBe(second.id);
+    });
+
+    it('con Premium, deshacer devuelve la carta arriba del deck', async () => {
+      setMockPremium(true);
+      const { result } = await renderDeck('par');
+      const target = result.current.cards![0];
+
+      await act(async () => {
+        result.current.decide(target, 'pass');
+      });
+      expect(result.current.cards![0].id).not.toBe(target.id);
+
+      let restored: string | null = null;
+      await act(async () => {
+        restored = await result.current.undo();
+      });
+
+      expect(restored).toBe(target.id);
+      expect(result.current.cards![0].id).toBe(target.id);
+      expect(result.current.blocked).toBeNull();
+    });
+
+    it('si no hay nada que deshacer, el deck no cambia', async () => {
+      setMockPremium(true);
+      const { result } = await renderDeck('par');
+      const before = result.current.cards!.map((profile) => profile.id);
+
+      let restored: string | null = 'x';
+      await act(async () => {
+        restored = await result.current.undo();
+      });
+
+      expect(restored).toBeNull();
+      expect(result.current.cards!.map((profile) => profile.id)).toEqual(before);
+    });
+
+    it('con Premium, el Boost devuelve cuándo termina', async () => {
+      setMockPremium(true);
+      const { result } = await renderDeck('par');
+
+      let endsAt: string | null = null;
+      await act(async () => {
+        endsAt = await result.current.boost();
+      });
+
+      expect(Date.parse(endsAt!)).toBeGreaterThan(0);
+      expect(result.current.blocked).toBeNull();
+    });
+
+    it('sin Premium, el Boost abre la hoja de Premium', async () => {
+      const { result } = await renderDeck('par');
+
+      await act(async () => {
+        await result.current.boost();
+      });
+
+      expect(result.current.blocked).toBe('premium');
+    });
+
+    it('comprobar el límite con el cupo agotado abre la hoja con la hora del servidor', async () => {
+      seedMockLikeEvents('like', 25, 1);
+      const { result } = await renderDeck('par');
+
+      await act(async () => {
+        await result.current.checkLikeLimit();
+      });
+
+      expect(result.current.blocked).toMatchObject({ kind: 'likes' });
+    });
+
+    it('comprobar el límite con cupo liberado no abre nada', async () => {
+      const { result } = await renderDeck('par');
+
+      await act(async () => {
+        await result.current.checkLikeLimit();
+      });
+
+      expect(result.current.blocked).toBeNull();
+    });
+
+    it('sin Premium, deshacer abre la hoja de Premium', async () => {
+      const { result } = await renderDeck('par');
+
+      await act(async () => {
+        await result.current.undo();
+      });
+
+      expect(result.current.blocked).toBe('premium');
+    });
   });
 });

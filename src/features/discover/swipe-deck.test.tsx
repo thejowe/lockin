@@ -33,7 +33,7 @@ import { buildProfile, buildProfileInput } from '@/data/test-fixtures';
 import { cardTestId, PAN_TEST_ID, SwipeDeck } from './swipe-deck';
 
 import type { LegacyPanGesture } from 'react-native-gesture-handler';
-import type { Profile } from '@/data';
+import type { DeckProfile } from '@/data';
 
 // gesture-handler 3 exige un `GestureHandlerRootView` por encima de cada
 // `GestureDetector`, también bajo Jest. En la app lo pone `src/app/_layout.tsx`.
@@ -80,17 +80,17 @@ const THRESHOLD = 110;
 /** Velocidad a la que un flick decide sin llegar al umbral. */
 const FLICK = 800;
 
-const PROFILES: Profile[] = [
+const PROFILES: DeckProfile[] = [
   buildProfile({ id: 'p1', name: 'Núria Bosch', avatar: { initials: 'NB', accent: 'teal' } }),
   buildProfile({ id: 'p2', name: 'Marc Oller', avatar: { initials: 'MO', accent: 'brass' } }),
   buildProfile({ id: 'p3', name: 'Alba Ferrer', avatar: { initials: 'AF', accent: 'teal' } }),
   buildProfile({ id: 'p4', name: 'Diego Sanz', avatar: { initials: 'DS', accent: 'brass' } }),
-];
+].map((profile) => ({ ...profile, superLikedMe: false }));
 
 let onDecide: jest.Mock;
 
 /** Monta el deck con los perfiles dados. */
-async function renderDeck(profiles: Profile[] = PROFILES) {
+async function renderDeck(profiles: DeckProfile[] = PROFILES) {
   const view = await render(<SwipeDeck profiles={profiles} onDecide={onDecide} />);
 
   // `useReduceMotion` pregunta al sistema en un efecto asíncrono: sin vaciar la
@@ -188,6 +188,55 @@ describe('SwipeDeck', () => {
     swipe({ translationX: THRESHOLD + 20 });
 
     expect(onDecide).toHaveBeenCalledWith(PROFILES[0], 'like');
+  });
+
+  describe('con el cupo de likes agotado', () => {
+    async function renderLocked() {
+      const onLikeLocked = jest.fn();
+      await render(
+        <SwipeDeck profiles={PROFILES} onDecide={onDecide} likeLocked onLikeLocked={onLikeLocked} />
+      );
+      await act(async () => {});
+      return onLikeLocked;
+    }
+
+    it('el gesto a la derecha devuelve la tarjeta a su sitio y avisa, sin decidir', async () => {
+      const onLikeLocked = await renderLocked();
+
+      swipe({ translationX: THRESHOLD + 20 });
+
+      expect(onLikeLocked).toHaveBeenCalledTimes(1);
+      expect(onDecide).not.toHaveBeenCalled();
+      // Vuelve con el muelle, no sale con el temporizador de la salida.
+      expect(mockWithSpring).toHaveBeenCalled();
+      expect(mockWithTiming).not.toHaveBeenCalled();
+    });
+
+    it('un flick a la derecha tampoco la descarta', async () => {
+      const onLikeLocked = await renderLocked();
+
+      swipe({ translationX: 20, velocityX: FLICK + 1 });
+
+      expect(onLikeLocked).toHaveBeenCalledTimes(1);
+      expect(onDecide).not.toHaveBeenCalled();
+    });
+
+    it('el botón Like avisa en vez de decidir', async () => {
+      const onLikeLocked = await renderLocked();
+
+      await fireEvent.press(screen.getByLabelText('Like'));
+
+      expect(onLikeLocked).toHaveBeenCalledTimes(1);
+      expect(onDecide).not.toHaveBeenCalled();
+    });
+
+    it('pasar sigue funcionando', async () => {
+      await renderLocked();
+
+      swipe({ translationX: -(THRESHOLD + 20) });
+
+      expect(onDecide).toHaveBeenCalledWith(PROFILES[0], 'pass');
+    });
   });
 
   it('arrastrar más allá del umbral hacia la izquierda es un pass', async () => {
@@ -421,7 +470,7 @@ describe('SwipeDeck en el relevo', () => {
   }
 
   /** Padre que hace lo que `useDeck`: retira la tarjeta decidida, y puede devolverla. */
-  let restore: (profile: Profile) => void;
+  let restore: (profile: DeckProfile) => void;
   function Harness() {
     const [profiles, setProfiles] = useState(PROFILES);
     restore = (profile) => setProfiles((current) => [profile, ...current]);

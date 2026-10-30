@@ -32,6 +32,11 @@
  * cuando una tarjeta vuelve arriba (el guardado falló, o se cambia de modo y
  * reaparece): nace con turno nuevo, visible y en el centro.
  *
+ * Con el cupo de likes agotado (`likeLocked`), el like —gesto, botón o Super Like—
+ * no descarta la tarjeta: vuelve a su sitio con el mismo muelle que un arrastre
+ * corto y se avisa a quien lo gestiona (`onLikeLocked`), que abre la hoja. Pasar
+ * sigue igual: no gasta cupo.
+ *
  * Con «reducir movimiento» activado en el sistema, la tarjeta llega al MISMO
  * estado final sin el recorrido: misma decisión, mismo `onDecide`, misma lógica
  * de match aguas arriba. Lo que se apaga es solo lo que se mueve solo —la salida
@@ -67,7 +72,7 @@ import { ProfileCard } from './profile-card';
 import { useTapHint } from './tap-hint';
 
 import type { SharedValue } from 'react-native-reanimated';
-import type { Decision, Profile, Specialty } from '@/data';
+import type { DeckProfile, Decision, Specialty } from '@/data';
 import type { DaySchedule } from '@/features/profile';
 
 /** Desplazamiento a partir del cual soltar cuenta como decisión. */
@@ -160,10 +165,27 @@ export function SwipeDeck({
   onDecide,
   viewerSpecialties,
   viewerSchedule,
+  likeLocked = false,
+  onLikeLocked,
+  isPremium,
+  likesLeft,
+  onUndo,
+  onSuperLike,
+  onBoost,
 }: {
-  profiles: Profile[];
+  profiles: DeckProfile[];
   /** Se llama una vez por tarjeta, cuando la animación de salida termina. */
-  onDecide: (profile: Profile, decision: Decision) => void;
+  onDecide: (profile: DeckProfile, decision: Decision) => void;
+  /** El cupo de likes está agotado: el like devuelve la tarjeta y avisa en vez de decidir. */
+  likeLocked?: boolean;
+  onLikeLocked?: () => void;
+  /** Lo que enseñan los botones de Premium (ver `DeckActions`). */
+  isPremium?: boolean;
+  likesLeft?: number | null;
+  onUndo?: () => void;
+  /** Super Like sobre la tarjeta superior: sale como un like y llega aquí, no a `onDecide`. */
+  onSuperLike?: (profile: DeckProfile) => void;
+  onBoost?: () => void;
   /** Lo que domina quien swipea. Solo lo reenvía a la tarjeta, que lo resalta. */
   viewerSpecialties?: Specialty[];
   /** Jornada de quien swipea: la tarjeta marca en qué franjas coincidís. */
@@ -212,16 +234,22 @@ export function SwipeDeck({
   });
 
   /** Cierra la decisión. La tarjeta ya está oculta: aquí solo se avisa al padre. */
-  function settle(profile: Profile, decision: Decision) {
+  function settle(profile: DeckProfile, decision: Decision, superLike = false) {
     exiting.set(false);
     // Quien ya decide una tarjeta no necesita la pista de tocarla.
     tapHint.dismiss();
-    onDecide(profile, decision);
+    if (superLike && onSuperLike) onSuperLike(profile);
+    else onDecide(profile, decision);
   }
 
   /** Salida animada disparada desde los botones (el gesto tiene la suya). */
-  function swipeAway(decision: Decision) {
+  function swipeAway(decision: Decision, superLike = false) {
     if (top === null || exiting.get()) return;
+    // Sin cupo de likes la tarjeta no sale: se queda donde está y se avisa.
+    if (decision === 'like' && likeLocked) {
+      onLikeLocked?.();
+      return;
+    }
     const profile = top;
     const key = turnKey;
     const target = decision === 'like' ? exitDistance : -exitDistance;
@@ -234,7 +262,7 @@ export function SwipeDeck({
         owner.set(key);
         exited.set(true);
       })();
-      settle(profile, decision);
+      settle(profile, decision, superLike);
       return;
     }
 
@@ -252,7 +280,7 @@ export function SwipeDeck({
         withTiming(target, EXIT_TIMING, (finished) => {
           if (!finished) return;
           exited.set(true);
-          runOnJS(settle)(profile, decision);
+          runOnJS(settle)(profile, decision, superLike);
         })
       );
     })();
@@ -300,6 +328,20 @@ export function SwipeDeck({
       }
 
       const decision: Decision = liked ? 'like' : 'pass';
+
+      if (liked && likeLocked) {
+        // Sin cupo, el like no sale: la tarjeta vuelve al centro como en un
+        // arrastre corto y se avisa para abrir la hoja.
+        translateX.set(
+          reduceMotion ? 0 : withSpring(0, { ...Springs.settle, velocity: event.velocityX })
+        );
+        translateY.set(
+          reduceMotion ? 0 : withSpring(0, { ...Springs.settle, velocity: event.velocityY })
+        );
+        if (onLikeLocked) runOnJS(onLikeLocked)();
+        return;
+      }
+
       exiting.set(true);
 
       if (reduceMotion) {
@@ -370,7 +412,16 @@ export function SwipeDeck({
       */}
       {safetyOpen ? null : (
         <View style={styles.actions} pointerEvents="box-none">
-          <DeckActions onDecide={swipeAway} disabled={top === null} progress={swipeProgress} />
+          <DeckActions
+            onDecide={swipeAway}
+            disabled={top === null}
+            progress={swipeProgress}
+            isPremium={isPremium}
+            likesLeft={likesLeft}
+            onUndo={onUndo}
+            onSuperLike={() => swipeAway('like', true)}
+            onBoost={onBoost}
+          />
         </View>
       )}
     </View>
@@ -394,7 +445,7 @@ function TopCard({
   tapHint,
   onPageChange,
 }: {
-  profile: Profile;
+  profile: DeckProfile;
   turnKey: string | null;
   drag: Drag;
   viewerSpecialties?: Specialty[];
@@ -514,7 +565,7 @@ function BehindCard({
   viewerSpecialties,
   viewerSchedule,
 }: {
-  profile: Profile;
+  profile: DeckProfile;
   index: number;
   /** Turno de la superior actual: si el arrastre es suyo, esta la sigue. */
   frontKey: string | null;

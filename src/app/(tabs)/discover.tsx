@@ -24,7 +24,15 @@ import { useLockTabSwipe } from '@/components/swipe-between-tabs';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useQuery, useRepositories } from '@/data';
-import { ActionButton, DeckEmpty, MatchModal, SwipeDeck, useDeck } from '@/features/discover';
+import {
+  ActionButton,
+  DeckEmpty,
+  MatchModal,
+  OutOfLikesSheet,
+  SwipeDeck,
+  useDeck,
+} from '@/features/discover';
+import { openPaywall } from '@/features/premium';
 import { useTheme } from '@/hooks/use-theme';
 
 import type { ModePreference, Specialty } from '@/data';
@@ -47,7 +55,24 @@ export default function DiscoverScreen() {
   const viewerSchedule = viewer
     ? { bands: viewer.availability.bands, timezone: viewer.timezone }
     : undefined;
-  const { cards, loading, error, match, decide, dismissMatch, refresh } = useDeck(DECK_MODE);
+  const {
+    cards,
+    loading,
+    error,
+    match,
+    blocked,
+    quotas,
+    decide,
+    superLike,
+    undo,
+    boost,
+    checkLikeLimit,
+    dismissBlocked,
+    dismissMatch,
+    refresh,
+  } = useDeck(DECK_MODE);
+  // Sin Premium y sin likes, el like no sale: la tarjeta vuelve y se abre la hoja.
+  const likeLocked = quotas !== null && !quotas.isPremium && quotas.likesLeft === 0;
 
   // Con tarjetas, el swipe horizontal es de la tarjeta; sin ellas (deck vacío,
   // cargando o en error) deslizar lleva a la pestaña de al lado.
@@ -78,6 +103,13 @@ export default function DiscoverScreen() {
                 onDecide={decide}
                 viewerSpecialties={viewerSpecialties}
                 viewerSchedule={viewerSchedule}
+                likeLocked={likeLocked}
+                onLikeLocked={() => void checkLikeLimit()}
+                isPremium={quotas?.isPremium ?? false}
+                likesLeft={quotas?.likesLeft ?? null}
+                onUndo={() => void undo()}
+                onSuperLike={(profile) => superLike(profile.id)}
+                onBoost={() => void boost()}
               />
             ) : (
               <DeckEmpty onOpenMatches={() => router.push('/matches')} onRefresh={refresh} />
@@ -91,6 +123,16 @@ export default function DiscoverScreen() {
           ) : null}
         </View>
       </SafeAreaView>
+
+      <OutOfLikesSheet
+        blocked={blocked}
+        isPremium={quotas?.isPremium ?? false}
+        onClose={dismissBlocked}
+        onUpgrade={() => {
+          dismissBlocked();
+          openPaywall();
+        }}
+      />
 
       <MatchModal
         event={match}
