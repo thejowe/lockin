@@ -6,10 +6,11 @@
  * `descubrir` puede reutilizarla para el detalle de una tarjeta si le sirve.
  */
 
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
+import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
-import { Radii, Spacing, Stroke } from '@/constants/theme';
+import { Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { ambitionLabel, seeksComplement, specialtyLabel, startingPointSentence } from './catalog';
@@ -21,13 +22,36 @@ import { ProfileAvatar } from './profile-avatar';
 
 import type { Profile, Specialty } from '@/data';
 
-export function ProfileDetails({ profile }: { profile: Profile }) {
+export function ProfileDetails({
+  profile,
+  onAvatarPress,
+}: {
+  profile: Profile;
+  /**
+   * Solo en el perfil propio: la foto lleva encima una cámara translúcida y,
+   * al pulsarla, quien la monta abre la hoja de cambiar la foto (2026-10-30).
+   */
+  onAvatarPress?: () => void;
+}) {
   const theme = useTheme();
 
   return (
     <View style={styles.root}>
       <View style={styles.identity}>
-        <ProfileAvatar avatar={profile.avatar} size="large" />
+        {onAvatarPress ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Cambiar foto de perfil"
+            onPress={onAvatarPress}
+            style={({ pressed }) => ({ opacity: pressed ? Opacity.pressed : 1 })}>
+            <ProfileAvatar avatar={profile.avatar} size="large" />
+            <View style={[styles.camera, { borderColor: theme.border }]}>
+              <Icon name="camera" size={18} color="#FFFFFF" />
+            </View>
+          </Pressable>
+        ) : (
+          <ProfileAvatar avatar={profile.avatar} size="large" />
+        )}
 
         <View style={styles.identityText}>
           <ThemedText type="title">{profile.name}</ThemedText>
@@ -214,6 +238,19 @@ function Section({
 const styles = StyleSheet.create({
   root: {
     gap: Spacing.two + Spacing.half,
+  },
+  /** Cámara de cristal oscuro sobre la esquina de la foto: se ve la foto a través. */
+  camera: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 34,
+    height: 34,
+    borderRadius: Radii.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#0A0A0B8C',
+    borderWidth: Stroke.hairline,
   },
   identity: {
     flexDirection: 'row',

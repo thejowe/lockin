@@ -22,6 +22,8 @@ const SIZES = {
   small: { box: 40, type: 'smallBold' },
   medium: { box: 56, type: 'heading' },
   large: { box: 88, type: 'title' },
+  /** La hoja de cambiar la foto: la misma, un poco más grande. */
+  xlarge: { box: 136, type: 'display' },
 } as const;
 
 export function ProfileAvatar({

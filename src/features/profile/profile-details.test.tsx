@@ -27,6 +27,17 @@ beforeEach(() => {
 afterEach(() => openURL.mockRestore());
 
 describe('ProfileDetails', () => {
+  it('la cámara de la foto solo existe en el perfil propio y abre la hoja', async () => {
+    const onAvatarPress = jest.fn();
+    await render(<ProfileDetails profile={buildProfile()} onAvatarPress={onAvatarPress} />);
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Cambiar foto de perfil' }));
+    expect(onAvatarPress).toHaveBeenCalledTimes(1);
+
+    await render(<ProfileDetails profile={buildProfile()} />);
+    expect(screen.queryByRole('button', { name: 'Cambiar foto de perfil' })).toBeNull();
+  });
+
   it('separa lo que domina de lo que busca', async () => {
     await render(
       <ProfileDetails

@@ -1,5 +1,5 @@
 /**
- * Tests del bloque «Foto» del perfil propio.
+ * Tests de la hoja «Foto de perfil» (la abre la cámara de la foto propia).
  *
  * El selector nativo se sustituye por un doble: lo que se prueba es qué pasa en
  * cada desenlace —subida, permiso denegado, cancelado, rechazo del servidor— y
@@ -25,6 +25,7 @@ const pick = pickAvatarPhoto as jest.Mock;
 let repositories: Repositories;
 let profile: Profile;
 const onChange = jest.fn();
+const onClose = jest.fn();
 
 async function setup(withPhoto = false) {
   resetState();
@@ -32,11 +33,12 @@ async function setup(withPhoto = false) {
   profile = await repositories.profiles.saveCurrent(buildProfileInput());
   if (withPhoto) profile = await repositories.profiles.setAvatarPhoto('file:///vieja.jpg');
   onChange.mockClear();
+  onClose.mockClear();
   pick.mockReset();
 
   await render(
     <DataProvider value={repositories}>
-      <PhotoSection profile={profile} onChange={onChange} />
+      <PhotoSection profile={profile} onChange={onChange} visible onClose={onClose} />
     </DataProvider>
   );
 }
@@ -46,7 +48,7 @@ describe('PhotoSection', () => {
     await setup();
 
     expect(screen.getByText('Aún no tienes foto')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Quitar foto' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Eliminar foto' })).toBeNull();
   });
 
   it('si la URL firmada no está disponible pero la foto existe, sigue ofreciendo quitarla', async () => {
@@ -57,12 +59,14 @@ describe('PhotoSection', () => {
         <PhotoSection
           profile={{ ...profile, avatar: { ...avatar, hasPhoto: true } }}
           onChange={onChange}
+          visible
+          onClose={onClose}
         />
       </DataProvider>
     );
 
     expect(screen.queryByText('Aún no tienes foto')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Quitar foto' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Eliminar foto' })).toBeTruthy();
   });
 
   it('elegir de la galería sube la foto y avisa con onChange', async () => {
@@ -72,6 +76,7 @@ describe('PhotoSection', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Elegir de la galería' }));
 
     await waitFor(() => expect(onChange).toHaveBeenCalledTimes(1));
+    expect(onClose).toHaveBeenCalledTimes(1);
     expect(pick).toHaveBeenCalledWith('library');
     expect((await repositories.profiles.getCurrent())?.avatar.imageUrl).toBe('file:///nueva.jpg');
   });
@@ -129,7 +134,7 @@ describe('PhotoSection', () => {
   it('con foto, «Quitar foto» llama a removeAvatarPhoto y avisa', async () => {
     await setup(true);
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Quitar foto' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Eliminar foto' }));
 
     await waitFor(() => expect(onChange).toHaveBeenCalledTimes(1));
     expect((await repositories.profiles.getCurrent())?.avatar.imageUrl).toBeUndefined();
@@ -141,7 +146,7 @@ describe('PhotoSection', () => {
       .spyOn(repositories.profiles, 'removeAvatarPhoto')
       .mockRejectedValueOnce(new Error('No hemos podido revisar la foto ahora mismo.'));
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Quitar foto' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Eliminar foto' }));
 
     expect(await screen.findByText('No hemos podido revisar la foto ahora mismo.')).toBeTruthy();
     expect(onChange).not.toHaveBeenCalled();
@@ -188,7 +193,7 @@ describe('PhotoSection', () => {
       expect(screen.getByRole('button', { name: 'Hacer una foto' })).toBeDisabled()
     );
     expect(screen.getByRole('button', { name: 'Elegir de la galería' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Quitar foto' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Eliminar foto' })).toBeDisabled();
 
     finish();
     await waitFor(() =>

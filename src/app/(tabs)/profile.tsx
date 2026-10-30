@@ -36,6 +36,8 @@ export default function ProfileScreen() {
   const repositories = useRepositories();
 
   const [editing, setEditing] = useState(false);
+  /** La hoja de cambiar la foto, que abre la cámara de la foto de arriba. */
+  const [photoOpen, setPhotoOpen] = useState(false);
   const scrollRef = useRef<ScrollViewInstance>(null);
   const reduceMotion = useReduceMotion();
   const terms = useTermsGate();
@@ -162,18 +164,26 @@ export default function ProfileScreen() {
           </ThemedText>
 
           <Animated.View entering={enterUp(0)}>
-            <ProfileDetails profile={profile} />
+            <ProfileDetails
+              profile={profile}
+              onAvatarPress={terms.gate === 'accepted' ? () => setPhotoOpen(true) : undefined}
+            />
           </Animated.View>
 
-          <Animated.View entering={enterUp(1)}>
-            {terms.gate === 'accepted' ? (
-              <PhotoSection profile={profile} onChange={refresh} />
-            ) : terms.gate === 'required' ? (
+          {terms.gate === 'accepted' ? (
+            <PhotoSection
+              profile={profile}
+              onChange={refresh}
+              visible={photoOpen}
+              onClose={() => setPhotoOpen(false)}
+            />
+          ) : terms.gate === 'required' ? (
+            <Animated.View entering={enterUp(1)}>
               <ThemedText type="body" themeColor="textSecondary">
                 Para publicar una foto acepta antes los Términos y Normas: pulsa «Editar perfil».
               </ThemedText>
-            ) : null}
-          </Animated.View>
+            </Animated.View>
+          ) : null}
 
           {/* El tablón propio: fotos del trabajo y de una misma (2026-10-17). */}
           <Animated.View entering={enterUp(2)}>
