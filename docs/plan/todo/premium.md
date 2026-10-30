@@ -87,7 +87,7 @@ escriba código pasa por `codex review` antes de commitear en la rama principal.
   suscripción al borrar la cuenta (`AccountSection`), «Simular Premium» solo en `__DEV__` con mock (dentro
   del paywall: `AccountSection` no pinta nada con el mock, así que ahí no se ve la fila). Solo Jest:
   **sin ver en dispositivo** (Tarea 10, `[comprobador]`). Pendiente `codex review`.
-- [ ] [comprobador] Recorrido gratis en el emulador (agotar likes, hoja, número de likes, paywall)
+- [x] [comprobador] Recorrido gratis en el emulador (agotar likes, hoja, número de likes, paywall)
   con mock y con Supabase real.
   **Mock comprobado el 2026-10-30** (commit 5d466e2, APK debug con Metro, backend mock; evidencia en
   `e2e/artifacts/local/2026-10-30-premium-mock/`): ✅ filtros con candado, hoja «sin likes», «Te quedan N likes»,
@@ -160,3 +160,16 @@ Backend: Supabase. Hora del emulador: 30 oct 23:38.
 - ✅ «Hazte Premium» desde la hoja abre el paywall (47); «Ahora no» cierra la hoja y la tarjeta sigue ahí.
 - ✅ Deshacer (52) y Boost (54) gratis abren el paywall.
 - ⚠️ Super Like gratis (49, 50): con el cupo de likes agotado el servidor responde con la hoja de cupo las dos veces; no se llegó a ver «Sin Super Likes» (haría falta un cupo de likes libre).
+
+#### Fase 2 (con Premium concedido por SQL, 2 días, play_store; cuenta 109e1400…; capturas 60-79, `logcat-fase2.txt`)
+
+Backend: Supabase. Reinicio en frío para refrescar el entitlement.
+- ✅ Fila Premium en Cuenta (77): «Activo hasta 1 nov 2026», «Gestionar suscripción» y «Restaurar compras»; ya no sale «Hazte Premium».
+- ✅ Aviso al borrar (78): «Tu suscripción no se cancela sola: cancélala en la tienda o se seguirá cobrando», con «Gestionar suscripción»; «Mejor no» cancela (79) y no se borró nada.
+- ✅ Matches y `/likes` (71-73): «Te han dado like (1)»; con Premium sale el perfil real «Comprob Apoyo Premium» con insignia «Super Like» y «Te ha dado un Super Like · Barcelona»; «Me gusta» da ¡Match! y «Abrir chat» (75, 76); la lista queda en «Nadie te ha dado like todavía».
+- ✅ Deck con Premium (60): sin «Te quedan N likes» y los cinco botones activos.
+- ✅ Boost (61, 62): «Boost activo durante 30 minutos» y, al segundo intento, «Boost no disponible… domingo, 29 de noviembre a las 23:42».
+- ✅ Deshacer (63, 64): tras un like, repone la tarjeta anterior.
+- ✅ Super Like con Premium (65): pasa sin hoja, el deck avanza (no hay aviso ni contador de Super Likes restantes).
+- ✅ Filtros avanzados (66-70): sin candados; Noche + Apostarlo todo + 5 h aplican («Filtros (3)») sin error y sin LQ005 en el logcat; añadir Legal vacía el deck («Filtros (4)», 70), así que filtran de verdad.
+- Sin ver: tocar «Gestionar suscripción» y «Restaurar compras» con Premium; el tope de 5 Super Likes/semana; la paginación de `/likes`; «Sin Super Likes» en gratis (cupo de likes agotado a la vez); compra real (fase 3).
