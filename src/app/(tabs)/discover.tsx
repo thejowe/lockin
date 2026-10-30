@@ -4,9 +4,12 @@
  * Solo compone — el estado del deck vive en `useDeck` y el gesto en `SwipeDeck`,
  * para que cuando `datos` cambie el mock por Supabase esta pantalla no cambie.
  *
- * Sin cabecera ni filtro: desde el 2026-10-12 el producto es solo buscar
- * cofundador, así que el deck se lee siempre en modo `par` y la tarjeta se
- * queda con todo el alto que deja la barra de pestañas.
+ * Sin cabecera: desde el 2026-10-12 el producto es solo buscar cofundador, así
+ * que el deck se lee siempre en modo `par` y la tarjeta se queda con todo el alto
+ * que deja la barra de pestañas. Solo hay un botón «Filtros» (hoja con la
+ * especialidad libre y los avanzados con candado para Premium). El `ProfileFilter`
+ * vive aquí; si el servidor lo rechaza por Premium caducado, se quitan los
+ * avanzados, el deck se recarga y se avisa.
  *
  * También lee el perfil propio, y solo por una cosa: qué domina uno, para que
  * la tarjeta pueda resaltar el encaje con lo que la otra persona busca. Es una
@@ -15,18 +18,27 @@
  */
 
 import { useRouter } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AmbientBackground } from '@/components/ambient-background';
 import { LoadingState, MessageState } from '@/components/state-view';
 import { useLockTabSwipe } from '@/components/swipe-between-tabs';
 import { ThemedText } from '@/components/themed-text';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import {
+  BottomTabInset,
+  HitSlop,
+  MaxContentWidth,
+  Radii,
+  ScrimAlpha,
+  Spacing,
+} from '@/constants/theme';
 import { useQuery, useRepositories } from '@/data';
 import {
   ActionButton,
   DeckEmpty,
+  DeckFilters,
   MatchModal,
   OutOfLikesSheet,
   SwipeDeck,
@@ -35,7 +47,7 @@ import {
 import { openPaywall } from '@/features/premium';
 import { useTheme } from '@/hooks/use-theme';
 
-import type { ModePreference, Specialty } from '@/data';
+import type { ModePreference, ProfileFilter, Specialty } from '@/data';
 
 /** El único modo del producto: buscar cofundador. Lock-In queda fuera de la UI. */
 const DECK_MODE: ModePreference = 'par';
@@ -55,6 +67,9 @@ export default function DiscoverScreen() {
   const viewerSchedule = viewer
     ? { bands: viewer.availability.bands, timezone: viewer.timezone }
     : undefined;
+  const [filter, setFilter] = useState<ProfileFilter>({});
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const {
     cards,
     loading,
@@ -70,9 +85,23 @@ export default function DiscoverScreen() {
     dismissBlocked,
     dismissMatch,
     refresh,
-  } = useDeck(DECK_MODE);
+  } = useDeck(DECK_MODE, filter, {
+    onPremiumFiltersRemoved: (cleaned) => {
+      setFilter(cleaned);
+      setNotice('Tus filtros Premium se han quitado');
+    },
+  });
   // Sin Premium y sin likes, el like no sale: la tarjeta vuelve y se abre la hoja.
   const likeLocked = quotas !== null && !quotas.isPremium && quotas.likesLeft === 0;
+
+  const activeFilters = Object.values(filter).filter(
+    (value) => value !== undefined && !(Array.isArray(value) && value.length === 0)
+  ).length;
+
+  function changeFilter(next: ProfileFilter) {
+    setNotice(null);
+    setFilter(next);
+  }
 
   // Con tarjetas, el swipe horizontal es de la tarjeta; sin ellas (deck vacío,
   // cargando o en error) deslizar lleva a la pestaña de al lado.
@@ -88,6 +117,26 @@ export default function DiscoverScreen() {
       <AmbientBackground variant="ember" />
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
         <View style={styles.content}>
+          <View style={styles.toolbar}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={
+                activeFilters > 0 ? `Filtros, ${activeFilters} activos` : 'Filtros'
+              }
+              onPress={() => setFiltersOpen(true)}
+              hitSlop={HitSlop.chip}>
+              <ThemedText type="smallBold" themeColor="brass">
+                {activeFilters > 0 ? `Filtros (${activeFilters})` : 'Filtros'}
+              </ThemedText>
+            </Pressable>
+          </View>
+
+          {notice ? (
+            <ThemedText type="small" themeColor="danger" accessibilityLiveRegion="polite">
+              {notice}
+            </ThemedText>
+          ) : null}
+
           <View style={styles.deck}>
             {loading ? (
               <LoadingState label="Buscando perfiles…" />
@@ -128,6 +177,35 @@ export default function DiscoverScreen() {
         </View>
       </SafeAreaView>
 
+      <Modal
+        testID="deck-filters-modal"
+        visible={filtersOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setFiltersOpen(false)}>
+        <View style={[styles.backdrop, { backgroundColor: theme.background + ScrimAlpha }]}>
+          <View
+            accessibilityViewIsModal
+            style={[
+              styles.sheet,
+              { backgroundColor: theme.surfaceOpaque, borderColor: theme.border },
+            ]}>
+            <ScrollView contentContainerStyle={styles.sheetContent}>
+              <DeckFilters
+                value={filter}
+                isPremium={quotas?.isPremium ?? false}
+                onChange={changeFilter}
+                onLocked={() => {
+                  setFiltersOpen(false);
+                  openPaywall();
+                }}
+              />
+            </ScrollView>
+            <ActionButton label="Listo" onPress={() => setFiltersOpen(false)} />
+          </View>
+        </View>
+      </Modal>
+
       <OutOfLikesSheet
         blocked={blocked}
         isPremium={quotas?.isPremium ?? false}
@@ -167,5 +245,26 @@ const styles = StyleSheet.create({
   },
   deck: {
     flex: 1,
+  },
+  toolbar: {
+    alignItems: 'flex-end',
+  },
+  backdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  sheet: {
+    maxHeight: '85%',
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+    gap: Spacing.three,
+    padding: Spacing.three,
+    borderTopLeftRadius: Radii.sheet,
+    borderTopRightRadius: Radii.sheet,
+    borderWidth: 1,
+  },
+  sheetContent: {
+    paddingBottom: Spacing.two,
   },
 });

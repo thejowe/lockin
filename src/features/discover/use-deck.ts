@@ -20,7 +20,17 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { PremiumRequiredError, QuotaExceededError, useQuery, useRepositories } from '@/data';
 import { usePremium } from '@/features/premium';
 
-import type { DeckProfile, Decision, Match, ModePreference, PremiumQuotas, Profile } from '@/data';
+import { hasPremiumFilters, withoutPremiumFilters } from './deck-filters';
+
+import type {
+  DeckProfile,
+  Decision,
+  Match,
+  ModePreference,
+  PremiumQuotas,
+  Profile,
+  ProfileFilter,
+} from '@/data';
 
 /** Un match recién creado, con el perfil que lo provocó ya resuelto. */
 export interface MatchEvent {
@@ -96,18 +106,60 @@ function blockedBy(cause: unknown): Exclude<Blocked, null> | null {
   return null;
 }
 
-export function useDeck(mode: ModePreference): DeckState {
+/** Sin filtros: constante para no crear un objeto nuevo en cada render. */
+const NO_FILTER: ProfileFilter = {};
+
+/** El filtro como texto estable (claves ordenadas): sirve de clave de la consulta. */
+function filterSignature(filter: ProfileFilter): string {
+  const entries = Object.entries(filter)
+    .filter(([, value]) => value !== undefined && !(Array.isArray(value) && value.length === 0))
+    .sort(([a], [b]) => (a < b ? -1 : 1));
+  return entries.length === 0 ? '' : JSON.stringify(entries);
+}
+
+export interface DeckOptions {
+  /**
+   * El servidor rechazó los filtros premium con `PremiumRequiredError` (Premium
+   * caducó con ellos puestos): se llama una vez con el filtro ya limpio para que
+   * la pantalla lo aplique, lo que recarga el deck, y avise a la persona.
+   */
+  onPremiumFiltersRemoved?: (filter: ProfileFilter) => void;
+}
+
+export function useDeck(
+  mode: ModePreference,
+  filter: ProfileFilter = NO_FILTER,
+  options?: DeckOptions
+): DeckState {
   const repositories = useRepositories();
   const { quotas, refresh: refreshQuotas } = usePremium();
-  const query = useQuery(`deck:${mode}`, () => repositories.discovery.getDeck({ mode }));
+  const signature = filterSignature(filter);
+  // Sin filtro la clave sigue siendo `deck:${mode}`, la que releen otras pantallas.
+  const deckKey = signature === '' ? `deck:${mode}` : `deck:${mode}:${signature}`;
+  const query = useQuery(deckKey, () => repositories.discovery.getDeck({ ...filter, mode }));
   const { refresh } = query;
+
+  // Premium caducado con filtros premium puestos: se quitan y se avisa una vez.
+  const onRemoved = useRef(options?.onPremiumFiltersRemoved);
+  useEffect(() => {
+    onRemoved.current = options?.onPremiumFiltersRemoved;
+  });
+  const handled = useRef<string | null>(null);
+  const rejected = query.error instanceof PremiumRequiredError && hasPremiumFilters(filter);
+  useEffect(() => {
+    if (!rejected || handled.current === deckKey) return;
+    handled.current = deckKey;
+    onRemoved.current?.(withoutPremiumFilters(filter));
+  }, [rejected, deckKey, filter]);
 
   // El último deck bueno de este modo: si una relectura falla, `useQuery` suelta
   // el dato, y el deck usable no puede desaparecer por eso. Se ajusta en render
   // (patrón de React para estado derivado), sin un efecto.
-  const [kept, setKept] = useState<{ mode: ModePreference; deck: DeckProfile[] } | null>(null);
-  if (query.data !== null && kept?.deck !== query.data) setKept({ mode, deck: query.data });
-  const data = query.data ?? (kept?.mode === mode ? kept.deck : null);
+  const [kept, setKept] = useState<{ key: string; deck: DeckProfile[] } | null>(null);
+  if (query.data !== null && kept?.deck !== query.data) {
+    setKept({ key: deckKey, deck: query.data });
+  }
+  const data = query.data ?? (kept?.key === deckKey ? kept.deck : null);
   const error = query.data === null && data !== null ? null : query.error;
   // Con un deck retenido no se vuelve a cargar: la pantalla desmontaría el
   // stack para enseñar un spinner en cada relectura tras un fallo.

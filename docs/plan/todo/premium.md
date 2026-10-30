@@ -61,11 +61,18 @@ escriba código pasa por `codex review` antes de commitear en la rama principal.
   en `DeckActions`, `useDeck` con `blocked`/`superLike`/`undo`/`boost`, y el gesto a la derecha sin cupo
   que devuelve la tarjeta (`likeLocked` en `SwipeDeck`, que no figuraba en los archivos de la tarea).
   `/premium` es un stub (`src/app/premium.tsx`) hasta la Tarea 9. Solo probado con Jest: **sin ver en
-  dispositivo** (lo cubre la casilla `[comprobador]`) y `codex review` pendiente.
+  dispositivo** (lo cubre la casilla `[comprobador]`). `codex review` pasado en 5 rondas (commits
+  d28302a..5f46b18). Queda anotado un P2 de carrera muy estrecha: carta repuesta que se vuelve a
+  decidir, con refresco solapado, bloqueo del perfil y fallo del guardado → puede reaparecer hasta el
+  siguiente refresco (`use-deck.ts`, validación de cartas repuestas omite las de `decided`).
 - [ ] [Claude] Matches: fila «Te han dado like (N)» y la cuadrícula premium (gratis ve relleno
   genérico, nunca fotos reales).
 - [ ] [Claude] Filtros avanzados con candado; paywall (`src/lib/purchases.ts` con ofertas falsas en
   mock); fila Premium en Cuenta; aviso al borrar la cuenta.
+  Filtros con candado hechos el 2026-10-30 (Tarea 7): `DeckFilters` (`deck-filters.tsx`), botón «Filtros»
+  con hoja en Descubrir, `useDeck(mode, filter, { onPremiumFiltersRemoved })` y aviso «Tus filtros Premium
+  se han quitado» si el servidor rechaza con `PremiumRequiredError`. Solo Jest: **falta verlo en
+  dispositivo** (`[comprobador]`). Quedan el paywall, la fila de Cuenta y el aviso al borrar (Tareas 9-10).
 - [ ] [comprobador] Recorrido gratis en el emulador (agotar likes, hoja, número de likes, paywall)
   con mock y con Supabase real.
 

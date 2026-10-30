@@ -198,6 +198,66 @@ describe('DiscoverScreen', () => {
     expect(router.push).not.toHaveBeenCalled();
   });
 
+  describe('Filtros', () => {
+    it('la especialidad filtra el deck sin Premium', async () => {
+      const getDeck = jest.spyOn(repositories.discovery, 'getDeck');
+      await renderDiscover();
+
+      await fireEvent.press(screen.getByLabelText('Filtros'));
+      await fireEvent.press(screen.getByLabelText('Desarrollo'));
+
+      await waitFor(() =>
+        expect(getDeck).toHaveBeenLastCalledWith({ mode: 'par', specialties: ['dev'] })
+      );
+      await waitFor(() => expect(screen.getByLabelText('Filtros, 1 activos')).toBeTruthy());
+    });
+
+    it('un filtro de Premium sin Premium cierra la hoja y abre el paywall', async () => {
+      await renderDiscover();
+
+      await fireEvent.press(screen.getByLabelText('Filtros'));
+      await fireEvent.press(screen.getByLabelText('Apostarlo todo'));
+
+      expect(router.push).toHaveBeenCalledWith('/premium');
+    });
+
+    it('con Premium el filtro avanzado se aplica', async () => {
+      setMockPremium(true);
+      const getDeck = jest.spyOn(repositories.discovery, 'getDeck');
+      await renderDiscover();
+
+      await fireEvent.press(screen.getByLabelText('Filtros'));
+      await fireEvent.press(screen.getByLabelText('Apostarlo todo'));
+
+      await waitFor(() =>
+        expect(getDeck).toHaveBeenLastCalledWith({ mode: 'par', ambition: ['todo-o-nada'] })
+      );
+      expect(router.push).not.toHaveBeenCalled();
+    });
+
+    it('si Premium caduca con filtros puestos, los quita, recarga y avisa', async () => {
+      setMockPremium(true);
+      await renderDiscover();
+      await fireEvent.press(screen.getByLabelText('Filtros'));
+      await fireEvent.press(screen.getByLabelText('Apostarlo todo'));
+      await waitFor(() => expect(screen.getByLabelText('Filtros, 1 activos')).toBeTruthy());
+
+      // Premium caduca con el filtro avanzado aún puesto; el siguiente cambio lo recarga.
+      setMockPremium(false);
+      const getDeck = jest.spyOn(repositories.discovery, 'getDeck');
+      await fireEvent.press(screen.getByLabelText('Desarrollo'));
+
+      await waitFor(() =>
+        expect(screen.getByText('Tus filtros Premium se han quitado')).toBeTruthy()
+      );
+      await waitFor(() =>
+        expect(getDeck).toHaveBeenLastCalledWith({ mode: 'par', specialties: ['dev'] })
+      );
+      await waitFor(() => expect(screen.getByLabelText('Filtros, 1 activos')).toBeTruthy());
+      expect(screen.queryByText('No hemos podido cargar el deck')).toBeNull();
+    });
+  });
+
   describe('Premium', () => {
     it('sin Premium y con el cupo agotado, frena el like del deck y lo dice', async () => {
       seedMockLikeEvents('like', 25, 1);

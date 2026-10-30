@@ -10,6 +10,7 @@ export { Chip, type ChipTone } from './chip';
 export { complementWith } from './complement';
 export { DeckActions } from './deck-actions';
 export { DeckEmpty } from './deck-empty';
+export { DeckFilters, hasPremiumFilters, withoutPremiumFilters } from './deck-filters';
 export { MatchModal } from './match-modal';
 export { OutOfLikesSheet } from './out-of-likes-sheet';
 export { ProfileCard } from './profile-card';

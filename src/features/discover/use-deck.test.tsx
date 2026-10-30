@@ -10,7 +10,7 @@
 import { renderHook, waitFor } from '@testing-library/react-native';
 import { act } from 'react';
 
-import { DataProvider, QuotaExceededError } from '@/data';
+import { DataProvider, PremiumRequiredError, QuotaExceededError } from '@/data';
 import {
   createMockRepositories,
   CURRENT_USER_ID,
@@ -23,7 +23,7 @@ import { buildProfileInput } from '@/data/test-fixtures';
 
 import { useDeck } from './use-deck';
 
-import type { ModePreference, Profile, Repositories } from '@/data';
+import type { ModePreference, Profile, ProfileFilter, Repositories } from '@/data';
 
 const RECIPROCAL_ID = SEED_RECIPROCAL_IDS[0];
 
@@ -728,5 +728,71 @@ describe('useDeck', () => {
 
       expect(getById).not.toHaveBeenCalledWith(target.id);
     });
+  });
+});
+
+describe('useDeck con filtros', () => {
+  it('lee el deck con el filtro y lo manda al repositorio junto con el modo', async () => {
+    const getDeck = jest.spyOn(repositories.discovery, 'getDeck');
+    setMockPremium(true);
+
+    const view = await renderHook(() => useDeck('par', { ambition: ['todo-o-nada'] }), { wrapper });
+    await waitFor(() => expect(view.result.current.cards).not.toBeNull());
+
+    expect(getDeck).toHaveBeenCalledWith({ mode: 'par', ambition: ['todo-o-nada'] });
+    expect(view.result.current.cards!.every((card) => card.ambition === 'todo-o-nada')).toBe(true);
+  });
+
+  it('cambiar el filtro relee el deck sin enseñar las cartas del filtro anterior', async () => {
+    const getDeck = jest.spyOn(repositories.discovery, 'getDeck');
+    const view = await renderHook((props: { specialties: 'dev'[] }) => useDeck('par', props), {
+      initialProps: { specialties: [] as 'dev'[] },
+      wrapper,
+    });
+    await waitFor(() => expect(view.result.current.cards).not.toBeNull());
+
+    await view.rerender({ specialties: ['dev'] });
+    await waitFor(() => expect(getDeck).toHaveBeenCalledTimes(2));
+    expect(getDeck).toHaveBeenLastCalledWith({ mode: 'par', specialties: ['dev'] });
+    await waitFor(() => expect(view.result.current.loading).toBe(false));
+    expect(view.result.current.cards!.every((card) => card.specialties.includes('dev'))).toBe(true);
+  });
+
+  it('si el servidor rechaza con PremiumRequiredError, quita los filtros premium y avisa una vez', async () => {
+    const getDeck = jest.spyOn(repositories.discovery, 'getDeck');
+    const onPremiumFiltersRemoved = jest.fn();
+
+    const view = await renderHook(
+      (props: { filter: ProfileFilter }) =>
+        useDeck('par', props.filter, { onPremiumFiltersRemoved }),
+      {
+        initialProps: {
+          filter: { specialties: ['dev'], ambition: ['todo-o-nada'] } as ProfileFilter,
+        },
+        wrapper,
+      }
+    );
+
+    await waitFor(() => expect(onPremiumFiltersRemoved).toHaveBeenCalledTimes(1));
+    expect(onPremiumFiltersRemoved).toHaveBeenCalledWith({ specialties: ['dev'] });
+
+    // La pantalla aplica el filtro limpio: se recarga una vez y no vuelve a avisar.
+    await view.rerender({ filter: { specialties: ['dev'] } });
+    await waitFor(() => expect(view.result.current.cards).not.toBeNull());
+    expect(getDeck).toHaveBeenCalledTimes(2);
+    expect(onPremiumFiltersRemoved).toHaveBeenCalledTimes(1);
+    expect(view.result.current.error).toBeNull();
+  });
+
+  it('un PremiumRequiredError sin filtros premium puestos no avisa de filtros quitados', async () => {
+    const onPremiumFiltersRemoved = jest.fn();
+    jest.spyOn(repositories.discovery, 'getDeck').mockRejectedValue(new PremiumRequiredError());
+
+    const view = await renderHook(() => useDeck('par', {}, { onPremiumFiltersRemoved }), {
+      wrapper,
+    });
+    await waitFor(() => expect(view.result.current.error).not.toBeNull());
+
+    expect(onPremiumFiltersRemoved).not.toHaveBeenCalled();
   });
 });
