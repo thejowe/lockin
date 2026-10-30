@@ -10,8 +10,12 @@
  *   sistema lleva a su app, que es lo que se espera al tocar su logo.
  * - Los logos son dibujos propios y sencillos, en el color de la tinta: la app
  *   no carga marcas de terceros a todo color dentro de su paleta.
+ * - Instagram y TikTok llevan además `@usuario` al lado del logo (2026-10-30,
+ *   decisión del usuario), sacado del propio enlace. Si el enlace no deja ver
+ *   el usuario (una publicación suelta, un enlace acortado), solo el logo.
  */
 
+import { type ReactNode } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
@@ -34,6 +38,48 @@ const LABELS: Record<ConnectedApp, string> = {
 const ORDER: ConnectedApp[] = ['github', 'linkedin', 'instagram', 'tiktok', 'portfolio'];
 
 const SAFE_URL = /^https?:\/\/\S+$/i;
+
+/** Rutas de Instagram que no son un usuario: `instagram.com/p/…` es una publicación. */
+const INSTAGRAM_RESERVED = new Set([
+  'p',
+  'reel',
+  'reels',
+  'tv',
+  'stories',
+  'explore',
+  'accounts',
+  'direct',
+  'about',
+  'developer',
+  'legal',
+]);
+
+/**
+ * El `@usuario` de un enlace de Instagram o TikTok, o `null` si el enlace no
+ * lo dice. Instagram: `instagram.com/usuario`; TikTok: `tiktok.com/@usuario`.
+ */
+export function socialHandle(app: ConnectedApp, url: string): string | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return null;
+  }
+  const host = parsed.hostname.toLowerCase().replace(/^(www\.|m\.)/, '');
+  const first = parsed.pathname.split('/').filter(Boolean)[0] ?? '';
+
+  if (app === 'instagram' && (host === 'instagram.com' || host === 'instagr.am')) {
+    const user = first.replace(/^@/, '');
+    return /^[A-Za-z0-9._]{1,30}$/.test(user) && !INSTAGRAM_RESERVED.has(user.toLowerCase())
+      ? user
+      : null;
+  }
+  if (app === 'tiktok' && host === 'tiktok.com') {
+    const match = /^@([A-Za-z0-9._]{1,24})$/.exec(decodeURIComponent(first));
+    return match ? match[1] : null;
+  }
+  return null;
+}
 
 /** Las apps con enlace válido de esa persona, en el orden de la fila. */
 export function connectedApps(profile: Profile): { app: ConnectedApp; url: string }[] {
@@ -111,37 +157,69 @@ export function Glyph({
   );
 }
 
-export function ConnectedApps({ profile }: { profile: Profile }) {
+export function ConnectedApps({
+  profile,
+  action,
+}: {
+  profile: Profile;
+  /**
+   * Junto al rótulo (el lápiz del perfil propio). Con acción el bloque sale
+   * aunque no haya enlaces: es justo donde se pulsa para añadirlos.
+   */
+  action?: ReactNode;
+}) {
   const theme = useTheme();
   const apps = connectedApps(profile);
-  if (apps.length === 0) return null;
+  if (apps.length === 0 && !action) return null;
 
   return (
     <View style={styles.root}>
-      <ThemedText type="label" themeColor="textSecondary">
-        Redes y enlaces
-      </ThemedText>
-      <View style={styles.row}>
-        {apps.map(({ app, url }) => (
-          <Pressable
-            key={app}
-            accessibilityRole="link"
-            accessibilityLabel={`Abrir el ${LABELS[app]} de ${profile.name}`}
-            hitSlop={HitSlop.inline}
-            onPress={() => void Linking.openURL(url).catch(() => undefined)}
-            style={({ pressed }) => [
-              styles.button,
-              {
-                backgroundColor: theme.backgroundElement,
-                borderColor: theme.border,
-                boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
-                opacity: pressed ? Opacity.pressed : 1,
-              },
-            ]}>
-            <Glyph app={app} color={theme.text} size={22} />
-          </Pressable>
-        ))}
+      <View style={styles.header}>
+        <ThemedText type="label" themeColor="textSecondary">
+          Redes y enlaces
+        </ThemedText>
+        {action}
       </View>
+      {apps.length > 0 ? (
+        <View style={styles.row}>
+          {apps.map(({ app, url }) => {
+            const handle = socialHandle(app, url);
+            return (
+              <Pressable
+                key={app}
+                accessibilityRole="link"
+                accessibilityLabel={
+                  handle
+                    ? `Abrir el ${LABELS[app]} de ${profile.name}, @${handle}`
+                    : `Abrir el ${LABELS[app]} de ${profile.name}`
+                }
+                hitSlop={HitSlop.inline}
+                onPress={() => void Linking.openURL(url).catch(() => undefined)}
+                style={({ pressed }) => [
+                  styles.button,
+                  handle ? styles.pill : null,
+                  {
+                    backgroundColor: theme.backgroundElement,
+                    borderColor: theme.border,
+                    boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
+                    opacity: pressed ? Opacity.pressed : 1,
+                  },
+                ]}>
+                <Glyph app={app} color={theme.text} size={22} />
+                {handle ? (
+                  <ThemedText type="smallBold" numberOfLines={1} style={styles.handle}>
+                    @{handle}
+                  </ThemedText>
+                ) : null}
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : (
+        <ThemedText type="small" themeColor="textSecondary">
+          Añade tu Instagram, TikTok, LinkedIn o web con el lápiz.
+        </ThemedText>
+      )}
     </View>
   );
 }
@@ -149,6 +227,23 @@ export function ConnectedApps({ profile }: { profile: Profile }) {
 const styles = StyleSheet.create({
   root: {
     gap: Spacing.two,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: Control.minTouch,
+  },
+  /** Logo + `@usuario`: la misma píldora, a lo ancho. */
+  pill: {
+    width: 'auto',
+    flexDirection: 'row',
+    gap: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    maxWidth: '100%',
+  },
+  handle: {
+    flexShrink: 1,
   },
   row: {
     flexDirection: 'row',

@@ -106,13 +106,16 @@ describe('ProfileDetails', () => {
       await render(<ProfileDetails profile={profile} />);
 
       expect(screen.getByText('Redes y enlaces')).toBeTruthy();
+      // Instagram y TikTok llevan además el `@usuario` del enlace.
       for (const [app, url] of [
         ['GitHub', 'https://github.com/nuria'],
         ['LinkedIn', 'https://linkedin.com/in/nuria'],
-        ['Instagram', 'https://instagram.com/nuria'],
-        ['TikTok', 'https://tiktok.com/@nuria'],
+        ['Instagram, @nuria', 'https://instagram.com/nuria'],
+        ['TikTok, @nuria', 'https://tiktok.com/@nuria'],
       ]) {
-        await fireEvent.press(screen.getByLabelText(`Abrir el ${app} de ${profile.name}`));
+        const [name, handle] = app.split(', ');
+        const label = `Abrir el ${name} de ${profile.name}${handle ? `, ${handle}` : ''}`;
+        await fireEvent.press(screen.getByLabelText(label));
         expect(openURL).toHaveBeenLastCalledWith(url);
       }
       // La web no está en el perfil: no puede aparecer un logo que no lleva a nada.
@@ -131,7 +134,7 @@ describe('ProfileDetails', () => {
 
       expect(screen.queryByLabelText(`Abrir el GitHub de ${profile.name}`)).toBeNull();
       expect(screen.queryByLabelText(`Abrir el Web de ${profile.name}`)).toBeNull();
-      expect(screen.getByLabelText(`Abrir el Instagram de ${profile.name}`)).toBeTruthy();
+      expect(screen.getByLabelText(`Abrir el Instagram de ${profile.name}, @nuria`)).toBeTruthy();
     });
 
     it('se calla la fila entera cuando no hay ningún enlace', async () => {

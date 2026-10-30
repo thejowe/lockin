@@ -177,18 +177,10 @@ export function ProfileDetails({
       {/*
         Las apps conectadas, como logos que llevan a su cuenta (2026-10-17). El
         sello de GitHub va junto a ellas y no junto al nombre: lo que certifica
-        es ese enlace, no «perfil verificado». En el perfil propio, con su
-        rótulo y su lápiz: sin enlaces no habría dónde pulsar para añadirlos.
+        es ese enlace, no «perfil verificado». En el perfil propio lleva su
+        lápiz y sale aunque no haya enlaces: es donde se pulsa para añadirlos.
       */}
-      {onEdit ? (
-        <View style={styles.linksHeader}>
-          <ThemedText type="small" themeColor="textSecondary">
-            Enlaces y redes
-          </ThemedText>
-          {pencil('links')}
-        </View>
-      ) : null}
-      <ConnectedApps profile={profile} />
+      <ConnectedApps profile={profile} action={pencil('links')} />
       {profile.githubVerification ? (
         <GithubSeal handle={profile.githubVerification.handle} />
       ) : null}
@@ -314,11 +306,6 @@ const styles = StyleSheet.create({
   },
   name: {
     flexShrink: 1,
-  },
-  linksHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
   },
   /** Cámara de cristal oscuro sobre la esquina de la foto: se ve la foto a través. */
   camera: {
