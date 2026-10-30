@@ -173,3 +173,8 @@ Backend: Supabase. Reinicio en frío para refrescar el entitlement.
 - ✅ Super Like con Premium (65): pasa sin hoja, el deck avanza (no hay aviso ni contador de Super Likes restantes).
 - ✅ Filtros avanzados (66-70): sin candados; Noche + Apostarlo todo + 5 h aplican («Filtros (3)») sin error y sin LQ005 en el logcat; añadir Legal vacía el deck («Filtros (4)», 70), así que filtran de verdad.
 - Sin ver: tocar «Gestionar suscripción» y «Restaurar compras» con Premium; el tope de 5 Super Likes/semana; la paginación de `/likes`; «Sin Super Likes» en gratis (cupo de likes agotado a la vez); compra real (fase 3).
+
+### 2026-10-30 — cierre
+- Hallazgo del contador «Te han dado like (N)» sin refrescar al volver a Matches: resuelto en `matches.tsx` (relee al enfocar si la carga inicial ya terminó; `codex review` lo pidió así por el montaje anticipado de las pestañas). Comprobado con Jest; **no re-visto en dispositivo**.
+- Cuentas de prueba `109e1400-…` y `b519a4f1-…` borradas de `auth.users` el 2026-10-30; comprobado que no quedan decisiones, eventos ni entitlements.
+- Sin ver nunca: tope de 5 Super Likes/semana, «Sin Super Likes» con Supabase, paginación de `/likes`, «Gestionar suscripción»/«Restaurar compras» tocados y la compra real (Fase 3).

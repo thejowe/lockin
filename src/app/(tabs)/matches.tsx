@@ -6,7 +6,8 @@
  * `datos` cambie el mock por Supabase (no debería tocar nada de aquí).
  */
 
-import { useRouter, type Href } from 'expo-router';
+import { useFocusEffect, useRouter, type Href } from 'expo-router';
+import { useCallback, useEffect, useRef } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -28,6 +29,20 @@ export default function MatchesScreen() {
   const repositories = useRepositories();
   // Cuánta gente te ha dado like lo ve cualquiera; quién, solo Premium (`/likes`).
   const likes = useQuery('incoming-likes-count', () => repositories.premium.countIncomingLikes());
+  // Las pestañas siguen montadas al salir: sin esto, el like que llega mientras estás
+  // en otra pestaña no se ve hasta tirar para refrescar.
+  // Si la carga inicial sigue en curso, ya va a traer el dato; si no (la pestaña se montó
+  // fuera de pantalla y terminó antes de verse), se relee al enfocar.
+  const refreshLikes = likes.refresh;
+  const likesLoading = useRef(likes.loading);
+  useEffect(() => {
+    likesLoading.current = likes.loading;
+  }, [likes.loading]);
+  useFocusEffect(
+    useCallback(() => {
+      if (!likesLoading.current) refreshLikes();
+    }, [refreshLikes])
+  );
 
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
