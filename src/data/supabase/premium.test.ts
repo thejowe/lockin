@@ -234,8 +234,56 @@ describe('createSupabasePremiumRepository', () => {
       p_before_id: 'p0',
     });
     expect(likes).toHaveLength(1);
-    expect(likes[0]).toMatchObject({ isSuper: true, likedAt: '2026-10-30T10:00:00.000Z' });
+    expect(likes[0]).toMatchObject({ isSuper: true, likedAt: '2026-10-30T10:00:00+00:00' });
     expect(likes[0].profile.id).toBe('p1');
+  });
+
+  it('listIncomingLikes conserva los microsegundos del servidor y el cursor los devuelve intactos', async () => {
+    const { client, rpc } = fakeClient({
+      incoming_likes: {
+        data: [
+          { ...profileRow('p1'), is_super: false, liked_at: '2026-10-30T10:00:00.123456+00:00' },
+        ],
+        error: null,
+      },
+    });
+    const repository = createSupabasePremiumRepository(deps(client));
+    const [like] = await repository.listIncomingLikes();
+    expect(like.likedAt).toBe('2026-10-30T10:00:00.123456+00:00');
+
+    await repository.listIncomingLikes({ before: incomingLikeCursor(like) });
+    expect(rpc).toHaveBeenLastCalledWith(
+      'incoming_likes',
+      expect.objectContaining({ p_before: '2026-10-30T10:00:00.123456+00:00', p_before_id: 'p1' })
+    );
+  });
+
+  it('subscribeQuotas descarta un refresco superado por otro más nuevo', async () => {
+    const pending: ((row: PremiumQuotasRow) => void)[] = [];
+    const rpc = jest.fn(
+      (name: string) =>
+        new Promise<RpcResult>((resolve) => {
+          if (name === 'premium_quotas') {
+            pending.push((row) => resolve({ data: [row], error: null }));
+          } else {
+            resolve({ data: '2026-10-30T12:30:00+00:00', error: null });
+          }
+        })
+    );
+    const repository = createSupabasePremiumRepository(
+      deps({ rpc } as unknown as LockInSupabaseClient)
+    );
+    const seen: number[] = [];
+    repository.subscribeQuotas((quotas) => seen.push(quotas.likesLeft ?? -1));
+
+    await repository.activateBoost();
+    await repository.activateBoost();
+    expect(pending).toHaveLength(2);
+    pending[1]({ ...quotasRow, likes_left: 1 });
+    await flush();
+    pending[0]({ ...quotasRow, likes_left: 9 });
+    await flush();
+    expect(seen).toEqual([1]);
   });
 
   it('listIncomingLikes sin Premium rechaza con PremiumRequiredError', async () => {

@@ -111,10 +111,17 @@ export function createSupabasePremiumRepository({
     return toPremiumQuotas(row);
   }
 
+  // Cada refresco lleva un número; solo el último pedido puede entregar su respuesta.
+  // Sin esto, uno viejo que tarde más acabaría pisando al nuevo con cupos caducados.
+  let refreshGeneration = 0;
   const notifyQuotas = () => {
     if (listeners.size === 0) return;
+    const generation = ++refreshGeneration;
     void getQuotas().then(
-      (quotas) => listeners.forEach((listener) => listener(quotas)),
+      (quotas) => {
+        if (generation !== refreshGeneration) return;
+        listeners.forEach((listener) => listener(quotas));
+      },
       () => {
         // Un fallo de red al refrescar no debe romper la acción que lo provocó.
       }
@@ -172,7 +179,9 @@ export function createSupabasePremiumRepository({
       return rows.map((row, index): IncomingLike => ({
         profile: profiles[index],
         isSuper: row.is_super,
-        likedAt: new Date(row.liked_at).toISOString(),
+        // Tal cual lo manda el servidor: pasarlo por `Date` recortaría los microsegundos de
+        // Postgres y el cursor de la página siguiente se saltaría likes aún no vistos.
+        likedAt: row.liked_at,
       }));
     },
 
