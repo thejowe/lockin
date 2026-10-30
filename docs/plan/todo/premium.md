@@ -41,8 +41,13 @@ escriba código pasa por `codex review` antes de commitear en la rama principal.
   `20261030120200_premium_deck.sql` (Tarea 4), sin aplicar en producción. Pasa a `security definer`
   y devuelve una tabla con las columnas de `profiles` + `super_liked_me` (si `profiles` gana una
   columna visible, hay que añadirla en `discovery_deck` e `incoming_likes`).
-- [ ] [Codex] Tests de contrato SQL de la spec §8 (lista cerrada; el patrón son los tests de
+- [x] Tests de contrato SQL de la spec §8 (lista cerrada; el patrón son los tests de
   contrato de Supabase existentes).
+  Hecho el 2026-10-30: 34 casos SQL directos en `src/data/supabase/contract.test.ts` (códigos y
+  `detail`, atomicidad, concurrencia, cursores compuestos, orden y permisos), complementando el
+  contrato compartido. ESLint y salto sin la variable verificados; `tsc --noEmit` solo falla en
+  el artefacto E2E local de Deno `2026-10-14-avatar-fallo-cerrado/edge-runner.ts`, ajeno a esta tarea.
+  Ejecución contra Supabase pendiente de CI: aquí no hay Docker.
 - [ ] [Claude] Aplicar en producción por MCP, byte a byte (memoria
   `aplicar-migraciones-por-mcp-byte-a-byte`), y dejar Schema drift en verde. **Con orden del
   usuario.**

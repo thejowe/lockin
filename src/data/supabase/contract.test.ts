@@ -85,7 +85,7 @@ import { describeRepositoryContract } from '../repositories.contract';
 import { toProfileInsert } from './mappers';
 
 import type { ContractBackend, ContractFixture } from '../repositories.contract';
-import type { Database } from './database.types';
+import type { Database, IncomingLikeRow } from './database.types';
 import type { ModePreference } from '../types';
 import type {
   AgreementRepository,
@@ -93,7 +93,7 @@ import type {
   Repositories,
   RoomRepository,
 } from '../repositories';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { PostgrestError, SupabaseClient } from '@supabase/supabase-js';
 
 // Devuelve el `fetch` real antes de que `createClient` capture el stub de
 // `jest-expo`. Ver la cabecera del archivo.
@@ -718,6 +718,609 @@ const supabaseBackend: ContractBackend = {
   });
 
   describeRepositoryContract(supabaseBackend);
+
+  // Complementa `describe('premium')` del contrato compartido: aquí se observa
+  // la respuesta SQL sin traducir errores ni pasar por los repositorios.
+  describe('Premium SQL: RPC, cupos y permisos', () => {
+    const MINUTE_MS = 60_000;
+    const HOUR_MS = 60 * MINUTE_MS;
+    const DAY_MS = 24 * HOUR_MS;
+    type DeckArgs = Database['public']['Functions']['discovery_deck']['Args'];
+    type DecisionArgs = Database['public']['Functions']['record_decision']['Args'];
+    let actors: Reciprocal[] = [];
+    let viewer: Reciprocal;
+    let peers: Reciprocal[];
+
+    // El teardown del contrato compartido ya cerró appClient y reciprocals.
+    // Solo cuatro altas para todo este bloque; el seed limpia entre casos.
+    beforeAll(async () => {
+      for (const label of ['Premium SQL', 'SQL A', 'SQL B', 'SQL C']) {
+        actors.push(await createReciprocal(label, 'par'));
+      }
+      [viewer, ...peers] = actors;
+    });
+
+    beforeEach(async () => {
+      for (const actor of actors) {
+        const failure = await callDevReset(actor.client);
+        if (failure !== null) throw new Error(`dev_reset_current_user() falló: ${failure}`);
+      }
+      for (const actor of actors) {
+        await sqlData(
+          actor.client
+            .from('profiles')
+            .upsert(toProfileInsert(actor.id, buildProfileInput({ lookingFor: 'par' }), null))
+        );
+      }
+    });
+
+    afterAll(async () => {
+      for (const actor of actors) {
+        try {
+          const failure = await callDevReset(actor.client);
+          if (failure !== null) throw new Error(`dev_reset_current_user() falló: ${failure}`);
+        } finally {
+          await actor.client.removeAllChannels();
+          actor.client.realtime.disconnect();
+          actor.client.auth.stopAutoRefresh();
+          await actor.client.auth.signOut();
+        }
+      }
+      actors = [];
+    });
+
+    async function sqlData<T>(request: PromiseLike<{ data: T; error: unknown }>): Promise<T> {
+      const { data, error } = await request;
+      expect(error).toBeNull();
+      return data;
+    }
+
+    const record = (
+      targetId: string,
+      args: Partial<Omit<DecisionArgs, 'p_target_id'>> = {},
+      actor = viewer
+    ) =>
+      actor.client.rpc('record_decision', {
+        p_target_id: targetId,
+        p_decision: 'like',
+        p_mode: 'par',
+        ...args,
+      });
+
+    const quotas = async (actor = viewer) =>
+      (await sqlData(actor.client.rpc('premium_quotas').single()))!;
+    const decisions = (actor = viewer) =>
+      sqlData(
+        actor.client
+          .from('decisions')
+          .select('target_id, decision, created_at')
+          .eq('actor_id', actor.id)
+          .order('target_id')
+      );
+    const setPremium = (active: boolean, actor = viewer) =>
+      callDev(actor.client, 'dev_set_premium', { p_active: active });
+    const seedLikes = (kind: 'like' | 'super', count: number, ageHours = 1) =>
+      callDev(viewer.client, 'dev_add_like_events', {
+        p_kind: kind,
+        p_count: count,
+        p_age_hours: ageHours,
+      });
+
+    async function sqlQuota(
+      request: PromiseLike<{ error: PostgrestError | null }>,
+      code: string,
+      resetsAt: string | null
+    ) {
+      const { error } = await request;
+      expect(error?.code).toBe(code);
+      expect(error?.details).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+      expect(Number.isFinite(Date.parse(error!.details))).toBe(true);
+      expect(Date.parse(error!.details)).toBe(Date.parse(resetsAt!));
+    }
+
+    it.each([
+      {
+        label: 'like 26 gratis',
+        premium: false,
+        kind: 'like',
+        count: 24,
+        superLike: false,
+        code: 'LQ001',
+      },
+      {
+        label: 'segundo Super Like gratis',
+        premium: false,
+        kind: 'super',
+        count: 0,
+        superLike: true,
+        code: 'LQ002',
+      },
+      {
+        label: 'sexto Super Like Premium',
+        premium: true,
+        kind: 'super',
+        count: 4,
+        superLike: true,
+        code: 'LQ002',
+      },
+      {
+        label: 'like 301 Premium',
+        premium: true,
+        kind: 'like',
+        count: 299,
+        superLike: false,
+        code: 'LQ004',
+      },
+    ] as const)('$label: código, detail y rechazo sin escritura', async (test) => {
+      await setPremium(test.premium);
+      await seedLikes(test.kind, test.count);
+      await sqlData(record(peers[0].id, { p_super: test.superLike }));
+      await sqlData(record(peers[1].id, { p_decision: 'pass' }));
+      const before = await quotas();
+      const rows = await decisions();
+
+      await sqlQuota(
+        record(peers[1].id, { p_super: test.superLike }),
+        test.code,
+        test.superLike ? before.supers_reset_at : before.likes_reset_at
+      );
+
+      expect(await decisions()).toEqual(rows);
+      expect(await quotas()).toEqual(before);
+      expect(await sqlData(viewer.client.from('matches').select('id'))).toEqual([]);
+      // Incluso con el cupo agotado se puede hacer pass; no genera eventos.
+      await sqlData(record(peers[2].id, { p_decision: 'pass', p_super: true }));
+      expect(await quotas()).toEqual(before);
+    });
+
+    it('LQ004 tiene prioridad sobre LQ001 al perder Premium con 300 likes gastados', async () => {
+      await setPremium(true);
+      await seedLikes('like', 300);
+      await setPremium(false);
+      const before = await quotas();
+
+      await sqlQuota(record(peers[0].id), 'LQ004', before.likes_reset_at);
+
+      expect(await decisions()).toEqual([]);
+      expect(await quotas()).toEqual(before);
+    });
+
+    it('like → pass → like registra dos gastos aunque solo quede una decisión', async () => {
+      await sqlData(record(peers[0].id));
+      expect((await quotas()).likes_left).toBe(24);
+      await sqlData(record(peers[0].id, { p_decision: 'pass' }));
+      expect((await quotas()).likes_left).toBe(24);
+      await sqlData(record(peers[0].id));
+
+      expect((await quotas()).likes_left).toBe(23);
+      expect(await decisions()).toEqual([
+        expect.objectContaining({ target_id: peers[0].id, decision: 'like' }),
+      ]);
+    });
+
+    it('reintentos concurrentes del mismo Super Like gastan uno y no renuevan created_at', async () => {
+      await setPremium(true);
+      const first = await Promise.all([
+        record(peers[0].id, { p_super: true }),
+        record(peers[0].id, { p_super: true }),
+      ]);
+      expect(first.map(({ error }) => error)).toEqual([null, null]);
+      expect((await quotas()).supers_left).toBe(4);
+
+      await callDev(viewer.client, 'dev_age_last_decision', { p_minutes: 9 });
+      await seedLikes('super', 4);
+      const rows = await decisions();
+      const before = await quotas();
+      expect(before.supers_left).toBe(0);
+      const retries = await Promise.all([
+        record(peers[0].id, { p_super: true }),
+        record(peers[0].id, { p_super: true }),
+      ]);
+
+      expect(retries.map(({ error }) => error)).toEqual([null, null]);
+      expect(await decisions()).toEqual(rows);
+      expect(await quotas()).toEqual(before);
+    });
+
+    it.each([
+      {
+        label: 'likes gratis',
+        premium: false,
+        kind: 'like',
+        count: 24,
+        superLike: false,
+        code: 'LQ001',
+      },
+      {
+        label: 'Super Likes Premium',
+        premium: true,
+        kind: 'super',
+        count: 4,
+        superLike: true,
+        code: 'LQ002',
+      },
+      {
+        label: 'antiabuso Premium',
+        premium: true,
+        kind: 'like',
+        count: 299,
+        superLike: false,
+        code: 'LQ004',
+      },
+    ] as const)(
+      'cerrojo por actor: dos targets comparten el último cupo de $label',
+      async (test) => {
+        await setPremium(test.premium);
+        await seedLikes(test.kind, test.count);
+        const before = await quotas();
+        const results = await Promise.all(
+          peers.slice(0, 2).map((peer) => record(peer.id, { p_super: test.superLike }))
+        );
+        expect(results.filter(({ error }) => error === null)).toHaveLength(1);
+        const rejected = results.findIndex(({ error }) => error !== null);
+        await sqlQuota(
+          Promise.resolve(results[rejected]),
+          test.code,
+          test.superLike ? before.supers_reset_at : before.likes_reset_at
+        );
+        const accepted = rejected === 0 ? 1 : 0;
+        expect(await decisions()).toEqual([
+          expect.objectContaining({ target_id: peers[accepted].id, decision: 'like' }),
+        ]);
+        const after = await quotas();
+        expect(test.superLike ? after.supers_left : after.likes_left).toBe(
+          test.premium && !test.superLike ? null : 0
+        );
+        // Un tercer target sigue rechazado: el perdedor no dejó una decisión ni
+        // un match, y el cupo tampoco se recarga por cambiar de target.
+        await sqlQuota(
+          record(peers[2].id, { p_super: test.superLike }),
+          test.code,
+          test.superLike ? after.supers_reset_at : after.likes_reset_at
+        );
+        expect(await decisions()).toHaveLength(1);
+        expect(await sqlData(viewer.client.from('matches').select('id'))).toEqual([]);
+      }
+    );
+
+    it('premium_quotas devuelve una fila completa y ventanas independientes de 24 h y 7 días', async () => {
+      expect(await quotas()).toEqual({
+        is_premium: false,
+        premium_until: null,
+        likes_left: 25,
+        likes_reset_at: null,
+        supers_left: 1,
+        supers_reset_at: null,
+        boost_available_at: null,
+        boost_active_until: null,
+      });
+      const start = Date.parse((await sqlData(viewer.client.rpc('server_now')))!);
+      await seedLikes('like', 25, 25);
+      await seedLikes('super', 5, 169);
+      await seedLikes('super', 1, 25);
+      await seedLikes('super', 1, 1);
+      await seedLikes('like', 2, 1);
+      const end = Date.parse((await sqlData(viewer.client.rpc('server_now')))!);
+      const free = await quotas();
+
+      expect(free).toMatchObject({
+        is_premium: false,
+        premium_until: null,
+        likes_left: 22,
+        supers_left: 0,
+      });
+      expect(Date.parse(free.likes_reset_at!)).toBeGreaterThanOrEqual(start + 23 * HOUR_MS);
+      expect(Date.parse(free.likes_reset_at!)).toBeLessThanOrEqual(end + 23 * HOUR_MS);
+      // Con dos supers y tope gratis de uno, tiene que caducar el más reciente.
+      expect(Date.parse(free.supers_reset_at!)).toBeGreaterThanOrEqual(start + 167 * HOUR_MS);
+      expect(Date.parse(free.supers_reset_at!)).toBeLessThanOrEqual(end + 167 * HOUR_MS);
+
+      await setPremium(true);
+      const premium = await quotas();
+      expect(premium).toMatchObject({
+        is_premium: true,
+        likes_left: null,
+        supers_left: 3,
+        likes_reset_at: free.likes_reset_at,
+      });
+      expect(Date.parse(premium.premium_until!)).toBeGreaterThan(end);
+      // Con tope de cinco vuelve a ser el más antiguo de los dos supers vivos.
+      expect(Date.parse(premium.supers_reset_at!)).toBeGreaterThanOrEqual(start + 143 * HOUR_MS);
+      expect(Date.parse(premium.supers_reset_at!)).toBeLessThanOrEqual(end + 143 * HOUR_MS);
+    });
+
+    it.each(['undo_last_decision', 'activate_boost', 'incoming_likes'] as const)(
+      '%s sin Premium devuelve LQ005 sin cambiar decisiones ni cupos',
+      async (fn) => {
+        await sqlData(record(peers[0].id, { p_decision: 'pass' }));
+        const before = await quotas();
+        const rows = await decisions();
+
+        const { data, error } = await viewer.client.rpc(fn);
+
+        expect(data).toBeNull();
+        expect(error?.code).toBe('LQ005');
+        expect(await quotas()).toEqual(before);
+        expect(await decisions()).toEqual(rows);
+      }
+    );
+
+    it.each([
+      { minutes: 9, allowed: true },
+      { minutes: 10, allowed: false },
+    ])(
+      'undo_last_decision a los $minutes minutos: solo la última, sin devolver el Super Like',
+      async ({ minutes, allowed }) => {
+        await setPremium(true);
+        await sqlData(record(peers[0].id, { p_decision: 'pass' }));
+        await callDev(viewer.client, 'dev_age_last_decision', { p_minutes: 20 });
+        await sqlData(record(peers[1].id, { p_super: true }));
+        await callDev(viewer.client, 'dev_age_last_decision', { p_minutes: minutes });
+        const before = await quotas();
+
+        const target = await sqlData(viewer.client.rpc('undo_last_decision'));
+
+        expect(target).toBe(allowed ? peers[1].id : null);
+        expect((await decisions())!.map((row) => row.target_id).sort()).toEqual(
+          (allowed ? [peers[0].id] : [peers[0].id, peers[1].id]).sort()
+        );
+        expect(await quotas()).toEqual(before);
+        expect(before.supers_left).toBe(4);
+      }
+    );
+
+    it('undo_last_decision no borra un pass posterior a un match existente', async () => {
+      await setPremium(true);
+      await sqlData(record(viewer.id, {}, peers[0]));
+      const match = await sqlData(record(peers[0].id));
+      expect(match?.id).toEqual(expect.any(String));
+      await sqlData(record(peers[0].id, { p_decision: 'pass' }));
+      const rows = await decisions();
+
+      expect(await sqlData(viewer.client.rpc('undo_last_decision'))).toBeNull();
+      expect(await decisions()).toEqual(rows);
+      expect(await sqlData(viewer.client.from('matches').select('id'))).toEqual([
+        { id: match!.id },
+      ]);
+    });
+
+    it('undo_last_decision sin decisiones devuelve null', async () => {
+      await setPremium(true);
+      expect(await sqlData(viewer.client.rpc('undo_last_decision'))).toBeNull();
+    });
+
+    it('activate_boost publica los dos relojes y LQ003 conserva el Boost activo', async () => {
+      await setPremium(true);
+      const start = Date.parse((await sqlData(viewer.client.rpc('server_now')))!);
+      const endsAt = await sqlData(viewer.client.rpc('activate_boost'));
+      const end = Date.parse((await sqlData(viewer.client.rpc('server_now')))!);
+      const before = await quotas();
+
+      expect(Date.parse(endsAt!)).toBeGreaterThanOrEqual(start + 30 * MINUTE_MS);
+      expect(Date.parse(endsAt!)).toBeLessThanOrEqual(end + 30 * MINUTE_MS);
+      expect(before.boost_active_until).toBe(endsAt);
+      expect(Date.parse(before.boost_available_at!) - Date.parse(endsAt!)).toBe(
+        30 * DAY_MS - 30 * MINUTE_MS
+      );
+      await sqlQuota(viewer.client.rpc('activate_boost'), 'LQ003', before.boost_available_at);
+      expect(await quotas()).toEqual(before);
+    });
+
+    it.each([29, 30])(
+      'Boost de hace %i días: cooldown desde el inicio, aunque ya no esté activo',
+      async (ageDays) => {
+        await setPremium(true);
+        await callDev(viewer.client, 'dev_add_boost', { p_age_days: ageDays });
+        const before = await quotas();
+        expect(before.boost_active_until).toBeNull();
+        if (ageDays === 29) {
+          expect(before.boost_available_at).not.toBeNull();
+          await sqlQuota(viewer.client.rpc('activate_boost'), 'LQ003', before.boost_available_at);
+          expect(await quotas()).toEqual(before);
+        } else {
+          expect(before.boost_available_at).toBeNull();
+          const endsAt = await sqlData(viewer.client.rpc('activate_boost'));
+          expect((await quotas()).boost_active_until).toBe(endsAt);
+        }
+      }
+    );
+
+    it.each<DeckArgs>([
+      { p_min_hours_per_week: 0 },
+      { p_time_bands: ['noche'] },
+      { p_time_bands: [] },
+      { p_ambition: ['equilibrado'] },
+      { p_ambition: [] },
+      { p_starting_point: ['idea-sin-empezar'] },
+      { p_starting_point: [] },
+      { p_timezone_window_hours: 0 },
+    ])('discovery_deck rechaza cada filtro Premium con LQ005: %j', async (filter) => {
+      const { data, error } = await viewer.client.rpc('discovery_deck', filter);
+      expect(data).toBeNull();
+      expect(error?.code).toBe('LQ005');
+      // La misma firma y los mismos argumentos son válidos para Premium.
+      await setPremium(true);
+      const deck = await sqlData(viewer.client.rpc('discovery_deck', filter));
+      expect(deck!.map((row) => row.id)).toContain(peers[0].id);
+    });
+
+    it('discovery_deck ordena Super Like → Boost → encaje antes del LIMIT y respeta especialidad gratis', async () => {
+      await sqlData(
+        viewer.client.from('profiles').upsert(
+          toProfileInsert(
+            viewer.id,
+            buildProfileInput({
+              lookingFor: 'par',
+              specialties: ['dev'],
+              seekingSpecialties: ['diseno'],
+            }),
+            null
+          )
+        )
+      );
+      for (const [index, peer] of peers.entries()) {
+        await sqlData(
+          peer.client.from('profiles').upsert(
+            toProfileInsert(
+              peer.id,
+              buildProfileInput({
+                lookingFor: 'par',
+                specialties: index === 2 ? ['diseno'] : ['ventas'],
+                seekingSpecialties: index === 2 ? ['dev'] : [],
+              }),
+              null
+            )
+          )
+        );
+      }
+      const catalog = await sqlData(viewer.client.from('profiles').select('id'));
+      const args: DeckArgs = {
+        p_mode: 'par',
+        p_exclude_ids: catalog!
+          .filter(({ id }) => !peers.some((peer) => peer.id === id))
+          .map(({ id }) => id),
+      };
+      // Un Boost terminado tampoco puede adelantar al candidato de encaje mutuo.
+      await callDev(peers[0].client, 'dev_add_boost', { p_age_days: 1 });
+      const baseline = await sqlData(viewer.client.rpc('discovery_deck', args));
+      expect(baseline!.map(({ id }) => id)).toEqual([
+        peers[2].id,
+        ...[peers[0].id, peers[1].id].sort(),
+      ]);
+      await sqlData(record(viewer.id, { p_super: true }, peers[0]));
+      await setPremium(true, peers[1]);
+      await sqlData(peers[1].client.rpc('activate_boost'));
+
+      const page = await sqlData(viewer.client.rpc('discovery_deck', { ...args, p_limit: 2 }));
+      expect(page!.map(({ id, super_liked_me }) => ({ id, super_liked_me }))).toEqual([
+        { id: peers[0].id, super_liked_me: true },
+        { id: peers[1].id, super_liked_me: false },
+      ]);
+      const full = await sqlData(viewer.client.rpc('discovery_deck', args));
+      expect(full!.map(({ id }) => id)).toEqual(peers.map(({ id }) => id));
+      const filtered = await sqlData(
+        viewer.client.rpc('discovery_deck', { ...args, p_specialties: ['diseno'] })
+      );
+      expect(filtered!.map(({ id }) => id)).toEqual([peers[2].id]);
+    });
+
+    async function incomingFixture() {
+      await setPremium(true);
+      await sqlData(record(viewer.id, { p_super: true }, peers[0]));
+      // Fuerza el cruce de grupos: el Super Like es anterior a los normales.
+      await callDev(peers[0].client, 'dev_age_last_decision', { p_minutes: 1 });
+      for (const peer of peers.slice(1)) await sqlData(record(viewer.id, {}, peer));
+      return (await sqlData(viewer.client.rpc('incoming_likes')))!;
+    }
+
+    it('incoming_likes pagina por (is_super, liked_at, id), incluido el desempate exacto de fecha', async () => {
+      const all = await incomingFixture();
+      expect(all).toHaveLength(3);
+      expect(all[0]).toMatchObject({ id: peers[0].id, is_super: true });
+      expect(all.slice(1).every((row) => !row.is_super && row.liked_at > all[0].liked_at)).toBe(
+        true
+      );
+      expect(await sqlData(viewer.client.rpc('incoming_likes_count'))).toBe(3);
+      let cursor: IncomingLikeRow | undefined;
+      const seen: IncomingLikeRow[] = [];
+      for (let index = 0; index <= all.length; index += 1) {
+        const page = (await sqlData(
+          viewer.client.rpc('incoming_likes', {
+            p_limit: 1,
+            p_before: cursor?.liked_at,
+            p_before_super: cursor?.is_super,
+            p_before_id: cursor?.id,
+          })
+        ))!;
+        if (index === all.length) expect(page).toEqual([]);
+        else {
+          expect(page).toHaveLength(1);
+          seen.push(page[0]);
+          cursor = page[0];
+        }
+      }
+      expect(seen).toEqual(all);
+      // Un cursor justo ANTES del id, a su misma fecha, incluye esa fila. Con
+      // el id real la excluye. No hace falta poder escribir timestamps en SQL.
+      const last = all[all.length - 1];
+      const atLast = { p_before: last.liked_at, p_before_super: last.is_super };
+      expect(
+        await sqlData(
+          viewer.client.rpc('incoming_likes', {
+            ...atLast,
+            p_before_id: '00000000-0000-0000-0000-000000000000',
+          })
+        )
+      ).toEqual(
+        all.filter((row) => row.is_super === last.is_super && row.liked_at === last.liked_at)
+      );
+      expect(
+        await sqlData(
+          viewer.client.rpc('incoming_likes', {
+            ...atLast,
+            p_before_id: last.id,
+          })
+        )
+      ).toEqual([]);
+    });
+
+    it('incoming_likes y su conteo excluyen decisiones y bloqueos en ambas direcciones sin filtrar likes por RLS', async () => {
+      await incomingFixture();
+      await sqlData(record(peers[2].id, { p_decision: 'pass' }));
+      await sqlData(viewer.client.rpc('block_profile', { p_profile_id: peers[0].id }));
+      await sqlData(peers[1].client.rpc('block_profile', { p_profile_id: viewer.id }));
+
+      expect(await sqlData(viewer.client.rpc('incoming_likes_count'))).toBe(0);
+      expect(await sqlData(viewer.client.rpc('incoming_likes'))).toEqual([]);
+      for (const peer of peers.slice(0, 2)) {
+        expect(await decisions(peer)).toEqual([
+          expect.objectContaining({ target_id: viewer.id, decision: 'like' }),
+        ]);
+      }
+      // Premium tampoco abre la lectura directa de las decisiones ajenas.
+      expect(
+        await sqlData(viewer.client.from('decisions').select('*').eq('target_id', viewer.id))
+      ).toEqual([]);
+      await setPremium(false);
+      expect(await sqlData(viewer.client.rpc('incoming_likes_count'))).toBe(0);
+      expect((await viewer.client.rpc('incoming_likes')).error?.code).toBe('LQ005');
+    });
+
+    it.each(['anon', 'authenticated'] as const)(
+      'entitlements no admite INSERT, UPSERT, UPDATE ni DELETE con %s',
+      async (role) => {
+        await setPremium(true);
+        const before = await quotas();
+        // Estas tablas internas no están expuestas en database.types.ts; aquí
+        // se intenta saltar el contrato deliberadamente, con la API de tablas.
+        const client: SupabaseClient =
+          role === 'authenticated'
+            ? viewer.client
+            : createClient(url!, anonKey!, {
+                auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+              });
+        const row = {
+          user_id: viewer.id,
+          premium_until: null,
+          product_id: 'intruso',
+          store: 'app_store',
+        };
+        const insert = await client.from('entitlements').insert({ ...row, user_id: peers[0].id });
+        expect(insert.error?.code).toBe('42501');
+        const upsert = await client.from('entitlements').upsert(row);
+        expect(upsert.error?.code).toBe('42501');
+        const update = await client
+          .from('entitlements')
+          .update({ premium_until: null })
+          .eq('user_id', viewer.id);
+        expect(update.error?.code).toBe('42501');
+        const remove = await client.from('entitlements').delete().eq('user_id', viewer.id);
+        expect(remove.error?.code).toBe('42501');
+        expect(await quotas()).toEqual(before);
+        expect((await quotas(peers[0])).is_premium).toBe(false);
+      }
+    );
+  });
 
   // Foto de perfil (`20261012120000_avatar_photo.sql`): lo que RLS y los
   // permisos de columna dejan hacer a un cliente. La moderación en sí no se
