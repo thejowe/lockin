@@ -6,6 +6,7 @@
  * `datos` cambie el mock por Supabase (no debería tocar nada de aquí).
  */
 
+import { useRouter, type Href } from 'expo-router';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,13 +15,19 @@ import { AmbientBackground } from '@/components/ambient-background';
 import { enterFade } from '@/components/motion';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useQuery, useRepositories } from '@/data';
 import { MatchRow, MatchesEmpty, useMatches } from '@/features/chat';
+import { LikesRow } from '@/features/premium';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function MatchesScreen() {
   const theme = useTheme();
   const { data, loading, error, refresh } = useMatches();
   const matches = data ?? [];
+  const router = useRouter();
+  const repositories = useRepositories();
+  // Cuánta gente te ha dado like lo ve cualquiera; quién, solo Premium (`/likes`).
+  const likes = useQuery('incoming-likes-count', () => repositories.premium.countIncomingLikes());
 
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
@@ -49,6 +56,7 @@ export default function MatchesScreen() {
                   No hemos podido cargar tus matches. Desliza hacia abajo para reintentar.
                 </ThemedText>
               )}
+              <LikesRow count={likes.data ?? 0} onPress={() => router.push('/likes' as Href)} />
             </View>
           }
           // Sin datos todavía no enseñamos el estado vacío: diría "no tienes

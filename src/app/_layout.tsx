@@ -105,6 +105,7 @@ export default function RootLayout() {
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="chat/[matchId]" options={stackHeader} />
               <Stack.Screen name="agreement/[matchId]" options={stackHeader} />
+              <Stack.Screen name="likes" options={{ ...stackHeader, title: 'Te han dado like' }} />
               {/* Términos, Normas y Privacidad: una hoja dentro de la app, no el navegador. */}
               {/* El perfil completo de otra persona: desde la tarjeta («i») y el chat. */}
               <Stack.Screen

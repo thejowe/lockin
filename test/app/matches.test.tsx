@@ -13,13 +13,13 @@
  * Ojo: en RNTL 14 `render` es asíncrono.
  */
 
-import { screen, waitFor } from '@testing-library/react-native';
+import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { act } from 'react';
 
 import { buildProfileInput } from '@/data/test-fixtures';
 import { SEED_RECIPROCAL_IDS } from '@/data/mock/seed';
 
-import { renderRoute, repositories, resetRepositories, resetRouter } from '../routes';
+import { renderRoute, repositories, resetRepositories, resetRouter, router } from '../routes';
 
 import MatchesScreen from '../../src/app/(tabs)/matches';
 
@@ -95,5 +95,16 @@ describe('MatchesScreen', () => {
 
     await waitFor(() => expect(screen.getByText(ERROR_NOTICE)).toBeTruthy());
     expect(screen.queryByText(EMPTY_HEADLINE)).toBeNull();
+  });
+});
+
+describe('MatchesScreen: likes recibidos', () => {
+  it('enseña la fila «Te han dado like (N)» y abre /likes al tocarla', async () => {
+    await renderRoute(<MatchesScreen />);
+
+    await waitFor(() => expect(screen.getByText('Te han dado like (5)')).toBeTruthy());
+    await fireEvent.press(screen.getByText('Te han dado like (5)'));
+
+    expect(router.push).toHaveBeenCalledWith('/likes');
   });
 });
