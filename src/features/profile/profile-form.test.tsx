@@ -136,7 +136,8 @@ describe('ProfileForm', () => {
     expect(await screen.findByText('Escribe tu nombre.')).toBeTruthy();
     expect(screen.getByText('Elige al menos una especialidad.')).toBeTruthy();
     expect(screen.getByText('Marca al menos una franja horaria.')).toBeTruthy();
-    expect(screen.getByText('Responde al menos a la primera pregunta.')).toBeTruthy();
+    // Las respuestas son opcionales: no se piden.
+    expect(screen.queryByText('Responde al menos a la primera pregunta.')).toBeNull();
     expect(onSubmit).not.toHaveBeenCalled();
   });
 

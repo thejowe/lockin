@@ -155,9 +155,8 @@ function validate(draft: Draft): Errors {
   if (!draft.startingPoint) errors.startingPoint = 'Elige tu punto de partida.';
   if (draft.bands.length === 0) errors.bands = 'Marca al menos una franja horaria.';
   if (!draft.ambition) errors.ambition = 'Elige tu nivel de compromiso.';
-  if (draft.prompts[0].answer.trim().length === 0) {
-    errors.prompts = 'Responde al menos a la primera pregunta.';
-  }
+  // Las respuestas son opcionales desde el 2026-10-30 (decisión del usuario):
+  // sin ninguna, la tarjeta del deck se queda en sus dos primeras páginas.
 
   // Complemento del reporte, no moderación: ver `safety/content-filter.ts`.
   const objectionable = (text: string) => isObjectionable(text);
@@ -491,8 +490,8 @@ export function ProfileForm({
 
         {show('prompts') ? (
           <Field
-            label="Tus respuestas"
-            hint="La primera es obligatoria. Cortas: es lo que hace que un perfil se lea."
+            label="Tus respuestas (opcional)"
+            hint="Cortas: es lo que hace que un perfil se lea."
             error={errors.prompts}
             onLayout={track('prompts')}>
             {draft.prompts.map((prompt, index) => (

@@ -174,6 +174,27 @@ export function ProfileDetails({
         </View>
       ))}
 
+      {/* Sin respuestas (son opcionales): en el perfil propio, el hueco para añadirlas. */}
+      {onEdit && profile.prompts.length === 0 ? (
+        <View
+          style={[
+            styles.promptCard,
+            {
+              backgroundColor: theme.backgroundElement,
+              borderColor: theme.border,
+              boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
+            },
+          ]}>
+          <ThemedText type="small" themeColor="textSecondary">
+            Tus respuestas
+          </ThemedText>
+          <ThemedText type="body" themeColor="textSecondary">
+            Aún no has respondido ninguna. Son opcionales, pero hacen que tu perfil se lea.
+          </ThemedText>
+          {pencil('prompts', styles.corner)}
+        </View>
+      ) : null}
+
       {/*
         Las apps conectadas, como logos que llevan a su cuenta (2026-10-17). El
         sello de GitHub va junto a ellas y no junto al nombre: lo que certifica
