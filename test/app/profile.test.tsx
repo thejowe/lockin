@@ -116,9 +116,7 @@ describe('ProfileScreen', () => {
       await renderRoute(<ProfileScreen />);
 
       await waitFor(() => expect(screen.getByText('Perfil')).toBeTruthy());
-      expect(
-        screen.getByRole('button', { name: 'Editar nombre, edad y ubicación' })
-      ).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Editar nombre, edad y ubicación' })).toBeTruthy();
       expect(screen.queryByText('Guardar')).toBeNull();
     });
 
