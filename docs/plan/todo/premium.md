@@ -94,6 +94,7 @@ escriba código pasa por `codex review` antes de commitear en la rama principal.
   Super Like/Deshacer/Boost, fila «Te han dado like (N)» y `/likes` (relleno sin Premium, perfiles con Premium),
   paywall y «Simular Premium». ⚠️ Fila Premium en Cuenta y aviso al borrar: con mock `AccountSection` no se pinta, no
   comprobables aquí. **Casilla abierta: falta la parte con Supabase real.**
+  **Supabase real, parte 1 (2026-10-30, commit 4b5f01d, sin Premium):** ver «Hallazgos del comprobador». ✅ fila «Hazte Premium»/«Restaurar compras» en Cuenta, «Te han dado like (1)» y `/likes` con un candado, filtros con candado, paywall («Las compras aún no están disponibles»). ⚠️ No se pudo agotar el cupo (el deck real solo tiene ~16 perfiles) ni ver la hoja «Sin likes hasta…». **Casilla abierta:** faltan la parte con entitlement (fila Premium, aviso al borrar, `/likes` con perfiles, botones Premium) y la hoja de cupo.
 
 ## Fase 3 — cobro real (bloqueada)
 
@@ -137,3 +138,16 @@ llega a 25 solo con la UI). Evidencia: `e2e/artifacts/local/2026-10-30-premium-m
 - Entorno: el build local de Windows exige `-PreactNativeArchitectures=x86_64` y una copia en ruta corta (`C:\k`): reanimated
   falla en arm64 por rutas >260 caracteres. Metro tardó 26 min en el primer bundle y, mientras otros agentes editan `src/`,
   hace recarga rápida y pierde el estado del mock.
+
+### 2026-10-30 — recorrido gratis con Supabase real (commit 4b5f01d), parte 1
+
+Backend: **Supabase** (proyecto grrzmzktrhksbttpbblg; logcat: «backend de datos: Supabase»). APK debug x86_64 con Metro servido desde la copia `C:\k` (`--no-dev --minify --clear`) y `.env.local` con `EXPO_PUBLIC_REQUIRE_ACCOUNT=false` (alta anónima; la puerta de registro exigiría correo). Evidencia: `e2e/artifacts/local/2026-10-30-premium-supabase/` (capturas 01-31, `logcat.txt`). Cuenta de prueba A: «Prueba Premiumy», uid `109e1400-11fc-44f7-b29b-46705fd7a251`. Cuenta de apoyo (anónima, vía API con la clave anon): «Comprob Apoyo Premium», `b519a4f1-d744-4e06-853d-0b355895311a`, que dio like a A.
+
+- ✅ Alta anónima y deck real (19, 20): perfiles de producción con foto e iniciales.
+- ✅ Cuenta sin Premium (24): «Hazte Premium» y «Restaurar compras» entre «Asegurar mi cuenta» y «Cerrar sesión».
+- ✅ Matches (27) y `/likes` (28): «Te han dado like (1)»; sin Premium un solo candado genérico y «Hazte Premium», sin datos del perfil.
+- ✅ Filtros (30, 31): candado en horas, franjas, ambición, punto de partida y zona horaria; tocar uno abre el paywall.
+- ✅ Paywall con Supabase y sin SDK de compras (29): beneficios, «Las compras aún no están disponibles», «Restaurar compras», términos y privacidad.
+- ⚠️ Agotar likes y hoja «Sin likes hasta…» (día correcto): **no comprobable**. A dio ~16 likes reales (deck agotado, «Deck vacío», captura 26) y `Te quedan N likes` solo avisa con ≤5, así que no llegó a salir. No hay perfiles para llegar a 25; crear ~12 cuentas anónimas de relleno por API fue denegado por el sistema de permisos, y no hay helpers `dev_*` en producción. Con el deck vacío tampoco salen los cinco botones (Super Like/Deshacer/Boost) para ver sus puertas con Supabase.
+- Hallazgo menor 1: el contador de `/likes` se queda en 0 en Matches hasta hacer pull-to-refresh (clave `incoming-likes-count` en caché desde la primera visita): el like entrante no aparece al volver a la pestaña (25, 26) y sí tras tirar hacia abajo (27).
+- Hallazgo menor 2: el build local de release falla en CMake por rutas largas aun en `C:\k` (`rngesturehandler_codegen ... mkdir`); sirve el debug con Metro.
