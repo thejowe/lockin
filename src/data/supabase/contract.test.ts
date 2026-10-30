@@ -220,6 +220,23 @@ async function callDevReset(client: SupabaseClient<Database>): Promise<string | 
 }
 
 /**
+ * Las funciones `dev_*` de Premium viven solo en `supabase/seed.sql` (nunca en
+ * producción), así que tampoco están en `database.types.ts`.
+ */
+async function callDev(
+  client: SupabaseClient<Database>,
+  fn: string,
+  args?: Record<string, unknown>
+): Promise<void> {
+  const rpc = client.rpc.bind(client) as unknown as (
+    name: string,
+    params?: Record<string, unknown>
+  ) => PromiseLike<{ error: { code?: string; message: string } | null }>;
+  const { error } = await rpc(fn, args);
+  if (error) throw new Error(`${fn} falló: ${error.code ?? ''} ${error.message}`);
+}
+
+/**
  * Tope de página de `discovery_deck` (`p_limit default 50`, ver
  * `supabase/migrations/20260905000500_functions_and_realtime.sql`).
  */
@@ -348,8 +365,6 @@ async function waitUntilChannelsJoined(): Promise<void> {
 const supabaseBackend: ContractBackend = {
   name: 'supabase',
   canTimeTravel: false,
-  // La Tarea 5 del plan de Premium implementa el repositorio y reactiva el bloque.
-  skipPremium: true,
   // Un OAuth real necesita un navegador y un humano del otro lado: esta suite
   // no puede completar verifyGithub()/unverifyGithub() sola.
   canLinkIdentityWithoutBrowser: false,
@@ -446,6 +461,12 @@ const supabaseBackend: ContractBackend = {
   async reset(): Promise<ContractFixture> {
     const currentUserId = await resetCurrentUser();
     for (const [index, actor] of reciprocals.entries()) {
+      // Los de apoyo gastan cupos de Super Like y Boost (`superLikeFrom`,
+      // `boostAs`) y los likes_events/boosts no se pueden borrar desde el
+      // cliente: se resetean como el usuario de la app, y su perfil se vuelve a
+      // subir justo debajo.
+      const failure = await callDevReset(actor.client);
+      if (failure !== null) throw new Error(`dev_reset_current_user() falló: ${failure}`);
       const { label, lookingFor } = RECIPROCALS[index];
       const { error } = await actor.client
         .from('profiles')
@@ -539,24 +560,41 @@ const supabaseBackend: ContractBackend = {
         return roomRepositoryFor(actor);
       },
       elapse: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
-      // Los helpers `dev_*` llegan con la Tarea 5 del plan de Premium.
-      async setPremium() {
-        throw new Error('pendiente: Tarea 5');
+      // Estado que el cliente no puede escribir: lo siembran las `dev_*` de seed.sql.
+      async setPremium(active) {
+        await callDev(appClient, 'dev_set_premium', { p_active: active });
       },
-      async seedLikeEvents() {
-        throw new Error('pendiente: Tarea 5');
+      async seedLikeEvents(kind, count, ageHours) {
+        await callDev(appClient, 'dev_add_like_events', {
+          p_kind: kind,
+          p_count: count,
+          p_age_hours: ageHours,
+        });
       },
-      async ageLastDecision() {
-        throw new Error('pendiente: Tarea 5');
+      async ageLastDecision(minutes) {
+        await callDev(appClient, 'dev_age_last_decision', { p_minutes: minutes });
       },
-      async seedPastBoost() {
-        throw new Error('pendiente: Tarea 5');
+      async seedPastBoost(ageDays) {
+        await callDev(appClient, 'dev_add_boost', { p_age_days: ageDays });
       },
-      async superLikeFrom() {
-        throw new Error('pendiente: Tarea 5');
+      async superLikeFrom(profileId) {
+        const actor = reciprocals.find((candidate) => candidate.id === profileId);
+        if (!actor) throw new Error('superLikeFrom: perfil de apoyo desconocido: ' + profileId);
+        // Con Premium hay 5 Super Likes a la semana, no 1: sobra holgura.
+        await callDev(actor.client, 'dev_set_premium', { p_active: true });
+        const { error } = await actor.client.rpc('record_decision', {
+          p_target_id: currentUserId,
+          p_decision: 'like',
+          p_super: true,
+        });
+        if (error) throw error;
       },
-      async boostAs() {
-        throw new Error('pendiente: Tarea 5');
+      async boostAs(profileId) {
+        const actor = reciprocals.find((candidate) => candidate.id === profileId);
+        if (!actor) throw new Error('boostAs: perfil de apoyo desconocido: ' + profileId);
+        await callDev(actor.client, 'dev_set_premium', { p_active: true });
+        const { error } = await actor.client.rpc('activate_boost');
+        if (error) throw error;
       },
     };
   },

@@ -51,8 +51,11 @@ escriba código pasa por `codex review` antes de commitear en la rama principal.
 
 - [ ] [Claude] Contrato: `PremiumRepository`, `DeckProfile`, `ProfileFilter` ampliado,
   `QuotaExceededError` y `PremiumRequiredError` (spec §5). Implementación en mock y en Supabase.
-  Tarea 1 del plan hecha (2026-10-29): tipos, errores, límites, contrato y mock. Falta Supabase
-  (Tarea 5; en `supabase/index.ts` hay un `premium` provisional que lanza «pendiente: Tarea 5»).
+  Tarea 1 del plan hecha (2026-10-29): tipos, errores, límites, contrato y mock. Tarea 5 escrita
+  (2026-10-30): `src/data/supabase/premium.ts`, `getDeck`/`recordDecision` y el fixture del contrato
+  Supabase, con tests unitarios del mapeo; `describe('premium')` ya no se salta en Supabase. **Casilla
+  abierta hasta que el job «Contrato Supabase» de CI (`LOCKIN_SUPABASE_CONTRACT=1`, con migraciones y
+  `seed.sql` del repo) la pase en verde: aquí no hay Docker y esa suite no se ha ejecutado.**
 - [ ] [Claude] Deck: deshacer, Super Like y Boost; aviso de likes restantes; hoja «sin likes»;
   insignia de Super Like.
 - [ ] [Claude] Matches: fila «Te han dado like (N)» y la cuadrícula premium (gratis ve relleno

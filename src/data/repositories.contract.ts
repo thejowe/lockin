@@ -150,8 +150,6 @@ export interface ContractBackend {
    * persona del otro lado, así que Supabase declara `false`.
    */
   canLinkIdentityWithoutBrowser: boolean;
-  /** `true` mientras el backend no implemente `PremiumRepository`: salta `describe('premium')`. */
-  skipPremium?: boolean;
   /**
    * Corta la conexión de realtime del usuario, como una caída de red, y la
    * devuelve con `restoreRealtime()`.
@@ -702,9 +700,7 @@ export function describeRepositoryContract(backend: ContractBackend): void {
       });
     });
 
-    // Hasta la Tarea 5 del plan de Premium, Supabase no implementa el contrato.
-    const describePremium = backend.skipPremium ? describe.skip : describe;
-    describePremium('premium', () => {
+    describe('premium', () => {
       const HOUR_MS = 3_600_000;
       const MINUTE_MS = 60_000;
 

@@ -42,6 +42,7 @@ import {
   toSafetyError,
 } from './mappers';
 import { fetchAllPages } from './pagination';
+import { createSupabasePremiumRepository, toPremiumError } from './premium';
 import { closeLiveChannels } from './live-channels';
 import { createSupabaseRoomRepository } from './rooms';
 import { subscribeResyncingOnRejoin } from './realtime';
@@ -51,7 +52,7 @@ import { GITHUB_VERIFICATION_CANCELLED, LINKEDIN_VERIFICATION_CANCELLED } from '
 import { addBoardPost, listBoardPosts, removeBoardPost } from './board';
 
 import { deleteAvatar, uploadAvatar } from './avatar';
-import type { MatchRow, MessageRow, ProfileRow } from './database.types';
+import type { DeckRow, MatchRow, MessageRow, ProfileRow } from './database.types';
 import type { AvatarSigner } from './avatar-urls';
 import type { LockInSupabaseClient } from './client';
 import type {
@@ -649,6 +650,17 @@ export function createSupabaseRepositories({
     },
   };
 
+  /** Lo rellena el repositorio de Premium al crearse. */
+  let notifyQuotas: () => void = () => {};
+  const premium: PremiumRepository = createSupabasePremiumRepository({
+    getClient,
+    getUserId,
+    signProfiles: signer.signProfiles,
+    exposeNotify: (notifyFn) => {
+      notifyQuotas = notifyFn;
+    },
+  });
+
   const discovery: DiscoveryRepository = {
     async getDeck(filter: ProfileFilter = {}) {
       const client = getClient();
@@ -669,19 +681,29 @@ export function createSupabaseRepositories({
         p_mode: filter.mode ?? null,
         p_specialties: filter.specialties?.length ? filter.specialties : null,
         p_exclude_ids: filter.excludeIds?.length ? filter.excludeIds : null,
+        // Filtros avanzados: solo Premium. Sin él, el RPC contesta LQ005 y sale
+        // como `PremiumRequiredError`. Ausente o vacío = «sin filtro» (null).
+        p_min_hours_per_week: filter.minHoursPerWeek ?? null,
+        p_time_bands: filter.timeBands?.length ? filter.timeBands : null,
+        p_ambition: filter.ambition?.length ? filter.ambition : null,
+        p_starting_point: filter.startingPoint?.length ? filter.startingPoint : null,
+        p_timezone_window_hours: filter.timezoneWindowHours ?? null,
       });
-      if (error) throw error;
+      if (error) throw toPremiumError(error);
 
-      // Provisional hasta la Tarea 5 del plan de Premium: `discovery_deck` aún
-      // no devuelve `super_liked_me`.
-      const profiles = await signer.signProfiles((data as ProfileRow[]).map(toProfile));
-      return profiles.map((profile) => ({ ...profile, superLikedMe: false }));
+      const rows = data as DeckRow[];
+      const profiles = await signer.signProfiles(rows.map(toProfile));
+      return profiles.map((profile, index) => ({
+        ...profile,
+        superLikedMe: rows[index].super_liked_me === true,
+      }));
     },
 
     async recordDecision(
       profileId: string,
       decision: Decision,
-      mode?: ModePreference
+      mode?: ModePreference,
+      options?: { super?: boolean }
     ): Promise<DecisionResult> {
       const client = getClient();
       const userId = await getUserId();
@@ -693,6 +715,7 @@ export function createSupabaseRepositories({
         p_target_id: profileId,
         p_decision: decision,
         ...(mode ? { p_mode: mode } : {}),
+        ...(options?.super ? { p_super: true } : {}),
       });
 
       if (error) {
@@ -701,8 +724,12 @@ export function createSupabaseRepositories({
         // que un perfil inexistente "no crea match ni revienta", así que se
         // traduce a un resultado sin match en vez de propagarlo.
         if (error.code === '23503') return { decision, match: null };
-        throw error;
+        // LQ001/LQ002/LQ004 (cupos) -> `QuotaExceededError`; el resto, tal cual.
+        throw toPremiumError(error);
       }
+
+      // Un like (o Super Like) gasta cupo: los suscriptores de los cupos releen.
+      if (decision === 'like') notifyQuotas();
 
       // `record_decision` devuelve `public.matches`, un tipo COMPUESTO, y cuando
       // devuelve NULL PostgREST no manda `null`: manda una fila con todas las
@@ -885,20 +912,6 @@ export function createSupabaseRepositories({
         )
       );
     },
-  };
-
-  // Provisional hasta la Tarea 5 del plan de Premium (`./premium.ts`).
-  const pending = async (): Promise<never> => {
-    throw new Error('pendiente: Tarea 5');
-  };
-  const premium: PremiumRepository = {
-    getQuotas: pending,
-    subscribeQuotas: () => () => {},
-    undoLastDecision: pending,
-    activateBoost: pending,
-    countIncomingLikes: pending,
-    listIncomingLikes: pending,
-    syncEntitlement: pending,
   };
 
   return {

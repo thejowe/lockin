@@ -72,6 +72,24 @@ export type ProfileRow = {
   updated_at: string;
 };
 
+/** Una fila de `discovery_deck()`: las columnas de `profiles` y si te dio Super Like. */
+export type DeckRow = ProfileRow & { super_liked_me: boolean };
+
+/** Una fila de `incoming_likes()`: el perfil de quien dio like, si fue Super Like y cuándo. */
+export type IncomingLikeRow = ProfileRow & { is_super: boolean; liked_at: string };
+
+/** La fila única de `premium_quotas()`. */
+export type PremiumQuotasRow = {
+  is_premium: boolean;
+  premium_until: string | null;
+  likes_left: number | null;
+  likes_reset_at: string | null;
+  supers_left: number;
+  supers_reset_at: string | null;
+  boost_available_at: string | null;
+  boost_active_until: string | null;
+};
+
 /** Lo que se envía al crear o actualizar un perfil. */
 export type ProfileInsert = Omit<
   ProfileRow,
@@ -433,15 +451,23 @@ export type Database = {
         Args: Record<string, never>;
         Returns: undefined;
       };
-      /** `discovery_deck(p_mode, p_specialties, p_limit, p_exclude_ids)` → `setof profiles`. */
+      /**
+       * `discovery_deck(...)` (20261030120200): `profiles` + `super_liked_me`. Los
+       * filtros avanzados (`p_min_hours_per_week` en adelante) exigen Premium (LQ005).
+       */
       discovery_deck: {
         Args: {
           p_mode?: ModePreference | null;
           p_specialties?: Specialty[] | null;
           p_limit?: number | null;
           p_exclude_ids?: string[] | null;
+          p_min_hours_per_week?: number | null;
+          p_time_bands?: TimeBand[] | null;
+          p_ambition?: Ambition[] | null;
+          p_starting_point?: StartingPoint[] | null;
+          p_timezone_window_hours?: number | null;
         };
-        Returns: ProfileRow[];
+        Returns: DeckRow[];
       };
       /**
        * `last_messages_for_matches(p_match_ids)` → una fila por match, el
@@ -453,13 +479,31 @@ export type Database = {
         Returns: MessageRow[];
       };
       /**
-       * `record_decision(p_target_id, p_decision, p_mode?)` → la fila de
+       * `record_decision(p_target_id, p_decision, p_mode?, p_super?)` → la fila de
        * `matches` creada, o `null` si el like no fue recíproco o la decisión
        * fue `pass`. `p_mode` es el modo del deck; sin él manda el de la sesión.
        */
       record_decision: {
-        Args: { p_target_id: string; p_decision: Decision; p_mode?: ModePreference };
+        Args: {
+          p_target_id: string;
+          p_decision: Decision;
+          p_mode?: ModePreference;
+          p_super?: boolean;
+        };
         Returns: MatchRow | null;
+      };
+      undo_last_decision: { Args: Record<string, never>; Returns: string | null };
+      activate_boost: { Args: Record<string, never>; Returns: string };
+      premium_quotas: { Args: Record<string, never>; Returns: PremiumQuotasRow[] };
+      incoming_likes_count: { Args: Record<string, never>; Returns: number };
+      incoming_likes: {
+        Args: {
+          p_limit?: number | null;
+          p_before?: string | null;
+          p_before_super?: boolean | null;
+          p_before_id?: string | null;
+        };
+        Returns: IncomingLikeRow[];
       };
       create_room: {
         Args: { p_invitee_ids: string[]; p_starts_at: string; p_blocks: SessionBlocks };
