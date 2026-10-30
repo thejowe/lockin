@@ -10,6 +10,7 @@
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { act } from 'react';
+import { StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { DataProvider, PremiumRequiredError, QuotaExceededError, useQuery } from '@/data';
@@ -65,6 +66,14 @@ describe('IncomingLikes sin Premium', () => {
     expect(screen.queryByTestId('avatar-photo')).toBeNull();
     expect(screen.queryByText(await nameOf(SEED_RECIPROCAL_IDS[0]))).toBeNull();
     expect(screen.getByText('Hazte Premium')).toBeTruthy();
+  });
+
+  it('la rejilla de candados se centra, no se pega a la izquierda', async () => {
+    await setup();
+
+    const [first] = await waitFor(() => screen.getAllByTestId('incoming-like-filler'));
+    const grid = first.parent!;
+    expect(StyleSheet.flatten(grid.props.style)).toMatchObject({ justifyContent: 'center' });
   });
 
   it('«Hazte Premium» abre el paywall', async () => {

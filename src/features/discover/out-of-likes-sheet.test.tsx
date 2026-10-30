@@ -20,6 +20,10 @@ function clock(iso: string): string {
 }
 
 const RESETS_AT = '2026-10-27T18:30:00Z';
+/** Una reposición hoy (o ya pasada hoy): se dice solo la hora. */
+const TODAY_RESET = new Date(new Date().setHours(23, 45, 0, 0)).toISOString();
+/** Una reposición mañana a esa misma hora. */
+const TOMORROW_RESET = new Date(new Date().setHours(24 + 21, 45, 0, 0)).toISOString();
 
 function setup(blocked: React.ComponentProps<typeof OutOfLikesSheet>['blocked']) {
   const onClose = jest.fn();
@@ -41,19 +45,29 @@ describe('OutOfLikesSheet', () => {
   });
 
   it('sin likes dice la hora del servidor, en la zona del dispositivo', async () => {
-    const { ui } = setup({ kind: 'likes', resetsAt: RESETS_AT });
+    const { ui } = setup({ kind: 'likes', resetsAt: TODAY_RESET });
     await render(ui);
 
-    expect(screen.getByText(`Sin likes hasta las ${clock(RESETS_AT)}`)).toBeOnTheScreen();
+    expect(screen.getByText(`Sin likes hasta las ${clock(TODAY_RESET)}`)).toBeOnTheScreen();
   });
 
-  it('no mira el reloj del móvil: con otra hora local, la hoja dice la misma', async () => {
-    jest.useFakeTimers({ now: new Date('2030-01-01T03:00:00Z') });
+  it('si la reposición no es hoy, dice el día', async () => {
+    const { ui } = setup({ kind: 'likes', resetsAt: TOMORROW_RESET });
+    await render(ui);
+
+    expect(
+      screen.getByText(`Sin likes hasta mañana a las ${clock(TOMORROW_RESET)}`)
+    ).toBeOnTheScreen();
+  });
+
+  it('no mira el reloj del móvil para la hora: solo para decir el día', async () => {
+    jest.useFakeTimers({ now: new Date(2030, 0, 1, 3, 0) });
     try {
-      const { ui } = setup({ kind: 'likes', resetsAt: RESETS_AT });
+      const resetsAt = new Date(2030, 0, 1, 18, 30).toISOString();
+      const { ui } = setup({ kind: 'likes', resetsAt });
       await render(ui);
 
-      expect(screen.getByText(`Sin likes hasta las ${clock(RESETS_AT)}`)).toBeOnTheScreen();
+      expect(screen.getByText(`Sin likes hasta las ${clock(resetsAt)}`)).toBeOnTheScreen();
     } finally {
       jest.useRealTimers();
     }
@@ -68,7 +82,7 @@ describe('OutOfLikesSheet', () => {
   });
 
   it('«Hazte Premium» lleva al paywall y «Ahora no» cierra', async () => {
-    const { ui, onClose, onUpgrade } = setup({ kind: 'likes', resetsAt: RESETS_AT });
+    const { ui, onClose, onUpgrade } = setup({ kind: 'likes', resetsAt: TODAY_RESET });
     await render(ui);
 
     await fireEvent.press(screen.getByRole('button', { name: 'Hazte Premium' }));

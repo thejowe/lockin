@@ -23,14 +23,9 @@ import { useReduceMotion } from '@/hooks/use-reduce-motion';
 import { useTheme, useThemeName } from '@/hooks/use-theme';
 
 import { ActionButton } from './action-button';
+import { clockOf, untilLabel } from './reset-time';
 
 import type { Blocked } from './use-deck';
-
-/** «20:30», en la zona del dispositivo. */
-function clock(iso: string): string {
-  const date = new Date(iso);
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-}
 
 /** «el martes 27 de octubre a las 20:30», o `null` si la fecha no se entiende. */
 function dayAndClock(iso: string | null): string | null {
@@ -40,7 +35,7 @@ function dayAndClock(iso: string | null): string | null {
     day: 'numeric',
     month: 'long',
   });
-  return `el ${day} a las ${clock(iso)}`;
+  return `el ${day} a las ${clockOf(iso)}`;
 }
 
 interface Copy {
@@ -65,7 +60,7 @@ function copyFor(blocked: Exclude<Blocked, null>): Copy {
       return {
         title:
           blocked.resetsAt !== null && !Number.isNaN(Date.parse(blocked.resetsAt))
-            ? `Sin likes hasta las ${clock(blocked.resetsAt)}`
+            ? `Sin likes hasta ${untilLabel(blocked.resetsAt)}`
             : 'Sin likes por ahora',
         body: `Has gastado tus ${FREE_LIKES_PER_DAY} likes de hoy. Con Premium no hay límite.`,
         upgrade: true,

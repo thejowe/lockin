@@ -48,9 +48,12 @@ escriba código pasa por `codex review` antes de commitear en la rama principal.
   contrato compartido. ESLint y salto sin la variable verificados; `tsc --noEmit` solo falla en
   el artefacto E2E local de Deno `2026-10-14-avatar-fallo-cerrado/edge-runner.ts`, ajeno a esta tarea.
   Ejecución contra Supabase pendiente de CI: aquí no hay Docker.
-- [ ] [Claude] Aplicar en producción por MCP, byte a byte (memoria
-  `aplicar-migraciones-por-mcp-byte-a-byte`), y dejar Schema drift en verde. **Con orden del
-  usuario.**
+- [x] [Claude] Aplicar en producción por MCP, byte a byte (memoria
+  `aplicar-migraciones-por-mcp-byte-a-byte`), y dejar Schema drift en verde.
+  Hecho el 2026-10-30 con orden del usuario: `premium_tables`, `premium_rpcs`, `premium_deck` y
+  `premium_hardening` (esta última, `20261030120300`, también estaba sin aplicar). Comprobado en
+  producción: 4 tablas, 9 funciones sin sobrecargas y el cron `lockin-purge-old-premium-records`.
+  Schema drift (workflow_dispatch) verde.
 
 ## Fase 2 — cliente con mock
 
@@ -127,10 +130,10 @@ llega a 25 solo con la UI). Evidencia: `e2e/artifacts/local/2026-10-30-premium-m
 - ✅ Paywall `/premium` (15, 36, 37, 54): beneficios, 9,99 €/mes y 49,99 €/año, restaurar, términos; «Simular Premium» (solo __DEV__ con mock) cierra el paywall y activa los botones; «Hazte Premium» con ofertas falsas concede Premium.
 - ⚠️ Fila Premium en Cuenta y aviso al borrar la cuenta (50, 51): con mock el Perfil no muestra ni fila Premium ni borrado; no comprobables sin Supabase.
 - Hallazgos menores (no bloquean), para el bloque `descubrir`/`visual`:
-  1. Un Boost con éxito no da ningún aviso (captura 40: sin hoja ni toast tras pulsarlo; solo se nota al intentar otro).
-  2. Deshacer justo después de un like que hizo match no hace nada y no avisa (38 → 39 siguen en la misma tarjeta); el SQL lo prohíbe, el mock debería comportarse igual y/o avisar.
-  3. `/likes` sin Premium: la rejilla de candados queda pegada a la izquierda (márgenes 35 px / 100 px, captura 49).
-  4. «Sin likes hasta las 21:45» no dice el día cuando falta casi un día entero.
+  1. ✅ Resuelto (2026-10-30): aviso «Boost activo durante 30 minutos». Un Boost con éxito no da ningún aviso (captura 40: sin hoja ni toast tras pulsarlo; solo se nota al intentar otro).
+  2. ✅ Resuelto: el mock ya lo prohibía; ahora avisa «No se puede deshacer un match». Deshacer justo después de un like que hizo match no hace nada y no avisa (38 → 39 siguen en la misma tarjeta); el SQL lo prohíbe, el mock debería comportarse igual y/o avisar.
+  3. ✅ Resuelto (rejilla centrada). `/likes` sin Premium: la rejilla de candados queda pegada a la izquierda (márgenes 35 px / 100 px, captura 49).
+  4. ✅ Resuelto (`reset-time.ts`: «mañana a las…» / fecha). «Sin likes hasta las 21:45» no dice el día cuando falta casi un día entero.
 - Entorno: el build local de Windows exige `-PreactNativeArchitectures=x86_64` y una copia en ruta corta (`C:\k`): reanimated
   falla en arm64 por rutas >260 caracteres. Metro tardó 26 min en el primer bundle y, mientras otros agentes editan `src/`,
   hace recarga rápida y pierde el estado del mock.

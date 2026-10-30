@@ -269,7 +269,9 @@ describe('DiscoverScreen', () => {
         (mockDeck.props.onLikeLocked as () => void)();
       });
 
-      await waitFor(() => expect(screen.getByText(/^Sin likes hasta las /)).toBeTruthy());
+      await waitFor(() =>
+        expect(screen.getByText(/^Sin likes hasta (las|mañana a las) /)).toBeTruthy()
+      );
     });
 
     it('«Hazte Premium» cierra la hoja y abre el paywall', async () => {

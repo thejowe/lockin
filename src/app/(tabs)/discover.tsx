@@ -18,7 +18,7 @@
  */
 
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -70,6 +70,8 @@ export default function DiscoverScreen() {
   const [filter, setFilter] = useState<ProfileFilter>({});
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  /** `info` para confirmaciones y avisos neutros (Boost activo, no se puede deshacer). */
+  const [noticeTone, setNoticeTone] = useState<'danger' | 'info'>('danger');
   const {
     cards,
     loading,
@@ -88,9 +90,32 @@ export default function DiscoverScreen() {
   } = useDeck(DECK_MODE, filter, {
     onPremiumFiltersRemoved: (cleaned) => {
       setFilter(cleaned);
+      setNoticeTone('danger');
       setNotice('Tus filtros Premium se han quitado');
     },
+    onUndoRefused: (reason) => {
+      setNoticeTone('info');
+      setNotice(
+        reason === 'match'
+          ? 'No se puede deshacer un match'
+          : 'Ya no se puede deshacer esa decisión'
+      );
+    },
   });
+
+  // Los avisos informativos se retiran solos; el de filtros quitados se queda hasta que se actúe.
+  useEffect(() => {
+    if (notice === null || noticeTone !== 'info') return;
+    const timer = setTimeout(() => setNotice(null), 5000);
+    return () => clearTimeout(timer);
+  }, [notice, noticeTone]);
+
+  async function activateBoost() {
+    const endsAt = await boost();
+    if (endsAt === null) return;
+    setNoticeTone('info');
+    setNotice('Boost activo durante 30 minutos');
+  }
   // Sin Premium y sin likes, el like no sale: la tarjeta vuelve y se abre la hoja.
   const likeLocked = quotas !== null && !quotas.isPremium && quotas.likesLeft === 0;
 
@@ -132,7 +157,10 @@ export default function DiscoverScreen() {
           </View>
 
           {notice ? (
-            <ThemedText type="small" themeColor="danger" accessibilityLiveRegion="polite">
+            <ThemedText
+              type="small"
+              themeColor={noticeTone === 'danger' ? 'danger' : 'textSecondary'}
+              accessibilityLiveRegion="polite">
               {notice}
             </ThemedText>
           ) : null}
@@ -158,7 +186,7 @@ export default function DiscoverScreen() {
                 likesLeft={quotas?.likesLeft ?? null}
                 onUndo={() => void undo()}
                 onSuperLike={(profile) => superLike(profile.id)}
-                onBoost={() => void boost()}
+                onBoost={() => void activateBoost()}
               />
             ) : (
               <DeckEmpty

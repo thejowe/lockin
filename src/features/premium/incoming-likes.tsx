@@ -326,6 +326,8 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    // Con dos candados por fila a 44 % queda un 12 % libre: repartido a ambos lados, no pegado a uno.
+    justifyContent: 'center',
     gap: Spacing.three,
   },
   tile: {

@@ -145,6 +145,12 @@ export interface DeckOptions {
    * la pantalla lo aplique, lo que recarga el deck, y avise a la persona.
    */
   onPremiumFiltersRemoved?: (filter: ProfileFilter) => void;
+  /**
+   * Deshacer no ha hecho nada y no es por Premium ni por un fallo: `'match'` si
+   * la última decisión creó un match (el servidor no deja deshacerlo), y
+   * `'unavailable'` en el resto (nada que deshacer o ventana vencida).
+   */
+  onUndoRefused?: (reason: 'match' | 'unavailable') => void;
 }
 
 export function useDeck(
@@ -165,6 +171,12 @@ export function useDeck(
   useEffect(() => {
     onRemoved.current = options?.onPremiumFiltersRemoved;
   });
+  const onUndoRefused = useRef(options?.onUndoRefused);
+  useEffect(() => {
+    onUndoRefused.current = options?.onUndoRefused;
+  });
+  // Si la última decisión de esta sesión creó match (el servidor no la deja deshacer).
+  const lastMatched = useRef(false);
   const handled = useRef<string | null>(null);
   const rejected = query.error instanceof PremiumRequiredError && hasPremiumFilters(filter);
   useEffect(() => {
@@ -274,6 +286,7 @@ export function useDeck(
   const submit = useCallback(
     (profile: DeckProfile, decision: Decision, options?: { super?: boolean }) => {
       setFailure(null);
+      lastMatched.current = false;
       // La tarjeta ya ha salido de pantalla: descartarla antes de que responda
       // el repositorio evita un hueco en blanco mientras se resuelve la promesa.
       setSession((previous) => {
@@ -289,7 +302,10 @@ export function useDeck(
 
       saved.then(
         (result) => {
-          if (result.match) setMatch({ match: result.match, profile });
+          if (result.match) {
+            lastMatched.current = true;
+            setMatch({ match: result.match, profile });
+          }
         },
         (cause: unknown) => {
           // Si el swipe no se ha guardado, la tarjeta vuelve al deck: perderla
@@ -324,7 +340,10 @@ export function useDeck(
     try {
       const startedWith = latest.current.signature;
       const id = await repositories.premium.undoLastDecision();
-      if (id === null) return null;
+      if (id === null) {
+        onUndoRefused.current?.(lastMatched.current ? 'match' : 'unavailable');
+        return null;
+      }
 
       setFailure(null);
       // El filtro puede haber cambiado mientras el servidor respondía: se ancla

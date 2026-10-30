@@ -287,6 +287,71 @@ describe('useDeck', () => {
       expect(result.current.cards!.map((profile) => profile.id)).toEqual(before);
     });
 
+    describe('deshacer rechazado', () => {
+      async function renderWithRefusal() {
+        const onUndoRefused = jest.fn();
+        const view = await renderHook(() => useDeck('par', undefined, { onUndoRefused }), {
+          wrapper,
+        });
+        await waitFor(() => expect(view.result.current.cards).not.toBeNull());
+        return { ...view, onUndoRefused };
+      }
+
+      it('justo después de un like que hizo match avisa de que un match no se deshace', async () => {
+        setMockPremium(true);
+        const { result, onUndoRefused } = await renderWithRefusal();
+        const target = cardWithId(result.current.cards, RECIPROCAL_ID);
+
+        await act(async () => {
+          result.current.decide(target, 'like');
+        });
+        await waitFor(() => expect(result.current.match).not.toBeNull());
+
+        await act(async () => {
+          await result.current.undo();
+        });
+
+        expect(onUndoRefused).toHaveBeenCalledWith('match');
+        expect(result.current.cards!.map((profile) => profile.id)).not.toContain(RECIPROCAL_ID);
+      });
+
+      it('sin nada que deshacer avisa con el motivo genérico', async () => {
+        setMockPremium(true);
+        const { result, onUndoRefused } = await renderWithRefusal();
+
+        await act(async () => {
+          await result.current.undo();
+        });
+
+        expect(onUndoRefused).toHaveBeenCalledWith('unavailable');
+      });
+
+      it('un deshacer que funciona no avisa', async () => {
+        setMockPremium(true);
+        const { result, onUndoRefused } = await renderWithRefusal();
+
+        await act(async () => {
+          result.current.decide(result.current.cards![0], 'pass');
+        });
+        await act(async () => {
+          await result.current.undo();
+        });
+
+        expect(onUndoRefused).not.toHaveBeenCalled();
+      });
+
+      it('sin Premium abre la hoja y no avisa aparte', async () => {
+        const { result, onUndoRefused } = await renderWithRefusal();
+
+        await act(async () => {
+          await result.current.undo();
+        });
+
+        expect(result.current.blocked).toBe('premium');
+        expect(onUndoRefused).not.toHaveBeenCalled();
+      });
+    });
+
     it('con Premium, el Boost devuelve cuándo termina', async () => {
       setMockPremium(true);
       const { result } = await renderDeck('par');
