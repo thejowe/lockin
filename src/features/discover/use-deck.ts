@@ -222,9 +222,12 @@ export function useDeck(
     data: DeckProfile[] | null;
     cards: DeckProfile[] | null;
     session: Session;
-  }>({ data: null, cards: null, session: current });
+    mode: ModePreference;
+    signature: string;
+    refresh: () => void;
+  }>({ data: null, cards: null, session: current, mode, signature, refresh });
   useEffect(() => {
-    latest.current = { data, cards, session: current };
+    latest.current = { data, cards, session: current, mode, signature, refresh };
   });
 
   // Tras una lectura nueva, las cartas deshechas que no salen en la página se
@@ -323,9 +326,11 @@ export function useDeck(
       if (id === null) return null;
 
       setFailure(null);
-      const readNow = latest.current.data;
+      // El filtro puede haber cambiado mientras el servidor respondía: se ancla
+      // bajo el vigente y se relee la consulta activa, no la de entonces.
+      const { data: readNow, mode: nowMode, signature: nowSignature } = latest.current;
       setSession((previous) => {
-        const base = fit(previous, mode, signature);
+        const base = fit(previous, nowMode, nowSignature);
         const profile = base.decided.find((other) => other.id === id);
         return {
           ...base,
@@ -340,7 +345,7 @@ export function useDeck(
       // Se relee el deck: trae la carta si esta sesión no la conocía (la
       // pantalla se remontó dentro de la ventana de deshacer) y renueva la
       // copia de las demás. Si el servidor ya no la devuelve, no se enseña.
-      refresh();
+      latest.current.refresh();
       return id;
     } catch (cause) {
       const reason = blockedBy(cause);
@@ -348,7 +353,7 @@ export function useDeck(
       else setFailure(cause instanceof Error ? cause : new Error(String(cause)));
       return null;
     }
-  }, [mode, signature, refresh, repositories]);
+  }, [repositories]);
 
   const boost = useCallback(async (): Promise<string | null> => {
     try {

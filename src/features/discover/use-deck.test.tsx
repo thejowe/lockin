@@ -844,4 +844,41 @@ describe('useDeck con filtros', () => {
     await view.rerender({ filter: { ambition: ['todo-o-nada'] } });
     await waitFor(() => expect(onPremiumFiltersRemoved).toHaveBeenCalledTimes(2));
   });
+
+  it('un deshacer pendiente al cambiar el filtro ancla la carta bajo el filtro vigente', async () => {
+    setMockPremium(true);
+    const view = await renderHook(
+      (props: { filter: ProfileFilter }) => useDeck('par', props.filter),
+      {
+        initialProps: { filter: {} as ProfileFilter },
+        wrapper,
+      }
+    );
+    await waitFor(() => expect(view.result.current.cards).not.toBeNull());
+    const target = view.result.current.cards![0];
+    const kept = target.specialties[0];
+
+    await act(async () => {
+      view.result.current.decide(target, 'pass');
+    });
+    let finish: (id: string) => void = () => {};
+    jest.spyOn(repositories.premium, 'undoLastDecision').mockReturnValue(
+      new Promise<string | null>((resolve) => {
+        finish = resolve;
+      })
+    );
+    let pending: Promise<string | null> = Promise.resolve(null);
+    await act(async () => {
+      pending = view.result.current.undo();
+    });
+
+    await view.rerender({ filter: { specialties: [kept] } });
+    await waitFor(() => expect(view.result.current.loading).toBe(false));
+    await act(async () => {
+      finish(target.id);
+      await pending;
+    });
+
+    await waitFor(() => expect(view.result.current.cards![0].id).toBe(target.id));
+  });
 });
