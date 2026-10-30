@@ -151,3 +151,12 @@ Backend: **Supabase** (proyecto grrzmzktrhksbttpbblg; logcat: «backend de datos
 - ⚠️ Agotar likes y hoja «Sin likes hasta…» (día correcto): **no comprobable**. A dio ~16 likes reales (deck agotado, «Deck vacío», captura 26) y `Te quedan N likes` solo avisa con ≤5, así que no llegó a salir. No hay perfiles para llegar a 25; crear ~12 cuentas anónimas de relleno por API fue denegado por el sistema de permisos, y no hay helpers `dev_*` en producción. Con el deck vacío tampoco salen los cinco botones (Super Like/Deshacer/Boost) para ver sus puertas con Supabase.
 - Hallazgo menor 1: el contador de `/likes` se queda en 0 en Matches hasta hacer pull-to-refresh (clave `incoming-likes-count` en caché desde la primera visita): el like entrante no aparece al volver a la pestaña (25, 26) y sí tras tirar hacia abajo (27).
 - Hallazgo menor 2: el build local de release falla en CMake por rutas largas aun en `C:\k` (`rngesturehandler_codegen ... mkdir`); sirve el debug con Metro.
+
+#### Fase 1 (cupo agotado sembrado por SQL, cuenta 109e1400…, sin Premium; capturas 40-55, `logcat-fase1.txt`)
+
+Backend: Supabase. Hora del emulador: 30 oct 23:38.
+- ✅ Deck con cupo agotado (40): «Te quedan 0 likes»; el gesto a la derecha devuelve la tarjeta y abre la hoja (41).
+- ✅ Hoja del botón like (45): «Sin likes hasta **mañana** a las 22:36» y «Has gastado tus 25 likes de hoy»; el día es correcto (reset ≈ 23 h tras el evento más antiguo, de madrugada del día siguiente). Arreglo de 4b5f01d confirmado con Supabase.
+- ✅ «Hazte Premium» desde la hoja abre el paywall (47); «Ahora no» cierra la hoja y la tarjeta sigue ahí.
+- ✅ Deshacer (52) y Boost (54) gratis abren el paywall.
+- ⚠️ Super Like gratis (49, 50): con el cupo de likes agotado el servidor responde con la hoja de cupo las dos veces; no se llegó a ver «Sin Super Likes» (haría falta un cupo de likes libre).
