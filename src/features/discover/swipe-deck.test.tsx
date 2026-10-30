@@ -540,4 +540,105 @@ describe('SwipeDeck en el relevo', () => {
     expect(cardStyle('p1')).toMatchObject({ opacity: 1, translateX: 0, translateY: 0 });
     expect(cardStyle('p2')).toMatchObject({ translateY: 0, scale: 0.96 });
   });
+
+  describe('Super Like y acciones de Premium', () => {
+    it('el Super Like sale como un like y llega a onSuperLike, no a onDecide', async () => {
+      const onSuperLike = jest.fn();
+      await render(<SwipeDeck profiles={PROFILES} onDecide={onDecide} onSuperLike={onSuperLike} />);
+      await act(async () => {});
+
+      await fireEvent.press(screen.getByLabelText('Super Like'));
+
+      expect(onSuperLike).toHaveBeenCalledWith(PROFILES[0]);
+      expect(onDecide).not.toHaveBeenCalled();
+    });
+
+    it('sin onSuperLike, el Super Like cae en un like normal', async () => {
+      await renderDeck();
+
+      await fireEvent.press(screen.getByLabelText('Super Like'));
+
+      expect(onDecide).toHaveBeenCalledWith(PROFILES[0], 'like');
+    });
+
+    it('con «reducir movimiento», el Super Like llega igual y sin animar', async () => {
+      systemReduceMotion(true);
+      const onSuperLike = jest.fn();
+      await render(<SwipeDeck profiles={PROFILES} onDecide={onDecide} onSuperLike={onSuperLike} />);
+      await act(async () => {});
+
+      await fireEvent.press(screen.getByLabelText('Super Like'));
+
+      expect(onSuperLike).toHaveBeenCalledWith(PROFILES[0]);
+      expect(mockWithTiming).not.toHaveBeenCalled();
+    });
+
+    it('sin cupo de likes, el Super Like avisa en vez de salir', async () => {
+      const onLikeLocked = jest.fn();
+      const onSuperLike = jest.fn();
+      await render(
+        <SwipeDeck
+          profiles={PROFILES}
+          onDecide={onDecide}
+          likeLocked
+          onLikeLocked={onLikeLocked}
+          onSuperLike={onSuperLike}
+        />
+      );
+      await act(async () => {});
+
+      await fireEvent.press(screen.getByLabelText('Super Like'));
+
+      expect(onLikeLocked).toHaveBeenCalledTimes(1);
+      expect(onSuperLike).not.toHaveBeenCalled();
+    });
+
+    it('sin cupo y sin manejador, el like no sale y no rompe', async () => {
+      await render(<SwipeDeck profiles={PROFILES} onDecide={onDecide} likeLocked />);
+      await act(async () => {});
+
+      await fireEvent.press(screen.getByLabelText('Like'));
+      swipe({ translationX: THRESHOLD + 20 });
+
+      expect(onDecide).not.toHaveBeenCalled();
+    });
+
+    it('con «reducir movimiento» y sin cupo, el gesto vuelve al centro sin animar y avisa', async () => {
+      systemReduceMotion(true);
+      const onLikeLocked = jest.fn();
+      await render(
+        <SwipeDeck profiles={PROFILES} onDecide={onDecide} likeLocked onLikeLocked={onLikeLocked} />
+      );
+      await act(async () => {});
+
+      swipe({ translationX: THRESHOLD + 20 });
+
+      expect(onLikeLocked).toHaveBeenCalledTimes(1);
+      expect(onDecide).not.toHaveBeenCalled();
+      expect(mockWithSpring).not.toHaveBeenCalled();
+    });
+
+    it('Deshacer y Boost llegan al padre con Premium', async () => {
+      const onUndo = jest.fn();
+      const onBoost = jest.fn();
+      await render(
+        <SwipeDeck
+          profiles={PROFILES}
+          onDecide={onDecide}
+          isPremium
+          likesLeft={3}
+          onUndo={onUndo}
+          onBoost={onBoost}
+        />
+      );
+      await act(async () => {});
+
+      await fireEvent.press(screen.getByLabelText('Deshacer'));
+      await fireEvent.press(screen.getByLabelText('Boost'));
+
+      expect(onUndo).toHaveBeenCalledTimes(1);
+      expect(onBoost).toHaveBeenCalledTimes(1);
+      expect(screen.getByText('Te quedan 3 likes')).toBeOnTheScreen();
+    });
+  });
 });

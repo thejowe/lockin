@@ -315,6 +315,116 @@ describe('createSupabasePremiumRepository', () => {
   });
 });
 
+describe('createSupabasePremiumRepository: bordes', () => {
+  const failure = { code: '08006', message: 'sin red' };
+
+  it('getQuotas acepta una fila suelta y rechaza una respuesta vacía', async () => {
+    const single = fakeClient({ premium_quotas: { data: quotasRow, error: null } });
+    expect((await createSupabasePremiumRepository(deps(single.client)).getQuotas()).likesLeft).toBe(
+      3
+    );
+
+    const empty = fakeClient({ premium_quotas: { data: [], error: null } });
+    await expect(createSupabasePremiumRepository(deps(empty.client)).getQuotas()).rejects.toThrow(
+      'premium_quotas no devolvió ninguna fila'
+    );
+  });
+
+  it('un fallo de red en cualquier RPC llega tal cual, sin traducir', async () => {
+    const { client } = fakeClient({
+      premium_quotas: { data: null, error: failure },
+      undo_last_decision: { data: null, error: failure },
+      activate_boost: { data: null, error: failure },
+      incoming_likes_count: { data: null, error: failure },
+      incoming_likes: { data: null, error: failure },
+    });
+    const repository = createSupabasePremiumRepository(deps(client));
+
+    await expect(repository.getQuotas()).rejects.toBe(failure);
+    await expect(repository.undoLastDecision()).rejects.toBe(failure);
+    await expect(repository.activateBoost()).rejects.toBe(failure);
+    await expect(repository.countIncomingLikes()).rejects.toBe(failure);
+    await expect(repository.listIncomingLikes()).rejects.toBe(failure);
+  });
+
+  it('countIncomingLikes sin dato cuenta cero', async () => {
+    const { client } = fakeClient({ incoming_likes_count: { data: null, error: null } });
+
+    await expect(createSupabasePremiumRepository(deps(client)).countIncomingLikes()).resolves.toBe(
+      0
+    );
+  });
+
+  it('listIncomingLikes sin filas devuelve una lista vacía y pide 50 por defecto', async () => {
+    const { client, rpc } = fakeClient({ incoming_likes: { data: null, error: null } });
+
+    await expect(
+      createSupabasePremiumRepository(deps(client)).listIncomingLikes()
+    ).resolves.toEqual([]);
+    expect(rpc).toHaveBeenCalledWith('incoming_likes', expect.objectContaining({ p_limit: 50 }));
+  });
+
+  it('listIncomingLikes pasa los perfiles por signProfiles para firmar las fotos', async () => {
+    const { client } = fakeClient({
+      incoming_likes: {
+        data: [
+          { ...profileRow('p1'), is_super: true, liked_at: '2026-10-30T10:00:00.123456+00:00' },
+        ],
+        error: null,
+      },
+    });
+    const signProfiles = jest.fn(async (profiles: IncomingLike['profile'][]) =>
+      profiles.map((profile) => ({ ...profile, name: 'firmado' }))
+    );
+
+    const [like] = await createSupabasePremiumRepository({
+      ...deps(client),
+      signProfiles,
+    }).listIncomingLikes();
+
+    expect(signProfiles).toHaveBeenCalledTimes(1);
+    expect(like.profile.name).toBe('firmado');
+    expect(like.isSuper).toBe(true);
+  });
+
+  it('expone el aviso de cupos y syncEntitlement aún no hace nada', async () => {
+    const { client } = fakeClient({ premium_quotas: { data: [quotasRow], error: null } });
+    let notify: () => void = () => {};
+    const repository = createSupabasePremiumRepository({
+      ...deps(client),
+      exposeNotify: (fn) => {
+        notify = fn;
+      },
+    });
+    const seen: number[] = [];
+    repository.subscribeQuotas((quotas) => seen.push(quotas.supersLeft));
+
+    notify();
+    await flush();
+
+    expect(seen).toEqual([1]);
+    await expect(repository.syncEntitlement()).resolves.toBeUndefined();
+  });
+
+  it('un refresco que falla no avisa a nadie ni rompe nada', async () => {
+    const { client } = fakeClient({ premium_quotas: { data: null, error: failure } });
+    let notify: () => void = () => {};
+    const repository = createSupabasePremiumRepository({
+      ...deps(client),
+      exposeNotify: (fn) => {
+        notify = fn;
+      },
+    });
+    const listener = jest.fn();
+    repository.subscribeQuotas(listener);
+
+    notify();
+    await flush();
+
+    expect(listener).not.toHaveBeenCalled();
+  });
+});
+
 describe('discovery sobre Supabase con Premium', () => {
   const repositoriesWith = (results: Record<string, RpcResult>) => {
     const { client, rpc } = fakeClient(results);

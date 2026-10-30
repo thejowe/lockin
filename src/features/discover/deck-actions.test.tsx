@@ -148,5 +148,32 @@ describe('DeckActions', () => {
 
       expect(screen.queryByText(/Te quedan|Te queda/)).toBeNull();
     });
+
+    it('con cero likes avisa, y con un número negativo (dato roto) no', async () => {
+      const view = await render(<DeckActions onDecide={jest.fn()} likesLeft={0} />);
+      expect(screen.getByText('Te quedan 0 likes')).toBeOnTheScreen();
+
+      await view.rerender(<DeckActions onDecide={jest.fn()} likesLeft={-1} />);
+      expect(screen.queryByText(/Te quedan/)).toBeNull();
+    });
+
+    it('deshabilitado, ni siquiera el candado de Deshacer abre el paywall', async () => {
+      await render(<DeckActions onDecide={jest.fn()} disabled />);
+
+      await fireEvent.press(screen.getByRole('button', { name: 'Deshacer' }));
+      await fireEvent.press(screen.getByRole('button', { name: 'Boost' }));
+
+      expect(openPaywall).not.toHaveBeenCalled();
+    });
+
+    it('con Premium y sin manejadores, pulsar no rompe nada', async () => {
+      await render(<DeckActions onDecide={jest.fn()} isPremium />);
+
+      await fireEvent.press(screen.getByRole('button', { name: 'Deshacer' }));
+      await fireEvent.press(screen.getByRole('button', { name: 'Super Like' }));
+      await fireEvent.press(screen.getByRole('button', { name: 'Boost' }));
+
+      expect(openPaywall).not.toHaveBeenCalled();
+    });
   });
 });

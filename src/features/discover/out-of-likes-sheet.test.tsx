@@ -111,4 +111,56 @@ describe('OutOfLikesSheet', () => {
     expect(screen.getByText('Esto es de Premium')).toBeOnTheScreen();
     expect(screen.getByText('Hazte Premium')).toBeOnTheScreen();
   });
+
+  it('el Boost ya usado dice cuándo podrás otro y solo ofrece entender', async () => {
+    const { ui } = setup({ kind: 'boost', resetsAt: RESETS_AT });
+    await render(ui);
+
+    expect(screen.getByText('Boost no disponible')).toBeOnTheScreen();
+    expect(screen.getByText(/^Podrás usar otro el /)).toBeOnTheScreen();
+    expect(screen.queryByText('Hazte Premium')).toBeNull();
+  });
+
+  it('el Boost ya usado sin fecha conocida no la inventa', async () => {
+    const { ui } = setup({ kind: 'boost', resetsAt: null });
+    await render(ui);
+
+    expect(screen.getByText('Ya has usado tu Boost de este mes.')).toBeOnTheScreen();
+  });
+
+  it('los Super Likes con fecha la dicen, y sin fecha solo cuentan lo de Premium', async () => {
+    const { ui } = setup({ kind: 'supers', resetsAt: RESETS_AT });
+    const view = await render(ui);
+    expect(screen.getByText(/^Tu próximo Super Like llega el /)).toBeOnTheScreen();
+
+    await view.rerender(
+      <OutOfLikesSheet
+        blocked={{ kind: 'supers', resetsAt: null }}
+        onClose={jest.fn()}
+        onUpgrade={jest.fn()}
+      />
+    );
+    expect(screen.getByText('Con Premium tienes 5 a la semana.')).toBeOnTheScreen();
+  });
+
+  it('una hora ilegible no se enseña: dice sin likes por ahora', async () => {
+    const { ui } = setup({ kind: 'likes', resetsAt: 'mañana' });
+    await render(ui);
+
+    expect(screen.getByText('Sin likes por ahora')).toBeOnTheScreen();
+  });
+
+  it('quien ya es Premium no recibe una oferta que no le arregla nada', async () => {
+    await render(
+      <OutOfLikesSheet
+        blocked={{ kind: 'supers', resetsAt: RESETS_AT }}
+        isPremium
+        onClose={jest.fn()}
+        onUpgrade={jest.fn()}
+      />
+    );
+
+    expect(screen.queryByText('Hazte Premium')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Entendido' })).toBeOnTheScreen();
+  });
 });
