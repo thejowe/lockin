@@ -64,7 +64,7 @@
     "test:coverage": "jest --coverage",
     "test:e2e": "node --test \"e2e/*.test.mjs\"",
     "test:functions": "node --test \"supabase/functions/**/*.test.mjs\"",
-    "test:schema": "node --test supabase/schema-compare.test.mjs supabase/drift-check.test.mjs supabase/schema-embedded.test.mjs supabase/cleanup.test.mjs"
+    "test:schema": "node --test supabase/schema-compare.test.mjs supabase/drift-check.test.mjs supabase/schema-embedded.test.mjs supabase/premium-embedded.test.mjs supabase/cleanup.test.mjs"
   },
   "private": true
 }

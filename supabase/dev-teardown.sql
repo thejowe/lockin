@@ -34,12 +34,21 @@
 -- Pega este archivo en el SQL Editor del dashboard y ejecútalo. Después,
 -- `node supabase/drift-check.mjs` debe decir "NO está instalada" de las dos.
 --
+-- - `dev_set_premium(boolean)`, `dev_add_like_events(text, integer, integer)`,
+--   `dev_age_last_decision(integer)` y `dev_add_boost(integer)` — siembran el
+--   estado de Premium para la suite de contrato (20261030120000). La primera
+--   convierte a cualquiera en Premium sin pasar por una tienda.
+--
 -- Borra las funciones, no los datos. Para los usuarios anónimos que deja la
 -- suite de contrato, ver `supabase/README.md` → "Mantenimiento".
 
 begin;
 drop function if exists public.dev_reset_current_user();
 drop function if exists public.seed_incoming_likes(text);
+drop function if exists public.dev_set_premium(boolean);
+drop function if exists public.dev_add_like_events(text, integer, integer);
+drop function if exists public.dev_age_last_decision(integer);
+drop function if exists public.dev_add_boost(integer);
 
 -- No usar CASCADE: una dependencia inesperada debe bloquear la retirada.
 -- Detectar también sobrecargas instaladas a mano, sin borrarlas a ciegas.
@@ -48,7 +57,10 @@ begin
   if exists (
     select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public'
-      and p.proname in ('dev_reset_current_user', 'seed_incoming_likes')
+      and p.proname in (
+        'dev_reset_current_user', 'seed_incoming_likes', 'dev_set_premium',
+        'dev_add_like_events', 'dev_age_last_decision', 'dev_add_boost'
+      )
   ) then
     raise exception 'Quedan sobrecargas de funciones de desarrollo: revisar antes de liberar';
   end if;

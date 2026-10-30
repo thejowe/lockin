@@ -36,7 +36,13 @@ test('ve los sellos de GitHub y LinkedIn y la foto cerrados a authenticated, en 
 
 test('ve las tablas cerradas a authenticated (solo service role)', () => {
   // Para estas, el 42501 al leer es lo esperado; un 200 sería la deriva.
-  assert.deepEqual([...real.closed].sort(), ['apple_refresh_tokens', 'user_reports']);
+  assert.deepEqual([...real.closed].sort(), [
+    'apple_refresh_tokens',
+    'boosts',
+    'like_events',
+    'revenuecat_events',
+    'user_reports',
+  ]);
 });
 
 test('`revoke all` seguido de `grant select` de tabla NO cierra la tabla', () => {

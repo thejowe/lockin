@@ -352,6 +352,13 @@ begin
   -- entre test y test. Se borran a mano; `room_members` cae en cascada.
   delete from public.lockin_rooms where host_id = v_user;
   delete from public.user_settings where user_id = v_user;
+
+  -- Premium (20261030120000): caerían con el perfil por la FK, pero se borran
+  -- aquí a la vista. `like_events.target_id` no tiene FK y se deja: son likes
+  -- gastados por OTRAS personas.
+  delete from public.like_events where actor_id = v_user;
+  delete from public.boosts where user_id = v_user;
+  delete from public.entitlements where user_id = v_user;
   delete from public.profiles where id = v_user;
 end;
 $fn$;
@@ -361,3 +368,118 @@ grant execute on function public.dev_reset_current_user() to authenticated;
 
 comment on function public.dev_reset_current_user() is
   'Solo desarrollo: deja al usuario de la sesion como recien registrado. Lo usa src/data/supabase/contract.test.ts.';
+
+
+-- ---------------------------------------------------------------------------
+-- Premium: herramientas de desarrollo para la suite de contrato
+-- ---------------------------------------------------------------------------
+--
+-- Las usa el fixture de `src/data/supabase/contract.test.ts` (Tarea 5 del plan de
+-- Premium) para sembrar el estado que el cliente no puede escribir: hacerse
+-- Premium sin pasar por una tienda, gastar likes de hace horas, envejecer una
+-- decisión y crear un Boost ya terminado. Cada una solo actúa sobre
+-- `auth.uid()`. SOLO DESARROLLO, por lo mismo que `dev_reset_current_user`: en
+-- producción `dev_set_premium` sería un botón de «hazme Premium gratis».
+-- `supabase/dev-teardown.sql` las retira.
+
+create or replace function public.dev_set_premium(p_active boolean)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $fn$
+declare
+  v_user uuid := (select auth.uid());
+begin
+  if v_user is null then
+    raise exception 'dev_set_premium: no hay sesión autenticada'
+      using errcode = '28000';
+  end if;
+
+  insert into public.entitlements (user_id, premium_until, product_id, store)
+  values (v_user, case when p_active then now() + interval '30 days' end, 'dev', 'app_store')
+  on conflict (user_id) do update
+    set premium_until = excluded.premium_until, updated_at = now();
+end;
+$fn$;
+
+revoke execute on function public.dev_set_premium(boolean) from public, anon;
+grant execute on function public.dev_set_premium(boolean) to authenticated;
+
+create or replace function public.dev_add_like_events(p_kind text, p_count integer, p_age_hours integer)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $fn$
+declare
+  v_user uuid := (select auth.uid());
+begin
+  if v_user is null then
+    raise exception 'dev_add_like_events: no hay sesión autenticada'
+      using errcode = '28000';
+  end if;
+
+  insert into public.like_events (actor_id, target_id, kind, created_at)
+  select v_user, gen_random_uuid(), p_kind, now() - p_age_hours * interval '1 hour'
+  from generate_series(1, p_count);
+end;
+$fn$;
+
+revoke execute on function public.dev_add_like_events(text, integer, integer) from public, anon;
+grant execute on function public.dev_add_like_events(text, integer, integer) to authenticated;
+
+create or replace function public.dev_age_last_decision(p_minutes integer)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $fn$
+declare
+  v_user uuid := (select auth.uid());
+begin
+  if v_user is null then
+    raise exception 'dev_age_last_decision: no hay sesión autenticada'
+      using errcode = '28000';
+  end if;
+
+  update public.decisions d
+  set created_at = d.created_at - p_minutes * interval '1 minute'
+  where d.actor_id = v_user
+    and d.target_id = (
+      select l.target_id from public.decisions l
+      where l.actor_id = v_user
+      order by l.created_at desc, l.target_id
+      limit 1
+    );
+end;
+$fn$;
+
+revoke execute on function public.dev_age_last_decision(integer) from public, anon;
+grant execute on function public.dev_age_last_decision(integer) to authenticated;
+
+create or replace function public.dev_add_boost(p_age_days integer)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $fn$
+declare
+  v_user uuid := (select auth.uid());
+begin
+  if v_user is null then
+    raise exception 'dev_add_boost: no hay sesión autenticada'
+      using errcode = '28000';
+  end if;
+
+  insert into public.boosts (user_id, starts_at, ends_at)
+  values (
+    v_user,
+    now() - p_age_days * interval '1 day',
+    now() - p_age_days * interval '1 day' + interval '30 minutes'
+  );
+end;
+$fn$;
+
+revoke execute on function public.dev_add_boost(integer) from public, anon;
+grant execute on function public.dev_add_boost(integer) to authenticated;
