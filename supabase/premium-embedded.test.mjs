@@ -451,6 +451,87 @@ test('Premium: tablas, cupos, deshacer, Boost, likes recibidos y deck', async (t
       })
     );
 
+    await t.test('authenticated no escribe decisions directamente: solo lo hace el RPC', () =>
+      tx(async () => {
+        await actingAs(ME);
+        for (const statement of [
+          `insert into public.decisions (actor_id, target_id, decision, is_super) values ('${ME}', '${T[0]}', 'like', true)`,
+          `update public.decisions set decision = 'pass'`,
+          'delete from public.decisions',
+        ]) {
+          assert.equal((await attempt(statement)).code, '42501', statement);
+        }
+        await asOwner('set local role anon;');
+        assert.equal((await attempt('select * from public.decisions')).code, '42501');
+        await actingAs(ME);
+        assert.equal((await like(T[0])).ok, true, 'el RPC sigue funcionando');
+        assert.equal(
+          (await rows('select * from public.decisions')).length,
+          1,
+          'y la lectura propia'
+        );
+        assert.deepEqual(
+          await rows(`select policyname from pg_policies
+            where schemaname = 'public' and tablename = 'decisions' and cmd <> 'SELECT'`),
+          []
+        );
+      })
+    );
+
+    await t.test('un like con is_super insertado a mano no se salta los cupos', () =>
+      tx(async () => {
+        await actingAs(ME);
+        const forged = await attempt(
+          `insert into public.decisions (actor_id, target_id, decision, is_super) values ('${ME}', '${T[0]}', 'like', true)`
+        );
+        assert.equal(forged.ok, false);
+        assert.equal((await superLike(T[0])).ok, true);
+        assert.equal(await eventCount(), 1, 'el Super Like quedó registrado en like_events');
+      })
+    );
+
+    await t.test(
+      'undo y el match recíproco comparten el cerrojo del par, tomado después del del actor',
+      async () => {
+        const pairLock =
+          /pg_advisory_xact_lock\(hashtextextended\(least\(v_actor, [\w.]+\)::text \|\| ':' \|\| greatest\(v_actor, [\w.]+\)::text, 1\)\)/;
+        const def = async (sig) =>
+          (await rows(`select pg_get_functiondef('${sig}'::regprocedure) as d`))[0].d;
+        const actorLock = /pg_advisory_xact_lock\(hashtextextended\(v_actor::text, 0\)\)/;
+
+        const record = await def(
+          'public.record_decision(uuid,public.decision,public.mode_preference,boolean)'
+        );
+        const recActor = record.search(actorLock);
+        const recPair = record.search(pairLock);
+        assert.ok(recActor >= 0 && recPair > recActor, 'record_decision: par después del actor');
+        assert.equal(record.match(/pg_advisory_xact_lock/g).length, 2, 'solo dos cerrojos');
+        assert.ok(
+          recPair <
+            record.search(
+              /select exists \(\s+select 1\s+from public\.decisions d\s+where d\.actor_id = p_target_id/
+            ),
+          'el cerrojo del par va antes de leer la reciprocidad'
+        );
+        assert.ok(
+          recPair < record.search(/insert into public\.matches/),
+          'y antes de crear el match'
+        );
+        assert.ok(
+          recPair > record.search(/public\.has_profile_block\(p_target_id\)/),
+          'solo en la rama de like sin bloqueo'
+        );
+
+        const undo = await def('public.undo_last_decision()');
+        const undoActor = undo.search(actorLock);
+        const undoPair = undo.search(pairLock);
+        assert.ok(undoActor >= 0 && undoPair > undoActor, 'undo: par después del actor');
+        assert.equal(undo.match(/pg_advisory_xact_lock/g).length, 2);
+        assert.ok(undoPair < undo.search(/from public\.matches m/), 'antes de mirar si hay match');
+        assert.ok(undoPair < undo.search(/delete from public\.decisions/), 'y antes de borrar');
+      }
+    );
+
     await t.test('el cerrojo por actor se toma antes de contar los eventos', async () => {
       const body = (
         await rows(
