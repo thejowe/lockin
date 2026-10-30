@@ -63,11 +63,14 @@ export default function MatchesScreen() {
           // matches" cuando en realidad aún no lo sabemos.
           ListEmptyComponent={loading || error ? undefined : <MatchesEmpty />}
           refreshControl={
-            <RefreshControl refreshing={loading} onRefresh={() => {
+            <RefreshControl
+              refreshing={loading}
+              onRefresh={() => {
                 refresh();
                 likes.refresh();
               }}
-              tintColor={theme.brass} />
+              tintColor={theme.brass}
+            />
           }
         />
       </SafeAreaView>
