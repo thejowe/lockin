@@ -18,6 +18,12 @@ describe('socialHandle', () => {
     ['https://instagram.com/ana.bosch', 'ana.bosch'],
     ['https://www.instagram.com/ana_bosch/', 'ana_bosch'],
     ['https://www.instagram.com/ana.bosch?igsh=abc', 'ana.bosch'],
+    // Enlaces de «compartir perfil» reales (2026-10-30).
+    [
+      'https://www.instagram.com/godblessjowe?cplk=MTl6OW5jMXBwcHFwdw%3D%3D&utm_source=qr',
+      'godblessjowe',
+    ],
+    ['https://www.instagram.com/rogergiral?dlrf=b3VmaGlxcTZreXIz&utm_source=qr', 'rogergiral'],
   ])('Instagram %s → %s', (url, handle) => {
     expect(socialHandle('instagram', url)).toBe(handle);
   });
@@ -35,6 +41,17 @@ describe('socialHandle', () => {
     expect(socialHandle('tiktok', 'https://www.tiktok.com/@ana.bosch')).toBe('ana.bosch');
     expect(socialHandle('tiktok', 'https://www.tiktok.com/@ana/video/123')).toBe('ana');
     expect(socialHandle('tiktok', 'https://vm.tiktok.com/ZMabc/')).toBeNull();
+  });
+
+  it('no depende del `URL` del motor, que en el móvil no siempre está completo', () => {
+    const original = global.URL;
+    // @ts-expect-error: se quita a propósito para simular el motor del móvil.
+    global.URL = undefined;
+    try {
+      expect(socialHandle('instagram', 'https://www.instagram.com/ana?igsh=x')).toBe('ana');
+    } finally {
+      global.URL = original;
+    }
   });
 
   it('los demás no llevan @', () => {

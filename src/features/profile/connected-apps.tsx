@@ -58,16 +58,21 @@ const INSTAGRAM_RESERVED = new Set([
 /**
  * El `@usuario` de un enlace de Instagram o TikTok, o `null` si el enlace no
  * lo dice. Instagram: `instagram.com/usuario`; TikTok: `tiktok.com/@usuario`.
+ *
+ * Con una expresión y no con `new URL`: el `URL` de React Native no implementa
+ * `hostname` ni `pathname` en todos los motores, y en el móvil el usuario no
+ * salía (2026-10-30). Los enlaces de compartir traen `?igsh=…&utm_source=qr`.
  */
 export function socialHandle(app: ConnectedApp, url: string): string | null {
-  let parsed: URL;
+  const parts = /^https?:\/\/([^/?#]+)\/?([^/?#]*)/i.exec(url.trim());
+  if (!parts) return null;
+  const host = parts[1].toLowerCase().replace(/^(www\.|m\.)/, '');
+  let first: string;
   try {
-    parsed = new URL(url);
+    first = decodeURIComponent(parts[2]);
   } catch {
     return null;
   }
-  const host = parsed.hostname.toLowerCase().replace(/^(www\.|m\.)/, '');
-  const first = parsed.pathname.split('/').filter(Boolean)[0] ?? '';
 
   if (app === 'instagram' && (host === 'instagram.com' || host === 'instagr.am')) {
     const user = first.replace(/^@/, '');
@@ -76,7 +81,7 @@ export function socialHandle(app: ConnectedApp, url: string): string | null {
       : null;
   }
   if (app === 'tiktok' && host === 'tiktok.com') {
-    const match = /^@([A-Za-z0-9._]{1,24})$/.exec(decodeURIComponent(first));
+    const match = /^@([A-Za-z0-9._]{1,24})$/.exec(first);
     return match ? match[1] : null;
   }
   return null;
@@ -96,6 +101,12 @@ const BRAND = {
   tiktokCyan: '#25F4EE',
   tiktokRed: '#FE2C55',
 } as const;
+
+/** El `@usuario` en el color de su app: el rosa de Instagram, el rojo de TikTok. */
+const HANDLE_COLOR: Partial<Record<ConnectedApp, string>> = {
+  instagram: '#E1306C',
+  tiktok: BRAND.tiktokRed,
+};
 
 const TIKTOK_PATH =
   'M16.6 2.5c.3 2.1 1.6 3.6 3.6 3.8v2.9c-1.3 0-2.5-.4-3.6-1.1v6.4a5.6 5.6 0 1 1-5.6-5.6h.4v3a2.7 2.7 0 1 0 2.3 2.6V2.5z';
@@ -262,7 +273,10 @@ export function ConnectedApps({
                 ]}>
                 <Glyph app={app} color={theme.text} size={22} brand />
                 {handle ? (
-                  <ThemedText type="smallBold" numberOfLines={1} style={styles.handle}>
+                  <ThemedText
+                    type="smallBold"
+                    numberOfLines={1}
+                    style={[styles.handle, { color: HANDLE_COLOR[app] ?? theme.text }]}>
                     @{handle}
                   </ThemedText>
                 ) : null}

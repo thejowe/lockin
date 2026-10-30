@@ -10,6 +10,7 @@ export { AccountSection } from './account-section';
 export { Board } from './board';
 export { AuthCallback, authLinkFromParams } from './auth-callback';
 export { DayStrip, timezoneCity, type DaySchedule } from './day-strip';
+export { Glyph, connectedApps, type ConnectedApp } from './connected-apps';
 export { GithubSeal } from './github-seal';
 export { LinkAccounts } from './link-accounts';
 export { LinkedinSeal } from './linkedin-seal';

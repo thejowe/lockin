@@ -23,7 +23,7 @@
 import { Image } from 'expo-image';
 import { useEffect, useRef, useState } from 'react';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { ThemedText } from '@/components/themed-text';
@@ -35,15 +35,19 @@ import {
   ScrimAlpha,
   Spacing,
   Springs,
+  Stroke,
 } from '@/constants/theme';
 import {
   DayStrip,
+  Glyph,
+  connectedApps,
   GithubSeal,
   LinkedinSeal,
   ambitionLabel,
   seeksComplement,
   specialtyLabel,
   startingPointLabel,
+  type ConnectedApp,
   type DaySchedule,
 } from '@/features/profile';
 import { useReduceMotion } from '@/hooks/use-reduce-motion';
@@ -58,17 +62,29 @@ import type { ChipTone } from './chip';
 
 import type { Profile, Specialty } from '@/data';
 
-/** Páginas de la ficha, en orden de lectura. El prompt solo si lo hay. */
-type Page = 'about' | 'schedule' | 'prompt';
+/**
+ * Páginas de la ficha, en orden de lectura. El prompt solo si lo hay, y las
+ * redes (2026-10-30, decisión del usuario) solo si tiene alguna conectada.
+ */
+type Page = 'about' | 'schedule' | 'prompt' | 'socials';
 
 /** Nombre de cada página para el lector de pantalla: dice adónde lleva el toque. */
 /** Altura de la mano sobre el borde inferior: encima del nombre y su bloque. */
 const TAP_HINT_LIFT = 150;
 
+const SOCIAL_NAMES: Record<ConnectedApp, string> = {
+  github: 'GitHub',
+  linkedin: 'LinkedIn',
+  instagram: 'Instagram',
+  tiktok: 'TikTok',
+  portfolio: 'web',
+};
+
 const PAGE_NAMES: Record<Page, string> = {
   about: 'quién es',
   schedule: 'cuándo trabaja',
   prompt: 'su respuesta',
+  socials: 'sus redes',
 };
 
 export function ProfileCard({
@@ -126,7 +142,13 @@ export function ProfileCard({
   const prompt = profile.prompts[0];
   const complement = complementWith(profile, viewerSpecialties);
 
-  const pages: Page[] = prompt ? ['about', 'schedule', 'prompt'] : ['about', 'schedule'];
+  const socials = connectedApps(profile);
+  const pages: Page[] = [
+    'about',
+    'schedule',
+    ...(prompt ? (['prompt'] as const) : []),
+    ...(socials.length > 0 ? (['socials'] as const) : []),
+  ];
   const page = pages[Math.min(pageIndex, pages.length - 1)];
   const nextIndex = (pageIndex + 1) % pages.length;
 
@@ -225,21 +247,27 @@ export function ProfileCard({
         </View>
       </View>
 
-      {/* Solo texto y chips, nada que se pulse: los toques pasan a las mitades de debajo. */}
+      {/*
+        Solo texto y chips, nada que se pulse: los toques pasan a la tarjeta de
+        debajo. La excepción son los logos de la página de redes, que abren el
+        perfil: ahí el bloque deja pasar los toques solo a ellos.
+      */}
       <View
-        pointerEvents="none"
+        pointerEvents={page === 'socials' ? 'box-none' : 'none'}
         style={[styles.info, { paddingBottom: bottomInset + Spacing.four }]}>
-        <View style={styles.identity}>
-          <ThemedText type="title" numberOfLines={1} style={styles.name}>
-            {profile.name}
-          </ThemedText>
-          <ThemedText type="subtitle" style={styles.age}>
-            {profile.age}
+        <View pointerEvents="none" style={styles.heading}>
+          <View style={styles.identity}>
+            <ThemedText type="title" numberOfLines={1} style={styles.name}>
+              {profile.name}
+            </ThemedText>
+            <ThemedText type="subtitle" style={styles.age}>
+              {profile.age}
+            </ThemedText>
+          </View>
+          <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+            {profile.location}
           </ThemedText>
         </View>
-        <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
-          {profile.location}
-        </ThemedText>
 
         {page === 'about' ? (
           <View style={styles.section}>
@@ -309,8 +337,42 @@ export function ProfileCard({
           </View>
         ) : null}
 
+        {page === 'socials' ? (
+          <View style={styles.section} pointerEvents="box-none">
+            <View pointerEvents="none">
+              <ThemedText type="caption" themeColor="textSecondary">
+                Redes
+              </ThemedText>
+            </View>
+            {/* Solo el logo, en su color; al pulsarlo, a su perfil en esa app. */}
+            <View style={styles.socials} pointerEvents="box-none">
+              {socials.map(({ app, url }) => (
+                <Pressable
+                  key={app}
+                  accessibilityRole="link"
+                  accessibilityLabel={`Abrir el ${SOCIAL_NAMES[app]} de ${profile.name}`}
+                  hitSlop={HitSlop.inline}
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    void Linking.openURL(url).catch(() => undefined);
+                  }}
+                  style={({ pressed }) => [
+                    styles.social,
+                    {
+                      backgroundColor: theme.backgroundElement,
+                      borderColor: theme.border,
+                      opacity: pressed ? 0.6 : 1,
+                    },
+                  ]}>
+                  <Glyph app={app} color={theme.text} size={26} brand />
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        ) : null}
+
         {/* Un punto por bloque de información; el encendido es en el que estás. */}
-        <View style={styles.dots} accessibilityElementsHidden>
+        <View style={styles.dots} accessibilityElementsHidden pointerEvents="none">
           {pages.map((entry, index) => (
             <PageDot
               key={entry}
@@ -587,6 +649,22 @@ const styles = StyleSheet.create({
   section: {
     gap: Spacing.two + Spacing.half,
     paddingTop: Spacing.two,
+  },
+  heading: {
+    gap: Spacing.one,
+  },
+  socials: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
+  social: {
+    width: Control.minTouch + 4,
+    height: Control.minTouch + 4,
+    borderRadius: Radii.pill,
+    borderWidth: Stroke.hairline,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   badges: {
     flexDirection: 'row',

@@ -10,7 +10,7 @@
  */
 
 import { fireEvent, render, screen } from '@testing-library/react-native';
-import { StyleSheet } from 'react-native';
+import { Linking, StyleSheet } from 'react-native';
 
 import { Colors } from '@/constants/theme';
 import { buildProfile } from '@/data/test-fixtures';
@@ -231,6 +231,27 @@ describe('ProfileCard', () => {
       await fireEvent.press(screen.getByRole('button', { name: 'Ver cuándo trabaja' }));
       expect(dot('about')).not.toBe(lit);
       expect(dot('schedule')).toBe(lit);
+    });
+
+    it('con redes hay una última página de logos que abren su perfil', async () => {
+      const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+      await render(
+        <ProfileCard
+          profile={buildProfile({
+            name: 'Núria',
+            prompts: [],
+            links: { instagram: 'https://instagram.com/nuria' },
+          })}
+        />
+      );
+
+      await fireEvent.press(screen.getByRole('button', { name: 'Ver cuándo trabaja' }));
+      await fireEvent.press(screen.getByRole('button', { name: 'Ver sus redes' }));
+      expect(screen.getByText('Redes')).toBeTruthy();
+
+      await fireEvent.press(screen.getByRole('link', { name: 'Abrir el Instagram de Núria' }));
+      expect(openURL).toHaveBeenCalledWith('https://instagram.com/nuria');
+      openURL.mockRestore();
     });
 
     it('sin prompt no hay página de respuesta', async () => {
