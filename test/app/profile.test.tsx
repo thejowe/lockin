@@ -2,8 +2,10 @@
  * Tests de la tab Perfil.
  *
  * Tiene tres estados y la pantalla los elige sola: sin ficha (aterrizaje con la
- * sesión a medias), ficha en lectura, y ficha en edición. El que más importa es
- * el tercero, porque al guardar tiene que cerrar la edición Y releer: si solo
+ * sesión a medias), ficha en lectura, y ficha en edición. La edición es por
+ * bloques: cada lápiz abre una hoja con el formulario de ese bloque (desde
+ * 6d209ad ya no hay «Editar perfil»), y la foto se cambia desde el avatar. El
+ * que más importa es guardar, porque tiene que cerrar la hoja Y releer: si solo
  * cerrara, la ficha seguiría enseñando los datos viejos hasta cambiar de tab.
  *
  * `ProfileForm` se sustituye por un doble — el formulario ya tiene sus propios
@@ -22,7 +24,7 @@ import { renderRoute, repositories, resetRepositories, resetRouter, router } fro
 
 import ProfileScreen from '../../src/app/(tabs)/profile';
 
-import type { ProfileFormProps } from '@/features/profile';
+import type { ProfileFormProps } from '@/features/profile/profile-form';
 
 jest.mock('expo-router', () => require('../routes').expoRouterMock());
 
@@ -49,8 +51,9 @@ jest.mock('@/features/profile/account-gateway', () => ({
   ),
 }));
 
-jest.mock('@/features/profile', () => {
-  const actual = jest.requireActual('@/features/profile');
+// Se sustituye en su módulo, no en el índice: la hoja de edición lo importa de ahí.
+jest.mock('@/features/profile/profile-form', () => {
+  const actual = jest.requireActual('@/features/profile/profile-form');
   const { Pressable, Text } = require('react-native');
 
   return {
@@ -62,12 +65,18 @@ jest.mock('@/features/profile', () => {
           <Text>{props.submitLabel}</Text>
         </Pressable>
         <Pressable accessibilityRole="button" onPress={props.onCancel}>
-          <Text>{props.cancelLabel}</Text>
+          <Text>{props.cancelLabel ?? 'Cancelar'}</Text>
         </Pressable>
       </>
     ),
   };
 });
+
+/** Abre la hoja del bloque «Nombre, edad y ubicación» con su lápiz. */
+async function openBasicsSheet() {
+  await waitFor(() => expect(screen.getByText('Perfil')).toBeTruthy());
+  await fireEvent.press(screen.getByRole('button', { name: 'Editar nombre, edad y ubicación' }));
+}
 
 /** Deja una ficha guardada antes de montar la pantalla. */
 async function withProfile(name = 'Perfil Prueba') {
@@ -107,14 +116,18 @@ describe('ProfileScreen', () => {
       await renderRoute(<ProfileScreen />);
 
       await waitFor(() => expect(screen.getByText('Perfil')).toBeTruthy());
-      expect(screen.getByRole('button', { name: 'Editar perfil' })).toBeTruthy();
-      expect(screen.queryByText('Guardar cambios')).toBeNull();
+      expect(
+        screen.getByRole('button', { name: 'Editar nombre, edad y ubicación' })
+      ).toBeTruthy();
+      expect(screen.queryByText('Guardar')).toBeNull();
     });
 
     it('monta el bloque de la foto: sin foto lo dice y no ofrece quitarla', async () => {
       await withProfile();
 
       await renderRoute(<ProfileScreen />);
+      await waitFor(() => expect(screen.getByText('Perfil')).toBeTruthy());
+      await fireEvent.press(screen.getByRole('button', { name: 'Cambiar foto de perfil' }));
 
       expect(await screen.findByText('Aún no tienes foto')).toBeTruthy();
       expect(screen.getByRole('button', { name: 'Elegir de la galería' })).toBeTruthy();
@@ -125,13 +138,10 @@ describe('ProfileScreen', () => {
       await withProfile();
 
       await renderRoute(<ProfileScreen />);
-      await waitFor(() => expect(screen.getByText('Perfil')).toBeTruthy());
+      await openBasicsSheet();
 
-      await fireEvent.press(screen.getByRole('button', { name: 'Editar perfil' }));
-
-      expect(screen.getByText('Editar perfil')).toBeTruthy();
-      expect(screen.getByText('Tu ficha')).toBeTruthy();
-      expect(screen.getByRole('button', { name: 'Guardar cambios' })).toBeTruthy();
+      expect(screen.getByText('Nombre, edad y ubicación')).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Guardar' })).toBeTruthy();
     });
 
     it('sin aceptar la versión vigente, editar pide aceptar antes del formulario', async () => {
@@ -139,22 +149,23 @@ describe('ProfileScreen', () => {
 
       await renderRoute(<ProfileScreen />);
       await waitFor(() => expect(screen.getByText('Perfil')).toBeTruthy());
-      await fireEvent.press(screen.getByRole('button', { name: 'Editar perfil' }));
+      // Sin aceptar no hay lápices: la ficha solo ofrece revisar y aceptar.
+      expect(screen.queryByRole('button', { name: 'Editar nombre, edad y ubicación' })).toBeNull();
+      await fireEvent.press(screen.getByRole('button', { name: 'Revisar y aceptar' }));
 
       expect(screen.getByText('Términos y Normas')).toBeTruthy();
-      expect(screen.queryByRole('button', { name: 'Guardar cambios' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Guardar' })).toBeNull();
     });
 
     it('descartar vuelve a lectura sin tocar los datos', async () => {
       await withProfile('Perfil Prueba');
 
       await renderRoute(<ProfileScreen />);
-      await waitFor(() => expect(screen.getByText('Perfil')).toBeTruthy());
-      await fireEvent.press(screen.getByRole('button', { name: 'Editar perfil' }));
+      await openBasicsSheet();
 
-      await fireEvent.press(screen.getByRole('button', { name: 'Descartar cambios' }));
+      await fireEvent.press(screen.getByRole('button', { name: 'Cancelar' }));
 
-      expect(screen.queryByText('Guardar cambios')).toBeNull();
+      expect(screen.queryByText('Guardar')).toBeNull();
       await expect(repositories.profiles.getCurrent()).resolves.toMatchObject({
         name: 'Perfil Prueba',
       });
@@ -236,12 +247,11 @@ describe('ProfileScreen', () => {
       await withProfile('Perfil Prueba');
 
       await renderRoute(<ProfileScreen />);
-      await waitFor(() => expect(screen.getByText('Perfil')).toBeTruthy());
-      await fireEvent.press(screen.getByRole('button', { name: 'Editar perfil' }));
+      await openBasicsSheet();
 
-      await fireEvent.press(screen.getByRole('button', { name: 'Guardar cambios' }));
+      await fireEvent.press(screen.getByRole('button', { name: 'Guardar' }));
 
-      await waitFor(() => expect(screen.queryByText('Guardar cambios')).toBeNull());
+      await waitFor(() => expect(screen.queryByText('Guardar')).toBeNull());
       await waitFor(() => expect(screen.getByText('Núria Bosch')).toBeTruthy());
       expect(screen.queryByText('Perfil Prueba')).toBeNull();
     });

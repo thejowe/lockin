@@ -23,6 +23,11 @@ export const router = {
   push: jest.fn(),
   replace: jest.fn(),
   back: jest.fn(),
+  /** Hay historial al que volver; un test lo pone a `false` para la ruta alternativa. */
+  canGoBack: jest.fn(() => true),
+  /** Pila modal abierta que `dismissAll` cerraría; por defecto no hay ninguna. */
+  canDismiss: jest.fn(() => false),
+  dismissAll: jest.fn(),
   /** Destinos de cada `<Redirect href>` montado, en orden. */
   redirects: [] as string[],
 };
@@ -31,6 +36,11 @@ export function resetRouter() {
   router.push.mockClear();
   router.replace.mockClear();
   router.back.mockClear();
+  router.dismissAll.mockClear();
+  router.canDismiss.mockReset();
+  router.canDismiss.mockReturnValue(false);
+  router.canGoBack.mockReset();
+  router.canGoBack.mockReturnValue(true);
   router.redirects.length = 0;
 }
 

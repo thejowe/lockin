@@ -126,6 +126,18 @@ describe('SignInScreen', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Volver' }));
 
     expect(router.back).toHaveBeenCalled();
+    expect(router.replace).not.toHaveBeenCalled();
+    expect(mockSignIn).not.toHaveBeenCalled();
+  });
+
+  it('«Volver» sin historial lleva a la raíz sin cambiar de cuenta', async () => {
+    router.canGoBack.mockReturnValue(false);
+    await renderRoute(<SignInScreen />);
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Volver' }));
+
+    expect(router.back).not.toHaveBeenCalled();
+    expect(router.replace).toHaveBeenCalledWith('/');
     expect(mockSignIn).not.toHaveBeenCalled();
   });
 

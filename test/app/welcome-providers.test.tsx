@@ -1,5 +1,6 @@
 /**
- * «Continuar con Google / Apple» en la bienvenida (2026-10-17).
+ * «Continuar con Google / Apple» en el primer paso del alta (`about-you`).
+ * Desde el 2026-10-29 ya no están en la bienvenida (`mode.tsx`).
  *
  * - Solo salen con el proveedor configurado en la compilación.
  * - Al volver se guarda el modo en la sesión NUEVA (la del proveedor) y se va a
@@ -20,13 +21,13 @@ const mockSignIn = jest.fn();
 jest.mock('@/features/profile/account-gateway', () => ({
   ...jest.requireActual('@/features/profile/account-gateway'),
   accountsAvailable: true,
-  registrationRequired: false,
+  registrationRequired: true,
   enabledAuthProviders: new Set(['google', 'apple']),
   signInWithProvider: (...args: unknown[]) => mockSignIn(...args),
 }));
 
 // Importado después del mock: las constantes de la pantalla se fijan al cargar.
-const ModeScreen = require('../../src/app/(onboarding)/mode').default;
+const ModeScreen = require('../../src/app/(onboarding)/about-you').default;
 
 beforeEach(() => {
   resetRepositories();

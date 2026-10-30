@@ -19,3 +19,7 @@ e2e/artifacts/
 
 # Lo escribe scripts/build-legal.mjs desde docs/tiendas/*.md.
 src/features/legal/texts.generated.ts
+
+# Plantillas de correo: se pegan a mano en el panel de Supabase, así que tienen que
+# seguir byte a byte como están aplicadas; Prettier las reescribiría.
+supabase/templates/
