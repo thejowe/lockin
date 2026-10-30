@@ -322,15 +322,21 @@ export function useDeck(
 
   const undo = useCallback(async (): Promise<string | null> => {
     try {
+      const startedWith = latest.current.signature;
       const id = await repositories.premium.undoLastDecision();
       if (id === null) return null;
 
       setFailure(null);
       // El filtro puede haber cambiado mientras el servidor respondía: se ancla
-      // bajo el vigente y se relee la consulta activa, no la de entonces.
+      // bajo el vigente solo si el filtro es el mismo, y se relee la consulta activa.
       const { data: readNow, mode: nowMode, signature: nowSignature } = latest.current;
       setSession((previous) => {
         const base = fit(previous, nowMode, nowSignature);
+        // Con otro filtro no se ancla nada: puede que ya no encaje, y de eso
+        // decide el servidor al releer (devuelve la carta si encaja).
+        if (nowSignature !== startedWith) {
+          return { ...base, decided: base.decided.filter((other) => other.id !== id) };
+        }
         const profile = base.decided.find((other) => other.id === id);
         return {
           ...base,

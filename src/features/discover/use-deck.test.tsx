@@ -22,7 +22,7 @@ import { SEED_RECIPROCAL_IDS } from '@/data/mock/seed';
 import { buildProfileInput } from '@/data/test-fixtures';
 import { SPECIALTY_OPTIONS } from '@/features/profile';
 
-import { useDeck } from './use-deck';
+import { useDeck, type DeckState } from './use-deck';
 
 import type { ModePreference, Profile, ProfileFilter, Repositories } from '@/data';
 
@@ -845,40 +845,74 @@ describe('useDeck con filtros', () => {
     await waitFor(() => expect(onPremiumFiltersRemoved).toHaveBeenCalledTimes(2));
   });
 
-  it('un deshacer pendiente al cambiar el filtro ancla la carta bajo el filtro vigente', async () => {
-    setMockPremium(true);
-    const view = await renderHook(
-      (props: { filter: ProfileFilter }) => useDeck('par', props.filter),
-      {
-        initialProps: { filter: {} as ProfileFilter },
-        wrapper,
-      }
-    );
-    await waitFor(() => expect(view.result.current.cards).not.toBeNull());
-    const target = view.result.current.cards![0];
-    const kept = target.specialties[0];
+  describe('un deshacer pendiente mientras cambia el filtro', () => {
+    /** Decide la primera carta y deja un deshacer real retenido hasta `release()`. */
+    async function pendingUndo(
+      view: Awaited<ReturnType<typeof renderHook<DeckState, { filter: ProfileFilter }>>>
+    ) {
+      const target = view.result.current.cards![0];
+      await act(async () => {
+        view.result.current.decide(target, 'pass');
+      });
+      const real = repositories.premium.undoLastDecision.bind(repositories.premium);
+      let release: () => void = () => {};
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      jest.spyOn(repositories.premium, 'undoLastDecision').mockImplementation(async () => {
+        const id = await real();
+        await gate;
+        return id;
+      });
+      let pending: Promise<string | null> = Promise.resolve(null);
+      await act(async () => {
+        pending = view.result.current.undo();
+      });
+      return {
+        target,
+        finish: async () => {
+          await act(async () => {
+            release();
+            await pending;
+          });
+        },
+      };
+    }
 
-    await act(async () => {
-      view.result.current.decide(target, 'pass');
-    });
-    let finish: (id: string) => void = () => {};
-    jest.spyOn(repositories.premium, 'undoLastDecision').mockReturnValue(
-      new Promise<string | null>((resolve) => {
-        finish = resolve;
-      })
-    );
-    let pending: Promise<string | null> = Promise.resolve(null);
-    await act(async () => {
-      pending = view.result.current.undo();
+    async function mount() {
+      setMockPremium(true);
+      const view = await renderHook(
+        (props: { filter: ProfileFilter }) => useDeck('par', props.filter),
+        { initialProps: { filter: {} as ProfileFilter }, wrapper }
+      );
+      await waitFor(() => expect(view.result.current.cards).not.toBeNull());
+      return view;
+    }
+
+    it('si el filtro nuevo excluye la carta, no aparece', async () => {
+      const view = await mount();
+      const { target, finish } = await pendingUndo(view);
+      const other = SPECIALTY_OPTIONS.map((option) => option.value).find(
+        (value) => !target.specialties.includes(value)
+      )!;
+
+      await view.rerender({ filter: { specialties: [other] } });
+      await waitFor(() => expect(view.result.current.loading).toBe(false));
+      await finish();
+      await act(async () => {});
+
+      expect(view.result.current.cards!.some((card) => card.id === target.id)).toBe(false);
     });
 
-    await view.rerender({ filter: { specialties: [kept] } });
-    await waitFor(() => expect(view.result.current.loading).toBe(false));
-    await act(async () => {
-      finish(target.id);
-      await pending;
-    });
+    it('si el filtro nuevo la incluye, vuelve tras releer', async () => {
+      const view = await mount();
+      const { target, finish } = await pendingUndo(view);
 
-    await waitFor(() => expect(view.result.current.cards![0].id).toBe(target.id));
+      await view.rerender({ filter: { specialties: [target.specialties[0]] } });
+      await waitFor(() => expect(view.result.current.loading).toBe(false));
+      await finish();
+
+      await waitFor(() => expect(view.result.current.cards![0].id).toBe(target.id));
+    });
   });
 });
