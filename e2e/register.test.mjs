@@ -95,10 +95,9 @@ describe('register.yaml y register-confirm.yaml', () => {
   });
 
   it('el callback sin perfil vuelve a /register, que es donde se pone la contraseña', () => {
-    assert.match(
-      callbackRoute,
-      /router\.replace\(onboarded && !pending \? '\/profile' : '\/register'\)/
-    );
+    // `leave` = vaciar la pila y `router.replace` (ver `auth/callback.tsx`).
+    assert.match(callbackRoute, /leave\(onboarded && !pending \? '\/profile' : '\/register'\)/);
+    assert.match(callbackRoute, /router\.dismissAll\(\);\s+router\.replace\(href\);/);
   });
 });
 
