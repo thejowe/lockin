@@ -42,6 +42,7 @@ import {
   SessionForbiddenError,
   SessionWindowError,
 } from './session-errors';
+import { PremiumRequiredError, QuotaExceededError } from './premium-errors';
 import { RoomInviteError } from './rooms';
 import { buildProfileInput } from './test-fixtures';
 
@@ -114,6 +115,21 @@ export interface ContractFixture {
    * real espera de verdad, así que fuera de `canTimeTravel` solo se usa con segundos.
    */
   elapse(ms: number): Promise<void>;
+  /** Activa o quita Premium al usuario del test (en Supabase, con `dev_set_premium`). */
+  setPremium(active: boolean): Promise<void>;
+  /**
+   * Siembra `count` eventos de like (o de Super Like, que cuenta también como like)
+   * del usuario del test, de hace `ageHours` horas, sobre perfiles que no existen.
+   */
+  seedLikeEvents(kind: 'like' | 'super', count: number, ageHours: number): Promise<void>;
+  /** Envejece `minutes` minutos la última decisión del usuario del test. */
+  ageLastDecision(minutes: number): Promise<void>;
+  /** Crea un Boost ya terminado del usuario del test, de hace `ageDays` días. */
+  seedPastBoost(ageDays: number): Promise<void>;
+  /** `profileId` (de apoyo) te da un Super Like. */
+  superLikeFrom(profileId: string): Promise<void>;
+  /** `profileId` (de apoyo) hace Premium y activa un Boost. */
+  boostAs(profileId: string): Promise<void>;
 }
 
 /** Lo que implementa cada backend para poder ser interrogado por el contrato. */
@@ -680,6 +696,250 @@ export function describeRepositoryContract(backend: ContractBackend): void {
 
         expect(deck.length).toBeGreaterThan(0);
         expect(deck.every((profile) => profile.specialties.includes(specialty))).toBe(true);
+      });
+    });
+
+    describe('premium', () => {
+      const HOUR_MS = 3_600_000;
+      const MINUTE_MS = 60_000;
+
+      beforeEach(async () => {
+        await fixture.prepareSwiper();
+      });
+
+      /** Espera un `QuotaExceededError` de ese tipo y lo devuelve para inspeccionarlo. */
+      async function expectQuota(
+        promise: Promise<unknown>,
+        kind: QuotaExceededError['kind']
+      ): Promise<QuotaExceededError> {
+        const error: unknown = await promise.then(
+          () => null,
+          (caught: unknown) => caught
+        );
+        expect(error).toBeInstanceOf(QuotaExceededError);
+        expect(error).toMatchObject({ kind });
+        return error as QuotaExceededError;
+      }
+
+      const like = (id: string, options?: { super?: boolean }) =>
+        repositories.discovery.recordDecision(id, 'like', undefined, options);
+
+      it('el like 25 pasa y el 26 falla con QuotaExceededError likes', async () => {
+        await fixture.seedLikeEvents('like', 24, 1);
+
+        await expect(like(fixture.nonReciprocalId)).resolves.toMatchObject({ decision: 'like' });
+        const error = await expectQuota(like(fixture.excludableId), 'likes');
+
+        const wait = Date.parse(error.resetsAt ?? '') - Date.now();
+        expect(wait).toBeGreaterThanOrEqual(22 * HOUR_MS);
+        expect(wait).toBeLessThanOrEqual(24 * HOUR_MS);
+      });
+
+      it('los likes de hace más de 24 h no cuentan', async () => {
+        await fixture.seedLikeEvents('like', 25, 25);
+
+        await expect(like(fixture.nonReciprocalId)).resolves.toMatchObject({ decision: 'like' });
+      });
+
+      it('like → pass → like sobre el mismo perfil gasta dos', async () => {
+        await fixture.seedLikeEvents('like', 23, 1);
+        const { discovery } = repositories;
+
+        await expect(like(fixture.nonReciprocalId)).resolves.toBeDefined();
+        await expect(
+          discovery.recordDecision(fixture.nonReciprocalId, 'pass')
+        ).resolves.toBeDefined();
+        await expect(like(fixture.nonReciprocalId)).resolves.toBeDefined();
+
+        await expectQuota(like(fixture.excludableId), 'likes');
+      });
+
+      it('repetir el mismo like no gasta', async () => {
+        await fixture.seedLikeEvents('like', 24, 1);
+
+        await like(fixture.nonReciprocalId);
+        await like(fixture.nonReciprocalId);
+
+        expect((await repositories.premium.getQuotas()).likesLeft).toBe(0);
+      });
+
+      it('dos likes a la vez no superan el cupo', async () => {
+        await fixture.seedLikeEvents('like', 24, 1);
+
+        const results = await Promise.allSettled([
+          like(fixture.nonReciprocalId),
+          like(fixture.excludableId),
+        ]);
+
+        expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+      });
+
+      it('con Premium no hay 25 pero sí 300', async () => {
+        await fixture.setPremium(true);
+        await fixture.seedLikeEvents('like', 299, 1);
+
+        await expect(like(fixture.nonReciprocalId)).resolves.toMatchObject({ decision: 'like' });
+        await expectQuota(like(fixture.excludableId), 'abuse');
+
+        expect((await repositories.premium.getQuotas()).likesLeft).toBeNull();
+      });
+
+      it('el pass no gasta ni tiene límite', async () => {
+        await fixture.seedLikeEvents('like', 25, 1);
+
+        await expect(
+          repositories.discovery.recordDecision(fixture.nonReciprocalId, 'pass')
+        ).resolves.toMatchObject({ decision: 'pass' });
+      });
+
+      it('Super Like: 1 a la semana gratis, y gasta también del diario', async () => {
+        await expect(like(fixture.nonReciprocalId, { super: true })).resolves.toBeDefined();
+
+        const quotas = await repositories.premium.getQuotas();
+        expect(quotas.likesLeft).toBe(24);
+        expect(quotas.supersLeft).toBe(0);
+
+        await expectQuota(like(fixture.excludableId, { super: true }), 'supers');
+      });
+
+      it('Super Like con Premium: 5 a la semana, y el sexto falla', async () => {
+        await fixture.setPremium(true);
+        await fixture.seedLikeEvents('super', 4, 1);
+
+        await expect(like(fixture.nonReciprocalId, { super: true })).resolves.toBeDefined();
+        await expectQuota(like(fixture.excludableId, { super: true }), 'supers');
+      });
+
+      it('deshacer sin Premium rechaza PremiumRequiredError', async () => {
+        await expect(repositories.premium.undoLastDecision()).rejects.toBeInstanceOf(
+          PremiumRequiredError
+        );
+      });
+
+      it('deshacer devuelve el perfil al deck', async () => {
+        await fixture.setPremium(true);
+        await repositories.discovery.recordDecision(fixture.nonReciprocalId, 'pass');
+
+        await expect(repositories.premium.undoLastDecision()).resolves.toBe(
+          fixture.nonReciprocalId
+        );
+
+        const deck = await repositories.discovery.getDeck({ mode: 'ambos' });
+        expect(deck.map((profile) => profile.id)).toContain(fixture.nonReciprocalId);
+      });
+
+      it('no se deshace pasados 10 minutos', async () => {
+        await fixture.setPremium(true);
+        await repositories.discovery.recordDecision(fixture.nonReciprocalId, 'pass');
+        await fixture.ageLastDecision(11);
+
+        await expect(repositories.premium.undoLastDecision()).resolves.toBeNull();
+      });
+
+      it('no se deshace un like que creó match', async () => {
+        await fixture.setPremium(true);
+        const result = await like(fixture.reciprocalAId);
+        expect(result.match).not.toBeNull();
+
+        await expect(repositories.premium.undoLastDecision()).resolves.toBeNull();
+
+        const ids = (await repositories.matches.list()).map((match) => match.counterpart.id);
+        expect(ids).toContain(fixture.reciprocalAId);
+      });
+
+      it('likes recibidos: número gratis, lista solo con Premium y Super Like primero', async () => {
+        await fixture.superLikeFrom(fixture.reciprocalBId);
+        const count = await repositories.premium.countIncomingLikes();
+        expect(count).toBeGreaterThanOrEqual(2);
+
+        await expect(repositories.premium.listIncomingLikes()).rejects.toBeInstanceOf(
+          PremiumRequiredError
+        );
+
+        await fixture.setPremium(true);
+        const list = await repositories.premium.listIncomingLikes();
+        expect(list).toHaveLength(count);
+        expect(list[0]).toMatchObject({ isSuper: true });
+        expect(list[0].profile.id).toBe(fixture.reciprocalBId);
+
+        await repositories.discovery.recordDecision(fixture.reciprocalAId, 'pass');
+        expect(await repositories.premium.countIncomingLikes()).toBe(count - 1);
+      });
+
+      it('quien me bloquea no sale en likes recibidos ni en el deck con insignia', async () => {
+        await repositories.profiles.saveCurrent(buildProfileInput());
+        await fixture.superLikeFrom(fixture.reciprocalBId);
+        await fixture.setPremium(true);
+        const count = await repositories.premium.countIncomingLikes();
+
+        await repositories.profiles.block(fixture.reciprocalBId);
+
+        expect(await repositories.premium.countIncomingLikes()).toBe(count - 1);
+        const list = await repositories.premium.listIncomingLikes();
+        expect(list.map((entry) => entry.profile.id)).not.toContain(fixture.reciprocalBId);
+        const deck = await repositories.discovery.getDeck();
+        expect(deck.map((profile) => profile.id)).not.toContain(fixture.reciprocalBId);
+      });
+
+      describe('Boost', () => {
+        it('sin Premium rechaza PremiumRequiredError', async () => {
+          await expect(repositories.premium.activateBoost()).rejects.toBeInstanceOf(
+            PremiumRequiredError
+          );
+        });
+
+        it('con Premium dura 30 minutos y el segundo falla', async () => {
+          await fixture.setPremium(true);
+
+          const endsAt = await repositories.premium.activateBoost();
+
+          expect(Math.abs(Date.parse(endsAt) - Date.now() - 30 * MINUTE_MS)).toBeLessThan(
+            MINUTE_MS
+          );
+          await expectQuota(repositories.premium.activateBoost(), 'boost');
+        });
+
+        it('uno de hace 29 días aún cuenta', async () => {
+          await fixture.setPremium(true);
+          await fixture.seedPastBoost(29);
+
+          await expectQuota(repositories.premium.activateBoost(), 'boost');
+        });
+
+        it('uno de hace 31 días ya no', async () => {
+          await fixture.setPremium(true);
+          await fixture.seedPastBoost(31);
+
+          await expect(repositories.premium.activateBoost()).resolves.toEqual(expect.any(String));
+        });
+      });
+
+      it('orden del deck: Super Like, después Boost, después el resto', async () => {
+        await fixture.superLikeFrom(fixture.reciprocalBId);
+        await fixture.boostAs(fixture.reciprocalAId);
+
+        const deck = await repositories.discovery.getDeck();
+
+        expect(deck[0]).toMatchObject({ id: fixture.reciprocalBId, superLikedMe: true });
+        expect(deck[1].id).toBe(fixture.reciprocalAId);
+        expect(deck.slice(1).every((profile) => profile.superLikedMe === false)).toBe(true);
+      });
+
+      it('los filtros premium exigen Premium, el de especialidad no', async () => {
+        await expect(
+          repositories.discovery.getDeck({ mode: 'ambos', ambition: ['todo-o-nada'] })
+        ).rejects.toBeInstanceOf(PremiumRequiredError);
+        await expect(
+          repositories.discovery.getDeck({ mode: 'ambos', specialties: ['dev'] })
+        ).resolves.toBeDefined();
+
+        await fixture.setPremium(true);
+        const deck = await repositories.discovery.getDeck({
+          mode: 'ambos',
+          ambition: ['todo-o-nada'],
+        });
+        expect(deck.length).toBeGreaterThan(0);
+        expect(deck.every((profile) => profile.ambition === 'todo-o-nada')).toBe(true);
       });
     });
 

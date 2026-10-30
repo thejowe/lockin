@@ -41,6 +41,20 @@ export interface MockState {
   decisions: Map<string, Decision>;
   /** Perfiles que ya dieron like al usuario. Un like nuestro cierra el match. */
   incomingLikes: Set<string>;
+  /** Cuándo (reloj del store, en ms) dio like cada perfil de `incomingLikes`. */
+  incomingLikeAt: Map<string, number>;
+  /** Perfiles de `incomingLikes` cuyo like fue un Super Like. */
+  incomingSupers: Set<string>;
+  /** Premium por persona: id -> instante (reloj del store, en ms) en que caduca. */
+  premium: Map<string, number>;
+  /**
+   * Registro de likes gastados, solo de inserción (espejo de `like_events`). No
+   * se borra al deshacer ni al borrar al perfil destino: el like gastado no se devuelve.
+   */
+  likeEvents: { actorId: string; targetId: string; kind: 'like' | 'super'; atMs: number }[];
+  boosts: { userId: string; startsAtMs: number; endsAtMs: number }[];
+  /** Cuándo y cómo se tomó la decisión vigente: actor -> perfil -> metadatos. */
+  decisionMeta: Map<string, Map<string, { atMs: number; isSuper: boolean }>>;
   matches: Match[];
   messages: Message[];
   lockInSessions: LockInSession[];
@@ -92,6 +106,15 @@ function initialState(): MockState {
     profiles: new Map(SEED_PROFILES.map((profile) => [profile.id, profile])),
     decisions: new Map(),
     incomingLikes: new Set(SEED_RECIPROCAL_IDS),
+    // Cada like semilla, un minuto más viejo que el anterior: orden estable.
+    incomingLikeAt: new Map(
+      SEED_RECIPROCAL_IDS.map((id, index) => [id, Date.now() - (index + 1) * 60_000])
+    ),
+    incomingSupers: new Set(),
+    premium: new Map(),
+    likeEvents: [],
+    boosts: [],
+    decisionMeta: new Map(),
     matches: [],
     messages: [],
     lockInSessions: [],
@@ -227,6 +250,14 @@ export function createMockStore(): MockStore {
       for (const decisions of state.actorDecisions.values()) decisions.delete(userId);
       state.userBlocks.delete(userId);
       state.termsAcceptances.delete(userId);
+      state.premium.delete(userId);
+      // Los likes gastados que apuntan a esta cuenta se quedan: no se devuelven.
+      state.likeEvents = state.likeEvents.filter((event) => event.actorId !== userId);
+      state.boosts = state.boosts.filter((boost) => boost.userId !== userId);
+      state.decisionMeta.delete(userId);
+      for (const meta of state.decisionMeta.values()) meta.delete(userId);
+      state.incomingSupers.delete(userId);
+      state.incomingLikeAt.delete(userId);
       for (const blocked of state.userBlocks.values()) blocked.delete(userId);
       for (const report of state.userReports) {
         if (report.reporterId === userId) report.reporterId = null;
@@ -236,6 +267,8 @@ export function createMockStore(): MockStore {
         // Estos dos índices contienen solo decisiones de/a la cuenta propia.
         state.decisions.clear();
         state.incomingLikes.clear();
+        state.incomingSupers.clear();
+        state.incomingLikeAt.clear();
       } else {
         // Lo que la cuenta propia decidió sobre quien se va, o recibió de ella.
         state.decisions.delete(userId);

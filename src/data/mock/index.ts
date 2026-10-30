@@ -17,6 +17,16 @@ import {
   resolveMatchMode,
 } from './store';
 import { SEED_RECIPROCAL_IDS } from './seed';
+import {
+  boostedIds,
+  chargeLike,
+  createMockPremiumRepository,
+  matchesPremiumFilters,
+  notifyQuotas,
+  requireMockPremium,
+  superLikedActor,
+  usesPremiumFilters,
+} from './premium';
 import { createMockRoomRepository, roomsTopic } from './rooms';
 import { createMockSessionRepository } from './sessions';
 import { BOARD_MAX_POSTS, BoardRejectedError } from '../repositories';
@@ -34,6 +44,7 @@ import type {
 } from '../repositories';
 import type {
   BoardPost,
+  DeckProfile,
   Decision,
   DecisionResult,
   Match,
@@ -61,6 +72,15 @@ export type { MockSessionOptions } from './sessions';
 export { createMockAgreementRepository } from './agreement';
 export { createMockRoomRepository, roomsTopic } from './rooms';
 export type { MockRoomOptions } from './rooms';
+export {
+  ageMockLastDecision,
+  createMockPremiumRepository,
+  mockBoostAs,
+  mockSuperLikeFrom,
+  seedMockLikeEvents,
+  seedMockPastBoost,
+  setMockPremium,
+} from './premium';
 
 export interface MockRepositoriesOptions {
   /** Cliente secundario de contrato sobre el mismo almacén. */
@@ -446,7 +466,9 @@ export function createMockRepositories(
   };
 
   const discovery: DiscoveryRepository = {
-    async getDeck(filter: ProfileFilter = {}) {
+    async getDeck(filter: ProfileFilter = {}): Promise<DeckProfile[]> {
+      // Los filtros avanzados son de pago: sin Premium el deck ni se carga.
+      if (usesPremiumFilters(filter)) requireMockPremium(store, actorId);
       const decided = [...actorDecisions().keys()];
 
       const mode = filter.mode ?? effectiveMode();
@@ -470,18 +492,48 @@ export function createMockRepositories(
           Number(other.specialties.some((tag) => viewer.seekingSpecialties.includes(tag)))
         );
       };
-      return candidates
-        .filter((candidate) => !isBlocked(actorId, candidate.id))
-        .sort((a, b) => score(b) - score(a) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+      const boosted = boostedIds(store);
+      const nowMs = store.nowMs();
+      return (
+        candidates
+          .filter((candidate) => !isBlocked(actorId, candidate.id))
+          .filter((candidate) => matchesPremiumFilters(candidate, viewer, filter, nowMs))
+          .map((candidate): DeckProfile => ({
+            ...candidate,
+            superLikedMe: superLikedActor(store, actorId, candidate.id),
+          }))
+          // Primero quien te dio un Super Like, después quien tiene un Boost en
+          // curso y, dentro de cada grupo, el orden de siempre. El Boost solo
+          // reordena: nunca mete a quien el filtro dejó fuera.
+          .sort(
+            (a, b) =>
+              Number(b.superLikedMe) - Number(a.superLikedMe) ||
+              Number(boosted.has(b.id)) - Number(boosted.has(a.id)) ||
+              score(b) - score(a) ||
+              (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+          )
+      );
     },
 
     async recordDecision(
       profileId: string,
       decision: Decision,
-      mode?: ModePreference
+      mode?: ModePreference,
+      options?: { super?: boolean }
     ): Promise<DecisionResult> {
       const state = getState();
+      const isSuper = decision === 'like' && options?.super === true;
+      const meta = state.decisionMeta.get(actorId) ?? new Map();
+      state.decisionMeta.set(actorId, meta);
+      const previous = meta.get(profileId);
+      // Idempotencia primero: repetir la misma decisión no gasta ni se reescribe.
+      const unchanged =
+        actorDecisions().get(profileId) === decision && (previous?.isSuper ?? false) === isSuper;
+      // Después el cupo, y solo después el registro: un rechazo no escribe nada.
+      if (decision === 'like' && !unchanged) chargeLike(store, actorId, profileId, isSuper);
       actorDecisions().set(profileId, decision);
+      if (!unchanged) meta.set(profileId, { atMs: store.nowMs(), isSuper });
+      if (decision === 'like' && !unchanged) notifyQuotas(store, actorId);
 
       const other = state.profiles.get(profileId);
       const reverse =
@@ -617,6 +669,10 @@ export function createMockRepositories(
     agreement: createMockAgreementRepository(actorId, store),
     rooms: createMockRoomRepository(actorId, store, {
       autoAcceptFrom: autoAcceptSessions ? SEED_RECIPROCAL_IDS : [],
+    }),
+    premium: createMockPremiumRepository(actorId, store, {
+      decisions: actorDecisions,
+      isBlocked,
     }),
   };
 }

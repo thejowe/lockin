@@ -537,6 +537,25 @@ const supabaseBackend: ContractBackend = {
         return roomRepositoryFor(actor);
       },
       elapse: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+      // Los helpers `dev_*` llegan con la Tarea 5 del plan de Premium.
+      async setPremium() {
+        throw new Error('pendiente: Tarea 5');
+      },
+      async seedLikeEvents() {
+        throw new Error('pendiente: Tarea 5');
+      },
+      async ageLastDecision() {
+        throw new Error('pendiente: Tarea 5');
+      },
+      async seedPastBoost() {
+        throw new Error('pendiente: Tarea 5');
+      },
+      async superLikeFrom() {
+        throw new Error('pendiente: Tarea 5');
+      },
+      async boostAs() {
+        throw new Error('pendiente: Tarea 5');
+      },
     };
   },
 

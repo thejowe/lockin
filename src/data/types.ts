@@ -255,6 +255,48 @@ export interface ProfileFilter {
    * no lo metas aquí sin avisar a `descubrir`, que es quien lo consume.
    */
   specialties?: Specialty[];
+  /*
+   * Filtros avanzados: solo con Premium. Sin él, `getDeck` rechaza con
+   * `PremiumRequiredError` (LQ005 en Supabase). Todos son opcionales; ausente
+   * significa «sin filtro».
+   */
+  /** Horas por semana mínimas de `Availability.hoursPerWeek`. */
+  minHoursPerWeek?: number;
+  /** Franjas: basta con que se solape una con `Availability.bands`. */
+  timeBands?: TimeBand[];
+  ambition?: Ambition[];
+  startingPoint?: StartingPoint[];
+  /** Diferencia horaria máxima entre las dos zonas, en horas (0–12). */
+  timezoneWindowHours?: number;
+}
+
+/** Una carta del deck: el perfil más lo que solo el deck necesita saber. */
+export interface DeckProfile extends Profile {
+  /** Esta persona te ha dado un Super Like. Nunca hay insignia si hay un bloqueo. */
+  superLikedMe: boolean;
+}
+
+/** Cupos y estado de Premium de la persona que mira. */
+export interface PremiumQuotas {
+  isPremium: boolean;
+  premiumUntil: string | null;
+  /** Likes que quedan en las últimas 24 h. `null` con Premium (sin límite visible). */
+  likesLeft: number | null;
+  /** Cuándo se libera el primer hueco. `null` si no hay ningún like en la ventana. */
+  likesResetAt: string | null;
+  supersLeft: number;
+  supersResetAt: string | null;
+  /** Cuándo se puede volver a activar un Boost. `null` = disponible ya (con Premium). */
+  boostAvailableAt: string | null;
+  /** Hasta cuándo dura el Boost en curso. `null` si no hay ninguno. */
+  boostActiveUntil: string | null;
+}
+
+/** Alguien que te ha dado like y a quien aún no has respondido. */
+export interface IncomingLike {
+  profile: Profile;
+  isSuper: boolean;
+  likedAt: string;
 }
 
 /** Decisión de swipe. */

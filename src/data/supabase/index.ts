@@ -58,6 +58,7 @@ import type {
   DiscoveryRepository,
   MatchRepository,
   MessageRepository,
+  PremiumRepository,
   ProfileRepository,
   Repositories,
   SessionRepository,
@@ -671,7 +672,10 @@ export function createSupabaseRepositories({
       });
       if (error) throw error;
 
-      return signer.signProfiles((data as ProfileRow[]).map(toProfile));
+      // Provisional hasta la Tarea 5 del plan de Premium: `discovery_deck` aún
+      // no devuelve `super_liked_me`.
+      const profiles = await signer.signProfiles((data as ProfileRow[]).map(toProfile));
+      return profiles.map((profile) => ({ ...profile, superLikedMe: false }));
     },
 
     async recordDecision(
@@ -883,12 +887,27 @@ export function createSupabaseRepositories({
     },
   };
 
+  // Provisional hasta la Tarea 5 del plan de Premium (`./premium.ts`).
+  const pending = async (): Promise<never> => {
+    throw new Error('pendiente: Tarea 5');
+  };
+  const premium: PremiumRepository = {
+    getQuotas: pending,
+    subscribeQuotas: () => () => {},
+    undoLastDecision: pending,
+    activateBoost: pending,
+    countIncomingLikes: pending,
+    listIncomingLikes: pending,
+    syncEntitlement: pending,
+  };
+
   return {
     session,
     profiles,
     discovery,
     matches,
     messages,
+    premium,
     sessions: createSupabaseSessionRepository({ getClient, getUserId }),
     agreement: createSupabaseAgreementRepository({ getClient, getUserId }),
     rooms: createSupabaseRoomRepository({

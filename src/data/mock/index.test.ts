@@ -19,7 +19,13 @@ import {
   createMockSessionRepository,
   createMockStore,
   CURRENT_USER_ID,
+  ageMockLastDecision,
+  mockBoostAs,
+  mockSuperLikeFrom,
   resetState,
+  seedMockLikeEvents,
+  seedMockPastBoost,
+  setMockPremium,
 } from './index';
 import { SEED_RECIPROCAL_IDS } from './seed';
 import { getState } from './store';
@@ -87,6 +93,24 @@ const mockBackend: ContractBackend = {
       roomsFor: (profileId) => createMockRoomRepository(profileId),
       async elapse(ms) {
         advanceMockClock(ms);
+      },
+      async setPremium(active) {
+        setMockPremium(active);
+      },
+      async seedLikeEvents(kind, count, ageHours) {
+        seedMockLikeEvents(kind, count, ageHours);
+      },
+      async ageLastDecision(minutes) {
+        ageMockLastDecision(minutes);
+      },
+      async seedPastBoost(ageDays) {
+        seedMockPastBoost(ageDays);
+      },
+      async superLikeFrom(profileId) {
+        mockSuperLikeFrom(profileId);
+      },
+      async boostAs(profileId) {
+        mockBoostAs(profileId);
       },
     };
   },

@@ -14,8 +14,10 @@ import type {
   AgreementAnswerInput,
   AgreementTopicView,
   BoardPost,
+  DeckProfile,
   Decision,
   DecisionResult,
+  IncomingLike,
   LockInRoom,
   LockInSession,
   MatchStreak,
@@ -24,6 +26,7 @@ import type {
   MessageInput,
   MessageReportInput,
   ModePreference,
+  PremiumQuotas,
   Profile,
   ProfileFilter,
   ProfileInput,
@@ -203,7 +206,7 @@ export interface DiscoveryRepository {
    * Esto NO condiciona matches: siguen dependiendo solo del like recíproco.
    * Devuelve lista vacía cuando el deck se agota — no es un error.
    */
-  getDeck(filter?: ProfileFilter): Promise<Profile[]>;
+  getDeck(filter?: ProfileFilter): Promise<DeckProfile[]>;
   /**
    * Registra un swipe. Si el like es recíproco, crea el match y lo devuelve
    * en `match`; en cualquier otro caso `match` es `null`.
@@ -214,11 +217,17 @@ export interface DiscoveryRepository {
    * hay, el que declara el perfil. Si el deck deja cambiar de modo sin tocar
    * la sesión, tiene que pasarlo: si no, un like hecho desde Lock-In con la
    * sesión en Par crearía un match Par.
+   *
+   * `options.super` marca el like como Super Like. Los likes gastan cupo
+   * (`QuotaExceededError`); el pass no. El orden es siempre idempotencia, luego
+   * cupo, luego registro: repetir la misma decisión no gasta, y un rechazo por
+   * cupo no deja nada escrito.
    */
   recordDecision(
     profileId: string,
     decision: Decision,
-    mode?: ModePreference
+    mode?: ModePreference,
+    options?: { super?: boolean }
   ): Promise<DecisionResult>;
   /** Perfiles ya decididos, para excluirlos del deck. */
   listDecided(): Promise<string[]>;
@@ -349,6 +358,31 @@ export interface RoomRepository {
 }
 
 /**
+ * Premium (un solo nivel): cupos, deshacer, Boost y likes recibidos. Los cupos
+ * los aplica el servidor; la UI solo reacciona a `QuotaExceededError` y a
+ * `PremiumRequiredError` (ver `src/data/premium-errors.ts`).
+ */
+export interface PremiumRepository {
+  getQuotas(): Promise<PremiumQuotas>;
+  /** Avisa con los cupos nuevos tras cada cambio (decisión, deshacer, Boost, Premium). */
+  subscribeQuotas(cb: (quotas: PremiumQuotas) => void): Unsubscribe;
+  /**
+   * Deshace tu último swipe y devuelve el id del perfil, que vuelve al deck. `null`
+   * si no hay nada que deshacer: han pasado 10 minutos o el like ya creó match.
+   * No devuelve el like gastado. Lanza `PremiumRequiredError` sin Premium.
+   */
+  undoLastDecision(): Promise<string | null>;
+  /** Activa un Boost y devuelve cuándo acaba (ISO). */
+  activateBoost(): Promise<string>;
+  /** Cuánta gente te ha dado like y está sin responder. Lo ve cualquiera. */
+  countIncomingLikes(): Promise<number>;
+  /** Quién. Los Super Likes primero. Lanza `PremiumRequiredError` sin Premium. */
+  listIncomingLikes(page?: { before?: string; limit?: number }): Promise<IncomingLike[]>;
+  /** Pide al servidor que relea la suscripción de la tienda. El mock no hace nada. */
+  syncEntitlement(): Promise<void>;
+}
+
+/**
  * Punto único de acceso a datos. Cualquier implementación (mock, Supabase)
  * debe devolver un objeto con esta forma exacta.
  */
@@ -361,6 +395,7 @@ export interface Repositories {
   sessions: LockInSessionRepository;
   agreement: AgreementRepository;
   rooms: RoomRepository;
+  premium: PremiumRepository;
 }
 
 /** Fábrica de una implementación completa. Lo que exporta cada backend. */

@@ -185,6 +185,9 @@ export const repositories: Repositories = {
   get agreement() {
     return resolveActive().repositories.agreement;
   },
+  get premium() {
+    return resolveActive().repositories.premium;
+  },
   get rooms() {
     return resolveActive().repositories.rooms;
   },

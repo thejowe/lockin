@@ -40,6 +40,8 @@ escriba código pasa por `codex review` antes de commitear en la rama principal.
 
 - [ ] [Claude] Contrato: `PremiumRepository`, `DeckProfile`, `ProfileFilter` ampliado,
   `QuotaExceededError` y `PremiumRequiredError` (spec §5). Implementación en mock y en Supabase.
+  Tarea 1 del plan hecha (2026-10-29): tipos, errores, límites, contrato y mock. Falta Supabase
+  (Tarea 5; en `supabase/index.ts` hay un `premium` provisional que lanza «pendiente: Tarea 5»).
 - [ ] [Claude] Deck: deshacer, Super Like y Boost; aviso de likes restantes; hoja «sin likes»;
   insignia de Super Like.
 - [ ] [Claude] Matches: fila «Te han dado like (N)» y la cuadrícula premium (gratis ve relleno

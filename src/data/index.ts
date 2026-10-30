@@ -16,6 +16,8 @@ export type { QueryState } from './provider';
 export * from './sessions';
 export * from './streaks';
 export * from './session-errors';
+export * from './premium-errors';
+export * from './premium-limits';
 export * from './agreement';
 export * from './rooms';
 export { createMemoryPresenceAdapter } from './presence';
