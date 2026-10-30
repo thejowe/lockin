@@ -86,6 +86,11 @@ escriba código pasa por `codex review` antes de commitear en la rama principal.
   **sin ver en dispositivo** (Tarea 10, `[comprobador]`). Pendiente `codex review`.
 - [ ] [comprobador] Recorrido gratis en el emulador (agotar likes, hoja, número de likes, paywall)
   con mock y con Supabase real.
+  **Mock comprobado el 2026-10-30** (commit 5d466e2, APK debug con Metro, backend mock; evidencia en
+  `e2e/artifacts/local/2026-10-30-premium-mock/`): ✅ filtros con candado, hoja «sin likes», «Te quedan N likes»,
+  Super Like/Deshacer/Boost, fila «Te han dado like (N)» y `/likes` (relleno sin Premium, perfiles con Premium),
+  paywall y «Simular Premium». ⚠️ Fila Premium en Cuenta y aviso al borrar: con mock `AccountSection` no se pinta, no
+  comprobables aquí. **Casilla abierta: falta la parte con Supabase real.**
 
 ## Fase 3 — cobro real (bloqueada)
 
@@ -105,3 +110,27 @@ Las claves y los secretos los pega siempre el usuario.
 - [ ] Privacidad: RevenueCat como encargado del tratamiento, con su transferencia internacional.
 - [ ] Fichas: «Compras dentro de la app: sí»; Data safety con «Historial de compras»; App Privacy
   con «Purchases». Siguen sin anuncios.
+
+## Hallazgos del comprobador
+
+### 2026-10-30 — recorrido gratis con mock (commit 5d466e2)
+
+Backend: **mock** (logcat: «backend de datos: mock en memoria»). APK debug x86_64 con Metro; los likes se agotaron
+sembrando 22 eventos con `seedMockLikeEvents('like', 22, 1)` por CDP (el mock solo trae ~9 perfiles, no se
+llega a 25 solo con la UI). Evidencia: `e2e/artifacts/local/2026-10-30-premium-mock/` (capturas 13-54, `logcat.txt`).
+
+- ✅ Filtros (13, 14): hoja con candados en horas, franjas, ambición, punto de partida y zona horaria; tocar uno abre el paywall.
+- ✅ Hoja «sin likes» (34, 35): «Te quedan 3 likes» (31) → 0 (33) → «Sin likes hasta las 21:45»; el gesto a la derecha sin cupo devuelve la tarjeta.
+- ✅ Super Like gratis (19, 20): el primero pasa; el segundo da «Sin Super Likes por ahora» con la fecha de reposición (6 nov).
+- ✅ Boost gratis (16) y Deshacer gratis (17) abren el paywall. Con Premium: Deshacer repone la tarjeta (41, 42); Boost activa y el segundo da «Boost no disponible… 29 de noviembre» (43).
+- ✅ Matches (45, 46, 48, 49): «Te han dado like (3)»; con Premium, perfiles con nombre y foto, «Me gusta» da ¡Match!; sin Premium, solo candados genéricos y «Hazte Premium».
+- ✅ Paywall `/premium` (15, 36, 37, 54): beneficios, 9,99 €/mes y 49,99 €/año, restaurar, términos; «Simular Premium» (solo __DEV__ con mock) cierra el paywall y activa los botones; «Hazte Premium» con ofertas falsas concede Premium.
+- ⚠️ Fila Premium en Cuenta y aviso al borrar la cuenta (50, 51): con mock el Perfil no muestra ni fila Premium ni borrado; no comprobables sin Supabase.
+- Hallazgos menores (no bloquean), para el bloque `descubrir`/`visual`:
+  1. Un Boost con éxito no da ningún aviso (captura 40: sin hoja ni toast tras pulsarlo; solo se nota al intentar otro).
+  2. Deshacer justo después de un like que hizo match no hace nada y no avisa (38 → 39 siguen en la misma tarjeta); el SQL lo prohíbe, el mock debería comportarse igual y/o avisar.
+  3. `/likes` sin Premium: la rejilla de candados queda pegada a la izquierda (márgenes 35 px / 100 px, captura 49).
+  4. «Sin likes hasta las 21:45» no dice el día cuando falta casi un día entero.
+- Entorno: el build local de Windows exige `-PreactNativeArchitectures=x86_64` y una copia en ruta corta (`C:\k`): reanimated
+  falla en arm64 por rutas >260 caracteres. Metro tardó 26 min en el primer bundle y, mientras otros agentes editan `src/`,
+  hace recarga rápida y pierde el estado del mock.
