@@ -764,7 +764,8 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
     assert.deepEqual(decisionFn.rows, [
       {
         firmas: 1,
-        firma: 'p_target_id uuid, p_decision public.decision, p_mode public.mode_preference',
+        firma:
+          'p_target_id uuid, p_decision public.decision, p_mode public.mode_preference, p_super boolean',
         security_definer: true,
         config: ['search_path=""'],
         anon_ejecuta: false,

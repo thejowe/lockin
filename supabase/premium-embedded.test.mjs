@@ -224,6 +224,7 @@ test('Premium: tablas, cupos, deshacer, Boost, likes recibidos y deck', async (t
         const sigs = [
           'public.is_premium(uuid)',
           'public.premium_limits()',
+          'public.like_window_reset(uuid,text,interval,integer,timestamptz)',
           'public.purge_old_premium_records()',
         ];
         for (const sig of sigs) {
@@ -282,6 +283,486 @@ test('Premium: tablas, cupos, deshacer, Boost, likes recibidos y deck', async (t
           );
         })
     );
+
+    await t.test(
+      'las herramientas dev_* siembran el estado y dev_reset_current_user lo limpia',
+      () =>
+        tx(async () => {
+          await actingAs(ME);
+          await db.exec('select public.dev_set_premium(true)');
+          assert.equal((await quotas()).is_premium, true);
+          await db.exec('select public.dev_set_premium(false)');
+          assert.equal((await quotas()).is_premium, false);
+
+          await db.exec("select public.dev_add_like_events('like', 5, 2)");
+          assert.equal((await quotas()).likes_left, 20);
+          await db.exec("select public.dev_add_like_events('super', 1, 2)");
+          assert.equal((await quotas()).supers_left, 0);
+
+          await like(T[0]);
+          await db.exec('select public.dev_age_last_decision(11)');
+          await db.exec('select public.dev_set_premium(true)');
+          assert.equal(
+            (await attempt('select public.undo_last_decision()')).rows[0].undo_last_decision,
+            null
+          );
+
+          await db.exec('select public.dev_add_boost(29)');
+          assert.equal((await attempt('select public.activate_boost()')).code, 'LQ003');
+
+          await db.exec('select public.dev_reset_current_user()');
+          await asOwner('');
+          const left = await rows(`select
+          (select count(*) from public.like_events where actor_id = '${ME}')::int as likes,
+          (select count(*) from public.boosts where user_id = '${ME}')::int as boosts,
+          (select count(*) from public.entitlements where user_id = '${ME}')::int as ents`);
+          assert.deepEqual(left, [{ likes: 0, boosts: 0, ents: 0 }]);
+        })
+    );
+
+    // =======================================================================
+    // Tarea 3 — record_decision, deshacer, Boost, cuotas y likes recibidos
+    // =======================================================================
+
+    await t.test(
+      'record_decision tiene una sola firma, de 4 argumentos, y la ejecuta authenticated',
+      async () => {
+        const fns = await rows(`select pg_get_function_identity_arguments(p.oid) as firma,
+          p.prosecdef, p.proconfig,
+          has_function_privilege('anon', p.oid, 'execute') as anon,
+          has_function_privilege('authenticated', p.oid, 'execute') as auth
+        from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname = 'record_decision'`);
+        assert.deepEqual(fns, [
+          {
+            firma: 'p_target_id uuid, p_decision decision, p_mode mode_preference, p_super boolean',
+            prosecdef: true,
+            proconfig: ['search_path=""'],
+            anon: false,
+            auth: true,
+          },
+        ]);
+      }
+    );
+
+    await t.test('los RPC nuevos no los puede ejecutar anon', async () => {
+      const sigs = [
+        'public.record_decision(uuid,public.decision,public.mode_preference,boolean)',
+        'public.undo_last_decision()',
+        'public.activate_boost()',
+        'public.premium_quotas()',
+        'public.incoming_likes_count()',
+        'public.incoming_likes(integer,timestamptz,boolean,uuid)',
+      ];
+      for (const sig of sigs) {
+        assert.deepEqual(
+          (
+            await rows(`select
+              has_function_privilege('anon', '${sig}', 'execute') as anon,
+              has_function_privilege('authenticated', '${sig}', 'execute') as auth,
+              exists (select 1 from pg_proc p, aclexplode(p.proacl) a
+                       where p.oid = '${sig}'::regprocedure and a.grantee = 0) as public`)
+          )[0],
+          { anon: false, auth: true, public: false },
+          sig
+        );
+      }
+      await tx(async () => {
+        await asOwner('set local role anon;');
+        assert.equal((await attempt('select * from public.premium_quotas()')).code, '42501');
+      });
+    });
+
+    await t.test(
+      'el like 25 pasa y el 26 falla con LQ001 y un detail ISO entre +22 h y +24 h',
+      () =>
+        tx(async () => {
+          await seedLikeEvents('like', 24, 1);
+          await actingAs(ME);
+          assert.equal((await like(T[0])).ok, true);
+          const before = Date.now();
+          const refused = await like(T[1]);
+          assert.equal(refused.code, 'LQ001');
+          const resetsAt = isoMs(refused.detail);
+          assert.ok(resetsAt >= before + 22 * HOUR_MS, 'no antes de +22 h');
+          assert.ok(resetsAt <= Date.now() + 24 * HOUR_MS, 'no después de +24 h');
+          const q = await quotas();
+          assert.equal(q.likes_left, 0);
+          assert.ok(Math.abs(new Date(q.likes_reset_at).getTime() - resetsAt) <= 1);
+        })
+    );
+
+    await t.test('un rechazo no escribe nada: ni decisión ni evento', () =>
+      tx(async () => {
+        await seedLikeEvents('like', 25, 1);
+        await actingAs(ME);
+        assert.equal((await like(T[0])).code, 'LQ001');
+        assert.equal(await eventCount(), 25);
+        assert.deepEqual(await rows('select * from public.decisions'), []);
+      })
+    );
+
+    await t.test('los likes de hace más de 24 h no cuentan', () =>
+      tx(async () => {
+        await seedLikeEvents('like', 25, 25);
+        await actingAs(ME);
+        assert.equal((await like(T[0])).ok, true);
+        assert.equal((await quotas()).likes_left, 24);
+      })
+    );
+
+    await t.test('like, pass y like sobre el mismo perfil gastan dos', () =>
+      tx(async () => {
+        await seedLikeEvents('like', 23, 1);
+        await actingAs(ME);
+        assert.equal((await like(T[0])).ok, true);
+        assert.equal((await pass(T[0])).ok, true);
+        assert.equal((await like(T[0])).ok, true);
+        assert.equal((await like(T[1])).code, 'LQ001');
+        assert.equal(await eventCount(), 25);
+      })
+    );
+
+    await t.test('repetir el mismo like no gasta', () =>
+      tx(async () => {
+        await seedLikeEvents('like', 24, 1);
+        await actingAs(ME);
+        assert.equal((await like(T[0])).ok, true);
+        assert.equal((await like(T[0])).ok, true);
+        assert.equal((await quotas()).likes_left, 0);
+        assert.equal(await eventCount(), 25);
+      })
+    );
+
+    await t.test('dos record_decision a la vez con 24 eventos dejan exactamente 25', () =>
+      tx(async () => {
+        await seedLikeEvents('like', 24, 1);
+        await actingAs(ME);
+        // PGlite encola las dos: esto prueba el conteo, no la contención (ver cabecera).
+        // El bloque DO se traga el LQ001 para que la transacción siga viva.
+        const guarded = (target) =>
+          db.exec(`do $do$ begin
+            perform public.record_decision('${target}', 'like');
+          exception when sqlstate 'LQ001' then null;
+          end $do$;`);
+        await Promise.all([guarded(T[0]), guarded(T[1])]);
+        assert.equal(await eventCount(), 25, 'solo una de las dos gastó');
+        assert.equal((await rows('select * from public.decisions')).length, 1);
+      })
+    );
+
+    await t.test('el cerrojo por actor se toma antes de contar los eventos', async () => {
+      const body = (
+        await rows(
+          `select pg_get_functiondef('public.record_decision(uuid,public.decision,public.mode_preference,boolean)'::regprocedure) as d`
+        )
+      )[0].d;
+      const lock = body.search(/pg_advisory_xact_lock\(hashtextextended\(v_actor::text, 0\)\)/);
+      const count = body.search(/from public\.like_events e\s+where e\.actor_id = v_actor/);
+      assert.ok(lock >= 0 && count >= 0 && lock < count, 'cerrojo antes del primer conteo');
+      assert.ok(
+        lock < body.search(/v_now := clock_timestamp\(\)/),
+        'el reloj se captura después del cerrojo'
+      );
+    });
+
+    await t.test('con Premium no hay 25 pero sí 300 (LQ004), con detail', () =>
+      tx(async () => {
+        await setPremium(ME);
+        await seedLikeEvents('like', 299, 1);
+        await actingAs(ME);
+        assert.equal((await like(T[0])).ok, true);
+        const refused = await like(T[1]);
+        assert.equal(refused.code, 'LQ004');
+        isoMs(refused.detail);
+        const q = await quotas();
+        assert.equal(q.is_premium, true);
+        assert.equal(q.likes_left, null);
+        assert.ok(q.premium_until);
+      })
+    );
+
+    await t.test('un Premium caducado vuelve a tener el cupo gratis', () =>
+      tx(async () => {
+        await setPremium(ME, false);
+        await seedLikeEvents('like', 25, 1);
+        await actingAs(ME);
+        assert.equal((await like(T[0])).code, 'LQ001');
+        assert.equal((await quotas()).is_premium, false);
+      })
+    );
+
+    await t.test('el pass no gasta ni tiene límite', () =>
+      tx(async () => {
+        await seedLikeEvents('like', 25, 1);
+        await actingAs(ME);
+        assert.equal((await pass(T[0])).ok, true);
+        assert.equal(await eventCount(), 25);
+      })
+    );
+
+    await t.test('Super Like: 1 a la semana gratis y gasta también del diario', () =>
+      tx(async () => {
+        await actingAs(ME);
+        assert.equal((await superLike(T[0])).ok, true);
+        const q = await quotas();
+        assert.equal(q.likes_left, 24);
+        assert.equal(q.supers_left, 0);
+        assert.ok(q.supers_reset_at);
+        const refused = await superLike(T[1]);
+        assert.equal(refused.code, 'LQ002');
+        isoMs(refused.detail);
+        assert.deepEqual(
+          (await rows(`select decision, is_super from public.decisions order by target_id`)).map(
+            (r) => [r.decision, r.is_super]
+          ),
+          [['like', true]]
+        );
+      })
+    );
+
+    await t.test('con Premium hay 5 Super Likes por semana y el sexto falla', () =>
+      tx(async () => {
+        await setPremium(ME);
+        await actingAs(ME);
+        for (const target of T.slice(0, 5)) assert.equal((await superLike(target)).ok, true);
+        assert.equal((await superLike(T[5])).code, 'LQ002');
+        assert.equal((await quotas()).supers_left, 0);
+      })
+    );
+
+    await t.test('un Super Like sobre un like ya dado cuenta como un like nuevo', () =>
+      tx(async () => {
+        await actingAs(ME);
+        assert.equal((await like(T[0])).ok, true);
+        assert.equal((await superLike(T[0])).ok, true);
+        assert.equal(await eventCount(), 2);
+        assert.equal((await quotas()).supers_left, 0);
+      })
+    );
+
+    await t.test('un Super Like recíproco crea match igual que un like', () =>
+      tx(async () => {
+        await asOwner(
+          `insert into public.decisions (actor_id, target_id, decision) values ('${LIKER_1}', '${ME}', 'like')`
+        );
+        await actingAs(ME);
+        const result = await superLike(LIKER_1);
+        assert.ok(result.rows[0].match_id, 'hay match');
+      })
+    );
+
+    await t.test('deshacer sin Premium lanza LQ005', () =>
+      tx(async () => {
+        await actingAs(ME);
+        await pass(T[0]);
+        assert.equal((await attempt('select public.undo_last_decision()')).code, 'LQ005');
+      })
+    );
+
+    await t.test('deshacer devuelve el perfil al deck, y no devuelve el like gastado', () =>
+      tx(async () => {
+        await setPremium(ME);
+        await actingAs(ME);
+        await like(T[0]);
+        assert.ok(!(await deckIds()).includes(T[0]));
+        const undone = await attempt('select public.undo_last_decision() as t');
+        assert.equal(undone.rows[0].t, T[0]);
+        assert.ok((await deckIds()).includes(T[0]), 'vuelve al deck');
+        assert.equal(await eventCount(), 1, 'el like gastado no se devuelve');
+      })
+    );
+
+    await t.test('deshace solo el último, y no pasados 10 minutos', () =>
+      tx(async () => {
+        await setPremium(ME);
+        await actingAs(ME);
+        await pass(T[0]);
+        await pass(T[1]);
+        assert.equal((await attempt('select public.undo_last_decision() as t')).rows[0].t, T[1]);
+        assert.equal((await attempt('select public.undo_last_decision() as t')).rows[0].t, T[0]);
+        assert.equal((await attempt('select public.undo_last_decision() as t')).rows[0].t, null);
+
+        await pass(T[2]);
+        await asOwner(
+          `update public.decisions set created_at = created_at - interval '11 minutes'`
+        );
+        await actingAs(ME);
+        assert.equal((await attempt('select public.undo_last_decision() as t')).rows[0].t, null);
+        assert.equal((await rows('select * from public.decisions')).length, 1);
+      })
+    );
+
+    await t.test('no se deshace un like que creó match, y el match sigue', () =>
+      tx(async () => {
+        await setPremium(ME);
+        await asOwner(
+          `insert into public.decisions (actor_id, target_id, decision) values ('${LIKER_1}', '${ME}', 'like')`
+        );
+        await actingAs(ME);
+        assert.ok((await like(LIKER_1)).rows[0].match_id);
+        assert.equal((await attempt('select public.undo_last_decision() as t')).rows[0].t, null);
+        assert.equal((await rows('select * from public.matches')).length, 1);
+        assert.equal(
+          (await rows('select * from public.decisions where actor_id = auth.uid()')).length,
+          1
+        );
+      })
+    );
+
+    await t.test('si el otro te da like entre tu like y tu deshacer, el match sigue', () =>
+      tx(async () => {
+        await setPremium(ME);
+        await actingAs(ME);
+        await like(LIKER_1);
+        await actingAs(LIKER_1);
+        assert.ok((await like(ME)).rows[0].match_id, 'el otro lado cierra el match');
+        await actingAs(ME);
+        assert.equal((await attempt('select public.undo_last_decision() as t')).rows[0].t, null);
+        assert.equal((await rows('select * from public.matches')).length, 1);
+      })
+    );
+
+    await t.test('Boost: sin Premium LQ005; con Premium +30 min; el segundo LQ003 con detail', () =>
+      tx(async () => {
+        await actingAs(ME);
+        assert.equal((await attempt('select public.activate_boost()')).code, 'LQ005');
+        await setPremium(ME);
+        await actingAs(ME);
+        const first = await attempt('select public.activate_boost() as ends');
+        const ends = new Date(first.rows[0].ends).getTime();
+        assert.ok(Math.abs(ends - (Date.now() + 30 * MINUTE_MS)) < MINUTE_MS, '+30 min');
+        const second = await attempt('select public.activate_boost()');
+        assert.equal(second.code, 'LQ003');
+        const available = isoMs(second.detail);
+        assert.ok(Math.abs(available - (Date.now() + 30 * 24 * HOUR_MS)) < MINUTE_MS);
+        const q = await quotas();
+        assert.equal(new Date(q.boost_active_until).getTime(), ends);
+        assert.equal(new Date(q.boost_available_at).getTime(), available);
+      })
+    );
+
+    await t.test('Boost: a los 29 días rechaza y a los 31 resuelve', () =>
+      tx(async () => {
+        await setPremium(ME);
+        const past = (days) =>
+          asOwner(`delete from public.boosts; insert into public.boosts (user_id, starts_at, ends_at)
+            values ('${ME}', now() - interval '${days} days', now() - interval '${days} days' + interval '30 minutes');`);
+        await past(29);
+        await actingAs(ME);
+        assert.equal((await attempt('select public.activate_boost()')).code, 'LQ003');
+        await past(31);
+        await actingAs(ME);
+        assert.equal((await attempt('select public.activate_boost()')).ok, true);
+        assert.equal((await quotas()).boost_available_at !== null, true);
+      })
+    );
+
+    await t.test('premium_quotas de una persona gratis sin actividad', () =>
+      tx(async () => {
+        await actingAs(ME);
+        assert.deepEqual(await quotas(), {
+          is_premium: false,
+          premium_until: null,
+          likes_left: 25,
+          likes_reset_at: null,
+          supers_left: 1,
+          supers_reset_at: null,
+          boost_available_at: null,
+          boost_active_until: null,
+        });
+      })
+    );
+
+    await t.test('likes recibidos: el número cuenta los pendientes y baja al decidir', () =>
+      tx(async () => {
+        await asOwner(`insert into public.decisions (actor_id, target_id, decision, is_super) values
+          ('${LIKER_1}', '${ME}', 'like', true), ('${LIKER_2}', '${ME}', 'like', false),
+          ('${LIKER_3}', '${ME}', 'pass', false);`);
+        await actingAs(ME);
+        const count = async () => (await rows('select public.incoming_likes_count() as n'))[0].n;
+        assert.equal(await count(), 2, 'el pass del otro no cuenta');
+        await pass(LIKER_2);
+        assert.equal(await count(), 1);
+      })
+    );
+
+    await t.test('incoming_likes: sin Premium LQ005; con Premium, Super Likes primero', () =>
+      tx(async () => {
+        await asOwner(`insert into public.decisions (actor_id, target_id, decision, is_super, created_at) values
+          ('${LIKER_1}', '${ME}', 'like', false, now() - interval '1 hour'),
+          ('${LIKER_2}', '${ME}', 'like', true, now() - interval '5 hours'),
+          ('${LIKER_3}', '${ME}', 'like', false, now() - interval '2 hours');`);
+        await actingAs(ME);
+        assert.equal((await attempt('select * from public.incoming_likes()')).code, 'LQ005');
+        await setPremium(ME);
+        await actingAs(ME);
+        const list = await rows('select id, name, is_super, liked_at from public.incoming_likes()');
+        assert.deepEqual(
+          list.map((r) => [r.id, r.is_super]),
+          [
+            [LIKER_2, true],
+            [LIKER_1, false],
+            [LIKER_3, false],
+          ]
+        );
+        assert.ok(list[0].name, 'viene el perfil completo');
+      })
+    );
+
+    await t.test('incoming_likes pagina sobre el orden completo (Super Likes primero)', () =>
+      tx(async () => {
+        await setPremium(ME);
+        await asOwner(`insert into public.decisions (actor_id, target_id, decision, is_super, created_at) values
+          ('${LIKER_1}', '${ME}', 'like', true, now() - interval '9 hours'),
+          ('${LIKER_2}', '${ME}', 'like', false, now() - interval '1 hour'),
+          ('${LIKER_3}', '${ME}', 'like', false, now() - interval '2 hours');`);
+        await actingAs(ME);
+        const seen = [];
+        let page = await rows('select id, is_super, liked_at from public.incoming_likes(1)');
+        while (page.length > 0) {
+          seen.push(page[0].id);
+          const last = page[0];
+          page = await rows(
+            `select id, is_super, liked_at from public.incoming_likes(1, '${last.liked_at.toISOString()}', ${last.is_super}, '${last.id}')`
+          );
+        }
+        assert.deepEqual(seen, [LIKER_1, LIKER_2, LIKER_3]);
+        // Solo con la fecha (la forma simple) pagina por fecha.
+        const byDate = await rows(
+          `select id from public.incoming_likes(10, now() - interval '90 minutes')`
+        );
+        assert.deepEqual(
+          byDate.map((r) => r.id),
+          [LIKER_1, LIKER_3],
+          'sigue el orden: Super Like primero'
+        );
+      })
+    );
+
+    await t.test(
+      'un bloqueo en cualquier dirección saca el perfil de incoming_likes y de su número',
+      () =>
+        tx(async () => {
+          await setPremium(ME);
+          await asOwner(`insert into public.decisions (actor_id, target_id, decision, is_super) values
+          ('${LIKER_1}', '${ME}', 'like', true), ('${LIKER_2}', '${ME}', 'like', true),
+          ('${LIKER_3}', '${ME}', 'like', false);`);
+          await actingAs(ME);
+          const state = async () => ({
+            n: (await rows('select public.incoming_likes_count() as n'))[0].n,
+            ids: (await rows('select id from public.incoming_likes()')).map((r) => r.id).sort(),
+          });
+          assert.deepEqual(await state(), { n: 3, ids: [LIKER_1, LIKER_2, LIKER_3] });
+          await asOwner(`insert into public.user_blocks (blocker_id, blocked_id) values
+          ('${LIKER_1}', '${ME}'), ('${ME}', '${LIKER_2}');`);
+          await actingAs(ME);
+          assert.deepEqual(await state(), { n: 1, ids: [LIKER_3] });
+        })
+    );
+
+    // =======================================================================
+    // Tarea 4 — discovery_deck
+    // =======================================================================
 
   } finally {
     await db.close();
