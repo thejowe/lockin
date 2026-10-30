@@ -8,8 +8,9 @@
  *   `javascript:` o un esquema raro no se abre desde aquí.
  * - Se abre con `Linking.openURL`: con Instagram o TikTok instalados, el
  *   sistema lleva a su app, que es lo que se espera al tocar su logo.
- * - Los logos son dibujos propios y sencillos, en el color de la tinta: la app
- *   no carga marcas de terceros a todo color dentro de su paleta.
+ * - Los logos son dibujos propios y sencillos. Desde el 2026-10-30 van en el
+ *   color de cada app (decisión del usuario, `brand` en `Glyph`); GitHub y la
+ *   web no tienen color propio y siguen en la tinta.
  * - Instagram y TikTok llevan además `@usuario` al lado del logo (2026-10-30,
  *   decisión del usuario), sacado del propio enlace. Si el enlace no deja ver
  *   el usuario (una publicación suelta, un enlace acortado), solo el logo.
@@ -17,7 +18,7 @@
 
 import { type ReactNode } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
 import { ThemedText } from '@/components/themed-text';
 import { Control, HitSlop, Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
@@ -89,18 +90,77 @@ export function connectedApps(profile: Profile): { app: ConnectedApp; url: strin
   });
 }
 
+/** Colores de marca, literales a propósito: son de cada app, no de la paleta. */
+const BRAND = {
+  linkedin: '#0A66C2',
+  tiktokCyan: '#25F4EE',
+  tiktokRed: '#FE2C55',
+} as const;
+
+const TIKTOK_PATH =
+  'M16.6 2.5c.3 2.1 1.6 3.6 3.6 3.8v2.9c-1.3 0-2.5-.4-3.6-1.1v6.4a5.6 5.6 0 1 1-5.6-5.6h.4v3a2.7 2.7 0 1 0 2.3 2.6V2.5z';
+
 export function Glyph({
   app,
   color,
   size,
   /** El hueco de dentro del logo de LinkedIn: negro sobre el fondo, blanco en su azul. */
   cutout = '#000000',
+  brand = false,
 }: {
   app: ConnectedApp;
   color: string;
   size: number;
   cutout?: string;
+  /**
+   * Con el color de la marca (2026-10-30, decisión del usuario): Instagram en
+   * su degradado, TikTok con su cian y su rojo, LinkedIn en su azul. GitHub y
+   * la web no tienen color propio y siguen en la tinta (`color`).
+   */
+  brand?: boolean;
 }) {
+  if (brand && app === 'linkedin') {
+    return <Glyph app="linkedin" color={BRAND.linkedin} cutout="#FFFFFF" size={size} />;
+  }
+  if (brand && app === 'instagram') {
+    return (
+      <Svg width={size} height={size} viewBox="0 0 24 24">
+        <Defs>
+          <LinearGradient id="instagram-brand" x1="0" y1="1" x2="1" y2="0">
+            <Stop offset="0" stopColor="#FEDA75" />
+            <Stop offset="0.25" stopColor="#FA7E1E" />
+            <Stop offset="0.5" stopColor="#D62976" />
+            <Stop offset="0.75" stopColor="#962FBF" />
+            <Stop offset="1" stopColor="#4F5BD5" />
+          </LinearGradient>
+        </Defs>
+        <Rect x={1.5} y={1.5} width={21} height={21} rx={6} fill="url(#instagram-brand)" />
+        <Rect
+          x={5.5}
+          y={5.5}
+          width={13}
+          height={13}
+          rx={3.8}
+          stroke="#FFFFFF"
+          strokeWidth={1.7}
+          fill="none"
+        />
+        <Circle cx={12} cy={12} r={3.1} stroke="#FFFFFF" strokeWidth={1.7} fill="none" />
+        <Circle cx={15.9} cy={8.1} r={0.95} fill="#FFFFFF" />
+      </Svg>
+    );
+  }
+  if (brand && app === 'tiktok') {
+    // La nota en blanco con sus dos sombras desplazadas, como en fondo oscuro.
+    return (
+      <Svg width={size} height={size} viewBox="0 0 24 24">
+        <Path fill={BRAND.tiktokCyan} d={TIKTOK_PATH} transform="translate(-0.7 -0.7)" />
+        <Path fill={BRAND.tiktokRed} d={TIKTOK_PATH} transform="translate(0.7 0.7)" />
+        <Path fill="#FFFFFF" d={TIKTOK_PATH} />
+      </Svg>
+    );
+  }
+
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
       {app === 'github' ? (
@@ -136,12 +196,7 @@ export function Glyph({
           <Circle cx={17.3} cy={6.7} r={1.2} fill={color} />
         </>
       ) : null}
-      {app === 'tiktok' ? (
-        <Path
-          fill={color}
-          d="M16.6 2.5c.3 2.1 1.6 3.6 3.6 3.8v2.9c-1.3 0-2.5-.4-3.6-1.1v6.4a5.6 5.6 0 1 1-5.6-5.6h.4v3a2.7 2.7 0 1 0 2.3 2.6V2.5z"
-        />
-      ) : null}
+      {app === 'tiktok' ? <Path fill={color} d={TIKTOK_PATH} /> : null}
       {app === 'portfolio' ? (
         <>
           <Circle cx={12} cy={12} r={9} stroke={color} strokeWidth={1.8} fill="none" />
@@ -205,7 +260,7 @@ export function ConnectedApps({
                     opacity: pressed ? Opacity.pressed : 1,
                   },
                 ]}>
-                <Glyph app={app} color={theme.text} size={22} />
+                <Glyph app={app} color={theme.text} size={22} brand />
                 {handle ? (
                   <ThemedText type="smallBold" numberOfLines={1} style={styles.handle}>
                     @{handle}
