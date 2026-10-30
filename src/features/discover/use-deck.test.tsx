@@ -641,5 +641,92 @@ describe('useDeck', () => {
       await act(async () => {});
       expect(result.current.cards![0].id).toBe(target.id);
     });
+
+    it('con el deck retenido tras una relectura fallida, la siguiente no vuelve a cargar', async () => {
+      const { result } = await renderDeck('par');
+      const before = result.current.cards!.map((profile) => profile.id);
+      const getDeck = jest.spyOn(repositories.discovery, 'getDeck');
+
+      getDeck.mockRejectedValueOnce(new Error('sin red'));
+      await act(async () => {
+        result.current.refresh();
+      });
+      await waitFor(() => expect(getDeck).toHaveBeenCalledTimes(1));
+      await act(async () => {});
+
+      // La siguiente relectura queda pendiente: el deck retenido debe seguir a la vista.
+      getDeck.mockImplementationOnce(() => new Promise(() => {}));
+      await act(async () => {
+        result.current.refresh();
+      });
+
+      expect(result.current.loading).toBe(false);
+      expect(result.current.cards!.map((profile) => profile.id)).toEqual(before);
+    });
+
+    it('al reponer una carta con getById conserva que te había dado un Super Like', async () => {
+      setMockPremium(true);
+      const real = repositories.discovery.getDeck.bind(repositories.discovery);
+      const firstId = (await real({ mode: 'par' }))[0].id;
+      const getDeck = jest
+        .spyOn(repositories.discovery, 'getDeck')
+        .mockImplementation(async (filter) =>
+          (await real(filter)).map((profile) => ({
+            ...profile,
+            superLikedMe: profile.id === firstId,
+          }))
+        );
+      const { result } = await renderDeck('par');
+      const target = result.current.cards![0];
+      expect(target.superLikedMe).toBe(true);
+
+      getDeck.mockImplementation(async (filter) =>
+        (await real(filter)).filter((profile) => profile.id !== target.id)
+      );
+      await act(async () => {
+        result.current.decide(target, 'pass');
+      });
+      await act(async () => {
+        await result.current.undo();
+      });
+      await waitFor(() => expect(getDeck).toHaveBeenCalledTimes(2));
+      await act(async () => {});
+
+      expect(result.current.cards![0].id).toBe(target.id);
+      expect(result.current.cards![0].superLikedMe).toBe(true);
+    });
+
+    it('no comprueba con getById una carta que se ha vuelto a decidir tras deshacer', async () => {
+      setMockPremium(true);
+      const real = repositories.discovery.getDeck.bind(repositories.discovery);
+      const { result } = await renderDeck('par');
+      const target = result.current.cards![0];
+      jest
+        .spyOn(repositories.discovery, 'getDeck')
+        .mockImplementation(async (filter) =>
+          (await real(filter)).filter((profile) => profile.id !== target.id)
+        );
+      const getById = jest.spyOn(repositories.profiles, 'getById');
+
+      await act(async () => {
+        result.current.decide(target, 'pass');
+      });
+      await act(async () => {
+        await result.current.undo();
+      });
+      await waitFor(() => expect(getById).toHaveBeenCalledWith(target.id));
+      await act(async () => {});
+      getById.mockClear();
+
+      await act(async () => {
+        result.current.decide(result.current.cards![0], 'pass');
+      });
+      await act(async () => {
+        result.current.refresh();
+      });
+      await act(async () => {});
+
+      expect(getById).not.toHaveBeenCalledWith(target.id);
+    });
   });
 });

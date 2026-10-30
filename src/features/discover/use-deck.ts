@@ -100,7 +100,7 @@ export function useDeck(mode: ModePreference): DeckState {
   const repositories = useRepositories();
   const { quotas, refresh: refreshQuotas } = usePremium();
   const query = useQuery(`deck:${mode}`, () => repositories.discovery.getDeck({ mode }));
-  const { loading, refresh } = query;
+  const { refresh } = query;
 
   // El último deck bueno de este modo: si una relectura falla, `useQuery` suelta
   // el dato, y el deck usable no puede desaparecer por eso. Se ajusta en render
@@ -109,6 +109,9 @@ export function useDeck(mode: ModePreference): DeckState {
   if (query.data !== null && kept?.deck !== query.data) setKept({ mode, deck: query.data });
   const data = query.data ?? (kept?.mode === mode ? kept.deck : null);
   const error = query.data === null && data !== null ? null : query.error;
+  // Con un deck retenido no se vuelve a cargar: la pantalla desmontaría el
+  // stack para enseñar un spinner en cada relectura tras un fallo.
+  const loading = data === null && query.loading;
 
   const [session, setSession] = useState<Session>(emptySession(mode));
   const [match, setMatch] = useState<MatchEvent | null>(null);
@@ -154,7 +157,11 @@ export function useDeck(mode: ModePreference): DeckState {
     const { session: seen } = latest.current;
     if (seen.restoredBase === data) return;
     const missing = seen.restored.filter(
-      (id) => !seen.gone.includes(id) && !data.some((profile) => profile.id === id)
+      (id) =>
+        !seen.gone.includes(id) &&
+        // Una carta que se ha vuelto a decidir tras deshacer ya no se espera en el deck.
+        !seen.decided.some((profile) => profile.id === id) &&
+        !data.some((profile) => profile.id === id)
     );
     let cancelled = false;
     for (const id of missing) {
@@ -164,7 +171,9 @@ export function useDeck(mode: ModePreference): DeckState {
           setSession((previous) => {
             if (previous.mode !== mode) return previous;
             if (profile === null) return { ...previous, gone: [...previous.gone, id] };
-            const card: DeckProfile = { ...profile, superLikedMe: false };
+            // `getById` no sabe de Super Likes: se conserva lo que ya se sabía de la carta.
+            const known = previous.restoredCards.find((other) => other.id === id);
+            const card: DeckProfile = { ...profile, superLikedMe: known?.superLikedMe ?? false };
             return {
               ...previous,
               restoredCards: [card, ...previous.restoredCards.filter((other) => other.id !== id)],
