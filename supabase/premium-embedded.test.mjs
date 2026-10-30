@@ -352,6 +352,7 @@ test('Premium: tablas, cupos, deshacer, Boost, likes recibidos y deck', async (t
         'public.premium_quotas()',
         'public.incoming_likes_count()',
         'public.incoming_likes(integer,timestamptz,boolean,uuid)',
+        'public.discovery_deck(public.mode_preference,public.specialty[],integer,uuid[],integer,public.time_band[],public.ambition[],public.starting_point[],integer)',
       ];
       for (const sig of sigs) {
         assert.deepEqual(
@@ -764,6 +765,188 @@ test('Premium: tablas, cupos, deshacer, Boost, likes recibidos y deck', async (t
     // Tarea 4 — discovery_deck
     // =======================================================================
 
+    await t.test('discovery_deck: una sola firma y devuelve super_liked_me', async () => {
+      assert.equal(
+        (
+          await rows(`select count(*)::int as n from pg_proc
+            where pronamespace = 'public'::regnamespace and proname = 'discovery_deck'`)
+        )[0].n,
+        1
+      );
+      await tx(async () => {
+        await actingAs(ME);
+        const result = await db.query('select * from public.discovery_deck()');
+        assert.ok(result.fields.some((f) => f.name === 'super_liked_me'));
+        assert.equal(result.rows.length, ALL.length - 1);
+      });
+    });
+
+    await t.test('cualquier filtro premium sin Premium lanza LQ005, y el de especialidad no', () =>
+      tx(async () => {
+        await actingAs(ME);
+        for (const args of [
+          'p_min_hours_per_week => 5',
+          "p_time_bands => array['noche']::public.time_band[]",
+          "p_ambition => array['todo-o-nada']::public.ambition[]",
+          "p_starting_point => array['solo-ganas']::public.starting_point[]",
+          'p_timezone_window_hours => 3',
+        ]) {
+          const result = await attempt(`select * from public.discovery_deck(${args})`);
+          assert.equal(result.code, 'LQ005', args);
+        }
+        const free = await attempt(
+          "select * from public.discovery_deck(p_specialties => array['dev']::public.specialty[])"
+        );
+        assert.equal(free.ok, true);
+        await setPremium(ME);
+        await actingAs(ME);
+        assert.equal(
+          (await attempt('select * from public.discovery_deck(p_min_hours_per_week => 5)')).ok,
+          true
+        );
+      })
+    );
+
+    await t.test('filtros premium: horas, franjas, ambición y punto de partida', () =>
+      tx(async () => {
+        await setPremium(ME);
+        await asOwner(`update public.profiles set availability_hours_per_week = 30,
+            availability_bands = array['noche','madrugada']::public.time_band[],
+            ambition = 'todo-o-nada', starting_point = 'algo-empezado'
+          where id = '${T[0]}';
+          update public.profiles set availability_hours_per_week = 3 where id = '${T[1]}';`);
+        await actingAs(ME);
+        const where = async (args) => (await deckIds(args)).filter((u) => T.includes(u));
+        assert.deepEqual(await where('p_min_hours_per_week => 20'), [T[0]]);
+        assert.deepEqual(await where("p_time_bands => array['madrugada']::public.time_band[]"), [
+          T[0],
+        ]);
+        assert.deepEqual(await where("p_ambition => array['todo-o-nada']::public.ambition[]"), [
+          T[0],
+        ]);
+        assert.deepEqual(
+          await where("p_starting_point => array['algo-empezado']::public.starting_point[]"),
+          [T[0]]
+        );
+        assert.equal((await where('p_min_hours_per_week => 0')).length, T.length);
+        assert.equal(
+          (await where('p_ambition => array[]::public.ambition[]')).length,
+          T.length,
+          'una lista vacía no filtra, como en el mock'
+        );
+      })
+    );
+
+    await t.test(
+      'p_timezone_window_hours = 2 deja fuera un perfil a 6 h y deja dentro uno a 1 h',
+      () =>
+        tx(async () => {
+          // Zonas fijas (sin horario de verano) para que el desfase no dependa de la fecha.
+          await asOwner(`update public.profiles set timezone = 'Etc/GMT+8';
+          update public.profiles set timezone = 'Etc/GMT-1' where id = '${ME}';
+          update public.profiles set timezone = 'Etc/GMT+5' where id = '${T[0]}';
+          update public.profiles set timezone = 'Etc/GMT-2' where id = '${T[1]}';
+          update public.profiles set timezone = 'Etc/GMT-1' where id = '${T[2]}';
+          update public.profiles set timezone = 'Zona/Inventada' where id = '${T[3]}';`);
+          const formula = await rows(`select abs(extract(epoch from
+            (now() at time zone 'Etc/GMT+5') - (now() at time zone 'Etc/GMT-1'))) / 3600 as h`);
+          assert.equal(Number(formula[0].h), 6, 'la fórmula del plan da 6 h');
+          await setPremium(ME);
+          await actingAs(ME);
+          const near = (await deckIds('p_timezone_window_hours => 2')).filter((u) => T.includes(u));
+          assert.ok(!near.includes(T[0]), 'a 6 h queda fuera');
+          assert.ok(near.includes(T[1]), 'a 1 h queda dentro');
+          assert.ok(near.includes(T[2]), 'a 0 h queda dentro');
+          assert.ok(near.includes(T[3]), 'una zona que no se reconoce cuenta como UTC (a 1 h)');
+          const wide = (await deckIds('p_timezone_window_hours => 12')).filter((u) =>
+            T.includes(u)
+          );
+          assert.ok(wide.includes(T[0]));
+          const zero = (await deckIds('p_timezone_window_hours => 0')).filter((u) => T.includes(u));
+          assert.deepEqual(zero, [T[2]]);
+        })
+    );
+
+    await t.test('orden: Super Like recibido, después Boost activo, después el de siempre', () =>
+      tx(async () => {
+        const superUser = T[6];
+        const boosted = T[5];
+        await setPremium(boosted);
+        await asOwner(`insert into public.boosts (user_id, starts_at, ends_at)
+            values ('${boosted}', now() - interval '1 minute', now() + interval '29 minutes');
+          insert into public.decisions (actor_id, target_id, decision, is_super) values
+            ('${superUser}', '${ME}', 'like', true), ('${T[0]}', '${ME}', 'like', false);`);
+        await actingAs(ME);
+        const rowsOut = await rows('select id, super_liked_me from public.discovery_deck()');
+        const ids = rowsOut.map((r) => r.id);
+        assert.equal(ids[0], superUser);
+        assert.equal(ids[1], boosted);
+        const rest = rowsOut.slice(2);
+        assert.deepEqual(
+          rest.map((r) => r.id),
+          [...rest.map((r) => r.id)].sort(),
+          'el resto, por id'
+        );
+        assert.deepEqual(
+          rowsOut.filter((r) => r.super_liked_me).map((r) => r.id),
+          [superUser],
+          'un like normal no lleva insignia'
+        );
+      })
+    );
+
+    await t.test('un Boost terminado no adelanta', () =>
+      tx(async () => {
+        await asOwner(`insert into public.boosts (user_id, starts_at, ends_at)
+          values ('${T[5]}', now() - interval '2 hours', now() - interval '1 hour');`);
+        await actingAs(ME);
+        const ids = await deckIds();
+        assert.deepEqual(ids, [...ids].sort());
+      })
+    );
+
+    await t.test('el Boost no mete un perfil que el filtro excluye', () =>
+      tx(async () => {
+        await setPremium(ME);
+        await asOwner(`update public.profiles set ambition = 'todo-o-nada' where id = '${T[0]}';
+          insert into public.boosts (user_id, starts_at, ends_at)
+          values ('${T[5]}', now() - interval '1 minute', now() + interval '29 minutes');`);
+        await actingAs(ME);
+        assert.deepEqual(await deckIds("p_ambition => array['todo-o-nada']::public.ambition[]"), [
+          T[0],
+        ]);
+      })
+    );
+
+    await t.test(
+      'el Super Like de quien me bloquea, o de quien ya decidí, no sale con insignia',
+      () =>
+        tx(async () => {
+          await asOwner(`insert into public.decisions (actor_id, target_id, decision, is_super) values
+          ('${LIKER_1}', '${ME}', 'like', true), ('${LIKER_2}', '${ME}', 'like', true);
+          insert into public.user_blocks (blocker_id, blocked_id) values ('${LIKER_1}', '${ME}');`);
+          await actingAs(ME);
+          const withBadge = async () =>
+            (await rows('select id from public.discovery_deck() where super_liked_me')).map(
+              (r) => r.id
+            );
+          assert.deepEqual(await withBadge(), [LIKER_2], 'el bloqueo de LIKER_1 lo esconde');
+          assert.ok(!(await deckIds()).includes(LIKER_1));
+          await pass(LIKER_2);
+          assert.deepEqual(await withBadge(), [], 'una vez decidido, sale del deck');
+        })
+    );
+
+    await t.test('el deck conserva el filtro de modo, p_exclude_ids y p_limit', () =>
+      tx(async () => {
+        await asOwner(`update public.profiles set looking_for = 'par' where id = '${T[0]}'`);
+        await actingAs(ME);
+        assert.ok(!(await deckIds("p_mode => 'lockin'")).includes(T[0]));
+        assert.ok((await deckIds("p_mode => 'par'")).includes(T[0]));
+        assert.ok(!(await deckIds(`p_exclude_ids => array['${T[1]}']::uuid[]`)).includes(T[1]));
+        assert.equal((await deckIds('p_limit => 3')).length, 3);
+      })
+    );
   } finally {
     await db.close();
   }

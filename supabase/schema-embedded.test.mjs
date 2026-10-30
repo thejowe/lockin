@@ -1197,8 +1197,11 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       where n.nspname = 'public' and p.proname = 'discovery_deck'`);
     assert.deepEqual(decks.rows, [
       {
-        firma: 'public.discovery_deck(public.mode_preference,public.specialty[],integer,uuid[])',
-        security_definer: false,
+        // 20261030120200 (Premium): nueve argumentos, y SECURITY DEFINER porque lee
+        // los Super Likes recibidos y los Boosts, que la RLS no deja ver.
+        firma:
+          'public.discovery_deck(public.mode_preference,public.specialty[],integer,uuid[],integer,public.time_band[],public.ambition[],public.starting_point[],integer)',
+        security_definer: true,
         config: ['search_path=""'],
         anon_ejecuta: false,
         authenticated_ejecuta: true,

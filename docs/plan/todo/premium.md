@@ -22,14 +22,25 @@ escriba código pasa por `codex review` antes de commitear en la rama principal.
 
 ## Fase 1 — servidor (Supabase)
 
-- [ ] [Claude] Migración `premium`: `entitlements`, `is_premium()`, `like_events`,
+- [x] [Claude] Migración `premium`: `entitlements`, `is_premium()`, `like_events`,
   `decisions.is_super`, `boosts`, `revenuecat_events`, y el `pg_cron` de purga (spec §3).
-- [ ] [Claude] `record_decision` con Super Like, cupos (`LQ001`/`LQ002`/`LQ004`), cerrojo por actor
+  Hecho el 2026-10-29 en `20261030120000_premium_tables.sql` (Tarea 2). Solo en el repo: **sin aplicar en producción**.
+  Añade `premium_limits()` (los siete límites, comparados con `premium-limits.ts` por un test) y
+  `dev_set_premium`/`dev_add_like_events`/`dev_age_last_decision`/`dev_add_boost` en `seed.sql`
+  (retiradas por `dev-teardown.sql`).
+- [x] [Claude] `record_decision` con Super Like, cupos (`LQ001`/`LQ002`/`LQ004`), cerrojo por actor
   e idempotencia. Borrar antes la firma anterior para no dejar una sobrecarga.
-- [ ] [Claude] `undo_last_decision()`, `activate_boost()`, `premium_quotas()`,
-  `incoming_likes_count()` e `incoming_likes()`.
-- [ ] [Claude] `discovery_deck` con los filtros premium (`42501` sin Premium), y el orden Super
-  Like → Boost → el de siempre, con `super_liked_me`.
+  Hecho el 2026-10-29 en `20261030120100_premium_rpcs.sql` (Tarea 3), sin aplicar en producción.
+- [x] [Claude] `undo_last_decision()`, `activate_boost()`, `premium_quotas()`,
+  `incoming_likes_count()` e `incoming_likes()`. Misma migración. Desvíos: `incoming_likes` lleva dos
+  parámetros opcionales más (`p_before_super`, `p_before_id`) para paginar sobre el orden completo
+  (Super Likes primero), y hay una auxiliar interna `like_window_reset`. El `undo` es más estricto que
+  el mock: con match no deshace ni un pass posterior.
+- [x] [Claude] `discovery_deck` con los filtros premium (`LQ005` sin Premium), y el orden Super
+  Like → Boost → el de siempre, con `super_liked_me`. Hecho el 2026-10-29 en
+  `20261030120200_premium_deck.sql` (Tarea 4), sin aplicar en producción. Pasa a `security definer`
+  y devuelve una tabla con las columnas de `profiles` + `super_liked_me` (si `profiles` gana una
+  columna visible, hay que añadirla en `discovery_deck` e `incoming_likes`).
 - [ ] [Codex] Tests de contrato SQL de la spec §8 (lista cerrada; el patrón son los tests de
   contrato de Supabase existentes).
 - [ ] [Claude] Aplicar en producción por MCP, byte a byte (memoria
