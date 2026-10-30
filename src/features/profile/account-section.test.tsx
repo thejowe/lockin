@@ -23,7 +23,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
 import { DataProvider } from '@/data';
-import { createMockRepositories, resetState } from '@/data/mock';
+import { createMockRepositories, resetState, setMockPremium } from '@/data/mock';
 
 import { AccountSection } from './account-section';
 
@@ -490,6 +490,69 @@ describe('AccountSection', () => {
 
       await waitFor(() => expect(gateway.deleteMyAccount).toHaveBeenCalledTimes(1));
       expect(onDeleted).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Premium', () => {
+    it('sin Premium ofrece hacerse Premium', async () => {
+      await renderSection(ASEGURADA);
+
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Hazte Premium' })).toBeTruthy()
+      );
+      expect(screen.queryByText(/Activo hasta/)).toBeNull();
+    });
+
+    it('con Premium dice hasta cuándo y deja gestionarlo en la tienda', async () => {
+      setMockPremium(true);
+      await renderSection(ASEGURADA);
+
+      await waitFor(() => expect(screen.getByText(/^Activo hasta /)).toBeTruthy());
+      expect(screen.getByRole('button', { name: 'Gestionar suscripción' })).toBeTruthy();
+      expect(screen.queryByRole('button', { name: 'Hazte Premium' })).toBeNull();
+    });
+
+    it('eliminar la cuenta con Premium avisa de que la suscripción no se cancela sola', async () => {
+      setMockPremium(true);
+      await renderSection(ASEGURADA);
+      await waitFor(() => expect(screen.getByText(/^Activo hasta /)).toBeTruthy());
+
+      await press('Eliminar mi cuenta');
+
+      expect(
+        screen.getByText(
+          'Tu suscripción no se cancela sola: cancélala en la tienda o se seguirá cobrando.'
+        )
+      ).toBeTruthy();
+      expect(screen.getAllByRole('button', { name: 'Gestionar suscripción' })).toHaveLength(2);
+    });
+
+    it('eliminar la cuenta sin saber si hay Premium avisa con cautela', async () => {
+      jest.spyOn(repositories.premium, 'getQuotas').mockRejectedValue(new Error('sin red'));
+      await renderSection(ASEGURADA);
+      await waitFor(() => expect(screen.getByText('Eliminar mi cuenta')).toBeTruthy());
+
+      await press('Eliminar mi cuenta');
+
+      expect(screen.getByText(/No hemos podido comprobar si tienes una suscripción/)).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Gestionar suscripción' })).toBeTruthy();
+    });
+
+    it('siempre ofrece Restaurar compras', async () => {
+      await renderSection(ASEGURADA);
+
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Restaurar compras' })).toBeTruthy()
+      );
+    });
+
+    it('eliminar la cuenta sin Premium no lleva ese aviso', async () => {
+      await renderSection(ASEGURADA);
+      await waitFor(() => expect(screen.getByText('Eliminar mi cuenta')).toBeTruthy());
+
+      await press('Eliminar mi cuenta');
+
+      expect(screen.queryByText(/no se cancela sola/)).toBeNull();
     });
   });
 

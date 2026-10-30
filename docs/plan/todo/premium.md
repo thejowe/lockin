@@ -68,12 +68,17 @@ escriba código pasa por `codex review` antes de commitear en la rama principal.
 - [x] [Claude] Matches: fila «Te han dado like (N)» y la cuadrícula premium (gratis ve relleno
   genérico, nunca fotos reales).
   Hecho el 2026-10-30 (Tarea 8): `LikesRow` en Matches, ruta `/likes` con `IncomingLikes` (relleno sin Premium, perfiles con Premium, Super Likes primero, paginación por cursor, hoja/paywall si el like choca con cupo o Premium, `MatchModal` si hay match). Solo probado con Jest: **sin ver en dispositivo** (lo cubre la casilla `[comprobador]`). Pendiente `codex review`.
-- [ ] [Claude] Filtros avanzados con candado; paywall (`src/lib/purchases.ts` con ofertas falsas en
+- [x] [Claude] Filtros avanzados con candado; paywall (`src/lib/purchases.ts` con ofertas falsas en
   mock); fila Premium en Cuenta; aviso al borrar la cuenta.
   Filtros con candado hechos el 2026-10-30 (Tarea 7): `DeckFilters` (`deck-filters.tsx`), botón «Filtros»
   con hoja en Descubrir, `useDeck(mode, filter, { onPremiumFiltersRemoved })` y aviso «Tus filtros Premium
   se han quitado» si el servidor rechaza con `PremiumRequiredError`. Solo Jest: **falta verlo en
   dispositivo** (`[comprobador]`). Quedan el paywall, la fila de Cuenta y el aviso al borrar (Tareas 9-10).
+  Tarea 9 hecha el 2026-10-30: `src/lib/purchases.ts` (ofertas falsas con mock; con Supabase y sin SDK
+  lanza `PurchasesUnavailableError`), `Paywall` (`/premium` ya no es stub), `PremiumRow` y aviso de
+  suscripción al borrar la cuenta (`AccountSection`), «Simular Premium» solo en `__DEV__` con mock (dentro
+  del paywall: `AccountSection` no pinta nada con el mock, así que ahí no se ve la fila). Solo Jest:
+  **sin ver en dispositivo** (Tarea 10, `[comprobador]`). Pendiente `codex review`.
 - [ ] [comprobador] Recorrido gratis en el emulador (agotar likes, hoja, número de likes, paywall)
   con mock y con Supabase real.
 

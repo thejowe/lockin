@@ -36,13 +36,16 @@
  */
 
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Linking, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { useQuery } from '@/data';
+import { PremiumRow } from '@/features/premium/premium-row';
+import { usePremium } from '@/features/premium/use-premium';
+import { manageSubscriptionsUrl } from '@/lib/purchases';
 
 import {
   AccountError,
@@ -101,6 +104,7 @@ export function AccountSection({ onDeleted, onConfirmationShown }: AccountSectio
     saveRecoveredPassword,
     resetPassword,
   } = useAccountActions();
+  const { quotas, refresh: refreshPremium } = usePremium();
   const { data: recovering, refresh: refreshRecovering } = useQuery(
     'account:recovering',
     readRecovering
@@ -268,6 +272,8 @@ export function AccountSection({ onDeleted, onConfirmationShown }: AccountSectio
         </>
       ) : null}
 
+      <PremiumRow quotas={quotas} onRestored={() => void refreshPremium()} />
+
       {account.recoverable && panel === 'closed' ? (
         <SecondaryButton label="Gestionar contraseña" onPress={() => setPanel('menu')} />
       ) : null}
@@ -398,6 +404,19 @@ export function AccountSection({ onDeleted, onConfirmationShown }: AccountSectio
             Se borran tu perfil, tus matches, tus conversaciones, tus sesiones y tus salas, también
             para quienes hablaban contigo. No se puede deshacer ni recuperar.
           </ThemedText>
+          {quotas === null || quotas.isPremium ? (
+            <>
+              <ThemedText type="small" themeColor="danger">
+                {quotas === null
+                  ? 'No hemos podido comprobar si tienes una suscripción. Si la tienes, no se cancela sola: cancélala en la tienda o se seguirá cobrando.'
+                  : 'Tu suscripción no se cancela sola: cancélala en la tienda o se seguirá cobrando.'}
+              </ThemedText>
+              <SecondaryButton
+                label="Gestionar suscripción"
+                onPress={() => void Linking.openURL(manageSubscriptionsUrl())}
+              />
+            </>
+          ) : null}
 
           <SecondaryButton
             label={busy === 'borrar' ? 'Eliminando…' : 'Eliminar mi cuenta para siempre'}

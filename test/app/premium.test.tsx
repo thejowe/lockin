@@ -1,7 +1,6 @@
 /**
- * Tests de la ruta `/premium`, que hasta la Tarea 9 del plan de Premium es un
- * stub: dice que llega pronto y deja volver. Lo único que importa es que
- * `openPaywall()` aterrice en algo que navega sin error y de lo que se sale.
+ * Tests de la ruta `/premium` (el paywall): lo que importa es que `openPaywall()`
+ * aterrice en algo que navega sin error y de lo que se sale con «Ahora no».
  *
  * Ojo: en RNTL 14 `render` y `fireEvent` son asíncronos.
  */
@@ -21,28 +20,30 @@ beforeEach(() => {
   resetRouter();
 });
 
-describe('PremiumRoute (stub)', () => {
-  it('dice que Premium llega pronto, sin prometer precios', async () => {
+describe('PremiumRoute', () => {
+  it('pinta el paywall con los planes de la oferta', async () => {
     await renderRoute(<PremiumRoute />);
 
-    expect(screen.getByText('Muy pronto')).toBeTruthy();
-    expect(screen.queryByText(/€/)).toBeNull();
+    expect(await screen.findByText('Likes sin límite')).toBeTruthy();
+    expect(screen.getByRole('radio', { name: /Mensual/ })).toBeTruthy();
   });
 
-  it('Volver regresa a la pantalla anterior', async () => {
+  it('«Ahora no» regresa a la pantalla anterior', async () => {
     await renderRoute(<PremiumRoute />);
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Volver' }));
+    await screen.findByText('Likes sin límite');
+    await fireEvent.press(screen.getByRole('button', { name: 'Ahora no' }));
 
     expect(router.back).toHaveBeenCalledTimes(1);
     expect(router.replace).not.toHaveBeenCalled();
   });
 
-  it('abierta sin historial (enlace directo), Volver lleva a la puerta de entrada', async () => {
+  it('abierta sin historial (enlace directo), «Ahora no» lleva a la puerta de entrada', async () => {
     router.canGoBack.mockReturnValue(false);
     await renderRoute(<PremiumRoute />);
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Volver' }));
+    await screen.findByText('Likes sin límite');
+    await fireEvent.press(screen.getByRole('button', { name: 'Ahora no' }));
 
     expect(router.replace).toHaveBeenCalledWith('/');
     expect(router.back).not.toHaveBeenCalled();
