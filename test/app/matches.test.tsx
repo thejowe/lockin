@@ -107,4 +107,16 @@ describe('MatchesScreen: likes recibidos', () => {
 
     expect(router.push).toHaveBeenCalledWith('/likes');
   });
+
+  it('tirar para refrescar relee también el conteo de likes recibidos', async () => {
+    const count = jest.spyOn(repositories.premium, 'countIncomingLikes');
+    await renderRoute(<MatchesScreen />);
+    await waitFor(() => expect(count).toHaveBeenCalledTimes(1));
+
+    await act(async () => {
+      screen.getByTestId('matches-list').props.refreshControl.props.onRefresh();
+    });
+
+    await waitFor(() => expect(count).toHaveBeenCalledTimes(2));
+  });
 });

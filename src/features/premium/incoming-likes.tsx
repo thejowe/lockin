@@ -11,8 +11,8 @@
  * `MatchModal`, igual que al swipear.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { FlatList, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
 import { LoadingState } from '@/components/state-view';
@@ -28,6 +28,7 @@ import {
   QuotaExceededError,
   incomingLikeCursor,
   useQuery,
+  useRefreshQueryPrefix,
   useRepositories,
 } from '@/data';
 import { ProfileAvatar } from '@/features/profile';
@@ -93,62 +94,88 @@ function Tile({ like, onPress }: { like: IncomingLike; onPress: () => void }) {
   );
 }
 
+/** Lo que falló al decidir, para poder reintentarlo desde el aviso. */
+interface FailedDecision {
+  like: IncomingLike;
+  decision: Decision;
+}
+
+/** Páginas que siguen a la primera, atadas a la lectura de la que cuelgan. */
+interface MorePages {
+  base: IncomingLike[] | null;
+  items: IncomingLike[];
+  done: boolean;
+  failed: boolean;
+}
+
 export function IncomingLikes({ onOpenChat }: { onOpenChat: (matchId: string) => void }) {
   const theme = useTheme();
   const repositories = useRepositories();
   const { quotas, loading: quotasLoading } = usePremium();
   const isPremium = quotas?.isPremium ?? false;
   const count = useQuery('incoming-likes-count', () => repositories.premium.countIncomingLikes());
+  const refreshDeck = useRefreshQueryPrefix('deck');
 
-  const [likes, setLikes] = useState<IncomingLike[] | null>(null);
-  const [failed, setFailed] = useState(false);
+  // La primera página es una consulta registrada: cuando el backend avisa de que las URLs
+  // firmadas caducan, `DataProvider` la relee y los perfiles llegan con fotos nuevas.
+  const first = useQuery(`incoming-likes:list:${isPremium}`, () =>
+    isPremium
+      ? repositories.premium.listIncomingLikes({ limit: PAGE_SIZE })
+      : Promise.resolve<IncomingLike[]>([])
+  );
+  const [more, setMore] = useState<MorePages>({
+    base: null,
+    items: [],
+    done: false,
+    failed: false,
+  });
+  const [removed, setRemoved] = useState<ReadonlySet<string>>(new Set());
   const [selected, setSelected] = useState<IncomingLike | null>(null);
   const [match, setMatch] = useState<MatchEvent | null>(null);
   const [blocked, setBlocked] = useState<Blocked>(null);
+  const [failedDecision, setFailedDecision] = useState<FailedDecision | null>(null);
   const loadingPage = useRef(false);
-  const exhausted = useRef(false);
 
-  /** Pide una página y la añade sin repetir a nadie. `before` es el cursor de la última tarjeta. */
-  const loadPage = useCallback(
-    (before?: string) => {
-      if (loadingPage.current || exhausted.current) return Promise.resolve();
-      loadingPage.current = true;
-      return repositories.premium.listIncomingLikes({ before, limit: PAGE_SIZE }).then(
-        (page) => {
-          loadingPage.current = false;
-          if (page.length === 0) exhausted.current = true;
-          setFailed(false);
-          setLikes((current) => {
-            const seen = new Set((current ?? []).map((like) => like.profile.id));
-            return [...(current ?? []), ...page.filter((like) => !seen.has(like.profile.id))];
-          });
-        },
-        () => {
-          loadingPage.current = false;
-          setFailed(true);
-          setLikes((current) => current ?? []);
-        }
-      );
-    },
-    [repositories]
-  );
-
-  useEffect(() => {
-    // El `.then` de `loadPage` es quien escribe el estado, no el cuerpo del efecto.
-    if (isPremium) void loadPage();
-  }, [isPremium, loadPage]);
+  // Las páginas siguientes valen mientras la primera lectura sea la misma: si se relee,
+  // se vuelven a pedir al desplazarse.
+  const extra = more.base === first.data ? more : { items: [], done: false, failed: false };
+  const likes = useMemo(() => {
+    if (first.data === null) return null;
+    const fresh = new Map<string, IncomingLike>();
+    // Una lectura nueva reemplaza al perfil ya conocido, no solo añade ids nuevos.
+    for (const like of [...first.data, ...extra.items]) fresh.set(like.profile.id, like);
+    return [...fresh.values()].filter((like) => !removed.has(like.profile.id));
+  }, [first.data, extra.items, removed]);
 
   function loadMore() {
     const last = likes?.[likes.length - 1];
-    if (last) void loadPage(incomingLikeCursor(last));
+    const base = first.data;
+    if (!last || !base || loadingPage.current || extra.done) return;
+    loadingPage.current = true;
+    void repositories.premium
+      .listIncomingLikes({ before: incomingLikeCursor(last), limit: PAGE_SIZE })
+      .then(
+        (page) =>
+          setMore((current) => {
+            const items = current.base === base ? current.items : [];
+            return { base, items: [...items, ...page], done: page.length === 0, failed: false };
+          }),
+        () => setMore((current) => ({ ...current, base, failed: true }))
+      )
+      .finally(() => {
+        loadingPage.current = false;
+      });
   }
 
   async function decide(like: IncomingLike, decision: Decision) {
     setSelected(null);
+    setFailedDecision(null);
     try {
       const result = await repositories.discovery.recordDecision(like.profile.id, decision, 'par');
-      setLikes((current) => (current ?? []).filter((item) => item.profile.id !== like.profile.id));
+      setRemoved((current) => new Set(current).add(like.profile.id));
       count.refresh();
+      // El deck montado no debe volver a ofrecer a quien acabas de decidir aquí.
+      refreshDeck();
       if (result.match) setMatch({ match: result.match, profile: like.profile });
     } catch (cause) {
       if (cause instanceof QuotaExceededError) {
@@ -156,19 +183,20 @@ export function IncomingLikes({ onOpenChat }: { onOpenChat: (matchId: string) =>
       } else if (cause instanceof PremiumRequiredError) {
         setBlocked('premium');
       } else {
-        setFailed(true);
+        setFailedDecision({ like, decision });
       }
     }
   }
 
   const fillers = Math.min(count.data ?? 0, MAX_FILLERS);
+  const loadFailed = first.error !== null || extra.failed;
 
   let body: React.ReactNode;
-  if (quotasLoading || (isPremium && likes === null)) {
+  if (quotasLoading || (isPremium && likes === null && first.error === null)) {
     body = <LoadingState label="Cargando tus likes…" />;
   } else if (!isPremium) {
     body = (
-      <View style={styles.free}>
+      <ScrollView testID="incoming-likes-scroll" contentContainerStyle={styles.free}>
         <View style={styles.grid}>
           {Array.from({ length: fillers }, (_, index) => (
             <Filler key={index} />
@@ -178,7 +206,7 @@ export function IncomingLikes({ onOpenChat }: { onOpenChat: (matchId: string) =>
           Con Premium ves quién te ha dado like y puedes devolverlo desde aquí.
         </ThemedText>
         <ActionButton label="Hazte Premium" onPress={openPaywall} />
-      </View>
+      </ScrollView>
     );
   } else {
     body = (
@@ -192,9 +220,23 @@ export function IncomingLikes({ onOpenChat }: { onOpenChat: (matchId: string) =>
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
         contentContainerStyle={styles.list}
+        ListHeaderComponent={
+          failedDecision ? (
+            <View style={styles.notice}>
+              <ThemedText type="small" themeColor="danger">
+                No hemos podido guardar tu decisión.
+              </ThemedText>
+              <ActionButton
+                label="Reintentar"
+                variant="secondary"
+                onPress={() => void decide(failedDecision.like, failedDecision.decision)}
+              />
+            </View>
+          ) : undefined
+        }
         ListEmptyComponent={
           <ThemedText type="body" themeColor="textSecondary" style={styles.centered}>
-            {failed ? 'No hemos podido cargar tus likes.' : 'Nadie te ha dado like todavía'}
+            {loadFailed ? 'No hemos podido cargar tus likes.' : 'Nadie te ha dado like todavía'}
           </ThemedText>
         }
       />
@@ -265,6 +307,10 @@ export function IncomingLikes({ onOpenChat }: { onOpenChat: (matchId: string) =>
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+  },
+  notice: {
+    gap: Spacing.two,
+    marginBottom: Spacing.three,
   },
   list: {
     padding: Spacing.three,

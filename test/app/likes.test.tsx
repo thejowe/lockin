@@ -15,14 +15,29 @@ import { renderRoute, repositories, resetRepositories, resetRouter, router } fro
 import LikesRoute from '../../src/app/likes';
 
 jest.mock('expo-router', () => require('../routes').expoRouterMock());
+jest.mock('@/features/profile/use-registration-gate', () => ({
+  useRegistrationGate: jest.fn(() => 'open'),
+}));
+
+const useGate = jest.requireMock('@/features/profile/use-registration-gate')
+  .useRegistrationGate as jest.Mock;
 
 beforeEach(async () => {
   resetRepositories();
   resetRouter();
+  useGate.mockReturnValue('open');
   await repositories.profiles.saveCurrent(buildProfileInput());
 });
 
 describe('LikesRoute', () => {
+  it('sin email confirmado manda a /register y no enseña los likes', async () => {
+    useGate.mockReturnValue('required');
+    await renderRoute(<LikesRoute />);
+
+    expect(router.redirects).toContain('/register');
+    expect(screen.queryByText('Hazte Premium')).toBeNull();
+  });
+
   it('sin Premium pinta el relleno y el botón de Premium', async () => {
     await renderRoute(<LikesRoute />);
 

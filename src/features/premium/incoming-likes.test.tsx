@@ -9,9 +9,11 @@
  */
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { DataProvider, PremiumRequiredError, QuotaExceededError } from '@/data';
+import { DataProvider, PremiumRequiredError, QuotaExceededError, useQuery } from '@/data';
+import { emitMediaStale } from '@/data/media-refresh';
 import { createMockRepositories, mockSuperLikeFrom, resetState, setMockPremium } from '@/data/mock';
 import { SEED_RECIPROCAL_IDS } from '@/data/mock/seed';
 import { buildProfileInput } from '@/data/test-fixtures';
@@ -31,11 +33,12 @@ const METRICS = {
 let repositories: Repositories;
 const onOpenChat = jest.fn();
 
-async function setup() {
+async function setup(extra?: React.ReactNode) {
   await render(
     <SafeAreaProvider initialMetrics={METRICS}>
       <DataProvider value={repositories}>
         <IncomingLikes onOpenChat={onOpenChat} />
+        {extra}
       </DataProvider>
     </SafeAreaProvider>
   );
@@ -217,5 +220,112 @@ describe('IncomingLikes: casos de borde', () => {
 
     await waitFor(() => expect(screen.getAllByTestId('incoming-like-tile')).toHaveLength(5));
     expect(screen.queryByText(/Sin likes hasta/)).toBeNull();
+  });
+});
+
+describe('IncomingLikes: refrescos y avisos', () => {
+  beforeEach(() => setMockPremium(true));
+
+  it('tras decidir, invalida el deck montado y el conteo', async () => {
+    const run = jest.fn(async () => 1);
+    function DeckProbe() {
+      useQuery('deck:par', run);
+      return null;
+    }
+    const count = jest.spyOn(repositories.premium, 'countIncomingLikes');
+    await setup(<DeckProbe />);
+    const name = await nameOf(SEED_RECIPROCAL_IDS[0]);
+    await waitFor(() => expect(screen.getByText(name)).toBeTruthy());
+    const runs = run.mock.calls.length;
+    const counts = count.mock.calls.length;
+
+    await fireEvent.press(screen.getByText(name));
+    await fireEvent.press(screen.getByText('Pasar'));
+
+    await waitFor(() => expect(run.mock.calls.length).toBeGreaterThan(runs));
+    await waitFor(() => expect(count.mock.calls.length).toBeGreaterThan(counts));
+  });
+
+  it('sin Premium el contenido hace scroll', async () => {
+    setMockPremium(false);
+    await setup();
+
+    await waitFor(() => expect(screen.getByTestId('incoming-likes-scroll')).toBeTruthy());
+  });
+
+  it('al caducar las fotos firmadas relee la lista y reemplaza los perfiles', async () => {
+    const all = await repositories.premium.listIncomingLikes();
+    const renamed = all.map((like, index) =>
+      index === 0 ? { ...like, profile: { ...like.profile, name: 'Nombre Nuevo' } } : like
+    );
+    jest
+      .spyOn(repositories.premium, 'listIncomingLikes')
+      .mockResolvedValueOnce(all)
+      .mockResolvedValue(renamed);
+    await setup();
+    await waitFor(() => expect(screen.getAllByTestId('incoming-like-tile')).toHaveLength(5));
+
+    await act(async () => emitMediaStale());
+
+    await waitFor(() => expect(screen.getByText('Nombre Nuevo')).toBeTruthy());
+    expect(screen.queryByText(all[0].profile.name)).toBeNull();
+    expect(screen.getAllByTestId('incoming-like-tile')).toHaveLength(5);
+  });
+
+  it('un fallo al decidir con la lista poblada avisa aparte y permite reintentar', async () => {
+    const record = jest
+      .spyOn(repositories.discovery, 'recordDecision')
+      .mockRejectedValueOnce(new Error('red'));
+    await setup();
+    const name = await nameOf(SEED_RECIPROCAL_IDS[0]);
+    await waitFor(() => expect(screen.getByText(name)).toBeTruthy());
+
+    await fireEvent.press(screen.getByText(name));
+    await fireEvent.press(screen.getByText('Pasar'));
+
+    await waitFor(() =>
+      expect(screen.getByText('No hemos podido guardar tu decisión.')).toBeTruthy()
+    );
+    expect(screen.getAllByTestId('incoming-like-tile')).toHaveLength(5);
+
+    record.mockRestore();
+    await fireEvent.press(screen.getByText('Reintentar'));
+
+    await waitFor(() => expect(screen.getAllByTestId('incoming-like-tile')).toHaveLength(4));
+    expect(screen.queryByText('No hemos podido guardar tu decisión.')).toBeNull();
+  });
+});
+
+describe('IncomingLikes: cierres y fallos de paginación', () => {
+  beforeEach(() => setMockPremium(true));
+
+  it('«Entendido» cierra la hoja de cupo y la tarjeta sigue', async () => {
+    jest
+      .spyOn(repositories.discovery, 'recordDecision')
+      .mockRejectedValueOnce(new QuotaExceededError('likes', '2026-10-31T08:00:00Z'));
+    await setup();
+    const name = await nameOf(SEED_RECIPROCAL_IDS[0]);
+    await waitFor(() => expect(screen.getByText(name)).toBeTruthy());
+
+    await fireEvent.press(screen.getByText(name));
+    await fireEvent.press(screen.getByText('Me gusta'));
+    await waitFor(() => expect(screen.getByText(/Sin likes hasta/)).toBeTruthy());
+    await fireEvent.press(screen.getByText('Entendido'));
+    expect(screen.queryByText(/Sin likes hasta/)).toBeNull();
+    expect(screen.getAllByTestId('incoming-like-tile')).toHaveLength(5);
+  });
+
+  it('si falla una página siguiente, lo avisa sin perder las que ya hay', async () => {
+    const all = await repositories.premium.listIncomingLikes();
+    jest
+      .spyOn(repositories.premium, 'listIncomingLikes')
+      .mockResolvedValueOnce(all.slice(0, 2))
+      .mockRejectedValueOnce(new Error('red'));
+    await setup();
+    await waitFor(() => expect(screen.getAllByTestId('incoming-like-tile')).toHaveLength(2));
+
+    await fireEvent(screen.getByTestId('incoming-likes-list'), 'endReached');
+
+    await waitFor(() => expect(screen.getAllByTestId('incoming-like-tile')).toHaveLength(2));
   });
 });
