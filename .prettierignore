@@ -23,3 +23,6 @@ src/features/legal/texts.generated.ts
 # Plantillas de correo: se pegan a mano en el panel de Supabase, así que tienen que
 # seguir byte a byte como están aplicadas; Prettier las reescribiría.
 supabase/templates/
+
+# Copias temporales de `codex review` (git archive de un commit)
+.review-*/

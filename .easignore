@@ -72,3 +72,6 @@ supabase/evidence/
 docs/
 e2e/.runtime/
 .superpowers/
+
+# Copias temporales de `codex review` (git archive de un commit)
+.review-*/

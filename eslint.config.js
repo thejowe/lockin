@@ -15,6 +15,7 @@ module.exports = defineConfig([
       '.expo/*',
       'e2e/.runtime/**',
       'e2e/artifacts/**',
+      '.review-*/**',
       // Deno, no la app: sus imports `jsr:` no los resuelve este lint.
       'supabase/functions/**/index.ts',
     ],

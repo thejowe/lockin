@@ -63,3 +63,6 @@ _site/
 
 # logs del túnel de Expo
 expo-tunnel.log
+
+# Copias temporales de `codex review` (git archive de un commit)
+.review-*/
