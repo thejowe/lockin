@@ -1,5 +1,15 @@
 # TODO maestro — LockIn MVP
 
+## ▶ Al retomar (2026-10-30, cierre): Premium con mock y Supabase real comprobado; falta el cobro
+
+**Hecho:** Premium Fases 1–2 completas (`todo/premium.md`). Las 4 migraciones (`premium_tables`, `premium_rpcs`, `premium_deck`, `premium_hardening`) están **aplicadas en producción**, Schema drift verde. 34 tests de contrato SQL en CI. `comprobador` pasó el recorrido con mock y con Supabase real (cuentas de prueba borradas, producción limpia). Hallazgos menores corregidos. Todo empujado hasta `f38b363`.
+
+**Primer paso al volver:** leer el E2E Android del run `41147944463` (sobre `f38b363`; `gh run view 41147944463 --json jobs`). En `4b5f01d` la variante `mock` falló al ver el mensaje enviado en el chat (`Mensaje E2E …` no visible en 17 s); `04fe5bc` pasó y no se tocó el chat, así que parece intermitente. Si `mock` vuelve a fallar en ese paso, es regresión: descargar con `gh run download` y mirar `maestro.log`.
+
+**Sin ver en dispositivo:** tope de 5 Super Likes/semana, «Sin Super Likes» con Supabase, paginación de `/likes`, «Gestionar suscripción»/«Restaurar compras» tocados, contador de likes al volver a Matches.
+
+**Del usuario:** precios (la spec propone 9,99 €/mes y 49,99 €/año) y prueba gratis; **no subir build nueva a TestFlight todavía** (el paywall no puede cobrar sin RevenueCat y arriesga rechazo; decidir si se ocultan los botones Premium); Fase 3 (cuentas Apple/Google/RevenueCat) y Fase 4 (términos, privacidad, fichas). `.review-db61bfe/` quedó ignorada (borrarla fue denegado). El emulador y Metro (8081, copia `C:\k`) quedaron encendidos; al apagar el equipo se cierran.
+
 ## ▶ Al retomar (2026-10-29): envío a iOS, con la cuenta de Apple Developer ya activa
 
 **Hecho:**
