@@ -14,7 +14,7 @@ import { Control, Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { ambitionLabel, seeksComplement, specialtyLabel, startingPointSentence } from './catalog';
-import { ConnectedApps } from './connected-apps';
+import { ConnectedApps, type ConnectedApp } from './connected-apps';
 import { DayStrip } from './day-strip';
 import { GithubSeal } from './github-seal';
 import { LinkedinSeal } from './linkedin-seal';
@@ -28,8 +28,14 @@ export function ProfileDetails({
   profile,
   onAvatarPress,
   onEdit,
+  onSaveLink,
 }: {
   profile: Profile;
+  /**
+   * Solo en el perfil propio: «Redes y enlaces» enseña todos los logos y cada
+   * uno despliega su campo; sustituye al lápiz de ese bloque (2026-11-01).
+   */
+  onSaveLink?: (app: ConnectedApp, url: string | null) => Promise<void>;
   /**
    * Solo en el perfil propio: la foto lleva encima una cámara translúcida y,
    * al pulsarla, quien la monta abre la hoja de cambiar la foto (2026-10-30).
@@ -201,7 +207,11 @@ export function ProfileDetails({
         es ese enlace, no «perfil verificado». En el perfil propio lleva su
         lápiz y sale aunque no haya enlaces: es donde se pulsa para añadirlos.
       */}
-      <ConnectedApps profile={profile} action={pencil('links')} />
+      <ConnectedApps
+        profile={profile}
+        action={onSaveLink ? null : pencil('links')}
+        onSaveLink={onSaveLink}
+      />
       {profile.githubVerification ? (
         <GithubSeal handle={profile.githubVerification.handle} />
       ) : null}

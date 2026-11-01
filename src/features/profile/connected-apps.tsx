@@ -16,13 +16,15 @@
  *   el usuario (una publicación suelta, un enlace acortado), solo el logo.
  */
 
-import { type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
 import { ThemedText } from '@/components/themed-text';
 import { Control, HitSlop, Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+
+import { CompactPrimaryButton, CompactSecondaryButton, TextField } from './controls';
 
 import type { Profile } from '@/data';
 
@@ -223,9 +225,163 @@ export function Glyph({
   );
 }
 
+const PLACEHOLDERS: Record<ConnectedApp, string> = {
+  github: 'https://github.com/tuusuario',
+  linkedin: 'https://linkedin.com/in/tuusuario',
+  instagram: 'https://instagram.com/tuusuario',
+  tiktok: 'https://tiktok.com/@tuusuario',
+  portfolio: 'https://tuportfolio.com',
+};
+
+/**
+ * Perfil propio (2026-11-01, decisión del usuario): como «Vincular cuentas»,
+ * salen los cinco logos; en gris los que no tienen enlace y en su color los que
+ * sí. Tocar uno despliega debajo el campo del enlace.
+ */
+function EditableApps({
+  profile,
+  onSaveLink,
+}: {
+  profile: Profile;
+  onSaveLink: (app: ConnectedApp, url: string | null) => Promise<void>;
+}) {
+  const theme = useTheme();
+  const [open, setOpen] = useState<ConnectedApp | null>(null);
+  const [value, setValue] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function toggleApp(app: ConnectedApp) {
+    if (saving) return;
+    setError(null);
+    if (open === app) {
+      setOpen(null);
+      return;
+    }
+    setValue(profile.links[app]?.trim() ?? '');
+    setOpen(app);
+  }
+
+  async function save(app: ConnectedApp, url: string | null) {
+    const clean = url?.trim() ?? '';
+    if (url !== null && !SAFE_URL.test(clean)) {
+      setError('El enlace debe empezar por http:// o https://');
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await onSaveLink(app, url === null ? null : clean);
+      setOpen(null);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const githubLocked = Boolean(profile.githubVerification);
+
+  return (
+    <View style={styles.root}>
+      <ThemedText type="label" themeColor="textSecondary">
+        Redes y enlaces
+      </ThemedText>
+      <View style={styles.row}>
+        {ORDER.map((app) => {
+          const url = profile.links[app]?.trim();
+          const linked = Boolean(url && SAFE_URL.test(url));
+          return (
+            <View key={app} style={styles.cell}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={
+                  linked ? `${LABELS[app]} añadido, editar enlace` : `Añadir ${LABELS[app]}`
+                }
+                accessibilityState={{ selected: linked, expanded: open === app }}
+                hitSlop={HitSlop.inline}
+                onPress={() => toggleApp(app)}
+                style={({ pressed }) => [
+                  styles.button,
+                  {
+                    backgroundColor: theme.backgroundElement,
+                    borderColor: open === app ? theme.textSecondary : theme.border,
+                    boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
+                    opacity: pressed ? Opacity.pressed : 1,
+                  },
+                ]}>
+                <View style={linked ? null : styles.dimmed}>
+                  <Glyph
+                    app={app}
+                    color={linked ? theme.text : theme.textSecondary}
+                    size={22}
+                    brand={linked}
+                  />
+                </View>
+              </Pressable>
+              <ThemedText type="small" themeColor={linked ? 'text' : 'textSecondary'}>
+                {LABELS[app]}
+              </ThemedText>
+            </View>
+          );
+        })}
+      </View>
+
+      {open ? (
+        <View
+          style={[
+            styles.panel,
+            { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+          ]}>
+          {open === 'github' && githubLocked ? (
+            <ThemedText type="small" themeColor="textSecondary">
+              Tu GitHub está verificado: lo lleva el sello. Para cambiarlo, desvincúlalo abajo en
+              «Vincular cuentas».
+            </ThemedText>
+          ) : (
+            <>
+              <TextField
+                value={value}
+                onChangeText={(next) => {
+                  setValue(next);
+                  setError(null);
+                }}
+                placeholder={PLACEHOLDERS[open]}
+                autoCapitalize="none"
+                autoCorrect={false}
+                inputMode="url"
+                accessibilityLabel={`Enlace de ${LABELS[open]}`}
+              />
+              {error ? (
+                <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
+                  {error}
+                </ThemedText>
+              ) : null}
+              <CompactPrimaryButton
+                label={saving ? 'Guardando…' : 'Guardar'}
+                disabled={saving}
+                onPress={() => void save(open, value.trim().length > 0 ? value : null)}
+              />
+              {profile.links[open] ? (
+                <CompactSecondaryButton
+                  label="Quitar enlace"
+                  tone="danger"
+                  disabled={saving}
+                  onPress={() => void save(open, null)}
+                />
+              ) : null}
+            </>
+          )}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
 export function ConnectedApps({
   profile,
   action,
+  onSaveLink,
 }: {
   profile: Profile;
   /**
@@ -233,9 +389,15 @@ export function ConnectedApps({
    * aunque no haya enlaces: es justo donde se pulsa para añadirlos.
    */
   action?: ReactNode;
+  /**
+   * Perfil propio: salen todos los logos (gris si no hay enlace) y tocar uno
+   * despliega el campo. Guarda `url`, o `null` para quitar el enlace.
+   */
+  onSaveLink?: (app: ConnectedApp, url: string | null) => Promise<void>;
 }) {
   const theme = useTheme();
   const apps = connectedApps(profile);
+  if (onSaveLink) return <EditableApps profile={profile} onSaveLink={onSaveLink} />;
   if (apps.length === 0 && !action) return null;
 
   return (
@@ -318,6 +480,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.two,
+  },
+  cell: {
+    alignItems: 'center',
+    gap: Spacing.one,
+  },
+  dimmed: {
+    opacity: Opacity.disabled,
+  },
+  panel: {
+    gap: Spacing.two,
+    padding: Spacing.three,
+    borderRadius: Radii.medium,
+    borderWidth: Stroke.hairline,
   },
   button: {
     width: Control.minTouch + 4,

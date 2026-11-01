@@ -86,4 +86,34 @@ describe('ConnectedApps', () => {
     expect(screen.getByTestId('lapiz')).toBeTruthy();
     expect(screen.getByText(/Añade tu Instagram/)).toBeTruthy();
   });
+
+  it('perfil propio: los cinco logos, y tocar uno despliega su campo y guarda', async () => {
+    const onSaveLink = jest.fn().mockResolvedValue(undefined);
+    const profile = buildProfile({ links: { github: 'https://github.com/ana' } });
+    await render(<ConnectedApps profile={profile} onSaveLink={onSaveLink} />);
+
+    for (const name of ['GitHub', 'LinkedIn', 'Instagram', 'TikTok', 'Web']) {
+      expect(screen.getByText(name)).toBeTruthy();
+    }
+    expect(screen.getByRole('button', { name: 'Añadir Instagram' })).toBeTruthy();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Añadir Instagram' }));
+    await fireEvent.changeText(
+      screen.getByLabelText('Enlace de Instagram'),
+      'https://instagram.com/ana'
+    );
+    await fireEvent.press(screen.getByText('Guardar'));
+    expect(onSaveLink).toHaveBeenCalledWith('instagram', 'https://instagram.com/ana');
+  });
+
+  it('perfil propio: un enlace sin http no se guarda', async () => {
+    const onSaveLink = jest.fn().mockResolvedValue(undefined);
+    await render(<ConnectedApps profile={buildProfile({ links: {} })} onSaveLink={onSaveLink} />);
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Añadir TikTok' }));
+    await fireEvent.changeText(screen.getByLabelText('Enlace de TikTok'), 'tiktok.com/@ana');
+    await fireEvent.press(screen.getByText('Guardar'));
+    expect(onSaveLink).not.toHaveBeenCalled();
+    expect(screen.getByText(/empezar por http/)).toBeTruthy();
+  });
 });

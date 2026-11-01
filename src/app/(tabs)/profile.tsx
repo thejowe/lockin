@@ -23,7 +23,9 @@ import {
   type ProfileSection,
 } from '@/features/profile';
 import { accountsAvailable, enabledAuthProviders } from '@/features/profile/account-gateway';
+import type { ConnectedApp } from '@/features/profile/connected-apps';
 import { PrimaryButton, SecondaryButton } from '@/features/profile/controls';
+import { initialDraft, toInput } from '@/features/profile/profile-form';
 import { useTheme } from '@/hooks/use-theme';
 
 /**
@@ -89,6 +91,17 @@ export default function ProfileScreen() {
   async function handleSubmit(input: ProfileInput) {
     await repositories.profiles.saveCurrent(input);
     setEditing(false);
+    refresh();
+  }
+
+  /** Guarda (o quita) el enlace de una red desde su logo; el resto de la ficha viaja intacto. */
+  async function handleSaveLink(app: ConnectedApp, url: string | null) {
+    if (!profile) return;
+    const input = toInput(initialDraft(profile, null));
+    await repositories.profiles.saveCurrent({
+      ...input,
+      links: { ...input.links, [app]: url ?? undefined },
+    });
     refresh();
   }
 
@@ -184,6 +197,7 @@ export default function ProfileScreen() {
               profile={profile}
               onAvatarPress={terms.gate === 'accepted' ? () => setPhotoOpen(true) : undefined}
               onEdit={terms.gate === 'accepted' ? setEditSection : undefined}
+              onSaveLink={terms.gate === 'accepted' ? handleSaveLink : undefined}
             />
           </Animated.View>
 
