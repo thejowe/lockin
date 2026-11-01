@@ -107,8 +107,11 @@ export default function RootLayout() {
               <Stack.Screen name="agreement/[matchId]" options={stackHeader} />
               <Stack.Screen name="settings" options={{ ...stackHeader, title: 'Ajustes' }} />
               <Stack.Screen name="likes" options={{ ...stackHeader, title: 'Te han dado like' }} />
-              {/* El paywall: una hoja sobre lo que se estaba haciendo. */}
-              <Stack.Screen name="premium" options={{ presentation: 'modal' }} />
+              {/* El paywall: una hoja sobre lo que se estaba haciendo. Entra con un
+                  fundido, no subiendo desde abajo: tras la animación del diamante
+                  los planes tienen que aparecer sobre el azul, no llegar como una
+                  pestaña. */}
+              <Stack.Screen name="premium" options={{ presentation: 'modal', animation: 'fade' }} />
               {/* Términos, Normas y Privacidad: una hoja dentro de la app, no el navegador. */}
               {/* El perfil completo de otra persona: desde la tarjeta («i») y el chat. */}
               <Stack.Screen
