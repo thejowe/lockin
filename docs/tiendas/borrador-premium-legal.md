@@ -5,7 +5,7 @@ Estado: borrador del 2026-11-01. No sustituye a `terminos.md` ni a `privacidad.m
 antes anunciaría una suscripción que la app todavía no puede cobrar. No es asesoramiento jurídico: entra en
 la revisión del punto 8 de la lista de pendientes.
 
-Marcadores: `[precio-mes]`, `[precio-año]`, `[prueba-gratis]` (decisiones del usuario).
+Precios confirmados por el usuario el 2026-11-01: 9,99 €/mes y 49,99 €/año. Prueba gratis: por defecto, no (sin confirmar).
 
 ## Para `terminos.md` — nueva sección «Cofounder Premium» (entre §9 y §10)
 
@@ -13,9 +13,9 @@ Marcadores: `[precio-mes]`, `[precio-año]`, `[prueba-gratis]` (decisiones del u
 Super Likes, deshacer el último gesto, Boost y ver quién te ha dado like. Cofounder sigue siendo gratuito sin
 Premium y no muestra anuncios.
 
-**Precio y renovación.** `[precio-mes]` al mes o `[precio-año]` al año, impuestos incluidos, cobrados por Apple
+**Precio y renovación.** 9,99 € al mes o 49,99 € al año, impuestos incluidos, cobrados por Apple
 App Store o Google Play. La suscripción se renueva sola al final de cada periodo salvo que la canceles al menos
-24 horas antes. `[prueba-gratis]`
+24 horas antes. No hay periodo de prueba gratuito.
 
 **Cómo cancelar.** Desde los ajustes de suscripciones de tu cuenta de Apple o Google (la app tiene el acceso
 directo «Gestionar suscripción»). Borrar la cuenta de cofounder **no cancela** la suscripción en la tienda:

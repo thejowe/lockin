@@ -10,7 +10,7 @@ escriba código pasa por `codex review` antes de commitear en la rama principal.
 
 ## Decisiones del usuario pendientes
 
-- [ ] Precios definitivos (la spec propone 9,99 €/mes y 49,99 €/año).
+- [x] Precios definitivos: 9,99 €/mes y 49,99 €/año (confirmados por el usuario el 2026-11-01).
 - [ ] ¿Prueba gratis de lanzamiento? (Por defecto, no.)
 
 ## Fase 0 — plan
