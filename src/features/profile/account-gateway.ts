@@ -28,6 +28,7 @@ export {
   completeAuthLink,
   deleteMyAccount,
   linkEmailToCurrentUser,
+  saveAccountPhone,
   changeAccountPassword,
   isRecoveringPassword,
   sendPasswordReset,

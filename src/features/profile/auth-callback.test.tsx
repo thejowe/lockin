@@ -39,6 +39,7 @@ beforeEach(() => {
     email: 'ana@example.com',
     pendingEmail: null,
     recoverable: true,
+    phone: null,
   });
 });
 

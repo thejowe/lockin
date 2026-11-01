@@ -87,6 +87,7 @@ export {
   ensureUserId,
   getAccountState,
   linkEmailToCurrentUser,
+  saveAccountPhone,
   sendPasswordReset,
   setAccountPassword,
   changeAccountPassword,

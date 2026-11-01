@@ -61,6 +61,7 @@ export default function WelcomeScreen() {
   }
 
   if (gate === 'checking') return null;
+  if (registrationRequired && gate === 'phone') return <Redirect href="/phone" />;
   if (registrationRequired && gate === 'open') return <Redirect href="/profile-form" />;
 
   const logoWidth = Math.min(width * 0.56, 260);

@@ -42,6 +42,7 @@ jest.mock('./account-gateway', () => ({
   readAccountState: jest.fn(),
   linkEmailToCurrentUser: jest.fn(),
   setAccountPassword: jest.fn(),
+  saveAccountPhone: jest.fn(),
 }));
 
 const gateway = jest.requireMock('./account-gateway') as {
@@ -49,6 +50,7 @@ const gateway = jest.requireMock('./account-gateway') as {
   readAccountState: jest.Mock;
   linkEmailToCurrentUser: jest.Mock;
   setAccountPassword: jest.Mock;
+  saveAccountPhone: jest.Mock;
 };
 
 const { AccountError } = gateway;
@@ -60,6 +62,7 @@ const ANONIMA: AccountState = {
   email: null,
   pendingEmail: null,
   recoverable: false,
+  phone: null,
 };
 
 /** Email pedido y todavía sin confirmar. */
@@ -76,6 +79,7 @@ const CONFIRMADA: AccountState = {
   email: 'ana@example.com',
   pendingEmail: null,
   recoverable: true,
+  phone: null,
 };
 
 const CLAVE = 'una-clave-larga';
@@ -93,6 +97,7 @@ beforeEach(async () => {
   gateway.readAccountState.mockResolvedValue(ANONIMA);
   gateway.linkEmailToCurrentUser.mockResolvedValue(PENDIENTE);
   gateway.setAccountPassword.mockResolvedValue(undefined);
+  gateway.saveAccountPhone.mockResolvedValue(undefined);
 });
 
 async function renderForm(state: AccountState | null = ANONIMA) {
@@ -117,15 +122,17 @@ async function press(name: string) {
 
 /** Rellena el paso de cuenta entero; `overrides` estropea lo que haga falta. */
 async function fillAccount(
-  overrides: { email?: string; password?: string; repeat?: string; terms?: boolean } = {}
+  overrides: { email?: string; phone?: string; password?: string; repeat?: string; terms?: boolean } = {}
 ) {
   const {
     email = 'ana@example.com',
+    phone = '+34 600 123 456',
     password = CLAVE,
     repeat = password,
     terms = true,
   } = overrides;
   await fireEvent.changeText(screen.getByLabelText('Email de tu cuenta'), email);
+  await fireEvent.changeText(screen.getByLabelText('Teléfono de tu cuenta'), phone);
   await fireEvent.changeText(screen.getByLabelText('Contraseña de tu cuenta'), password);
   await fireEvent.changeText(screen.getByLabelText('Repite la contraseña'), repeat);
   if (terms) {
@@ -138,7 +145,7 @@ async function fillAccount(
 }
 
 describe('accountStepProblem', () => {
-  const ok = { email: 'a@b.c', password: CLAVE, repeat: CLAVE, termsAccepted: true };
+  const ok = { email: 'a@b.c', phone: '600123456', password: CLAVE, repeat: CLAVE, termsAccepted: true };
 
   it('no pone pegas a un paso completo', () => {
     expect(accountStepProblem(ok)).toBeNull();
@@ -146,6 +153,8 @@ describe('accountStepProblem', () => {
 
   it('dice qué falta, de uno en uno y en orden de pantalla', () => {
     expect(accountStepProblem({ ...ok, email: '  ' })).toMatch(/Escribe tu email/);
+    expect(accountStepProblem({ ...ok, phone: '' })).toMatch(/número de teléfono/);
+    expect(accountStepProblem({ ...ok, phone: '12ab' })).toMatch(/no parece válido/);
     expect(accountStepProblem({ ...ok, password: 'corta', repeat: 'corta' })).toMatch(/al menos 8/);
     expect(accountStepProblem({ ...ok, repeat: 'otra-clave-x' })).toMatch(/no coinciden/);
     expect(accountStepProblem({ ...ok, termsAccepted: false })).toMatch(/aceptar los Términos/);

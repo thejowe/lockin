@@ -1,19 +1,18 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, View, type ScrollViewInstance } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View, type ScrollViewInstance } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/ambient-background';
+import { Icon } from '@/components/icon';
 import { enterUp } from '@/components/motion';
 import { LoadingState, MessageState } from '@/components/state-view';
 import { ThemedText } from '@/components/themed-text';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { BottomTabInset, Control, MaxContentWidth, Opacity, Spacing } from '@/constants/theme';
 import { useQuery, useRepositories, type ProfileInput } from '@/data';
 import {
-  AccountSection,
   Board,
-  LegalLinks,
   LinkAccounts,
   PhotoSection,
   TermsAcceptance,
@@ -25,7 +24,7 @@ import {
 } from '@/features/profile';
 import { accountsAvailable, enabledAuthProviders } from '@/features/profile/account-gateway';
 import { PrimaryButton, SecondaryButton } from '@/features/profile/controls';
-import { useReduceMotion } from '@/hooks/use-reduce-motion';
+import { useTheme } from '@/hooks/use-theme';
 
 /**
  * Tab Perfil: ver y editar la ficha propia.
@@ -43,7 +42,7 @@ export default function ProfileScreen() {
   /** El bloque que se edita en su hoja, desde el lápiz de ese bloque. */
   const [editSection, setEditSection] = useState<ProfileSection | null>(null);
   const scrollRef = useRef<ScrollViewInstance>(null);
-  const reduceMotion = useReduceMotion();
+  const theme = useTheme();
   const terms = useTermsGate();
   const {
     data: profile,
@@ -167,9 +166,18 @@ export default function ProfileScreen() {
     <Screen ambient="plum">
       <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
         <ScrollView ref={scrollRef} contentContainerStyle={styles.content}>
-          <ThemedText type="label" themeColor="textSecondary">
-            Perfil
-          </ThemedText>
+          <View style={styles.topBar}>
+            <ThemedText type="label" themeColor="textSecondary">
+              Perfil
+            </ThemedText>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Ajustes de la cuenta"
+              onPress={() => router.push('/settings')}
+              style={({ pressed }) => [styles.gear, { opacity: pressed ? Opacity.pressed : 1 }]}>
+              <Icon name="settings" size={24} color={theme.text} />
+            </Pressable>
+          </View>
 
           <Animated.View entering={enterUp(0)}>
             <ProfileDetails
@@ -221,20 +229,6 @@ export default function ProfileScreen() {
             />
           </Animated.View>
 
-          {/* La cuenta va al final: es lo que menos se visita y donde vive la
-            salida destructiva. Arriba está lo que se viene a mirar. */}
-          <Animated.View entering={enterUp(4)}>
-            <LegalLinks />
-          </Animated.View>
-
-          <Animated.View entering={enterUp(5)}>
-            <AccountSection
-              onDeleted={() => router.replace('/')}
-              onConfirmationShown={() =>
-                scrollRef.current?.scrollToEnd({ animated: !reduceMotion })
-              }
-            />
-          </Animated.View>
         </ScrollView>
       </SafeAreaView>
     </Screen>
@@ -253,6 +247,18 @@ const styles = StyleSheet.create({
   },
   root: {
     flex: 1,
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  gear: {
+    width: Control.minTouch,
+    height: Control.minTouch,
+    marginRight: -Spacing.two,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   content: {
     gap: Spacing.four,

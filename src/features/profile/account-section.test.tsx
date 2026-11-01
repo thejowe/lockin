@@ -68,6 +68,7 @@ const ANONIMA: AccountState = {
   email: null,
   pendingEmail: null,
   recoverable: false,
+  phone: null,
 };
 
 /** Email pedido y todavía sin confirmar: sigue sin ser recuperable. */
@@ -84,6 +85,7 @@ const ASEGURADA: AccountState = {
   email: 'ana@example.com',
   pendingEmail: null,
   recoverable: true,
+  phone: null,
 };
 
 let repositories: Repositories;
@@ -214,12 +216,14 @@ describe('AccountSection', () => {
   });
 
   describe('cuenta asegurada', () => {
-    it('abajo solo deja el email, gestionar la contraseña, cerrar sesión y eliminar', async () => {
+    it('abajo solo deja gestionar la contraseña, cerrar sesión y eliminar', async () => {
       await renderSection(ASEGURADA);
 
       await waitFor(() =>
-        expect(screen.getByLabelText('Email de tu cuenta: ana@example.com')).toBeTruthy()
+        expect(screen.getByRole('button', { name: 'Gestionar contraseña' })).toBeTruthy()
       );
+      // El email vive ahora en «Información personal».
+      expect(screen.queryByLabelText('Email de tu cuenta: ana@example.com')).toBeNull();
       expect(screen.getByRole('button', { name: 'Gestionar contraseña' })).toBeTruthy();
       expect(screen.getByRole('button', { name: 'Cerrar sesión' })).toBeTruthy();
       expect(screen.getByRole('button', { name: 'Eliminar mi cuenta' })).toBeTruthy();
@@ -665,6 +669,7 @@ describe('AccountSection', () => {
       email: null,
       pendingEmail: null,
       recoverable: false,
+      phone: null,
     });
 
     await waitFor(() => expect(gateway.readAccountState).toHaveBeenCalled());

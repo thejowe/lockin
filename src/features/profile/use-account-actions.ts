@@ -21,18 +21,20 @@ import { useState } from 'react';
 import { useQuery } from '@/data';
 
 import { describeAccountError } from './account-copy';
+import { normalizePhone, phoneProblem } from './phone';
 import {
   changeAccountPassword,
   setRecoveredPassword,
   linkEmailToCurrentUser,
   readAccountState,
+  saveAccountPhone,
   sendPasswordReset,
   setAccountPassword,
 } from './account-gateway';
 
 /** Qué se le está pidiendo al servidor ahora mismo, si es que se le pide algo. */
 export type AccountBusy =
-  'asegurar' | 'reenviar' | 'contrasena' | 'recuperar' | 'salir' | 'borrar' | null;
+  'asegurar' | 'reenviar' | 'contrasena' | 'recuperar' | 'salir' | 'borrar' | 'telefono' | null;
 
 /** Aviso bajo los controles: neutro para lo que salió bien, `danger` para lo que no. */
 export interface AccountNotice {
@@ -100,6 +102,17 @@ export function useAccountActions() {
     void run('reenviar', () => linkEmailToCurrentUser(pendingEmail), done);
   }
 
+  /** Guarda el móvil de contacto tras comprobar que tiene forma de número. */
+  function savePhone(phone: string, done?: () => void) {
+    const problem = phoneProblem(phone);
+    if (problem) {
+      setNotice({ text: problem, tone: 'danger' });
+      return;
+    }
+
+    void run('telefono', () => saveAccountPhone(normalizePhone(phone)), done);
+  }
+
   /** Pone contraseña a la cuenta: solo se acepta con el email ya confirmado. */
   function savePassword(password: string, done?: () => void) {
     if (!password) {
@@ -144,6 +157,7 @@ export function useAccountActions() {
     run,
     link,
     resend,
+    savePhone,
     savePassword,
     changePassword,
     saveRecoveredPassword,

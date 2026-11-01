@@ -64,9 +64,10 @@ export default function IndexRoute() {
   // si no, la bienvenida (`/mode`), que empieza el alta por «Sobre ti». Con
   // perfil pero sin email confirmado —cuenta anónima anterior al registro
   // obligatorio— se asciende en `/register`: conserva perfil y matches.
-  if (registrationRequired && gate === 'open' && pendingPassword) {
+  if (registrationRequired && (gate === 'open' || gate === 'phone') && pendingPassword) {
     return <Redirect href="/register" />;
   }
+  if (registrationRequired && gate === 'phone') return <Redirect href="/phone" />;
   if (!onboarded) {
     return <Redirect href={registrationRequired && gate === 'open' ? '/profile-form' : '/mode'} />;
   }

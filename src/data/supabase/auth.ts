@@ -399,6 +399,11 @@ export interface AccountState {
    * GitHub", así que no es un camino de vuelta.
    */
   recoverable: boolean;
+  /**
+   * Móvil de contacto, tal cual lo escribió la persona. Vive en los metadatos
+   * del usuario de GoTrue (privado: solo lo lee su dueño), sin verificar por SMS.
+   */
+  phone: string | null;
 }
 
 const NO_SESSION: AccountState = {
@@ -407,6 +412,7 @@ const NO_SESSION: AccountState = {
   email: null,
   pendingEmail: null,
   recoverable: false,
+  phone: null,
 };
 
 function describeUser(user: User): AccountState {
@@ -433,7 +439,13 @@ function describeUser(user: User): AccountState {
     // no cuenta como pendiente de nada, porque nadie va a confirmarlo.
     pendingEmail: newEmail ?? (recoverable || synthetic ? null : email),
     recoverable,
+    phone: readPhone(user),
   };
+}
+
+function readPhone(user: User): string | null {
+  const value = user.user_metadata?.phone_number;
+  return typeof value === 'string' && value.trim() ? value : null;
 }
 
 /**
@@ -488,6 +500,15 @@ export async function linkEmailToCurrentUser(email: string): Promise<AccountStat
   await markEmailLinkRequested();
 
   return data.user ? describeUser(data.user) : getAccountState();
+}
+
+/**
+ * Guarda el móvil de contacto en los metadatos del usuario. No toca el email ni
+ * la contraseña, así que vale en cualquier punto del alta.
+ */
+export async function saveAccountPhone(phone: string): Promise<void> {
+  const { error } = await getSupabaseClient().auth.updateUser({ data: { phone_number: phone } });
+  if (error) throw toAccountError(error);
 }
 
 /**

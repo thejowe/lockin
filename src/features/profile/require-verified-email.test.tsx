@@ -54,6 +54,14 @@ describe('RequireVerifiedEmail', () => {
     expect(screen.queryByText('contenido privado')).toBeNull();
   });
 
+  it('con la cuenta confirmada pero sin móvil manda a /phone y no enseña nada', async () => {
+    useGate.mockReturnValue('phone');
+    await render(ui());
+
+    expect(mockRedirect).toHaveBeenCalledWith('/phone');
+    expect(screen.queryByText('contenido privado')).toBeNull();
+  });
+
   it('mientras comprueba no enseña el contenido ni redirige', async () => {
     useGate.mockReturnValue('checking');
     await render(ui());

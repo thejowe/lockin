@@ -47,7 +47,12 @@ import { Spacing } from '@/constants/theme';
 import { useRepositories } from '@/data';
 
 import { describeAccountError } from './account-copy';
-import { AccountError, linkEmailToCurrentUser, setAccountPassword } from './account-gateway';
+import {
+  AccountError,
+  linkEmailToCurrentUser,
+  saveAccountPhone,
+  setAccountPassword,
+} from './account-gateway';
 import { Field, PrimaryButton, SecondaryButton, TextField } from './controls';
 import {
   clearPendingPassword,
@@ -55,6 +60,7 @@ import {
   readPendingPassword,
   stashPendingPassword,
 } from './pending-password';
+import { normalizePhone, phoneProblem } from './phone';
 import { ProviderButtons } from './provider-buttons';
 import { TermsCheckbox, TermsLinks } from './terms';
 import { useAccountActions } from './use-account-actions';
@@ -65,16 +71,20 @@ export const PASSWORD_MIN_LENGTH = 8;
 /** Qué falta para poder mandar el paso de cuenta, o `null` si nada. */
 export function accountStepProblem({
   email,
+  phone,
   password,
   repeat,
   termsAccepted,
 }: {
   email: string;
+  phone: string;
   password: string;
   repeat: string;
   termsAccepted: boolean;
 }): string | null {
   if (!email.trim()) return 'Escribe tu email para que podamos mandarte el enlace.';
+  const phoneIssue = phoneProblem(phone);
+  if (phoneIssue) return phoneIssue;
   if (password.length < PASSWORD_MIN_LENGTH) {
     return `La contraseña necesita al menos ${PASSWORD_MIN_LENGTH} caracteres.`;
   }
@@ -144,6 +154,7 @@ export function RegisterForm({
     useAccountActions();
 
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [repeat, setRepeat] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -220,7 +231,7 @@ export function RegisterForm({
   }
 
   function submitAccount() {
-    const problem = accountStepProblem({ email, password, repeat, termsAccepted });
+    const problem = accountStepProblem({ email, phone, password, repeat, termsAccepted });
     if (problem) {
       setNotice({ text: problem, tone: 'danger' });
       return;
@@ -235,11 +246,13 @@ export function RegisterForm({
           throw new AccountError('no-session', 'No hay ninguna sesión abierta.');
         }
         await stashPendingPassword(password, owner);
+        await saveAccountPhone(normalizePhone(phone));
         await repositories.session.acceptTerms(TERMS_VERSION);
         await linkEmailToCurrentUser(address);
       },
       () => {
         setEmail('');
+        setPhone('');
         setPassword('');
         setRepeat('');
         setChangingEmail(false);
@@ -250,6 +263,7 @@ export function RegisterForm({
   function submitPassword() {
     const problem = accountStepProblem({
       email: account?.email ?? '-',
+      phone: '600000000',
       password,
       repeat,
       termsAccepted: true,
@@ -326,6 +340,20 @@ export function RegisterForm({
               textContentType="emailAddress"
               autoComplete="email"
               autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </Field>
+
+          <Field label="Teléfono" hint="Es privado: no sale en tu perfil.">
+            <TextField
+              value={phone}
+              onChangeText={setPhone}
+              accessibilityLabel="Teléfono de tu cuenta"
+              placeholder="+34 600 123 456"
+              keyboardType="phone-pad"
+              inputMode="tel"
+              textContentType="telephoneNumber"
+              autoComplete="tel"
               autoCorrect={false}
             />
           </Field>

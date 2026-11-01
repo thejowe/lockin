@@ -24,6 +24,7 @@ export function RequireVerifiedEmail({ children }: { children: ReactNode }) {
 
   if (gate === 'checking') return <LoadingState label="Comprobando tu cuenta…" />;
   if (gate === 'required') return <Redirect href="/register" />;
+  if (gate === 'phone') return <Redirect href="/phone" />;
 
   return <>{children}</>;
 }

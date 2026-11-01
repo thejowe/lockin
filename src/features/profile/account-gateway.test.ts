@@ -33,6 +33,7 @@ const ASEGURADA: AccountState = {
   email: 'ana@example.com',
   pendingEmail: null,
   recoverable: true,
+  phone: null,
 };
 
 /** Carga el puente con el entorno que tendría la app en cada caso. */

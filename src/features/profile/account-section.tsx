@@ -59,6 +59,8 @@ import { PASSWORD_MIN_LENGTH } from './register-form';
 import { useAccountActions } from './use-account-actions';
 
 export interface AccountSectionProps {
+  /** Lo que va entre la contraseña y las salidas (cerrar sesión, eliminar): el bloque Legal. */
+  children?: React.ReactNode;
   /** Corre cuando la cuenta ya está borrada: la pantalla vuelve al arranque. */
   onDeleted?: () => void;
   /**
@@ -89,7 +91,11 @@ function readRecovering(): Promise<boolean> {
   return accountsAvailable ? isRecoveringPassword() : Promise.resolve(false);
 }
 
-export function AccountSection({ onDeleted, onConfirmationShown }: AccountSectionProps = {}) {
+export function AccountSection({
+  children,
+  onDeleted,
+  onConfirmationShown,
+}: AccountSectionProps = {}) {
   const theme = useTheme();
   const {
     account,
@@ -204,17 +210,10 @@ export function AccountSection({ onDeleted, onConfirmationShown }: AccountSectio
   return (
     <View style={styles.root}>
       <ThemedText type="label" themeColor="textSecondary">
-        Cuenta
+        Cuenta y facturación
       </ThemedText>
 
-      {account.recoverable ? (
-        // Desde el 2026-10-17 abajo solo queda lo que se gestiona: la
-        // contraseña, cerrar sesión y eliminar la cuenta. El email se queda en
-        // una línea para saber en qué cuenta se está.
-        <ThemedText type="mono" accessibilityLabel={`Email de tu cuenta: ${account.email}`}>
-          {account.email}
-        </ThemedText>
-      ) : account.kind === 'pending-email' ? (
+      {account.recoverable ? null : account.kind === 'pending-email' ? (
         <>
           <ThemedText type="bodyStrong">Falta confirmar tu email</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
@@ -348,6 +347,8 @@ export function AccountSection({ onDeleted, onConfirmationShown }: AccountSectio
           <SecondaryButton label="Cancelar" onPress={closePanel} />
         </View>
       ) : null}
+
+      {children}
 
       {confirmingLeave ? (
         // En la propia pantalla y no en un diálogo del sistema, igual que el

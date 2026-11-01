@@ -53,6 +53,7 @@ const ANONIMA: AccountState = {
   email: null,
   pendingEmail: null,
   recoverable: false,
+  phone: null,
 };
 
 const ASEGURADA: AccountState = {
@@ -61,6 +62,7 @@ const ASEGURADA: AccountState = {
   email: 'ana@example.com',
   pendingEmail: null,
   recoverable: true,
+  phone: null,
 };
 
 const onSignedIn = jest.fn();
