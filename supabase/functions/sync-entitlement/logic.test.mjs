@@ -109,6 +109,13 @@ test('refreshEntitlement no borra Premium si el cuerpo 200 es ilegible', async (
   assert.equal(d.saved.length, 0);
 });
 
+test('refreshEntitlement acepta el 201 de un cliente nuevo para RevenueCat', async () => {
+  const d = deps({ response: { status: 201, body: { subscriber: { entitlements: {} } } } });
+  const result = await refreshEntitlement(UID, d);
+  assert.deepEqual(result, { premiumUntil: null, productId: null, store: null });
+  assert.equal(d.saved.length, 1);
+});
+
 test('readConfig', () => {
   assert.equal(readConfig({}), null);
   assert.deepEqual(readConfig({ REVENUECAT_SECRET_KEY: 'sk_x' }), { apiKey: 'sk_x' });

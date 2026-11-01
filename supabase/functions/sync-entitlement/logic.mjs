@@ -68,7 +68,8 @@ export function mapSubscriber(body) {
 /** Pide el estado a RevenueCat y lo escribe. Lanza si la API falla (el que llama decide el 5xx). */
 export async function refreshEntitlement(userId, deps) {
   const response = await deps.fetchSubscriber(userId);
-  if (response.status !== 200) {
+  // 201: RevenueCat crea al cliente si aún no lo conoce y devuelve su estado vacío.
+  if (response.status !== 200 && response.status !== 201) {
     throw new Error(`RevenueCat respondió ${response.status}`);
   }
   if (!response.body || typeof response.body !== 'object') {
