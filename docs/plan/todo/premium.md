@@ -57,13 +57,13 @@ escriba código pasa por `codex review` antes de commitear en la rama principal.
 
 ## Fase 2 — cliente con mock
 
-- [ ] [Claude] Contrato: `PremiumRepository`, `DeckProfile`, `ProfileFilter` ampliado,
+- [x] [Claude] Contrato: `PremiumRepository`, `DeckProfile`, `ProfileFilter` ampliado,
   `QuotaExceededError` y `PremiumRequiredError` (spec §5). Implementación en mock y en Supabase.
   Tarea 1 del plan hecha (2026-10-29): tipos, errores, límites, contrato y mock. Tarea 5 escrita
   (2026-10-30): `src/data/supabase/premium.ts`, `getDeck`/`recordDecision` y el fixture del contrato
   Supabase, con tests unitarios del mapeo; `describe('premium')` ya no se salta en Supabase. **Casilla
   abierta hasta que el job «Contrato Supabase» de CI (`LOCKIN_SUPABASE_CONTRACT=1`, con migraciones y
-  `seed.sql` del repo) la pase en verde: aquí no hay Docker y esa suite no se ha ejecutado.**
+  `seed.sql` del repo) la pase en verde: aquí no hay Docker y esa suite no se ha ejecutado.** Cerrada el 2026-11-01: CI (run 41147944634, `f38b363`) verde con el job «Contrato Supabase» y sus 34 tests de Premium.
 - [x] [Claude] Deck: deshacer, Super Like y Boost; aviso de likes restantes; hoja «sin likes»;
   insignia de Super Like. Hecho el 2026-10-30 (Tarea 6): `usePremium`, `OutOfLikesSheet`, cinco botones
   en `DeckActions`, `useDeck` con `blocked`/`superLike`/`undo`/`boost`, y el gesto a la derecha sin cupo
@@ -109,7 +109,7 @@ Las claves y los secretos los pega siempre el usuario.
 
 ## Fase 4 — legal y fichas (antes de activar productos)
 
-- [ ] Términos: sección de suscripción y desistimiento; subir `TERMS_VERSION` para que se vuelvan
+- [ ] Términos (borrador en `docs/tiendas/borrador-premium-legal.md`, 2026-11-01, sin publicar): sección de suscripción y desistimiento; subir `TERMS_VERSION` para que se vuelvan
   a aceptar.
 - [ ] Privacidad: RevenueCat como encargado del tratamiento, con su transferencia internacional.
 - [ ] Fichas: «Compras dentro de la app: sí»; Data safety con «Historial de compras»; App Privacy
@@ -178,3 +178,33 @@ Backend: Supabase. Reinicio en frío para refrescar el entitlement.
 - Hallazgo del contador «Te han dado like (N)» sin refrescar al volver a Matches: resuelto en `matches.tsx` (relee al enfocar si la carga inicial ya terminó; `codex review` lo pidió así por el montaje anticipado de las pestañas). Comprobado con Jest; **no re-visto en dispositivo**.
 - Cuentas de prueba `109e1400-…` y `b519a4f1-…` borradas de `auth.users` el 2026-10-30; comprobado que no quedan decisiones, eventos ni entitlements.
 - Sin ver nunca: tope de 5 Super Likes/semana, «Sin Super Likes» con Supabase, paginación de `/likes`, «Gestionar suscripción»/«Restaurar compras» tocados y la compra real (Fase 3).
+
+### 2026-11-01 — lo que faltaba, con Supabase real (commit 5050343)
+
+Backend: **Supabase** (logcat: «backend de datos: Supabase»). APK debug x86_64 con Metro desde `C:\k` con `src/` de HEAD (`git archive`), `EXPO_PUBLIC_REQUIRE_ACCOUNT=false`. Evidencia: `e2e/artifacts/local/2026-11-01-premium-supabase-restante/` (capturas 00-43, `logcat.txt`). Cuenta A «Prueba Restante» `6eab25bc-8198-41cc-8699-11a8e14e1f22` (sin Premium) y cuenta de apoyo anónima `acce2d3f-6877-4f80-9060-fb47b465ee21`. **Esta sesión no tenía acceso SQL a producción** (ni MCP de Supabase ni clave de servicio), así que no se pudo conceder Premium: lo que exige entitlement queda sin ver.
+
+- ✅ «Sin Super Likes» con Supabase, gratis (20, 21): el primer Super Like pasa y avanza la tarjeta; el segundo abre la hoja «Sin Super Likes por ahora — Tu próximo Super Like llega el domingo, 8 de noviembre a las 16:07. Con Premium tienes 5 a la semana», con «Hazte Premium» y «Ahora no». Cupo de likes libre (cuenta nueva), así que es el cupo de Super Likes y no el de likes.
+- ✅ «Restaurar compras» tocado (gratis, 23-25): sin SDK de compras muestra «Las compras aún no están disponibles.» bajo el botón; sin cierre ni error en logcat.
+- ✅ Contador «Te han dado like (N)» al volver a Matches (30, 31): en Matches no hay fila; en Descubrir la cuenta de apoyo da like a A por API; al volver a Matches aparece «Te han dado like (1)» **sin pull-to-refresh**. Cierra el hallazgo menor 1 del 2026-10-30 (fix 8151c75) en dispositivo.
+- ✅ Borrado de cuenta de prueba con Supabase (41-43): «Eliminar mi cuenta para siempre» → «Eliminando…» → vuelve a la bienvenida.
+- ⚠️ Tope de 5 Super Likes/semana con Premium: no comprobable aquí, hace falta entitlement por SQL (`entitlements`) en producción y no hay `dev_set_premium`. El gratis (tope 1) sí funciona.
+- ⚠️ «Gestionar suscripción» tocado: solo sale con Premium activo; no comprobable sin SQL. Sigue sin ver.
+- ⚠️ Paginación de `/likes` (`PAGE_SIZE` 20): exige más de 20 likes entrantes **y** Premium para ver perfiles; crear ~21 cuentas de relleno en producción no se hizo (ya se denegó el 2026-10-30) y no hay Premium. Sigue sin ver.
+- Entorno: el primer arranque tras `pm clear` mostró «Unable to load script» (Metro aún sin bundle, 40 s para el primero); un `force-stop` + relanzar bastó. El toast «Open debugger to view warnings» tapa «Registrarse» en la bienvenida.
+- Limpieza: apoyo borrada con `delete_my_account` (ok); A borrada desde la app. Sin acceso SQL no se pudo comprobar en `auth.users`; el RPC `delete_my_account` arrastra decisiones y eventos (comprobado así el 2026-10-30). **Conviene una consulta de confirmación de `6eab25bc…` y `acce2d3f…` por quien tenga MCP.**
+- Hecho el 2026-11-01 (Fase 2 con Premium concedido por SQL a una cuenta de prueba, luego borrada): tope de 5, «Gestionar suscripción» y «Restaurar compras» pasan. **Sigue sin ver en dispositivo solo la paginación de `/likes`** (>20 likes entrantes; sembrar cuentas en producción no se hace; queda cubierta por tests). Sin comprobar: si Deshacer devuelve el cupo de Super Likes.
+
+**Verificación de limpieza (2026-11-01, SQL de solo lectura):** las dos cuentas de prueba de esa pasada (`6eab25bc…`, `acce2d3f…`) no existen en `auth.users` ni en `profiles`. Producción limpia.
+
+#### 2026-11-01 — Fase 2 con Premium concedido por SQL (commit 5050343)
+
+Backend: **Supabase** (logcat: «backend de datos: Supabase»). Cuenta `1862c710-ce03-469b-a2ec-584cf290304e` («Prueba Premium Fase», anónima), entitlement insertado por la orquestadora (Premium hasta 2026-11-02 16:17 UTC). Reinicio en frío (`force-stop` + monkey, sin `pm clear`). Evidencia: `e2e/artifacts/local/2026-11-01-premium-supabase-restante/` (`60`, `sl1`-`sl17`, `logcat-fase2.txt`).
+
+- ✅ **Tope de 5 Super Likes/semana con Premium** (sl1-sl6): cinco Super Likes seguidos pasan y la tarjeta avanza cada vez (Roger → Joel 20 → Joel 18 → Joel 17 → piplop → Jo); el sexto abre «Sin Super Likes por ahora — Tu próximo Super Like llega el domingo, 8 de noviembre a las 16:19. Con Premium tienes 5 a la semana», con un solo botón «Entendido» (sin «Hazte Premium»). Repetirlo (sl10, sl11) devuelve la misma hoja y la tarjeta Jo vuelve; la captura sl9 pilla el vuelo de salida de la tarjeta antes de que vuelva y no es un séptimo Super Like colado. Hubo 5 tarjetas distintas disponibles.
+- ✅ **«Gestionar suscripción»** (sl15, sl16): visible con «Activo hasta 2 nov 2026»; tocado lanza un `VIEW` a `https://play.google.com/...` y se abre Chrome (con el AVD de Google APIs sin sesión de Play, la página queda en blanco); la app sigue viva y al volver (atrás) está en Cuenta. Sin cierre ni FATAL en logcat. No se comprobó el destino exacto de la URL de Play (el volcado solo muestra `play.google.com/...`).
+- ✅ **«Restaurar compras» con Premium** (sl17): muestra «Las compras aún no están disponibles.» sin cierre (igual que en gratis, esperado hasta la Fase 3).
+- ✅ Con Premium (60, sl12-sl14): sin «Te quedan N likes» y los cinco botones activos; Deshacer repone la tarjeta anterior (piplop, sl12); Boost da «Boost activo durante 30 minutos» (sl13); Filtros sin ningún candado (sl14).
+- Hallazgo menor: la hoja «Sin Super Likes» con Premium no ofrece más Super Likes ni compra (solo «Entendido»); bien. Que Deshacer tras un Super Like no devuelve el cupo no se comprobó.
+- Sin comprobar aún: paginación de `/likes` (hacen falta >20 likes entrantes; orden dada de no sembrar cuentas) y la compra real (Fase 3).
+
+**Limpieza final (2026-11-01):** borradas la cuenta Premium de prueba y una anónima huérfana; consulta posterior: 0 filas en users, profiles, entitlements, boosts, decisions y like_events para las 6 cuentas de prueba y 0 usuarios nuevos desde las 16:00 UTC.
