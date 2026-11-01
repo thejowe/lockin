@@ -8,7 +8,7 @@
 
 import { useState } from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { Control, Radii, Spacing } from '@/constants/theme';
@@ -52,58 +52,69 @@ export function CountryCodePicker({
         <ThemedText type="body">+{country.dial}</ThemedText>
       </Pressable>
 
-      <Modal visible={open} animationType="slide" onRequestClose={close}>
-        <SafeAreaView style={[styles.sheet, { backgroundColor: theme.background }]}>
-          <View style={styles.header}>
-            <ThemedText type="subtitle">Prefijo del país</ThemedText>
-            <Pressable accessibilityRole="button" accessibilityLabel="Cerrar" onPress={close}>
-              <ThemedText type="body" themeColor="textSecondary">
-                Cerrar
-              </ThemedText>
-            </Pressable>
-          </View>
-
-          <TextField
-            value={query}
-            // Solo dígitos: es lo que hace rápida la búsqueda.
-            onChangeText={(next) => setQuery(next.replace(/\D/g, ''))}
-            accessibilityLabel="Buscar prefijo por número"
-            placeholder="Escribe el prefijo: 3, 34…"
-            keyboardType="number-pad"
-            inputMode="numeric"
-            autoFocus
-            autoCorrect={false}
-            maxLength={4}
-          />
-
-          <FlatList
-            data={results}
-            keyExtractor={(item) => `${item.iso}-${item.dial}`}
-            keyboardShouldPersistTaps="handled"
-            ListEmptyComponent={
-              <ThemedText type="small" themeColor="textMuted" style={styles.empty}>
-                Ningún país tiene ese prefijo.
-              </ThemedText>
-            }
-            renderItem={({ item }) => (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`${item.name}, +${item.dial}`}
-                onPress={() => {
-                  onChange(item);
-                  close();
-                }}
-                style={styles.row}>
-                <ThemedText type="body" style={styles.rowName}>
-                  {item.name}
-                </ThemedText>
+      <Modal
+        visible={open}
+        animationType="slide"
+        onRequestClose={close}
+        statusBarTranslucent
+        supportedOrientations={['portrait']}>
+        {/* El Modal vive fuera del árbol de la app: sin su propio provider los
+            márgenes seguros llegan a 0 y la cabecera queda bajo la barra de estado. */}
+        <SafeAreaProvider>
+          <SafeAreaView
+            edges={['top', 'bottom', 'left', 'right']}
+            style={[styles.sheet, { backgroundColor: theme.background }]}>
+            <View style={styles.header}>
+              <ThemedText type="subtitle">Prefijo del país</ThemedText>
+              <Pressable accessibilityRole="button" accessibilityLabel="Cerrar" onPress={close}>
                 <ThemedText type="body" themeColor="textSecondary">
-                  +{item.dial}
+                  Cerrar
                 </ThemedText>
               </Pressable>
-            )}
-          />
-        </SafeAreaView>
+            </View>
+
+            <TextField
+              value={query}
+              // Solo dígitos: es lo que hace rápida la búsqueda.
+              onChangeText={(next) => setQuery(next.replace(/\D/g, ''))}
+              accessibilityLabel="Buscar prefijo por número"
+              placeholder="Escribe el prefijo: 3, 34…"
+              keyboardType="number-pad"
+              inputMode="numeric"
+              autoFocus
+              autoCorrect={false}
+              maxLength={4}
+            />
+
+            <FlatList
+              data={results}
+              keyExtractor={(item) => `${item.iso}-${item.dial}`}
+              keyboardShouldPersistTaps="handled"
+              ListEmptyComponent={
+                <ThemedText type="small" themeColor="textMuted" style={styles.empty}>
+                  Ningún país tiene ese prefijo.
+                </ThemedText>
+              }
+              renderItem={({ item }) => (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${item.name}, +${item.dial}`}
+                  onPress={() => {
+                    onChange(item);
+                    close();
+                  }}
+                  style={styles.row}>
+                  <ThemedText type="body" style={styles.rowName}>
+                    {item.name}
+                  </ThemedText>
+                  <ThemedText type="body" themeColor="textSecondary">
+                    +{item.dial}
+                  </ThemedText>
+                </Pressable>
+              )}
+            />
+          </SafeAreaView>
+        </SafeAreaProvider>
       </Modal>
     </>
   );
@@ -124,10 +135,12 @@ const styles = StyleSheet.create({
   },
   sheet: {
     flex: 1,
-    padding: Spacing.four,
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.three,
     gap: Spacing.three,
   },
   header: {
+    minHeight: Control.minTouch,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
