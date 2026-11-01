@@ -12,16 +12,15 @@ name: Registro con email (2/2) — volver del correo, contraseña aplicada y per
 # esperaba en el almacén seguro) y sigue al formulario de perfil. run.mjs
 # comprueba después contra GoTrue que esa contraseña entra.
 - extendedWaitUntil:
-    visible: '¿Qué dominas?'
+    visible: '¿Cómo te llamas?'
     timeout: 60000
 - assertNotVisible: 'Elige tu contraseña'
-# «Sobre ti» ya está contestado: el asistente empieza por lo que domino.
 # Y la puerta sigue abierta tras reiniciar: pregunta al servidor en cada montaje,
 # así que esto no lo puede sostener ningún estado en memoria de la app.
 - stopApp
 - launchApp:
     clearState: false
 - extendedWaitUntil:
-    visible: '¿Qué dominas?'
+    visible: '¿Cómo te llamas?'
     timeout: 60000
 - assertNotVisible: 'Crea tu cuenta'

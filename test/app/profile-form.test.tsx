@@ -21,12 +21,6 @@ import { buildProfileInput } from '@/data/test-fixtures';
 
 import { renderRoute, repositories, resetRepositories, resetRouter, router } from '../routes';
 
-import {
-  clearSignupBasics,
-  readSignupBasics,
-  saveSignupBasics,
-} from '@/features/profile/signup-draft';
-
 import { SPLASH_MS } from '@/components/welcome-splash';
 
 import ProfileFormScreen from '../../src/app/(onboarding)/profile-form';
@@ -65,7 +59,9 @@ jest.mock('@/features/profile', () => {
       mockForm.props = props;
       return (
         <>
-          <Pressable accessibilityRole="button" onPress={() => props.onSubmit(mockInput).catch(() => undefined)}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => props.onSubmit(mockInput).catch(() => undefined)}>
             <Text>{props.submitLabel}</Text>
           </Pressable>
         </>
@@ -80,7 +76,6 @@ beforeEach(() => {
   mockTerms.value = 'accepted';
   resetRepositories();
   resetRouter();
-  return clearSignupBasics();
 });
 
 describe('ProfileFormScreen', () => {
@@ -118,21 +113,6 @@ describe('ProfileFormScreen', () => {
     await renderRoute(<ProfileFormScreen />);
 
     await waitFor(() => expect(mockForm.props).not.toBeNull());
-  });
-
-  it('arranca con lo que se tecleó en «Sobre ti» y lo olvida al crear el perfil', async () => {
-    await saveSignupBasics({ name: 'Ana', age: 30, location: 'Vigo' });
-    await renderRoute(<ProfileFormScreen />);
-
-    await waitFor(() =>
-      expect(mockForm.props?.seed).toEqual({ name: 'Ana', age: 30, location: 'Vigo' })
-    );
-
-    await fireEvent.press(screen.getByRole('button', { name: 'Crear perfil' }));
-    await fireEvent.press(await screen.findByRole('button', { name: 'Entrar a cofounder' }));
-
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/discover'));
-    await expect(readSignupBasics()).resolves.toBeNull();
   });
 
   it('guarda el perfil y sustituye la ruta: atrás no vuelve al onboarding', async () => {

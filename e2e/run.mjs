@@ -1091,7 +1091,7 @@ if (command === 'test') {
   /**
    * Un intento de la variante `registro`: el alta con email de punta a punta.
    *
-   *   register.yaml          → bienvenida, «Sobre ti», cuenta, «Verifica tu email»
+   *   register.yaml          → bienvenida, cuenta, «Verifica tu email»
    *   oráculo                → la cuenta anónima espera ese email (su uid)
    *   Mailpit → GoTrue       → el enlace del correo, resuelto a cofounder://…?code=
    *   am start               → el enlace entra en la app por el esquema

@@ -317,9 +317,12 @@ export function AccountSection({
       </View>
 
       <View style={styles.block}>
-        <ThemedText type="label" themeColor="textSecondary">
-          Cuenta
-        </ThemedText>
+        {/* Con la cuenta asegurada no queda nada propio bajo este título. */}
+        {account.recoverable ? null : (
+          <ThemedText type="label" themeColor="textSecondary">
+            Cuenta
+          </ThemedText>
+        )}
 
         {account.recoverable ? null : account.kind === 'pending-email' ? (
           <>

@@ -40,5 +40,4 @@ export {
 } from './terms';
 export { PhoneStep } from './phone-step';
 export { PersonalInfo } from './personal-info';
-export { AboutYouForm } from './about-you-form';
 export { useRegistrationGate, type RegistrationGate } from './use-registration-gate';

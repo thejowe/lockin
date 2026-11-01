@@ -1,14 +1,13 @@
 /**
  * El botón grande de «Hazte Premium» en Ajustes.
  *
- * «Hazte Premium» arriba, centrado, y debajo un diamante grande. Al pulsarlo el
- * diamante crece desde el botón hasta cubrir la pantalla y, ya tapada, se
- * abre el paywall (con los dos planes, mensual y anual) por debajo; después el
- * diamante se desvanece y deja ver el paywall.
+ * Un diamante azul grande arriba y «Hazte Premium» debajo. Al pulsarlo, el
+ * diamante crece desde donde está hasta cubrir toda la pantalla; ya tapada, se
+ * abre el paywall (con los dos planes, mensual y anual) por debajo, se espera a
+ * que termine de subir y el diamante se desvanece para dejar ver los planes.
  *
- * `openPaywall` se llama nada más pulsar y no al final de la animación (aunque
- * el paywall no se vea hasta que el diamante se retira): se monta mientras crece, y así la transición nunca espera
- * a nada. Con «reducir movimiento» no hay diamante que crezca: solo se abre.
+ * Con «reducir movimiento» no hay diamante que crezca: se abre el paywall sin
+ * más.
  */
 
 import { useRef, useState } from 'react';
@@ -18,6 +17,7 @@ import Animated, {
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
   withTiming,
 } from 'react-native-reanimated';
 
@@ -32,8 +32,10 @@ import { openPaywall } from './open-paywall';
 const GEM = 72;
 /** Cuántas veces crece el diamante: de sobra para tapar cualquier pantalla desde cualquier punto. */
 const COVER_SCALE = 60;
-const GROW_MS = 520;
-const FADE_MS = 260;
+const GROW_MS = 650;
+/** Lo que tarda la hoja del paywall en subir bajo el diamante, antes de retirarlo. */
+const HOLD_MS = 450;
+const FADE_MS = 300;
 
 export function PremiumCta() {
   const theme = useTheme();
@@ -54,16 +56,29 @@ export function PremiumCta() {
     opacity.set(1);
   }
 
-  function handlePress() {
+  /** Con la pantalla ya tapada: abre el paywall, espera a que suba y retira el diamante. */
+  function covered() {
     openPaywall();
-    if (reduceMotion || !gemRef.current) return;
+    opacity.set(
+      withDelay(
+        HOLD_MS,
+        withTiming(0, { duration: FADE_MS }, () => runOnJS(finish)())
+      )
+    );
+  }
+
+  function handlePress() {
+    if (reduceMotion || !gemRef.current) {
+      openPaywall();
+      return;
+    }
     gemRef.current.measureInWindow((x, y, width, height) => {
       scale.set(1);
       opacity.set(1);
       setOrigin({ x: x + width / 2, y: y + height / 2 });
       scale.set(
         withTiming(COVER_SCALE, { duration: GROW_MS, easing: Easing.in(Easing.cubic) }, (done) => {
-          if (done) opacity.set(withTiming(0, { duration: FADE_MS }, () => runOnJS(finish)()));
+          if (done) runOnJS(covered)();
         })
       );
     });
@@ -79,16 +94,16 @@ export function PremiumCta() {
           styles.card,
           {
             backgroundColor: theme.brassSoft,
-            borderColor: theme.brass,
+            borderColor: theme.diamond,
             opacity: pressed ? Opacity.pressed : 1,
           },
         ]}>
+        <View ref={gemRef} collapsable={false}>
+          <Icon name="diamond" size={GEM} color={theme.diamond} strokeWidth={1.4} />
+        </View>
         <ThemedText type="subtitle" style={styles.title}>
           Hazte Premium
         </ThemedText>
-        <View ref={gemRef} collapsable={false}>
-          <Icon name="diamond" size={GEM} color={theme.brass} strokeWidth={1.4} />
-        </View>
       </Pressable>
 
       <Modal transparent statusBarTranslucent animationType="none" visible={origin !== null}>
@@ -100,7 +115,7 @@ export function PremiumCta() {
                 { left: origin.x - GEM / 2, top: origin.y - GEM / 2 },
                 overlayGem,
               ]}>
-              <Icon name="diamond" size={GEM} color={theme.brass} fill={theme.brass} />
+              <Icon name="diamond" size={GEM} color={theme.diamond} fill={theme.diamond} />
             </Animated.View>
           </View>
         ) : null}

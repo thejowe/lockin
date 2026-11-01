@@ -25,8 +25,10 @@ const ACTIONS_DELAY_MS = 1250;
  *
  * Desde el 2026-10-17 es solo marca y dos salidas: el logo en grande con su
  * entrada (`CofounderLogo`) y, abajo, «Iniciar sesión» en cristal blanco y
- * «Registrarse» en cristal negro. Registrarse empieza el alta por «Sobre ti»
- * (`/about-you`); la cuenta y el correo van después, y el perfil al final.
+ * «Registrarse» en cristal negro. Registrarse empieza el alta por la cuenta
+ * (`/register`: correo, contraseña y verificación); nombre, edad y ubicación se
+ * piden después, dentro del formulario del perfil. Sin capa de cuentas (mock) va
+ * directo al formulario.
  *
  * Guarda el modo `par` antes de seguir, como hacía la elección de modo que hubo
  * aquí hasta el 2026-10-12, para que nada de lo que aún lee `activeMode` se
@@ -52,7 +54,7 @@ export default function WelcomeScreen() {
     setError(null);
     try {
       await repositories.session.setActiveMode('par');
-      router.push('/about-you');
+      router.push(registrationRequired ? '/register' : '/profile-form');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'No hemos podido empezar el registro.');
     } finally {

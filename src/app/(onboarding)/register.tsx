@@ -6,7 +6,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Screen } from '@/components/ambient-background';
 import { BackArrow } from '@/components/back-arrow';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { useQuery, useRepositories } from '@/data';
 import { RegisterForm } from '@/features/profile';
 import { registrationRequired } from '@/features/profile/account-gateway';
 
@@ -19,11 +18,9 @@ import { registrationRequired } from '@/features/profile/account-gateway';
  *
  * Al terminar vuelve a `/`, que decide: `/profile-form` si no hay perfil y
  * `/discover` si ya lo había (cuenta anterior al registro obligatorio,
- * ascendida). En el alta normal es el paso 2 (cuenta) y 3 (verificar el correo)
- * de cuatro, tras «Sobre ti»; a quien asciende una cuenta con perfil no se le
- * cuentan pasos. Con
- * `replace` porque el
- * registro no es un sitio al que se vuelva con el botón atrás. «Ya tengo
+ * ascendida). En el alta normal es lo primero tras «Registrarse»: cuenta y
+ * verificar el correo, y solo después el formulario del perfil. Con `replace`
+ * porque el registro no es un sitio al que se vuelva con el botón atrás. «Ya tengo
  * cuenta» sí es un `push`: desde ahí se puede volver.
  */
 export default function RegisterScreen() {
@@ -34,12 +31,6 @@ export default function RegisterScreen() {
 /** Aparte para no preguntar por el perfil cuando la ruta solo va a redirigir. */
 function Register() {
   const router = useRouter();
-  const repositories = useRepositories();
-  const { data: onboarded, loading } = useQuery('session:onboarded', () =>
-    repositories.session.isOnboarded()
-  );
-
-  if (loading) return null;
 
   return (
     <Screen ambient="ember">
@@ -53,7 +44,6 @@ function Register() {
           <RegisterForm
             onDone={() => router.replace('/')}
             onSignIn={() => router.push('/sign-in')}
-            steps={onboarded ? undefined : { account: 'Paso 2 de 4', confirm: 'Paso 3 de 4' }}
           />
         </KeyboardAwareScrollView>
       </SafeAreaView>

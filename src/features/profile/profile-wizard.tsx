@@ -32,12 +32,7 @@ import {
   TIME_BAND_OPTIONS,
 } from './catalog';
 import { Chip, ChipRow, Field, OptionCard, Slider, TextField } from './controls';
-import {
-  BirthDateFields,
-  ageFromBirthDate,
-  birthDateProblem,
-  splitBirthDate,
-} from './about-you-form';
+import { BirthDateFields, ageFromBirthDate, birthDateProblem, splitBirthDate } from './birth-date';
 import {
   initialDraft,
   toInput,

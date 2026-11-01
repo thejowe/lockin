@@ -32,12 +32,12 @@ describe('WelcomeScreen', () => {
     expect(screen.getByRole('button', { name: 'Registrarse' })).not.toBeDisabled();
   });
 
-  it('«Registrarse» guarda el modo cofundador y empieza por «Sobre ti»', async () => {
+  it('«Registrarse» guarda el modo cofundador y empieza por la cuenta (o por el perfil, sin capa de cuentas)', async () => {
     await renderRoute(<ModeScreen />);
 
     await fireEvent.press(screen.getByRole('button', { name: 'Registrarse' }));
 
-    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/about-you'));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/profile-form'));
     await expect(repositories.session.get()).resolves.toMatchObject({ activeMode: 'par' });
   });
 

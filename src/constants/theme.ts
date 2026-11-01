@@ -55,6 +55,8 @@ const Dark = {
   teal: '#7FC3B0',
   /** Verde-azulado como relleno suave. */
   tealSoft: '#7FC3B029',
+  /** Azul del diamante de Premium. */
+  diamond: '#4DA3FF',
   /** Alerta/riesgo: descartar, destruir, error. */
   danger: '#FF9A80',
   /** Alerta como relleno suave. */

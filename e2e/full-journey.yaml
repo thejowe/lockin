@@ -15,13 +15,20 @@ name: Alta, perfil, deck, match, mensaje y persistencia
     clearState: true
 # Bienvenida (desde el 2026-10-17): logo y dos salidas. Desde el 2026-10-12 no
 # se elige modo, todo perfil es de cofundador. Sin la puerta del registro (mock,
-# o `REQUIRE_ACCOUNT=false` en la variante supabase) «Registrarse» va de «Sobre
-# ti» directo al perfil, sin cuenta ni correo.
+# o `REQUIRE_ACCOUNT=false` en la variante supabase) «Registrarse» va directo al
+# perfil, sin cuenta ni correo.
 - extendedWaitUntil:
     visible: 'Registrarse'
     timeout: 60000
 - tapOn: 'Registrarse'
-# «Sobre ti», de uno en uno: nombre, fecha de nacimiento y dónde vives.
+# Términos y Normas: sin aceptarlos no se publica perfil (gate de profile-form).
+- extendedWaitUntil:
+    visible: 'Términos y Normas'
+    timeout: 30000
+- tapOn: 'He leído y acepto los Términos de uso y las Normas de la comunidad'
+- tapOn: 'Aceptar y continuar'
+# El asistente del perfil: una pregunta por pantalla, empezando por nombre,
+# fecha de nacimiento y dónde vives.
 - extendedWaitUntil:
     visible: '¿Cómo te llamas?'
     timeout: 30000
@@ -51,14 +58,6 @@ name: Alta, perfil, deck, match, mensaje y persistencia
 - inputText: 'Barcelona'
 - hideKeyboard
 - tapOn: 'Continuar'
-# Términos y Normas: sin aceptarlos no se publica perfil (gate de profile-form).
-- extendedWaitUntil:
-    visible: 'Términos y Normas'
-    timeout: 30000
-- tapOn: 'He leído y acepto los Términos de uso y las Normas de la comunidad'
-- tapOn: 'Aceptar y continuar'
-# El asistente del perfil: una pregunta por pantalla. Nombre, edad y ubicación
-# ya vienen de «Sobre ti» y no se vuelven a preguntar.
 - extendedWaitUntil:
     visible: '¿Qué dominas?'
     timeout: 30000

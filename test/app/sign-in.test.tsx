@@ -79,7 +79,7 @@ describe('«Iniciar sesión» en la bienvenida', () => {
 
     await fireEvent.press(screen.getByRole('button', { name: 'Registrarse' }));
 
-    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/about-you'));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/profile-form'));
   });
 });
 

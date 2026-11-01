@@ -5,14 +5,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/ambient-background';
 import { WelcomeSplash } from '@/components/welcome-splash';
-import { useQuery, useRepositories, type ProfileInput } from '@/data';
+import { useRepositories, type ProfileInput } from '@/data';
 import {
   ProfileWizard,
   TermsAcceptance,
   useRegistrationGate,
   useTermsGate,
 } from '@/features/profile';
-import { clearSignupBasics, readSignupBasics } from '@/features/profile/signup-draft';
 
 /**
  * Último paso del onboarding: crear el perfil, pregunta a pregunta
@@ -50,7 +49,6 @@ export default function ProfileFormScreen() {
       // seguiría en `false` y cada arranque volvería aquí.
       await repositories.session.setActiveMode('par');
       await repositories.profiles.saveCurrent(input);
-      await clearSignupBasics();
       setSaved(true);
     } catch (cause) {
       setEntering(false);
@@ -77,7 +75,7 @@ export default function ProfileFormScreen() {
   return (
     <Screen ambient="plum">
       <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
-        <SeededProfileWizard onSubmit={handleSubmit} />
+        <ProfileWizard submitLabel="Crear perfil" onSubmit={handleSubmit} />
       </SafeAreaView>
       {/* Encima y no en su lugar: si el guardado falla, el asistente sigue como estaba. */}
       {entering ? (
@@ -88,17 +86,6 @@ export default function ProfileFormScreen() {
       ) : null}
     </Screen>
   );
-}
-
-/**
- * El asistente, una vez leído el borrador de «Sobre ti». Aparte para que la
- * lectura no empiece hasta que la puerta y los Términos dejan pasar: con ella
- * arriba, la pantalla se repintaría (y repetiría su `Redirect`) al resolverla.
- */
-function SeededProfileWizard({ onSubmit }: { onSubmit: (input: ProfileInput) => Promise<void> }) {
-  const { data: basics, loading } = useQuery('signup:basics', readSignupBasics);
-  if (loading) return null;
-  return <ProfileWizard submitLabel="Crear perfil" seed={basics} onSubmit={onSubmit} />;
 }
 
 const styles = StyleSheet.create({

@@ -5,7 +5,7 @@
  */
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { Linking } from 'react-native';
+import { AccessibilityInfo, Linking } from 'react-native';
 
 import { DataProvider } from '@/data';
 import { createMockRepositories, resetState, setMockPremium } from '@/data/mock';
@@ -39,6 +39,8 @@ describe('PremiumRow', () => {
   });
 
   it('sin Premium ofrece hacerse Premium', async () => {
+    // Con «reducir movimiento» no hay diamante que crezca: abre el paywall al pulsar.
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
     await render(<PremiumRow quotas={BASE} />);
 
     await fireEvent.press(screen.getByRole('button', { name: 'Hazte Premium' }));

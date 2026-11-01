@@ -1,5 +1,5 @@
 /**
- * «Continuar con Google / Apple» en el primer paso del alta (`about-you`).
+ * «Continuar con Google / Apple» en la pantalla de cuenta del alta (`register`).
  * Desde el 2026-10-29 ya no están en la bienvenida (`mode.tsx`).
  *
  * - Solo salen con el proveedor configurado en la compilación.
@@ -21,13 +21,21 @@ const mockSignIn = jest.fn();
 jest.mock('@/features/profile/account-gateway', () => ({
   ...jest.requireActual('@/features/profile/account-gateway'),
   accountsAvailable: true,
+  readAccountState: async () => ({
+    kind: 'anonymous',
+    userId: 'uid-1',
+    email: null,
+    pendingEmail: null,
+    recoverable: false,
+    phone: null,
+  }),
   registrationRequired: true,
   enabledAuthProviders: new Set(['google', 'apple']),
   signInWithProvider: (...args: unknown[]) => mockSignIn(...args),
 }));
 
 // Importado después del mock: las constantes de la pantalla se fijan al cargar.
-const ModeScreen = require('../../src/app/(onboarding)/about-you').default;
+const ModeScreen = require('../../src/app/(onboarding)/register').default;
 
 beforeEach(() => {
   resetRepositories();
@@ -38,7 +46,7 @@ beforeEach(() => {
 it('ofrece Google y, al volver, guarda el modo y deja decidir a la puerta de entrada', async () => {
   await renderRoute(<ModeScreen />);
 
-  await fireEvent.press(screen.getByRole('button', { name: 'Continuar con Google' }));
+  await fireEvent.press(await screen.findByRole('button', { name: 'Continuar con Google' }));
 
   await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/'));
   expect(mockSignIn).toHaveBeenCalledWith('google');
@@ -49,7 +57,7 @@ it('si se cancela no navega', async () => {
   mockSignIn.mockResolvedValue(false);
   await renderRoute(<ModeScreen />);
 
-  await fireEvent.press(screen.getByRole('button', { name: 'Continuar con Google' }));
+  await fireEvent.press(await screen.findByRole('button', { name: 'Continuar con Google' }));
 
   await waitFor(() => expect(mockSignIn).toHaveBeenCalled());
   expect(router.replace).not.toHaveBeenCalled();
@@ -59,7 +67,7 @@ it('un fallo se cuenta en la pantalla', async () => {
   mockSignIn.mockRejectedValue(new Error('provider is not enabled'));
   await renderRoute(<ModeScreen />);
 
-  await fireEvent.press(screen.getByRole('button', { name: 'Continuar con Google' }));
+  await fireEvent.press(await screen.findByRole('button', { name: 'Continuar con Google' }));
 
   expect(await screen.findByRole('alert')).toBeTruthy();
   expect(router.replace).not.toHaveBeenCalled();
@@ -70,5 +78,5 @@ it('Apple sale en iOS (el preset `jest-expo` corre como iOS)', async () => {
   expect(Platform.OS).toBe('ios');
   await renderRoute(<ModeScreen />);
 
-  expect(screen.getByRole('button', { name: 'Continuar con Apple' })).toBeTruthy();
+  expect(await screen.findByRole('button', { name: 'Continuar con Apple' })).toBeTruthy();
 });

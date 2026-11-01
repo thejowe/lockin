@@ -1,4 +1,4 @@
-# Registro obligatorio con email, primera mitad: la bienvenida, «Sobre ti», la
+# Registro obligatorio con email, primera mitad: la bienvenida, la
 # cuenta (email, contraseña dos veces y Términos) y el correo pedido. Solo en la
 # variante `registro`, la única cuyo APK lleva la puerta encendida (`buildEnv` en
 # run.mjs). Lo lanza run.mjs, que a continuación lee el correo de Mailpit,
@@ -7,7 +7,7 @@
 # es register-confirm.yaml. `e2e/register.test.mjs` fija las etiquetas contra el
 # código.
 appId: app.cofounder.mobile
-name: Registro con email (1/2) — sobre ti, crear la cuenta y quedar a la espera del correo
+name: Registro con email (1/2) — crear la cuenta y quedar a la espera del correo
 ---
 - assertTrue: ${EMAIL && PASSWORD}
 # Estado limpio: sin sesión guardada, la app abre una anónima al arrancar y
@@ -18,36 +18,6 @@ name: Registro con email (1/2) — sobre ti, crear la cuenta y quedar a la esper
     visible: 'Registrarse'
     timeout: 60000
 - tapOn: 'Registrarse'
-- extendedWaitUntil:
-    visible: '¿Cómo te llamas?'
-    timeout: 30000
-# El campo y no su etiqueta, que se llama igual: como en full-journey.yaml.
-- tapOn:
-    text: 'Nombre|Cómo te llamas'
-    below: 'Nombre'
-- inputText: 'Ana E2E'
-- hideKeyboard
-- tapOn: 'Continuar'
-- extendedWaitUntil:
-    visible: '¿Cuándo naciste?'
-    timeout: 30000
-- tapOn: 'Día'
-- inputText: '15'
-- hideKeyboard
-- tapOn: 'Mes'
-- inputText: '6'
-- hideKeyboard
-- tapOn: 'Año'
-- inputText: '1990'
-- hideKeyboard
-- tapOn: 'Continuar'
-- extendedWaitUntil:
-    visible: '¿Dónde vives?'
-    timeout: 30000
-- tapOn: 'De dónde eres|Barcelona'
-- inputText: 'Barcelona'
-- hideKeyboard
-- tapOn: 'Continuar'
 - extendedWaitUntil:
     visible: 'Crea tu cuenta'
     timeout: 30000
