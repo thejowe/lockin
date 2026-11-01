@@ -103,7 +103,7 @@ perfil de pagos de Google, el proyecto de RevenueCat y los productos creados en 
 Las claves y los secretos los pega siempre el usuario.
 
 - [ ] `react-native-purchases`, con su versión verificada contra SDK 58; `logIn`/`logOut` con el uid.
-- [ ] Edge Functions `revenuecat-webhook` y `sync-entitlement`, con sus tests (spec §8).
+- [x] Edge Functions `revenuecat-webhook` y `sync-entitlement`, con sus tests (spec §8). Escritas y con 38 tests verdes (`supabase/functions/{revenuecat-webhook,sync-entitlement}`, lógica compartida en `sync-entitlement/logic.mjs`). **Falta:** desplegar (`sync-entitlement` con `verify_jwt: true`, `revenuecat-webhook` con `false`, subiendo `../sync-entitlement/logic.mjs` como archivo) y poner los secretos `REVENUECAT_SECRET_KEY` y `REVENUECAT_WEBHOOK_SECRET`; configurar el webhook en RevenueCat con ese valor en Authorization.
 - [ ] [comprobador] Compra de prueba con *license tester* en un track interno de Play.
 - [ ] Compra en el sandbox de iOS (la hace el usuario: no hay macOS ni iPhone en el emulador).
 
@@ -208,3 +208,5 @@ Backend: **Supabase** (logcat: «backend de datos: Supabase»). Cuenta `1862c710
 - Sin comprobar aún: paginación de `/likes` (hacen falta >20 likes entrantes; orden dada de no sembrar cuentas) y la compra real (Fase 3).
 
 **Limpieza final (2026-11-01):** borradas la cuenta Premium de prueba y una anónima huérfana; consulta posterior: 0 filas en users, profiles, entitlements, boosts, decisions y like_events para las 6 cuentas de prueba y 0 usuarios nuevos desde las 16:00 UTC.
+
+**Revisión de Codex a las Edge Functions de RevenueCat (2026-11-01):** corregidos el cuerpo 200 ilegible (ya no borra Premium; reintenta) y los eventos `REFUND_REVERSED` y `TEMPORARY_ENTITLEMENT_GRANT`. **Abierto antes de desplegar:** refrescos solapados del mismo usuario pueden pisarse (una `EXPIRATION` lenta tras una `RENEWAL` deja caducado); serializar por usuario o rechazar instantáneas más viejas (p. ej. columna de versión en `entitlements` o `pg_advisory_xact_lock` en un RPC).
