@@ -42,8 +42,8 @@ Se copian las *funciones* de Tinder, no su marca: nada de «Gold», «Plus»,
 
 | Producto | Tipo | Precio (propuesta, **pendiente del usuario**) |
 |---|---|---|
-| `premium_monthly` | Suscripción auto-renovable, 1 mes | 9,99 € |
-| `premium_yearly` | Suscripción auto-renovable, 1 año | 49,99 € (~58 % menos) |
+| `premium_monthly` | Suscripción auto-renovable, 1 mes | 4,99 € |
+| `premium_yearly` | Suscripción auto-renovable, 1 año | 39,99 € (~33 % menos) |
 
 - Los dos productos van en el mismo grupo de suscripción de Apple, y en Google
   son dos *base plans* de una suscripción `premium`. Así, pasar de uno a otro es

@@ -8,7 +8,7 @@
 
 **Sin ver en dispositivo:** tope de 5 Super Likes/semana, «Sin Super Likes» con Supabase, paginación de `/likes`, «Gestionar suscripción»/«Restaurar compras» tocados, contador de likes al volver a Matches.
 
-**Del usuario:** precios (la spec propone 9,99 €/mes y 49,99 €/año) y prueba gratis; **no subir build nueva a TestFlight todavía** (el paywall no puede cobrar sin RevenueCat y arriesga rechazo; decidir si se ocultan los botones Premium); Fase 3 (cuentas Apple/Google/RevenueCat) y Fase 4 (términos, privacidad, fichas). `.review-db61bfe/` quedó ignorada (borrarla fue denegado). El emulador y Metro (8081, copia `C:\k`) quedaron encendidos; al apagar el equipo se cierran.
+**Del usuario:** precios (decididos el 2026-11-01: 4,99 €/mes y 39,99 €/año, prueba gratis de 3 días); **no subir build nueva a TestFlight todavía** (el paywall no puede cobrar sin RevenueCat y arriesga rechazo; decidir si se ocultan los botones Premium); Fase 3 (cuentas Apple/Google/RevenueCat) y Fase 4 (términos, privacidad, fichas). `.review-db61bfe/` quedó ignorada (borrarla fue denegado). El emulador y Metro (8081, copia `C:\k`) quedaron encendidos; al apagar el equipo se cierran.
 
 ## ▶ Al retomar (2026-10-29): envío a iOS, con la cuenta de Apple Developer ya activa
 

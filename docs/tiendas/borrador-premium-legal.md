@@ -5,7 +5,7 @@ Estado: borrador del 2026-11-01. No sustituye a `terminos.md` ni a `privacidad.m
 antes anunciaría una suscripción que la app todavía no puede cobrar. No es asesoramiento jurídico: entra en
 la revisión del punto 8 de la lista de pendientes.
 
-Precios confirmados por el usuario el 2026-11-01: 9,99 €/mes y 49,99 €/año. Prueba gratis: 3 días (confirmada por el usuario el 2026-11-01).
+Precios confirmados por el usuario el 2026-11-01: 4,99 €/mes y 39,99 €/año. Prueba gratis: 3 días (confirmada por el usuario el 2026-11-01).
 
 ## Para `terminos.md` — nueva sección «Cofounder Premium» (entre §9 y §10)
 
@@ -13,7 +13,7 @@ Precios confirmados por el usuario el 2026-11-01: 9,99 €/mes y 49,99 €/año.
 Super Likes, deshacer el último gesto, Boost y ver quién te ha dado like. Cofounder sigue siendo gratuito sin
 Premium y no muestra anuncios.
 
-**Precio y renovación.** 9,99 € al mes o 49,99 € al año, impuestos incluidos, cobrados por Apple
+**Precio y renovación.** 4,99 € al mes o 39,99 € al año, impuestos incluidos, cobrados por Apple
 App Store o Google Play. La suscripción se renueva sola al final de cada periodo salvo que la canceles al menos
 24 horas antes. La primera vez que te suscribes tienes 3 días de prueba gratuita; si no cancelas al menos 24 horas antes de que termine, empieza el cobro del plan elegido. La prueba es una por persona y cuenta de tienda.
 

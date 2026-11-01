@@ -10,7 +10,7 @@ escriba código pasa por `codex review` antes de commitear en la rama principal.
 
 ## Decisiones del usuario pendientes
 
-- [x] Precios definitivos: 9,99 €/mes y 49,99 €/año (confirmados por el usuario el 2026-11-01).
+- [x] Precios definitivos: 4,99 €/mes y 39,99 €/año (el usuario los fijó el 2026-11-01; la spec proponía 9,99 €/49,99 €).
 - [x] Prueba gratis: 3 días, una por persona (decidido por el usuario el 2026-11-01). Se configura como oferta introductoria en App Store Connect y Google Play al crear los productos (Fase 3); los términos ya la recogen en el borrador.
 
 ## Fase 0 — plan

@@ -39,19 +39,19 @@ export class PurchasesUnavailableError extends Error {
   }
 }
 
-/** Ofertas de mentira del mock. Los precios son los que propone la spec, no definitivos. */
+/** Ofertas de mentira del mock. Precios definitivos (2026-11-01): 4,99 €/mes y 39,99 €/año. */
 const FAKE_OFFERINGS: PurchasePackage[] = [
   {
     id: 'mock_month',
     period: 'month',
-    priceString: '9,99 €',
-    pricePerMonthString: '9,99 €',
+    priceString: '4,99 €',
+    pricePerMonthString: '4,99 €',
   },
   {
     id: 'mock_year',
     period: 'year',
-    priceString: '49,99 €',
-    pricePerMonthString: '4,17 €',
+    priceString: '39,99 €',
+    pricePerMonthString: '3,33 €',
   },
 ];
 
