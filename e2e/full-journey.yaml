@@ -21,20 +21,32 @@ name: Alta, perfil, deck, match, mensaje y persistencia
     visible: 'Registrarse'
     timeout: 60000
 - tapOn: 'Registrarse'
-# «Sobre ti»: nombre, edad y de dónde eres, antes que nada.
+# «Sobre ti», de uno en uno: nombre, fecha de nacimiento y dónde vives.
 - extendedWaitUntil:
-    visible: 'Sobre ti'
+    visible: '¿Cómo te llamas?'
     timeout: 30000
 - tapOn:
     text: 'Nombre|Cómo te llamas'
     below: 'Nombre'
 - inputText: ${PROFILE_NAME}
 - hideKeyboard
-- tapOn:
-    text: 'Edad|28'
-    below: 'Edad'
-- inputText: '28'
+- tapOn: 'Continuar'
+- extendedWaitUntil:
+    visible: '¿Cuándo naciste?'
+    timeout: 30000
+- tapOn: 'Día'
+- inputText: '15'
 - hideKeyboard
+- tapOn: 'Mes'
+- inputText: '6'
+- hideKeyboard
+- tapOn: 'Año'
+- inputText: '1990'
+- hideKeyboard
+- tapOn: 'Continuar'
+- extendedWaitUntil:
+    visible: '¿Dónde vives?'
+    timeout: 30000
 - tapOn: 'De dónde eres|Barcelona'
 - inputText: 'Barcelona'
 - hideKeyboard
@@ -45,55 +57,63 @@ name: Alta, perfil, deck, match, mensaje y persistencia
     timeout: 30000
 - tapOn: 'He leído y acepto los Términos de uso y las Normas de la comunidad'
 - tapOn: 'Aceptar y continuar'
-# Nombre, edad y ubicación ya vienen de «Sobre ti»: no se vuelven a teclear.
+# El asistente del perfil: una pregunta por pantalla. Nombre, edad y ubicación
+# ya vienen de «Sobre ti» y no se vuelven a preguntar.
 - extendedWaitUntil:
-    visible: ${PROFILE_NAME}
+    visible: '¿Qué dominas?'
     timeout: 30000
-- assertVisible: 'Barcelona'
-- scrollUntilVisible:
-    element: 'Desarrollo'
-    direction: DOWN
 - tapOn: 'Desarrollo'
 # Marketing no es decorado: es lo que hace aparecer el ✓ en la primera tarjeta
 # del deck, porque Núria busca marketing y ventas.
-- scrollUntilVisible:
-    element: 'Marketing'
-    direction: DOWN
 - tapOn: 'Marketing'
-# "Lo que debe dominar quien busco". Solo se pinta con `par` o `ambos` —aquí,
-# `ambos`—: es la invariante de `Profile.seekingSpecialties`. Se toca por su
-# etiqueta de accesibilidad porque "Diseño" nombra dos chips de esta pantalla,
-# el que domino y el que busco, y por texto visible serían el mismo.
-- scrollUntilVisible:
-    element: 'Busco Diseño'
-    direction: DOWN
+- tapOn: 'Continuar'
+# "Lo que debe dominar quien busco" (opcional). Se toca por su etiqueta de
+# accesibilidad porque "Diseño" nombra dos chips del alta, el que domino y el
+# que busco, y por texto visible serían el mismo.
+- extendedWaitUntil:
+    visible: '¿Qué le pides a tu cofundador?'
+    timeout: 10000
 - tapOn: 'Busco Diseño'
-- scrollUntilVisible:
-    element: 'Solo ganas'
-    direction: DOWN
+- tapOn: 'Continuar'
+- extendedWaitUntil:
+    visible: '¿En qué punto estás?'
+    timeout: 10000
 - tapOn: 'Solo ganas'
-- scrollUntilVisible:
-    element: 'Tarde · 12–20'
-    direction: DOWN
+- tapOn: 'Continuar'
+# Horas por semana: se queda en el valor de partida.
+- extendedWaitUntil:
+    visible: '¿Cuántas horas a la semana?'
+    timeout: 10000
+- tapOn: 'Continuar'
+- extendedWaitUntil:
+    visible: '¿Cuándo sueles trabajar?'
+    timeout: 10000
 - tapOn: 'Tarde · 12–20'
-- scrollUntilVisible:
-    element: 'En serio, con equilibrio'
-    direction: DOWN
+- tapOn: 'Continuar'
+- extendedWaitUntil:
+    visible: '¿Cuánto te la juegas?'
+    timeout: 10000
 - tapOn: 'En serio, con equilibrio'
-- scrollUntilVisible:
-    element:
-      text: 'Lo que quiero construir es…|Tu respuesta'
-      below: 'Busco a alguien que…'
-    direction: DOWN
+- tapOn: 'Continuar'
+- extendedWaitUntil:
+    visible: 'Cuéntanos algo más'
+    timeout: 10000
 - tapOn:
     text: 'Lo que quiero construir es…|Tu respuesta'
     below: 'Busco a alguien que…'
 - inputText: 'Una herramienta para construir en equipo'
 - hideKeyboard
-- scrollUntilVisible:
-    element: 'Crear perfil'
-    direction: DOWN
-- tapOn: 'Crear perfil'
+- tapOn: 'Continuar'
+# Enlaces: opcional y último paso; omitir lo termina.
+- extendedWaitUntil:
+    visible: '¿Dónde te encuentran?'
+    timeout: 10000
+- tapOn: 'Omitir'
+# La entrada animada del logo: tocarla entra sin esperar a que acabe.
+- extendedWaitUntil:
+    visible: 'Entrar a cofounder'
+    timeout: 30000
+- tapOn: 'Entrar a cofounder'
 - extendedWaitUntil:
     visible: 'Like'
     timeout: 60000

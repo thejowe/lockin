@@ -51,7 +51,7 @@ import {
 import type { Ambition, Profile, ProfileInput, Specialty, StartingPoint, TimeBand } from '@/data';
 
 /** Estado del formulario. Los números viven como texto mientras se teclean. */
-interface Draft {
+export interface Draft {
   name: string;
   age: string;
   location: string;
@@ -72,7 +72,7 @@ interface Draft {
   prompts: { question: string; answer: string }[];
 }
 
-type Errors = Partial<Record<keyof Draft, string>>;
+export type Errors = Partial<Record<keyof Draft, string>>;
 
 /** Orden de los campos en pantalla: el primero con error es adonde se lleva a la persona. */
 const FIELD_ORDER: (keyof Draft)[] = [
@@ -106,7 +106,7 @@ function deviceTimezone(): string {
 /** Lo que el alta ya sabe antes del formulario (ver `signup-draft.ts`). */
 export type ProfileSeed = Pick<Profile, 'name' | 'age' | 'location'>;
 
-function initialDraft(profile: Profile | null, seed: ProfileSeed | null): Draft {
+export function initialDraft(profile: Profile | null, seed: ProfileSeed | null): Draft {
   const prompts = [0, 1].map((index) => ({
     question: profile?.prompts[index]?.question ?? PROMPT_QUESTIONS[index],
     answer: profile?.prompts[index]?.answer ?? '',
@@ -133,7 +133,7 @@ function initialDraft(profile: Profile | null, seed: ProfileSeed | null): Draft 
 }
 
 /** Añade o quita un valor de una selección múltiple. */
-function toggle<T>(values: T[], value: T): T[] {
+export function toggle<T>(values: T[], value: T): T[] {
   return values.includes(value) ? values.filter((item) => item !== value) : [...values, value];
 }
 
@@ -141,7 +141,7 @@ function toggle<T>(values: T[], value: T): T[] {
  * Validación mínima: solo lo que hace que una ficha sea impresentable en el deck.
  * Los enlaces son opcionales, pero si se escriben tienen que parecer una URL.
  */
-function validate(draft: Draft): Errors {
+export function validate(draft: Draft): Errors {
   const errors: Errors = {};
   const age = Number(draft.age);
 
@@ -175,7 +175,7 @@ function validate(draft: Draft): Errors {
 }
 
 /** Convierte el borrador validado en lo que espera el repositorio. */
-function toInput(draft: Draft): ProfileInput {
+export function toInput(draft: Draft): ProfileInput {
   const link = (value: string) => (value.trim().length > 0 ? value.trim() : undefined);
 
   return {

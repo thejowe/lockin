@@ -23,6 +23,10 @@ jest.mock('expo-router', () => ({
 
 jest.mock('./use-registration-gate', () => ({ useRegistrationGate: jest.fn() }));
 
+/** Lo que lee la puerta de la cuenta: cada test elige si hay sesión o no. */
+const mockAccount: { value: { kind: string } | null } = { value: { kind: 'anonymous' } };
+jest.mock('@/data', () => ({ useQuery: () => ({ data: mockAccount.value }) }));
+
 const useGate = jest.requireMock('./use-registration-gate').useRegistrationGate as jest.Mock;
 
 function ui() {
@@ -36,6 +40,7 @@ function ui() {
 describe('RequireVerifiedEmail', () => {
   beforeEach(() => {
     mockRedirect.mockClear();
+    mockAccount.value = { kind: 'anonymous' };
   });
 
   it('con la cuenta abierta enseña el contenido', async () => {
@@ -52,6 +57,15 @@ describe('RequireVerifiedEmail', () => {
 
     expect(mockRedirect).toHaveBeenCalledWith('/register');
     expect(screen.queryByText('contenido privado')).toBeNull();
+  });
+
+  it('sin sesión (acaba de cerrarla) manda a la inicial y no al registro', async () => {
+    mockAccount.value = { kind: 'none' };
+    useGate.mockReturnValue('required');
+    await render(ui());
+
+    expect(mockRedirect).toHaveBeenCalledWith('/mode');
+    expect(mockRedirect).not.toHaveBeenCalledWith('/register');
   });
 
   it('con la cuenta confirmada pero sin móvil manda a /phone y no enseña nada', async () => {

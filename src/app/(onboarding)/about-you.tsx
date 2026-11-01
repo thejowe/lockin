@@ -1,18 +1,15 @@
 import { useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/ambient-background';
-import { BackArrow } from '@/components/back-arrow';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useQuery } from '@/data';
 import { AboutYouForm, ProviderButtons } from '@/features/profile';
 import { registrationRequired } from '@/features/profile/account-gateway';
 import { readSignupBasics, saveSignupBasics } from '@/features/profile/signup-draft';
 
 /**
- * Primer paso del alta: nombre, edad y de dónde eres.
+ * Primer paso del alta: nombre, fecha de nacimiento y dónde vives, de uno en uno.
  *
  * Sigue a la cuenta (`/register`) si la compilación la exige y, sin capa de
  * cuentas (mock), directamente al perfil. Lo tecleado queda en el borrador del
@@ -28,29 +25,20 @@ export default function AboutYouScreen() {
   return (
     <Screen ambient="ember">
       <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
-        {router.canGoBack() ? <BackArrow onPress={() => router.back()} /> : null}
-        {/* El campo enfocado sube por encima del teclado: ver `profile-form.tsx`. */}
-        <KeyboardAwareScrollView
-          bottomOffset={Spacing.five}
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled">
-          <AboutYouForm
-            initial={basics}
-            step={registrationRequired ? 'Paso 1 de 4' : 'Paso 1 de 2'}
-            onNext={async (next) => {
-              await saveSignupBasics(next);
-              router.push(registrationRequired ? '/register' : '/profile-form');
-            }}
-            // Registrarse con Google o Apple sin pasar por aquí: los datos los
-            // pide igualmente el formulario de perfil, y con cuenta ya existente
-            // `/` lleva directa al deck.
-            alternatives={
-              registrationRequired ? (
-                <ProviderButtons onSignedIn={() => router.replace('/')} />
-              ) : null
-            }
-          />
-        </KeyboardAwareScrollView>
+        <AboutYouForm
+          initial={basics}
+          onBack={router.canGoBack() ? () => router.back() : undefined}
+          onNext={async (next) => {
+            await saveSignupBasics(next);
+            router.push(registrationRequired ? '/register' : '/profile-form');
+          }}
+          // Registrarse con Google o Apple sin pasar por aquí: los datos los
+          // pide igualmente el formulario de perfil, y con cuenta ya existente
+          // `/` lleva directa al deck.
+          alternatives={
+            registrationRequired ? <ProviderButtons onSignedIn={() => router.replace('/')} /> : null
+          }
+        />
       </SafeAreaView>
     </Screen>
   );
@@ -59,14 +47,5 @@ export default function AboutYouScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-  },
-  content: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.five,
-    width: '100%',
-    maxWidth: MaxContentWidth,
-    alignSelf: 'center',
   },
 });

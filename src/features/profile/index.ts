@@ -23,6 +23,7 @@ export {
   type ProfileSection,
   type ProfileSeed,
 } from './profile-form';
+export { ProfileWizard } from './profile-wizard';
 export { SectionEditSheet } from './section-edit-sheet';
 export { NewPasswordForm } from './new-password-form';
 export { ProviderButtons } from './provider-buttons';

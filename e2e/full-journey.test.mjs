@@ -43,7 +43,7 @@ describe('full-journey declara lo que busca la persona', () => {
     // accessibilityLabel que `perfil` puso justo para poder distinguirlos.
     assert(at("- tapOn: 'Busco Diseño'") >= 0, 'Falta declarar qué debe dominar la otra persona');
     assert(
-      at("- tapOn: 'Busco Diseño'") < at("- tapOn: 'Crear perfil'"),
+      at("- tapOn: 'Busco Diseño'") < at("- tapOn: 'Entrar a cofounder'"),
       'Se declara después de guardar el perfil: no llegaría a la fila'
     );
   });
@@ -115,7 +115,7 @@ describe('full-journey declara lo que busca la persona', () => {
     const marketing = at("- tapOn: 'Marketing'");
     assert(marketing >= 0, 'El recorrido ya no domina marketing');
     assert(marketing > at("- tapOn: 'Continuar'"), 'Se elige antes de entrar al formulario');
-    assert(marketing < at("- tapOn: 'Crear perfil'"), 'Se elige después de guardar el perfil');
+    assert(marketing < at("- tapOn: 'Entrar a cofounder'"), 'Se elige después de guardar el perfil');
   });
 
   it('relee la suya de Postgres después del reinicio', () => {

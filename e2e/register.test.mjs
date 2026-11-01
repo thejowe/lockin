@@ -27,7 +27,6 @@ const form = read('../src/features/profile/register-form.tsx');
 const welcome = read('../src/app/(onboarding)/mode.tsx');
 const aboutYou = read('../src/features/profile/about-you-form.tsx');
 const terms = read('../src/features/profile/terms.tsx');
-const profileFormRoute = read('../src/app/(onboarding)/profile-form.tsx');
 const auth = read('../src/data/supabase/auth.ts');
 const callbackRoute = read('../src/app/auth/callback.tsx');
 const app = JSON.parse(read('../app.json'));
@@ -36,11 +35,19 @@ describe('register.yaml y register-confirm.yaml', () => {
   it('tocan etiquetas que existen en la bienvenida y en «Sobre ti»', () => {
     assert.match(first, /tapOn: 'Registrarse'/);
     assert.match(welcome, /: 'Registrarse'\}/);
-    assert.match(first, /visible: 'Sobre ti'/);
-    assert.match(aboutYou, /<ThemedText type="title">Sobre ti<\/ThemedText>/);
+    // «Sobre ti» va de uno en uno: nombre, fecha de nacimiento y dónde vives.
+    assert.match(first, /visible: '¿Cómo te llamas\?'/);
+    assert.match(aboutYou, /title="¿Cómo te llamas\?"/);
     assert.match(aboutYou, /accessibilityLabel="Nombre"/);
     assert.match(aboutYou, /placeholder="Cómo te llamas"/);
-    assert.match(aboutYou, /accessibilityLabel="Edad"/);
+    assert.match(first, /visible: '¿Cuándo naciste\?'/);
+    assert.match(aboutYou, /title="¿Cuándo naciste\?"/);
+    for (const part of ['Día', 'Mes', 'Año']) {
+      assert.match(first, new RegExp("tapOn: '" + part + "'"));
+      assert.match(aboutYou, new RegExp('accessibilityLabel="' + part + '"'));
+    }
+    assert.match(first, /visible: '¿Dónde vives\?'/);
+    assert.match(aboutYou, /title="¿Dónde vives\?"/);
     assert.match(first, /tapOn: 'De dónde eres\|Barcelona'/);
     assert.match(aboutYou, /accessibilityLabel="De dónde eres"/);
     assert.match(first, /tapOn: 'Continuar'/);
@@ -70,13 +77,12 @@ describe('register.yaml y register-confirm.yaml', () => {
     assert.match(form, /<ThemedText type="title">Verifica tu email<\/ThemedText>/);
 
     // La segunda mitad no teclea la contraseña: la pone sola la que esperaba.
-    assert.match(second, /visible: 'Paso 4 de 4'/);
-    assert.match(profileFormRoute, /'Paso 4 de 4'/);
+    assert.match(second, /visible: '¿Qué dominas\?'/);
+    assert.match(read('../src/features/profile/profile-wizard.tsx'), /title="¿Qué dominas\?"/);
     assert.match(second, /assertNotVisible: 'Elige tu contraseña'/);
     assert.match(form, /<ThemedText type="title">Elige tu contraseña<\/ThemedText>/);
     assert.doesNotMatch(second, /inputText: \$\{PASSWORD\}/);
     assert.match(form, /await setAccountPassword\(stashed, userId\)/);
-    assert.match(second, /assertVisible: 'Ana E2E'/);
     assert.match(first, /inputText: 'Ana E2E'/);
   });
 

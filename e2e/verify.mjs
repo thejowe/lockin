@@ -13,7 +13,11 @@ export async function verifyPersistence(status, profileName, message) {
     return data;
   }
   const profile = await rows(client.from('profiles').select('*').eq('name', profileName).single());
-  assert.equal(profile.age, 28);
+  // La fecha de nacimiento que teclean los .yaml (15/06/1990): la edad depende del día.
+  const now = new Date();
+  const birthday = new Date(now.getFullYear(), 5, 15);
+  const age = now.getFullYear() - 1990 - (now < birthday ? 1 : 0);
+  assert.equal(profile.age, age);
   assert.equal(profile.location, 'Barcelona');
   // Solo cofundador desde el 2026-10-12: ni la bienvenida ni el formulario preguntan.
   assert.equal(profile.looking_for, 'par');

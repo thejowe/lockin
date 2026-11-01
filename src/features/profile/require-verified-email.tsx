@@ -14,6 +14,9 @@
 import { Redirect } from 'expo-router';
 
 import { LoadingState } from '@/components/state-view';
+import { useQuery } from '@/data';
+
+import { readAccountState } from './account-gateway';
 
 import { useRegistrationGate } from './use-registration-gate';
 
@@ -21,9 +24,14 @@ import type { ReactNode } from 'react';
 
 export function RequireVerifiedEmail({ children }: { children: ReactNode }) {
   const gate = useRegistrationGate();
+  const { data: account } = useQuery('account:state', readAccountState);
 
   if (gate === 'checking') return <LoadingState label="Comprobando tu cuenta…" />;
-  if (gate === 'required') return <Redirect href="/register" />;
+  // Sin sesión (acaba de cerrarla) se vuelve a la inicial, con el logo y las dos
+  // salidas; solo quien tiene una cuenta a medias va a asegurarla en `/register`.
+  if (gate === 'required') {
+    return <Redirect href={account?.kind === 'none' ? '/mode' : '/register'} />;
+  }
   if (gate === 'phone') return <Redirect href="/phone" />;
 
   return <>{children}</>;

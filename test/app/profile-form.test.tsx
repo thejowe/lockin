@@ -1,14 +1,14 @@
 /**
- * Tests del paso 2 del onboarding.
+ * Tests del último paso del onboarding (el asistente del perfil y la entrada animada).
  *
  * La pantalla no dibuja el formulario, lo compone: lo que decide es esperar al
  * modo del paso 1 antes de montarlo (si llegara después, "qué busco" ya estaría
  * inicializado en vacío) y usar `replace` al terminar, para que el botón atrás
  * no devuelva a nadie a un onboarding ya hecho.
  *
- * `ProfileForm` se sustituye por un doble que guarda sus props y pinta su
- * cabecera: montar el formulario real aquí duplicaría `profile-form.test.tsx`
- * de `perfil` y taparía justo lo que esta pantalla aporta. La puerta del
+ * `ProfileWizard` se sustituye por un doble que guarda sus props: montar el
+ * asistente real aquí duplicaría `profile-wizard.test.tsx` de `perfil` y taparía
+ * justo lo que esta pantalla aporta. La puerta del
  * registro obligatorio (`useRegistrationGate`) se sustituye por un valor que el
  * test elige: su lógica se prueba en `src/features/profile/`.
  *
@@ -27,9 +27,15 @@ import {
   saveSignupBasics,
 } from '@/features/profile/signup-draft';
 
+import { SPLASH_MS } from '@/components/welcome-splash';
+
 import ProfileFormScreen from '../../src/app/(onboarding)/profile-form';
 
-import type { ProfileFormProps } from '@/features/profile';
+import type { ComponentProps } from 'react';
+
+import type { ProfileWizard } from '@/features/profile';
+
+type WizardProps = ComponentProps<typeof ProfileWizard>;
 
 jest.mock('expo-router', () => require('../routes').expoRouterMock());
 
@@ -37,7 +43,7 @@ jest.mock('expo-router', () => require('../routes').expoRouterMock());
  * Props con las que se montó el formulario. El prefijo `mock` es lo que deja a
  * `jest.mock` cerrar sobre una variable de este módulo.
  */
-const mockForm: { props: ProfileFormProps | null } = { props: null };
+const mockForm: { props: WizardProps | null } = { props: null };
 
 /** Lo que envía el doble al pulsar: el perfil ya relleno. */
 const mockInput = buildProfileInput({ name: 'Núria Bosch' });
@@ -55,12 +61,11 @@ jest.mock('@/features/profile', () => {
     useRegistrationGate: () => mockGate.value,
     useTermsGate: () => ({ gate: mockTerms.value, refresh: jest.fn() }),
     TermsAcceptance: () => <Text>Términos y Normas</Text>,
-    ProfileForm: (props: ProfileFormProps) => {
+    ProfileWizard: (props: WizardProps) => {
       mockForm.props = props;
       return (
         <>
-          {props.header}
-          <Pressable accessibilityRole="button" onPress={() => props.onSubmit(mockInput)}>
+          <Pressable accessibilityRole="button" onPress={() => props.onSubmit(mockInput).catch(() => undefined)}>
             <Text>{props.submitLabel}</Text>
           </Pressable>
         </>
@@ -109,14 +114,6 @@ describe('ProfileFormScreen', () => {
     expect(mockForm.props).toBeNull();
   });
 
-  it('sitúa el paso y explica qué se pide en la cabecera del formulario', async () => {
-    await renderRoute(<ProfileFormScreen />);
-
-    expect(screen.getByText('Paso 2 de 2')).toBeTruthy();
-    expect(screen.getByText('Cuéntate')).toBeTruthy();
-    expect(screen.getByText('Crear perfil')).toBeTruthy();
-  });
-
   it('monta el formulario sin esperar a ningún modo: ya no se elige', async () => {
     await renderRoute(<ProfileFormScreen />);
 
@@ -132,6 +129,7 @@ describe('ProfileFormScreen', () => {
     );
 
     await fireEvent.press(screen.getByRole('button', { name: 'Crear perfil' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Entrar a cofounder' }));
 
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/discover'));
     await expect(readSignupBasics()).resolves.toBeNull();
@@ -141,11 +139,41 @@ describe('ProfileFormScreen', () => {
     await renderRoute(<ProfileFormScreen />);
 
     await fireEvent.press(screen.getByRole('button', { name: 'Crear perfil' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Entrar a cofounder' }));
 
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/discover'));
     expect(router.push).not.toHaveBeenCalled();
     await expect(repositories.profiles.getCurrent()).resolves.toMatchObject({
       name: 'Núria Bosch',
     });
+  });
+
+  it('al terminar enseña la animación del logo y, sin tocar, entra sola cuando acaba', async () => {
+    jest.useFakeTimers();
+    try {
+      await renderRoute(<ProfileFormScreen />);
+
+      await fireEvent.press(screen.getByRole('button', { name: 'Crear perfil' }));
+      expect(await screen.findByLabelText('cofounder')).toBeTruthy();
+      expect(router.replace).not.toHaveBeenCalled();
+
+      await jest.advanceTimersByTimeAsync(SPLASH_MS + 100);
+
+      await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/discover'));
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('si el guardado falla, quita la animación y deja el asistente donde estaba', async () => {
+    await renderRoute(<ProfileFormScreen />);
+    jest.spyOn(repositories.profiles, 'saveCurrent').mockRejectedValueOnce(new Error('sin red'));
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Crear perfil' }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Entrar a cofounder' })).toBeNull()
+    );
+    expect(router.replace).not.toHaveBeenCalled();
   });
 });

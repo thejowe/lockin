@@ -24,6 +24,11 @@ export interface SignupBasics {
   name: string;
   age: number;
   location: string;
+  /**
+   * Fecha de nacimiento («AAAA-MM-DD»), solo para volver a rellenar «Sobre ti» al
+   * retroceder. En el perfil se guarda la edad que sale de ella.
+   */
+  birthDate?: string;
 }
 
 function isBasics(value: unknown): value is SignupBasics {
