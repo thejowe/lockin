@@ -4,7 +4,7 @@
  * se saltan el formulario de registro, o tiene la cuenta de antes del requisito.
  *
  * Sin salida: el móvil es obligatorio. Al guardar, `onDone` devuelve al arranque
- * (`/`), que decide el siguiente paso.
+ * (`/`), que decide el siguiente paso. El número no se verifica por SMS.
  */
 
 import { useState } from 'react';
@@ -14,10 +14,13 @@ import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 
 import { Field, PrimaryButton, TextField } from './controls';
+import { CountryCodePicker } from './country-code-picker';
+import { DEFAULT_COUNTRY, joinPhone } from './countries';
 import { useAccountActions } from './use-account-actions';
 
 export function PhoneStep({ onDone }: { onDone: () => void }) {
   const { busy, notice, savePhone } = useAccountActions();
+  const [country, setCountry] = useState(DEFAULT_COUNTRY);
   const [phone, setPhone] = useState('');
 
   return (
@@ -30,23 +33,28 @@ export function PhoneStep({ onDone }: { onDone: () => void }) {
       </View>
 
       <Field label="Teléfono">
-        <TextField
-          value={phone}
-          onChangeText={setPhone}
-          accessibilityLabel="Teléfono de tu cuenta"
-          placeholder="+34 600 123 456"
-          keyboardType="phone-pad"
-          inputMode="tel"
-          textContentType="telephoneNumber"
-          autoComplete="tel"
-          autoCorrect={false}
-        />
+        <View style={styles.phoneRow}>
+          <CountryCodePicker country={country} onChange={setCountry} disabled={busy !== null} />
+          <View style={styles.phoneInput}>
+            <TextField
+              value={phone}
+              onChangeText={setPhone}
+              accessibilityLabel="Teléfono de tu cuenta, sin prefijo"
+              placeholder="600 123 456"
+              keyboardType="phone-pad"
+              inputMode="tel"
+              textContentType="telephoneNumber"
+              autoComplete="tel"
+              autoCorrect={false}
+            />
+          </View>
+        </View>
       </Field>
 
       <PrimaryButton
         label={busy === 'telefono' ? 'Guardando…' : 'Guardar y continuar'}
         disabled={busy !== null}
-        onPress={() => savePhone(phone, onDone)}
+        onPress={() => savePhone(joinPhone(country, phone), onDone)}
       />
 
       {notice ? (
@@ -64,5 +72,12 @@ const styles = StyleSheet.create({
   },
   header: {
     gap: Spacing.two,
+  },
+  phoneRow: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  phoneInput: {
+    flex: 1,
   },
 });
