@@ -13,8 +13,11 @@
  * `deps`:
  * - `fetchSubscriber(appUserId)` → `{ status, body }`: la respuesta de la API REST
  *   (`body` es el JSON o `null`). Lanza si la red falla.
- * - `saveEntitlement(userId, { premiumUntil, productId, store })`: upsert en
- *   `entitlements` con la service role (`premiumUntil` es ISO o `null`).
+ * - `saveEntitlement(userId, { premiumUntil, productId, store, snapshotAt })`: escribe
+ *   `entitlements` con la service role vía el RPC `save_entitlement` (`premiumUntil` es
+ *   ISO o `null`; `snapshotAt` es el instante en que se EMPEZÓ a pedir el estado: el RPC
+ *   descarta una instantánea más vieja que la ya guardada).
+ * - `now()` (opcional): reloj, para los tests.
  * - `log(message)`: rastro en los logs. Nunca recibe claves.
  */
 
@@ -67,6 +70,8 @@ export function mapSubscriber(body) {
 
 /** Pide el estado a RevenueCat y lo escribe. Lanza si la API falla (el que llama decide el 5xx). */
 export async function refreshEntitlement(userId, deps) {
+  // Se apunta ANTES de pedir: una petición que empezó antes no puede traer un estado más nuevo.
+  const snapshotAt = (deps.now ? deps.now() : new Date()).toISOString();
   const response = await deps.fetchSubscriber(userId);
   // 201: RevenueCat crea al cliente si aún no lo conoce y devuelve su estado vacío.
   if (response.status !== 200 && response.status !== 201) {
@@ -77,7 +82,7 @@ export async function refreshEntitlement(userId, deps) {
     throw new Error('RevenueCat respondió 200 con un cuerpo ilegible');
   }
   const entitlement = mapSubscriber(response.body);
-  await deps.saveEntitlement(userId, entitlement);
+  await deps.saveEntitlement(userId, { ...entitlement, snapshotAt });
   return entitlement;
 }
 

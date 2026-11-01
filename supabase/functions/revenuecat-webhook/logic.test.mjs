@@ -93,6 +93,8 @@ for (const type of [
     const r = await call(d, ev(type));
     assert.equal(r.status, 200);
     assert.deepEqual(d.state.fetched, [UID]);
+    const snapshotAt = d.state.saved[0]?.[1].snapshotAt;
+    assert.match(snapshotAt, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/);
     assert.deepEqual(d.state.saved, [
       [
         UID,
@@ -100,6 +102,7 @@ for (const type of [
           premiumUntil: '2026-12-01T10:00:00.000Z',
           productId: 'premium_monthly',
           store: 'app_store',
+          snapshotAt,
         },
       ],
     ]);

@@ -56,18 +56,20 @@ Deno.serve(async (request) => {
       },
       async saveEntitlement(
         userId: string,
-        e: { premiumUntil: string | null; productId: string | null; store: string | null }
+        e: {
+          premiumUntil: string | null;
+          productId: string | null;
+          store: string | null;
+          snapshotAt: string;
+        }
       ) {
-        const { error } = await admin.from('entitlements').upsert(
-          {
-            user_id: userId,
-            premium_until: e.premiumUntil,
-            product_id: e.productId,
-            store: e.store,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'user_id' }
-        );
+        const { error } = await admin.rpc('save_entitlement', {
+          p_user: userId,
+          p_premium_until: e.premiumUntil,
+          p_product_id: e.productId,
+          p_store: e.store,
+          p_snapshot_at: e.snapshotAt,
+        });
         if (error) throw error;
       },
       log(message: string) {

@@ -1028,6 +1028,62 @@ test('Premium: tablas, cupos, deshacer, Boost, likes recibidos y deck', async (t
         assert.equal((await deckIds('p_limit => 3')).length, 3);
       })
     );
+
+    // =======================================================================
+    // 20261101120000 — una instantánea más vieja no pisa una más nueva
+    // =======================================================================
+
+    await t.test('save_entitlement: la instantánea más vieja no pisa a la más nueva', () =>
+      tx(async () => {
+        const save = (until, snapshot, product = 'p') =>
+          rows(`select public.save_entitlement('${ME}', ${until}, '${product}', 'app_store',
+            '${snapshot}') as applied`);
+        const stored = async () =>
+          (
+            await rows(`select premium_until, product_id from public.entitlements
+            where user_id = '${ME}'`)
+          )[0];
+        await asOwner('select 1');
+
+        // RENEWAL (empezó a las 10:00:02) llega antes que la EXPIRATION lenta (empezó a las 10:00:01).
+        assert.equal(
+          (await save("'2026-12-01T00:00:00Z'", '2026-11-01T10:00:02Z', 'renewal'))[0].applied,
+          true
+        );
+        assert.equal(
+          (await save("'2026-11-01T00:00:00Z'", '2026-11-01T10:00:01Z', 'expiration'))[0].applied,
+          false
+        );
+        const row = await stored();
+        assert.equal(row.product_id, 'renewal');
+        assert.equal(new Date(row.premium_until).toISOString(), '2026-12-01T00:00:00.000Z');
+
+        // La misma marca de tiempo sí escribe (otra petición del mismo instante).
+        assert.equal(
+          (await save("'2026-12-15T00:00:00Z'", '2026-11-01T10:00:02Z', 'mismo'))[0].applied,
+          true
+        );
+        // Una más nueva siempre escribe, también para quitar Premium.
+        assert.equal((await save('null', '2026-11-01T10:00:03Z', 'fin'))[0].applied, true);
+        assert.equal((await stored()).premium_until, null);
+      })
+    );
+
+    await t.test('save_entitlement solo la ejecuta la service role', () =>
+      tx(async () => {
+        await actingAs(ME);
+        const denied = await attempt(
+          `select public.save_entitlement('${ME}', now() + interval '1 year', 'x', 'app_store', now())`
+        );
+        assert.equal(denied.ok, false);
+        assert.equal(denied.code, '42501');
+        await asOwner('set local role service_role');
+        const allowed = await attempt(
+          `select public.save_entitlement('${ME}', now() + interval '1 day', 'x', 'app_store', now())`
+        );
+        assert.equal(allowed.ok, true);
+      })
+    );
   } finally {
     await db.close();
   }

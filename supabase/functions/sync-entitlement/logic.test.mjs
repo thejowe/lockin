@@ -91,7 +91,7 @@ test('refreshEntitlement escribe lo que diga la API, no otra cosa', async () => 
   const d = deps();
   const result = await refreshEntitlement(UID, d);
   assert.deepEqual(d.fetched, [UID]);
-  assert.deepEqual(d.saved, [[UID, result]]);
+  assert.deepEqual(d.saved, [[UID, { ...result, snapshotAt: d.saved[0][1].snapshotAt }]]);
   assert.equal(result.premiumUntil, '2026-12-01T10:00:00.000Z');
 });
 
@@ -170,4 +170,27 @@ test('sync: uid que no es uuid → 400', async () => {
   const r = await handleSyncRequest({ userId: 'x', config: { apiKey: 'k' }, deps: d });
   assert.equal(r.status, 400);
   assert.equal(d.fetched.length, 0);
+});
+
+test('refreshEntitlement apunta el instante ANTES de pedir el estado y lo pasa al guardado', async () => {
+  const order = [];
+  const saved = [];
+  const clock = [new Date('2026-11-01T10:00:00.000Z'), new Date('2026-11-01T10:00:05.000Z')];
+  const response = { status: 200, body: { subscriber: { entitlements: {} } } };
+  await refreshEntitlement('11111111-1111-4111-8111-111111111111', {
+    now: () => {
+      order.push('now');
+      return clock.shift();
+    },
+    fetchSubscriber: async () => {
+      order.push('fetch');
+      return response;
+    },
+    saveEntitlement: async (id, e) => {
+      order.push('save');
+      saved.push(e);
+    },
+  });
+  assert.deepEqual(order, ['now', 'fetch', 'save']);
+  assert.equal(saved[0].snapshotAt, '2026-11-01T10:00:00.000Z');
 });
