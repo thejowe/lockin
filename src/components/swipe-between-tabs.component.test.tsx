@@ -140,6 +140,24 @@ describe('SwipeBetweenTabs', () => {
 
     expect(mockNavigate).not.toHaveBeenCalled();
   });
+
+  it('con una pantalla apilada encima conserva la última pestaña, no vuelve a la primera', async () => {
+    mockPathname = '/profile';
+    const tree = (
+      <SwipeBetweenTabs>
+        <Text>contenido</Text>
+      </SwipeBetweenTabs>
+    );
+    const { rerender } = await render(tree);
+
+    mockPathname = '/settings';
+    await rerender(tree);
+
+    // Si hubiera caído a la primera pestaña, arrastrar a la derecha no navegaría.
+    await act(async () => drag(300));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/matches');
+  });
 });
 
 describe('PagerPage', () => {

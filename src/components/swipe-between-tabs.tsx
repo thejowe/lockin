@@ -111,7 +111,12 @@ export function SwipeBetweenTabs({ children }: { children: ReactNode }) {
   const reduceMotion = useReduceMotion();
   const window = useWindowDimensions();
 
-  const focused = tabIndex(pathname) ?? 0;
+  // Con una pantalla apilada encima (Ajustes, un chat…) la ruta deja de ser una
+  // pestaña: se conserva la última, o el paginador se iría a Descubrir por detrás
+  // y, al volver, se vería saltar de las tarjetas a la pestaña de verdad.
+  const [focused, setFocused] = useState(tabIndex(pathname) ?? 0);
+  const routeTab = tabIndex(pathname);
+  if (routeTab !== null && routeTab !== focused) setFocused(routeTab);
   const position = useSharedValue(focused);
   const width = useSharedValue(window.width);
   const start = useSharedValue(focused);
