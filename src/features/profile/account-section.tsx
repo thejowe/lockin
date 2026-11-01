@@ -54,11 +54,22 @@ import {
   isRecoveringPassword,
   signOut,
 } from './account-gateway';
-import { Field, PrimaryButton, SecondaryButton, TextField } from './controls';
+import {
+  CompactPrimaryButton as PrimaryButton,
+  CompactSecondaryButton as SecondaryButton,
+  Field,
+  TextField,
+} from './controls';
 import { PASSWORD_MIN_LENGTH } from './register-form';
 import { useAccountActions } from './use-account-actions';
 
 export interface AccountSectionProps {
+  /**
+   * «Información personal» (correo y teléfono). La contraseña se pinta justo
+   * debajo, en el mismo apartado, así que esta sección la recibe para ponerla
+   * delante en vez de dejar que la pantalla las separe.
+   */
+  personalInfo?: React.ReactNode;
   /** Lo que va entre la contraseña y las salidas (cerrar sesión, eliminar): el bloque Legal. */
   children?: React.ReactNode;
   /** Corre cuando la cuenta ya está borrada: la pantalla vuelve al arranque. */
@@ -92,6 +103,7 @@ function readRecovering(): Promise<boolean> {
 }
 
 export function AccountSection({
+  personalInfo,
   children,
   onDeleted,
   onConfirmationShown,
@@ -209,254 +221,286 @@ export function AccountSection({
 
   return (
     <View style={styles.root}>
-      <ThemedText type="label" themeColor="textSecondary">
-        Cuenta y facturación
-      </ThemedText>
+      <View style={styles.block}>
+        {personalInfo}
 
-      {account.recoverable ? null : account.kind === 'pending-email' ? (
-        <>
-          <ThemedText type="bodyStrong">Falta confirmar tu email</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            {`Te hemos mandado un correo a ${pendingEmail ?? 'tu email'}. Pincha el enlace y tu cuenta quedará asegurada.`}
-          </ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            Hasta que lo pinches, tus datos siguen viviendo solo en este teléfono.
-          </ThemedText>
-        </>
-      ) : (
-        <>
-          <ThemedText type="bodyStrong">Tus datos viven solo en este teléfono</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            Tu perfil, tus matches y tus conversaciones están guardados aquí, en este móvil. Si
-            cambias de teléfono o desinstalas cofounder, no hay forma de traerlos de vuelta.
-          </ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            Con un email recuperas tu cuenta desde donde quieras. No creas otra: aseguras la que ya
-            tienes.
-          </ThemedText>
-        </>
-      )}
+        {account.recoverable ? (
+          <View style={styles.passwordRow}>
+            <ThemedText type="body" themeColor="textSecondary">
+              Contraseña
+            </ThemedText>
+            {panel === 'closed' ? (
+              <SecondaryButton label="Gestionar contraseña" onPress={() => setPanel('menu')} />
+            ) : null}
+          </View>
+        ) : null}
 
-      {waitingForEmail ? (
-        <>
-          <PrimaryButton label="Ya lo he confirmado" onPress={refresh} />
-          <SecondaryButton
-            label={busy === 'reenviar' ? 'Mandando…' : 'Reenviar el correo'}
-            onPress={handleResend}
-          />
-          <SecondaryButton label="Usar otro email" onPress={() => setChangingEmail(true)} />
-        </>
-      ) : null}
-
-      {askingForEmail ? (
-        <>
-          <Field label="Email" hint="Te mandamos un enlace para confirmar que es tuyo.">
-            <TextField
-              value={email}
-              onChangeText={setEmail}
-              accessibilityLabel="Email con el que asegurar tu cuenta"
-              placeholder="tu@email.com"
-              keyboardType="email-address"
-              inputMode="email"
-              textContentType="emailAddress"
-              autoCapitalize="none"
-              autoCorrect={false}
+        {account.recoverable && panel === 'menu' ? (
+          <View style={[styles.panel, { borderColor: theme.border }]}>
+            <ThemedText type="bodyStrong">Gestionar contraseña</ThemedText>
+            <PrimaryButton label="Cambiar contraseña" onPress={() => setPanel('change')} />
+            <SecondaryButton
+              label={busy === 'recuperar' ? 'Mandando…' : 'He olvidado mi contraseña'}
+              onPress={handlePasswordReset}
             />
-          </Field>
+            <SecondaryButton label="Cancelar" onPress={closePanel} />
+          </View>
+        ) : null}
 
-          <PrimaryButton
-            label={busy === 'asegurar' ? 'Mandando el correo…' : 'Asegurar mi cuenta'}
-            onPress={handleLink}
-          />
-        </>
-      ) : null}
+        {account.recoverable && (panel === 'change' || panel === 'recovery') ? (
+          <View style={[styles.panel, { borderColor: theme.border }]}>
+            <ThemedText type="bodyStrong">
+              {panel === 'recovery' ? 'Elige tu nueva contraseña' : 'Cambiar contraseña'}
+            </ThemedText>
 
-      <PremiumRow quotas={quotas} onRestored={() => void refreshPremium()} />
+            {panel === 'change' ? (
+              <Field label="Contraseña actual">
+                <TextField
+                  value={current}
+                  onChangeText={setCurrent}
+                  accessibilityLabel="Contraseña actual"
+                  placeholder="La que usas ahora"
+                  secureTextEntry
+                  textContentType="password"
+                  autoComplete="current-password"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </Field>
+            ) : null}
 
-      {account.recoverable && panel === 'closed' ? (
-        <SecondaryButton label="Gestionar contraseña" onPress={() => setPanel('menu')} />
-      ) : null}
-
-      {account.recoverable && panel === 'menu' ? (
-        <View style={[styles.panel, { borderColor: theme.border }]}>
-          <ThemedText type="bodyStrong">Gestionar contraseña</ThemedText>
-          <PrimaryButton label="Cambiar contraseña" onPress={() => setPanel('change')} />
-          <SecondaryButton
-            label={busy === 'recuperar' ? 'Mandando…' : 'He olvidado mi contraseña'}
-            onPress={handlePasswordReset}
-          />
-          <SecondaryButton label="Cancelar" onPress={closePanel} />
-        </View>
-      ) : null}
-
-      {account.recoverable && (panel === 'change' || panel === 'recovery') ? (
-        <View style={[styles.panel, { borderColor: theme.border }]}>
-          <ThemedText type="bodyStrong">
-            {panel === 'recovery' ? 'Elige tu nueva contraseña' : 'Cambiar contraseña'}
-          </ThemedText>
-
-          {panel === 'change' ? (
-            <Field label="Contraseña actual">
+            <Field label="Nueva contraseña" hint={`Al menos ${PASSWORD_MIN_LENGTH} caracteres.`}>
               <TextField
-                value={current}
-                onChangeText={setCurrent}
-                accessibilityLabel="Contraseña actual"
-                placeholder="La que usas ahora"
+                value={next}
+                onChangeText={setNext}
+                accessibilityLabel="Nueva contraseña"
+                placeholder="La nueva"
                 secureTextEntry
-                textContentType="password"
-                autoComplete="current-password"
+                textContentType="newPassword"
+                autoComplete="new-password"
                 autoCapitalize="none"
                 autoCorrect={false}
               />
             </Field>
-          ) : null}
 
-          <Field label="Nueva contraseña" hint={`Al menos ${PASSWORD_MIN_LENGTH} caracteres.`}>
-            <TextField
-              value={next}
-              onChangeText={setNext}
-              accessibilityLabel="Nueva contraseña"
-              placeholder="La nueva"
-              secureTextEntry
-              textContentType="newPassword"
-              autoComplete="new-password"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </Field>
-
-          <Field label="Repite la nueva contraseña">
-            <TextField
-              value={repeat}
-              onChangeText={setRepeat}
-              accessibilityLabel="Repite la nueva contraseña"
-              placeholder="Otra vez"
-              secureTextEntry
-              textContentType="newPassword"
-              autoComplete="new-password"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </Field>
-
-          <PrimaryButton
-            label={busy === 'contrasena' ? 'Guardando…' : 'Guardar contraseña'}
-            disabled={busy !== null}
-            onPress={handleSavePassword}
-          />
-          <SecondaryButton label="Cancelar" onPress={closePanel} />
-        </View>
-      ) : null}
-
-      {children}
-
-      {confirmingLeave ? (
-        // En la propia pantalla y no en un diálogo del sistema, igual que el
-        // panel de verificación: un modal bloqueante deja la app sin responder.
-        <View
-          onLayout={onConfirmationShown}
-          style={[
-            styles.confirm,
-            { backgroundColor: theme.dangerSoft, borderColor: theme.danger },
-          ]}>
-          <ThemedText type="bodyStrong" themeColor="danger">
-            Cerrar sesión aquí te deja sin acceso a tu cuenta
-          </ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            Esta cuenta solo existe en este teléfono. Si cierras sesión, perderás el acceso a tu
-            perfil, tus matches y tus conversaciones desde este dispositivo y no podrás recuperarlo.
-          </ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            Cerrar sesión no borra tus datos del servidor; para eso está «Eliminar mi cuenta». Si no
-            quieres perder el acceso, asegura antes la cuenta con un email.
-          </ThemedText>
-
-          <SecondaryButton
-            label={busy === 'salir' ? 'Cerrando sesión…' : 'Cerrar sesión y perder el acceso'}
-            tone="danger"
-            onPress={() =>
-              void run(
-                'salir',
-                () => signOut({ acceptDataLoss: true }),
-                () => setConfirmingLeave(false)
-              )
-            }
-          />
-          <SecondaryButton label="Mejor no" onPress={() => setConfirmingLeave(false)} />
-        </View>
-      ) : (
-        <SecondaryButton
-          label={busy === 'salir' ? 'Cerrando sesión…' : 'Cerrar sesión'}
-          onPress={handleSignOut}
-        />
-      )}
-
-      {confirmingDelete ? (
-        <View
-          onLayout={onConfirmationShown}
-          style={[
-            styles.confirm,
-            { backgroundColor: theme.dangerSoft, borderColor: theme.danger },
-          ]}>
-          <ThemedText type="bodyStrong" themeColor="danger">
-            Eliminar tu cuenta es para siempre
-          </ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            Se borran tu perfil, tus matches, tus conversaciones, tus sesiones y tus salas, también
-            para quienes hablaban contigo. No se puede deshacer ni recuperar.
-          </ThemedText>
-          {quotas === null || quotas.isPremium ? (
-            <>
-              <ThemedText type="small" themeColor="danger">
-                {quotas === null
-                  ? 'No hemos podido comprobar si tienes una suscripción. Si la tienes, no se cancela sola: cancélala en la tienda o se seguirá cobrando.'
-                  : 'Tu suscripción no se cancela sola: cancélala en la tienda o se seguirá cobrando.'}
-              </ThemedText>
-              <SecondaryButton
-                label="Gestionar suscripción"
-                onPress={() => void Linking.openURL(manageSubscriptionsUrl())}
+            <Field label="Repite la nueva contraseña">
+              <TextField
+                value={repeat}
+                onChangeText={setRepeat}
+                accessibilityLabel="Repite la nueva contraseña"
+                placeholder="Otra vez"
+                secureTextEntry
+                textContentType="newPassword"
+                autoComplete="new-password"
+                autoCapitalize="none"
+                autoCorrect={false}
               />
-            </>
-          ) : null}
+            </Field>
 
-          <SecondaryButton
-            label={busy === 'borrar' ? 'Eliminando…' : 'Eliminar mi cuenta para siempre'}
-            tone="danger"
-            onPress={() =>
-              void run(
-                'borrar',
-                () => deleteMyAccount(),
-                () => {
-                  setConfirmingDelete(false);
-                  onDeleted?.();
-                }
-              )
-            }
-          />
-          <SecondaryButton label="Mejor no" onPress={() => setConfirmingDelete(false)} />
-        </View>
-      ) : (
-        <SecondaryButton
-          label="Eliminar mi cuenta"
-          tone="danger"
-          onPress={() => {
-            setConfirmingLeave(false);
-            setConfirmingDelete(true);
-          }}
-        />
-      )}
+            <View style={styles.actions}>
+              <PrimaryButton
+                label={busy === 'contrasena' ? 'Guardando…' : 'Guardar contraseña'}
+                disabled={busy !== null}
+                onPress={handleSavePassword}
+              />
+              <SecondaryButton label="Cancelar" onPress={closePanel} />
+            </View>
+          </View>
+        ) : null}
+      </View>
 
-      {notice ? (
-        <ThemedText type="small" themeColor={notice.tone}>
-          {notice.text}
+      <View style={styles.block}>
+        <ThemedText type="label" themeColor="textSecondary">
+          Premium
         </ThemedText>
-      ) : null}
+        <PremiumRow quotas={quotas} onRestored={() => void refreshPremium()} />
+      </View>
+
+      <View style={styles.block}>
+        <ThemedText type="label" themeColor="textSecondary">
+          Cuenta
+        </ThemedText>
+
+        {account.recoverable ? null : account.kind === 'pending-email' ? (
+          <>
+            <ThemedText type="bodyStrong">Falta confirmar tu email</ThemedText>
+            <ThemedText type="body" themeColor="textSecondary">
+              {`Te hemos mandado un correo a ${pendingEmail ?? 'tu email'}. Pincha el enlace y tu cuenta quedará asegurada.`}
+            </ThemedText>
+            <ThemedText type="body" themeColor="textSecondary">
+              Hasta que lo pinches, tus datos siguen viviendo solo en este teléfono.
+            </ThemedText>
+          </>
+        ) : (
+          <>
+            <ThemedText type="bodyStrong">Tus datos viven solo en este teléfono</ThemedText>
+            <ThemedText type="body" themeColor="textSecondary">
+              Tu perfil, tus matches y tus conversaciones están guardados aquí, en este móvil. Si
+              cambias de teléfono o desinstalas cofounder, no hay forma de traerlos de vuelta.
+            </ThemedText>
+            <ThemedText type="body" themeColor="textSecondary">
+              Con un email recuperas tu cuenta desde donde quieras. No creas otra: aseguras la que
+              ya tienes.
+            </ThemedText>
+          </>
+        )}
+
+        {waitingForEmail ? (
+          <>
+            <PrimaryButton label="Ya lo he confirmado" onPress={refresh} />
+            <SecondaryButton
+              label={busy === 'reenviar' ? 'Mandando…' : 'Reenviar el correo'}
+              onPress={handleResend}
+            />
+            <SecondaryButton label="Usar otro email" onPress={() => setChangingEmail(true)} />
+          </>
+        ) : null}
+
+        {askingForEmail ? (
+          <>
+            <Field label="Email" hint="Te mandamos un enlace para confirmar que es tuyo.">
+              <TextField
+                value={email}
+                onChangeText={setEmail}
+                accessibilityLabel="Email con el que asegurar tu cuenta"
+                placeholder="tu@email.com"
+                keyboardType="email-address"
+                inputMode="email"
+                textContentType="emailAddress"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </Field>
+
+            <PrimaryButton
+              label={busy === 'asegurar' ? 'Mandando el correo…' : 'Asegurar mi cuenta'}
+              onPress={handleLink}
+            />
+          </>
+        ) : null}
+
+        {children}
+
+        {confirmingLeave ? (
+          // En la propia pantalla y no en un diálogo del sistema, igual que el
+          // panel de verificación: un modal bloqueante deja la app sin responder.
+          <View
+            onLayout={onConfirmationShown}
+            style={[
+              styles.confirm,
+              { backgroundColor: theme.dangerSoft, borderColor: theme.danger },
+            ]}>
+            <ThemedText type="bodyStrong" themeColor="danger">
+              Cerrar sesión aquí te deja sin acceso a tu cuenta
+            </ThemedText>
+            <ThemedText type="body" themeColor="textSecondary">
+              Esta cuenta solo existe en este teléfono. Si cierras sesión, perderás el acceso a tu
+              perfil, tus matches y tus conversaciones desde este dispositivo y no podrás
+              recuperarlo.
+            </ThemedText>
+            <ThemedText type="body" themeColor="textSecondary">
+              Cerrar sesión no borra tus datos del servidor; para eso está «Eliminar mi cuenta». Si
+              no quieres perder el acceso, asegura antes la cuenta con un email.
+            </ThemedText>
+
+            <SecondaryButton
+              label={busy === 'salir' ? 'Cerrando sesión…' : 'Cerrar sesión y perder el acceso'}
+              tone="danger"
+              onPress={() =>
+                void run(
+                  'salir',
+                  () => signOut({ acceptDataLoss: true }),
+                  () => setConfirmingLeave(false)
+                )
+              }
+            />
+            <SecondaryButton label="Mejor no" onPress={() => setConfirmingLeave(false)} />
+          </View>
+        ) : (
+          <SecondaryButton
+            label={busy === 'salir' ? 'Cerrando sesión…' : 'Cerrar sesión'}
+            onPress={handleSignOut}
+          />
+        )}
+
+        {confirmingDelete ? (
+          <View
+            onLayout={onConfirmationShown}
+            style={[
+              styles.confirm,
+              { backgroundColor: theme.dangerSoft, borderColor: theme.danger },
+            ]}>
+            <ThemedText type="bodyStrong" themeColor="danger">
+              Eliminar tu cuenta es para siempre
+            </ThemedText>
+            <ThemedText type="body" themeColor="textSecondary">
+              Se borran tu perfil, tus matches, tus conversaciones, tus sesiones y tus salas,
+              también para quienes hablaban contigo. No se puede deshacer ni recuperar.
+            </ThemedText>
+            {quotas === null || quotas.isPremium ? (
+              <>
+                <ThemedText type="body" themeColor="danger">
+                  {quotas === null
+                    ? 'No hemos podido comprobar si tienes una suscripción. Si la tienes, no se cancela sola: cancélala en la tienda o se seguirá cobrando.'
+                    : 'Tu suscripción no se cancela sola: cancélala en la tienda o se seguirá cobrando.'}
+                </ThemedText>
+                <SecondaryButton
+                  label="Gestionar suscripción"
+                  onPress={() => void Linking.openURL(manageSubscriptionsUrl())}
+                />
+              </>
+            ) : null}
+
+            <SecondaryButton
+              label={busy === 'borrar' ? 'Eliminando…' : 'Eliminar mi cuenta para siempre'}
+              tone="danger"
+              onPress={() =>
+                void run(
+                  'borrar',
+                  () => deleteMyAccount(),
+                  () => {
+                    setConfirmingDelete(false);
+                    onDeleted?.();
+                  }
+                )
+              }
+            />
+            <SecondaryButton label="Mejor no" onPress={() => setConfirmingDelete(false)} />
+          </View>
+        ) : (
+          <SecondaryButton
+            label="Eliminar mi cuenta"
+            tone="danger"
+            onPress={() => {
+              setConfirmingLeave(false);
+              setConfirmingDelete(true);
+            }}
+          />
+        )}
+
+        {notice ? (
+          <ThemedText type="body" themeColor={notice.tone}>
+            {notice.text}
+          </ThemedText>
+        ) : null}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
+    gap: Spacing.four,
+  },
+  block: {
+    gap: Spacing.two,
+  },
+  passwordRow: {
+    gap: Spacing.one,
+  },
+  actions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: Spacing.two,
   },
   panel: {

@@ -175,7 +175,7 @@ export default function ProfileScreen() {
               accessibilityLabel="Ajustes de la cuenta"
               onPress={() => router.push('/settings')}
               style={({ pressed }) => [styles.gear, { opacity: pressed ? Opacity.pressed : 1 }]}>
-              <Icon name="settings" size={24} color={theme.text} />
+              <Icon name="menu" size={26} color={theme.text} />
             </Pressable>
           </View>
 

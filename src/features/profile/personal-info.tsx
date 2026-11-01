@@ -3,19 +3,28 @@
  *
  * Lo que aquí aparece es privado: no sale en el perfil que ve la gente. El
  * correo se muestra y no se edita (cambiarlo es asegurar la cuenta otra vez, y
- * eso vive en «Cuenta»); el móvil sí se edita, y es obligatorio desde el alta.
+ * eso vive en «Cuenta»); el móvil sí se edita, con un lápiz al lado del valor
+ * como el resto de cosas editables, y es obligatorio desde el alta.
  */
 
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
+import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { HitSlop, Opacity, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
-import { Field, PrimaryButton, SecondaryButton, TextField } from './controls';
+import {
+  CompactPrimaryButton as PrimaryButton,
+  CompactSecondaryButton as SecondaryButton,
+  Field,
+  TextField,
+} from './controls';
 import { useAccountActions } from './use-account-actions';
 
 export function PersonalInfo() {
+  const theme = useTheme();
   const { account, busy, notice, setNotice, savePhone } = useAccountActions();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
@@ -37,10 +46,12 @@ export function PersonalInfo() {
       </ThemedText>
 
       <View style={styles.row}>
-        <ThemedText type="small" themeColor="textSecondary">
+        <ThemedText type="body" themeColor="textSecondary">
           Correo
         </ThemedText>
-        <ThemedText type="mono" accessibilityLabel={`Correo de tu cuenta: ${email ?? 'sin añadir'}`}>
+        <ThemedText
+          type="bodyStrong"
+          accessibilityLabel={`Correo de tu cuenta: ${email ?? 'sin añadir'}`}>
           {email ?? 'Sin añadir'}
         </ThemedText>
       </View>
@@ -60,35 +71,41 @@ export function PersonalInfo() {
               autoCorrect={false}
             />
           </Field>
-          <PrimaryButton
-            label={busy === 'telefono' ? 'Guardando…' : 'Guardar teléfono'}
-            disabled={busy !== null}
-            onPress={() =>
-              savePhone(draft, () => {
-                setEditing(false);
-                setNotice({ text: 'Teléfono guardado.', tone: 'textSecondary' });
-              })
-            }
-          />
-          <SecondaryButton label="Cancelar" onPress={() => setEditing(false)} />
+          <View style={styles.actions}>
+            <PrimaryButton
+              label={busy === 'telefono' ? 'Guardando…' : 'Guardar teléfono'}
+              disabled={busy !== null}
+              onPress={() =>
+                savePhone(draft, () => {
+                  setEditing(false);
+                  setNotice({ text: 'Teléfono guardado.', tone: 'textSecondary' });
+                })
+              }
+            />
+            <SecondaryButton label="Cancelar" onPress={() => setEditing(false)} />
+          </View>
         </>
       ) : (
-        <>
-          <View style={styles.row}>
-            <ThemedText type="small" themeColor="textSecondary">
-              Teléfono
-            </ThemedText>
-            <ThemedText type="mono">{account.phone ?? 'Sin añadir'}</ThemedText>
+        <View style={styles.row}>
+          <ThemedText type="body" themeColor="textSecondary">
+            Teléfono
+          </ThemedText>
+          <View style={styles.valueRow}>
+            <ThemedText type="bodyStrong">{account.phone ?? 'Sin añadir'}</ThemedText>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={account.phone ? 'Cambiar teléfono' : 'Añadir teléfono'}
+              hitSlop={HitSlop.inline}
+              onPress={startEditing}
+              style={({ pressed }) => [{ opacity: pressed ? Opacity.pressed : 1 }]}>
+              <Icon name="pencil" size={20} color={theme.textSecondary} />
+            </Pressable>
           </View>
-          <SecondaryButton
-            label={account.phone ? 'Cambiar teléfono' : 'Añadir teléfono'}
-            onPress={startEditing}
-          />
-        </>
+        </View>
       )}
 
       {notice ? (
-        <ThemedText type="small" themeColor={notice.tone}>
+        <ThemedText type="body" themeColor={notice.tone}>
           {notice.text}
         </ThemedText>
       ) : null}
@@ -102,5 +119,15 @@ const styles = StyleSheet.create({
   },
   row: {
     gap: Spacing.half,
+  },
+  valueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+  },
+  actions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
   },
 });

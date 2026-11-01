@@ -15,7 +15,7 @@ import { ThemedText } from '@/components/themed-text';
 import { useRepositories } from '@/data';
 import { PurchasesUnavailableError, manageSubscriptionsUrl, restore } from '@/lib/purchases';
 
-import { openPaywall } from './open-paywall';
+import { PremiumCta } from './premium-cta';
 
 import type { PremiumQuotas } from '@/data';
 
@@ -70,21 +70,23 @@ export function PremiumRow({
           </ThemedText>
           <Button
             variant="secondary"
+            compact
             label="Gestionar suscripción"
             onPress={() => void Linking.openURL(manageSubscriptionsUrl())}
           />
         </>
       ) : quotas ? (
-        <Button label="Hazte Premium" variant="secondary" onPress={openPaywall} />
+        <PremiumCta />
       ) : null}
       <Button
         variant="secondary"
+        compact
         label={restoring ? 'Restaurando…' : 'Restaurar compras'}
         disabled={restoring}
         onPress={() => void handleRestore()}
       />
       {notice ? (
-        <ThemedText type="small" themeColor="textSecondary">
+        <ThemedText type="body" themeColor="textSecondary">
           {notice}
         </ThemedText>
       ) : null}

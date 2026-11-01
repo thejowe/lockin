@@ -41,6 +41,7 @@ export function Button({
   href,
   variant = 'primary',
   disabled = false,
+  compact = false,
   accessibilityLabel,
   accessibilityHint,
   style,
@@ -51,6 +52,8 @@ export function Button({
   href?: Href;
   variant?: ButtonVariant;
   disabled?: boolean;
+  /** Botón pequeño que mide lo que su texto (Ajustes): no ocupa el ancho de la pantalla. */
+  compact?: boolean;
   accessibilityLabel?: string;
   accessibilityHint?: string;
   /** Estilo del contenedor (p. ej. `flex: 1` en una fila de botones). */
@@ -75,6 +78,7 @@ export function Button({
           collapsable={false}
           style={[
             styles.button,
+            compact && styles.compact,
             primary
               ? {
                   backgroundColor: theme.brass,
@@ -89,7 +93,7 @@ export function Button({
             { opacity: disabled ? Opacity.disabled : pressed ? Opacity.pressed : 1 },
           ]}>
           <ThemedText
-            type="bodyStrong"
+            type={compact ? 'smallBold' : 'bodyStrong'}
             themeColor={primary ? 'onAccent' : variant === 'danger' ? 'danger' : 'text'}>
             {label}
           </ThemedText>
@@ -99,7 +103,7 @@ export function Button({
   );
 
   return (
-    <Animated.View style={[press.style, style]}>
+    <Animated.View style={[press.style, compact && styles.compactSelf, style]}>
       {href !== undefined ? (
         <Link href={href} asChild>
           {pressable}
@@ -118,5 +122,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: Spacing.four,
     borderRadius: Radii.pill,
+  },
+  compact: {
+    minHeight: Control.minTouch,
+    paddingHorizontal: Spacing.three,
+  },
+  compactSelf: {
+    alignSelf: 'flex-start',
   },
 });

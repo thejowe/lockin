@@ -5,8 +5,9 @@
  * en `profile-form.tsx`. Ningún color literal — todo sale de `@/constants/theme`.
  */
 
-import { useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
+  PanResponder,
   Pressable,
   StyleSheet,
   TextInput,
@@ -330,6 +331,111 @@ function StepperButton({
   );
 }
 
+/**
+ * Barra con un punto que se arrastra: a la derecha más, a la izquierda menos.
+ *
+ * Más ágil que un +/− para un número con rango largo (las horas a la semana).
+ * Se puede tocar la barra para llevar el punto hasta ahí y, para quien no
+ * arrastra, es un control `adjustable`: subir y bajar de uno en uno con las
+ * acciones de accesibilidad.
+ */
+export function Slider({
+  value,
+  onChange,
+  min,
+  max,
+  step = 1,
+  accessibilityLabel,
+}: {
+  value: number;
+  onChange: (next: number) => void;
+  min: number;
+  max: number;
+  step?: number;
+  accessibilityLabel: string;
+}) {
+  const theme = useTheme();
+  const [width, setWidth] = useState(0);
+  // El gesto vive en un objeto que no se recrea: lee siempre lo último desde aquí.
+  const latest = useRef({ value, onChange, min, max, step, width });
+  useLayoutEffect(() => {
+    latest.current = { value, onChange, min, max, step, width };
+  });
+  const startValue = useRef(value);
+
+  const snap = (raw: number) => {
+    const { min: lo, max: hi, step: increment } = latest.current;
+    const stepped = Math.round((raw - lo) / increment) * increment + lo;
+    return Math.min(hi, Math.max(lo, stepped));
+  };
+  const fromX = (x: number) => {
+    const { min: lo, max: hi, width: trackWidth } = latest.current;
+    return trackWidth > 0 ? snap(lo + (x / trackWidth) * (hi - lo)) : latest.current.value;
+  };
+
+  const responder = useMemo(
+    () =>
+      // Los manejadores solo leen las refs al gesto, nunca al renderizar.
+      // eslint-disable-next-line react-hooks/refs
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        // Dentro de un scroll: una vez agarrado el punto, el scroll no se lo lleva.
+        onPanResponderTerminationRequest: () => false,
+        onPanResponderGrant: (event) => {
+          const next = fromX(event.nativeEvent.locationX);
+          startValue.current = next;
+          if (next !== latest.current.value) latest.current.onChange(next);
+        },
+        onPanResponderMove: (_event, gesture) => {
+          const { min: lo, max: hi, width: trackWidth } = latest.current;
+          if (trackWidth <= 0) return;
+          const next = snap(startValue.current + (gesture.dx / trackWidth) * (hi - lo));
+          if (next !== latest.current.value) latest.current.onChange(next);
+        },
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
+  const fraction = max > min ? (value - min) / (max - min) : 0;
+  const travel = Math.max(0, width - SLIDER_THUMB);
+
+  return (
+    <View
+      accessible
+      accessibilityRole="adjustable"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityValue={{ min, max, now: value }}
+      accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+      onAccessibilityAction={(event) => {
+        if (event.nativeEvent.actionName === 'increment') onChange(snap(value + step));
+        if (event.nativeEvent.actionName === 'decrement') onChange(snap(value - step));
+      }}
+      onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
+      style={styles.slider}
+      {...responder.panHandlers}>
+      <View
+        pointerEvents="none"
+        style={[styles.sliderTrack, { backgroundColor: theme.backgroundSelected }]}
+      />
+      <View
+        pointerEvents="none"
+        style={[
+          styles.sliderFill,
+          { backgroundColor: theme.brass, width: SLIDER_THUMB / 2 + fraction * travel },
+        ]}
+      />
+      <View
+        pointerEvents="none"
+        style={[styles.sliderThumb, { backgroundColor: theme.brass, left: fraction * travel }]}
+      />
+    </View>
+  );
+}
+
+const SLIDER_THUMB = 28;
+
 /** Botón de acción principal. Latón sólido. Es el `Button` compartido. */
 export function PrimaryButton({
   label,
@@ -367,7 +473,48 @@ export function SecondaryButton({
   );
 }
 
+/** Versiones pequeñas de los dos botones, para Ajustes: miden lo que su texto. */
+export function CompactPrimaryButton(props: {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  return <Button {...props} compact />;
+}
+
+export function CompactSecondaryButton({
+  tone = 'text',
+  ...props
+}: {
+  label: string;
+  onPress: () => void;
+  tone?: 'text' | 'danger';
+  disabled?: boolean;
+}) {
+  return <Button {...props} compact variant={tone === 'danger' ? 'danger' : 'secondary'} />;
+}
+
 const styles = StyleSheet.create({
+  slider: {
+    height: Control.minTouch,
+    justifyContent: 'center',
+  },
+  sliderTrack: {
+    height: 6,
+    borderRadius: Radii.pill,
+  },
+  sliderFill: {
+    position: 'absolute',
+    left: 0,
+    height: 6,
+    borderRadius: Radii.pill,
+  },
+  sliderThumb: {
+    position: 'absolute',
+    width: SLIDER_THUMB,
+    height: SLIDER_THUMB,
+    borderRadius: Radii.pill,
+  },
   field: {
     gap: Spacing.two,
   },

@@ -32,7 +32,8 @@ export type IconName =
   | 'back'
   | 'camera'
   | 'pencil'
-  | 'settings';
+  | 'menu'
+  | 'diamond';
 
 export function Icon({
   name,
@@ -166,15 +167,15 @@ export function Icon({
                 <Circle cx={12} cy={12.75} r={3.25} {...stroke} />
               </>
             );
-          case 'settings':
-            // Tuerca: círculo central y ocho dientes radiales.
+          case 'menu':
+            // Tres rayas: el acceso a Ajustes.
+            return <Path d="M4 7h16M4 12h16M4 17h16" {...stroke} />;
+          case 'diamond':
+            // Gema: tabla, corona y pabellón.
             return (
               <>
-                <Circle cx={12} cy={12} r={3.2} {...stroke} />
-                <Path
-                  d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"
-                  {...stroke}
-                />
+                <Path d="M6.5 4h11L22 9.5 12 20.5 2 9.5z" {...stroke} />
+                <Path d="M2 9.5h20M9.5 4L7.5 9.5 12 20.5l4.5-11L14.5 4" {...stroke} fill="none" />
               </>
             );
           case 'document':

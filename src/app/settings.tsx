@@ -9,7 +9,7 @@ import { AccountSection, LegalLinks, PersonalInfo } from '@/features/profile';
 import { useReduceMotion } from '@/hooks/use-reduce-motion';
 
 /**
- * Ajustes de la cuenta: lo que no se enseña a la gente (desde la tuerca del
+ * Ajustes de la cuenta: lo que no se enseña a la gente (desde las tres rayas del
  * perfil, 2026-11-01). Información personal, plan y facturación, contraseña,
  * legal y las salidas (cerrar sesión, eliminar la cuenta).
  */
@@ -22,8 +22,8 @@ export default function SettingsScreen() {
     <Screen ambient="plum">
       <SafeAreaView style={styles.root} edges={['bottom']}>
         <ScrollView ref={scrollRef} contentContainerStyle={styles.content}>
-          <PersonalInfo />
           <AccountSection
+            personalInfo={<PersonalInfo />}
             onDeleted={() => router.replace('/')}
             onConfirmationShown={() =>
               scrollRef.current?.scrollToEnd({ animated: !reduceMotion })
