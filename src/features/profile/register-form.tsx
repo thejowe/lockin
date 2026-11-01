@@ -61,6 +61,8 @@ import {
   stashPendingPassword,
 } from './pending-password';
 import { normalizePhone, phoneProblem } from './phone';
+import { CountryCodePicker } from './country-code-picker';
+import { DEFAULT_COUNTRY, joinPhone } from './countries';
 import { ProviderButtons } from './provider-buttons';
 import { TermsCheckbox, TermsLinks } from './terms';
 import { useAccountActions } from './use-account-actions';
@@ -154,6 +156,7 @@ export function RegisterForm({
     useAccountActions();
 
   const [email, setEmail] = useState('');
+  const [country, setCountry] = useState(DEFAULT_COUNTRY);
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [repeat, setRepeat] = useState('');
@@ -231,7 +234,14 @@ export function RegisterForm({
   }
 
   function submitAccount() {
-    const problem = accountStepProblem({ email, phone, password, repeat, termsAccepted });
+    const fullPhone = joinPhone(country, phone);
+    const problem = accountStepProblem({
+      email,
+      phone: fullPhone,
+      password,
+      repeat,
+      termsAccepted,
+    });
     if (problem) {
       setNotice({ text: problem, tone: 'danger' });
       return;
@@ -246,7 +256,7 @@ export function RegisterForm({
           throw new AccountError('no-session', 'No hay ninguna sesión abierta.');
         }
         await stashPendingPassword(password, owner);
-        await saveAccountPhone(normalizePhone(phone));
+        await saveAccountPhone(normalizePhone(fullPhone));
         await repositories.session.acceptTerms(TERMS_VERSION);
         await linkEmailToCurrentUser(address);
       },
@@ -345,17 +355,26 @@ export function RegisterForm({
           </Field>
 
           <Field label="Teléfono" hint="Es privado: no sale en tu perfil.">
-            <TextField
-              value={phone}
-              onChangeText={setPhone}
-              accessibilityLabel="Teléfono de tu cuenta"
-              placeholder="+34 600 123 456"
-              keyboardType="phone-pad"
-              inputMode="tel"
-              textContentType="telephoneNumber"
-              autoComplete="tel"
-              autoCorrect={false}
-            />
+            <View style={styles.phoneRow}>
+              <CountryCodePicker
+                country={country}
+                onChange={setCountry}
+                disabled={busy !== null}
+              />
+              <View style={styles.phoneInput}>
+                <TextField
+                  value={phone}
+                  onChangeText={setPhone}
+                  accessibilityLabel="Teléfono de tu cuenta, sin prefijo"
+                  placeholder="600 123 456"
+                  keyboardType="phone-pad"
+                  inputMode="tel"
+                  textContentType="telephoneNumber"
+                  autoComplete="tel"
+                  autoCorrect={false}
+                />
+              </View>
+            </View>
           </Field>
 
           <PasswordFields
@@ -425,6 +444,13 @@ export function RegisterForm({
 }
 
 const styles = StyleSheet.create({
+  phoneRow: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  phoneInput: {
+    flex: 1,
+  },
   root: {
     gap: Spacing.three,
   },

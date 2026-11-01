@@ -132,7 +132,7 @@ async function fillAccount(
     terms = true,
   } = overrides;
   await fireEvent.changeText(screen.getByLabelText('Email de tu cuenta'), email);
-  await fireEvent.changeText(screen.getByLabelText('Teléfono de tu cuenta'), phone);
+  await fireEvent.changeText(screen.getByLabelText('Teléfono de tu cuenta, sin prefijo'), phone);
   await fireEvent.changeText(screen.getByLabelText('Contraseña de tu cuenta'), password);
   await fireEvent.changeText(screen.getByLabelText('Repite la contraseña'), repeat);
   if (terms) {
