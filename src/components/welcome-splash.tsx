@@ -10,19 +10,14 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, useWindowDimensions } from 'react-native';
-import Animated, { Easing, FadeInUp } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/ambient-background';
 import { CofounderLogo } from '@/components/cofounder-logo';
-import { ThemedText } from '@/components/themed-text';
-import { Curves, Duration, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 
-const easeOut = Easing.bezier(...Curves.out);
-
-/** Lo que dura la animación antes de entrar sola: logo, nombre y un respiro. */
+/** Lo que dura la animación antes de entrar sola: el logo y un respiro. */
 export const SPLASH_MS = 2200;
-const WORDMARK_DELAY_MS = 700;
 
 export function WelcomeSplash({ ready, onEnter }: { ready: boolean; onEnter: () => void }) {
   const { width } = useWindowDimensions();
@@ -50,10 +45,6 @@ export function WelcomeSplash({ ready, onEnter }: { ready: boolean; onEnter: () 
         style={styles.fill}>
         <SafeAreaView style={styles.center} edges={['top', 'bottom']}>
           <CofounderLogo width={Math.min(width * 0.56, 260)} />
-          <Animated.View
-            entering={FadeInUp.duration(Duration.slow).easing(easeOut).delay(WORDMARK_DELAY_MS)}>
-            <ThemedText type="display">cofounder</ThemedText>
-          </Animated.View>
         </SafeAreaView>
       </Pressable>
     </Screen>

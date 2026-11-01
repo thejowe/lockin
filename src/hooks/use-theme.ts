@@ -6,14 +6,21 @@
  * pantallas no cambien.
  */
 
+import { createContext, useContext } from 'react';
+
 import { Colors, type ThemeName, type ThemePalette } from '@/constants/theme';
+
+/** Una paleta que sustituye a la normal en un subárbol (el paywall sobre azul). */
+export const ThemeOverride = createContext<ThemePalette | null>(null);
 
 /** El esquema activo: siempre oscuro. */
 export function useThemeName(): ThemeName {
   return 'dark';
 }
 
-/** La paleta del esquema activo. */
+/** La paleta del esquema activo, o la que imponga un `ThemeOverride`. */
 export function useTheme(): ThemePalette {
-  return Colors[useThemeName()];
+  const override = useContext(ThemeOverride);
+  const base = Colors[useThemeName()];
+  return override ?? base;
 }

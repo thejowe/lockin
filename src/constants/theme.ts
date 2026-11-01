@@ -87,7 +87,27 @@ export const AmbientPeak = Dark.background;
 
 export type ThemeName = keyof typeof Colors;
 export type ThemeColor = keyof typeof Dark;
-export type ThemePalette = typeof Dark;
+export type ThemePalette = { [K in keyof typeof Dark]: string };
+
+/**
+ * El paywall tras la animación del diamante: la pantalla ya es azul y los planes
+ * salen encima, con tinta negra. Mismas claves que la paleta normal.
+ */
+export const OnDiamond: ThemePalette = {
+  ...Dark,
+  background: Dark.diamond,
+  backgroundElement: '#FFFFFF40',
+  backgroundSelected: '#FFFFFF66',
+  text: '#000000',
+  textSecondary: '#000000CC',
+  textMuted: '#000000A6',
+  border: '#00000040',
+  brass: '#000000',
+  brassSoft: '#FFFFFF59',
+  onAccent: '#FFFFFF',
+  danger: '#7A1500',
+  dangerSoft: '#7A150020',
+};
 
 /**
  * Familias tipográficas. Inter es la neo-grotesca más cercana a SF Pro (la
