@@ -672,6 +672,28 @@ export async function sendPasswordReset(email: string): Promise<void> {
   await markEmailLinkRequested();
 }
 
+/** Esperas entre intentos cuando la petición del enlace no llega a salir. */
+const LINK_RETRY_DELAYS_MS = [700, 1500, 3000, 5000];
+
+/**
+ * Repite una llamada de GoTrue mientras falle por falta de red real (sin
+ * respuesta HTTP). Al volver del cliente de correo Android suele tener la red
+ * aún sin reasignar a la app, y el primer `fetch` muere sin salir: el `code`
+ * del enlace no se ha gastado, así que repetir el canje es seguro. Cualquier
+ * otro error, o agotar los intentos, se devuelve tal cual.
+ */
+async function retryWhileOffline<T extends { error: unknown }>(
+  call: () => Promise<T>
+): Promise<T> {
+  let result = await call();
+  for (const delay of LINK_RETRY_DELAYS_MS) {
+    if (!result.error || toAccountError(result.error).reason !== 'offline') break;
+    await new Promise((resolve) => setTimeout(resolve, delay));
+    result = await call();
+  }
+  return result;
+}
+
 /**
  * Cierra el enlace que llega por `cofounder://auth/callback`: confirmación de
  * email o recuperación de contraseña.
@@ -751,7 +773,9 @@ export async function completeAuthLink(url: string): Promise<AccountState> {
     // saltaría en silencio una confirmación de correo o una recuperación
     // caducadas (codex review del 2026-10-02). El único code gastado que se
     // perdona es el que se puede correlacionar: el apuntado arriba.
-    const { data: exchanged, error } = await client.auth.exchangeCodeForSession(code);
+    const { data: exchanged, error } = await retryWhileOffline(() =>
+      client.auth.exchangeCodeForSession(code)
+    );
     if (error) throw toAccountError(error);
     // `resetPasswordForEmail` deja el verificador PKCE marcado como recuperación
     // y el canje lo devuelve: Perfil pedirá la nueva sin la actual.
@@ -802,10 +826,12 @@ export async function completeAuthLink(url: string): Promise<AccountState> {
           'otro correo desde tu perfil.'
       );
     }
-    const { data: verified, error } = await client.auth.verifyOtp({
-      token_hash: tokenHash,
-      type: type as EmailOtpType,
-    });
+    const { data: verified, error } = await retryWhileOffline(() =>
+      client.auth.verifyOtp({
+        token_hash: tokenHash,
+        type: type as EmailOtpType,
+      })
+    );
     if (!error && type === 'recovery') await markPasswordRecovery(verified?.user?.id ?? null);
     // La petición no se borra: con «Secure email change» llegan dos enlaces (el
     // correo viejo y el nuevo) para una sola petición. Caduca por su cuenta.

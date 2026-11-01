@@ -214,6 +214,26 @@ describe('linkGithubIdentity', () => {
     expect(auth.exchangeCodeForSession).not.toHaveBeenCalled();
   });
 
+  it('el enlace del correo reintenta el canje si la red aún no está lista', async () => {
+    const offline = Object.assign(new Error('Network request failed'), {
+      name: 'AuthRetryableFetchError',
+    });
+    auth.exchangeCodeForSession
+      .mockResolvedValueOnce({ data: null, error: offline })
+      .mockResolvedValueOnce({ data: { user: null }, error: null });
+    auth.getSession.mockResolvedValue({ data: { session: null }, error: null });
+    jest.useFakeTimers();
+    try {
+      const link = completeAuthLink(callback('correo-sin-red-aun'));
+      await jest.advanceTimersByTimeAsync(5000);
+      await link;
+    } finally {
+      jest.useRealTimers();
+    }
+    expect(auth.exchangeCodeForSession).toHaveBeenCalledTimes(2);
+    expect(auth.exchangeCodeForSession).toHaveBeenLastCalledWith('correo-sin-red-aun');
+  });
+
   it('propaga un canje PKCE fallido', async () => {
     const error = new Error('Código caducado');
     auth.exchangeCodeForSession.mockResolvedValueOnce({ error });
