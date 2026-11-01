@@ -186,7 +186,10 @@ export function createSupabasePremiumRepository({
     },
 
     async syncEntitlement() {
-      // La función `sync-entitlement` llega con el cobro real (Fase 3).
+      // Tras comprar o restaurar: la función pregunta a RevenueCat por NUESTRO uid y escribe
+      // `entitlements`. Sin ella desplegada (o sin clave) no rompe: el webhook llegará igual.
+      const { error } = await getClient().functions.invoke('sync-entitlement', { body: {} });
+      if (error) console.warn('[premium] sync-entitlement falló:', error.message);
     },
   };
 }

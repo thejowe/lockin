@@ -68,7 +68,11 @@ function fakeClient(results: Record<string, RpcResult> = {}) {
   const rpc = jest.fn(async (name: string, _args?: unknown): Promise<RpcResult> => {
     return results[name] ?? { data: null, error: null };
   });
-  return { client: { rpc } as unknown as LockInSupabaseClient, rpc };
+  const invoke = jest.fn(async (_name: string, _opts?: unknown) => ({
+    data: null,
+    error: null as { message: string } | null,
+  }));
+  return { client: { rpc, functions: { invoke } } as unknown as LockInSupabaseClient, rpc, invoke };
 }
 
 const deps = (client: LockInSupabaseClient) => ({
@@ -387,8 +391,8 @@ describe('createSupabasePremiumRepository: bordes', () => {
     expect(like.isSuper).toBe(true);
   });
 
-  it('expone el aviso de cupos y syncEntitlement aún no hace nada', async () => {
-    const { client } = fakeClient({ premium_quotas: { data: [quotasRow], error: null } });
+  it('expone el aviso de cupos y syncEntitlement llama a sync-entitlement', async () => {
+    const { client, invoke } = fakeClient({ premium_quotas: { data: [quotasRow], error: null } });
     let notify: () => void = () => {};
     const repository = createSupabasePremiumRepository({
       ...deps(client),
@@ -404,6 +408,7 @@ describe('createSupabasePremiumRepository: bordes', () => {
 
     expect(seen).toEqual([1]);
     await expect(repository.syncEntitlement()).resolves.toBeUndefined();
+    expect(invoke).toHaveBeenCalledWith('sync-entitlement', { body: {} });
   });
 
   it('un refresco que falla no avisa a nadie ni rompe nada', async () => {

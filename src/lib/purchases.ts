@@ -17,7 +17,7 @@
 import { Platform } from 'react-native';
 
 import { setMockPremium } from '@/data/mock';
-import { hasSupabaseCredentials } from '@/data/supabase/client';
+import { getSupabaseClient, hasSupabaseCredentials } from '@/data/supabase/client';
 
 export interface PurchasePackage {
   id: string;
@@ -59,9 +59,104 @@ function usesMockStore(): boolean {
   return !hasSupabaseCredentials;
 }
 
+type PurchasesSdk = typeof import('react-native-purchases').default;
+type SdkPackage = import('react-native-purchases').PurchasesPackage;
+
+/**
+ * Claves PÚBLICAS del SDK de RevenueCat (`goog_…` / `appl_…`), una por tienda. Se
+ * inyectan en el build; sin la de la plataforma, las compras no existen.
+ */
+function sdkApiKey(): string | null {
+  const key =
+    Platform.OS === 'ios'
+      ? process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY
+      : Platform.OS === 'android'
+        ? process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY
+        : undefined;
+  return key ? key : null;
+}
+
+/** El SDK es nativo: se carga solo cuando hace falta (Jest, web y Expo Go no lo tienen). */
+function loadSdk(): PurchasesSdk {
+  const apiKey = sdkApiKey();
+  if (!apiKey) throw new PurchasesUnavailableError();
+  let sdk: PurchasesSdk;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    sdk = (require('react-native-purchases') as { default: PurchasesSdk }).default;
+  } catch {
+    throw new PurchasesUnavailableError();
+  }
+  if (!configured) {
+    sdk.configure({ apiKey });
+    configured = true;
+  }
+  return sdk;
+}
+
+let configured = false;
+/** Último uid con el que se hizo `logIn`, para no repetirlo en cada llamada. */
+let loggedInAs: string | null = null;
+
+/**
+ * `app_user_id` de RevenueCat = `auth.uid()` de Supabase, nunca un usuario anónimo
+ * de RevenueCat: así una compra no puede quedar sin dueño (spec §4).
+ */
+async function sdkReady(): Promise<PurchasesSdk> {
+  const sdk = loadSdk();
+  const { data } = await getSupabaseClient().auth.getSession();
+  const uid = data.session?.user.id;
+  if (!uid) throw new PurchasesUnavailableError();
+  if (loggedInAs !== uid) {
+    await sdk.logIn(uid);
+    loggedInAs = uid;
+  }
+  return sdk;
+}
+
+/** Al cerrar sesión o borrar la cuenta: la siguiente persona no hereda la identidad. */
+export async function logOutPurchases(): Promise<void> {
+  if (usesMockStore() || !configured) return;
+  loggedInAs = null;
+  try {
+    const sdk = loadSdk();
+    await sdk.logOut();
+  } catch {
+    // Sin sesión de RevenueCat (ya era anónimo) o sin SDK: no hay nada que cerrar.
+  }
+}
+
+/** Los paquetes del SDK que se pintan, indexados por el id que ve la interfaz. */
+const sdkPackages = new Map<string, SdkPackage>();
+
+function periodOf(pkg: SdkPackage): 'month' | 'year' | null {
+  if (pkg.packageType === 'MONTHLY') return 'month';
+  if (pkg.packageType === 'ANNUAL') return 'year';
+  return null;
+}
+
 export async function getOfferings(): Promise<PurchasePackage[]> {
   if (usesMockStore()) return FAKE_OFFERINGS.map((offer) => ({ ...offer }));
-  throw new PurchasesUnavailableError();
+  const sdk = await sdkReady();
+  const offerings = await sdk.getOfferings();
+  const available = offerings.current?.availablePackages ?? [];
+  sdkPackages.clear();
+  const result: PurchasePackage[] = [];
+  for (const pkg of available) {
+    const period = periodOf(pkg);
+    if (!period) continue;
+    sdkPackages.set(pkg.identifier, pkg);
+    const price = pkg.product.priceString;
+    result.push({
+      id: pkg.identifier,
+      period,
+      priceString: price,
+      pricePerMonthString: pkg.product.pricePerMonthString ?? price,
+    });
+  }
+  // Nunca se enseña un paywall sin nada que cobrar.
+  if (result.length === 0) throw new PurchasesUnavailableError();
+  return result.sort((a, b) => (a.period === b.period ? 0 : a.period === 'month' ? -1 : 1));
 }
 
 export async function purchase(id: string): Promise<PurchaseResult> {
@@ -72,12 +167,25 @@ export async function purchase(id: string): Promise<PurchaseResult> {
     setMockPremium(true);
     return 'purchased';
   }
-  throw new PurchasesUnavailableError();
+  const sdk = await sdkReady();
+  const pkg = sdkPackages.get(id);
+  if (!pkg) throw new Error(`Oferta desconocida: ${id}`);
+  try {
+    await sdk.purchasePackage(pkg);
+    return 'purchased';
+  } catch (error) {
+    const e = error as { userCancelled?: boolean | null; code?: string };
+    if (e.userCancelled) return 'cancelled';
+    // PAYMENT_PENDING_ERROR: la tienda aún no ha confirmado el pago (tarjeta en espera, etc.).
+    if (e.code === sdk.PURCHASES_ERROR_CODE.PAYMENT_PENDING_ERROR) return 'pending';
+    throw error;
+  }
 }
 
 export async function restore(): Promise<void> {
   if (usesMockStore()) return;
-  throw new PurchasesUnavailableError();
+  const sdk = await sdkReady();
+  await sdk.restorePurchases();
 }
 
 /** Dónde se cancela o gestiona la suscripción: la tienda, no cofounder. */

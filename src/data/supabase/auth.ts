@@ -68,6 +68,8 @@ import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
 
+import { logOutPurchases } from '@/lib/purchases';
+
 import { deleteAvatar } from './avatar';
 import { getSupabaseClient, peekSupabaseClient } from './client';
 import { oauthCompletionFor, runOAuth } from './oauth';
@@ -916,6 +918,7 @@ export async function signOut(options: SignOutOptions = {}): Promise<void> {
     ? await auth.signOut({ scope: options.scope })
     : await auth.signOut();
   await secureAuthStorage.removeItem(DEVICE_ACCOUNT_KEY);
+  await logOutPurchases();
   if (error) throw toAccountError(error);
 }
 
