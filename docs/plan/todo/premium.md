@@ -102,8 +102,8 @@ Bloqueada hasta que el usuario tenga la membresía de Apple pagada con el Paid A
 perfil de pagos de Google, el proyecto de RevenueCat y los productos creados en las dos tiendas.
 Las claves y los secretos los pega siempre el usuario.
 
-- [ ] `react-native-purchases`, con su versión verificada contra SDK 58; `logIn`/`logOut` con el uid.
-- [x] Edge Functions `revenuecat-webhook` y `sync-entitlement`, con sus tests (spec §8). Escritas y con 38 tests verdes (`supabase/functions/{revenuecat-webhook,sync-entitlement}`, lógica compartida en `sync-entitlement/logic.mjs`). **Falta:** desplegar (`sync-entitlement` con `verify_jwt: true`, `revenuecat-webhook` con `false`, subiendo `../sync-entitlement/logic.mjs` como archivo) y poner los secretos `REVENUECAT_SECRET_KEY` y `REVENUECAT_WEBHOOK_SECRET`; configurar el webhook en RevenueCat con ese valor en Authorization.
+- [x] `react-native-purchases` (v11.0.0, peer RN ≥0.80) tras `src/lib/purchases.ts`; `logIn` con el uid y `logOut` al cerrar sesión. Hecho el 2026-11-01 (`f4fe6f7`); **sin probar con una compra real** (hace falta el acuerdo de Apple activo y un build).
+- [x] Edge Functions `revenuecat-webhook` y `sync-entitlement`, con sus tests (spec §8). Escritas y con 38 tests verdes (`supabase/functions/{revenuecat-webhook,sync-entitlement}`, lógica compartida en `sync-entitlement/logic.mjs`). Desplegadas el 2026-11-01 (v1, `sync-entitlement` con JWT, `revenuecat-webhook` sin); secretos puestos por el usuario; 401 en la prueba de humo. **Falta:** configurar el webhook en RevenueCat (URL `…/functions/v1/revenuecat-webhook`, Authorization = `REVENUECAT_WEBHOOK_SECRET`).
 - [ ] [comprobador] Compra de prueba con *license tester* en un track interno de Play.
 - [ ] Compra en el sandbox de iOS (la hace el usuario: no hay macOS ni iPhone en el emulador).
 
@@ -212,3 +212,13 @@ Backend: **Supabase** (logcat: «backend de datos: Supabase»). Cuenta `1862c710
 **Revisión de Codex a las Edge Functions de RevenueCat (2026-11-01):** corregidos el cuerpo 200 ilegible (ya no borra Premium; reintenta) y los eventos `REFUND_REVERSED` y `TEMPORARY_ENTITLEMENT_GRANT`. **Abierto antes de desplegar:** refrescos solapados del mismo usuario pueden pisarse (una `EXPIRATION` lenta tras una `RENEWAL` deja caducado); serializar por usuario o rechazar instantáneas más viejas (p. ej. columna de versión en `entitlements` o `pg_advisory_xact_lock` en un RPC).
 
 **Segunda revisión de Codex (2026-11-01, `--base bd5dda5`):** corregido el 201 de RevenueCat para clientes nuevos. **Sigue abierto, P1, bloquea desplegar las funciones:** la carrera entre refrescos solapados (una `EXPIRATION` lenta puede pisar una `RENEWAL`). Arreglo: guardar de forma condicional (RPC que compare con la hora en que se pidió la instantánea, o `pg_advisory_xact_lock` por usuario), lo que exige una migración nueva.
+
+**Cierre del P1 (2026-11-01):** `save_entitlement` (migración `20261101120000`, aplicada en producción, Schema drift verde) serializa por usuario con `pg_advisory_xact_lock` y solo escribe si la instantánea se pidió después o a la vez que la guardada. Las dos funciones apuntan `snapshotAt` antes de pedir el estado. Tests: `test:schema` 192 y `test:functions` 94 en verde. **Sin `codex review`.**
+
+### 2026-11-01 — tiendas y RevenueCat (hecho con Chrome)
+
+- **App Store Connect:** grupo `cofounder Premium` (id 22535704); `…premium.monthly` (Apple ID 6829556750, 1 mes, 4,99 € España) y `…premium.annual` (6829557129, 1 año por adelantado, 39,99 €); 175 países; localización es-ES «cofounder Premium»/«cofounder Premium anual»; estado «En preparación para el envío». Falta la captura de pantalla de revisión (la sube el usuario) y la oferta de prueba gratis de 3 días (la sección no aparece aún en la ficha).
+- **Acuerdos:** Acuerdo para apps de pago «Procesando» (BBVA terminada en 6278, W-8BEN y Certificado de condición de beneficiario extranjero activos, DSA activo). Aviso de Apple: puede tardar 24 h.
+- **Clave de compras dentro de la app** «Cofounder» (Key ID `BC63K95CA3`) ya generada y subida a RevenueCat; la API de App Store Connect no está solicitada (por eso «Import» de productos sale desactivado: los productos se crearon a mano).
+- **RevenueCat** (proyecto `cofounder`, id `b772cc12`): app `cofounder (App Store)` (`app09ad81d09d`), productos, entitlement `premium` (`entld02e8399fe`) con los dos productos, offering `default` (`ofrngb408049117`) con paquetes Annual y Monthly. Clave pública iOS en `eas.json`. Banner de correo sin confirmar resuelto por el usuario. Existe además un «Test Store» por defecto de RevenueCat sin usar.
+- **Play Console:** cuenta de desarrollador creada (id 7166558137802576901) pero con la verificación de identidad y del teléfono pendientes. Aparcado por el usuario.

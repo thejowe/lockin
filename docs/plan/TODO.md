@@ -1,5 +1,18 @@
 # TODO maestro — LockIn MVP
 
+## ▶ Al retomar (2026-11-01, cierre): cobro de Premium cableado en iOS; faltan Apple, prueba gratis y Android
+
+**Hecho (todo empujado; HEAD de la rama `claude/startup-cofounder-matching-app-tfeai1`):** SDK `react-native-purchases@11` tras `src/lib/purchases.ts` (ofertas, compra y restauración reales si hay clave `EXPO_PUBLIC_REVENUECAT_{IOS,ANDROID}_KEY`; `logIn` con el uid de Supabase, `logOut` al cerrar sesión; `syncEntitlement` invoca la Edge Function). Migración `20261101120000_premium_entitlement_snapshot_guard` (`save_entitlement`, cierra el P1 de Codex) **aplicada en producción** y Schema drift verde (run `41362234694`). Edge Functions `sync-entitlement` (JWT) y `revenuecat-webhook` (sin JWT) **desplegadas** (v1) y con 401 en la prueba de humo; los dos secretos de Supabase (`REVENUECAT_SECRET_KEY`, `REVENUECAT_WEBHOOK_SECRET`) los puso el usuario. App Store Connect: grupo `cofounder Premium` con `app.cofounder.mobile.premium.monthly` (4,99 €) y `.annual` (39,99 €, por adelantado), 175 países, nombre en español; siguen «En preparación para el envío». RevenueCat (proyecto `cofounder`): app iOS con clave de compras válida, productos, entitlement `premium`, offering `default` (Monthly + Annual); clave pública `appl_…` ya en `eas.json`.
+
+**Falta, en este orden:**
+1. **Webhook en RevenueCat** (lo hace el usuario o `comprobador` con Chrome): Integraciones → Webhooks → URL `https://grrzmzktrhksbttpbblg.supabase.co/functions/v1/revenuecat-webhook`, cabecera Authorization = el valor de `REVENUECAT_WEBHOOK_SECRET`. Sin esto, solo cuenta `sync-entitlement` tras comprar.
+2. **Apple:** el Acuerdo de apps de pago estaba «Procesando» (hasta 24 h; banco BBVA y formularios fiscales ya enviados). Comprobar que pasa a «Activo» en Negocio → Acuerdos. Subir la captura de revisión de cada suscripción (la sube el usuario) y crear la **oferta de prueba gratis de 3 días** (no apareció aún la sección de ofertas en la ficha; probablemente tras completar la captura). La primera suscripción debe enviarse con un build nuevo.
+3. **Probar el cobro:** build `preview` de EAS en iOS con el sandbox (lo hace el usuario: no hay iPhone ni macOS aquí); ver que el paywall carga los precios reales y que Premium se activa tras comprar.
+4. **Android (aparcado por el usuario):** cuenta de Play Console creada pero faltan verificación de identidad y teléfono; luego app `app.cofounder.mobile`, build interno, productos, clave `goog_…` en `eas.json` y `[comprobador]` con *license tester*.
+5. **Fase 4 legal** (términos/privacidad/fichas) y **`codex review`** del último cambio (SDK + `save_entitlement` + funciones): la regla del proyecto lo pide y no se pasó.
+
+**Avisos:** `auth.test.ts` tiene 1 test rojo previo y ajeno («sin sesión no hay cuenta que proteger»); `tsc` da errores de rutas `/phone` y `/settings` ajenos. Cambios sin commitear de otra sesión: `sign-in.tsx`, `action-button.tsx`, `paywall.tsx`, `paywall.test.tsx` (no tocar sin preguntar). Las claves secretas no van nunca en `.env` ni en el repo. Ver memoria «RevenueCat y tiendas».
+
 ## ▶ Al retomar (2026-10-30, cierre): Premium con mock y Supabase real comprobado; falta el cobro
 
 **Hecho:** Premium Fases 1–2 completas (`todo/premium.md`). Las 4 migraciones (`premium_tables`, `premium_rpcs`, `premium_deck`, `premium_hardening`) están **aplicadas en producción**, Schema drift verde. 34 tests de contrato SQL en CI. `comprobador` pasó el recorrido con mock y con Supabase real (cuentas de prueba borradas, producción limpia). Hallazgos menores corregidos. Todo empujado hasta `f38b363`.
