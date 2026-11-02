@@ -1,5 +1,5 @@
 /**
- * Filtro básico de contenido objetable (es/en) para bio, textos de perfil y
+ * Filtro básico de contenido objetable (es/en/ca) para bio, textos de perfil y
  * mensajes. Módulo puro: sin red, sin estado.
  *
  * ES UN COMPLEMENTO DEL REPORTE, NO SUSTITUYE A LA MODERACIÓN. Es una lista
@@ -16,10 +16,13 @@
  * Se compara por palabra completa, no por subcadena.
  */
 
+import { t, tk } from '@/i18n';
+
 export type ObjectionableKind = 'insulto' | 'amenaza' | 'sexual';
 
-export const OBJECTIONABLE_MESSAGE =
-  'Este texto contiene lenguaje que no permitimos (insultos, amenazas o contenido sexual explícito). Reescríbelo para continuar.';
+export const OBJECTIONABLE_MESSAGE = tk(
+  'Este texto contiene lenguaje que no permitimos (insultos, amenazas o contenido sexual explícito). Reescríbelo para continuar.'
+);
 
 const WORDS: Record<ObjectionableKind, string[]> = {
   insulto: [
@@ -50,6 +53,9 @@ const WORDS: Record<ObjectionableKind, string[]> = {
     'asshole',
     'motherfucker',
     'dumbass',
+    // ca
+    'malparit',
+    'malparida',
   ],
   amenaza: ['kys'],
   sexual: [
@@ -86,6 +92,8 @@ const PHRASES: { kind: ObjectionableKind; pattern: RegExp }[] = [
     kind: 'amenaza',
     pattern: /\b(i will|ill|im going to|im gonna|gonna|going to) (kill|rape|murder) (you|u)\b/,
   },
+  { kind: 'amenaza', pattern: /\bet (mato|matare|violo|violare|rebentare)\b/ },
+  { kind: 'amenaza', pattern: /\bet (vaig|anem) a (matar|violar|rebentar)\b/ },
   { kind: 'amenaza', pattern: /\bkill (yourself|urself)\b/ },
   { kind: 'amenaza', pattern: /\b(hope you die|go die)\b/ },
   { kind: 'sexual', pattern: /\b(send|manda|pasa|enviame|dame) nudes\b/ },
@@ -192,7 +200,7 @@ export function isObjectionable(text: string): boolean {
 export class ObjectionableContentError extends Error {
   readonly kind: ObjectionableKind;
   constructor(kind: ObjectionableKind) {
-    super(OBJECTIONABLE_MESSAGE);
+    super(t(OBJECTIONABLE_MESSAGE));
     this.name = 'ObjectionableContentError';
     this.kind = kind;
   }

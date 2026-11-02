@@ -64,7 +64,7 @@ describe('ConversationIntro', () => {
   it('escribe la disponibilidad en horas y franjas legibles', async () => {
     await render(<ConversationIntro match={buildMatch()} />);
 
-    expect(screen.getByText('15 h/semana · por la mañana y noche')).toBeTruthy();
+    expect(screen.getByText('15 h/semana · por la mañana y por la noche')).toBeTruthy();
   });
 
   it('fecha el match sin nombrar modo: todo match es de cofundador', async () => {

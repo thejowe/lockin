@@ -29,6 +29,7 @@ import { ProfileAvatar } from './profile-avatar';
 import type { ProfileSection } from './profile-form';
 
 import type { Profile } from '@/data';
+import { lowerInSentence, t } from '@/i18n';
 
 export function ProfileDetails({
   profile,
@@ -63,7 +64,7 @@ export function ProfileDetails({
         {onAvatarPress ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Cambiar foto de perfil"
+            accessibilityLabel={t('Cambiar foto de perfil')}
             onPress={onAvatarPress}
             style={({ pressed }) => ({ opacity: pressed ? Opacity.pressed : 1 })}>
             <ProfileAvatar avatar={profile.avatar} size="large" />
@@ -107,7 +108,7 @@ export function ProfileDetails({
         ]}>
         <View style={styles.complementSide}>
           <ThemedText type="label" themeColor="textSecondary">
-            Lo que domina
+            {t('Lo que domina')}
           </ThemedText>
           <SpecialtyTags
             labels={[
@@ -126,7 +127,7 @@ export function ProfileDetails({
               { borderTopColor: theme.border },
             ]}>
             <ThemedText type="label" themeColor="textSecondary">
-              Lo que busca
+              {t('Lo que busca')}
             </ThemedText>
 
             {profile.seekingSpecialties.length > 0 ? (
@@ -134,7 +135,7 @@ export function ProfileDetails({
             ) : (
               // Vacío no es un dato que falte: es «ábreme a cualquiera».
               <ThemedText type="small" themeColor="textSecondary">
-                Abierto a cualquier especialidad.
+                {t('Abierto a cualquier especialidad.')}
               </ThemedText>
             )}
           </View>
@@ -153,18 +154,19 @@ export function ProfileDetails({
               { borderTopColor: theme.border },
             ]}>
             <ThemedText type="label" themeColor="textSecondary">
-              Idiomas
+              {t('Idiomas')}
             </ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              Aún no has dicho qué idiomas hablas. Los pedimos para que te encuentre quien pueda
-              entenderse contigo.
+              {t(
+                'Aún no has dicho qué idiomas hablas. Los pedimos para que te encuentre quien pueda entenderse contigo.'
+              )}
             </ThemedText>
             <ThemedText
               type="smallBold"
               themeColor="brass"
               accessibilityRole="button"
               onPress={() => onEdit('specialties')}>
-              Añadir mis idiomas
+              {t('Añadir mis idiomas')}
             </ThemedText>
           </View>
         ) : null}
@@ -176,12 +178,14 @@ export function ProfileDetails({
               { borderTopColor: theme.border },
             ]}>
             <ThemedText type="label" themeColor="textSecondary">
-              Idiomas
+              {t('Idiomas')}
             </ThemedText>
             <ThemedText type="body">{languagesSentence(profile.languages)}</ThemedText>
             {profile.seekingLanguages.length > 0 ? (
               <ThemedText type="small" themeColor="textSecondary">
-                Busca que hable {languagesSentence(profile.seekingLanguages).toLowerCase()}.
+                {t('Busca que hable {languages}.', {
+                  languages: lowerInSentence(languagesSentence(profile.seekingLanguages)),
+                })}
               </ThemedText>
             ) : null}
           </View>
@@ -204,7 +208,7 @@ export function ProfileDetails({
             boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
           },
         ]}>
-        <Section title="Punto de partida" bare>
+        <Section title={t('Punto de partida')} bare>
           <ThemedText type="body">{startingPointSentence(profile.startingPoint)}</ThemedText>
         </Section>
         <View style={[styles.divider, { backgroundColor: theme.border }]} />
@@ -214,7 +218,7 @@ export function ProfileDetails({
           timezone={profile.timezone}
         />
         <View style={[styles.divider, { backgroundColor: theme.border }]} />
-        <Section title="Ambición" bare>
+        <Section title={t('Ambición')} bare>
           <ThemedText type="bodyStrong">{ambitionLabel(profile.ambition)}</ThemedText>
         </Section>
         {pencil('work', styles.corner)}
@@ -232,7 +236,7 @@ export function ProfileDetails({
             },
           ]}>
           <ThemedText type="small" themeColor="textSecondary">
-            {prompt.question}
+            {t(prompt.question)}
           </ThemedText>
           <ThemedText type="subtitle">{prompt.answer}</ThemedText>
           {pencil('prompts', styles.corner)}
@@ -251,10 +255,10 @@ export function ProfileDetails({
             },
           ]}>
           <ThemedText type="small" themeColor="textSecondary">
-            Tus respuestas
+            {t('Tus respuestas')}
           </ThemedText>
           <ThemedText type="body" themeColor="textSecondary">
-            Aún no has respondido ninguna. Son opcionales, pero hacen que tu perfil se lea.
+            {t('Aún no has respondido ninguna. Son opcionales, pero hacen que tu perfil se lea.')}
           </ThemedText>
           {pencil('prompts', styles.corner)}
         </View>
@@ -311,11 +315,21 @@ function SpecialtyTags({ labels, tone }: { labels: string[]; tone: 'have' | 'see
 }
 
 const EDIT_LABELS: Record<ProfileSection, string> = {
-  basics: 'Editar nombre, edad y ubicación',
-  specialties: 'Editar lo que dominas, lo que buscas e idiomas',
-  work: 'Editar cómo trabajas',
-  prompts: 'Editar tus respuestas',
-  links: 'Editar enlaces y redes',
+  get basics() {
+    return t('Editar nombre, edad y ubicación');
+  },
+  get specialties() {
+    return t('Editar lo que dominas, lo que buscas e idiomas');
+  },
+  get work() {
+    return t('Editar cómo trabajas');
+  },
+  get prompts() {
+    return t('Editar tus respuestas');
+  },
+  get links() {
+    return t('Editar enlaces y redes');
+  },
 };
 
 /** Lápiz de editar un bloque: pequeño, pero con los 44 táctiles de siempre. */

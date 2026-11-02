@@ -20,6 +20,7 @@ import { useQuery, useRepositories } from '@/data';
 import { MatchRow, MatchesEmpty, useMatches } from '@/features/chat';
 import { LikesRow } from '@/features/premium';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/i18n';
 
 export default function MatchesScreen() {
   const theme = useTheme();
@@ -65,10 +66,10 @@ export default function MatchesScreen() {
               <ThemedText type="label" themeColor="textSecondary">
                 Matches
               </ThemedText>
-              <ThemedText type="title">Con quién has conectado</ThemedText>
+              <ThemedText type="title">{t('Con quién has conectado')}</ThemedText>
               {error && (
                 <ThemedText type="small" themeColor="danger">
-                  No hemos podido cargar tus matches. Desliza hacia abajo para reintentar.
+                  {t('No hemos podido cargar tus matches. Desliza hacia abajo para reintentar.')}
                 </ThemedText>
               )}
               <LikesRow count={likes.data ?? 0} onPress={() => router.push('/likes' as Href)} />

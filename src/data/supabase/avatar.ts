@@ -10,6 +10,7 @@
 import { readLocalImage } from './avatar-file';
 
 import type { LockInSupabaseClient } from './client';
+import { t } from '@/i18n';
 
 const UPLOADS = 'avatar-uploads';
 const FUNCTION = 'moderate-avatar';
@@ -17,10 +18,18 @@ const FUNCTION = 'moderate-avatar';
 export type AvatarRejectedReason = 'flagged' | 'invalid-image' | 'conflict' | 'unavailable';
 
 const MESSAGES: Record<AvatarRejectedReason, string> = {
-  flagged: 'Esta foto no cumple las normas de la comunidad. Prueba con otra.',
-  'invalid-image': 'No hemos podido usar esa imagen. Prueba con otra foto.',
-  conflict: 'Tu foto ha cambiado a la vez desde otro sitio. Inténtalo de nuevo.',
-  unavailable: 'No hemos podido revisar la foto ahora mismo. Inténtalo más tarde.',
+  get flagged() {
+    return t('Esta foto no cumple las normas de la comunidad. Prueba con otra.');
+  },
+  get 'invalid-image'() {
+    return t('No hemos podido usar esa imagen. Prueba con otra foto.');
+  },
+  get conflict() {
+    return t('Tu foto ha cambiado a la vez desde otro sitio. Inténtalo de nuevo.');
+  },
+  get unavailable() {
+    return t('No hemos podido revisar la foto ahora mismo. Inténtalo más tarde.');
+  },
 };
 
 /** La foto no se ha publicado. `message` ya está listo para enseñarse. */
@@ -72,7 +81,7 @@ export async function uploadAvatar(
   const { error: uploadError } = await client.storage
     .from(UPLOADS)
     .upload(path, bytes, { contentType, upsert: false });
-  if (uploadError) throw new Error('No se ha podido subir la foto. Inténtalo de nuevo.');
+  if (uploadError) throw new Error(t('No se ha podido subir la foto. Inténtalo de nuevo.'));
 
   const { data, error } = await client.functions.invoke(FUNCTION, {
     body: { action: 'set', path },

@@ -34,6 +34,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Curves, Duration, Radii, Spacing, Stroke } from '@/constants/theme';
 import { useReduceMotion } from '@/hooks/use-reduce-motion';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/i18n';
 
 export const TAP_HINT_KEY = 'cofounder.hint.card-tap.seen';
 
@@ -132,7 +133,7 @@ export function TapHint({
           styles.label,
           { backgroundColor: `${theme.background}B3`, borderColor: theme.border },
         ]}>
-        <ThemedText type="smallBold">Toca para ver más</ThemedText>
+        <ThemedText type="smallBold">{t('Toca para ver más')}</ThemedText>
       </View>
     </Animated.View>
   );

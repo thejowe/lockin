@@ -17,7 +17,7 @@ import * as WebBrowser from 'expo-web-browser';
 
 import { LegalDocument, isLegalDocKey, legalDocForUrl } from './legal-document';
 import { parseInline, parseMarkdown } from './markdown';
-import { LEGAL_TEXTS } from './texts.generated';
+import { LEGAL_TEXTS, LEGAL_TRANSLATIONS } from './texts.generated';
 
 jest.mock('expo-web-browser', () => ({ openBrowserAsync: jest.fn(() => Promise.resolve()) }));
 
@@ -32,8 +32,24 @@ describe('texts.generated.ts', () => {
     ).not.toThrow();
   });
 
+  it('cada traducción tiene las mismas secciones, enlaces y plazos que el original', () => {
+    const shape = (text: string) => ({
+      headings: (text.match(/^#+ /gm) ?? []).length,
+      urls: (text.match(/https?:\/\/[^\s)]+/g) ?? []).sort(),
+      numbers: (text.match(/\d+(?:[.,]\d+)*/g) ?? []).map((n) => n.replace(',', '.')).sort(),
+    });
+    for (const translation of Object.values(LEGAL_TRANSLATIONS)) {
+      for (const key of Object.keys(LEGAL_TEXTS) as (keyof typeof LEGAL_TEXTS)[]) {
+        expect(shape(translation[key])).toEqual(shape(LEGAL_TEXTS[key]));
+      }
+    }
+  });
+
   it('no enseña notas internas ni lo que va tras la línea `---`', () => {
-    for (const text of Object.values(LEGAL_TEXTS)) {
+    for (const text of [
+      ...Object.values(LEGAL_TEXTS),
+      ...Object.values(LEGAL_TRANSLATIONS).flatMap((docs) => Object.values(docs)),
+    ]) {
       expect(text).not.toMatch(/^>/m);
       expect(text).not.toMatch(/^---$/m);
     }

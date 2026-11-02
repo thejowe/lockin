@@ -18,12 +18,13 @@ import { PurchasesUnavailableError, manageSubscriptionsUrl, restore } from '@/li
 import { PremiumCta } from './premium-cta';
 
 import type { PremiumQuotas } from '@/data';
+import { getIntlLocale, t } from '@/i18n';
 
 /** «26 nov 2026», o `null` si la fecha no se entiende. */
 export function untilLabel(iso: string | null): string | null {
   if (iso === null || Number.isNaN(Date.parse(iso))) return null;
   return new Date(iso)
-    .toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
+    .toLocaleDateString(getIntlLocale(), { day: 'numeric', month: 'short', year: 'numeric' })
     .replace(/\./g, '');
 }
 
@@ -48,12 +49,12 @@ export function PremiumRow({
       await repositories.premium.syncEntitlement();
       const fresh = await repositories.premium.getQuotas();
       onRestored?.();
-      if (!fresh.isPremium) setNotice('No hemos encontrado ninguna suscripción activa.');
+      if (!fresh.isPremium) setNotice(t('No hemos encontrado ninguna suscripción activa.'));
     } catch (cause) {
       setNotice(
         cause instanceof PurchasesUnavailableError
           ? cause.message
-          : 'No hemos podido restaurar tus compras. Inténtalo otra vez.'
+          : t('No hemos podido restaurar tus compras. Inténtalo otra vez.')
       );
     } finally {
       setRestoring(false);
@@ -66,12 +67,12 @@ export function PremiumRow({
       {quotas?.isPremium ? (
         <>
           <ThemedText type="bodyStrong">
-            {until ? `Activo hasta ${until}` : 'Premium activo'}
+            {until ? t('Activo hasta {until}', { until }) : t('Premium activo')}
           </ThemedText>
           <Button
             variant="secondary"
             compact
-            label="Gestionar suscripción"
+            label={t('Gestionar suscripción')}
             onPress={() => void Linking.openURL(manageSubscriptionsUrl())}
           />
         </>
@@ -81,7 +82,7 @@ export function PremiumRow({
       <Button
         variant="secondary"
         compact
-        label={restoring ? 'Restaurando…' : 'Restaurar compras'}
+        label={restoring ? t('Restaurando…') : t('Restaurar compras')}
         disabled={restoring}
         onPress={() => void handleRestore()}
       />

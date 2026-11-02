@@ -28,6 +28,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { describeAccountError } from './account-copy';
 import { accountsAvailable, enabledAuthProviders, signInWithProvider } from './account-gateway';
 import { clearPendingPassword } from './pending-password';
+import { t } from '@/i18n';
 
 type Provider = 'google' | 'apple';
 
@@ -126,7 +127,7 @@ export function ProviderButtons({
       {providers.map((provider) => (
         <GlassButton
           key={provider}
-          label={busy === provider ? `Abriendo ${NAME[provider]}…` : 'Continuar con'}
+          label={busy === provider ? t('Abriendo {v}…', { v: NAME[provider] }) : t('Continuar con')}
           icon={
             busy === provider ? null : provider === 'google' ? (
               <GoogleLogo />
@@ -134,7 +135,7 @@ export function ProviderButtons({
               <AppleLogo color="#0A0A0B" />
             )
           }
-          accessibilityLabel={`Continuar con ${NAME[provider]}`}
+          accessibilityLabel={t('Continuar con {v}', { v: NAME[provider] })}
           tint="light"
           disabled={disabled || busy !== null}
           onPress={() => void handle(provider)}

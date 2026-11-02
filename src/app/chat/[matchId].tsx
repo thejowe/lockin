@@ -56,6 +56,7 @@ import {
 } from '@/features/profile';
 import { Screen } from '@/components/ambient-background';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { t } from '@/i18n';
 
 function ChatScreenContent() {
   const theme = useTheme();
@@ -101,7 +102,7 @@ function ChatScreenContent() {
     inputRef.current?.focus();
   };
 
-  const title = match?.counterpart.name ?? 'Conversación';
+  const title = match?.counterpart.name ?? t('Conversación');
   const counterpartId = match?.counterpart.id ?? null;
 
   return (
@@ -116,7 +117,7 @@ function ChatScreenContent() {
             match && counterpartId && !blocked ? (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`Ver el perfil de ${title}`}
+                accessibilityLabel={t('Ver el perfil de {title}', { title })}
                 onPress={() =>
                   router.push({ pathname: '/person/[id]', params: { id: counterpartId } })
                 }
@@ -176,7 +177,7 @@ function ChatScreenContent() {
         {blocked ? (
           <MissingMatch error={null} />
         ) : loading && !match ? (
-          <LoadingState label="Cargando la conversación…" />
+          <LoadingState label={t('Cargando la conversación…')} />
         ) : !match ? (
           <MissingMatch error={error} />
         ) : reportingMessageId ? (
@@ -246,7 +247,7 @@ function ChatScreenContent() {
               <ThemedText type="small" themeColor="danger" style={styles.sendError}>
                 {sendError instanceof ObjectionableContentError
                   ? sendError.message
-                  : 'No se ha podido enviar. Inténtalo otra vez.'}
+                  : t('No se ha podido enviar. Inténtalo otra vez.')}
               </ThemedText>
             )}
 
@@ -256,7 +257,7 @@ function ChatScreenContent() {
               onChangeText={setDraft}
               onSend={handleSend}
               sending={sending}
-              placeholder={`Escribe a ${match.counterpart.name.split(' ')[0]}`}
+              placeholder={t('Escribe a {v}', { v: match.counterpart.name.split(' ')[0] })}
             />
           </View>
         )}
@@ -269,13 +270,13 @@ function ChatScreenContent() {
 function MissingMatch({ error }: { error: Error | null }) {
   return (
     <MessageState
-      title="Esta conversación no está disponible"
+      title={t('Esta conversación no está disponible')}
       body={
         error
-          ? 'Ha fallado la carga. Vuelve a tus matches y entra otra vez.'
-          : 'Vuelve a tus matches para ver tus conversaciones disponibles.'
+          ? t('Ha fallado la carga. Vuelve a tus matches y entra otra vez.')
+          : t('Vuelve a tus matches para ver tus conversaciones disponibles.')
       }>
-      <Button label="Volver a Matches" href="/matches" />
+      <Button label={t('Volver a Matches')} href="/matches" />
     </MessageState>
   );
 }

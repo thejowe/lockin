@@ -16,6 +16,7 @@ import { useTheme } from '@/hooks/use-theme';
 
 import { TextField } from './controls';
 import { filterCountries, type Country } from './countries';
+import { t } from '@/i18n';
 
 export function CountryCodePicker({
   country,
@@ -41,7 +42,10 @@ export function CountryCodePicker({
     <>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Prefijo del país: ${country.name}, +${country.dial}. Cambiar`}
+        accessibilityLabel={t('Prefijo del país: {name}, +{dial}. Cambiar', {
+          name: country.name,
+          dial: country.dial,
+        })}
         disabled={disabled}
         onPress={() => setOpen(true)}
         style={[
@@ -65,10 +69,13 @@ export function CountryCodePicker({
             edges={['top', 'bottom', 'left', 'right']}
             style={[styles.sheet, { backgroundColor: theme.background }]}>
             <View style={styles.header}>
-              <ThemedText type="subtitle">Prefijo del país</ThemedText>
-              <Pressable accessibilityRole="button" accessibilityLabel="Cerrar" onPress={close}>
+              <ThemedText type="subtitle">{t('Prefijo del país')}</ThemedText>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('Cerrar')}
+                onPress={close}>
                 <ThemedText type="body" themeColor="textSecondary">
-                  Cerrar
+                  {t('Cerrar')}
                 </ThemedText>
               </Pressable>
             </View>
@@ -77,8 +84,8 @@ export function CountryCodePicker({
               value={query}
               // Solo dígitos: es lo que hace rápida la búsqueda.
               onChangeText={(next) => setQuery(next.replace(/\D/g, ''))}
-              accessibilityLabel="Buscar prefijo por número"
-              placeholder="Escribe el prefijo: 3, 34…"
+              accessibilityLabel={t('Buscar prefijo por número')}
+              placeholder={t('Escribe el prefijo: 3, 34…')}
               keyboardType="number-pad"
               inputMode="numeric"
               autoFocus
@@ -92,7 +99,7 @@ export function CountryCodePicker({
               keyboardShouldPersistTaps="handled"
               ListEmptyComponent={
                 <ThemedText type="small" themeColor="textMuted" style={styles.empty}>
-                  Ningún país tiene ese prefijo.
+                  {t('Ningún país tiene ese prefijo.')}
                 </ThemedText>
               }
               renderItem={({ item }) => (

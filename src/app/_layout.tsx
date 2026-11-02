@@ -3,7 +3,8 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { AppState } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 
@@ -11,6 +12,8 @@ import { BrandFonts } from '@/constants/fonts';
 import { Colors, FontFamily } from '@/constants/theme';
 import { DataProvider } from '@/data';
 import { useThemeName } from '@/hooks/use-theme';
+import { loadLocalePreference, refreshDeviceLocale, useLocale } from '@/i18n';
+import { t } from '@/i18n';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -62,14 +65,25 @@ export default function RootLayout() {
   const scheme = useThemeName();
   const palette = Colors[scheme];
   const [fontsLoaded, fontError] = useFonts(BrandFonts);
+  const locale = useLocale();
+  const [localeLoaded, setLocaleLoaded] = useState(false);
+  const fontsSettled = fontsLoaded || Boolean(fontError);
+
+  useEffect(() => {
+    void loadLocalePreference().finally(() => setLocaleLoaded(true));
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') refreshDeviceLocale();
+    });
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     // Si las fuentes fallan, arrancamos igual con los fallbacks del sistema:
     // quedarse en el splash para siempre sería peor que una tipografía distinta.
-    if (fontsLoaded || fontError) SplashScreen.hideAsync();
-  }, [fontsLoaded, fontError]);
+    if (fontsSettled && localeLoaded) SplashScreen.hideAsync();
+  }, [fontsSettled, localeLoaded]);
 
-  if (!fontsLoaded && !fontError) return null;
+  if (!fontsSettled || !localeLoaded) return null;
 
   return (
     // `KeyboardProvider` va aquí, en la raíz, porque es donde se engancha a los
@@ -95,7 +109,9 @@ export default function RootLayout() {
         <ThemeProvider value={navigationTheme(scheme)}>
           <DataProvider>
             <StatusBar style="light" />
+            {/* La `key` vuelve a montar las pantallas al cambiar de idioma: ver `@/i18n`. */}
             <Stack
+              key={locale}
               screenOptions={{
                 headerShown: false,
                 contentStyle: { backgroundColor: palette.background },
@@ -105,8 +121,11 @@ export default function RootLayout() {
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="chat/[matchId]" options={stackHeader} />
               <Stack.Screen name="agreement/[matchId]" options={stackHeader} />
-              <Stack.Screen name="settings" options={{ ...stackHeader, title: 'Ajustes' }} />
-              <Stack.Screen name="likes" options={{ ...stackHeader, title: 'Te han dado like' }} />
+              <Stack.Screen name="settings" options={{ ...stackHeader, title: t('Ajustes') }} />
+              <Stack.Screen
+                name="likes"
+                options={{ ...stackHeader, title: t('Te han dado like') }}
+              />
               {/* El paywall: una hoja sobre lo que se estaba haciendo. Entra con un
                   fundido, no subiendo desde abajo: tras la animación del diamante
                   los planes tienen que aparecer sobre el azul, no llegar como una

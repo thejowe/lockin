@@ -53,6 +53,7 @@ import { readAccountState, sendPasswordReset, signInWithEmail } from './account-
 import { Field, PrimaryButton, SecondaryButton, TextField } from './controls';
 import { clearPendingPassword } from './pending-password';
 import { ProviderButtons } from './provider-buttons';
+import { t } from '@/i18n';
 
 /** Qué se le está pidiendo al servidor ahora mismo, si es que se le pide algo. */
 type Busy = 'entrar' | 'recuperar' | null;
@@ -125,7 +126,7 @@ export function SignInForm({
 
     const address = email.trim();
     if (!address || !password) {
-      setNotice({ text: 'Escribe tu email y tu contraseña.', tone: 'danger' });
+      setNotice({ text: t('Escribe tu email y tu contraseña.'), tone: 'danger' });
       return;
     }
 
@@ -156,7 +157,7 @@ export function SignInForm({
     const address = email.trim();
     if (!address) {
       setNotice({
-        text: 'Escribe tu email y te mandamos un correo para cambiar la contraseña.',
+        text: t('Escribe tu email y te mandamos un correo para cambiar la contraseña.'),
         tone: 'danger',
       });
       return;
@@ -168,7 +169,9 @@ export function SignInForm({
     try {
       await sendPasswordReset(address);
       setNotice({
-        text: 'Si ese email tiene una cuenta, te hemos mandado un correo para cambiar la contraseña.',
+        text: t(
+          'Si ese email tiene una cuenta, te hemos mandado un correo para cambiar la contraseña.'
+        ),
         tone: 'textSecondary',
       });
     } catch (cause) {
@@ -191,19 +194,21 @@ export function SignInForm({
       <View style={styles.root}>
         <View style={styles.header}>
           <ThemedText type="label" themeColor="textSecondary">
-            Ya tengo cuenta
+            {t('Ya tengo cuenta')}
           </ThemedText>
-          <ThemedText type="title">Reinicia tu contraseña</ThemedText>
+          <ThemedText type="title">{t('Reinicia tu contraseña')}</ThemedText>
           <ThemedText type="body" themeColor="textSecondary">
-            Escribe el email de tu cuenta y te mandamos un enlace para elegir una contraseña nueva.
+            {t(
+              'Escribe el email de tu cuenta y te mandamos un enlace para elegir una contraseña nueva.'
+            )}
           </ThemedText>
         </View>
 
-        <Field label="Email">
+        <Field label={t('Email')}>
           <TextField
             value={email}
             onChangeText={setEmail}
-            accessibilityLabel="Email de tu cuenta"
+            accessibilityLabel={t('Email de tu cuenta')}
             placeholder="tu@email.com"
             keyboardType="email-address"
             inputMode="email"
@@ -215,7 +220,7 @@ export function SignInForm({
         </Field>
 
         <PrimaryButton
-          label={busy === 'recuperar' ? 'Mandando…' : 'Mandar enlace'}
+          label={busy === 'recuperar' ? t('Mandando…') : t('Mandar enlace')}
           disabled={busy !== null}
           onPress={() => void handleForgot()}
         />
@@ -233,20 +238,21 @@ export function SignInForm({
     <View style={styles.root}>
       <View style={styles.header}>
         <ThemedText type="label" themeColor="textSecondary">
-          Ya tengo cuenta
+          {t('Ya tengo cuenta')}
         </ThemedText>
-        <ThemedText type="title">Vuelve a tu cuenta</ThemedText>
+        <ThemedText type="title">{t('Vuelve a tu cuenta')}</ThemedText>
         <ThemedText type="body" themeColor="textSecondary">
-          Entra con el email y la contraseña que pusiste al asegurar tu cuenta y recuperas tu
-          perfil, tus matches y tus conversaciones.
+          {t(
+            'Entra con el email y la contraseña que pusiste al asegurar tu cuenta y recuperas tu perfil, tus matches y tus conversaciones.'
+          )}
         </ThemedText>
       </View>
 
-      <Field label="Email">
+      <Field label={t('Email')}>
         <TextField
           value={email}
           onChangeText={setEmail}
-          accessibilityLabel="Email de tu cuenta"
+          accessibilityLabel={t('Email de tu cuenta')}
           placeholder="tu@email.com"
           keyboardType="email-address"
           inputMode="email"
@@ -257,12 +263,12 @@ export function SignInForm({
         />
       </Field>
 
-      <Field label="Contraseña">
+      <Field label={t('Contraseña')}>
         <TextField
           value={password}
           onChangeText={setPassword}
-          accessibilityLabel="Contraseña de tu cuenta"
-          placeholder="Tu contraseña"
+          accessibilityLabel={t('Contraseña de tu cuenta')}
+          placeholder={t('Tu contraseña')}
           secureTextEntry
           textContentType="password"
           autoComplete="current-password"
@@ -280,16 +286,16 @@ export function SignInForm({
             { backgroundColor: theme.dangerSoft, borderColor: theme.danger },
           ]}>
           <ThemedText type="bodyStrong" themeColor="danger">
-            Entrar aquí deja atrás el perfil de este teléfono
+            {t('Entrar aquí deja atrás el perfil de este teléfono')}
           </ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            La cuenta de este teléfono no tiene email, así que tu perfil, tus matches y tus
-            conversaciones de ahora solo existen aquí. Si entras en la otra cuenta, no hay forma de
-            volver a ellos.
+            {t(
+              'La cuenta de este teléfono no tiene email, así que tu perfil, tus matches y tus conversaciones de ahora solo existen aquí. Si entras en la otra cuenta, no hay forma de volver a ellos.'
+            )}
           </ThemedText>
 
           <SecondaryButton
-            label={busy === 'entrar' ? 'Entrando…' : 'Entrar y dejar este perfil'}
+            label={busy === 'entrar' ? t('Entrando…') : t('Entrar y dejar este perfil')}
             tone="danger"
             onPress={() => {
               if (busy) return;
@@ -297,24 +303,24 @@ export function SignInForm({
               void enter(email.trim());
             }}
           />
-          <SecondaryButton label="Mejor no" onPress={() => setConfirmingLeave(false)} />
+          <SecondaryButton label={t('Mejor no')} onPress={() => setConfirmingLeave(false)} />
         </View>
       ) : (
         <>
           <PrimaryButton
-            label={busy === 'entrar' ? 'Entrando…' : 'Entrar'}
+            label={busy === 'entrar' ? t('Entrando…') : t('Entrar')}
             disabled={busy !== null}
             onPress={() => void handleEnter()}
           />
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="¿Has olvidado la contraseña?"
+            accessibilityLabel={t('¿Has olvidado la contraseña?')}
             hitSlop={Spacing.two}
             disabled={busy !== null}
             onPress={() => showForgot(true)}
             style={({ pressed }) => [styles.forgot, { opacity: pressed ? Opacity.pressed : 1 }]}>
             <ThemedText type="small" themeColor="textSecondary">
-              ¿Has olvidado la contraseña?
+              {t('¿Has olvidado la contraseña?')}
             </ThemedText>
           </Pressable>
         </>

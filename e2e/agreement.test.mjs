@@ -10,12 +10,13 @@
 
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { withoutTranslationCalls } from './product-source.mjs';
 import { dirname, join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const read = (path) => readFileSync(join(here, path), 'utf8');
+const read = (path) => withoutTranslationCalls(readFileSync(join(here, path), 'utf8'));
 
 const flow = read('agreement.yaml');
 const runner = read('run.mjs');
@@ -39,7 +40,7 @@ describe('agreement.yaml', () => {
     assert.match(topics, /question: '¿Cuánto tiempo le vas a dedicar los próximos 6 meses\?'/);
 
     assert.match(flow, /tapOn: 'Jornada completa'/);
-    assert.match(topics, /\{ key: 'completa', label: 'Jornada completa' \}/);
+    assert.match(topics, /key: 'completa',\s+label: 'Jornada completa'/);
     assert.match(row, /accessibilityLabel=\{candidate\.label\}/);
 
     assert.match(flow, /element: 'Guardar respuesta'/);

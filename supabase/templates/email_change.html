@@ -1,6 +1,29 @@
+{{ if and .Data .Data.locale }}{{ if eq .Data.locale "en" }}
+<h2>Confirm your email for cofounder</h2>
+<p>You've asked to use {{ .NewEmail }} on your cofounder account, the app for finding a cofounder. Confirm it from the phone where you have the app: that way you can recover your account if you change phones.</p>
+<p><a href="{{ .ConfirmationURL }}">Confirm my email</a></p>
+<p>If the link doesn't work, copy this address into your browser:<br>{{ .ConfirmationURL }}</p>
+<p>If this wasn't you, ignore this message: without confirmation, your account doesn't change.</p>
+<p>cofounder · Support: cofounder.soporte@gmail.com</p>
+{{ else if eq .Data.locale "ca" }}
+<h2>Confirma el teu correu a cofounder</h2>
+<p>Has demanat fer servir {{ .NewEmail }} al teu compte de cofounder, l'app per trobar cofundador. Confirma'l des del mòbil on tens l'app: així podràs recuperar el teu compte si canvies de telèfon.</p>
+<p><a href="{{ .ConfirmationURL }}">Confirma el meu correu</a></p>
+<p>Si l'enllaç no funciona, copia aquesta adreça al navegador:<br>{{ .ConfirmationURL }}</p>
+<p>Si no has estat tu, ignora aquest missatge: sense confirmar, el teu compte no canvia.</p>
+<p>cofounder · Suport: cofounder.soporte@gmail.com</p>
+{{ else }}
 <h2>Confirma tu correo en cofounder</h2>
 <p>Has pedido usar {{ .NewEmail }} en tu cuenta de cofounder, la app para encontrar cofundador. Confírmalo desde el móvil donde tienes la app: así podrás recuperar tu cuenta si cambias de teléfono.</p>
 <p><a href="{{ .ConfirmationURL }}">Confirmar mi correo</a></p>
 <p>Si el enlace no funciona, copia esta dirección en tu navegador:<br>{{ .ConfirmationURL }}</p>
 <p>Si no has sido tú, ignora este mensaje: sin confirmar, tu cuenta no cambia.</p>
 <p>cofounder · Soporte: cofounder.soporte@gmail.com</p>
+{{ end }}{{ else }}
+<h2>Confirma tu correo en cofounder</h2>
+<p>Has pedido usar {{ .NewEmail }} en tu cuenta de cofounder, la app para encontrar cofundador. Confírmalo desde el móvil donde tienes la app: así podrás recuperar tu cuenta si cambias de teléfono.</p>
+<p><a href="{{ .ConfirmationURL }}">Confirmar mi correo</a></p>
+<p>Si el enlace no funciona, copia esta dirección en tu navegador:<br>{{ .ConfirmationURL }}</p>
+<p>Si no has sido tú, ignora este mensaje: sin confirmar, tu cuenta no cambia.</p>
+<p>cofounder · Soporte: cofounder.soporte@gmail.com</p>
+{{ end }}

@@ -18,6 +18,7 @@ import type {
   MessageReportInput,
   ProfileReportInput,
 } from '../types';
+import { t } from '@/i18n';
 
 /** Los reportes se envían al RPC sin devolver ni mapear filas privadas. */
 export function toReportArgs({ profileId, reason, details }: ProfileReportInput) {
@@ -30,11 +31,11 @@ export function toMessageReportArgs({ messageId, reason, details }: MessageRepor
 
 export function toSafetyError(error: { code: string; message: string }): Error & { code: string } {
   const messages: Record<string, string> = {
-    LI008: 'No puedes bloquearte ni reportarte a ti mismo.',
-    LI009: 'Elige un motivo válido.',
-    '23514': 'El texto no puede superar 500 caracteres.',
-    '23503': 'El perfil no está disponible.',
-    '42501': 'El mensaje no está disponible.',
+    LI008: t('No puedes bloquearte ni reportarte a ti mismo.'),
+    LI009: t('Elige un motivo válido.'),
+    '23514': t('El texto no puede superar 500 caracteres.'),
+    '23503': t('El perfil no está disponible.'),
+    '42501': t('El mensaje no está disponible.'),
   };
   return Object.assign(new Error(messages[error.code] ?? error.message), { code: error.code });
 }

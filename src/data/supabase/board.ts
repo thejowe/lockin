@@ -12,6 +12,7 @@ import { readLocalImage } from './avatar-file';
 
 import type { LockInSupabaseClient } from './client';
 import type { BoardPost } from '../types';
+import { t } from '@/i18n';
 
 const UPLOADS = 'avatar-uploads';
 const BUCKET = 'board';
@@ -91,7 +92,7 @@ export async function addBoardPost(
   const { error: uploadError } = await client.storage
     .from(UPLOADS)
     .upload(path, bytes, { contentType, upsert: false });
-  if (uploadError) throw new Error('No se ha podido subir la foto. Inténtalo de nuevo.');
+  if (uploadError) throw new Error(t('No se ha podido subir la foto. Inténtalo de nuevo.'));
 
   const { data, error } = await client.functions.invoke(FUNCTION, {
     body: { action: 'add', path, caption },
@@ -119,5 +120,5 @@ export async function removeBoardPost(client: LockInSupabaseClient, postId: stri
   const { error } = await client.functions.invoke(FUNCTION, {
     body: { action: 'remove', postId },
   });
-  if (error) throw new Error('No se ha podido quitar la foto. Inténtalo de nuevo.');
+  if (error) throw new Error(t('No se ha podido quitar la foto. Inténtalo de nuevo.'));
 }

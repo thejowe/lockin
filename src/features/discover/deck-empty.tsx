@@ -12,6 +12,7 @@ import { Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { ActionButton } from './action-button';
+import { t } from '@/i18n';
 
 export function DeckEmpty({
   onOpenMatches,
@@ -35,20 +36,23 @@ export function DeckEmpty({
         { backgroundColor: theme.backgroundElement, borderColor: theme.border },
       ]}>
       <ThemedText type="label" themeColor="textSecondary">
-        Deck vacío
+        {t('Deck vacío')}
       </ThemedText>
 
-      <ThemedText type="title">Ya has visto a todo el mundo</ThemedText>
+      <ThemedText type="title">{t('Ya has visto a todo el mundo')}</ThemedText>
 
       <ThemedText type="body" themeColor="textSecondary">
-        No quedan perfiles nuevos por decidir. Vuelve en un rato: la gente que se apunta entra
-        directamente en tu deck.
+        {t(
+          'No quedan perfiles nuevos por decidir. Vuelve en un rato: la gente que se apunta entra directamente en tu deck.'
+        )}
       </ThemedText>
 
       <View style={styles.actions}>
-        <ActionButton label="Ver mis matches" onPress={onOpenMatches} />
-        {onUndo ? <ActionButton label="Deshacer" variant="secondary" onPress={onUndo} /> : null}
-        <ActionButton label="Volver a comprobar" variant="secondary" onPress={onRefresh} />
+        <ActionButton label={t('Ver mis matches')} onPress={onOpenMatches} />
+        {onUndo ? (
+          <ActionButton label={t('Deshacer')} variant="secondary" onPress={onUndo} />
+        ) : null}
+        <ActionButton label={t('Volver a comprobar')} variant="secondary" onPress={onRefresh} />
       </View>
     </View>
   );

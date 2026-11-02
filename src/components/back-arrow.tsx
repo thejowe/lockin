@@ -12,13 +12,14 @@ import { Pressable, StyleSheet } from 'react-native';
 import { Icon } from '@/components/icon';
 import { Control, Opacity, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/i18n';
 
 export function BackArrow({ onPress }: { onPress: () => void }) {
   const theme = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Volver"
+      accessibilityLabel={t('Volver')}
       onPress={onPress}
       style={({ pressed }) => [styles.button, { opacity: pressed ? Opacity.pressed : 1 }]}>
       <Icon name="back" size={24} color={theme.text} />

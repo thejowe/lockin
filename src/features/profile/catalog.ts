@@ -17,6 +17,7 @@ import type {
   StartingPoint,
   TimeBand,
 } from '@/data';
+import { joinList, lowerInSentence, t, tk } from '@/i18n';
 
 /** Una opción seleccionable: código estable, etiqueta y explicación opcional. */
 export interface Option<T extends string> {
@@ -30,42 +31,134 @@ export interface Option<T extends string> {
 export const MODE_OPTIONS: Option<ModePreference>[] = [
   {
     value: 'par',
-    label: 'Cofundador',
-    description: 'Alguien en igualdad de condiciones para construir algo desde cero.',
+    get label() {
+      return t('Cofundador');
+    },
+    get description() {
+      return t('Alguien en igualdad de condiciones para construir algo desde cero.');
+    },
   },
   {
     value: 'lockin',
-    label: 'Compañero de Lock-In',
-    description: 'Alguien con quien trabajar concentrado a la vez, cada uno en lo suyo.',
+    get label() {
+      return t('Compañero de Lock-In');
+    },
+    get description() {
+      return t('Alguien con quien trabajar concentrado a la vez, cada uno en lo suyo.');
+    },
   },
   {
     value: 'ambos',
-    label: 'Ambos',
-    description: 'Enséñame las dos cosas y ya decido tarjeta a tarjeta.',
+    get label() {
+      return t('Ambos');
+    },
+    get description() {
+      return t('Enséñame las dos cosas y ya decido tarjeta a tarjeta.');
+    },
   },
 ];
 
 export const SPECIALTY_OPTIONS: Option<Specialty>[] = [
-  { value: 'diseno', label: 'Diseño' },
-  { value: 'dev', label: 'Desarrollo' },
-  { value: 'producto', label: 'Producto' },
+  {
+    value: 'diseno',
+    get label() {
+      return t('Diseño');
+    },
+  },
+  {
+    value: 'dev',
+    get label() {
+      return t('Desarrollo');
+    },
+  },
+  {
+    value: 'producto',
+    get label() {
+      return t('Producto');
+    },
+  },
   { value: 'marketing', label: 'Marketing' },
-  { value: 'ventas', label: 'Ventas' },
-  { value: 'datos', label: 'Datos' },
-  { value: 'contenido', label: 'Contenido' },
-  { value: 'finanzas', label: 'Finanzas' },
-  { value: 'operaciones', label: 'Operaciones' },
-  { value: 'legal', label: 'Legal' },
-  { value: 'ia', label: 'IA y machine learning' },
+  {
+    value: 'ventas',
+    get label() {
+      return t('Ventas');
+    },
+  },
+  {
+    value: 'datos',
+    get label() {
+      return t('Datos');
+    },
+  },
+  {
+    value: 'contenido',
+    get label() {
+      return t('Contenido');
+    },
+  },
+  {
+    value: 'finanzas',
+    get label() {
+      return t('Finanzas');
+    },
+  },
+  {
+    value: 'operaciones',
+    get label() {
+      return t('Operaciones');
+    },
+  },
+  {
+    value: 'legal',
+    get label() {
+      return t('Legal');
+    },
+  },
+  {
+    value: 'ia',
+    get label() {
+      return t('IA y machine learning');
+    },
+  },
   { value: 'hardware', label: 'Hardware' },
   { value: 'growth', label: 'Growth' },
-  { value: 'comunidad', label: 'Comunidad' },
-  { value: 'personas', label: 'Personas y RR. HH.' },
-  { value: 'investigacion', label: 'Investigación' },
-  { value: 'audiovisual', label: 'Vídeo y audiovisual' },
-  { value: 'seguridad', label: 'Ciberseguridad' },
+  {
+    value: 'comunidad',
+    get label() {
+      return t('Comunidad');
+    },
+  },
+  {
+    value: 'personas',
+    get label() {
+      return t('Personas y RR. HH.');
+    },
+  },
+  {
+    value: 'investigacion',
+    get label() {
+      return t('Investigación');
+    },
+  },
+  {
+    value: 'audiovisual',
+    get label() {
+      return t('Vídeo y audiovisual');
+    },
+  },
+  {
+    value: 'seguridad',
+    get label() {
+      return t('Ciberseguridad');
+    },
+  },
   { value: 'ecommerce', label: 'E-commerce' },
-  { value: 'inversion', label: 'Inversión y fundraising' },
+  {
+    value: 'inversion',
+    get label() {
+      return t('Inversión y fundraising');
+    },
+  },
 ];
 
 /** Tope de especialidades por lista: el `check` de `profiles` lo pide así. */
@@ -76,64 +169,182 @@ export const OTHER_SPECIALTY_MIN_LENGTH = 2;
 export const OTHER_SPECIALTY_MAX_LENGTH = 40;
 
 export const LANGUAGE_OPTIONS: Option<Language>[] = [
-  { value: 'es', label: 'Español' },
-  { value: 'en', label: 'Inglés' },
-  { value: 'ca', label: 'Catalán' },
-  { value: 'eu', label: 'Euskera' },
-  { value: 'gl', label: 'Gallego' },
-  { value: 'pt', label: 'Portugués' },
-  { value: 'fr', label: 'Francés' },
-  { value: 'de', label: 'Alemán' },
-  { value: 'it', label: 'Italiano' },
-  { value: 'nl', label: 'Neerlandés' },
-  { value: 'ro', label: 'Rumano' },
-  { value: 'ar', label: 'Árabe' },
-  { value: 'zh', label: 'Chino' },
-  { value: 'ru', label: 'Ruso' },
+  {
+    value: 'es',
+    get label() {
+      return t('Español');
+    },
+  },
+  {
+    value: 'en',
+    get label() {
+      return t('Inglés');
+    },
+  },
+  {
+    value: 'ca',
+    get label() {
+      return t('Catalán');
+    },
+  },
+  {
+    value: 'eu',
+    get label() {
+      return t('Euskera');
+    },
+  },
+  {
+    value: 'gl',
+    get label() {
+      return t('Gallego');
+    },
+  },
+  {
+    value: 'pt',
+    get label() {
+      return t('Portugués');
+    },
+  },
+  {
+    value: 'fr',
+    get label() {
+      return t('Francés');
+    },
+  },
+  {
+    value: 'de',
+    get label() {
+      return t('Alemán');
+    },
+  },
+  {
+    value: 'it',
+    get label() {
+      return t('Italiano');
+    },
+  },
+  {
+    value: 'nl',
+    get label() {
+      return t('Neerlandés');
+    },
+  },
+  {
+    value: 'ro',
+    get label() {
+      return t('Rumano');
+    },
+  },
+  {
+    value: 'ar',
+    get label() {
+      return t('Árabe');
+    },
+  },
+  {
+    value: 'zh',
+    get label() {
+      return t('Chino');
+    },
+  },
+  {
+    value: 'ru',
+    get label() {
+      return t('Ruso');
+    },
+  },
 ];
 
 /** Las tres opciones literales de `CONCEPTO.md`. */
 export const STARTING_POINT_OPTIONS: Option<StartingPoint>[] = [
   {
     value: 'solo-ganas',
-    label: 'Solo ganas',
-    description: 'Solo tengo ganas y ambición, sin idea todavía.',
+    get label() {
+      return t('Solo ganas');
+    },
+    get description() {
+      return t('Solo tengo ganas y ambición, sin idea todavía.');
+    },
   },
   {
     value: 'idea-sin-empezar',
-    label: 'Idea sin empezar',
-    description: 'Tengo una idea pero no he empezado nada.',
+    get label() {
+      return t('Idea sin empezar');
+    },
+    get description() {
+      return t('Tengo una idea pero no he empezado nada.');
+    },
   },
   {
     value: 'algo-empezado',
-    label: 'Algo empezado',
-    description: 'Ya toqué algo pequeño, busco con quién llevarlo en serio.',
+    get label() {
+      return t('Algo empezado');
+    },
+    get description() {
+      return t('Ya toqué algo pequeño, busco con quién llevarlo en serio.');
+    },
   },
 ];
 
 export const AMBITION_OPTIONS: Option<Ambition>[] = [
   {
     value: 'lifestyle',
-    label: 'Negocio lifestyle',
-    description: 'Algo sostenible que quepa en la vida que ya tengo.',
+    get label() {
+      return t('Negocio lifestyle');
+    },
+    get description() {
+      return t('Algo sostenible que quepa en la vida que ya tengo.');
+    },
   },
   {
     value: 'equilibrado',
-    label: 'En serio, con equilibrio',
-    description: 'Le meto horas de verdad, pero no me quemo.',
+    get label() {
+      return t('En serio, con equilibrio');
+    },
+    get description() {
+      return t('Le meto horas de verdad, pero no me quemo.');
+    },
   },
   {
     value: 'todo-o-nada',
-    label: 'Apostarlo todo',
-    description: 'Lo demás se aparta hasta que esto funcione.',
+    get label() {
+      return t('Apostarlo todo');
+    },
+    get description() {
+      return t('Lo demás se aparta hasta que esto funcione.');
+    },
   },
 ];
 
 export const TIME_BAND_OPTIONS: Option<TimeBand>[] = [
-  { value: 'madrugada', label: 'Madrugada', description: '00–06' },
-  { value: 'manana', label: 'Mañana', description: '06–12' },
-  { value: 'tarde', label: 'Tarde', description: '12–20' },
-  { value: 'noche', label: 'Noche', description: '20–00' },
+  {
+    value: 'madrugada',
+    get label() {
+      return t('Madrugada');
+    },
+    description: '00–06',
+  },
+  {
+    value: 'manana',
+    get label() {
+      return t('Mañana');
+    },
+    description: '06–12',
+  },
+  {
+    value: 'tarde',
+    get label() {
+      return t('Tarde');
+    },
+    description: '12–20',
+  },
+  {
+    value: 'noche',
+    get label() {
+      return t('Noche');
+    },
+    description: '20–00',
+  },
 ];
 
 /**
@@ -141,12 +352,12 @@ export const TIME_BAND_OPTIONS: Option<TimeBand>[] = [
  * sienta "swipeable" en vez de un CV: cortas, concretas y en primera persona.
  */
 export const PROMPT_QUESTIONS: string[] = [
-  'Lo que quiero construir es…',
-  'Mi mejor sesión de trabajo empieza…',
-  'Necesito compañía para…',
-  'Lo que aporto desde el día uno es…',
-  'Lo que ya intenté y no salió…',
-  'Busco a alguien que…',
+  tk('Lo que quiero construir es…'),
+  tk('Mi mejor sesión de trabajo empieza…'),
+  tk('Necesito compañía para…'),
+  tk('Lo que aporto desde el día uno es…'),
+  tk('Lo que ya intenté y no salió…'),
+  tk('Busco a alguien que…'),
 ];
 
 /** Longitud máxima de una respuesta de prompt. Corta a propósito. */
@@ -174,12 +385,25 @@ export const languageLabel = (value: Language) => labelOf(LANGUAGE_OPTIONS, valu
 
 /** "Español, inglés y catalán". */
 export function languagesSentence(values: Language[]): string {
-  const labels = values.map((value, index) =>
-    index === 0 ? languageLabel(value) : languageLabel(value).toLowerCase()
+  return joinList(
+    values.map((value, index) =>
+      index === 0 ? languageLabel(value) : lowerInSentence(languageLabel(value))
+    )
   );
-  return labels.length <= 1
-    ? (labels[0] ?? '')
-    : `${labels.slice(0, -1).join(', ')} y ${labels[labels.length - 1]}`;
+}
+
+/** La franja dentro de una frase, entera porque cada idioma la dice distinto. */
+export function timeBandPhrase(band: TimeBand): string {
+  switch (band) {
+    case 'madrugada':
+      return t('de madrugada');
+    case 'manana':
+      return t('por la mañana');
+    case 'tarde':
+      return t('por la tarde');
+    case 'noche':
+      return t('por la noche');
+  }
 }
 
 /**
@@ -205,10 +429,7 @@ export function startingPointSentence(value: StartingPoint): string {
 /** "12 h/semana · Tarde y noche". Lo que se lee de un vistazo en una tarjeta. */
 export function availabilitySummary(hoursPerWeek: number, bands: TimeBand[]): string {
   const labels = bands.map(timeBandLabel);
-  const joined =
-    labels.length <= 1
-      ? (labels[0] ?? 'Sin franja')
-      : `${labels.slice(0, -1).join(', ')} y ${labels[labels.length - 1]}`;
+  const joined = joinList(labels) || t('Sin franja');
 
-  return `${hoursPerWeek} h/semana · ${joined.toLowerCase()}`;
+  return t('{hoursPerWeek} h/semana · {bands}', { hoursPerWeek, bands: joined.toLowerCase() });
 }

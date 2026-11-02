@@ -28,6 +28,7 @@ import { useReduceMotion } from '@/hooks/use-reduce-motion';
 import { useTheme } from '@/hooks/use-theme';
 
 import { openPaywall } from './open-paywall';
+import { t } from '@/i18n';
 
 const GEM = 72;
 /** Cuántas veces crece el diamante: de sobra para tapar cualquier pantalla desde cualquier punto. */
@@ -88,7 +89,7 @@ export function PremiumCta() {
     <>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Hazte Premium"
+        accessibilityLabel={t('Hazte Premium')}
         onPress={handlePress}
         style={({ pressed }) => [
           styles.card,
@@ -102,7 +103,7 @@ export function PremiumCta() {
           <Icon name="diamond" size={GEM} color={theme.diamond} strokeWidth={1.4} />
         </View>
         <ThemedText type="subtitle" style={styles.title}>
-          Hazte Premium
+          {t('Hazte Premium')}
         </ThemedText>
       </Pressable>
 

@@ -11,12 +11,13 @@ import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/i18n';
 
 export function LikesRow({ count, onPress }: { count: number; onPress: () => void }) {
   const theme = useTheme();
   if (count <= 0) return null;
 
-  const label = `Te han dado like (${count})`;
+  const label = t('Te han dado like ({count})', { count });
 
   return (
     <Pressable

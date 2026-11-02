@@ -761,7 +761,7 @@ describe('linkEmailToCurrentUser', () => {
       recoverable: false,
     });
     expect(auth.updateUser).toHaveBeenCalledWith(
-      { email: 'ana@example.com' },
+      { email: 'ana@example.com', data: { locale: 'es' } },
       { emailRedirectTo: 'cofounder://auth/callback' }
     );
   });

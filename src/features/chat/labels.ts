@@ -8,59 +8,120 @@
  */
 
 import type { Ambition, Mode, Specialty, StartingPoint, TimeBand } from '@/data';
+import { joinList, t } from '@/i18n';
 
 export const SPECIALTY_LABELS: Record<Specialty, string> = {
-  diseno: 'diseño',
-  dev: 'desarrollo',
-  marketing: 'marketing',
-  ventas: 'ventas',
-  datos: 'datos',
-  legal: 'legal',
-  producto: 'producto',
-  finanzas: 'finanzas',
-  operaciones: 'operaciones',
-  contenido: 'contenido',
-  ia: 'IA',
-  hardware: 'hardware',
-  growth: 'growth',
-  comunidad: 'comunidad',
-  personas: 'personas',
-  investigacion: 'investigación',
-  audiovisual: 'audiovisual',
-  seguridad: 'ciberseguridad',
-  ecommerce: 'e-commerce',
-  inversion: 'inversión',
+  get diseno() {
+    return t('diseño');
+  },
+  get dev() {
+    return t('desarrollo');
+  },
+  get marketing() {
+    return t('marketing');
+  },
+  get ventas() {
+    return t('ventas');
+  },
+  get datos() {
+    return t('datos');
+  },
+  get legal() {
+    return t('legal');
+  },
+  get producto() {
+    return t('producto');
+  },
+  get finanzas() {
+    return t('finanzas');
+  },
+  get operaciones() {
+    return t('operaciones');
+  },
+  get contenido() {
+    return t('contenido');
+  },
+  get ia() {
+    return t('IA');
+  },
+  get hardware() {
+    return t('hardware');
+  },
+  get growth() {
+    return t('growth');
+  },
+  get comunidad() {
+    return t('comunidad');
+  },
+  get personas() {
+    return t('personas');
+  },
+  get investigacion() {
+    return t('investigación');
+  },
+  get audiovisual() {
+    return t('audiovisual');
+  },
+  get seguridad() {
+    return t('ciberseguridad');
+  },
+  get ecommerce() {
+    return t('e-commerce');
+  },
+  get inversion() {
+    return t('inversión');
+  },
 };
 
 /** Franjas horarias, redactadas para caber dentro de una frase ("los dos estáis por la…"). */
 export const TIME_BAND_LABELS: Record<TimeBand, string> = {
-  madrugada: 'madrugada',
-  manana: 'mañana',
-  tarde: 'tarde',
-  noche: 'noche',
+  get madrugada() {
+    return t('madrugada');
+  },
+  get manana() {
+    return t('mañana');
+  },
+  get tarde() {
+    return t('tarde');
+  },
+  get noche() {
+    return t('noche');
+  },
 };
 
 export const AMBITION_LABELS: Record<Ambition, string> = {
-  lifestyle: 'negocio lifestyle',
-  equilibrado: 'ambición equilibrada',
-  'todo-o-nada': 'apostarlo todo',
+  get lifestyle() {
+    return t('negocio lifestyle');
+  },
+  get equilibrado() {
+    return t('ambición equilibrada');
+  },
+  get 'todo-o-nada'() {
+    return t('apostarlo todo');
+  },
 };
 
 export const STARTING_POINT_LABELS: Record<StartingPoint, string> = {
-  'solo-ganas': 'solo ganas, sin idea todavía',
-  'idea-sin-empezar': 'una idea sin empezar',
-  'algo-empezado': 'algo ya empezado',
+  get 'solo-ganas'() {
+    return t('solo ganas, sin idea todavía');
+  },
+  get 'idea-sin-empezar'() {
+    return t('una idea sin empezar');
+  },
+  get 'algo-empezado'() {
+    return t('algo ya empezado');
+  },
 };
 
 /** Cómo se nombra el match en la lista: es el contexto bajo el que se conocieron. */
 export const MODE_LABELS: Record<Mode, string> = {
-  par: 'Cofundador',
+  get par() {
+    return t('Cofundador');
+  },
   lockin: 'Lock-In',
 };
 
 /** "diseño y producto" — enumeración natural, sin coma de Oxford. */
 export function joinNaturally(items: string[]): string {
-  if (items.length === 0) return '';
-  if (items.length === 1) return items[0];
-  return `${items.slice(0, -1).join(', ')} y ${items[items.length - 1]}`;
+  return joinList(items);
 }

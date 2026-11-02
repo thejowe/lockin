@@ -42,6 +42,7 @@ import { LoadingState, MessageState } from '@/components/state-view';
 import { describeAccountError } from './account-copy';
 import { AccountError, completeAuthLink } from './account-gateway';
 import { SecondaryButton } from './controls';
+import { t } from '@/i18n';
 
 /** Los parámetros que `completeAuthLink` sabe leer de un enlace de cuenta. */
 const AUTH_LINK_PARAMS = ['code', 'token_hash', 'type', 'error', 'error_description'] as const;
@@ -103,11 +104,13 @@ export function AuthCallback({
   if (error?.github) {
     return (
       <MessageState
-        eyebrow="Verificación"
-        title="La verificación con GitHub no se ha completado"
+        eyebrow={t('Verificación')}
+        title={t('La verificación con GitHub no se ha completado')}
         body={error.message}
-        detail="En tu perfil verás si GitHub ha quedado verificado y, si no, podrás volver a intentarlo.">
-        <SecondaryButton label="Volver a mi perfil" onPress={onDone} />
+        detail={t(
+          'En tu perfil verás si GitHub ha quedado verificado y, si no, podrás volver a intentarlo.'
+        )}>
+        <SecondaryButton label={t('Volver a mi perfil')} onPress={onDone} />
       </MessageState>
     );
   }
@@ -115,15 +118,15 @@ export function AuthCallback({
   if (error) {
     return (
       <MessageState
-        eyebrow="Cuenta"
-        title="Ese enlace no ha funcionado"
+        eyebrow={t('Cuenta')}
+        title={t('Ese enlace no ha funcionado')}
         body={error.message}
-        detail="Tu cuenta no ha cambiado. Puedes pedir otro correo desde tu perfil.">
-        <SecondaryButton label="Volver a mi perfil" onPress={onDone} />
+        detail={t('Tu cuenta no ha cambiado. Puedes pedir otro correo desde tu perfil.')}>
+        <SecondaryButton label={t('Volver a mi perfil')} onPress={onDone} />
       </MessageState>
     );
   }
 
   // Sin decir «de tu correo»: la vuelta de GitHub también pasa por aquí.
-  return <LoadingState label="Un momento…" detail="Estamos actualizando tu cuenta." />;
+  return <LoadingState label={t('Un momento…')} detail={t('Estamos actualizando tu cuenta.')} />;
 }

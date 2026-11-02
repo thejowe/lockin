@@ -78,6 +78,7 @@ import type {
   Session,
 } from '../types';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import { t } from '@/i18n';
 
 export {
   AccountError,
@@ -477,7 +478,7 @@ export function createSupabaseRepositories({
       // aquí porque la vuelta en frío —Android mató el proceso con GitHub
       // abierto— solo pasa por `completeAuthLink`, y tiene que poder ponerlo.
       const profile = await profiles.getCurrent();
-      if (!profile) throw new Error('No hay perfil que verificar todavía.');
+      if (!profile) throw new Error(t('No hay perfil que verificar todavía.'));
       return profile;
     },
 
@@ -488,7 +489,7 @@ export function createSupabaseRepositories({
       if (error) throw error;
 
       const profile = await profiles.getCurrent();
-      if (!profile) throw new Error('No hay perfil que desverificar todavía.');
+      if (!profile) throw new Error(t('No hay perfil que desverificar todavía.'));
       return profile;
     },
 
@@ -512,20 +513,20 @@ export function createSupabaseRepositories({
       // que lee auth.identities): aquí no viaja ningún nombre.
       if (!(await linkLinkedinIdentity())) throw new Error(LINKEDIN_VERIFICATION_CANCELLED);
       const profile = await profiles.getCurrent();
-      if (!profile) throw new Error('No hay perfil que verificar todavía.');
+      if (!profile) throw new Error(t('No hay perfil que verificar todavía.'));
       return profile;
     },
 
     async unverifyLinkedin() {
       await unlinkLinkedinIdentity();
       const profile = await profiles.getCurrent();
-      if (!profile) throw new Error('No hay perfil que desverificar todavía.');
+      if (!profile) throw new Error(t('No hay perfil que desverificar todavía.'));
       return profile;
     },
 
     async refreshGithubVerification() {
       const before = await profiles.getCurrent();
-      if (!before) throw new Error('No hay perfil que sincronizar todavía.');
+      if (!before) throw new Error(t('No hay perfil que sincronizar todavía.'));
 
       // Sin sello no hay nada que refrescar, y llamar al RPC aquí sería
       // destructivo: su rama «no hay identidad de GitHub» vacía `link_github`, y
@@ -537,7 +538,7 @@ export function createSupabaseRepositories({
       if (error) throw error;
 
       const after = await profiles.getCurrent();
-      if (!after) throw new Error('No hay perfil que sincronizar todavía.');
+      if (!after) throw new Error(t('No hay perfil que sincronizar todavía.'));
       return after;
     },
 
@@ -581,7 +582,7 @@ export function createSupabaseRepositories({
       const client = getClient();
       const userId = await getUserId();
       if (!(await profiles.getCurrent())) {
-        throw new Error('No hay perfil al que ponerle foto todavía.');
+        throw new Error(t('No hay perfil al que ponerle foto todavía.'));
       }
 
       // La publica la Edge Function tras revisarla: el perfil se relee después.
@@ -595,7 +596,7 @@ export function createSupabaseRepositories({
       const client = getClient();
       await getUserId();
       if (!(await profiles.getCurrent())) {
-        throw new Error('No hay perfil al que ponerle foto todavía.');
+        throw new Error(t('No hay perfil al que ponerle foto todavía.'));
       }
 
       await deleteAvatar(client);

@@ -45,6 +45,7 @@ import { LanguagePicker, MasteryPicker, SeekingSpecialtyPicker } from './pickers
 import { WizardScreen } from './wizard';
 
 import type { Profile, ProfileInput } from '@/data';
+import { t } from '@/i18n';
 
 type StepKey =
   | 'name'
@@ -146,7 +147,7 @@ export function ProfileWizard({
       return;
     }
     if (Object.values(found).some(Boolean)) {
-      setSaveError('Hay algo en tu ficha que no cuadra. Revísala desde tu perfil.');
+      setSaveError(t('Hay algo en tu ficha que no cuadra. Revísala desde tu perfil.'));
       return;
     }
 
@@ -155,7 +156,7 @@ export function ProfileWizard({
     try {
       await onSubmit(toInput(finalDraft));
     } catch (cause) {
-      setSaveError(cause instanceof Error ? cause.message : 'No se ha podido guardar.');
+      setSaveError(cause instanceof Error ? cause.message : t('No se ha podido guardar.'));
     } finally {
       setSaving(false);
     }
@@ -208,7 +209,7 @@ export function ProfileWizard({
     total: steps.length,
     onBack: index > 0 ? () => setIndex(index - 1) : undefined,
     onSkip: optional ? () => void handleSkip() : undefined,
-    primaryLabel: last ? (saving ? 'Guardando…' : submitLabel) : 'Continuar',
+    primaryLabel: last ? (saving ? t('Guardando…') : submitLabel) : t('Continuar'),
     busy: saving,
     error: saveError,
     onPrimary: () => void handleNext(),
@@ -217,16 +218,16 @@ export function ProfileWizard({
   switch (step) {
     case 'name':
       return (
-        <WizardScreen {...common} title="¿Cómo te llamas?">
-          <Field label="Nombre" error={errors.name}>
+        <WizardScreen {...common} title={t('¿Cómo te llamas?')}>
+          <Field label={t('Nombre')} error={errors.name}>
             <TextField
               value={draft.name}
               onChangeText={(value) => update('name', value)}
-              placeholder="Cómo te llamas"
+              placeholder={t('Cómo te llamas')}
               autoCapitalize="words"
               autoCorrect={false}
               autoComplete="name"
-              accessibilityLabel="Nombre"
+              accessibilityLabel={t('Nombre')}
             />
           </Field>
         </WizardScreen>
@@ -234,7 +235,7 @@ export function ProfileWizard({
 
     case 'birth':
       return (
-        <WizardScreen {...common} title="¿Cuándo naciste?">
+        <WizardScreen {...common} title={t('¿Cuándo naciste?')}>
           <BirthDateFields
             value={birth}
             onChange={(next) => {
@@ -248,15 +249,15 @@ export function ProfileWizard({
 
     case 'location':
       return (
-        <WizardScreen {...common} title="¿Dónde vives?">
-          <Field label="Ubicación" error={errors.location}>
+        <WizardScreen {...common} title={t('¿Dónde vives?')}>
+          <Field label={t('Ubicación')} error={errors.location}>
             <TextField
               value={draft.location}
               onChangeText={(value) => update('location', value)}
               placeholder="Barcelona"
               autoCapitalize="words"
               autoCorrect={false}
-              accessibilityLabel="Ubicación"
+              accessibilityLabel={t('Ubicación')}
             />
           </Field>
         </WizardScreen>
@@ -266,9 +267,9 @@ export function ProfileWizard({
       return (
         <WizardScreen
           {...common}
-          title="¿Qué dominas?"
-          subtitle="Lo que sabes hacer. Elige todas las que apliquen.">
-          <Field label="Lo que domino" error={errors.specialties}>
+          title={t('¿Qué dominas?')}
+          subtitle={t('Lo que sabes hacer. Elige todas las que apliquen.')}>
+          <Field label={t('Lo que domino')} error={errors.specialties}>
             <MasteryPicker
               specialties={draft.specialties}
               other={draft.otherSpecialty}
@@ -287,9 +288,9 @@ export function ProfileWizard({
       return (
         <WizardScreen
           {...common}
-          title="¿Qué le pides a tu cofundador?"
-          subtitle="Lo que a ti te falta. Si lo omites, te enseñamos a todo el mundo.">
-          <Field label="Lo que debe dominar quien busco" error={errors.seekingSpecialties}>
+          title={t('¿Qué le pides a tu cofundador?')}
+          subtitle={t('Lo que a ti te falta. Si lo omites, te enseñamos a todo el mundo.')}>
+          <Field label={t('Lo que debe dominar quien busco')} error={errors.seekingSpecialties}>
             <SeekingSpecialtyPicker
               values={draft.seekingSpecialties}
               onChange={(next) => update('seekingSpecialties', next)}
@@ -302,9 +303,9 @@ export function ProfileWizard({
       return (
         <WizardScreen
           {...common}
-          title="¿Qué idiomas hablas?"
-          subtitle="Elige todos los que manejes con soltura.">
-          <Field label="Idiomas que hablo" error={errors.languages}>
+          title={t('¿Qué idiomas hablas?')}
+          subtitle={t('Elige todos los que manejes con soltura.')}>
+          <Field label={t('Idiomas que hablo')} error={errors.languages}>
             <LanguagePicker
               values={draft.languages}
               onChange={(next) => update('languages', next)}
@@ -317,9 +318,9 @@ export function ProfileWizard({
       return (
         <WizardScreen
           {...common}
-          title="¿Qué idiomas debe hablar?"
-          subtitle="Los que necesitas que hable tu cofundador. Si lo omites, te da igual.">
-          <Field label="Idiomas que debe hablar quien busco">
+          title={t('¿Qué idiomas debe hablar?')}
+          subtitle={t('Los que necesitas que hable tu cofundador. Si lo omites, te da igual.')}>
+          <Field label={t('Idiomas que debe hablar quien busco')}>
             <LanguagePicker
               values={draft.seekingLanguages}
               onChange={(next) => update('seekingLanguages', next)}
@@ -331,8 +332,8 @@ export function ProfileWizard({
 
     case 'startingPoint':
       return (
-        <WizardScreen {...common} title="¿En qué punto estás?">
-          <Field label="Punto de partida" error={errors.startingPoint}>
+        <WizardScreen {...common} title={t('¿En qué punto estás?')}>
+          <Field label={t('Punto de partida')} error={errors.startingPoint}>
             {STARTING_POINT_OPTIONS.map((option) => (
               <OptionCard
                 key={option.value}
@@ -349,14 +350,14 @@ export function ProfileWizard({
       return (
         <WizardScreen
           {...common}
-          title="¿Cuántas horas puedes dedicarle?"
-          subtitle="Horas reales, no las que te gustaría tener.">
+          title={t('¿Cuántas horas puedes dedicarle?')}
+          subtitle={t('Horas reales, no las que te gustaría tener.')}>
           <View style={styles.hours}>
             <ThemedText type="display" style={styles.hoursValue} accessibilityLiveRegion="polite">
               {draft.hoursPerWeek}
             </ThemedText>
             <ThemedText type="body" themeColor="textSecondary" style={styles.hoursValue}>
-              horas por semana
+              {t('horas por semana')}
             </ThemedText>
             <Slider
               value={draft.hoursPerWeek}
@@ -364,7 +365,7 @@ export function ProfileWizard({
               min={HOURS_MIN}
               max={HOURS_MAX}
               step={HOURS_STEP}
-              accessibilityLabel="Horas por semana"
+              accessibilityLabel={t('Horas por semana')}
             />
             <View style={styles.hoursRange}>
               <ThemedText type="small" themeColor="textMuted">
@@ -380,8 +381,8 @@ export function ProfileWizard({
 
     case 'bands':
       return (
-        <WizardScreen {...common} title="¿Cuándo sueles trabajar?">
-          <Field label="Franjas" error={errors.bands}>
+        <WizardScreen {...common} title={t('¿Cuándo sueles trabajar?')}>
+          <Field label={t('Franjas')} error={errors.bands}>
             <ChipRow>
               {TIME_BAND_OPTIONS.map((option) => (
                 <Chip
@@ -399,8 +400,8 @@ export function ProfileWizard({
 
     case 'ambition':
       return (
-        <WizardScreen {...common} title="¿Cuánto te la juegas?">
-          <Field label="Ambición" error={errors.ambition}>
+        <WizardScreen {...common} title={t('¿Cuánto te la juegas?')}>
+          <Field label={t('Ambición')} error={errors.ambition}>
             {AMBITION_OPTIONS.map((option) => (
               <OptionCard
                 key={option.value}
@@ -417,16 +418,16 @@ export function ProfileWizard({
       return (
         <WizardScreen
           {...common}
-          title="Cuéntanos algo más"
-          subtitle="Respuestas cortas: es lo que hace que un perfil se lea.">
-          <Field label="Tus respuestas" error={errors.prompts}>
+          title={t('Cuéntanos algo más')}
+          subtitle={t('Respuestas cortas: es lo que hace que un perfil se lea.')}>
+          <Field label={t('Tus respuestas')} error={errors.prompts}>
             {draft.prompts.map((prompt, position) => (
               <View key={position} style={styles.prompt}>
                 <ChipRow>
                   {PROMPT_QUESTIONS.map((question) => (
                     <Chip
                       key={question}
-                      label={question}
+                      label={t(question)}
                       selected={prompt.question === question}
                       onPress={() => updatePrompt(position, { question })}
                     />
@@ -435,13 +436,13 @@ export function ProfileWizard({
                 <TextField
                   value={prompt.answer}
                   onChangeText={(answer) => updatePrompt(position, { answer })}
-                  placeholder={position === 0 ? 'Tu respuesta' : 'Opcional'}
+                  placeholder={position === 0 ? t('Tu respuesta') : t('Opcional')}
                   autoCapitalize="sentences"
                   autoCorrect={false}
                   multiline
                   maxLength={PROMPT_MAX_LENGTH}
                   showCount
-                  accessibilityLabel={prompt.question}
+                  accessibilityLabel={t(prompt.question)}
                 />
               </View>
             ))}
@@ -453,9 +454,11 @@ export function ProfileWizard({
       return (
         <WizardScreen
           {...common}
-          title="¿Dónde te encuentran?"
-          subtitle="Lo que enseñe qué has hecho: GitHub, portfolio, LinkedIn, Instagram, TikTok.">
-          <Field label="Enlaces y redes" error={errors.github}>
+          title={t('¿Dónde te encuentran?')}
+          subtitle={t(
+            'Lo que enseñe qué has hecho: GitHub, portfolio, LinkedIn, Instagram, TikTok.'
+          )}>
+          <Field label={t('Enlaces y redes')} error={errors.github}>
             <TextField
               value={draft.github}
               onChangeText={(value) => update('github', value)}

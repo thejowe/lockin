@@ -21,6 +21,7 @@ import {
   Typography,
 } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/i18n';
 
 export interface MessageComposerProps {
   value: string;
@@ -33,7 +34,7 @@ export interface MessageComposerProps {
 
 export const MessageComposer = forwardRef<TextInputInstance, MessageComposerProps>(
   function MessageComposer(
-    { value, onChangeText, onSend, sending = false, placeholder = 'Escribe un mensaje' },
+    { value, onChangeText, onSend, sending = false, placeholder = t('Escribe un mensaje') },
     ref
   ) {
     const theme = useTheme();
@@ -62,7 +63,7 @@ export const MessageComposer = forwardRef<TextInputInstance, MessageComposerProp
           // `default` en vez de `send`: con multilínea, Enter debe hacer salto de
           // línea, no mandar a medias un mensaje largo.
           returnKeyType="default"
-          accessibilityLabel="Mensaje"
+          accessibilityLabel={t('Mensaje')}
           style={[
             styles.input,
             {
@@ -79,7 +80,7 @@ export const MessageComposer = forwardRef<TextInputInstance, MessageComposerProp
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Enviar mensaje"
+          accessibilityLabel={t('Enviar mensaje')}
           accessibilityState={{ disabled: !canSend }}
           disabled={!canSend}
           onPress={onSend}

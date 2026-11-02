@@ -18,6 +18,7 @@ import { Platform } from 'react-native';
 
 import { setMockPremium } from '@/data/mock';
 import { getSupabaseClient, hasSupabaseCredentials } from '@/data/supabase/client';
+import { t } from '@/i18n';
 
 export interface PurchasePackage {
   id: string;
@@ -35,7 +36,7 @@ export class PurchasesUnavailableError extends Error {
   override name = 'PurchasesUnavailableError';
 
   constructor() {
-    super('Las compras aún no están disponibles.');
+    super(t('Las compras aún no están disponibles.'));
   }
 }
 

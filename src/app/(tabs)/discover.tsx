@@ -48,6 +48,7 @@ import { openPaywall } from '@/features/premium';
 import { useTheme } from '@/hooks/use-theme';
 
 import type { ModePreference, ProfileFilter, Specialty } from '@/data';
+import { t } from '@/i18n';
 
 /** El único modo del producto: buscar cofundador. Lock-In queda fuera de la UI. */
 const DECK_MODE: ModePreference = 'par';
@@ -91,14 +92,14 @@ export default function DiscoverScreen() {
     onPremiumFiltersRemoved: (cleaned) => {
       setFilter(cleaned);
       setNoticeTone('danger');
-      setNotice('Tus filtros Premium se han quitado');
+      setNotice(t('Tus filtros Premium se han quitado'));
     },
     onUndoRefused: (reason) => {
       setNoticeTone('info');
       setNotice(
         reason === 'match'
-          ? 'No se puede deshacer un match'
-          : 'Ya no se puede deshacer esa decisión'
+          ? t('No se puede deshacer un match')
+          : t('Ya no se puede deshacer esa decisión')
       );
     },
   });
@@ -114,7 +115,7 @@ export default function DiscoverScreen() {
     const endsAt = await boost();
     if (endsAt === null) return;
     setNoticeTone('info');
-    setNotice('Boost activo durante 30 minutos');
+    setNotice(t('Boost activo durante 30 minutos'));
   }
   // Sin Premium y sin likes, el like no sale: la tarjeta vuelve y se abre la hoja.
   const likeLocked = quotas !== null && !quotas.isPremium && quotas.likesLeft === 0;
@@ -146,12 +147,14 @@ export default function DiscoverScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={
-                activeFilters > 0 ? `Filtros, ${activeFilters} activos` : 'Filtros'
+                activeFilters > 0
+                  ? t('Filtros, {activeFilters} activos', { activeFilters })
+                  : t('Filtros')
               }
               onPress={() => setFiltersOpen(true)}
               hitSlop={HitSlop.chip}>
               <ThemedText type="smallBold" themeColor="brass">
-                {activeFilters > 0 ? `Filtros (${activeFilters})` : 'Filtros'}
+                {activeFilters > 0 ? `Filtros (${activeFilters})` : t('Filtros')}
               </ThemedText>
             </Pressable>
           </View>
@@ -167,12 +170,12 @@ export default function DiscoverScreen() {
 
           <View style={styles.deck}>
             {loading ? (
-              <LoadingState label="Buscando perfiles…" />
+              <LoadingState label={t('Buscando perfiles…')} />
             ) : error && !cards?.length ? (
               <MessageState
-                title="No hemos podido cargar el deck"
-                body="Inténtalo otra vez en un momento.">
-                <ActionButton label="Reintentar" onPress={refresh} />
+                title={t('No hemos podido cargar el deck')}
+                body={t('Inténtalo otra vez en un momento.')}>
+                <ActionButton label={t('Reintentar')} onPress={refresh} />
               </MessageState>
             ) : cards && cards.length > 0 ? (
               <SwipeDeck
@@ -199,7 +202,7 @@ export default function DiscoverScreen() {
 
           {error && cards && cards.length > 0 ? (
             <ThemedText type="small" themeColor="danger">
-              No hemos podido guardar tu última decisión. La tarjeta sigue en el deck.
+              {t('No hemos podido guardar tu última decisión. La tarjeta sigue en el deck.')}
             </ThemedText>
           ) : null}
         </View>
@@ -229,7 +232,7 @@ export default function DiscoverScreen() {
                 }}
               />
             </ScrollView>
-            <ActionButton label="Listo" onPress={() => setFiltersOpen(false)} />
+            <ActionButton label={t('Listo')} onPress={() => setFiltersOpen(false)} />
           </View>
         </View>
       </Modal>

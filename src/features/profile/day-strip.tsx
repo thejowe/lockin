@@ -19,7 +19,9 @@ import { ThemedText } from '@/components/themed-text';
 import { Radii, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-import { TIME_BAND_OPTIONS, timeBandLabel } from './catalog';
+import { joinList, t } from '@/i18n';
+
+import { TIME_BAND_OPTIONS, timeBandLabel, timeBandPhrase } from './catalog';
 
 import type { TimeBand } from '@/data';
 
@@ -57,20 +59,22 @@ export function DayStrip({
       ? bands.filter((band) => viewer.bands.includes(band))
       : [];
 
-  const worked = joinLabels(bands.map(timeBandLabel)) || 'Sin franja';
+  const worked = joinList(bands.map(timeBandLabel)) || t('Sin franja');
   const label =
-    `Jornada, hora de ${timezoneCity(timezone)}: ${hoursPerWeek} horas por semana, ` +
-    `${worked.toLowerCase()}.` +
-    (shared.length > 0 ? ` Coincidís ${sharedPhrase(shared)}.` : '');
+    t('Jornada, hora de {v}: {hoursPerWeek} horas por semana, {v2}.', {
+      v: timezoneCity(timezone),
+      hoursPerWeek,
+      v2: worked.toLowerCase(),
+    }) + (shared.length > 0 ? t(' Coincidís {when}.', { when: sharedPhrase(shared) }) : '');
 
   return (
     <View accessible accessibilityLabel={label} style={styles.root}>
       <View style={styles.header}>
         <ThemedText type="caption" themeColor="textMuted" numberOfLines={1} style={styles.title}>
-          Jornada · hora de {timezoneCity(timezone)}
+          {t('Jornada · hora de {city}', { city: timezoneCity(timezone) })}
         </ThemedText>
         <ThemedText type="mono" themeColor="textSecondary">
-          {hoursPerWeek} h/sem
+          {t('{hoursPerWeek} h/sem', { hoursPerWeek })}
         </ThemedText>
       </View>
 
@@ -111,24 +115,16 @@ export function DayStrip({
 
       {shared.length > 0 ? (
         <ThemedText type="smallBold" themeColor="teal">
-          Coincidís {sharedPhrase(shared)}
+          {t('Coincidís {when}', { when: sharedPhrase(shared) })}
         </ThemedText>
       ) : null}
     </View>
   );
 }
 
-/** «por la mañana y la tarde», «de madrugada»: como se dice, no como se guarda. */
+/** «por la mañana y por la tarde», «de madrugada»: como se dice, no como se guarda. */
 function sharedPhrase(bands: TimeBand[]): string {
-  const parts = bands.map((band) =>
-    band === 'madrugada' ? 'de madrugada' : `por la ${timeBandLabel(band).toLowerCase()}`
-  );
-  return joinLabels(parts);
-}
-
-function joinLabels(labels: string[]): string {
-  if (labels.length <= 1) return labels[0] ?? '';
-  return `${labels.slice(0, -1).join(', ')} y ${labels[labels.length - 1]}`;
+  return joinList(bands.map(timeBandPhrase));
 }
 
 /**

@@ -26,14 +26,28 @@ export const LEGAL_SOURCES = {
   childSafety: 'seguridad-infantil.md',
 };
 
+/** Traducciones: `docs/tiendas/<idioma>/`, con los mismos nombres de archivo. */
+const TRANSLATIONS = ['en', 'ca'];
+
 const unixLines = (text) => text.split('\r\n').join('\n');
 
-export async function renderLegalModule() {
+async function renderEntries(folder, indent) {
   const entries = [];
   for (const [key, file] of Object.entries(LEGAL_SOURCES)) {
-    const source = unixLines(await readFile(join(root, 'docs/tiendas', file), 'utf8'));
+    const source = unixLines(await readFile(join(root, folder, file), 'utf8'));
     const text = publishableBody(source).trim() + '\n';
-    entries.push(`  ${key}: ${JSON.stringify(text)},`);
+    entries.push(`${indent}${key}: ${JSON.stringify(text)},`);
+  }
+  return entries;
+}
+
+export async function renderLegalModule() {
+  const entries = await renderEntries('docs/tiendas', '  ');
+  const translations = [];
+  for (const locale of TRANSLATIONS) {
+    translations.push(`  ${locale}: {`);
+    translations.push(...(await renderEntries(`docs/tiendas/${locale}`, '    ')));
+    translations.push('  },');
   }
   return [
     '// GENERADO por scripts/build-legal.mjs desde docs/tiendas/*.md. No editar a mano:',
@@ -41,6 +55,10 @@ export async function renderLegalModule() {
     '',
     'export const LEGAL_TEXTS = {',
     ...entries,
+    '} as const;',
+    '',
+    'export const LEGAL_TRANSLATIONS = {',
+    ...translations,
     '} as const;',
     '',
   ].join('\n');

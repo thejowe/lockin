@@ -41,6 +41,7 @@ import type {
   SessionRatingEntry,
   TermsAcceptance,
 } from './types';
+import { t } from '@/i18n';
 
 /**
  * Cursor de `listIncomingLikes` para pedir la página que sigue a `like`. La lista
@@ -69,10 +70,20 @@ export const BOARD_MAX_POSTS = 12;
 export type BoardRejectedReason = 'flagged' | 'invalid-image' | 'board-full' | 'unavailable';
 
 const BOARD_MESSAGES: Record<BoardRejectedReason, string> = {
-  flagged: 'Esta foto o su texto no cumplen las normas de la comunidad. Prueba con otra.',
-  'invalid-image': 'No hemos podido usar esa imagen. Prueba con otra foto.',
-  'board-full': `Tu tablón ya tiene ${BOARD_MAX_POSTS} fotos. Quita alguna para subir otra.`,
-  unavailable: 'No hemos podido revisar la foto ahora mismo. Inténtalo más tarde.',
+  get flagged() {
+    return t('Esta foto o su texto no cumplen las normas de la comunidad. Prueba con otra.');
+  },
+  get 'invalid-image'() {
+    return t('No hemos podido usar esa imagen. Prueba con otra foto.');
+  },
+  get 'board-full'() {
+    return t('Tu tablón ya tiene {BOARD_MAX_POSTS} fotos. Quita alguna para subir otra.', {
+      BOARD_MAX_POSTS,
+    });
+  },
+  get unavailable() {
+    return t('No hemos podido revisar la foto ahora mismo. Inténtalo más tarde.');
+  },
 };
 
 /** La foto del tablón no se ha publicado. `message` ya está listo para enseñarse. */

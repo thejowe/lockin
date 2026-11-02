@@ -35,6 +35,7 @@ import { useTheme } from '@/hooks/use-theme';
 
 import type { SharedValue } from 'react-native-reanimated';
 import type { Decision } from '@/data';
+import { t } from '@/i18n';
 
 /** Zona pulsable de cada botón. */
 const BUTTON_SIZE = 64;
@@ -88,23 +89,25 @@ export function DeckActions({
       <View style={styles.notice} pointerEvents="none">
         {lowLikes ? (
           <ThemedText type="smallBold" style={styles.noticeText}>
-            {likesLeft === 1 ? 'Te queda 1 like' : `Te quedan ${likesLeft} likes`}
+            {likesLeft === 1
+              ? t('Te queda 1 like')
+              : t('Te quedan {likesLeft} likes', { likesLeft })}
           </ThemedText>
         ) : null}
       </View>
 
       <View style={styles.row}>
         <SmallAction
-          label="Deshacer"
-          hint={isPremium ? 'Recuperar el último perfil' : 'Requiere Premium'}
+          label={t('Deshacer')}
+          hint={isPremium ? t('Recuperar el último perfil') : t('Requiere Premium')}
           icon="back"
           disabled={disabled}
           locked={!isPremium}
           onPress={() => (isPremium ? onUndo?.() : openPaywall())}
         />
         <ActionButton
-          label="Pasar"
-          hint="Descartar este perfil"
+          label={t('Pasar')}
+          hint={t('Descartar este perfil')}
           tone="pass"
           disabled={disabled}
           progress={value}
@@ -112,14 +115,14 @@ export function DeckActions({
         />
         <SmallAction
           label="Super Like"
-          hint="Decirle que te interesa mucho"
+          hint={t('Decirle que te interesa mucho')}
           icon="sparkle"
           disabled={disabled}
           onPress={() => onSuperLike?.()}
         />
         <ActionButton
           label="Like"
-          hint="Guardar este perfil como interesante"
+          hint={t('Guardar este perfil como interesante')}
           tone="like"
           disabled={disabled}
           progress={value}
@@ -127,7 +130,7 @@ export function DeckActions({
         />
         <SmallAction
           label="Boost"
-          hint={isPremium ? 'Aparecer antes durante 30 minutos' : 'Requiere Premium'}
+          hint={isPremium ? t('Aparecer antes durante 30 minutos') : t('Requiere Premium')}
           icon="flame"
           disabled={disabled}
           locked={!isPremium}

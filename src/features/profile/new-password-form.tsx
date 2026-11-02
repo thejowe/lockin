@@ -22,6 +22,7 @@ import { newPasswordProblem } from './account-section';
 import { Field, PrimaryButton, SecondaryButton, TextField } from './controls';
 import { PASSWORD_MIN_LENGTH } from './register-form';
 import { useAccountActions } from './use-account-actions';
+import { t } from '@/i18n';
 
 export function NewPasswordForm({
   /** Guardada, o cerrada sin guardar: a dónde sigue lo decide quien la monta. */
@@ -46,7 +47,7 @@ export function NewPasswordForm({
       setRepeat('');
       setSaved(true);
       setNotice({
-        text: 'Contraseña guardada. Ya puedes entrar con ella desde otro teléfono.',
+        text: t('Contraseña guardada. Ya puedes entrar con ella desde otro teléfono.'),
         tone: 'textSecondary',
       });
     });
@@ -55,9 +56,11 @@ export function NewPasswordForm({
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <ThemedText type="title">Elige tu nueva contraseña</ThemedText>
+        <ThemedText type="title">{t('Elige tu nueva contraseña')}</ThemedText>
         {account?.email ? (
-          <ThemedText type="mono" accessibilityLabel={`Email de tu cuenta: ${account.email}`}>
+          <ThemedText
+            type="mono"
+            accessibilityLabel={t('Email de tu cuenta: {email}', { email: account.email })}>
             {account.email}
           </ThemedText>
         ) : null}
@@ -65,12 +68,14 @@ export function NewPasswordForm({
 
       {saved ? null : (
         <>
-          <Field label="Nueva contraseña" hint={`Al menos ${PASSWORD_MIN_LENGTH} caracteres.`}>
+          <Field
+            label={t('Nueva contraseña')}
+            hint={t('Al menos {PASSWORD_MIN_LENGTH} caracteres.', { PASSWORD_MIN_LENGTH })}>
             <TextField
               value={next}
               onChangeText={setNext}
-              accessibilityLabel="Nueva contraseña"
-              placeholder="La nueva"
+              accessibilityLabel={t('Nueva contraseña')}
+              placeholder={t('La nueva')}
               secureTextEntry
               textContentType="newPassword"
               autoComplete="new-password"
@@ -79,12 +84,12 @@ export function NewPasswordForm({
             />
           </Field>
 
-          <Field label="Repite la nueva contraseña">
+          <Field label={t('Repite la nueva contraseña')}>
             <TextField
               value={repeat}
               onChangeText={setRepeat}
-              accessibilityLabel="Repite la nueva contraseña"
-              placeholder="Otra vez"
+              accessibilityLabel={t('Repite la nueva contraseña')}
+              placeholder={t('Otra vez')}
               secureTextEntry
               textContentType="newPassword"
               autoComplete="new-password"
@@ -94,7 +99,7 @@ export function NewPasswordForm({
           </Field>
 
           <PrimaryButton
-            label={busy === 'contrasena' ? 'Guardando…' : 'Guardar contraseña'}
+            label={busy === 'contrasena' ? t('Guardando…') : t('Guardar contraseña')}
             disabled={busy !== null}
             onPress={handleSave}
           />
@@ -108,9 +113,9 @@ export function NewPasswordForm({
       ) : null}
 
       {saved ? (
-        <PrimaryButton label="Seguir" onPress={onDone} />
+        <PrimaryButton label={t('Seguir')} onPress={onDone} />
       ) : (
-        <SecondaryButton label="Ahora no" disabled={busy !== null} onPress={onDone} />
+        <SecondaryButton label={t('Ahora no')} disabled={busy !== null} onPress={onDone} />
       )}
     </View>
   );

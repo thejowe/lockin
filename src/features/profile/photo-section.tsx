@@ -30,12 +30,19 @@ import { SecondaryButton } from './controls';
 import { ProfileAvatar } from './profile-avatar';
 
 import type { Profile } from '@/data';
+import { t } from '@/i18n';
 
 const DENIED = {
-  library:
-    'Sin permiso de galería no podemos leer tu foto. Puedes dárselo en los ajustes del móvil.',
-  camera:
-    'Sin permiso de cámara no podemos hacerte la foto. Puedes dárselo en los ajustes del móvil.',
+  get library() {
+    return t(
+      'Sin permiso de galería no podemos leer tu foto. Puedes dárselo en los ajustes del móvil.'
+    );
+  },
+  get camera() {
+    return t(
+      'Sin permiso de cámara no podemos hacerte la foto. Puedes dárselo en los ajustes del móvil.'
+    );
+  },
 } as const;
 
 export function PhotoSection({
@@ -87,7 +94,7 @@ export function PhotoSection({
       setError(
         cause instanceof Error
           ? cause.message
-          : 'No se ha podido subir la foto. Inténtalo de nuevo.'
+          : t('No se ha podido subir la foto. Inténtalo de nuevo.')
       );
     } finally {
       setBusy(false);
@@ -105,7 +112,7 @@ export function PhotoSection({
       setError(
         cause instanceof Error
           ? cause.message
-          : 'No se ha podido quitar la foto. Inténtalo de nuevo.'
+          : t('No se ha podido quitar la foto. Inténtalo de nuevo.')
       );
     } finally {
       setBusy(false);
@@ -122,7 +129,7 @@ export function PhotoSection({
       <View style={styles.backdrop}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Cerrar"
+          accessibilityLabel={t('Cerrar')}
           onPress={close}
           style={[StyleSheet.absoluteFill, { backgroundColor: theme.background + ScrimAlpha }]}
         />
@@ -140,9 +147,9 @@ export function PhotoSection({
 
           <View style={styles.header}>
             <ProfileAvatar avatar={profile.avatar} size="xlarge" />
-            <ThemedText type="heading">Foto de perfil</ThemedText>
+            <ThemedText type="heading">{t('Foto de perfil')}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
-              {hasPhoto ? 'Es lo que ve la gente en tu tarjeta.' : 'Aún no tienes foto'}
+              {hasPhoto ? t('Es lo que ve la gente en tu tarjeta.') : t('Aún no tienes foto')}
             </ThemedText>
           </View>
 
@@ -152,7 +159,7 @@ export function PhotoSection({
               themeColor="textSecondary"
               accessibilityLiveRegion="polite"
               style={styles.center}>
-              Subiendo…
+              {t('Subiendo…')}
             </ThemedText>
           ) : null}
 
@@ -164,18 +171,18 @@ export function PhotoSection({
 
           <View style={styles.actions}>
             <SecondaryButton
-              label="Hacer una foto"
+              label={t('Hacer una foto')}
               disabled={busy}
               onPress={() => choose('camera')}
             />
             <SecondaryButton
-              label="Elegir de la galería"
+              label={t('Elegir de la galería')}
               disabled={busy}
               onPress={() => choose('library')}
             />
             {hasPhoto ? (
               <SecondaryButton
-                label="Eliminar foto"
+                label={t('Eliminar foto')}
                 tone="danger"
                 disabled={busy}
                 onPress={remove}

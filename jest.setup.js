@@ -32,6 +32,11 @@ jest.mock('expo-font', () => ({
   loadAsync: jest.fn(() => Promise.resolve()),
 }));
 
+// Los tests corren en español, sea cual sea el idioma de la máquina.
+jest.mock('expo-localization', () => ({
+  getLocales: () => [{ languageCode: 'es', languageTag: 'es-ES' }],
+}));
+
 // Matchers de accesibilidad de RNTL: `toBeSelected`, `toBeDisabled`,
 // `toBeOnTheScreen`… Son la forma legible de aseverar estado de a11y.
 require('@testing-library/react-native/dist/matchers/extend-expect');

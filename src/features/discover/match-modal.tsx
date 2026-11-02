@@ -45,6 +45,7 @@ import { complementWith } from './complement';
 import type { MatchEvent } from './use-deck';
 
 import type { Specialty } from '@/data';
+import { t } from '@/i18n';
 
 /** Entrada de la tarjeta: sube 16 y crece desde 0.92, con el muelle `pop`. */
 function popIn() {
@@ -103,7 +104,7 @@ export function MatchModal({
             ]}>
             <Animated.View entering={reduceMotion ? undefined : enterUp(2)}>
               <ThemedText type="display" style={styles.blurb}>
-                ¡Match!
+                {t('¡Match!')}
               </ThemedText>
             </Animated.View>
 
@@ -119,19 +120,25 @@ export function MatchModal({
                 <ProfileAvatar avatar={event.profile.avatar} size="large" />
               </Animated.View>
               <ThemedText type="body" themeColor="textSecondary" style={styles.blurb}>
-                {event.profile.name} ya te había dado like. Ahora os toca hablar.
+                {t('{name} ya te había dado like. Ahora os toca hablar.', {
+                  name: event.profile.name,
+                })}
               </ThemedText>
 
               {complement.length > 0 ? (
                 <ThemedText type="smallBold" themeColor="brass" style={styles.blurb}>
-                  Y busca justo lo que tú dominas: {listLabels(complement)}.
+                  {t('Y busca justo lo que tú dominas: {list}.', { list: listLabels(complement) })}
                 </ThemedText>
               ) : null}
             </View>
 
             <View style={styles.actions}>
-              <ActionButton label="Abrir chat" onPress={() => onOpenChat(event.match.id)} />
-              <ActionButton label="Seguir descubriendo" variant="secondary" onPress={onDismiss} />
+              <ActionButton label={t('Abrir chat')} onPress={() => onOpenChat(event.match.id)} />
+              <ActionButton
+                label={t('Seguir descubriendo')}
+                variant="secondary"
+                onPress={onDismiss}
+              />
             </View>
           </Animated.View>
         </View>

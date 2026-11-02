@@ -10,6 +10,8 @@
  * huele a «uno contrata al otro» (`CONCEPTO.md`).
  */
 
+import { t } from '@/i18n';
+
 export const AGREEMENT_CATALOG_VERSION = 1;
 
 /** Opción comodín de todos los temas. Nunca cuenta como desacuerdo. */
@@ -31,91 +33,233 @@ export interface AgreementTopic {
 }
 
 export const SECTION_LABELS: Record<AgreementSection, string> = {
-  compromiso: 'Compromiso',
-  reparto: 'Reparto',
-  salida: 'Salida',
+  get compromiso() {
+    return t('Compromiso');
+  },
+  get reparto() {
+    return t('Reparto');
+  },
+  get salida() {
+    return t('Salida');
+  },
 };
 
-const UNDECIDED_OPTION: AgreementOption = { key: UNDECIDED, label: 'Aún no lo sé' };
+const UNDECIDED_OPTION: AgreementOption = {
+  key: UNDECIDED,
+  get label() {
+    return t('Aún no lo sé');
+  },
+};
 
 export const AGREEMENT_CATALOG: readonly AgreementTopic[] = [
   {
     key: 'dedicacion',
     section: 'compromiso',
-    question: '¿Cuánto tiempo le vas a dedicar los próximos 6 meses?',
+    get question() {
+      return t('¿Cuánto tiempo le vas a dedicar los próximos 6 meses?');
+    },
     options: [
-      { key: 'menos-10h', label: 'Menos de 10 h a la semana' },
-      { key: '10-25h', label: 'Entre 10 y 25 h a la semana' },
-      { key: 'media-jornada', label: 'Media jornada' },
-      { key: 'completa', label: 'Jornada completa' },
+      {
+        key: 'menos-10h',
+        get label() {
+          return t('Menos de 10 h a la semana');
+        },
+      },
+      {
+        key: '10-25h',
+        get label() {
+          return t('Entre 10 y 25 h a la semana');
+        },
+      },
+      {
+        key: 'media-jornada',
+        get label() {
+          return t('Media jornada');
+        },
+      },
+      {
+        key: 'completa',
+        get label() {
+          return t('Jornada completa');
+        },
+      },
     ],
   },
   {
     key: 'horizonte',
     section: 'compromiso',
-    question: '¿Cuánto le das antes de replantearlo?',
+    get question() {
+      return t('¿Cuánto le das antes de replantearlo?');
+    },
     options: [
-      { key: '3-meses', label: 'Unos 3 meses' },
-      { key: '1-ano', label: 'Un año' },
-      { key: 'hasta-que-funcione', label: 'Hasta que funcione o se acabe' },
+      {
+        key: '3-meses',
+        get label() {
+          return t('Unos 3 meses');
+        },
+      },
+      {
+        key: '1-ano',
+        get label() {
+          return t('Un año');
+        },
+      },
+      {
+        key: 'hasta-que-funcione',
+        get label() {
+          return t('Hasta que funcione o se acabe');
+        },
+      },
     ],
   },
   {
     key: 'dinero-propio',
     section: 'compromiso',
-    question: '¿Cuánto dinero tuyo estás dispuesto a poner?',
+    get question() {
+      return t('¿Cuánto dinero tuyo estás dispuesto a poner?');
+    },
     options: [
-      { key: 'nada', label: 'Nada' },
-      { key: 'gastos-pequenos', label: 'Algo para gastos pequeños' },
-      { key: 'colchon-serio', label: 'Un colchón serio' },
+      {
+        key: 'nada',
+        get label() {
+          return t('Nada');
+        },
+      },
+      {
+        key: 'gastos-pequenos',
+        get label() {
+          return t('Algo para gastos pequeños');
+        },
+      },
+      {
+        key: 'colchon-serio',
+        get label() {
+          return t('Un colchón serio');
+        },
+      },
     ],
   },
   {
     key: 'participacion',
     section: 'reparto',
-    question: '¿Cómo repartiríais la participación?',
+    get question() {
+      return t('¿Cómo repartiríais la participación?');
+    },
     options: [
-      { key: 'partes-iguales', label: 'A partes iguales' },
-      { key: 'segun-aportacion', label: 'Según lo que aporte cada uno' },
-      { key: 'mas-adelante', label: 'Lo decidimos más adelante' },
+      {
+        key: 'partes-iguales',
+        get label() {
+          return t('A partes iguales');
+        },
+      },
+      {
+        key: 'segun-aportacion',
+        get label() {
+          return t('Según lo que aporte cada uno');
+        },
+      },
+      {
+        key: 'mas-adelante',
+        get label() {
+          return t('Lo decidimos más adelante');
+        },
+      },
     ],
   },
   {
     key: 'consolidacion',
     section: 'reparto',
-    question: '¿La participación se gana con el tiempo (vesting)?',
+    get question() {
+      return t('¿La participación se gana con el tiempo (vesting)?');
+    },
     options: [
-      { key: 'si-con-periodo', label: 'Sí, con un periodo pactado' },
-      { key: 'no', label: 'No, es de cada uno desde el principio' },
+      {
+        key: 'si-con-periodo',
+        get label() {
+          return t('Sí, con un periodo pactado');
+        },
+      },
+      {
+        key: 'no',
+        get label() {
+          return t('No, es de cada uno desde el principio');
+        },
+      },
     ],
   },
   {
     key: 'decisiones',
     section: 'reparto',
-    question: '¿Cómo se decide cuando no estáis de acuerdo?',
+    get question() {
+      return t('¿Cómo se decide cuando no estáis de acuerdo?');
+    },
     options: [
-      { key: 'consenso', label: 'Hasta llegar a un consenso' },
-      { key: 'cada-uno-su-area', label: 'Cada uno decide en su área' },
-      { key: 'desempate-pactado', label: 'Con un desempate pactado de antemano' },
+      {
+        key: 'consenso',
+        get label() {
+          return t('Hasta llegar a un consenso');
+        },
+      },
+      {
+        key: 'cada-uno-su-area',
+        get label() {
+          return t('Cada uno decide en su área');
+        },
+      },
+      {
+        key: 'desempate-pactado',
+        get label() {
+          return t('Con un desempate pactado de antemano');
+        },
+      },
     ],
   },
   {
     key: 'si-uno-se-va',
     section: 'salida',
-    question: 'Si uno lo deja en el primer año…',
+    get question() {
+      return t('Si uno lo deja en el primer año…');
+    },
     options: [
-      { key: 'se-va-sin-nada', label: 'Se va sin participación' },
-      { key: 'conserva-lo-ganado', label: 'Conserva lo que ya haya ganado' },
-      { key: 'lo-hablamos-entonces', label: 'Lo hablamos cuando pase' },
+      {
+        key: 'se-va-sin-nada',
+        get label() {
+          return t('Se va sin participación');
+        },
+      },
+      {
+        key: 'conserva-lo-ganado',
+        get label() {
+          return t('Conserva lo que ya haya ganado');
+        },
+      },
+      {
+        key: 'lo-hablamos-entonces',
+        get label() {
+          return t('Lo hablamos cuando pase');
+        },
+      },
     ],
   },
   {
     key: 'lo-creado',
     section: 'salida',
-    question: 'Lo que cada uno crea antes de constituir, ¿de quién es?',
+    get question() {
+      return t('Lo que cada uno crea antes de constituir, ¿de quién es?');
+    },
     options: [
-      { key: 'del-proyecto', label: 'Del proyecto, desde el primer día' },
-      { key: 'de-quien-lo-hizo', label: 'De quien lo hizo, hasta constituir' },
+      {
+        key: 'del-proyecto',
+        get label() {
+          return t('Del proyecto, desde el primer día');
+        },
+      },
+      {
+        key: 'de-quien-lo-hizo',
+        get label() {
+          return t('De quien lo hizo, hasta constituir');
+        },
+      },
     ],
   },
 ];

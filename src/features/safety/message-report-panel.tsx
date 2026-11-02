@@ -7,6 +7,7 @@ import { Spacing } from '@/constants/theme';
 import { useRepositories } from '@/data';
 
 import { ReportForm } from './report-form';
+import { t } from '@/i18n';
 
 /**
  * Reporte de un mensaje concreto. El reportado es su autor; la persona no
@@ -28,14 +29,14 @@ export function MessageReportPanel({
     return (
       <View style={styles.panel}>
         <ThemedText type="subtitle" accessibilityRole="alert">
-          Reporte enviado.
+          {t('Reporte enviado.')}
         </ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
-          El reporte es privado.
+          {t('El reporte es privado.')}
         </ThemedText>
         <Button
-          label="Cerrar"
-          accessibilityLabel="Cerrar reporte"
+          label={t('Cerrar')}
+          accessibilityLabel={t('Cerrar reporte')}
           variant="secondary"
           onPress={onClose}
         />
@@ -45,7 +46,7 @@ export function MessageReportPanel({
   return (
     <ReportForm
       name={name}
-      title="Reportar este mensaje"
+      title={t('Reportar este mensaje')}
       onSubmit={(reason, details) => repositories.messages.report({ messageId, reason, details })}
       onCancel={onClose}
       onSubmitted={() => setSent(true)}

@@ -27,6 +27,7 @@ import type { ConnectedApp } from '@/features/profile/connected-apps';
 import { PrimaryButton, SecondaryButton } from '@/features/profile/controls';
 import { initialDraft, toInput } from '@/features/profile/profile-form';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/i18n';
 
 /**
  * Tab Perfil: ver y editar la ficha propia.
@@ -109,7 +110,7 @@ export default function ProfileScreen() {
     return (
       <Screen ambient="plum">
         <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
-          <LoadingState label="Cargando tu perfil…" />
+          <LoadingState label={t('Cargando tu perfil…')} />
         </SafeAreaView>
       </Screen>
     );
@@ -122,10 +123,10 @@ export default function ProfileScreen() {
       <Screen ambient="plum">
         <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
           <MessageState
-            eyebrow="Perfil"
-            title="Todavía no tienes ficha"
-            body="Crea tu perfil para que la gente pueda encontrarte en el deck.">
-            <PrimaryButton label="Crear perfil" onPress={() => router.replace('/mode')} />
+            eyebrow={t('Perfil')}
+            title={t('Todavía no tienes ficha')}
+            body={t('Crea tu perfil para que la gente pueda encontrarte en el deck.')}>
+            <PrimaryButton label={t('Crear perfil')} onPress={() => router.replace('/mode')} />
           </MessageState>
         </SafeAreaView>
       </Screen>
@@ -144,7 +145,7 @@ export default function ProfileScreen() {
               terms.refresh();
               setEditing(false);
             }}
-            footer={<SecondaryButton label="Volver" onPress={() => setEditing(false)} />}
+            footer={<SecondaryButton label={t('Volver')} onPress={() => setEditing(false)} />}
           />
         </SafeAreaView>
       </Screen>
@@ -157,16 +158,16 @@ export default function ProfileScreen() {
         <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
           <ProfileForm
             initial={profile}
-            submitLabel="Guardar cambios"
+            submitLabel={t('Guardar cambios')}
             onSubmit={handleSubmit}
             onCancel={() => setEditing(false)}
-            cancelLabel="Descartar cambios"
+            cancelLabel={t('Descartar cambios')}
             header={
               <View style={styles.header}>
                 <ThemedText type="label" themeColor="textSecondary">
-                  Editar perfil
+                  {t('Editar perfil')}
                 </ThemedText>
-                <ThemedText type="title">Tu ficha</ThemedText>
+                <ThemedText type="title">{t('Tu ficha')}</ThemedText>
               </View>
             }
           />
@@ -181,11 +182,11 @@ export default function ProfileScreen() {
         <ScrollView ref={scrollRef} contentContainerStyle={styles.content}>
           <View style={styles.topBar}>
             <ThemedText type="label" themeColor="textSecondary">
-              Perfil
+              {t('Perfil')}
             </ThemedText>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Ajustes de la cuenta"
+              accessibilityLabel={t('Ajustes de la cuenta')}
               onPress={() => router.push('/settings')}
               style={({ pressed }) => [styles.gear, { opacity: pressed ? Opacity.pressed : 1 }]}>
               <Icon name="menu" size={26} color={theme.text} />
@@ -224,9 +225,9 @@ export default function ProfileScreen() {
             // acepta primero; luego ya edita cada bloque con su lápiz.
             <Animated.View entering={enterUp(1)} style={styles.termsGate}>
               <ThemedText type="body" themeColor="textSecondary">
-                Para editar tu perfil o publicar una foto acepta antes los Términos y Normas.
+                {t('Para editar tu perfil o publicar una foto acepta antes los Términos y Normas.')}
               </ThemedText>
-              <SecondaryButton label="Revisar y aceptar" onPress={() => setEditing(true)} />
+              <SecondaryButton label={t('Revisar y aceptar')} onPress={() => setEditing(true)} />
             </Animated.View>
           ) : null}
 
@@ -242,7 +243,6 @@ export default function ProfileScreen() {
               available={{ github: true, linkedin: linkedinAvailable }}
             />
           </Animated.View>
-
         </ScrollView>
       </SafeAreaView>
     </Screen>

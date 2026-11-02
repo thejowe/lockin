@@ -10,6 +10,7 @@ import { useRegistrationGate } from '@/features/profile';
 import { registrationRequired } from '@/features/profile/account-gateway';
 import { hasPendingPassword } from '@/features/profile/pending-password';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/i18n';
 
 /** Recupera el perfil antes de decidir si hace falta onboarding. */
 export default function IndexRoute() {
@@ -35,7 +36,7 @@ export default function IndexRoute() {
   // luego tendrá que confirmar el correo; sin él, decide entre la bienvenida y
   // el formulario.
   if (loading || pendingLoading || gate === 'checking') {
-    return <LoadingState label="Abriendo cofounder…" />;
+    return <LoadingState label={t('Abriendo cofounder…')} />;
   }
 
   // Una consulta fallida no significa que el usuario no tenga perfil.
@@ -51,10 +52,10 @@ export default function IndexRoute() {
           está escrito en ella (run 35362453233).
         */}
         <MessageState
-          title="No hemos podido recuperar tu perfil"
-          body="Comprueba tu conexión y vuelve a intentarlo."
+          title={t('No hemos podido recuperar tu perfil')}
+          body={t('Comprueba tu conexión y vuelve a intentarlo.')}
           detail={error.message}>
-          <Button label="Reintentar" onPress={refresh} />
+          <Button label={t('Reintentar')} onPress={refresh} />
         </MessageState>
       </SafeAreaView>
     );

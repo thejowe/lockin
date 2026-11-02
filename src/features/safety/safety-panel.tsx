@@ -7,12 +7,13 @@ import { Spacing } from '@/constants/theme';
 import { useRefreshQuery, useRefreshQueryPrefix, useRepositories } from '@/data';
 
 import { ReportForm } from './report-form';
+import { t } from '@/i18n';
 
 export function SafetyMenuButton({ name, onPress }: { name: string; onPress: () => void }) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Opciones de ${name}`}
+      accessibilityLabel={t('Opciones de {name}', { name })}
       onPress={(event) => {
         event.stopPropagation();
         onPress();
@@ -98,14 +99,14 @@ export function SafetyPanel({
     return scrollable(
       <View style={styles.panel}>
         <ThemedText type="subtitle" accessibilityRole="alert">
-          Reporte enviado.
+          {t('Reporte enviado.')}
         </ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
-          El reporte es privado.
+          {t('El reporte es privado.')}
         </ThemedText>
         <Button
-          label="Cerrar"
-          accessibilityLabel="Cerrar opciones"
+          label={t('Cerrar')}
+          accessibilityLabel={t('Cerrar opciones')}
           variant="secondary"
           onPress={onClose}
         />
@@ -115,26 +116,27 @@ export function SafetyPanel({
   if (stage === 'block')
     return scrollable(
       <View style={styles.panel}>
-        <ThemedText type="subtitle">¿Bloquear a {name}?</ThemedText>
+        <ThemedText type="subtitle">{t('¿Bloquear a {name}?', { name })}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
-          Dejaréis de veros en Descubrir y Matches y no podréis enviaros mensajes. Esta persona no
-          recibirá ningún aviso.
+          {t(
+            'Dejaréis de veros en Descubrir y Matches y no podréis enviaros mensajes. Esta persona no recibirá ningún aviso.'
+          )}
         </ThemedText>
         {error ? (
           <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
-            No se ha podido bloquear. Inténtalo otra vez.
+            {t('No se ha podido bloquear. Inténtalo otra vez.')}
           </ThemedText>
         ) : null}
         <Button
-          label={busy ? 'Bloqueando…' : 'Bloquear'}
-          accessibilityLabel="Confirmar bloqueo"
+          label={busy ? t('Bloqueando…') : t('Bloquear')}
+          accessibilityLabel={t('Confirmar bloqueo')}
           variant="danger"
           disabled={busy}
           onPress={() => void block()}
         />
         <Button
-          label="Cancelar"
-          accessibilityLabel="Cancelar bloqueo"
+          label={t('Cancelar')}
+          accessibilityLabel={t('Cancelar bloqueo')}
           variant="secondary"
           disabled={busy}
           onPress={() => {
@@ -147,22 +149,22 @@ export function SafetyPanel({
 
   return scrollable(
     <View style={styles.panel}>
-      <ThemedText type="subtitle">Opciones de {name}</ThemedText>
+      <ThemedText type="subtitle">{t('Opciones de {name}', { name })}</ThemedText>
       <Button
-        label="Bloquear"
-        accessibilityLabel={`Bloquear a ${name}`}
+        label={t('Bloquear')}
+        accessibilityLabel={t('Bloquear a {name}', { name })}
         variant="secondary"
         onPress={() => setStage('block')}
       />
       <Button
-        label="Reportar"
-        accessibilityLabel={`Reportar a ${name}`}
+        label={t('Reportar')}
+        accessibilityLabel={t('Reportar a {name}', { name })}
         variant="secondary"
         onPress={() => setStage('report')}
       />
       <Button
-        label="Cerrar"
-        accessibilityLabel="Cerrar opciones"
+        label={t('Cerrar')}
+        accessibilityLabel={t('Cerrar opciones')}
         variant="secondary"
         onPress={onClose}
       />

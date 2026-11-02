@@ -31,6 +31,7 @@ import {
   sendPasswordReset,
   setAccountPassword,
 } from './account-gateway';
+import { t } from '@/i18n';
 
 /** Qué se le está pidiendo al servidor ahora mismo, si es que se le pide algo. */
 export type AccountBusy =
@@ -87,7 +88,10 @@ export function useAccountActions() {
   function link(email: string, done?: () => void) {
     const value = email.trim();
     if (!value) {
-      setNotice({ text: 'Escribe tu email para que podamos mandarte el enlace.', tone: 'danger' });
+      setNotice({
+        text: t('Escribe tu email para que podamos mandarte el enlace.'),
+        tone: 'danger',
+      });
       return;
     }
 
@@ -116,7 +120,7 @@ export function useAccountActions() {
   /** Pone contraseña a la cuenta: solo se acepta con el email ya confirmado. */
   function savePassword(password: string, done?: () => void) {
     if (!password) {
-      setNotice({ text: 'Escribe la contraseña que quieres usar.', tone: 'danger' });
+      setNotice({ text: t('Escribe la contraseña que quieres usar.'), tone: 'danger' });
       return;
     }
 
@@ -131,7 +135,7 @@ export function useAccountActions() {
   /** Cambia la contraseña comprobando antes la actual. */
   function changePassword(current: string, next: string, done?: () => void) {
     if (!current) {
-      setNotice({ text: 'Escribe tu contraseña actual.', tone: 'danger' });
+      setNotice({ text: t('Escribe tu contraseña actual.'), tone: 'danger' });
       return;
     }
 

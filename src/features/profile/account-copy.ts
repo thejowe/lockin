@@ -43,12 +43,13 @@
 import { AccountError } from './account-gateway';
 
 import type { AccountErrorReason } from './account-gateway';
+import { t, tk } from '@/i18n';
 
 /** Sin red. Vale para el `AccountError` y para el fallo crudo del runtime. */
-const OFFLINE = 'No hay conexión con el servidor. Comprueba tu red y vuelve a intentarlo.';
+const OFFLINE = tk('No hay conexión con el servidor. Comprueba tu red y vuelve a intentarlo.');
 
 /** Cuando no se sabe más: nunca el texto del servidor, que viene en inglés. */
-const GENERIC = 'No hemos podido completar la operación. Inténtalo otra vez.';
+const GENERIC = tk('No hemos podido completar la operación. Inténtalo otra vez.');
 
 /**
  * Qué se enseña por cada razón; `null` = el mensaje del `AccountError` ya es
@@ -62,12 +63,17 @@ const COPY: Record<AccountErrorReason, string | null> = {
   'wrong-password': null,
   'too-many-emails': null,
   'needs-confirmed-email': null,
-  'unrecoverable-account':
-    'Esta cuenta solo vive en este teléfono: si cierras sesión, perderás el acceso a tu perfil, ' +
-    'tus matches y tus conversaciones y no podrás recuperarlos. Asegúrala antes con un email.',
-  'no-session':
-    'Aquí ya no hay ninguna sesión abierta. Cierra cofounder, vuelve a abrirla y repite.',
-  offline: OFFLINE,
+  get 'unrecoverable-account'() {
+    return t(
+      'Esta cuenta solo vive en este teléfono: si cierras sesión, perderás el acceso a tu perfil, tus matches y tus conversaciones y no podrás recuperarlos. Asegúrala antes con un email.'
+    );
+  },
+  get 'no-session'() {
+    return t('Aquí ya no hay ninguna sesión abierta. Cierra cofounder, vuelve a abrirla y repite.');
+  },
+  get offline() {
+    return t(OFFLINE);
+  },
   unknown: null,
 };
 
@@ -120,12 +126,12 @@ export function describeAccountError(cause: unknown): string {
       // distingue «ese email no existe» de «contraseña errónea»: decirlo sería
       // contarle a cualquiera quién tiene cuenta en cofounder.
       if (causeCode(cause.cause) === 'invalid_credentials') {
-        return 'Email o contraseña incorrectos. Revísalos e inténtalo otra vez.';
+        return t('Email o contraseña incorrectos. Revísalos e inténtalo otra vez.');
       }
-      if (looksOffline(cause.cause)) return OFFLINE;
+      if (looksOffline(cause.cause)) return t(OFFLINE);
       // Con `cause` el mensaje es el del servidor (inglés); sin él lo escribió
       // `auth.ts` para la pantalla (los dos casos de `completeAuthLink`).
-      return cause.cause === undefined ? cause.message : GENERIC;
+      return cause.cause === undefined ? cause.message : t(GENERIC);
     }
 
     return COPY[cause.reason] ?? cause.message;
@@ -133,6 +139,6 @@ export function describeAccountError(cause: unknown): string {
 
   // Lo que nunca pasó por `toAccountError`: una consulta a PostgREST, el
   // cliente sin credenciales, un rechazo que ni siquiera es un `Error`.
-  if (looksOffline(cause)) return OFFLINE;
-  return GENERIC;
+  if (looksOffline(cause)) return t(OFFLINE);
+  return t(GENERIC);
 }

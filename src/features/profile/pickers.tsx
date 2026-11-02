@@ -9,6 +9,7 @@ import { Chip, ChipRow, TextField } from './controls';
 import { toggle } from './profile-form';
 
 import type { Language, Specialty } from '@/data';
+import { t } from '@/i18n';
 
 /**
  * Lo que domino: la lista y, al final, «Otra», que abre un campo para escribirla.
@@ -38,7 +39,7 @@ export function MasteryPicker({
           />
         ))}
         <Chip
-          label="Otra"
+          label={t('Otra')}
           multiple
           selected={other !== null}
           onPress={() => onOtherChange(other === null ? '' : null)}
@@ -48,11 +49,11 @@ export function MasteryPicker({
         <TextField
           value={other}
           onChangeText={onOtherChange}
-          placeholder="Escribe cuál"
+          placeholder={t('Escribe cuál')}
           autoCapitalize="sentences"
           autoCorrect={false}
           maxLength={OTHER_SPECIALTY_MAX_LENGTH}
-          accessibilityLabel="Otra especialidad"
+          accessibilityLabel={t('Otra especialidad')}
         />
       ) : null}
     </>
@@ -75,7 +76,7 @@ export function SeekingSpecialtyPicker({
           label={option.label}
           // Sin esto, «Desarrollo» nombraría dos chips distintos: el que domino
           // y el que busco.
-          accessibilityLabel={`Busco ${option.label}`}
+          accessibilityLabel={t('Busco {label}', { label: option.label })}
           multiple
           selected={values.includes(option.value)}
           onPress={() => onChange(toggle(values, option.value))}
@@ -101,7 +102,9 @@ export function LanguagePicker({
         <Chip
           key={option.value}
           label={option.label}
-          accessibilityLabel={seeking ? `Que hable ${option.label}` : option.label}
+          accessibilityLabel={
+            seeking ? t('Que hable {label}', { label: option.label }) : option.label
+          }
           multiple
           selected={values.includes(option.value)}
           onPress={() => onChange(toggle(values, option.value))}

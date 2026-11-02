@@ -23,6 +23,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { formatClock } from './format';
 
 import type { Message } from '@/data';
+import { t } from '@/i18n';
 
 /** Antigüedad por debajo de la cual un mensaje cuenta como recién llegado. */
 const FRESH_MS = 3_000;
@@ -75,12 +76,12 @@ export function MessageBubble({
       {!isMine && onReport ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Reportar mensaje"
+          accessibilityLabel={t('Reportar mensaje')}
           hitSlop={12}
           onPress={onReport}
           style={styles.report}>
           <ThemedText type="caption" themeColor="textMuted">
-            Reportar
+            {t('Reportar')}
           </ThemedText>
         </Pressable>
       ) : null}

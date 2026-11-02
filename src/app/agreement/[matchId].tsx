@@ -20,9 +20,11 @@ import { useTheme } from '@/hooks/use-theme';
 
 import type { AgreementSection } from '@/features/agreement';
 import { RequireVerifiedEmail } from '@/features/profile';
+import { t, tk } from '@/i18n';
 
-const LEGAL_NOTICE =
-  'Esto no es un contrato ni asesoría legal. Sirve para hablar de lo difícil antes de que salga caro. Cuando vayáis en serio, id a un profesional.';
+const LEGAL_NOTICE = tk(
+  'Esto no es un contrato ni asesoría legal. Sirve para hablar de lo difícil antes de que salga caro. Cuando vayáis en serio, id a un profesional.'
+);
 
 function AgreementScreenContent() {
   const theme = useTheme();
@@ -42,21 +44,24 @@ function AgreementScreenContent() {
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
       <AmbientBackground variant="plum" />
-      <Stack.Screen options={{ title: 'Acuerdo de socios' }} />
+      <Stack.Screen options={{ title: t('Acuerdo de socios') }} />
       {matchQuery.loading || agreement.loading ? (
-        <LoadingState label="Cargando el acuerdo…" />
+        <LoadingState label={t('Cargando el acuerdo…')} />
       ) : missing ? (
-        <Centered title="Esta conversación no está disponible" text="El match ya no existe." />
+        <Centered
+          title={t('Esta conversación no está disponible')}
+          text={t('El match ya no existe.')}
+        />
       ) : blocked ? (
-        <Centered text="El acuerdo es solo para matches de cofundador." />
+        <Centered text={t('El acuerdo es solo para matches de cofundador.')} />
       ) : agreement.error ? (
-        <Centered text="No se ha podido cargar el acuerdo.">
-          <Button label="Reintentar" onPress={agreement.refresh} />
+        <Centered text={t('No se ha podido cargar el acuerdo.')}>
+          <Button label={t('Reintentar')} onPress={agreement.refresh} />
         </Centered>
       ) : (
         <ScrollView contentContainerStyle={styles.content}>
           <View style={[styles.notice, { backgroundColor: theme.brassSoft }]}>
-            <ThemedText type="small">{LEGAL_NOTICE}</ThemedText>
+            <ThemedText type="small">{t(LEGAL_NOTICE)}</ThemedText>
           </View>
           {(Object.keys(SECTION_LABELS) as AgreementSection[]).map((section) => (
             <View key={section} style={styles.section}>
@@ -75,13 +80,13 @@ function AgreementScreenContent() {
           ))}
           {agreement.saveError && (
             <ThemedText type="small" themeColor="danger">
-              No se ha podido guardar. Inténtalo de nuevo.
+              {t('No se ha podido guardar. Inténtalo de nuevo.')}
             </ThemedText>
           )}
           <Link href={{ pathname: '/chat/[matchId]', params: { matchId } }} asChild>
             <Pressable accessibilityRole="link" style={styles.back}>
               <ThemedText type="bodyStrong" style={{ color: theme.brass }}>
-                Habladlo en el chat
+                {t('Habladlo en el chat')}
               </ThemedText>
             </Pressable>
           </Link>
@@ -102,10 +107,10 @@ function Centered({
   children?: React.ReactNode;
 }) {
   return (
-    <MessageState eyebrow="Acuerdo de socios" title={title} body={text}>
+    <MessageState eyebrow={t('Acuerdo de socios')} title={title} body={text}>
       {children}
       <Button
-        label="Volver a Matches"
+        label={t('Volver a Matches')}
         href="/matches"
         variant={children ? 'secondary' : 'primary'}
       />

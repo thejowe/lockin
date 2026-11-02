@@ -22,6 +22,7 @@ import { useTheme } from '@/hooks/use-theme';
 import type { LegalDocKey } from '@/features/legal';
 
 import { PrimaryButton } from './controls';
+import { t } from '@/i18n';
 
 export type TermsGate = 'checking' | 'accepted' | 'required';
 
@@ -91,28 +92,29 @@ export function TermsAcceptance({
   return (
     <ScrollView contentContainerStyle={styles.root}>
       <ThemedText type="label" themeColor="textSecondary">
-        Antes de continuar
+        {t('Antes de continuar')}
       </ThemedText>
-      <ThemedText type="title">Términos y Normas</ThemedText>
+      <ThemedText type="title">{t('Términos y Normas')}</ThemedText>
       <ThemedText type="body" themeColor="textSecondary">
-        Para publicar tu perfil y hablar con otras personas necesitas aceptar los Términos de uso y
-        las Normas de la comunidad. Léelos, son cortos.
+        {t(
+          'Para publicar tu perfil y hablar con otras personas necesitas aceptar los Términos de uso y las Normas de la comunidad. Léelos, son cortos.'
+        )}
       </ThemedText>
 
-      <LinkRow label="Leer los Términos de uso" doc="terms" />
-      <LinkRow label="Leer las Normas de la comunidad" doc="guidelines" />
-      <LinkRow label="Política de privacidad" doc="privacy" />
+      <LinkRow label={t('Leer los Términos de uso')} doc="terms" />
+      <LinkRow label={t('Leer las Normas de la comunidad')} doc="guidelines" />
+      <LinkRow label={t('Política de privacidad')} doc="privacy" />
 
       <TermsCheckbox checked={checked} onToggle={() => setChecked((value) => !value)} />
 
       {failed ? (
         <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
-          No hemos podido guardar tu aceptación. Inténtalo de nuevo.
+          {t('No hemos podido guardar tu aceptación. Inténtalo de nuevo.')}
         </ThemedText>
       ) : null}
 
       <PrimaryButton
-        label={saving ? 'Guardando…' : 'Aceptar y continuar'}
+        label={saving ? t('Guardando…') : t('Aceptar y continuar')}
         disabled={!checked || saving}
         onPress={() => void accept()}
       />
@@ -131,7 +133,7 @@ export function TermsCheckbox({ checked, onToggle }: { checked: boolean; onToggl
     <Pressable
       accessibilityRole="checkbox"
       accessibilityState={{ checked }}
-      accessibilityLabel="He leído y acepto los Términos de uso y las Normas de la comunidad"
+      accessibilityLabel={t('He leído y acepto los Términos de uso y las Normas de la comunidad')}
       onPress={onToggle}
       style={[
         styles.check,
@@ -144,7 +146,7 @@ export function TermsCheckbox({ checked, onToggle }: { checked: boolean; onToggl
         {checked ? <View style={[styles.dot, { backgroundColor: theme.brass }]} /> : null}
       </View>
       <ThemedText type="body" style={styles.checkText}>
-        He leído y acepto los Términos de uso y las Normas de la comunidad.
+        {t('He leído y acepto los Términos de uso y las Normas de la comunidad.')}
       </ThemedText>
     </Pressable>
   );
@@ -154,9 +156,9 @@ export function TermsCheckbox({ checked, onToggle }: { checked: boolean; onToggl
 export function TermsLinks() {
   return (
     <View style={styles.links}>
-      <LinkRow label="Leer los Términos de uso" doc="terms" />
-      <LinkRow label="Leer las Normas de la comunidad" doc="guidelines" />
-      <LinkRow label="Política de privacidad" doc="privacy" />
+      <LinkRow label={t('Leer los Términos de uso')} doc="terms" />
+      <LinkRow label={t('Leer las Normas de la comunidad')} doc="guidelines" />
+      <LinkRow label={t('Política de privacidad')} doc="privacy" />
     </View>
   );
 }
@@ -166,11 +168,11 @@ export function LegalLinks() {
   return (
     <View style={styles.links}>
       <ThemedText type="label" themeColor="textSecondary">
-        Legal
+        {t('Legal')}
       </ThemedText>
-      <LinkRow label="Política de privacidad" doc="privacy" />
-      <LinkRow label="Términos de uso" doc="terms" />
-      <LinkRow label="Normas de la comunidad" doc="guidelines" />
+      <LinkRow label={t('Política de privacidad')} doc="privacy" />
+      <LinkRow label={t('Términos de uso')} doc="terms" />
+      <LinkRow label={t('Normas de la comunidad')} doc="guidelines" />
     </View>
   );
 }

@@ -17,13 +17,24 @@ import { useTheme } from '@/hooks/use-theme';
 import { ProfileForm, type ProfileSection } from './profile-form';
 
 import type { Profile, ProfileInput } from '@/data';
+import { t } from '@/i18n';
 
 export const SECTION_TITLES: Record<ProfileSection, string> = {
-  basics: 'Nombre, edad y ubicación',
-  specialties: 'Lo que dominas y lo que buscas',
-  work: 'Cómo trabajas',
-  prompts: 'Tus respuestas',
-  links: 'Enlaces y redes',
+  get basics() {
+    return t('Nombre, edad y ubicación');
+  },
+  get specialties() {
+    return t('Lo que dominas y lo que buscas');
+  },
+  get work() {
+    return t('Cómo trabajas');
+  },
+  get prompts() {
+    return t('Tus respuestas');
+  },
+  get links() {
+    return t('Enlaces y redes');
+  },
 };
 
 export function SectionEditSheet({
@@ -59,7 +70,7 @@ export function SectionEditSheet({
               key={section}
               initial={profile}
               section={section}
-              submitLabel="Guardar"
+              submitLabel={t('Guardar')}
               onSubmit={async (input) => {
                 await onSave(input);
                 onClose();
@@ -68,7 +79,7 @@ export function SectionEditSheet({
               header={
                 <View style={styles.header}>
                   <ThemedText type="label" themeColor="textSecondary">
-                    Editar
+                    {t('Editar')}
                   </ThemedText>
                   <ThemedText type="title">{SECTION_TITLES[section]}</ThemedText>
                 </View>

@@ -11,6 +11,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { HitSlop, Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/i18n';
 
 export function IcebreakerSuggestions({
   suggestions,
@@ -27,14 +28,16 @@ export function IcebreakerSuggestions({
   return (
     <View style={styles.root}>
       <ThemedText type="label" themeColor="textMuted">
-        Para romper el hielo
+        {t('Para romper el hielo')}
       </ThemedText>
 
       {suggestions.map((suggestion) => (
         <Pressable
           key={suggestion}
           accessibilityRole="button"
-          accessibilityHint="Escribe esta frase en el campo de mensaje para que puedas editarla"
+          accessibilityHint={t(
+            'Escribe esta frase en el campo de mensaje para que puedas editarla'
+          )}
           // Una sugerencia de una línea mide 36 px: el hitSlop la lleva por encima de los 44
           // mínimos sin separar las sugerencias entre sí.
           hitSlop={HitSlop.chip}

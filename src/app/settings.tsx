@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/ambient-background';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { AccountSection, LegalLinks, PersonalInfo } from '@/features/profile';
+import { AccountSection, LanguageSection, LegalLinks, PersonalInfo } from '@/features/profile';
 import { useReduceMotion } from '@/hooks/use-reduce-motion';
 
 /**
@@ -22,12 +22,11 @@ export default function SettingsScreen() {
     <Screen ambient="plum">
       <SafeAreaView style={styles.root} edges={['bottom']}>
         <ScrollView ref={scrollRef} contentContainerStyle={styles.content}>
+          <LanguageSection />
           <AccountSection
             personalInfo={<PersonalInfo />}
             onDeleted={() => router.replace('/')}
-            onConfirmationShown={() =>
-              scrollRef.current?.scrollToEnd({ animated: !reduceMotion })
-            }>
+            onConfirmationShown={() => scrollRef.current?.scrollToEnd({ animated: !reduceMotion })}>
             <LegalLinks />
           </AccountSection>
         </ScrollView>

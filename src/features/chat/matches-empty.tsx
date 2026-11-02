@@ -10,20 +10,22 @@ import { StyleSheet, View } from 'react-native';
 import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
+import { t } from '@/i18n';
 
 export function MatchesEmpty() {
   return (
     <View style={styles.root}>
       <ThemedText type="subtitle" style={styles.centered}>
-        Todavía no hay nadie al otro lado
+        {t('Todavía no hay nadie al otro lado')}
       </ThemedText>
 
       <ThemedText type="body" themeColor="textSecondary" style={styles.centered}>
-        Un match aparece aquí cuando dos personas se dan like. Sigue pasando tarjetas en Descubrir y
-        en cuanto haya reciprocidad tendrás con quién hablar.
+        {t(
+          'Un match aparece aquí cuando dos personas se dan like. Sigue pasando tarjetas en Descubrir y en cuanto haya reciprocidad tendrás con quién hablar.'
+        )}
       </ThemedText>
 
-      <Button label="Ir a Descubrir" href="/discover" style={styles.action} />
+      <Button label={t('Ir a Descubrir')} href="/discover" style={styles.action} />
     </View>
   );
 }

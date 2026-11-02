@@ -193,7 +193,14 @@ function buildEnv(status) {
   for (const key of Object.keys(env)) {
     if (/SUPABASE|^EXPO_PUBLIC_/.test(key)) delete env[key];
   }
-  const base = { ...env, CI: '1', EXPO_NO_DOTENV: '1', EXPO_NO_TELEMETRY: '1' };
+  // Los flujos buscan textos en español y el emulador de CI arranca en inglés.
+  const base = {
+    ...env,
+    CI: '1',
+    EXPO_NO_DOTENV: '1',
+    EXPO_NO_TELEMETRY: '1',
+    EXPO_PUBLIC_FORCE_LOCALE: 'es',
+  };
   // El control negativo se queda aquí: sin estas dos variables el bundle no
   // lleva credenciales y `hasSupabaseCredentials` es falso dentro del APK.
   //

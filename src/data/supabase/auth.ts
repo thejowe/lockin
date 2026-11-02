@@ -78,6 +78,7 @@ import { secureAuthStorage } from './secure-storage';
 import type { LockInSupabaseClient } from './client';
 import type { SignOutOptions } from '../types';
 import type { EmailOtpType, User } from '@supabase/supabase-js';
+import { getLocale, t } from '@/i18n';
 
 /** Credenciales de la cuenta de dispositivo del paso 3. */
 const DEVICE_ACCOUNT_KEY = 'lockin.supabase.device-account';
@@ -178,14 +179,14 @@ function toAccountError(error: unknown): AccountError {
   if (/multiple accounts with the same email/i.test(text)) {
     return new AccountError(
       'email-in-use',
-      'Ese email ya está en otra cuenta de cofounder. Entra con tu email y tu contraseña.',
+      t('Ese email ya está en otra cuenta de cofounder. Entra con tu email y tu contraseña.'),
       error
     );
   }
 
   switch (errorField(error, 'code')) {
     case 'LI007':
-      return new AccountError('no-session', 'No hay ninguna sesión abierta.', error);
+      return new AccountError('no-session', t('No hay ninguna sesión abierta.'), error);
     case 'email_exists':
     case 'user_already_exists':
       // Decisión de producto del 2026-09-17: aquí no se ofrece ninguna salida.
@@ -193,35 +194,37 @@ function toAccountError(error: unknown): AccountError {
       // los chats de este dispositivo, y eso no se propone de pasada.
       return new AccountError(
         'email-in-use',
-        'Ese email ya tiene una cuenta de cofounder. Prueba con otro.',
+        t('Ese email ya tiene una cuenta de cofounder. Prueba con otro.'),
         error
       );
     case 'weak_password':
       return new AccountError(
         'weak-password',
-        'Esa contraseña es demasiado fácil de adivinar. Alárgala o mézclala con números.',
+        t('Esa contraseña es demasiado fácil de adivinar. Alárgala o mézclala con números.'),
         error
       );
     case 'email_address_invalid':
     case 'validation_failed':
-      return new AccountError('invalid-email', 'Ese email no parece válido. Revísalo.', error);
+      return new AccountError('invalid-email', t('Ese email no parece válido. Revísalo.'), error);
     case 'same_password':
       return new AccountError(
         'same-password',
-        'La contraseña nueva tiene que ser distinta de la que ya tenías.',
+        t('La contraseña nueva tiene que ser distinta de la que ya tenías.'),
         error
       );
     case 'over_email_send_rate_limit':
     case 'over_request_rate_limit':
       return new AccountError(
         'too-many-emails',
-        'Se han mandado demasiados correos a esa dirección. Espera unos minutos y vuelve a intentarlo.',
+        t(
+          'Se han mandado demasiados correos a esa dirección. Espera unos minutos y vuelve a intentarlo.'
+        ),
         error
       );
     case 'email_not_confirmed':
       return new AccountError(
         'needs-confirmed-email',
-        'Falta confirmar el email: pincha el enlace que te hemos mandado y vuelve aquí.',
+        t('Falta confirmar el email: pincha el enlace que te hemos mandado y vuelve aquí.'),
         error
       );
     default:
@@ -233,12 +236,12 @@ function toAccountError(error: unknown): AccountError {
   if (errorField(error, 'name') === 'AuthRetryableFetchError' && !httpStatus(error)) {
     return new AccountError(
       'offline',
-      'No hay conexión con el servidor. Inténtalo otra vez cuando vuelvas a tener red.',
+      t('No hay conexión con el servidor. Inténtalo otra vez cuando vuelvas a tener red.'),
       error
     );
   }
 
-  const message = error instanceof Error ? error.message : 'Error desconocido en la cuenta.';
+  const message = error instanceof Error ? error.message : t('Error desconocido en la cuenta.');
   return new AccountError('unknown', message, error);
 }
 
@@ -495,7 +498,7 @@ export async function getAccountState(): Promise<AccountState> {
  */
 export async function linkEmailToCurrentUser(email: string): Promise<AccountState> {
   const { data, error } = await getSupabaseClient().auth.updateUser(
-    { email },
+    { email, data: { locale: getLocale() } },
     { emailRedirectTo: authRedirectUrl() }
   );
   if (error) throw toAccountError(error);
@@ -530,15 +533,15 @@ export async function saveAccountPhone(phone: string): Promise<void> {
 export async function setAccountPassword(password: string, expectedUserId?: string): Promise<void> {
   const state = await getAccountState();
   if (state.kind === 'none') {
-    throw new AccountError('no-session', 'No hay ninguna sesión abierta.');
+    throw new AccountError('no-session', t('No hay ninguna sesión abierta.'));
   }
   const sessionChanged = () =>
-    new AccountError('no-session', 'La sesión ha cambiado de cuenta. Vuelve a intentarlo.');
+    new AccountError('no-session', t('La sesión ha cambiado de cuenta. Vuelve a intentarlo.'));
   if (expectedUserId !== undefined && state.userId !== expectedUserId) throw sessionChanged();
   if (!state.recoverable) {
     throw new AccountError(
       'needs-confirmed-email',
-      'Falta confirmar el email: pincha el enlace que te hemos mandado y vuelve aquí.'
+      t('Falta confirmar el email: pincha el enlace que te hemos mandado y vuelve aquí.')
     );
   }
 
@@ -566,12 +569,12 @@ export async function setAccountPassword(password: string, expectedUserId?: stri
 export async function changeAccountPassword(current: string, next: string): Promise<void> {
   const state = await getAccountState();
   if (state.kind === 'none' || !state.userId) {
-    throw new AccountError('no-session', 'No hay ninguna sesión abierta.');
+    throw new AccountError('no-session', t('No hay ninguna sesión abierta.'));
   }
   if (!state.recoverable || !state.email) {
     throw new AccountError(
       'needs-confirmed-email',
-      'Falta confirmar el email: pincha el enlace que te hemos mandado y vuelve aquí.'
+      t('Falta confirmar el email: pincha el enlace que te hemos mandado y vuelve aquí.')
     );
   }
 
@@ -581,12 +584,15 @@ export async function changeAccountPassword(current: string, next: string): Prom
   });
   if (error) {
     if (errorField(error, 'code') === 'invalid_credentials') {
-      throw new AccountError('wrong-password', 'La contraseña actual no es correcta.', error);
+      throw new AccountError('wrong-password', t('La contraseña actual no es correcta.'), error);
     }
     throw toAccountError(error);
   }
   if (data.user?.id !== state.userId) {
-    throw new AccountError('no-session', 'La sesión ha cambiado de cuenta. Vuelve a intentarlo.');
+    throw new AccountError(
+      'no-session',
+      t('La sesión ha cambiado de cuenta. Vuelve a intentarlo.')
+    );
   }
 
   await setAccountPassword(next, state.userId);
@@ -631,7 +637,9 @@ export async function setRecoveredPassword(password: string): Promise<void> {
   if (!(await isRecoveringPassword())) {
     throw new AccountError(
       'unknown',
-      'El enlace para cambiar la contraseña ha caducado. Pide otro correo o cámbiala con la actual.'
+      t(
+        'El enlace para cambiar la contraseña ha caducado. Pide otro correo o cámbiala con la actual.'
+      )
     );
   }
   const userId = await currentUserId();
@@ -684,9 +692,7 @@ const LINK_RETRY_DELAYS_MS = [700, 1500, 3000, 5000];
  * del enlace no se ha gastado, así que repetir el canje es seguro. Cualquier
  * otro error, o agotar los intentos, se devuelve tal cual.
  */
-async function retryWhileOffline<T extends { error: unknown }>(
-  call: () => Promise<T>
-): Promise<T> {
+async function retryWhileOffline<T extends { error: unknown }>(call: () => Promise<T>): Promise<T> {
   let result = await call();
   for (const delay of LINK_RETRY_DELAYS_MS) {
     if (!result.error || toAccountError(result.error).reason !== 'offline') break;
@@ -729,14 +735,16 @@ export async function completeAuthLink(url: string): Promise<AccountState> {
       throw githubFailure(
         new AccountError(
           'unknown',
-          `GitHub no ha completado la verificación (${failure}). Puedes volver a intentarlo ` +
-            'desde tu perfil.'
+          t(
+            'GitHub no ha completado la verificación ({failure}). Puedes volver a intentarlo desde tu perfil.',
+            { failure }
+          )
         )
       );
     }
     throw new AccountError(
       'unknown',
-      `El enlace ya no sirve (${failure}). Pide otro correo e inténtalo de nuevo.`
+      t('El enlace ya no sirve ({failure}). Pide otro correo e inténtalo de nuevo.', { failure })
     );
   }
 
@@ -808,8 +816,9 @@ export async function completeAuthLink(url: string): Promise<AccountState> {
       await adoptLinkedinIdentity().catch((cause: unknown) => {
         throw new AccountError(
           'unknown',
-          'LinkedIn ha quedado vinculado, pero no hemos podido poner el sello. Pulsa «Vincular ' +
-            'LinkedIn» en tu perfil para terminar.',
+          t(
+            'LinkedIn ha quedado vinculado, pero no hemos podido poner el sello. Pulsa «Vincular LinkedIn» en tu perfil para terminar.'
+          ),
           cause
         );
       });
@@ -824,8 +833,9 @@ export async function completeAuthLink(url: string): Promise<AccountState> {
     if (!EMAIL_LINK_TYPES.has(type) || !(await hasPendingEmailLinkRequest())) {
       throw new AccountError(
         'unknown',
-        'Ese enlace no corresponde a ninguna petición hecha desde este teléfono. Pide ' +
-          'otro correo desde tu perfil.'
+        t(
+          'Ese enlace no corresponde a ninguna petición hecha desde este teléfono. Pide otro correo desde tu perfil.'
+        )
       );
     }
     const { data: verified, error } = await retryWhileOffline(() =>
@@ -841,7 +851,7 @@ export async function completeAuthLink(url: string): Promise<AccountState> {
   } else {
     throw new AccountError(
       'unknown',
-      'Ese enlace no trae el código de confirmación. Pide otro correo.'
+      t('Ese enlace no trae el código de confirmación. Pide otro correo.')
     );
   }
 
@@ -882,7 +892,11 @@ export async function signInWithEmail(email: string, password: string): Promise<
 
 /** Alta con email y contraseña. */
 export async function signUpWithEmail(email: string, password: string): Promise<string | null> {
-  const { data, error } = await getSupabaseClient().auth.signUp({ email, password });
+  const { data, error } = await getSupabaseClient().auth.signUp({
+    email,
+    password,
+    options: { data: { locale: getLocale() } },
+  });
   if (error) throw toAccountError(error);
   await markEmailLinkRequested();
   return data.user?.id ?? null;
@@ -1099,7 +1113,7 @@ async function settleGithubCode(code: string): Promise<void> {
   // prueba que este code la vinculara (codex review del 2026-10-02).
   if (error) throw error;
   if (await adoptGithubReturn(code)) return;
-  throw new Error('GitHub no ha quedado vinculado a tu cuenta. Vuelve a intentarlo.');
+  throw new Error(t('GitHub no ha quedado vinculado a tu cuenta. Vuelve a intentarlo.'));
 }
 
 /** El canje compartido de ese code de GitHub; lo arranca quien llegue primero. */
@@ -1139,7 +1153,7 @@ function githubCodeFrom(result: WebBrowser.WebBrowserAuthSessionResult): string 
   if (result.type !== 'success') return null;
 
   const code = new URL(result.url).searchParams.get('code');
-  if (!code) throw new Error('GitHub no devolvió el código de verificación.');
+  if (!code) throw new Error(t('GitHub no devolvió el código de verificación.'));
 
   // Se registra aquí, antes de que nadie más vea resolverse el navegador: la
   // ruta que lo esperaba encuentra el canje ya en marcha.
@@ -1175,7 +1189,7 @@ export async function linkGithubIdentity(): Promise<boolean> {
       );
     }
     if (/already/i.test(error.message)) {
-      throw new Error('Esa cuenta de GitHub ya está verificada en otro perfil de cofounder.');
+      throw new Error(t('Esa cuenta de GitHub ya está verificada en otro perfil de cofounder.'));
     }
     throw error;
   }
@@ -1307,7 +1321,7 @@ export async function linkLinkedinIdentity(): Promise<boolean> {
       );
     }
     if (/already/i.test(error.message)) {
-      throw new Error('Esa cuenta de LinkedIn ya está vinculada a otro perfil de cofounder.');
+      throw new Error(t('Esa cuenta de LinkedIn ya está vinculada a otro perfil de cofounder.'));
     }
     throw error;
   }
@@ -1318,7 +1332,7 @@ export async function linkLinkedinIdentity(): Promise<boolean> {
       const { error: exchangeError } = await client.auth.exchangeCodeForSession(code);
       if (exchangeError) throw exchangeError;
       if (!(await adoptLinkedinIdentity())) {
-        throw new Error('LinkedIn no ha quedado vinculado a tu cuenta. Vuelve a intentarlo.');
+        throw new Error(t('LinkedIn no ha quedado vinculado a tu cuenta. Vuelve a intentarlo.'));
       }
     });
     return outcome === 'done';
@@ -1397,7 +1411,7 @@ async function signInWithAppleNative(): Promise<boolean> {
     throw cause;
   }
   if (!credential.identityToken) {
-    throw new Error('Apple no ha devuelto tu identificación. Vuelve a intentarlo.');
+    throw new Error(t('Apple no ha devuelto tu identificación. Vuelve a intentarlo.'));
   }
 
   const client = getSupabaseClient();

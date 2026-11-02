@@ -6,6 +6,7 @@ import { ThemedText } from '@/components/themed-text';
 import { HitSlop } from '@/constants/theme';
 import { LEGAL_TITLES, LegalDocument, isLegalDocKey } from '@/features/legal';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/i18n';
 
 /**
  * `/legal/terms`, `/legal/guidelines`, `/legal/privacy`, `/legal/childSafety`:
@@ -31,14 +32,14 @@ export default function LegalRoute() {
           headerRight: () => (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Cerrar"
+              accessibilityLabel={t('Cerrar')}
               hitSlop={HitSlop.inline}
               // Abierta desde un enlace (`cofounder://legal/terms`) no hay detrás
               // a donde volver: entonces, a la puerta de entrada.
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
               style={({ pressed }) => [styles.close, pressed && styles.pressed]}>
               <ThemedText type="bodyStrong" style={{ color: theme.text }}>
-                Cerrar
+                {t('Cerrar')}
               </ThemedText>
             </Pressable>
           ),

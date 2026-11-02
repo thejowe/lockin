@@ -7,6 +7,8 @@
  */
 
 /** «20:30», en la zona del dispositivo. */
+import { getIntlLocale, t } from '@/i18n';
+
 export function clockOf(iso: string): string {
   const date = new Date(iso);
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
@@ -27,8 +29,8 @@ export function untilLabel(iso: string, now: Date = new Date()): string {
   const date = new Date(iso);
   const days = calendarDaysBetween(date, now);
   const time = clockOf(iso);
-  if (days <= 0) return `las ${time}`;
-  if (days === 1) return `mañana a las ${time}`;
-  const day = date.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
-  return `el ${day} a las ${time}`;
+  if (days <= 0) return t('las {time}', { time });
+  if (days === 1) return t('mañana a las {time}', { time });
+  const day = date.toLocaleDateString(getIntlLocale(), { day: 'numeric', month: 'long' });
+  return t('el {day} a las {time}', { day, time });
 }

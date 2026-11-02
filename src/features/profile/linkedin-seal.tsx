@@ -10,13 +10,14 @@ import { StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Radii, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/i18n';
 
 export function LinkedinSeal({ name, compact = false }: { name: string; compact?: boolean }) {
   const theme = useTheme();
   return (
     <View
       accessible
-      accessibilityLabel={`LinkedIn verificado: ${name}`}
+      accessibilityLabel={t('LinkedIn verificado: {name}', { name })}
       style={[
         styles.seal,
         compact ? styles.compact : styles.full,

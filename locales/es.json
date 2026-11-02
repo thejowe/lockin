@@ -1,0 +1,10 @@
+{
+  "ios": {
+    "CFBundleDisplayName": "cofounder",
+    "NSPhotoLibraryUsageDescription": "cofounder necesita tu galería para que elijas tu foto de perfil.",
+    "NSCameraUsageDescription": "cofounder necesita la cámara para hacerte la foto de perfil."
+  },
+  "android": {
+    "app_name": "cofounder"
+  }
+}

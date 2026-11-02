@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { withoutTranslationCalls } from './product-source.mjs';
 import { describe, it } from 'node:test';
 
-const read = (file) => readFileSync(new URL(file, import.meta.url), 'utf8');
+const read = (file) =>
+  withoutTranslationCalls(readFileSync(new URL(file, import.meta.url), 'utf8'));
 const signIn = read('sign-in.yaml');
 const reset = read('password-reset.yaml');
 const form = read('../src/features/profile/sign-in-form.tsx');

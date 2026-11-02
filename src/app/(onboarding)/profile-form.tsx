@@ -12,6 +12,7 @@ import {
   useRegistrationGate,
   useTermsGate,
 } from '@/features/profile';
+import { t } from '@/i18n';
 
 /**
  * Último paso del onboarding: crear el perfil, pregunta a pregunta
@@ -75,7 +76,7 @@ export default function ProfileFormScreen() {
   return (
     <Screen ambient="plum">
       <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
-        <ProfileWizard submitLabel="Crear perfil" onSubmit={handleSubmit} />
+        <ProfileWizard submitLabel={t('Crear perfil')} onSubmit={handleSubmit} />
       </SafeAreaView>
       {/* Encima y no en su lugar: si el guardado falla, el asistente sigue como estaba. */}
       {entering ? (

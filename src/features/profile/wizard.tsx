@@ -31,6 +31,7 @@ import {
 import { useTheme } from '@/hooks/use-theme';
 
 import { PrimaryButton } from './controls';
+import { t } from '@/i18n';
 
 const easeOut = Easing.bezier(...Curves.out);
 
@@ -49,7 +50,7 @@ export function WizardProgress({ step, total }: { step: number; total: number })
     <View
       accessible
       accessibilityRole="progressbar"
-      accessibilityLabel={`Paso ${step} de ${total}`}
+      accessibilityLabel={t('Paso {step} de {total}', { step, total })}
       accessibilityValue={{ min: 0, max: total, now: step }}
       style={[styles.track, { backgroundColor: theme.backgroundSelected }]}>
       <Animated.View style={[styles.fill, { backgroundColor: theme.brass }, fill]} />
@@ -99,12 +100,12 @@ export function WizardScreen({
           {onSkip ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Omitir"
+              accessibilityLabel={t('Omitir')}
               hitSlop={8}
               onPress={onSkip}
               style={({ pressed }) => ({ opacity: pressed ? Opacity.pressed : 1 })}>
               <ThemedText type="bodyStrong" themeColor="textSecondary">
-                Omitir
+                {t('Omitir')}
               </ThemedText>
             </Pressable>
           ) : null}

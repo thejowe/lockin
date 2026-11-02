@@ -66,6 +66,7 @@ import { DEFAULT_COUNTRY, joinPhone } from './countries';
 import { ProviderButtons } from './provider-buttons';
 import { TermsCheckbox, TermsLinks } from './terms';
 import { useAccountActions } from './use-account-actions';
+import { t } from '@/i18n';
 
 /** Mínimo propio, por encima de los 6 de GoTrue por defecto. */
 export const PASSWORD_MIN_LENGTH = 8;
@@ -84,14 +85,17 @@ export function accountStepProblem({
   repeat: string;
   termsAccepted: boolean;
 }): string | null {
-  if (!email.trim()) return 'Escribe tu email para que podamos mandarte el enlace.';
+  if (!email.trim()) return t('Escribe tu email para que podamos mandarte el enlace.');
   const phoneIssue = phoneProblem(phone);
   if (phoneIssue) return phoneIssue;
   if (password.length < PASSWORD_MIN_LENGTH) {
-    return `La contraseña necesita al menos ${PASSWORD_MIN_LENGTH} caracteres.`;
+    return t('La contraseña necesita al menos {PASSWORD_MIN_LENGTH} caracteres.', {
+      PASSWORD_MIN_LENGTH,
+    });
   }
-  if (password !== repeat) return 'Las dos contraseñas no coinciden.';
-  if (!termsAccepted) return 'Para crear la cuenta tienes que aceptar los Términos y las Normas.';
+  if (password !== repeat) return t('Las dos contraseñas no coinciden.');
+  if (!termsAccepted)
+    return t('Para crear la cuenta tienes que aceptar los Términos y las Normas.');
   return null;
 }
 
@@ -108,12 +112,14 @@ function PasswordFields({
 }) {
   return (
     <>
-      <Field label="Contraseña" hint={`Al menos ${PASSWORD_MIN_LENGTH} caracteres.`}>
+      <Field
+        label={t('Contraseña')}
+        hint={t('Al menos {PASSWORD_MIN_LENGTH} caracteres.', { PASSWORD_MIN_LENGTH })}>
         <TextField
           value={password}
           onChangeText={onPassword}
-          accessibilityLabel="Contraseña de tu cuenta"
-          placeholder="Tu contraseña"
+          accessibilityLabel={t('Contraseña de tu cuenta')}
+          placeholder={t('Tu contraseña')}
           secureTextEntry
           textContentType="newPassword"
           autoComplete="new-password"
@@ -122,12 +128,12 @@ function PasswordFields({
         />
       </Field>
 
-      <Field label="Repite la contraseña">
+      <Field label={t('Repite la contraseña')}>
         <TextField
           value={repeat}
           onChangeText={onRepeat}
-          accessibilityLabel="Repite la contraseña"
-          placeholder="Otra vez"
+          accessibilityLabel={t('Repite la contraseña')}
+          placeholder={t('Otra vez')}
           secureTextEntry
           textContentType="newPassword"
           autoComplete="new-password"
@@ -206,12 +212,12 @@ export function RegisterForm({
   if (loadError || !account) {
     return (
       <View style={styles.root}>
-        <ThemedText type="title">No hemos podido comprobar tu cuenta</ThemedText>
+        <ThemedText type="title">{t('No hemos podido comprobar tu cuenta')}</ThemedText>
         <ThemedText type="body" themeColor="textSecondary">
-          {loadError ? describeAccountError(loadError) : 'Inténtalo otra vez.'}
+          {loadError ? describeAccountError(loadError) : t('Inténtalo otra vez.')}
         </ThemedText>
-        <PrimaryButton label="Reintentar" onPress={refresh} />
-        <SecondaryButton label="Ya tengo cuenta" onPress={onSignIn} />
+        <PrimaryButton label={t('Reintentar')} onPress={refresh} />
+        <SecondaryButton label={t('Ya tengo cuenta')} onPress={onSignIn} />
       </View>
     );
   }
@@ -225,9 +231,9 @@ export function RegisterForm({
   if (step === 'password' && finish !== 'manual') {
     return (
       <View style={styles.root}>
-        <ThemedText type="title">Email confirmado</ThemedText>
+        <ThemedText type="title">{t('Email confirmado')}</ThemedText>
         <ThemedText type="body" themeColor="textSecondary">
-          Terminando de crear tu cuenta…
+          {t('Terminando de crear tu cuenta…')}
         </ThemedText>
       </View>
     );
@@ -253,7 +259,7 @@ export function RegisterForm({
       'asegurar',
       async () => {
         if (!owner) {
-          throw new AccountError('no-session', 'No hay ninguna sesión abierta.');
+          throw new AccountError('no-session', t('No hay ninguna sesión abierta.'));
         }
         await stashPendingPassword(password, owner);
         await saveAccountPhone(normalizePhone(fullPhone));
@@ -300,38 +306,45 @@ export function RegisterForm({
       <View style={styles.header}>
         <ThemedText type="label" themeColor="textSecondary">
           {step === 'confirm'
-            ? (steps?.confirm ?? 'Casi está')
-            : (steps?.account ?? 'Antes de empezar')}
+            ? (steps?.confirm ?? t('Casi está'))
+            : (steps?.account ?? t('Antes de empezar'))}
         </ThemedText>
 
         {step === 'account' ? (
           <>
-            <ThemedText type="title">Crea tu cuenta</ThemedText>
+            <ThemedText type="title">{t('Crea tu cuenta')}</ThemedText>
             <ThemedText type="body" themeColor="textSecondary">
-              Con tu email y tu contraseña vuelves a tu perfil, tus matches y tus conversaciones
-              desde cualquier teléfono. Te mandaremos un correo para confirmar que es tuyo.
+              {t(
+                'Con tu email y tu contraseña vuelves a tu perfil, tus matches y tus conversaciones desde cualquier teléfono. Te mandaremos un correo para confirmar que es tuyo.'
+              )}
             </ThemedText>
           </>
         ) : null}
 
         {step === 'confirm' ? (
           <>
-            <ThemedText type="title">Verifica tu email</ThemedText>
+            <ThemedText type="title">{t('Verifica tu email')}</ThemedText>
             <ThemedText type="body" themeColor="textSecondary">
-              {`Te hemos mandado un correo a ${account.pendingEmail ?? 'tu email'}. Pincha el enlace y vuelve aquí: seguimos con tu perfil.`}
+              {t(
+                'Te hemos mandado un correo a {v}. Pincha el enlace y vuelve aquí: seguimos con tu perfil.',
+                { v: account.pendingEmail ?? t('tu email') }
+              )}
             </ThemedText>
           </>
         ) : null}
 
         {step === 'password' ? (
           <>
-            <ThemedText type="title">Elige tu contraseña</ThemedText>
-            <ThemedText type="mono" accessibilityLabel={`Email confirmado: ${account.email ?? ''}`}>
+            <ThemedText type="title">{t('Elige tu contraseña')}</ThemedText>
+            <ThemedText
+              type="mono"
+              accessibilityLabel={t('Email confirmado: {v}', { v: account.email ?? '' })}>
               {account.email}
             </ThemedText>
             <ThemedText type="body" themeColor="textSecondary">
-              Email confirmado. Vuelve a escribir la contraseña con la que entrarás desde otro
-              teléfono.
+              {t(
+                'Email confirmado. Vuelve a escribir la contraseña con la que entrarás desde otro teléfono.'
+              )}
             </ThemedText>
           </>
         ) : null}
@@ -339,11 +352,11 @@ export function RegisterForm({
 
       {step === 'account' ? (
         <>
-          <Field label="Email">
+          <Field label={t('Email')}>
             <TextField
               value={email}
               onChangeText={setEmail}
-              accessibilityLabel="Email de tu cuenta"
+              accessibilityLabel={t('Email de tu cuenta')}
               placeholder="tu@email.com"
               keyboardType="email-address"
               inputMode="email"
@@ -354,18 +367,14 @@ export function RegisterForm({
             />
           </Field>
 
-          <Field label="Teléfono" hint="Es privado: no sale en tu perfil.">
+          <Field label={t('Teléfono')} hint={t('Es privado: no sale en tu perfil.')}>
             <View style={styles.phoneRow}>
-              <CountryCodePicker
-                country={country}
-                onChange={setCountry}
-                disabled={busy !== null}
-              />
+              <CountryCodePicker country={country} onChange={setCountry} disabled={busy !== null} />
               <View style={styles.phoneInput}>
                 <TextField
                   value={phone}
                   onChangeText={setPhone}
-                  accessibilityLabel="Teléfono de tu cuenta, sin prefijo"
+                  accessibilityLabel={t('Teléfono de tu cuenta, sin prefijo')}
                   placeholder="600 123 456"
                   keyboardType="phone-pad"
                   inputMode="tel"
@@ -391,7 +400,7 @@ export function RegisterForm({
           />
 
           <PrimaryButton
-            label={busy === 'asegurar' ? 'Creando la cuenta…' : 'Crear cuenta'}
+            label={busy === 'asegurar' ? t('Creando la cuenta…') : t('Crear cuenta')}
             disabled={busy !== null}
             onPress={submitAccount}
           />
@@ -402,16 +411,16 @@ export function RegisterForm({
 
       {step === 'confirm' ? (
         <>
-          <PrimaryButton label="Ya lo he verificado" onPress={refresh} />
+          <PrimaryButton label={t('Ya lo he verificado')} onPress={refresh} />
           <SecondaryButton
-            label={busy === 'reenviar' ? 'Mandando…' : 'Reenviar el correo'}
+            label={busy === 'reenviar' ? t('Mandando…') : t('Reenviar el correo')}
             onPress={() =>
               resend(() =>
-                setNotice({ text: 'Te lo hemos vuelto a mandar.', tone: 'textSecondary' })
+                setNotice({ text: t('Te lo hemos vuelto a mandar.'), tone: 'textSecondary' })
               )
             }
           />
-          <SecondaryButton label="Usar otro email" onPress={() => setChangingEmail(true)} />
+          <SecondaryButton label={t('Usar otro email')} onPress={() => setChangingEmail(true)} />
         </>
       ) : null}
 
@@ -425,7 +434,7 @@ export function RegisterForm({
           />
 
           <PrimaryButton
-            label={busy === 'contrasena' ? 'Guardando…' : 'Guardar y continuar'}
+            label={busy === 'contrasena' ? t('Guardando…') : t('Guardar y continuar')}
             disabled={busy !== null}
             onPress={submitPassword}
           />
@@ -438,7 +447,9 @@ export function RegisterForm({
         </ThemedText>
       ) : null}
 
-      {step === 'password' ? null : <SecondaryButton label="Ya tengo cuenta" onPress={onSignIn} />}
+      {step === 'password' ? null : (
+        <SecondaryButton label={t('Ya tengo cuenta')} onPress={onSignIn} />
+      )}
     </View>
   );
 }

@@ -39,6 +39,7 @@ import { usePremium } from './use-premium';
 
 import type { Blocked, MatchEvent } from '@/features/discover';
 import type { Decision, IncomingLike } from '@/data';
+import { t } from '@/i18n';
 
 /** Tarjetas por página, y tope de tarjetas de relleno sin Premium. */
 const PAGE_SIZE = 20;
@@ -193,7 +194,7 @@ export function IncomingLikes({ onOpenChat }: { onOpenChat: (matchId: string) =>
 
   let body: React.ReactNode;
   if (quotasLoading || (isPremium && likes === null && first.error === null)) {
-    body = <LoadingState label="Cargando tus likes…" />;
+    body = <LoadingState label={t('Cargando tus likes…')} />;
   } else if (!isPremium) {
     body = (
       <ScrollView testID="incoming-likes-scroll" contentContainerStyle={styles.free}>
@@ -203,9 +204,9 @@ export function IncomingLikes({ onOpenChat }: { onOpenChat: (matchId: string) =>
           ))}
         </View>
         <ThemedText type="body" themeColor="textSecondary" style={styles.centered}>
-          Con Premium ves quién te ha dado like y puedes devolverlo desde aquí.
+          {t('Con Premium ves quién te ha dado like y puedes devolverlo desde aquí.')}
         </ThemedText>
-        <ActionButton label="Hazte Premium" onPress={openPaywall} />
+        <ActionButton label={t('Hazte Premium')} onPress={openPaywall} />
       </ScrollView>
     );
   } else {
@@ -224,10 +225,10 @@ export function IncomingLikes({ onOpenChat }: { onOpenChat: (matchId: string) =>
           failedDecision ? (
             <View style={styles.notice}>
               <ThemedText type="small" themeColor="danger">
-                No hemos podido guardar tu decisión.
+                {t('No hemos podido guardar tu decisión.')}
               </ThemedText>
               <ActionButton
-                label="Reintentar"
+                label={t('Reintentar')}
                 variant="secondary"
                 onPress={() => void decide(failedDecision.like, failedDecision.decision)}
               />
@@ -236,7 +237,9 @@ export function IncomingLikes({ onOpenChat }: { onOpenChat: (matchId: string) =>
         }
         ListEmptyComponent={
           <ThemedText type="body" themeColor="textSecondary" style={styles.centered}>
-            {loadFailed ? 'No hemos podido cargar tus likes.' : 'Nadie te ha dado like todavía'}
+            {loadFailed
+              ? t('No hemos podido cargar tus likes.')
+              : t('Nadie te ha dado like todavía')}
           </ThemedText>
         }
       />
@@ -265,18 +268,22 @@ export function IncomingLikes({ onOpenChat }: { onOpenChat: (matchId: string) =>
                 {selected.profile.name}
               </ThemedText>
               <ThemedText type="small" themeColor="textSecondary" style={styles.centered}>
-                {selected.isSuper ? 'Te ha dado un Super Like · ' : ''}
+                {selected.isSuper ? t('Te ha dado un Super Like · ') : ''}
                 {selected.profile.location}
               </ThemedText>
               <View style={styles.actions}>
                 <ActionButton
-                  label="Pasar"
+                  label={t('Pasar')}
                   variant="secondary"
                   onPress={() => void decide(selected, 'pass')}
                 />
-                <ActionButton label="Me gusta" onPress={() => void decide(selected, 'like')} />
+                <ActionButton label={t('Me gusta')} onPress={() => void decide(selected, 'like')} />
               </View>
-              <ActionButton label="Cerrar" variant="secondary" onPress={() => setSelected(null)} />
+              <ActionButton
+                label={t('Cerrar')}
+                variant="secondary"
+                onPress={() => setSelected(null)}
+              />
             </View>
           </View>
         ) : null}

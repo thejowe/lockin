@@ -5,6 +5,19 @@ import {
   isObjectionable,
 } from './content-filter';
 
+describe('catalán', () => {
+  it.each(['ets un malparit', 'et mataré', 'et vaig a matar'])('frena «%s»', (text) => {
+    expect(isObjectionable(text)).toBe(true);
+  });
+
+  it.each(['et matarà la feina', 'el meu projecte és bo', 'vaig a la reunió'])(
+    'deja pasar «%s»',
+    (text) => {
+      expect(isObjectionable(text)).toBe(false);
+    }
+  );
+});
+
 describe('findObjectionableContent', () => {
   it.each([
     ['eres un hijo de puta', 'insulto'],

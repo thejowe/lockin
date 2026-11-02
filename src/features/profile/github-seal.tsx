@@ -24,6 +24,7 @@ import { StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Radii, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/i18n';
 
 export function GithubSeal({
   handle,
@@ -38,7 +39,7 @@ export function GithubSeal({
   return (
     <View
       accessible
-      accessibilityLabel={`GitHub verificado: ${handle}`}
+      accessibilityLabel={t('GitHub verificado: {handle}', { handle })}
       style={[
         styles.seal,
         compact ? styles.compact : styles.full,

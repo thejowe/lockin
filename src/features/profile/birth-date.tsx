@@ -10,6 +10,7 @@ import { Spacing } from '@/constants/theme';
 
 import { AGE_MAX, AGE_MIN } from './catalog';
 import { Field, TextField } from './controls';
+import { t } from '@/i18n';
 
 /** Día, mes y año tal como se teclean (texto). */
 export interface BirthParts {
@@ -57,8 +58,9 @@ export function ageFromBirthDate(parts: BirthParts, now: Date = new Date()): num
 /** Qué falla en la fecha tecleada, o `null` si vale. */
 export function birthDateProblem(parts: BirthParts, now: Date = new Date()): string | null {
   const age = ageFromBirthDate(parts, now);
-  if (age === null) return 'Escribe una fecha que exista: día, mes y año.';
-  if (age < AGE_MIN || age > AGE_MAX) return `Una edad entre ${AGE_MIN} y ${AGE_MAX}.`;
+  if (age === null) return t('Escribe una fecha que exista: día, mes y año.');
+  if (age < AGE_MIN || age > AGE_MAX)
+    return t('Una edad entre {AGE_MIN} y {AGE_MAX}.', { AGE_MIN, AGE_MAX });
   return null;
 }
 
@@ -75,39 +77,39 @@ export function BirthDateFields({
   const digits = (text: string) => text.replace(/[^0-9]/g, '');
 
   return (
-    <Field label="Fecha de nacimiento" hint="Solo se enseña tu edad." error={error}>
+    <Field label={t('Fecha de nacimiento')} hint={t('Solo se enseña tu edad.')} error={error}>
       <View style={styles.dateRow}>
         <View style={styles.dateSmall}>
           <TextField
             value={value.day}
             onChangeText={(text) => onChange({ ...value, day: digits(text) })}
-            placeholder="Día"
+            placeholder={t('Día')}
             inputMode="numeric"
             maxLength={2}
             autoCorrect={false}
-            accessibilityLabel="Día"
+            accessibilityLabel={t('Día')}
           />
         </View>
         <View style={styles.dateSmall}>
           <TextField
             value={value.month}
             onChangeText={(text) => onChange({ ...value, month: digits(text) })}
-            placeholder="Mes"
+            placeholder={t('Mes')}
             inputMode="numeric"
             maxLength={2}
             autoCorrect={false}
-            accessibilityLabel="Mes"
+            accessibilityLabel={t('Mes')}
           />
         </View>
         <View style={styles.dateYear}>
           <TextField
             value={value.year}
             onChangeText={(text) => onChange({ ...value, year: digits(text) })}
-            placeholder="Año"
+            placeholder={t('Año')}
             inputMode="numeric"
             maxLength={4}
             autoCorrect={false}
-            accessibilityLabel="Año"
+            accessibilityLabel={t('Año')}
           />
         </View>
       </View>

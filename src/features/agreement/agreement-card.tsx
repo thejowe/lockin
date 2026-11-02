@@ -18,6 +18,7 @@ import { summarize } from './status';
 import { useAgreement } from './use-agreement';
 
 import type { MatchWithProfile } from '@/data';
+import { t } from '@/i18n';
 
 export function AgreementCard({ match }: { match: MatchWithProfile }) {
   if (match.mode !== 'par') return null;
@@ -32,17 +33,26 @@ function ParAgreementCard({ match }: { match: MatchWithProfile }) {
 
   const headline =
     compared === 0
-      ? `${total} temas difíciles, a ciegas hasta que respondáis los dos.`
-      : `${compared} de ${total} comparados · ${different} ${different === 1 ? 'distinto' : 'distintos'}`;
+      ? t('{total} temas difíciles, a ciegas hasta que respondáis los dos.', { total })
+      : different === 1
+        ? t('{compared} de {total} comparados · 1 distinto', { compared, total })
+        : t('{compared} de {total} comparados · {different} distintos', {
+            compared,
+            total,
+            different,
+          });
   const ahead =
     theirsAhead > 0
-      ? `${match.counterpart.name} ha respondido ${theirsAhead} que tú aún no.`
+      ? t('{name} ha respondido {theirsAhead} que tú aún no.', {
+          name: match.counterpart.name,
+          theirsAhead,
+        })
       : null;
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={['Acuerdo de socios', headline, ahead].filter(Boolean).join('. ')}
+      accessibilityLabel={[t('Acuerdo de socios'), headline, ahead].filter(Boolean).join('. ')}
       onPress={() =>
         router.push({ pathname: '/agreement/[matchId]', params: { matchId: match.id } })
       }
@@ -59,7 +69,7 @@ function ParAgreementCard({ match }: { match: MatchWithProfile }) {
           <Icon name="document" size={18} color={theme.brass} />
         </View>
         <ThemedText type="heading" style={styles.title}>
-          Acuerdo de socios
+          {t('Acuerdo de socios')}
         </ThemedText>
       </View>
       <ThemedText type="small" themeColor="textSecondary">

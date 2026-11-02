@@ -33,6 +33,7 @@ import { GithubSeal } from './github-seal';
 import { LinkedinSeal } from './linkedin-seal';
 
 import type { Profile } from '@/data';
+import { t } from '@/i18n';
 
 export type LinkableAccount = 'github' | 'linkedin';
 
@@ -96,7 +97,7 @@ export function LinkAccounts({
         message === GITHUB_VERIFICATION_CANCELLED || message === LINKEDIN_VERIFICATION_CANCELLED;
       setNotice(
         cancelled
-          ? { text: 'No se completó. No ha cambiado nada.', tone: 'textSecondary' }
+          ? { text: t('No se completó. No ha cambiado nada.'), tone: 'textSecondary' }
           : { text: message, tone: 'danger' }
       );
     } finally {
@@ -131,7 +132,7 @@ export function LinkAccounts({
     setOpen(null);
     if (!available[account]) {
       setNotice({
-        text: `Vincular ${LABELS[account]} todavía no está disponible.`,
+        text: t('Vincular {v} todavía no está disponible.', { v: LABELS[account] }),
         tone: 'textSecondary',
       });
       return;
@@ -150,20 +151,26 @@ export function LinkAccounts({
   return (
     <View style={styles.root}>
       <ThemedText type="label" themeColor="textSecondary">
-        Vincular cuentas
+        {t('Vincular cuentas')}
       </ThemedText>
 
       <View style={styles.row}>
         {accounts.map((account) => {
           const isLinked = linked[account];
           const isBusy = busy?.account === account;
-          const caption = isLinked ? 'Vinculado' : available[account] ? LABELS[account] : 'Pronto';
+          const caption = isLinked
+            ? t('Vinculado')
+            : available[account]
+              ? LABELS[account]
+              : t('Pronto');
           return (
             <View key={account} style={styles.cell}>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={
-                  isLinked ? `${LABELS[account]} vinculado` : `Vincular ${LABELS[account]}`
+                  isLinked
+                    ? t('{account} vinculado', { account: LABELS[account] })
+                    : t('Vincular {account}', { account: LABELS[account] })
                 }
                 accessibilityState={{
                   selected: isLinked,
@@ -208,8 +215,9 @@ export function LinkAccounts({
       </View>
 
       <ThemedText type="small" themeColor="textSecondary">
-        Toca un logo para vincular esa cuenta. Los vinculados salen en color y con su sello en tu
-        tarjeta.
+        {t(
+          'Toca un logo para vincular esa cuenta. Los vinculados salen en color y con su sello en tu tarjeta.'
+        )}
       </ThemedText>
 
       {confirmingGithub && handwrittenGithub ? (
@@ -218,16 +226,19 @@ export function LinkAccounts({
             styles.panel,
             { backgroundColor: theme.backgroundElement, borderColor: theme.border },
           ]}>
-          <ThemedText type="bodyStrong">Vas a sustituir el enlace que escribiste</ThemedText>
+          <ThemedText type="bodyStrong">{t('Vas a sustituir el enlace que escribiste')}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            Tu ficha enseña ahora:
+            {t('Tu ficha enseña ahora:')}
           </ThemedText>
           <ThemedText type="mono">{handwrittenGithub}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            Al vincular pasará a enseñar la cuenta con la que entres en GitHub, sea cual sea.
+            {t('Al vincular pasará a enseñar la cuenta con la que entres en GitHub, sea cual sea.')}
           </ThemedText>
-          <PrimaryButton label="Continuar y sobrescribir" onPress={() => link('github')} />
-          <SecondaryButton label="Dejarlo como está" onPress={() => setConfirmingGithub(false)} />
+          <PrimaryButton label={t('Continuar y sobrescribir')} onPress={() => link('github')} />
+          <SecondaryButton
+            label={t('Dejarlo como está')}
+            onPress={() => setConfirmingGithub(false)}
+          />
         </View>
       ) : null}
 
@@ -239,11 +250,12 @@ export function LinkAccounts({
           ]}>
           <GithubSeal handle={githubSeal.handle} />
           <ThemedText type="small" themeColor="textSecondary">
-            Certifica que el enlace de GitHub de tu ficha es tuyo, y nada más: no dice quién eres ni
-            lo bueno que seas.
+            {t(
+              'Certifica que el enlace de GitHub de tu ficha es tuyo, y nada más: no dice quién eres ni lo bueno que seas.'
+            )}
           </ThemedText>
           <SecondaryButton
-            label={busy?.action === 'quitar' ? 'Quitando…' : 'Desvincular GitHub'}
+            label={busy?.action === 'quitar' ? t('Quitando…') : t('Desvincular GitHub')}
             disabled={busy !== null}
             onPress={() => unlink('github')}
           />
@@ -258,10 +270,10 @@ export function LinkAccounts({
           ]}>
           <LinkedinSeal name={linkedinSeal.name} />
           <ThemedText type="small" themeColor="textSecondary">
-            Certifica que esa cuenta de LinkedIn es tuya, y nada más.
+            {t('Certifica que esa cuenta de LinkedIn es tuya, y nada más.')}
           </ThemedText>
           <SecondaryButton
-            label={busy?.action === 'quitar' ? 'Quitando…' : 'Desvincular LinkedIn'}
+            label={busy?.action === 'quitar' ? t('Quitando…') : t('Desvincular LinkedIn')}
             disabled={busy !== null}
             onPress={() => unlink('linkedin')}
           />

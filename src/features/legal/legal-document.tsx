@@ -19,16 +19,31 @@ import { MaxContentWidth, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { parseMarkdown, type Block, type Span } from './markdown';
-import { LEGAL_TEXTS } from './texts.generated';
+import { LEGAL_TEXTS, LEGAL_TRANSLATIONS } from './texts.generated';
+import { getLocale, t } from '@/i18n';
 
 export type LegalDocKey = keyof typeof LEGAL_TEXTS;
 
 export const LEGAL_TITLES: Record<LegalDocKey, string> = {
-  terms: 'Términos de uso',
-  guidelines: 'Normas de la comunidad',
-  privacy: 'Política de privacidad',
-  childSafety: 'Seguridad infantil',
+  get terms() {
+    return t('Términos de uso');
+  },
+  get guidelines() {
+    return t('Normas de la comunidad');
+  },
+  get privacy() {
+    return t('Política de privacidad');
+  },
+  get childSafety() {
+    return t('Seguridad infantil');
+  },
 };
+
+/** El documento en el idioma actual. Lo que se acepta y se publica en la web es el español. */
+function legalText(doc: LegalDocKey): string {
+  const locale = getLocale();
+  return locale === 'es' ? LEGAL_TEXTS[doc] : LEGAL_TRANSLATIONS[locale][doc];
+}
 
 /** Carpeta publicada de cada documento (la de `build-web.mjs`). */
 const PUBLISHED: Record<string, LegalDocKey> = {
@@ -143,7 +158,7 @@ export function LegalDocument({
   onOpenDocument: (doc: LegalDocKey) => void;
   bottomInset?: number;
 }) {
-  const blocks = useMemo(() => parseMarkdown(LEGAL_TEXTS[doc]), [doc]);
+  const blocks = useMemo(() => parseMarkdown(legalText(doc)), [doc]);
 
   function handleLink(url: string) {
     const target = legalDocForUrl(url);

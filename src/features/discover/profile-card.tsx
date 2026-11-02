@@ -62,6 +62,7 @@ import { TapHint } from './tap-hint';
 import type { ChipTone } from './chip';
 
 import type { DeckProfile, Profile, Specialty } from '@/data';
+import { t } from '@/i18n';
 
 /**
  * Páginas de la ficha, en orden de lectura. El prompt solo si lo hay, y las
@@ -82,10 +83,18 @@ const SOCIAL_NAMES: Record<ConnectedApp, string> = {
 };
 
 const PAGE_NAMES: Record<Page, string> = {
-  about: 'quién es',
-  schedule: 'cuándo trabaja',
-  prompt: 'su respuesta',
-  socials: 'sus redes',
+  get about() {
+    return t('quién es');
+  },
+  get schedule() {
+    return t('cuándo trabaja');
+  },
+  get prompt() {
+    return t('su respuesta');
+  },
+  get socials() {
+    return t('sus redes');
+  },
 };
 
 export function ProfileCard({
@@ -158,7 +167,7 @@ export function ProfileCard({
   if (blocked)
     return (
       <View style={[styles.card, styles.panel, { backgroundColor: theme.surfaceOpaque }]}>
-        <ThemedText type="subtitle">Perfil bloqueado.</ThemedText>
+        <ThemedText type="subtitle">{t('Perfil bloqueado.')}</ThemedText>
       </View>
     );
 
@@ -190,7 +199,7 @@ export function ProfileCard({
       */}
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Ver ${PAGE_NAMES[pages[nextIndex]]}`}
+        accessibilityLabel={t('Ver {page}', { page: PAGE_NAMES[pages[nextIndex]] })}
         onPress={() => {
           setPageIndex(nextIndex);
           onPageChange?.(nextIndex);
@@ -230,7 +239,7 @@ export function ProfileCard({
           {onOpenProfile ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Ver el perfil de ${profile.name}`}
+              accessibilityLabel={t('Ver el perfil de {name}', { name: profile.name })}
               hitSlop={HitSlop.inline}
               onPress={(event) => {
                 event.stopPropagation();
@@ -280,8 +289,8 @@ export function ProfileCard({
             profile.linkedinVerification ? (
               <View style={styles.badges}>
                 {/* Va primero: es lo que más cambia lo que haces con la tarjeta. */}
-                {superLiked ? <Chip label="Te ha dado un Super Like" tone="match" /> : null}
-                {complement.length > 0 ? <Chip label="✓ Encajas" tone="match" /> : null}
+                {superLiked ? <Chip label={t('Te ha dado un Super Like')} tone="match" /> : null}
+                {complement.length > 0 ? <Chip label={t('✓ Encajas')} tone="match" /> : null}
                 {/*
                   Sin sello no se pinta nada: marcar lo no verificado castigaría a
                   las especialidades que no tienen GitHub, y el sello es señal —no
@@ -297,7 +306,7 @@ export function ProfileCard({
             ) : null}
 
             <SpecialtyRow
-              label="Domina"
+              label={t('Domina')}
               values={profile.specialties}
               other={profile.otherSpecialty}
               tone="have"
@@ -306,23 +315,23 @@ export function ProfileCard({
             {seeksComplement(profile.lookingFor) ? (
               profile.seekingSpecialties.length > 0 ? (
                 <SpecialtyRow
-                  label="Busca"
+                  label={t('Busca')}
                   values={profile.seekingSpecialties}
                   tone="seek"
                   highlight={complement}
                 />
               ) : (
                 // Vacío no es un dato que falte: es «ábreme a cualquiera».
-                <Row label="Busca">
+                <Row label={t('Busca')}>
                   <ThemedText type="small" themeColor="textSecondary">
-                    Cualquier especialidad
+                    {t('Cualquier especialidad')}
                   </ThemedText>
                 </Row>
               )
             ) : null}
 
             {profile.languages.length > 0 ? (
-              <Row label="Habla">
+              <Row label={t('Habla')}>
                 <ThemedText type="small">{languagesSentence(profile.languages)}</ThemedText>
               </Row>
             ) : null}
@@ -338,8 +347,11 @@ export function ProfileCard({
               viewer={viewerSchedule}
             />
             <View style={styles.facts}>
-              <Fact label="Punto de partida" value={startingPointLabel(profile.startingPoint)} />
-              <Fact label="Ambición" value={ambitionLabel(profile.ambition)} />
+              <Fact
+                label={t('Punto de partida')}
+                value={startingPointLabel(profile.startingPoint)}
+              />
+              <Fact label={t('Ambición')} value={ambitionLabel(profile.ambition)} />
             </View>
           </View>
         ) : null}
@@ -347,7 +359,7 @@ export function ProfileCard({
         {page === 'prompt' && prompt ? (
           <View style={styles.section}>
             <ThemedText type="caption" themeColor="textSecondary">
-              {prompt.question}
+              {t(prompt.question)}
             </ThemedText>
             {/* La respuesta es lo que hace que un perfil se lea: en grande, como una cita. */}
             <ThemedText type="subtitle" numberOfLines={5}>
@@ -360,7 +372,7 @@ export function ProfileCard({
           <View style={styles.section} pointerEvents="box-none">
             <View pointerEvents="none">
               <ThemedText type="caption" themeColor="textSecondary">
-                Redes
+                {t('Redes')}
               </ThemedText>
             </View>
             {/* Solo el logo, en su color; al pulsarlo, a su perfil en esa app. */}
@@ -369,7 +381,10 @@ export function ProfileCard({
                 <Pressable
                   key={app}
                   accessibilityRole="link"
-                  accessibilityLabel={`Abrir el ${SOCIAL_NAMES[app]} de ${profile.name}`}
+                  accessibilityLabel={t('Abrir el {v} de {name}', {
+                    v: SOCIAL_NAMES[app],
+                    name: profile.name,
+                  })}
                   hitSlop={HitSlop.inline}
                   onPress={(event) => {
                     event.stopPropagation();

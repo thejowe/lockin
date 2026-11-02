@@ -9,6 +9,7 @@ import { HitSlop, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useQuery, useRepositories } from '@/data';
 import { Board, ProfileDetails, RequireVerifiedEmail } from '@/features/profile';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/i18n';
 
 /**
  * `/person/<id>`: el perfil completo de otra persona, en una hoja que sube sobre
@@ -52,35 +53,35 @@ function Person() {
     <>
       <Stack.Screen
         options={{
-          title: profile?.name ?? 'Perfil',
+          title: profile?.name ?? t('Perfil'),
           headerRight: () => (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Cerrar"
+              accessibilityLabel={t('Cerrar')}
               hitSlop={HitSlop.inline}
               onPress={close}
               style={({ pressed }) => [styles.close, pressed && styles.pressed]}>
               <ThemedText type="bodyStrong" style={{ color: theme.text }}>
-                Cerrar
+                {t('Cerrar')}
               </ThemedText>
             </Pressable>
           ),
         }}
       />
       {loading ? (
-        <LoadingState label="Abriendo el perfil…" />
+        <LoadingState label={t('Abriendo el perfil…')} />
       ) : error ? (
         <MessageState
-          title="No hemos podido abrir este perfil"
-          body="Comprueba tu conexión y vuelve a intentarlo."
+          title={t('No hemos podido abrir este perfil')}
+          body={t('Comprueba tu conexión y vuelve a intentarlo.')}
           detail={error.message}>
-          <Button label="Reintentar" onPress={refresh} />
+          <Button label={t('Reintentar')} onPress={refresh} />
         </MessageState>
       ) : !profile ? (
         <MessageState
-          title="Este perfil ya no está disponible"
-          body="Puede que la persona haya borrado su cuenta.">
-          <Button label="Cerrar" variant="secondary" onPress={close} />
+          title={t('Este perfil ya no está disponible')}
+          body={t('Puede que la persona haya borrado su cuenta.')}>
+          <Button label={t('Cerrar')} variant="secondary" onPress={close} />
         </MessageState>
       ) : (
         <ScrollView

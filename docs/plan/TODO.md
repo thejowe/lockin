@@ -1,5 +1,9 @@
 # TODO maestro — LockIn MVP
 
+## ▶ Al retomar (2026-11-02): idiomas es/en/ca hechos en el código, sin probar en dispositivo
+
+Detecta el idioma del móvil y se cambia en Ajustes. Reglas y lista de pendientes en `todo/idiomas.md`: revisión legal de las traducciones, plantillas de correo sin aplicar, `[comprobador]` con build nativa nueva, fichas de tienda y web pública. `expo-localization` es intencionado.
+
 ## ▶ Al retomar (2026-11-02, cierre): legal de Premium hecho, todo en verde; falta lo del usuario y la prueba gratis en el paywall
 
 **Estado del repo:** todo empujado. Árbol limpio. Jest completo en verde (1853 pasan, 0 fallan) y `tsc --noEmit` limpio. No queda ninguna rama sin fusionar: `premium-ci`, `premium-ci-2`, `project-thread-3zjyk6` y `codex/contraste-deck` están ya en esta rama.

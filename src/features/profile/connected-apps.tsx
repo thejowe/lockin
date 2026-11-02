@@ -27,6 +27,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { CompactPrimaryButton, CompactSecondaryButton, TextField } from './controls';
 
 import type { Profile } from '@/data';
+import { t } from '@/i18n';
 
 export type ConnectedApp = 'github' | 'linkedin' | 'instagram' | 'tiktok' | 'portfolio';
 
@@ -35,7 +36,9 @@ const LABELS: Record<ConnectedApp, string> = {
   linkedin: 'LinkedIn',
   instagram: 'Instagram',
   tiktok: 'TikTok',
-  portfolio: 'Web',
+  get portfolio() {
+    return t('Web');
+  },
 };
 
 const ORDER: ConnectedApp[] = ['github', 'linkedin', 'instagram', 'tiktok', 'portfolio'];
@@ -265,7 +268,7 @@ function EditableApps({
   async function save(app: ConnectedApp, url: string | null) {
     const clean = url?.trim() ?? '';
     if (url !== null && !SAFE_URL.test(clean)) {
-      setError('El enlace debe empezar por http:// o https://');
+      setError(t('El enlace debe empezar por http:// o https://'));
       return;
     }
     setSaving(true);
@@ -285,7 +288,7 @@ function EditableApps({
   return (
     <View style={styles.root}>
       <ThemedText type="label" themeColor="textSecondary">
-        Redes y enlaces
+        {t('Redes y enlaces')}
       </ThemedText>
       <View style={styles.row}>
         {ORDER.map((app) => {
@@ -296,7 +299,9 @@ function EditableApps({
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={
-                  linked ? `${LABELS[app]} añadido, editar enlace` : `Añadir ${LABELS[app]}`
+                  linked
+                    ? t('{v} añadido, editar enlace', { v: LABELS[app] })
+                    : t('Añadir {v}', { v: LABELS[app] })
                 }
                 accessibilityState={{ selected: linked, expanded: open === app }}
                 hitSlop={HitSlop.inline}
@@ -335,8 +340,9 @@ function EditableApps({
           ]}>
           {open === 'github' && githubLocked ? (
             <ThemedText type="small" themeColor="textSecondary">
-              Tu GitHub está verificado: lo lleva el sello. Para cambiarlo, desvincúlalo abajo en
-              «Vincular cuentas».
+              {t(
+                'Tu GitHub está verificado: lo lleva el sello. Para cambiarlo, desvincúlalo abajo en «Vincular cuentas».'
+              )}
             </ThemedText>
           ) : (
             <>
@@ -350,7 +356,7 @@ function EditableApps({
                 autoCapitalize="none"
                 autoCorrect={false}
                 inputMode="url"
-                accessibilityLabel={`Enlace de ${LABELS[open]}`}
+                accessibilityLabel={t('Enlace de {v}', { v: LABELS[open] })}
               />
               {error ? (
                 <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
@@ -358,13 +364,13 @@ function EditableApps({
                 </ThemedText>
               ) : null}
               <CompactPrimaryButton
-                label={saving ? 'Guardando…' : 'Guardar'}
+                label={saving ? t('Guardando…') : t('Guardar')}
                 disabled={saving}
                 onPress={() => void save(open, value.trim().length > 0 ? value : null)}
               />
               {profile.links[open] ? (
                 <CompactSecondaryButton
-                  label="Quitar enlace"
+                  label={t('Quitar enlace')}
                   tone="danger"
                   disabled={saving}
                   onPress={() => void save(open, null)}
@@ -404,7 +410,7 @@ export function ConnectedApps({
     <View style={styles.root}>
       <View style={styles.header}>
         <ThemedText type="label" themeColor="textSecondary">
-          Redes y enlaces
+          {t('Redes y enlaces')}
         </ThemedText>
         {action}
       </View>
@@ -418,8 +424,12 @@ export function ConnectedApps({
                 accessibilityRole="link"
                 accessibilityLabel={
                   handle
-                    ? `Abrir el ${LABELS[app]} de ${profile.name}, @${handle}`
-                    : `Abrir el ${LABELS[app]} de ${profile.name}`
+                    ? t('Abrir el {v} de {name}, @{handle}', {
+                        v: LABELS[app],
+                        name: profile.name,
+                        handle,
+                      })
+                    : t('Abrir el {v} de {name}', { v: LABELS[app], name: profile.name })
                 }
                 hitSlop={HitSlop.inline}
                 onPress={() => void Linking.openURL(url).catch(() => undefined)}
@@ -448,7 +458,7 @@ export function ConnectedApps({
         </View>
       ) : (
         <ThemedText type="small" themeColor="textSecondary">
-          Añade tu Instagram, TikTok, LinkedIn o web con el lápiz.
+          {t('Añade tu Instagram, TikTok, LinkedIn o web con el lápiz.')}
         </ThemedText>
       )}
     </View>

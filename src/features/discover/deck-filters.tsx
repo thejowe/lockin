@@ -28,6 +28,7 @@ import { Chip } from './chip';
 
 import type { ProfileFilter } from '@/data';
 import type { Option } from '@/features/profile';
+import { t } from '@/i18n';
 
 /** Paso de las horas mínimas y tope de la diferencia horaria (0–12 h). */
 const HOURS_STEP = 5;
@@ -89,17 +90,17 @@ export function DeckFilters({
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <ThemedText type="subtitle">Filtros</ThemedText>
+        <ThemedText type="subtitle">{t('Filtros')}</ThemedText>
         {clearable ? (
           <Pressable accessibilityRole="button" hitSlop={HitSlop.chip} onPress={() => onChange({})}>
             <ThemedText type="smallBold" themeColor="brass">
-              Limpiar
+              {t('Limpiar')}
             </ThemedText>
           </Pressable>
         ) : null}
       </View>
 
-      <Section title="Especialidad">
+      <Section title={t('Especialidad')}>
         <Choices
           options={SPECIALTY_OPTIONS}
           selected={value.specialties}
@@ -107,20 +108,20 @@ export function DeckFilters({
         />
       </Section>
 
-      <Section title="Horas mínimas por semana" locked={!isPremium}>
+      <Section title={t('Horas mínimas por semana')} locked={!isPremium}>
         <Counter
-          noun="horas mínimas"
+          noun={t('horas mínimas')}
           value={value.minHoursPerWeek}
           step={HOURS_STEP}
           min={HOURS_STEP}
           max={HOURS_MAX}
-          anyLabel="Sin mínimo"
+          anyLabel={t('Sin mínimo')}
           format={(hours) => `${hours} h/semana`}
           onChange={(next) => premium({ minHoursPerWeek: next })}
         />
       </Section>
 
-      <Section title="Franjas" locked={!isPremium}>
+      <Section title={t('Franjas')} locked={!isPremium}>
         <Choices
           options={TIME_BAND_OPTIONS}
           selected={value.timeBands}
@@ -128,7 +129,7 @@ export function DeckFilters({
         />
       </Section>
 
-      <Section title="Ambición" locked={!isPremium}>
+      <Section title={t('Ambición')} locked={!isPremium}>
         <Choices
           options={AMBITION_OPTIONS}
           selected={value.ambition}
@@ -136,7 +137,7 @@ export function DeckFilters({
         />
       </Section>
 
-      <Section title="Punto de partida" locked={!isPremium}>
+      <Section title={t('Punto de partida')} locked={!isPremium}>
         <Choices
           options={STARTING_POINT_OPTIONS}
           selected={value.startingPoint}
@@ -144,15 +145,15 @@ export function DeckFilters({
         />
       </Section>
 
-      <Section title="Zona horaria" locked={!isPremium}>
+      <Section title={t('Zona horaria')} locked={!isPremium}>
         <Counter
-          noun="diferencia horaria"
+          noun={t('diferencia horaria')}
           value={value.timezoneWindowHours}
           step={1}
           min={0}
           max={ZONE_MAX}
-          anyLabel="Cualquiera"
-          format={(hours) => `Hasta ${hours} h`}
+          anyLabel={t('Cualquiera')}
+          format={(hours) => t('Hasta {hours} h', { hours })}
           onChange={(next) => premium({ timezoneWindowHours: next })}
         />
       </Section>
@@ -175,7 +176,7 @@ function Section({
       <View style={styles.sectionTitle}>
         <ThemedText type="smallBold">{title}</ThemedText>
         {locked ? (
-          <View accessible accessibilityLabel="Solo con Premium">
+          <View accessible accessibilityLabel={t('Solo con Premium')}>
             <Icon name="lock" size={14} color={theme.textSecondary} />
           </View>
         ) : null}
@@ -241,14 +242,14 @@ function Counter({
     <View style={styles.counter}>
       <CounterButton
         label="−"
-        accessibilityLabel={`Restar ${noun}`}
+        accessibilityLabel={t('Restar {noun}', { noun })}
         disabled={value === undefined}
         onPress={less}
       />
       <ThemedText type="bodyStrong">{value === undefined ? anyLabel : format(value)}</ThemedText>
       <CounterButton
         label="+"
-        accessibilityLabel={`Sumar ${noun}`}
+        accessibilityLabel={t('Sumar {noun}', { noun })}
         disabled={value !== undefined && value >= max}
         onPress={more}
       />

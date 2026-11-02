@@ -33,6 +33,7 @@ import {
 import { useTheme } from '@/hooks/use-theme';
 
 import type { Option } from './catalog';
+import { t } from '@/i18n';
 
 /** Bloque etiquetado de un campo, con pista y error opcionales. */
 export function Field({
@@ -278,7 +279,7 @@ export function Stepper({
       ]}>
       <StepperButton
         label="−"
-        accessibilityLabel="Restar"
+        accessibilityLabel={t('Restar')}
         disabled={value <= min}
         onPress={() => onChange(clamp(value - step))}
       />
@@ -289,7 +290,7 @@ export function Stepper({
 
       <StepperButton
         label="+"
-        accessibilityLabel="Sumar"
+        accessibilityLabel={t('Sumar')}
         disabled={value >= max}
         onPress={() => onChange(clamp(value + step))}
       />

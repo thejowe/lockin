@@ -26,16 +26,17 @@ import { ActionButton } from './action-button';
 import { clockOf, untilLabel } from './reset-time';
 
 import type { Blocked } from './use-deck';
+import { getIntlLocale, t } from '@/i18n';
 
 /** «el martes 27 de octubre a las 20:30», o `null` si la fecha no se entiende. */
 function dayAndClock(iso: string | null): string | null {
   if (iso === null || Number.isNaN(Date.parse(iso))) return null;
-  const day = new Date(iso).toLocaleDateString('es-ES', {
+  const day = new Date(iso).toLocaleDateString(getIntlLocale(), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
   });
-  return `el ${day} a las ${clockOf(iso)}`;
+  return t('el {day} a las {v}', { day, v: clockOf(iso) });
 }
 
 interface Copy {
@@ -48,8 +49,8 @@ interface Copy {
 function copyFor(blocked: Exclude<Blocked, null>): Copy {
   if (blocked === 'premium') {
     return {
-      title: 'Esto es de Premium',
-      body: 'Deshacer y el Boost son de Premium.',
+      title: t('Esto es de Premium'),
+      body: t('Deshacer y el Boost son de Premium.'),
       upgrade: true,
     };
   }
@@ -60,29 +61,38 @@ function copyFor(blocked: Exclude<Blocked, null>): Copy {
       return {
         title:
           blocked.resetsAt !== null && !Number.isNaN(Date.parse(blocked.resetsAt))
-            ? `Sin likes hasta ${untilLabel(blocked.resetsAt)}`
-            : 'Sin likes por ahora',
-        body: `Has gastado tus ${FREE_LIKES_PER_DAY} likes de hoy. Con Premium no hay límite.`,
+            ? t('Sin likes hasta {v}', { v: untilLabel(blocked.resetsAt) })
+            : t('Sin likes por ahora'),
+        body: t('Has gastado tus {FREE_LIKES_PER_DAY} likes de hoy. Con Premium no hay límite.', {
+          FREE_LIKES_PER_DAY,
+        }),
         upgrade: true,
       };
     case 'supers':
       return {
-        title: 'Sin Super Likes por ahora',
+        title: t('Sin Super Likes por ahora'),
         body: when
-          ? `Tu próximo Super Like llega ${when}. Con Premium tienes ${PREMIUM_SUPERS_PER_WEEK} a la semana.`
-          : `Con Premium tienes ${PREMIUM_SUPERS_PER_WEEK} a la semana.`,
+          ? t(
+              'Tu próximo Super Like llega {when}. Con Premium tienes {PREMIUM_SUPERS_PER_WEEK} a la semana.',
+              { when, PREMIUM_SUPERS_PER_WEEK }
+            )
+          : t('Con Premium tienes {PREMIUM_SUPERS_PER_WEEK} a la semana.', {
+              PREMIUM_SUPERS_PER_WEEK,
+            }),
         upgrade: true,
       };
     case 'boost':
       return {
-        title: 'Boost no disponible',
-        body: when ? `Podrás usar otro ${when}.` : 'Ya has usado tu Boost de este mes.',
+        title: t('Boost no disponible'),
+        body: when
+          ? t('Podrás usar otro {when}.', { when })
+          : t('Ya has usado tu Boost de este mes.'),
         upgrade: false,
       };
     case 'abuse':
       return {
-        title: 'Demasiados likes por hoy',
-        body: 'Has dado demasiados likes hoy. Inténtalo más tarde.',
+        title: t('Demasiados likes por hoy'),
+        body: t('Has dado demasiados likes hoy. Inténtalo más tarde.'),
         upgrade: false,
       };
   }
@@ -141,11 +151,11 @@ export function OutOfLikesSheet({
             <View style={styles.actions}>
               {upgrade ? (
                 <>
-                  <ActionButton label="Hazte Premium" onPress={onUpgrade} />
-                  <ActionButton label="Ahora no" variant="secondary" onPress={onClose} />
+                  <ActionButton label={t('Hazte Premium')} onPress={onUpgrade} />
+                  <ActionButton label={t('Ahora no')} variant="secondary" onPress={onClose} />
                 </>
               ) : (
-                <ActionButton label="Entendido" onPress={onClose} />
+                <ActionButton label={t('Entendido')} onPress={onClose} />
               )}
             </View>
           </Animated.View>

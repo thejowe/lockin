@@ -31,17 +31,18 @@ import {
 } from '@/lib/purchases';
 
 import type { LegalDocKey } from '@/features/legal';
+import { t, tk } from '@/i18n';
 
 const BENEFITS = [
-  'Likes sin límite',
-  'Deshacer tu último swipe',
-  'Ver quién te ha dado like',
-  '5 Super Likes a la semana',
-  'Boost: 30 minutos arriba del deck cada mes',
-  'Filtros avanzados: disponibilidad, ambición, punto de partida y zona horaria',
+  tk('Likes sin límite'),
+  tk('Deshacer tu último swipe'),
+  tk('Ver quién te ha dado like'),
+  tk('5 Super Likes a la semana'),
+  tk('Boost: 30 minutos arriba del deck cada mes'),
+  tk('Filtros avanzados: disponibilidad, ambición, punto de partida y zona horaria'),
 ];
 
-const RENEWAL = 'Se renueva automáticamente. Cancela cuando quieras desde la tienda.';
+const RENEWAL = tk('Se renueva automáticamente. Cancela cuando quieras desde la tienda.');
 
 type OffersState =
   | { status: 'loading' }
@@ -50,11 +51,11 @@ type OffersState =
   | { status: 'error' };
 
 function periodLabel(offer: PurchasePackage): string {
-  return offer.period === 'month' ? 'Mensual' : 'Anual';
+  return offer.period === 'month' ? t('Mensual') : t('Anual');
 }
 
 function periodSuffix(offer: PurchasePackage): string {
-  return offer.period === 'month' ? 'al mes' : 'al año';
+  return offer.period === 'month' ? t('al mes') : t('al año');
 }
 
 export function Paywall({
@@ -132,14 +133,14 @@ export function Paywall({
       const result = await purchase(selectedId);
       if (result === 'cancelled') return;
       if (result === 'pending') {
-        setNotice('Pago pendiente de confirmar');
+        setNotice(t('Pago pendiente de confirmar'));
         return;
       }
       if (!(await settle())) {
-        setNotice('Tu compra se está procesando. Si no se activa, prueba «Restaurar compras».');
+        setNotice(t('Tu compra se está procesando. Si no se activa, prueba «Restaurar compras».'));
       }
     } catch {
-      setNotice('No hemos podido completar la compra. Inténtalo otra vez.');
+      setNotice(t('No hemos podido completar la compra. Inténtalo otra vez.'));
     } finally {
       setBusy(null);
     }
@@ -151,12 +152,12 @@ export function Paywall({
     setNotice(null);
     try {
       await restore();
-      if (!(await settle())) setNotice('No hemos encontrado ninguna suscripción activa.');
+      if (!(await settle())) setNotice(t('No hemos encontrado ninguna suscripción activa.'));
     } catch (cause) {
       setNotice(
         cause instanceof PurchasesUnavailableError
           ? cause.message
-          : 'No hemos podido restaurar tus compras. Inténtalo otra vez.'
+          : t('No hemos podido restaurar tus compras. Inténtalo otra vez.')
       );
     } finally {
       setBusy(null);
@@ -170,7 +171,7 @@ export function Paywall({
   }
 
   if (state.status === 'loading') {
-    return <LoadingState label="Cargando los planes…" />;
+    return <LoadingState label={t('Cargando los planes…')} />;
   }
 
   const showSimulator = __DEV__ && !hasSupabaseCredentials;
@@ -185,7 +186,7 @@ export function Paywall({
           <ThemedText type="label" themeColor="brass">
             Premium
           </ThemedText>
-          <ThemedText type="title">Encuentra cofundador sin frenos</ThemedText>
+          <ThemedText type="title">{t('Encuentra cofundador sin frenos')}</ThemedText>
         </View>
 
         <View style={styles.benefits}>
@@ -193,7 +194,7 @@ export function Paywall({
             <View key={benefit} style={styles.benefit}>
               <Icon name="check" size={18} color={theme.brass} />
               <ThemedText type="body" style={styles.benefitText}>
-                {benefit}
+                {t(benefit)}
               </ThemedText>
             </View>
           ))}
@@ -234,17 +235,17 @@ export function Paywall({
           <MessageState
             title={
               state.status === 'unavailable'
-                ? 'Las compras aún no están disponibles'
-                : 'No hemos podido cargar los planes'
+                ? t('Las compras aún no están disponibles')
+                : t('No hemos podido cargar los planes')
             }
             body={
               state.status === 'unavailable'
-                ? 'Vuelve a mirar en unos días.'
-                : 'Comprueba tu conexión e inténtalo otra vez.'
+                ? t('Vuelve a mirar en unos días.')
+                : t('Comprueba tu conexión e inténtalo otra vez.')
             }>
             {state.status === 'error' ? (
               <Button
-                label="Reintentar"
+                label={t('Reintentar')}
                 variant="secondary"
                 onPress={() => {
                   setState({ status: 'loading' });
@@ -258,12 +259,12 @@ export function Paywall({
         {state.status === 'ready' ? (
           <>
             <Button
-              label={busy === 'buy' ? 'Comprando…' : 'Hazte Premium'}
+              label={busy === 'buy' ? t('Comprando…') : t('Hazte Premium')}
               disabled={busy !== null || selectedId === null}
               onPress={() => void handleBuy()}
             />
             <ThemedText type="caption" themeColor="textMuted" style={styles.centered}>
-              {RENEWAL}
+              {t(RENEWAL)}
             </ThemedText>
           </>
         ) : null}
@@ -275,28 +276,28 @@ export function Paywall({
         ) : null}
 
         <Button
-          label={busy === 'restore' ? 'Restaurando…' : 'Restaurar compras'}
+          label={busy === 'restore' ? t('Restaurando…') : t('Restaurar compras')}
           variant="secondary"
           disabled={busy !== null}
           onPress={() => void handleRestore()}
         />
-        <Button label="Ahora no" variant="secondary" onPress={onClose} />
+        <Button label={t('Ahora no')} variant="secondary" onPress={onClose} />
 
         <View style={styles.legal}>
           <Pressable
             accessibilityRole="link"
-            accessibilityLabel="Términos de uso"
+            accessibilityLabel={t('Términos de uso')}
             onPress={() => onOpenLegal('terms')}>
             <ThemedText type="small" themeColor="brass">
-              Términos de uso
+              {t('Términos de uso')}
             </ThemedText>
           </Pressable>
           <Pressable
             accessibilityRole="link"
-            accessibilityLabel="Política de privacidad"
+            accessibilityLabel={t('Política de privacidad')}
             onPress={() => onOpenLegal('privacy')}>
             <ThemedText type="small" themeColor="brass">
-              Política de privacidad
+              {t('Política de privacidad')}
             </ThemedText>
           </Pressable>
         </View>
@@ -304,13 +305,13 @@ export function Paywall({
         {showSimulator ? (
           <View style={[styles.simulator, { borderColor: theme.border }]}>
             <ThemedText type="small" themeColor="textSecondary">
-              Solo desarrollo
+              {t('Solo desarrollo')}
             </ThemedText>
             <ThemedText type="body" style={styles.benefitText}>
-              Simular Premium
+              {t('Simular Premium')}
             </ThemedText>
             <Switch
-              accessibilityLabel="Simular Premium"
+              accessibilityLabel={t('Simular Premium')}
               value={simulated}
               onValueChange={handleSimulate}
             />

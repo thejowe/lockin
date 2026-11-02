@@ -39,5 +39,6 @@ export {
   type TermsGate,
 } from './terms';
 export { PhoneStep } from './phone-step';
+export { LanguageSection } from './language-section';
 export { PersonalInfo } from './personal-info';
 export { useRegistrationGate, type RegistrationGate } from './use-registration-gate';

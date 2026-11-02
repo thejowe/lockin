@@ -21,9 +21,10 @@ import { formatRelative } from './format';
 import { ProfileAvatar } from './profile-avatar';
 
 import type { MatchWithProfile } from '@/data';
+import { t, tk } from '@/i18n';
 
 /** Lo que se lee bajo el nombre mientras nadie ha escrito nada. */
-export const NO_MESSAGES_HINT = 'Escribe el primer mensaje';
+export const NO_MESSAGES_HINT = tk('Escribe el primer mensaje');
 
 /**
  * Textos de la racha de pareja. Son copia de `streakTag`/`streakLine` de
@@ -31,7 +32,7 @@ export const NO_MESSAGES_HINT = 'Escribe el primer mensaje';
  * número y su test fija que los textos no divergen.
  */
 const streakTag = (count: number) => `· Racha ${count}`;
-const streakLine = (count: number) => `Racha de ${count} sesiones seguidas`;
+const streakLine = (count: number) => t('Racha de {count} sesiones seguidas', { count });
 
 export function MatchRow({
   match,
@@ -56,7 +57,9 @@ export function MatchRow({
   const { counterpart, lastMessage } = match;
 
   const isMine = lastMessage !== null && lastMessage.senderId !== counterpart.id;
-  const preview = lastMessage ? `${isMine ? 'Tú: ' : ''}${lastMessage.body}` : NO_MESSAGES_HINT;
+  const preview = lastMessage
+    ? `${isMine ? t('Tú: ') : ''}${lastMessage.body}`
+    : t(NO_MESSAGES_HINT);
   const timestamp = formatRelative(lastMessage?.sentAt ?? match.createdAt);
   const streakPart = streak === null ? '' : `${streakLine(streak)}. `;
 
@@ -64,7 +67,11 @@ export function MatchRow({
     <Link href={`/chat/${match.id}`} asChild>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Conversación con ${counterpart.name}. ${streakPart}${preview}`}
+        accessibilityLabel={t('Conversación con {name}. {streakPart}{preview}', {
+          name: counterpart.name,
+          streakPart,
+          preview,
+        })}
         onPressIn={press.onPressIn}
         onPressOut={press.onPressOut}>
         {({ pressed }) => (
@@ -104,7 +111,7 @@ export function MatchRow({
                 {/* Sin etiqueta de modo: desde el 2026-10-12 todo match es de cofundador. */}
                 {lastMessage === null && (
                   <ThemedText type="label" themeColor="brass">
-                    Nuevo
+                    {t('Nuevo')}
                   </ThemedText>
                 )}
                 {streak !== null && (

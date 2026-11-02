@@ -17,6 +17,7 @@ import { Field, PrimaryButton, TextField } from './controls';
 import { CountryCodePicker } from './country-code-picker';
 import { DEFAULT_COUNTRY, joinPhone } from './countries';
 import { useAccountActions } from './use-account-actions';
+import { t } from '@/i18n';
 
 export function PhoneStep({ onDone }: { onDone: () => void }) {
   const { busy, notice, savePhone } = useAccountActions();
@@ -26,20 +27,20 @@ export function PhoneStep({ onDone }: { onDone: () => void }) {
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <ThemedText type="title">Tu teléfono</ThemedText>
+        <ThemedText type="title">{t('Tu teléfono')}</ThemedText>
         <ThemedText type="body" themeColor="textSecondary">
-          Necesitamos un número de contacto para tu cuenta. Es privado: no sale en tu perfil.
+          {t('Necesitamos un número de contacto para tu cuenta. Es privado: no sale en tu perfil.')}
         </ThemedText>
       </View>
 
-      <Field label="Teléfono">
+      <Field label={t('Teléfono')}>
         <View style={styles.phoneRow}>
           <CountryCodePicker country={country} onChange={setCountry} disabled={busy !== null} />
           <View style={styles.phoneInput}>
             <TextField
               value={phone}
               onChangeText={setPhone}
-              accessibilityLabel="Teléfono de tu cuenta, sin prefijo"
+              accessibilityLabel={t('Teléfono de tu cuenta, sin prefijo')}
               placeholder="600 123 456"
               keyboardType="phone-pad"
               inputMode="tel"
@@ -52,7 +53,7 @@ export function PhoneStep({ onDone }: { onDone: () => void }) {
       </Field>
 
       <PrimaryButton
-        label={busy === 'telefono' ? 'Guardando…' : 'Guardar y continuar'}
+        label={busy === 'telefono' ? t('Guardando…') : t('Guardar y continuar')}
         disabled={busy !== null}
         onPress={() => savePhone(joinPhone(country, phone), onDone)}
       />

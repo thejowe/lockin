@@ -53,6 +53,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Duration, Radii, Spacing, Springs } from '@/constants/theme';
 import { useReduceMotion } from '@/hooks/use-reduce-motion';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/i18n';
 
 /** Alto de cada botón de la barra (≥ 44 táctiles). */
 const ITEM_HEIGHT = 46;
@@ -65,9 +66,23 @@ const TABS: {
   label: string;
   icon: IconName;
 }[] = [
-  { name: 'discover', href: '/discover', label: 'Descubrir', icon: 'discover' },
+  {
+    name: 'discover',
+    href: '/discover',
+    get label() {
+      return t('Descubrir');
+    },
+    icon: 'discover',
+  },
   { name: 'matches', href: '/matches', label: 'Matches', icon: 'chat' },
-  { name: 'profile', href: '/profile', label: 'Perfil', icon: 'person' },
+  {
+    name: 'profile',
+    href: '/profile',
+    get label() {
+      return t('Perfil');
+    },
+    icon: 'person',
+  },
 ];
 
 /** Canal por el que el botón activo le dice al resalte dónde está. */

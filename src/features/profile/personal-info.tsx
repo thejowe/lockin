@@ -22,6 +22,7 @@ import {
   TextField,
 } from './controls';
 import { useAccountActions } from './use-account-actions';
+import { t } from '@/i18n';
 
 export function PersonalInfo() {
   const theme = useTheme();
@@ -42,27 +43,27 @@ export function PersonalInfo() {
   return (
     <View style={styles.root}>
       <ThemedText type="label" themeColor="textSecondary">
-        Información personal
+        {t('Información personal')}
       </ThemedText>
 
       <View style={styles.row}>
         <ThemedText type="body" themeColor="textSecondary">
-          Correo
+          {t('Correo')}
         </ThemedText>
         <ThemedText
           type="bodyStrong"
-          accessibilityLabel={`Correo de tu cuenta: ${email ?? 'sin añadir'}`}>
-          {email ?? 'Sin añadir'}
+          accessibilityLabel={t('Correo de tu cuenta: {v}', { v: email ?? t('sin añadir') })}>
+          {email ?? t('Sin añadir')}
         </ThemedText>
       </View>
 
       {editing ? (
         <>
-          <Field label="Teléfono" hint="Es privado: no sale en tu perfil.">
+          <Field label={t('Teléfono')} hint={t('Es privado: no sale en tu perfil.')}>
             <TextField
               value={draft}
               onChangeText={setDraft}
-              accessibilityLabel="Teléfono de tu cuenta"
+              accessibilityLabel={t('Teléfono de tu cuenta')}
               placeholder="+34 600 123 456"
               keyboardType="phone-pad"
               inputMode="tel"
@@ -73,28 +74,28 @@ export function PersonalInfo() {
           </Field>
           <View style={styles.actions}>
             <PrimaryButton
-              label={busy === 'telefono' ? 'Guardando…' : 'Guardar teléfono'}
+              label={busy === 'telefono' ? t('Guardando…') : t('Guardar teléfono')}
               disabled={busy !== null}
               onPress={() =>
                 savePhone(draft, () => {
                   setEditing(false);
-                  setNotice({ text: 'Teléfono guardado.', tone: 'textSecondary' });
+                  setNotice({ text: t('Teléfono guardado.'), tone: 'textSecondary' });
                 })
               }
             />
-            <SecondaryButton label="Cancelar" onPress={() => setEditing(false)} />
+            <SecondaryButton label={t('Cancelar')} onPress={() => setEditing(false)} />
           </View>
         </>
       ) : (
         <View style={styles.row}>
           <ThemedText type="body" themeColor="textSecondary">
-            Teléfono
+            {t('Teléfono')}
           </ThemedText>
           <View style={styles.valueRow}>
-            <ThemedText type="bodyStrong">{account.phone ?? 'Sin añadir'}</ThemedText>
+            <ThemedText type="bodyStrong">{account.phone ?? t('Sin añadir')}</ThemedText>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={account.phone ? 'Cambiar teléfono' : 'Añadir teléfono'}
+              accessibilityLabel={account.phone ? t('Cambiar teléfono') : t('Añadir teléfono')}
               hitSlop={HitSlop.inline}
               onPress={startEditing}
               style={({ pressed }) => [{ opacity: pressed ? Opacity.pressed : 1 }]}>

@@ -15,13 +15,24 @@ import { REPORT_MAX_LENGTH, REPORT_REASONS, type ReportReason } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 
 import { useReportKeyboardLift } from './keyboard-lift';
+import { t } from '@/i18n';
 
 const reasonLabels: Record<ReportReason, string> = {
-  acoso: 'Acoso',
-  'contenido-inapropiado': 'Contenido inapropiado',
-  spam: 'Spam o estafa',
-  suplantacion: 'Suplantación de identidad',
-  otro: 'Otro motivo',
+  get acoso() {
+    return t('Acoso');
+  },
+  get 'contenido-inapropiado'() {
+    return t('Contenido inapropiado');
+  },
+  get spam() {
+    return t('Spam o estafa');
+  },
+  get suplantacion() {
+    return t('Suplantación de identidad');
+  },
+  get otro() {
+    return t('Otro motivo');
+  },
 };
 
 export function ReportForm({
@@ -76,12 +87,12 @@ export function ReportForm({
 
   const fields = (
     <>
-      <ThemedText type="subtitle">{title ?? `Reportar a ${name}`}</ThemedText>
+      <ThemedText type="subtitle">{title ?? t('Reportar a {name}', { name })}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">
-        El reporte es privado. Esta persona no recibirá ningún aviso.
+        {t('El reporte es privado. Esta persona no recibirá ningún aviso.')}
       </ThemedText>
-      <ThemedText type="bodyStrong">Motivo</ThemedText>
-      <View accessibilityRole="radiogroup" accessibilityLabel="Motivo del reporte">
+      <ThemedText type="bodyStrong">{t('Motivo')}</ThemedText>
+      <View accessibilityRole="radiogroup" accessibilityLabel={t('Motivo del reporte')}>
         {REPORT_REASONS.map((value) => (
           <Pressable
             key={value}
@@ -104,9 +115,9 @@ export function ReportForm({
           </Pressable>
         ))}
       </View>
-      <ThemedText type="small">Detalles (opcional)</ThemedText>
+      <ThemedText type="small">{t('Detalles (opcional)')}</ThemedText>
       <TextInput
-        accessibilityLabel="Detalles del reporte (opcional)"
+        accessibilityLabel={t('Detalles del reporte (opcional)')}
         value={details}
         onChangeText={setDetails}
         editable={!busy}
@@ -120,7 +131,7 @@ export function ReportForm({
         multiline
         maxLength={REPORT_MAX_LENGTH}
         textAlignVertical="top"
-        placeholder="Añade contexto si lo necesitas"
+        placeholder={t('Añade contexto si lo necesitas')}
         placeholderTextColor={theme.textMuted}
         style={[
           styles.input,
@@ -134,7 +145,7 @@ export function ReportForm({
       <ThemedText
         type="caption"
         themeColor={valid || length <= REPORT_MAX_LENGTH ? 'textMuted' : 'danger'}>
-        {length}/{REPORT_MAX_LENGTH} caracteres
+        {t('{length}/{REPORT_MAX_LENGTH} caracteres', { length, REPORT_MAX_LENGTH })}
       </ThemedText>
     </>
   );
@@ -142,18 +153,18 @@ export function ReportForm({
     <>
       {error ? (
         <ThemedText accessibilityRole="alert" type="small" themeColor="danger">
-          No se ha podido enviar el reporte. Inténtalo otra vez.
+          {t('No se ha podido enviar el reporte. Inténtalo otra vez.')}
         </ThemedText>
       ) : null}
       <Button
-        label={busy ? 'Enviando…' : 'Enviar reporte'}
-        accessibilityLabel="Enviar reporte"
+        label={busy ? t('Enviando…') : t('Enviar reporte')}
+        accessibilityLabel={t('Enviar reporte')}
         disabled={!valid || busy}
         onPress={() => void submit()}
       />
       <Button
-        label="Cancelar"
-        accessibilityLabel="Cancelar reporte"
+        label={t('Cancelar')}
+        accessibilityLabel={t('Cancelar reporte')}
         variant="secondary"
         disabled={busy}
         onPress={onCancel}

@@ -62,6 +62,7 @@ import {
 } from './controls';
 import { PASSWORD_MIN_LENGTH } from './register-form';
 import { useAccountActions } from './use-account-actions';
+import { t } from '@/i18n';
 
 export interface AccountSectionProps {
   /**
@@ -86,9 +87,11 @@ export interface AccountSectionProps {
 /** Qué falta para poder guardar una contraseña nueva, o `null` si nada. */
 export function newPasswordProblem(next: string, repeat: string): string | null {
   if (next.length < PASSWORD_MIN_LENGTH) {
-    return `La contraseña nueva necesita al menos ${PASSWORD_MIN_LENGTH} caracteres.`;
+    return t('La contraseña nueva necesita al menos {PASSWORD_MIN_LENGTH} caracteres.', {
+      PASSWORD_MIN_LENGTH,
+    });
   }
-  if (next !== repeat) return 'Las dos contraseñas nuevas no coinciden.';
+  if (next !== repeat) return t('Las dos contraseñas nuevas no coinciden.');
   return null;
 }
 
@@ -164,7 +167,7 @@ export function AccountSection({
   }
 
   function handleResend() {
-    resend(() => setNotice({ text: 'Te lo hemos vuelto a mandar.', tone: 'textSecondary' }));
+    resend(() => setNotice({ text: t('Te lo hemos vuelto a mandar.'), tone: 'textSecondary' }));
   }
 
   function handleSavePassword() {
@@ -177,7 +180,7 @@ export function AccountSection({
       closePanel();
       refreshRecovering();
       setNotice({
-        text: 'Contraseña guardada. Ya puedes entrar con ella desde otro teléfono.',
+        text: t('Contraseña guardada. Ya puedes entrar con ella desde otro teléfono.'),
         tone: 'textSecondary',
       });
     };
@@ -188,7 +191,7 @@ export function AccountSection({
   function handlePasswordReset() {
     resetPassword(() =>
       setNotice({
-        text: 'Te hemos mandado un correo para cambiar la contraseña.',
+        text: t('Te hemos mandado un correo para cambiar la contraseña.'),
         tone: 'textSecondary',
       })
     );
@@ -227,39 +230,39 @@ export function AccountSection({
         {account.recoverable ? (
           <View style={styles.passwordRow}>
             <ThemedText type="body" themeColor="textSecondary">
-              Contraseña
+              {t('Contraseña')}
             </ThemedText>
             {panel === 'closed' ? (
-              <SecondaryButton label="Gestionar contraseña" onPress={() => setPanel('menu')} />
+              <SecondaryButton label={t('Gestionar contraseña')} onPress={() => setPanel('menu')} />
             ) : null}
           </View>
         ) : null}
 
         {account.recoverable && panel === 'menu' ? (
           <View style={[styles.panel, { borderColor: theme.border }]}>
-            <ThemedText type="bodyStrong">Gestionar contraseña</ThemedText>
-            <PrimaryButton label="Cambiar contraseña" onPress={() => setPanel('change')} />
+            <ThemedText type="bodyStrong">{t('Gestionar contraseña')}</ThemedText>
+            <PrimaryButton label={t('Cambiar contraseña')} onPress={() => setPanel('change')} />
             <SecondaryButton
-              label={busy === 'recuperar' ? 'Mandando…' : 'He olvidado mi contraseña'}
+              label={busy === 'recuperar' ? t('Mandando…') : t('He olvidado mi contraseña')}
               onPress={handlePasswordReset}
             />
-            <SecondaryButton label="Cancelar" onPress={closePanel} />
+            <SecondaryButton label={t('Cancelar')} onPress={closePanel} />
           </View>
         ) : null}
 
         {account.recoverable && (panel === 'change' || panel === 'recovery') ? (
           <View style={[styles.panel, { borderColor: theme.border }]}>
             <ThemedText type="bodyStrong">
-              {panel === 'recovery' ? 'Elige tu nueva contraseña' : 'Cambiar contraseña'}
+              {panel === 'recovery' ? t('Elige tu nueva contraseña') : t('Cambiar contraseña')}
             </ThemedText>
 
             {panel === 'change' ? (
-              <Field label="Contraseña actual">
+              <Field label={t('Contraseña actual')}>
                 <TextField
                   value={current}
                   onChangeText={setCurrent}
-                  accessibilityLabel="Contraseña actual"
-                  placeholder="La que usas ahora"
+                  accessibilityLabel={t('Contraseña actual')}
+                  placeholder={t('La que usas ahora')}
                   secureTextEntry
                   textContentType="password"
                   autoComplete="current-password"
@@ -269,12 +272,14 @@ export function AccountSection({
               </Field>
             ) : null}
 
-            <Field label="Nueva contraseña" hint={`Al menos ${PASSWORD_MIN_LENGTH} caracteres.`}>
+            <Field
+              label={t('Nueva contraseña')}
+              hint={t('Al menos {PASSWORD_MIN_LENGTH} caracteres.', { PASSWORD_MIN_LENGTH })}>
               <TextField
                 value={next}
                 onChangeText={setNext}
-                accessibilityLabel="Nueva contraseña"
-                placeholder="La nueva"
+                accessibilityLabel={t('Nueva contraseña')}
+                placeholder={t('La nueva')}
                 secureTextEntry
                 textContentType="newPassword"
                 autoComplete="new-password"
@@ -283,12 +288,12 @@ export function AccountSection({
               />
             </Field>
 
-            <Field label="Repite la nueva contraseña">
+            <Field label={t('Repite la nueva contraseña')}>
               <TextField
                 value={repeat}
                 onChangeText={setRepeat}
-                accessibilityLabel="Repite la nueva contraseña"
-                placeholder="Otra vez"
+                accessibilityLabel={t('Repite la nueva contraseña')}
+                placeholder={t('Otra vez')}
                 secureTextEntry
                 textContentType="newPassword"
                 autoComplete="new-password"
@@ -299,11 +304,11 @@ export function AccountSection({
 
             <View style={styles.actions}>
               <PrimaryButton
-                label={busy === 'contrasena' ? 'Guardando…' : 'Guardar contraseña'}
+                label={busy === 'contrasena' ? t('Guardando…') : t('Guardar contraseña')}
                 disabled={busy !== null}
                 onPress={handleSavePassword}
               />
-              <SecondaryButton label="Cancelar" onPress={closePanel} />
+              <SecondaryButton label={t('Cancelar')} onPress={closePanel} />
             </View>
           </View>
         ) : null}
@@ -320,52 +325,57 @@ export function AccountSection({
         {/* Con la cuenta asegurada no queda nada propio bajo este título. */}
         {account.recoverable ? null : (
           <ThemedText type="label" themeColor="textSecondary">
-            Cuenta
+            {t('Cuenta')}
           </ThemedText>
         )}
 
         {account.recoverable ? null : account.kind === 'pending-email' ? (
           <>
-            <ThemedText type="bodyStrong">Falta confirmar tu email</ThemedText>
+            <ThemedText type="bodyStrong">{t('Falta confirmar tu email')}</ThemedText>
             <ThemedText type="body" themeColor="textSecondary">
-              {`Te hemos mandado un correo a ${pendingEmail ?? 'tu email'}. Pincha el enlace y tu cuenta quedará asegurada.`}
+              {t(
+                'Te hemos mandado un correo a {v}. Pincha el enlace y tu cuenta quedará asegurada.',
+                { v: pendingEmail ?? t('tu email') }
+              )}
             </ThemedText>
             <ThemedText type="body" themeColor="textSecondary">
-              Hasta que lo pinches, tus datos siguen viviendo solo en este teléfono.
+              {t('Hasta que lo pinches, tus datos siguen viviendo solo en este teléfono.')}
             </ThemedText>
           </>
         ) : (
           <>
-            <ThemedText type="bodyStrong">Tus datos viven solo en este teléfono</ThemedText>
+            <ThemedText type="bodyStrong">{t('Tus datos viven solo en este teléfono')}</ThemedText>
             <ThemedText type="body" themeColor="textSecondary">
-              Tu perfil, tus matches y tus conversaciones están guardados aquí, en este móvil. Si
-              cambias de teléfono o desinstalas cofounder, no hay forma de traerlos de vuelta.
+              {t(
+                'Tu perfil, tus matches y tus conversaciones están guardados aquí, en este móvil. Si cambias de teléfono o desinstalas cofounder, no hay forma de traerlos de vuelta.'
+              )}
             </ThemedText>
             <ThemedText type="body" themeColor="textSecondary">
-              Con un email recuperas tu cuenta desde donde quieras. No creas otra: aseguras la que
-              ya tienes.
+              {t(
+                'Con un email recuperas tu cuenta desde donde quieras. No creas otra: aseguras la que ya tienes.'
+              )}
             </ThemedText>
           </>
         )}
 
         {waitingForEmail ? (
           <>
-            <PrimaryButton label="Ya lo he confirmado" onPress={refresh} />
+            <PrimaryButton label={t('Ya lo he confirmado')} onPress={refresh} />
             <SecondaryButton
-              label={busy === 'reenviar' ? 'Mandando…' : 'Reenviar el correo'}
+              label={busy === 'reenviar' ? t('Mandando…') : t('Reenviar el correo')}
               onPress={handleResend}
             />
-            <SecondaryButton label="Usar otro email" onPress={() => setChangingEmail(true)} />
+            <SecondaryButton label={t('Usar otro email')} onPress={() => setChangingEmail(true)} />
           </>
         ) : null}
 
         {askingForEmail ? (
           <>
-            <Field label="Email" hint="Te mandamos un enlace para confirmar que es tuyo.">
+            <Field label={t('Email')} hint={t('Te mandamos un enlace para confirmar que es tuyo.')}>
               <TextField
                 value={email}
                 onChangeText={setEmail}
-                accessibilityLabel="Email con el que asegurar tu cuenta"
+                accessibilityLabel={t('Email con el que asegurar tu cuenta')}
                 placeholder="tu@email.com"
                 keyboardType="email-address"
                 inputMode="email"
@@ -376,7 +386,7 @@ export function AccountSection({
             </Field>
 
             <PrimaryButton
-              label={busy === 'asegurar' ? 'Mandando el correo…' : 'Asegurar mi cuenta'}
+              label={busy === 'asegurar' ? t('Mandando el correo…') : t('Asegurar mi cuenta')}
               onPress={handleLink}
             />
           </>
@@ -394,20 +404,23 @@ export function AccountSection({
               { backgroundColor: theme.dangerSoft, borderColor: theme.danger },
             ]}>
             <ThemedText type="bodyStrong" themeColor="danger">
-              Cerrar sesión aquí te deja sin acceso a tu cuenta
+              {t('Cerrar sesión aquí te deja sin acceso a tu cuenta')}
             </ThemedText>
             <ThemedText type="body" themeColor="textSecondary">
-              Esta cuenta solo existe en este teléfono. Si cierras sesión, perderás el acceso a tu
-              perfil, tus matches y tus conversaciones desde este dispositivo y no podrás
-              recuperarlo.
+              {t(
+                'Esta cuenta solo existe en este teléfono. Si cierras sesión, perderás el acceso a tu perfil, tus matches y tus conversaciones desde este dispositivo y no podrás recuperarlo.'
+              )}
             </ThemedText>
             <ThemedText type="body" themeColor="textSecondary">
-              Cerrar sesión no borra tus datos del servidor; para eso está «Eliminar mi cuenta». Si
-              no quieres perder el acceso, asegura antes la cuenta con un email.
+              {t(
+                'Cerrar sesión no borra tus datos del servidor; para eso está «Eliminar mi cuenta». Si no quieres perder el acceso, asegura antes la cuenta con un email.'
+              )}
             </ThemedText>
 
             <SecondaryButton
-              label={busy === 'salir' ? 'Cerrando sesión…' : 'Cerrar sesión y perder el acceso'}
+              label={
+                busy === 'salir' ? t('Cerrando sesión…') : t('Cerrar sesión y perder el acceso')
+              }
               tone="danger"
               onPress={() =>
                 void run(
@@ -417,11 +430,11 @@ export function AccountSection({
                 )
               }
             />
-            <SecondaryButton label="Mejor no" onPress={() => setConfirmingLeave(false)} />
+            <SecondaryButton label={t('Mejor no')} onPress={() => setConfirmingLeave(false)} />
           </View>
         ) : (
           <SecondaryButton
-            label={busy === 'salir' ? 'Cerrando sesión…' : 'Cerrar sesión'}
+            label={busy === 'salir' ? t('Cerrando sesión…') : t('Cerrar sesión')}
             onPress={handleSignOut}
           />
         )}
@@ -434,28 +447,33 @@ export function AccountSection({
               { backgroundColor: theme.dangerSoft, borderColor: theme.danger },
             ]}>
             <ThemedText type="bodyStrong" themeColor="danger">
-              Eliminar tu cuenta es para siempre
+              {t('Eliminar tu cuenta es para siempre')}
             </ThemedText>
             <ThemedText type="body" themeColor="textSecondary">
-              Se borran tu perfil, tus matches, tus conversaciones, tus sesiones y tus salas,
-              también para quienes hablaban contigo. No se puede deshacer ni recuperar.
+              {t(
+                'Se borran tu perfil, tus matches, tus conversaciones, tus sesiones y tus salas, también para quienes hablaban contigo. No se puede deshacer ni recuperar.'
+              )}
             </ThemedText>
             {quotas === null || quotas.isPremium ? (
               <>
                 <ThemedText type="body" themeColor="danger">
                   {quotas === null
-                    ? 'No hemos podido comprobar si tienes una suscripción. Si la tienes, no se cancela sola: cancélala en la tienda o se seguirá cobrando.'
-                    : 'Tu suscripción no se cancela sola: cancélala en la tienda o se seguirá cobrando.'}
+                    ? t(
+                        'No hemos podido comprobar si tienes una suscripción. Si la tienes, no se cancela sola: cancélala en la tienda o se seguirá cobrando.'
+                      )
+                    : t(
+                        'Tu suscripción no se cancela sola: cancélala en la tienda o se seguirá cobrando.'
+                      )}
                 </ThemedText>
                 <SecondaryButton
-                  label="Gestionar suscripción"
+                  label={t('Gestionar suscripción')}
                   onPress={() => void Linking.openURL(manageSubscriptionsUrl())}
                 />
               </>
             ) : null}
 
             <SecondaryButton
-              label={busy === 'borrar' ? 'Eliminando…' : 'Eliminar mi cuenta para siempre'}
+              label={busy === 'borrar' ? t('Eliminando…') : t('Eliminar mi cuenta para siempre')}
               tone="danger"
               onPress={() =>
                 void run(
@@ -468,11 +486,11 @@ export function AccountSection({
                 )
               }
             />
-            <SecondaryButton label="Mejor no" onPress={() => setConfirmingDelete(false)} />
+            <SecondaryButton label={t('Mejor no')} onPress={() => setConfirmingDelete(false)} />
           </View>
         ) : (
           <SecondaryButton
-            label="Eliminar mi cuenta"
+            label={t('Eliminar mi cuenta')}
             tone="danger"
             onPress={() => {
               setConfirmingLeave(false);

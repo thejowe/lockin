@@ -388,6 +388,16 @@ tareas van en paralelo (Tarea 1 ∥ Tarea 2 y Tarea 4 ∥ Tarea 5; ver el plan).
   la spec antes de la Tarea 1, y aplicar `20261002000100_lockin_rooms.sql` en
   `grrzmzktrhksbttpbblg` al cerrar.
 
+### 15. `idiomas` — Español, inglés y catalán
+
+Entrega: la app detecta el idioma del móvil y se puede cambiar en Ajustes. Reglas y pendientes en
+`docs/plan/todo/idiomas.md`. **Todo texto visible nuevo va con `t()` (`@/i18n`) y con su traducción
+en `src/i18n/en.json` y `ca.json`**, sea cual sea el bloque que lo escriba.
+
+- Archivos propios: `src/i18n/`, `locales/`, `docs/tiendas/{en,ca}/`, `e2e/product-source.mjs`.
+- Cruza la capa de texto de todos los bloques, sin cambiar lógica ni datos.
+- Depende de: nada abierto. **Del usuario**: revisión legal de las traducciones y aplicar las plantillas de correo.
+
 ## Orden recomendado de trabajo
 
 1. `arquitecto` primero y solo — es la base de todo lo demás.

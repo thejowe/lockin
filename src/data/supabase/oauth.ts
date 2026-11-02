@@ -18,6 +18,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as WebBrowser from 'expo-web-browser';
+import { t } from '@/i18n';
 
 /**
  * El último code canjeado por aquí, en disco: Android puede volver a entregar
@@ -49,7 +50,7 @@ export async function runOAuth(
     const failure = params.get('error_description') ?? params.get('error');
     if (failure) throw new Error(failure);
     const code = params.get('code');
-    if (!code) throw new Error('El proveedor no devolvió el código de acceso.');
+    if (!code) throw new Error(t('El proveedor no devolvió el código de acceso.'));
     // Registrado antes de que nadie más vea resolverse el navegador: la ruta de
     // callback que lo esperaba encuentra el canje ya en marcha.
     if (!completions.has(code)) {

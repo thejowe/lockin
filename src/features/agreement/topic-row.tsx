@@ -19,12 +19,21 @@ import { isKnownAnswer, optionLabel, optionsOf } from './topics';
 
 import type { AgreementTopic } from './topics';
 import type { AgreementAnswer, AgreementTopicView } from '@/data';
+import { t } from '@/i18n';
 
 const STATUS_TEXT = {
-  coincidis: 'Coincidís',
-  distinto: 'Distinto',
-  'por-hablar': 'Lo tenéis que hablar',
-  pendiente: 'Pendiente',
+  get coincidis() {
+    return t('Coincidís');
+  },
+  get distinto() {
+    return t('Distinto');
+  },
+  get 'por-hablar'() {
+    return t('Lo tenéis que hablar');
+  },
+  get pendiente() {
+    return t('Pendiente');
+  },
 } as const;
 
 export function TopicRow({
@@ -68,24 +77,31 @@ export function TopicRow({
   const lines: string[] = [];
   if (status === 'pendiente') {
     if (!mine) {
-      lines.push('Falta tu respuesta');
+      lines.push(t('Falta tu respuesta'));
       if (view?.theirs) lines.push(`${counterpartName} ya ha respondido`);
     } else {
-      lines.push(`${counterpartName} aún no ha respondido`, `Tú: ${labelOf(mine)}`);
+      lines.push(
+        t('{counterpartName} aún no ha respondido', { counterpartName }),
+        t('Tú: {v}', { v: labelOf(mine) })
+      );
     }
   } else if (status === 'coincidis') {
     lines.push(labelOf(mine!));
   } else {
-    lines.push(`Tú: ${labelOf(mine!)}`, `${counterpartName}: ${labelOf(theirs!)}`);
+    lines.push(t('Tú: {v}', { v: labelOf(mine!) }), `${counterpartName}: ${labelOf(theirs!)}`);
   }
   if (status !== 'pendiente') {
-    if (mine?.note) lines.push(`Tú: «${mine.note}»`);
+    if (mine?.note) lines.push(t('Tú: «{note}»', { note: mine.note }));
     if (theirs?.note) lines.push(`${counterpartName}: «${theirs.note}»`);
   }
 
   const a11y = `${topic.question}. ${STATUS_TEXT[status]}. ${
     status === 'distinto'
-      ? `tú: ${labelOf(mine!)}; ${counterpartName}: ${labelOf(theirs!)}`
+      ? t('tú: {v}; {counterpartName}: {v2}', {
+          v: labelOf(mine!),
+          counterpartName,
+          v2: labelOf(theirs!),
+        })
       : lines.join('. ')
   }`;
 
@@ -134,8 +150,8 @@ export function TopicRow({
             })}
           </View>
           <TextInput
-            accessibilityLabel="Nota opcional"
-            placeholder="Nota opcional"
+            accessibilityLabel={t('Nota opcional')}
+            placeholder={t('Nota opcional')}
             placeholderTextColor={theme.textSecondary}
             value={note}
             onChangeText={setNote}
@@ -148,7 +164,7 @@ export function TopicRow({
           </ThemedText>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Guardar respuesta"
+            accessibilityLabel={t('Guardar respuesta')}
             accessibilityState={{ disabled: option === null || saving }}
             disabled={option === null || saving}
             onPress={() => {
@@ -163,7 +179,7 @@ export function TopicRow({
               },
             ]}>
             <ThemedText type="bodyStrong" style={{ color: theme.onAccent }}>
-              Guardar
+              {t('Guardar')}
             </ThemedText>
           </Pressable>
         </View>

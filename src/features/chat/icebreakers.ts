@@ -11,19 +11,28 @@
  * tres primeras, así que el orden de este archivo *es* la prioridad.
  */
 
-import { SPECIALTY_LABELS, TIME_BAND_LABELS, joinNaturally } from './labels';
+import { SPECIALTY_LABELS, joinNaturally } from './labels';
 
 import type { Mode, Profile, StartingPoint } from '@/data';
+import { t } from '@/i18n';
+import { timeBandPhrase } from '@/features/profile/catalog';
 
 /** Cuántas sugerencias enseñamos. Tres caben sin empujar la conversación fuera de pantalla. */
 const MAX_SUGGESTIONS = 3;
 
 /** Cómo se menciona el punto de partida del otro dentro de una pregunta. */
 const STARTING_POINT_OPENERS: Record<StartingPoint, string> = {
-  'solo-ganas':
-    'Dices que aún no tienes idea, solo ganas. ¿Qué terreno te llama más para empezar a mirar?',
-  'idea-sin-empezar': 'Tienes una idea pero sin empezar. ¿Qué te ha frenado hasta ahora?',
-  'algo-empezado': 'Dices que ya tocaste algo. ¿Qué tienes montado y qué te falta?',
+  get 'solo-ganas'() {
+    return t(
+      'Dices que aún no tienes idea, solo ganas. ¿Qué terreno te llama más para empezar a mirar?'
+    );
+  },
+  get 'idea-sin-empezar'() {
+    return t('Tienes una idea pero sin empezar. ¿Qué te ha frenado hasta ahora?');
+  },
+  get 'algo-empezado'() {
+    return t('Dices que ya tocaste algo. ¿Qué tienes montado y qué te falta?');
+  },
 };
 
 /**
@@ -66,14 +75,19 @@ function complementarySpecialties(counterpart: Profile, me: Profile): string | n
   const mine = joinNaturally(mineOnly.map((s) => SPECIALTY_LABELS[s]));
   const theirs = joinNaturally(theirsOnly.map((s) => SPECIALTY_LABELS[s]));
 
-  return `Yo voy más por ${mine} y tú por ${theirs} — eso encaja. ¿Qué parte te apetecería llevar?`;
+  return t(
+    'Yo voy más por {mine} y tú por {theirs} — eso encaja. ¿Qué parte te apetecería llevar?',
+    { mine, theirs }
+  );
 }
 
 function sharedSpecialties(counterpart: Profile, me: Profile): string | null {
   const shared = counterpart.specialties.filter((s) => me.specialties.includes(s));
   if (shared.length === 0) return null;
 
-  return `Los dos venimos de ${joinNaturally(shared.map((s) => SPECIALTY_LABELS[s]))}. ¿En qué parte te sientes más fuerte?`;
+  return t('Los dos venimos de {v}. ¿En qué parte te sientes más fuerte?', {
+    v: joinNaturally(shared.map((s) => SPECIALTY_LABELS[s])),
+  });
 }
 
 /** Franja compartida: es la excusa natural para proponer la primera llamada. */
@@ -83,26 +97,37 @@ function sharedTimeBand(counterpart: Profile, me: Profile): string | null {
   );
   if (shared.length === 0) return null;
 
-  return `Los dos solemos estar por la ${TIME_BAND_LABELS[shared[0]]}. ¿Hablamos esta semana a esa hora?`;
+  return t('Los dos solemos estar {when}. ¿Hablamos esta semana a esa hora?', {
+    when: timeBandPhrase(shared[0]),
+  });
 }
 
 function sharedAmbition(counterpart: Profile, me: Profile): string | null {
   if (counterpart.ambition !== me.ambition) return null;
 
   if (counterpart.ambition === 'todo-o-nada') {
-    return 'Los dos hemos puesto apostarlo todo. ¿Qué significa eso para ti en los próximos seis meses?';
+    return t(
+      'Los dos hemos puesto apostarlo todo. ¿Qué significa eso para ti en los próximos seis meses?'
+    );
   }
   if (counterpart.ambition === 'lifestyle') {
-    return 'Los dos buscamos algo sostenible más que un cohete. ¿Cómo sería para ti el tamaño ideal?';
+    return t(
+      'Los dos buscamos algo sostenible más que un cohete. ¿Cómo sería para ti el tamaño ideal?'
+    );
   }
-  return 'Los dos queremos algo serio sin quemarnos. ¿Cuántas horas de verdad puedes sostener al mes?';
+  return t(
+    'Los dos queremos algo serio sin quemarnos. ¿Cuántas horas de verdad puedes sostener al mes?'
+  );
 }
 
 /** Sin franja común y en husos distintos, la primera pregunta útil es la logística. */
 function differentTimezone(counterpart: Profile, me: Profile): string | null {
   if (counterpart.timezone === me.timezone) return null;
 
-  return `Tú estás en ${counterpart.location} y yo en ${me.location}. ¿Qué hora te encaja para coincidir?`;
+  return t('Tú estás en {location} y yo en {location2}. ¿Qué hora te encaja para coincidir?', {
+    location: counterpart.location,
+    location2: me.location,
+  });
 }
 
 /** Citar su propio prompt es lo que más se parece a haber leído el perfil. */
@@ -110,18 +135,20 @@ function quoteTheirPrompt(counterpart: Profile): string | null {
   const prompt = counterpart.prompts.find((entry) => entry.answer.trim().length > 0);
   if (!prompt) return null;
 
-  return `Has puesto «${prompt.answer.trim()}». Cuéntame más.`;
+  return t('Has puesto «{v}». Cuéntame más.', { v: prompt.answer.trim() });
 }
 
 /** Regla de reserva cuando no hay perfil propio: al menos hablamos de lo suyo. */
 function theirSpecialties(counterpart: Profile): string | null {
   if (counterpart.specialties.length === 0) return null;
 
-  return `Veo que llevas ${joinNaturally(counterpart.specialties.map((s) => SPECIALTY_LABELS[s]))}. ¿Cómo llegaste ahí?`;
+  return t('Veo que llevas {v}. ¿Cómo llegaste ahí?', {
+    v: joinNaturally(counterpart.specialties.map((s) => SPECIALTY_LABELS[s])),
+  });
 }
 
 function modeFallback(mode: Mode): string {
   return mode === 'lockin'
-    ? '¿Cuándo es tu mejor rato para concentrarte? Busco con quién coincidir.'
-    : '¿Qué es lo que más te apetece construir ahora mismo?';
+    ? t('¿Cuándo es tu mejor rato para concentrarte? Busco con quién coincidir.')
+    : t('¿Qué es lo que más te apetece construir ahora mismo?');
 }

@@ -12,7 +12,8 @@
       "bundleIdentifier": "app.cofounder.mobile",
       "usesAppleSignIn": true,
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleAllowMixedLocalizations": true
       }
     },
     "android": {
@@ -30,6 +31,11 @@
     "web": {
       "output": "static",
       "favicon": "./assets/images/favicon.png"
+    },
+    "locales": {
+      "es": "./locales/es.json",
+      "en": "./locales/en.json",
+      "ca": "./locales/ca.json"
     },
     "plugins": [
       "expo-router",
@@ -55,6 +61,12 @@
         "expo-secure-store",
         {
           "faceIDPermission": false
+        }
+      ],
+      [
+        "expo-localization",
+        {
+          "supportedLocales": ["es", "en", "ca"]
         }
       ]
     ],

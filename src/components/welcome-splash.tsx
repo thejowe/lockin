@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Screen } from '@/components/ambient-background';
 import { CofounderLogo } from '@/components/cofounder-logo';
 import { Spacing } from '@/constants/theme';
+import { t } from '@/i18n';
 
 /** Lo que dura la animación antes de entrar sola: el logo y un respiro. */
 export const SPLASH_MS = 2200;
@@ -40,7 +41,7 @@ export function WelcomeSplash({ ready, onEnter }: { ready: boolean; onEnter: () 
     <Screen ambient="ember">
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Entrar a cofounder"
+        accessibilityLabel={t('Entrar a cofounder')}
         onPress={() => setTapped(true)}
         style={styles.fill}>
         <SafeAreaView style={styles.center} edges={['top', 'bottom']}>

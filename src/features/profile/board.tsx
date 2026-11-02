@@ -21,6 +21,7 @@ import { useTheme } from '@/hooks/use-theme';
 
 import { pickAvatarPhoto } from './avatar-photo';
 import { Field, PrimaryButton, SecondaryButton, TextField } from './controls';
+import { t } from '@/i18n';
 
 const CAPTION_MAX = 280;
 /** Las URLs firmadas valen una hora: se piden otras antes de que caduquen. */
@@ -68,7 +69,7 @@ export function Board({
     setNotice(null);
     const picked = await pickAvatarPhoto('library', [1, 1]);
     if (picked.status === 'denied') {
-      setNotice('Sin permiso para tus fotos no podemos subir ninguna.');
+      setNotice(t('Sin permiso para tus fotos no podemos subir ninguna.'));
       return;
     }
     if (picked.status === 'picked') setDraft({ uri: picked.uri, caption: '' });
@@ -77,11 +78,11 @@ export function Board({
   async function publish() {
     if (!draft) return;
     if (draft.caption.length > CAPTION_MAX) {
-      setNotice(`El texto no puede pasar de ${CAPTION_MAX} caracteres.`);
+      setNotice(t('El texto no puede pasar de {CAPTION_MAX} caracteres.', { CAPTION_MAX }));
       return;
     }
     if (isObjectionable(draft.caption)) {
-      setNotice(OBJECTIONABLE_MESSAGE);
+      setNotice(t(OBJECTIONABLE_MESSAGE));
       return;
     }
     setBusy('subir');
@@ -91,7 +92,7 @@ export function Board({
       setDraft(null);
       refresh();
     } catch (cause) {
-      setNotice(cause instanceof Error ? cause.message : 'No se ha podido subir la foto.');
+      setNotice(cause instanceof Error ? cause.message : t('No se ha podido subir la foto.'));
     } finally {
       setBusy(null);
     }
@@ -105,7 +106,7 @@ export function Board({
       setOpen(null);
       refresh();
     } catch (cause) {
-      setNotice(cause instanceof Error ? cause.message : 'No se ha podido quitar la foto.');
+      setNotice(cause instanceof Error ? cause.message : t('No se ha podido quitar la foto.'));
     } finally {
       setBusy(null);
     }
@@ -116,12 +117,13 @@ export function Board({
   return (
     <View style={styles.root}>
       <ThemedText type="label" themeColor="textSecondary">
-        {editable ? 'Tu tablón' : 'Tablón'}
+        {editable ? t('Tu tablón') : t('Tablón')}
       </ThemedText>
       {editable && list.length === 0 && !draft ? (
         <ThemedText type="small" themeColor="textSecondary">
-          Enseña en qué trabajas, lo que has construido o algo más de ti. Las fotos se revisan antes
-          de publicarse.
+          {t(
+            'Enseña en qué trabajas, lo que has construido o algo más de ti. Las fotos se revisan antes de publicarse.'
+          )}
         </ThemedText>
       ) : null}
 
@@ -132,44 +134,48 @@ export function Board({
               source={{ uri: open.imageUrl }}
               style={styles.large}
               contentFit="cover"
-              accessibilityLabel={open.caption || `Foto del tablón de ${ownerName}`}
+              accessibilityLabel={
+                open.caption || t('Foto del tablón de {ownerName}', { ownerName })
+              }
             />
           ) : null}
           {open.caption ? <ThemedText type="body">{open.caption}</ThemedText> : null}
           {editable ? (
             <SecondaryButton
-              label={busy === 'quitar' ? 'Quitando…' : 'Quitar esta foto'}
+              label={busy === 'quitar' ? t('Quitando…') : t('Quitar esta foto')}
               tone="danger"
               disabled={busy !== null}
               onPress={() => void remove(open)}
             />
           ) : null}
-          <SecondaryButton label="Cerrar" onPress={() => setOpen(null)} />
+          <SecondaryButton label={t('Cerrar')} onPress={() => setOpen(null)} />
         </View>
       ) : null}
 
       {draft ? (
         <View style={[styles.viewer, { borderColor: theme.border }]}>
           <Image source={{ uri: draft.uri }} style={styles.large} contentFit="cover" />
-          <Field label="Texto (opcional)" hint={`Hasta ${CAPTION_MAX} caracteres.`}>
+          <Field
+            label={t('Texto (opcional)')}
+            hint={t('Hasta {CAPTION_MAX} caracteres.', { CAPTION_MAX })}>
             <TextField
               value={draft.caption}
               onChangeText={(caption) => setDraft({ ...draft, caption })}
-              placeholder="Qué es, en qué estás trabajando…"
+              placeholder={t('Qué es, en qué estás trabajando…')}
               multiline
               maxLength={CAPTION_MAX}
               showCount
               autoCapitalize="sentences"
               autoCorrect={false}
-              accessibilityLabel="Texto de la foto"
+              accessibilityLabel={t('Texto de la foto')}
             />
           </Field>
           <PrimaryButton
-            label={busy === 'subir' ? 'Revisando y subiendo…' : 'Publicar en el tablón'}
+            label={busy === 'subir' ? t('Revisando y subiendo…') : t('Publicar en el tablón')}
             disabled={busy !== null}
             onPress={() => void publish()}
           />
-          <SecondaryButton label="Cancelar" onPress={() => setDraft(null)} />
+          <SecondaryButton label={t('Cancelar')} onPress={() => setDraft(null)} />
         </View>
       ) : null}
 
@@ -178,7 +184,7 @@ export function Board({
           <Pressable
             key={post.id}
             accessibilityRole="imagebutton"
-            accessibilityLabel={post.caption || `Foto del tablón de ${ownerName}`}
+            accessibilityLabel={post.caption || t('Foto del tablón de {ownerName}', { ownerName })}
             onPress={() => setOpen(post)}
             style={[styles.cell, { backgroundColor: theme.backgroundElement }]}>
             {post.imageUrl ? (
@@ -189,7 +195,7 @@ export function Board({
         {editable && !full && !draft ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Añadir una foto al tablón"
+            accessibilityLabel={t('Añadir una foto al tablón')}
             onPress={() => void pick()}
             style={[
               styles.cell,

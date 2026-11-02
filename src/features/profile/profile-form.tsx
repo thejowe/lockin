@@ -59,6 +59,7 @@ import type {
   StartingPoint,
   TimeBand,
 } from '@/data';
+import { t } from '@/i18n';
 
 /** Estado del formulario. Los números viven como texto mientras se teclean. */
 export interface Draft {
@@ -165,43 +166,45 @@ export function validate(draft: Draft): Errors {
   const errors: Errors = {};
   const age = Number(draft.age);
 
-  if (draft.name.trim().length < 2) errors.name = 'Escribe tu nombre.';
+  if (draft.name.trim().length < 2) errors.name = t('Escribe tu nombre.');
   if (!Number.isInteger(age) || age < AGE_MIN || age > AGE_MAX) {
-    errors.age = `Una edad entre ${AGE_MIN} y ${AGE_MAX}.`;
+    errors.age = t('Una edad entre {AGE_MIN} y {AGE_MAX}.', { AGE_MIN, AGE_MAX });
   }
-  if (draft.location.trim().length < 2) errors.location = 'Ciudad o zona donde estás.';
-  if (draft.timezone.trim().length === 0) errors.timezone = 'Necesitamos tu zona horaria.';
+  if (draft.location.trim().length < 2) errors.location = t('Ciudad o zona donde estás.');
+  if (draft.timezone.trim().length === 0) errors.timezone = t('Necesitamos tu zona horaria.');
   const other = draft.otherSpecialty?.trim() ?? null;
   if (draft.specialties.length === 0 && other === null) {
-    errors.specialties = 'Elige al menos una especialidad.';
+    errors.specialties = t('Elige al menos una especialidad.');
   } else if (other !== null && other.length < OTHER_SPECIALTY_MIN_LENGTH) {
-    errors.specialties = 'Escribe cuál es la otra, o desmárcala.';
+    errors.specialties = t('Escribe cuál es la otra, o desmárcala.');
   } else if (draft.specialties.length > SPECIALTIES_MAX) {
-    errors.specialties = `Como mucho ${SPECIALTIES_MAX}: quédate con las que más te definen.`;
+    errors.specialties = t('Como mucho {SPECIALTIES_MAX}: quédate con las que más te definen.', {
+      SPECIALTIES_MAX,
+    });
   }
   if (draft.seekingSpecialties.length > SPECIALTIES_MAX) {
-    errors.seekingSpecialties = `Como mucho ${SPECIALTIES_MAX}.`;
+    errors.seekingSpecialties = t('Como mucho {SPECIALTIES_MAX}.', { SPECIALTIES_MAX });
   }
-  if (draft.languages.length === 0) errors.languages = 'Elige al menos un idioma.';
-  if (!draft.startingPoint) errors.startingPoint = 'Elige tu punto de partida.';
-  if (draft.bands.length === 0) errors.bands = 'Marca al menos una franja horaria.';
-  if (!draft.ambition) errors.ambition = 'Elige tu nivel de compromiso.';
+  if (draft.languages.length === 0) errors.languages = t('Elige al menos un idioma.');
+  if (!draft.startingPoint) errors.startingPoint = t('Elige tu punto de partida.');
+  if (draft.bands.length === 0) errors.bands = t('Marca al menos una franja horaria.');
+  if (!draft.ambition) errors.ambition = t('Elige tu nivel de compromiso.');
   // Las respuestas son opcionales desde el 2026-10-30 (decisión del usuario):
   // sin ninguna, la tarjeta del deck se queda en sus dos primeras páginas.
 
   // Complemento del reporte, no moderación: ver `safety/content-filter.ts`.
   const objectionable = (text: string) => isObjectionable(text);
-  if (objectionable(draft.name)) errors.name = OBJECTIONABLE_MESSAGE;
-  if (objectionable(draft.location)) errors.location = OBJECTIONABLE_MESSAGE;
-  if (other !== null && objectionable(other)) errors.specialties = OBJECTIONABLE_MESSAGE;
+  if (objectionable(draft.name)) errors.name = t(OBJECTIONABLE_MESSAGE);
+  if (objectionable(draft.location)) errors.location = t(OBJECTIONABLE_MESSAGE);
+  if (other !== null && objectionable(other)) errors.specialties = t(OBJECTIONABLE_MESSAGE);
   if (draft.prompts.some((prompt) => objectionable(prompt.answer))) {
-    errors.prompts = OBJECTIONABLE_MESSAGE;
+    errors.prompts = t(OBJECTIONABLE_MESSAGE);
   }
 
   const invalidLink = (
     [draft.github, draft.portfolio, draft.linkedin, draft.instagram, draft.tiktok] as const
   ).some((link) => link.trim().length > 0 && !/^https?:\/\/\S+$/.test(link.trim()));
-  if (invalidLink) errors.github = 'Los enlaces deben empezar por http:// o https://';
+  if (invalidLink) errors.github = t('Los enlaces deben empezar por http:// o https://');
 
   return errors;
 }
@@ -275,11 +278,21 @@ const SECTION_FIELDS: Record<ProfileSection, (keyof Draft)[]> = {
 
 /** Cómo se llama cada bloque en el aviso de «falta algo en otra parte». */
 const SECTION_NAMES: Record<ProfileSection, string> = {
-  basics: 'Nombre, edad y ubicación',
-  specialties: 'Lo que dominas',
-  work: 'Cómo trabajas',
-  prompts: 'Tus respuestas',
-  links: 'Enlaces y redes',
+  get basics() {
+    return t('Nombre, edad y ubicación');
+  },
+  get specialties() {
+    return t('Lo que dominas');
+  },
+  get work() {
+    return t('Cómo trabajas');
+  },
+  get prompts() {
+    return t('Tus respuestas');
+  },
+  get links() {
+    return t('Enlaces y redes');
+  },
 };
 
 /**
@@ -292,11 +305,17 @@ export function elsewhereMessage(field: keyof Draft, error: string): string {
   const owner = (Object.keys(SECTION_FIELDS) as ProfileSection[]).find((part) =>
     SECTION_FIELDS[part].includes(field)
   );
-  const where = owner ? `«${SECTION_NAMES[owner]}»` : 'otra parte de tu ficha';
+  const where = owner ? `«${SECTION_NAMES[owner]}»` : t('otra parte de tu ficha');
   if (field === 'languages') {
-    return `Ahora los perfiles muestran los idiomas y aún no has elegido los tuyos. Añádelos desde el lápiz de ${where} y podrás guardar esto.`;
+    return t(
+      'Ahora los perfiles muestran los idiomas y aún no has elegido los tuyos. Añádelos desde el lápiz de {where} y podrás guardar esto.',
+      { where }
+    );
   }
-  return `Falta algo en ${where}: ${error} Corrígelo desde su lápiz y podrás guardar esto.`;
+  return t('Falta algo en {where}: {error} Corrígelo desde su lápiz y podrás guardar esto.', {
+    where,
+    error,
+  });
 }
 
 export function ProfileForm({
@@ -305,7 +324,7 @@ export function ProfileForm({
   submitLabel,
   onSubmit,
   onCancel,
-  cancelLabel = 'Cancelar',
+  cancelLabel = t('Cancelar'),
   header,
   section,
 }: ProfileFormProps) {
@@ -372,7 +391,7 @@ export function ProfileForm({
     try {
       await onSubmit(toInput(draft));
     } catch (cause) {
-      setSaveError(cause instanceof Error ? cause.message : 'No se ha podido guardar.');
+      setSaveError(cause instanceof Error ? cause.message : t('No se ha podido guardar.'));
     } finally {
       setSaving(false);
     }
@@ -395,19 +414,19 @@ export function ProfileForm({
 
         {show('basics') ? (
           <>
-            <Field label="Nombre" error={errors.name} onLayout={track('name')}>
+            <Field label={t('Nombre')} error={errors.name} onLayout={track('name')}>
               <TextField
                 value={draft.name}
                 onChangeText={(value) => update('name', value)}
-                placeholder="Cómo te llamas"
+                placeholder={t('Cómo te llamas')}
                 autoCapitalize="words"
                 autoCorrect={false}
                 autoComplete="name"
-                accessibilityLabel="Nombre"
+                accessibilityLabel={t('Nombre')}
               />
             </Field>
 
-            <Field label="Edad" error={errors.age} onLayout={track('age')}>
+            <Field label={t('Edad')} error={errors.age} onLayout={track('age')}>
               <TextField
                 value={draft.age}
                 onChangeText={(value) => update('age', value.replace(/[^0-9]/g, ''))}
@@ -416,18 +435,18 @@ export function ProfileForm({
                 autoCorrect={false}
                 inputMode="numeric"
                 maxLength={2}
-                accessibilityLabel="Edad"
+                accessibilityLabel={t('Edad')}
               />
             </Field>
 
-            <Field label="Ubicación" error={errors.location} onLayout={track('location')}>
+            <Field label={t('Ubicación')} error={errors.location} onLayout={track('location')}>
               <TextField
                 value={draft.location}
                 onChangeText={(value) => update('location', value)}
                 placeholder="Barcelona"
                 autoCapitalize="words"
                 autoCorrect={false}
-                accessibilityLabel="Ubicación"
+                accessibilityLabel={t('Ubicación')}
               />
             </Field>
           </>
@@ -435,8 +454,8 @@ export function ProfileForm({
 
         {show('work') ? (
           <Field
-            label="Zona horaria"
-            hint="La detectamos de tu dispositivo. Cámbiala si no es la tuya."
+            label={t('Zona horaria')}
+            hint={t('La detectamos de tu dispositivo. Cámbiala si no es la tuya.')}
             error={errors.timezone}
             onLayout={track('timezone')}>
             <TextField
@@ -445,7 +464,7 @@ export function ProfileForm({
               placeholder="Europe/Madrid"
               autoCapitalize="none"
               autoCorrect={false}
-              accessibilityLabel="Zona horaria"
+              accessibilityLabel={t('Zona horaria')}
             />
           </Field>
         ) : null}
@@ -453,8 +472,8 @@ export function ProfileForm({
         {show('specialties') ? (
           <>
             <Field
-              label="Lo que domino"
-              hint="Lo que sabes hacer. Elige todas las que apliquen."
+              label={t('Lo que domino')}
+              hint={t('Lo que sabes hacer. Elige todas las que apliquen.')}
               error={errors.specialties}
               onLayout={track('specialties')}>
               <MasteryPicker
@@ -470,8 +489,8 @@ export function ProfileForm({
             </Field>
 
             <Field
-              label="Lo que debe dominar quien busco"
-              hint="Lo que a ti te falta. Si lo dejas vacío, te enseñamos a todo el mundo."
+              label={t('Lo que debe dominar quien busco')}
+              hint={t('Lo que a ti te falta. Si lo dejas vacío, te enseñamos a todo el mundo.')}
               error={errors.seekingSpecialties}
               onLayout={track('seekingSpecialties')}>
               <SeekingSpecialtyPicker
@@ -480,7 +499,10 @@ export function ProfileForm({
               />
             </Field>
 
-            <Field label="Idiomas que hablo" error={errors.languages} onLayout={track('languages')}>
+            <Field
+              label={t('Idiomas que hablo')}
+              error={errors.languages}
+              onLayout={track('languages')}>
               <LanguagePicker
                 values={draft.languages}
                 onChange={(next) => update('languages', next)}
@@ -488,8 +510,8 @@ export function ProfileForm({
             </Field>
 
             <Field
-              label="Idiomas que debe hablar quien busco"
-              hint="Si lo dejas vacío, te da igual el idioma.">
+              label={t('Idiomas que debe hablar quien busco')}
+              hint={t('Si lo dejas vacío, te da igual el idioma.')}>
               <LanguagePicker
                 values={draft.seekingLanguages}
                 onChange={(next) => update('seekingLanguages', next)}
@@ -502,7 +524,7 @@ export function ProfileForm({
         {show('work') ? (
           <>
             <Field
-              label="Punto de partida"
+              label={t('Punto de partida')}
               error={errors.startingPoint}
               onLayout={track('startingPoint')}>
               {STARTING_POINT_OPTIONS.map((option) => (
@@ -516,8 +538,8 @@ export function ProfileForm({
             </Field>
 
             <Field
-              label="Cuántas horas puedes dedicarle"
-              hint="Horas reales a la semana, no las que te gustaría tener.">
+              label={t('Cuántas horas puedes dedicarle')}
+              hint={t('Horas reales a la semana, no las que te gustaría tener.')}>
               <Stepper
                 value={draft.hoursPerWeek}
                 onChange={(value) => update('hoursPerWeek', value)}
@@ -528,7 +550,10 @@ export function ProfileForm({
               />
             </Field>
 
-            <Field label="Cuándo sueles trabajar" error={errors.bands} onLayout={track('bands')}>
+            <Field
+              label={t('Cuándo sueles trabajar')}
+              error={errors.bands}
+              onLayout={track('bands')}>
               <ChipRow>
                 {TIME_BAND_OPTIONS.map((option) => (
                   <Chip
@@ -542,7 +567,7 @@ export function ProfileForm({
               </ChipRow>
             </Field>
 
-            <Field label="Ambición" error={errors.ambition} onLayout={track('ambition')}>
+            <Field label={t('Ambición')} error={errors.ambition} onLayout={track('ambition')}>
               {AMBITION_OPTIONS.map((option) => (
                 <OptionCard
                   key={option.value}
@@ -557,8 +582,8 @@ export function ProfileForm({
 
         {show('prompts') ? (
           <Field
-            label="Tus respuestas (opcional)"
-            hint="Cortas: es lo que hace que un perfil se lea."
+            label={t('Tus respuestas (opcional)')}
+            hint={t('Cortas: es lo que hace que un perfil se lea.')}
             error={errors.prompts}
             onLayout={track('prompts')}>
             {draft.prompts.map((prompt, index) => (
@@ -567,7 +592,7 @@ export function ProfileForm({
                   {PROMPT_QUESTIONS.map((question) => (
                     <Chip
                       key={question}
-                      label={question}
+                      label={t(question)}
                       selected={prompt.question === question}
                       onPress={() => updatePrompt(index, { question })}
                     />
@@ -580,13 +605,13 @@ export function ProfileForm({
                 <TextField
                   value={prompt.answer}
                   onChangeText={(answer) => updatePrompt(index, { answer })}
-                  placeholder={index === 0 ? 'Tu respuesta' : 'Opcional'}
+                  placeholder={index === 0 ? t('Tu respuesta') : t('Opcional')}
                   autoCapitalize="sentences"
                   autoCorrect={false}
                   multiline
                   maxLength={PROMPT_MAX_LENGTH}
                   showCount
-                  accessibilityLabel={prompt.question}
+                  accessibilityLabel={t(prompt.question)}
                 />
               </View>
             ))}
@@ -595,11 +620,15 @@ export function ProfileForm({
 
         {show('links') ? (
           <Field
-            label="Enlaces y redes (opcional)"
+            label={t('Enlaces y redes (opcional)')}
             hint={
               githubLocked
-                ? 'Tu GitHub está verificado: lo lleva el sello, no este campo. Para cambiarlo, desvincúlalo desde tu perfil.'
-                : 'Lo que enseñe qué has hecho y dónde estás: portfolio, LinkedIn, Instagram, TikTok.'
+                ? t(
+                    'Tu GitHub está verificado: lo lleva el sello, no este campo. Para cambiarlo, desvincúlalo desde tu perfil.'
+                  )
+                : t(
+                    'Lo que enseñe qué has hecho y dónde estás: portfolio, LinkedIn, Instagram, TikTok.'
+                  )
             }
             error={errors.github}
             onLayout={track('github')}>
@@ -663,7 +692,7 @@ export function ProfileForm({
 
         <View style={styles.actions}>
           <PrimaryButton
-            label={saving ? 'Guardando…' : submitLabel}
+            label={saving ? t('Guardando…') : submitLabel}
             disabled={saving}
             onPress={handleSubmit}
           />

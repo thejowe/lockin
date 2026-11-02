@@ -12,6 +12,7 @@ import { Curves, Duration, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useRepositories } from '@/data';
 import { useRegistrationGate } from '@/features/profile';
 import { accountsAvailable, registrationRequired } from '@/features/profile/account-gateway';
+import { t } from '@/i18n';
 
 const easeOut = Easing.bezier(...Curves.out);
 
@@ -56,7 +57,7 @@ export default function WelcomeScreen() {
       await repositories.session.setActiveMode('par');
       router.push(registrationRequired ? '/register' : '/profile-form');
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'No hemos podido empezar el registro.');
+      setError(cause instanceof Error ? cause.message : t('No hemos podido empezar el registro.'));
     } finally {
       setSaving(false);
     }
@@ -78,7 +79,7 @@ export default function WelcomeScreen() {
             style={styles.wordmark}>
             <ThemedText type="display">cofounder</ThemedText>
             <ThemedText type="body" themeColor="textSecondary" style={styles.tagline}>
-              Encuentra con quién construir.
+              {t('Encuentra con quién construir.')}
             </ThemedText>
           </Animated.View>
         </View>
@@ -98,14 +99,14 @@ export default function WelcomeScreen() {
           {/* Sin capa de cuentas (mock) no hay a qué entrar: ver `sign-in.tsx`. */}
           {accountsAvailable ? (
             <GlassButton
-              label="Iniciar sesión"
+              label={t('Iniciar sesión')}
               tint="light"
               revealDelay={ACTIONS_DELAY_MS}
               onPress={() => router.push('/sign-in')}
             />
           ) : null}
           <GlassButton
-            label={saving ? 'Un momento…' : 'Registrarse'}
+            label={saving ? t('Un momento…') : t('Registrarse')}
             tint="dark"
             revealDelay={ACTIONS_DELAY_MS}
             disabled={saving}
