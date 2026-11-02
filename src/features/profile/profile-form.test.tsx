@@ -228,6 +228,23 @@ describe('ProfileForm', () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ['Cómo te llamas', 'Idiota'],
+    ['Ciudad', 'Mierda'],
+    ['https://github.com/tuusuario', 'https://github.com/gilipollas'],
+    ['https://tiktok.com/@tuusuario', 'https://tiktok.com/@idiota'],
+  ])('rechaza insultos en el campo %s', async (field, text) => {
+    const onSubmit = jest.fn<Promise<void>, [ProfileInput]>().mockResolvedValue(undefined);
+    await render(<ProfileForm submitLabel="Guardar" onSubmit={onSubmit} />);
+    await fillValidForm();
+    const input = screen.queryByPlaceholderText(field) ?? screen.getByLabelText(field);
+    await fireEvent.changeText(input, text);
+    await fireEvent.press(screen.getByRole('button', { name: 'Guardar' }));
+
+    expect(await screen.findByText(/lenguaje que no permitimos/)).toBeTruthy();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
   it('exige que los enlaces parezcan una URL', async () => {
     await render(<ProfileForm submitLabel="Guardar" onSubmit={jest.fn()} />);
 

@@ -22,6 +22,7 @@ import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from 'react-nativ
 
 import { ThemedText } from '@/components/themed-text';
 import { Control, HitSlop, Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
+import { OBJECTIONABLE_MESSAGE, isObjectionable } from '@/features/safety/content-filter';
 import { useTheme } from '@/hooks/use-theme';
 
 import { CompactPrimaryButton, CompactSecondaryButton, TextField } from './controls';
@@ -269,6 +270,10 @@ function EditableApps({
     const clean = url?.trim() ?? '';
     if (url !== null && !SAFE_URL.test(clean)) {
       setError(t('El enlace debe empezar por http:// o https://'));
+      return;
+    }
+    if (url !== null && isObjectionable(clean)) {
+      setError(t(OBJECTIONABLE_MESSAGE));
       return;
     }
     setSaving(true);

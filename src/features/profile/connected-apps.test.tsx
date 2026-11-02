@@ -116,4 +116,18 @@ describe('ConnectedApps', () => {
     expect(onSaveLink).not.toHaveBeenCalled();
     expect(screen.getByText(/empezar por http/)).toBeTruthy();
   });
+
+  it('perfil propio: un enlace con insultos no se guarda', async () => {
+    const onSaveLink = jest.fn().mockResolvedValue(undefined);
+    await render(<ConnectedApps profile={buildProfile({ links: {} })} onSaveLink={onSaveLink} />);
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Añadir TikTok' }));
+    await fireEvent.changeText(
+      screen.getByLabelText('Enlace de TikTok'),
+      'https://tiktok.com/@idiota'
+    );
+    await fireEvent.press(screen.getByText('Guardar'));
+    expect(onSaveLink).not.toHaveBeenCalled();
+    expect(screen.getByText(/lenguaje que no permitimos/)).toBeTruthy();
+  });
 });

@@ -1,6 +1,8 @@
 /**
- * Filtro básico de contenido objetable (es/en/ca) para bio, textos de perfil y
- * mensajes. Módulo puro: sin red, sin estado.
+ * Filtro básico de contenido objetable (es/en/ca) para todo texto libre que otra
+ * persona puede leer: nombre, ubicación, respuestas, enlaces, pies de foto, notas
+ * del acuerdo y mensajes. Módulo puro: sin red, sin estado. No se aplica al
+ * reporte, que tiene que poder citar el insulto que denuncia.
  *
  * ES UN COMPLEMENTO DEL REPORTE, NO SUSTITUYE A LA MODERACIÓN. Es una lista
  * corta y deliberadamente conservadora (insultos graves, amenazas, contenido
@@ -14,6 +16,11 @@
  * (0→o, 1→i, 3→e, 4→a, 5→s, 7→t, @→a, $→s) solo dentro de palabras con letras,
  * letras alargadas («puuuta») y letras sueltas separadas («p u t a»).
  * Se compara por palabra completa, no por subcadena.
+ *
+ * Fuera de la lista a propósito, porque el filtro también mira nombres y sitios:
+ * «moron» (Morón de la Frontera), «collons» (Les Collons), «cony» (nombre de
+ * pila), «perra» (mascota), «inutil» (frase normal) y
+ * «tortillera». «Coño» va aparte: normalizado sería «cono», una palabra limpia.
  */
 
 import { t, tk } from '@/i18n';
@@ -40,6 +47,77 @@ const WORDS: Record<ObjectionableKind, string[]> = {
     'retrasado',
     'mongolo',
     'hdp',
+    'idiota',
+    'imbecil',
+    'estupido',
+    'estupida',
+    'tonto',
+    'tonta',
+    'tontolaba',
+    'tontopollas',
+    'capullo',
+    'capulla',
+    'cretino',
+    'cretina',
+    'tarado',
+    'tarada',
+    'bastardo',
+    'bastarda',
+    'malnacido',
+    'malnacida',
+    'pendejo',
+    'pendeja',
+    'boludo',
+    'boluda',
+    'pelotudo',
+    'pelotuda',
+    'huevon',
+    'mamon',
+    'mamona',
+    'soplapollas',
+    'lameculos',
+    'comemierda',
+    'mierda',
+    'culo',
+    'joder',
+    'jodete',
+    'cojones',
+    'conazo',
+    'gilipollez',
+    'cabronazo',
+    'putita',
+    'puton',
+    'zorron',
+    'mariconazo',
+    'negrata',
+    'sudaca',
+    'bollera',
+    // en
+    'fuck',
+    'fucking',
+    'fucked',
+    'fucker',
+    'shit',
+    'bullshit',
+    'shithead',
+    'dipshit',
+    'idiot',
+    'stupid',
+    'imbecile',
+    'bastard',
+    'wanker',
+    'twat',
+    'prick',
+    'dickhead',
+    'douchebag',
+    'scumbag',
+    'cocksucker',
+    'arsehole',
+    // ca
+    'gilipolles',
+    'merda',
+    'merdes',
+    'putes',
     // en
     'cunt',
     'faggot',
@@ -83,7 +161,6 @@ const WORDS: Record<ObjectionableKind, string[]> = {
 
 const PHRASES: { kind: ObjectionableKind; pattern: RegExp }[] = [
   { kind: 'insulto', pattern: /\bhij[oa] de (la )?puta\b/ },
-  { kind: 'insulto', pattern: /\bfuck (you|off|u)\b/ },
   { kind: 'amenaza', pattern: /\bte (voy a|vamos a) (matar|violar|reventar)\b/ },
   { kind: 'amenaza', pattern: /\b(te mato|te violo|voy a (matarte|violarte))\b/ },
   { kind: 'amenaza', pattern: /\bojala (te )?(mueras|revientes)\b/ },
@@ -98,7 +175,6 @@ const PHRASES: { kind: ObjectionableKind; pattern: RegExp }[] = [
   { kind: 'amenaza', pattern: /\b(hope you die|go die)\b/ },
   { kind: 'sexual', pattern: /\b(send|manda|pasa|enviame|dame) nudes\b/ },
   { kind: 'sexual', pattern: /\bdick pic\b/ },
-  { kind: 'sexual', pattern: /\bfuck me\b/ },
 ];
 
 const LEET: Record<string, string> = {
@@ -111,6 +187,24 @@ const LEET: Record<string, string> = {
   '@': 'a',
   $: 's',
 };
+
+/** «Coño» sobre el texto sin normalizar, donde aún se distingue de «cono». */
+const WITH_N_TILDE = /(^|[^a-zñ0-9])c[o0]ñ[o0a4]s?($|[^a-zñ0-9])/;
+
+/**
+ * Deshace el `%xx` de los enlaces: la ficha enseña `tiktok.com/%40idiota` como
+ * «@idiota», así que el filtro tiene que leer lo mismo. Secuencia a secuencia,
+ * porque un «%» suelto («100% seguro») haría fallar el texto entero.
+ */
+function decodePercent(text: string): string {
+  return text.replace(/(%[0-9a-f]{2})+/gi, (encoded) => {
+    try {
+      return decodeURIComponent(encoded);
+    } catch {
+      return encoded;
+    }
+  });
+}
 
 const collapse = (word: string): string => word.replace(/(.)\1+/g, '$1');
 const STRETCHED = /(.)\1{2,}/;
@@ -136,7 +230,11 @@ function baseNormalize(text: string): string {
 function tokenize(text: string): string[] {
   const raw = baseNormalize(text)
     .split(/[^a-z0-9@$]+/)
-    .filter(Boolean);
+    .filter(Boolean)
+    // «@idiota» es un usuario, no «aidiota»; «@sshole» sigue leyéndose con la «a».
+    .flatMap((token) =>
+      /^[@$]+[a-z0-9]/.test(token) ? [token, token.replace(/^[@$]+/, '')] : [token]
+    );
   const tokens = raw.map((token) =>
     /[a-z]/.test(token) ? token.replace(/[0-9@$]/g, (char) => LEET[char] ?? char) : token
   );
@@ -180,7 +278,9 @@ function lookup(token: string): ObjectionableKind | null {
 /** Primera categoría objetable encontrada, o `null` si el texto pasa el filtro. */
 export function findObjectionableContent(text: string): ObjectionableKind | null {
   if (!text) return null;
-  const tokens = tokenize(text);
+  const decoded = decodePercent(text);
+  if (WITH_N_TILDE.test(decoded.normalize('NFC').toLowerCase())) return 'insulto';
+  const tokens = tokenize(decoded);
   for (const token of tokens) {
     const hit = lookup(token);
     if (hit) return hit;

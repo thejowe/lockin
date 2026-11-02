@@ -61,6 +61,50 @@ describe('findObjectionableContent', () => {
     }
   });
 
+  it.each([
+    'idiota',
+    'Imbécil',
+    'capullo',
+    'estúpida',
+    'mierda',
+    'pendejo',
+    'coño',
+    'c0ño',
+    'fuck',
+    'fucking idiot',
+    'shit',
+    'merda',
+    'gilipolles',
+    'tooontooo',
+    'https://github.com/idiota',
+    'https://tiktok.com/@idiota',
+    'https://tiktok.com/%40idiota',
+    'https://instagram.com/%69diota',
+    'idiota 100% seguro',
+    '@sshole',
+  ])('bloquea los insultos habituales: %s', (text) => {
+    expect(findObjectionableContent(text)).toBe('insulto');
+  });
+
+  it('no confunde sitios, apellidos ni palabras limpias con insultos', () => {
+    for (const text of [
+      'Morón de la Frontera',
+      'Les Collons',
+      'Cony Gonzalez',
+      'Cono de helado',
+      '100% seguro',
+      'https://tiktok.com/%40maria',
+      'Tengo 30 años',
+      'Mi perra se llama Luna',
+      'Es inútil seguir así',
+      'Essex',
+      'Buceo en Cuenca',
+      'https://github.com/maria-lopez',
+    ]) {
+      expect(findObjectionableContent(text)).toBeNull();
+    }
+  });
+
   it('ObjectionableContentError lleva el mensaje claro', () => {
     const error = new ObjectionableContentError('insulto');
     expect(error.message).toBe(OBJECTIONABLE_MESSAGE);

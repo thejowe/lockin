@@ -227,10 +227,18 @@ export function validate(draft: Draft): Errors {
     errors.prompts = t(OBJECTIONABLE_MESSAGE);
   }
 
-  const invalidLink = (
-    [draft.github, draft.portfolio, draft.linkedin, draft.instagram, draft.tiktok] as const
-  ).some((link) => link.trim().length > 0 && !/^https?:\/\/\S+$/.test(link.trim()));
+  const links = [
+    draft.github,
+    draft.portfolio,
+    draft.linkedin,
+    draft.instagram,
+    draft.tiktok,
+  ] as const;
+  const invalidLink = links.some(
+    (link) => link.trim().length > 0 && !/^https?:\/\/\S+$/.test(link.trim())
+  );
   if (invalidLink) errors.github = t('Los enlaces deben empezar por http:// o https://');
+  else if (links.some(objectionable)) errors.github = t(OBJECTIONABLE_MESSAGE);
 
   return errors;
 }

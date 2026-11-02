@@ -87,6 +87,23 @@ it('una nota de solo espacios se guarda como null', async () => {
   expect(onSave).toHaveBeenCalledWith('completa', null);
 });
 
+it('una nota con insultos no se guarda y avisa; al corregirla, el aviso se va', async () => {
+  const onSave = jest.fn();
+  await row(undefined, onSave);
+  await fireEvent.press(screen.getByText(topic.question));
+  await fireEvent.press(screen.getByRole('radio', { name: 'Jornada completa' }));
+  await fireEvent.changeText(screen.getByLabelText('Nota opcional'), 'Eres idiota');
+  await fireEvent.press(screen.getByRole('button', { name: 'Guardar respuesta' }));
+
+  expect(onSave).not.toHaveBeenCalled();
+  expect(screen.getByText(/lenguaje que no permitimos/)).toBeTruthy();
+
+  await fireEvent.changeText(screen.getByLabelText('Nota opcional'), 'Lo hablamos');
+  expect(screen.queryByText(/lenguaje que no permitimos/)).toBeNull();
+  await fireEvent.press(screen.getByRole('button', { name: 'Guardar respuesta' }));
+  expect(onSave).toHaveBeenCalledWith('completa', 'Lo hablamos');
+});
+
 it('mi clave desconocida cuenta como no respondida, y el editor no la marca', async () => {
   await row({ topic: 'dedicacion', mine: answer('catalogo-viejo'), theirs: answer('completa') });
   expect(screen.getByText('Falta tu respuesta')).toBeTruthy();

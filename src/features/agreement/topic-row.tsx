@@ -12,6 +12,7 @@ import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Control, Opacity, Radii, Spacing } from '@/constants/theme';
 import { AGREEMENT_NOTE_MAX } from '@/data';
+import { OBJECTIONABLE_MESSAGE, isObjectionable } from '@/features/safety/content-filter';
 import { useTheme } from '@/hooks/use-theme';
 
 import { topicStatus } from './status';
@@ -60,10 +61,12 @@ export function TopicRow({
   const [open, setOpen] = useState(false);
   const [option, setOption] = useState<string | null>(mine?.option ?? null);
   const [note, setNote] = useState(mine?.note ?? '');
+  const [noteError, setNoteError] = useState<string | null>(null);
 
   // Al abrir, el editor parte de la respuesta guardada: la vista puede haber
   // llegado (o cambiado) después del montaje.
   const toggle = () => {
+    setNoteError(null);
     if (!open) {
       setOption(mine?.option ?? null);
       setNote(mine?.note ?? '');
@@ -154,7 +157,10 @@ export function TopicRow({
             placeholder={t('Nota opcional')}
             placeholderTextColor={theme.textSecondary}
             value={note}
-            onChangeText={setNote}
+            onChangeText={(next) => {
+              setNote(next);
+              setNoteError(null);
+            }}
             maxLength={AGREEMENT_NOTE_MAX}
             multiline
             style={[styles.note, { borderColor: theme.border, color: theme.text }]}
@@ -162,12 +168,21 @@ export function TopicRow({
           <ThemedText type="small" themeColor="textSecondary">
             {note.length}/{AGREEMENT_NOTE_MAX}
           </ThemedText>
+          {noteError ? (
+            <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
+              {noteError}
+            </ThemedText>
+          ) : null}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('Guardar respuesta')}
             accessibilityState={{ disabled: option === null || saving }}
             disabled={option === null || saving}
             onPress={() => {
+              if (isObjectionable(note)) {
+                setNoteError(t(OBJECTIONABLE_MESSAGE));
+                return;
+              }
               onSave(option!, note.trim() === '' ? null : note.trim());
               setOpen(false);
             }}
