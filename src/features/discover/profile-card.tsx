@@ -44,6 +44,7 @@ import {
   GithubSeal,
   LinkedinSeal,
   ambitionLabel,
+  languagesSentence,
   seeksComplement,
   specialtyLabel,
   startingPointLabel,
@@ -295,7 +296,12 @@ export function ProfileCard({
               </View>
             ) : null}
 
-            <SpecialtyRow label="Domina" values={profile.specialties} tone="have" />
+            <SpecialtyRow
+              label="Domina"
+              values={profile.specialties}
+              other={profile.otherSpecialty}
+              tone="have"
+            />
 
             {seeksComplement(profile.lookingFor) ? (
               profile.seekingSpecialties.length > 0 ? (
@@ -313,6 +319,12 @@ export function ProfileCard({
                   </ThemedText>
                 </Row>
               )
+            ) : null}
+
+            {profile.languages.length > 0 ? (
+              <Row label="Habla">
+                <ThemedText type="small">{languagesSentence(profile.languages)}</ThemedText>
+              </Row>
             ) : null}
           </View>
         ) : null}
@@ -505,11 +517,14 @@ function Portrait({ profile }: { profile: Profile }) {
 function SpecialtyRow({
   label,
   values,
+  other = null,
   tone,
   highlight = [],
 }: {
   label: string;
   values: Specialty[];
+  /** La escrita a mano («Otra»): va al final y nunca encaja con nada. */
+  other?: string | null;
   tone: ChipTone;
   highlight?: Specialty[];
 }) {
@@ -525,6 +540,7 @@ function SpecialtyRow({
           />
         );
       })}
+      {other ? <Chip label={other} tone={tone} /> : null}
     </Row>
   );
 }

@@ -13,7 +13,13 @@ import { ThemedText } from '@/components/themed-text';
 import { Control, Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-import { ambitionLabel, seeksComplement, specialtyLabel, startingPointSentence } from './catalog';
+import {
+  ambitionLabel,
+  languagesSentence,
+  seeksComplement,
+  specialtyLabel,
+  startingPointSentence,
+} from './catalog';
 import { ConnectedApps, type ConnectedApp } from './connected-apps';
 import { DayStrip } from './day-strip';
 import { GithubSeal } from './github-seal';
@@ -22,7 +28,7 @@ import { ProfileAvatar } from './profile-avatar';
 
 import type { ProfileSection } from './profile-form';
 
-import type { Profile, Specialty } from '@/data';
+import type { Profile } from '@/data';
 
 export function ProfileDetails({
   profile,
@@ -103,7 +109,13 @@ export function ProfileDetails({
           <ThemedText type="label" themeColor="textSecondary">
             Lo que domina
           </ThemedText>
-          <SpecialtyTags values={profile.specialties} tone="have" />
+          <SpecialtyTags
+            labels={[
+              ...profile.specialties.map(specialtyLabel),
+              ...(profile.otherSpecialty ? [profile.otherSpecialty] : []),
+            ]}
+            tone="have"
+          />
         </View>
 
         {seeksComplement(profile.lookingFor) ? (
@@ -118,13 +130,33 @@ export function ProfileDetails({
             </ThemedText>
 
             {profile.seekingSpecialties.length > 0 ? (
-              <SpecialtyTags values={profile.seekingSpecialties} tone="seek" />
+              <SpecialtyTags labels={profile.seekingSpecialties.map(specialtyLabel)} tone="seek" />
             ) : (
               // Vacío no es un dato que falte: es «ábreme a cualquiera».
               <ThemedText type="small" themeColor="textSecondary">
                 Abierto a cualquier especialidad.
               </ThemedText>
             )}
+          </View>
+        ) : null}
+
+        {/* Perfiles anteriores al 2026-11-02 pueden no tener idiomas: entonces no se pinta. */}
+        {profile.languages.length > 0 ? (
+          <View
+            style={[
+              styles.complementSide,
+              styles.complementSeeking,
+              { borderTopColor: theme.border },
+            ]}>
+            <ThemedText type="label" themeColor="textSecondary">
+              Idiomas
+            </ThemedText>
+            <ThemedText type="body">{languagesSentence(profile.languages)}</ThemedText>
+            {profile.seekingLanguages.length > 0 ? (
+              <ThemedText type="small" themeColor="textSecondary">
+                Busca que hable {languagesSentence(profile.seekingLanguages).toLowerCase()}.
+              </ThemedText>
+            ) : null}
           </View>
         ) : null}
         {pencil('specialties', styles.corner)}
@@ -229,22 +261,22 @@ export function ProfileDetails({
  * igual que en la tarjeta del deck: relleno (`have`) lo que la persona aporta,
  * solo contorno (`seek`) el hueco que busca llenar.
  */
-function SpecialtyTags({ values, tone }: { values: Specialty[]; tone: 'have' | 'seek' }) {
+function SpecialtyTags({ labels, tone }: { labels: string[]; tone: 'have' | 'seek' }) {
   const theme = useTheme();
   const filled = tone === 'have';
 
   return (
     <View style={styles.tags}>
-      {values.map((specialty) => (
+      {labels.map((label) => (
         <View
-          key={specialty}
+          key={label}
           style={[
             styles.tag,
             filled
               ? { backgroundColor: theme.backgroundSelected, borderColor: 'transparent' }
               : { backgroundColor: 'transparent', borderColor: theme.border },
           ]}>
-          <ThemedText type="smallBold">{specialtyLabel(specialty)}</ThemedText>
+          <ThemedText type="smallBold">{label}</ThemedText>
         </View>
       ))}
     </View>
@@ -253,7 +285,7 @@ function SpecialtyTags({ values, tone }: { values: Specialty[]; tone: 'have' | '
 
 const EDIT_LABELS: Record<ProfileSection, string> = {
   basics: 'Editar nombre, edad y ubicación',
-  specialties: 'Editar lo que dominas y lo que buscas',
+  specialties: 'Editar lo que dominas, lo que buscas e idiomas',
   work: 'Editar cómo trabajas',
   prompts: 'Editar tus respuestas',
   links: 'Editar enlaces y redes',

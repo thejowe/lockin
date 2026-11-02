@@ -24,6 +24,9 @@ async function toHours() {
   await fireEvent.press(screen.getByRole('checkbox', { name: 'Desarrollo' }));
   await next();
   await skip(); // lo que busco
+  await fireEvent.press(screen.getByRole('checkbox', { name: 'Español' }));
+  await next();
+  await skip(); // idiomas que busco
   await fireEvent.press(screen.getAllByRole('radio')[0]);
   await next();
 }
@@ -33,7 +36,7 @@ describe('ProfileWizard', () => {
     await render(<ProfileWizard seed={SEED} submitLabel="Crear perfil" onSubmit={jest.fn()} />);
 
     expect(screen.getByText('¿Qué dominas?')).toBeTruthy();
-    expect(screen.getByRole('progressbar', { name: 'Paso 1 de 8' })).toBeTruthy();
+    expect(screen.getByRole('progressbar', { name: 'Paso 1 de 10' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Omitir' })).toBeNull();
   });
 
@@ -41,7 +44,7 @@ describe('ProfileWizard', () => {
     await render(<ProfileWizard submitLabel="Crear perfil" onSubmit={jest.fn()} />);
 
     expect(screen.getByText('¿Cómo te llamas?')).toBeTruthy();
-    expect(screen.getByRole('progressbar', { name: 'Paso 1 de 11' })).toBeTruthy();
+    expect(screen.getByRole('progressbar', { name: 'Paso 1 de 13' })).toBeTruthy();
   });
 
   it('no deja pasar un paso obligatorio vacío y lo dice', async () => {
@@ -60,7 +63,7 @@ describe('ProfileWizard', () => {
 
     expect(screen.getByText('¿Qué le pides a tu cofundador?')).toBeTruthy();
     await skip();
-    expect(screen.getByText('¿En qué punto estás?')).toBeTruthy();
+    expect(screen.getByText('¿Qué idiomas hablas?')).toBeTruthy();
 
     await fireEvent.press(screen.getByRole('button', { name: 'Volver' }));
     expect(screen.getByText('¿Qué le pides a tu cofundador?')).toBeTruthy();
@@ -91,7 +94,7 @@ describe('ProfileWizard', () => {
     await fireEvent.press(screen.getAllByRole('radio')[0]); // ambición
     await next();
     await skip(); // respuestas
-    expect(screen.getByRole('progressbar', { name: 'Paso 8 de 8' })).toBeTruthy();
+    expect(screen.getByRole('progressbar', { name: 'Paso 10 de 10' })).toBeTruthy();
     await skip(); // enlaces: es el último, omitir termina
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
@@ -101,8 +104,61 @@ describe('ProfileWizard', () => {
       location: 'Vigo',
       specialties: ['dev'],
       seekingSpecialties: [],
+      otherSpecialty: null,
+      languages: ['es'],
+      seekingLanguages: [],
       prompts: [],
       availability: { hoursPerWeek: 10 },
+    });
+  });
+
+  it('el idioma es obligatorio; los que busco, opcionales', async () => {
+    await render(<ProfileWizard seed={SEED} submitLabel="Crear perfil" onSubmit={jest.fn()} />);
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Desarrollo' }));
+    await next();
+    await skip();
+
+    await next();
+    expect(screen.getByText('Elige al menos un idioma.')).toBeTruthy();
+
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Inglés' }));
+    await next();
+    expect(screen.getByText('¿Qué idiomas debe hablar?')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Omitir' })).toBeTruthy();
+  });
+
+  it('«Otra» abre un campo para escribirla y vale sin marcar ninguna de la lista', async () => {
+    const onSubmit = jest.fn().mockResolvedValue(undefined);
+    await render(<ProfileWizard seed={SEED} submitLabel="Crear perfil" onSubmit={onSubmit} />);
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Otra' }));
+
+    await next();
+    expect(screen.getByText('Escribe cuál es la otra, o desmárcala.')).toBeTruthy();
+
+    await fireEvent.changeText(screen.getByLabelText('Otra especialidad'), '  Biotecnología ');
+    await next();
+    expect(screen.getByText('¿Qué le pides a tu cofundador?')).toBeTruthy();
+    // Lo que busco no tiene «Otra».
+    expect(screen.queryByRole('checkbox', { name: 'Otra' })).toBeNull();
+
+    await skip();
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Español' }));
+    await next();
+    await skip();
+    await fireEvent.press(screen.getAllByRole('radio')[0]);
+    await next();
+    await next(); // horas
+    await fireEvent.press(screen.getAllByRole('checkbox')[0]);
+    await next();
+    await fireEvent.press(screen.getAllByRole('radio')[0]);
+    await next();
+    await skip();
+    await skip();
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      specialties: [],
+      otherSpecialty: 'Biotecnología',
     });
   });
 

@@ -474,6 +474,17 @@ Decisiones del usuario: «Verificación» pasa a «Vincular cuentas» con GitHub
 - [x] **`codex review`** de esta tanda (teclado, legales, fondo, mano guía): cuatro hallazgos corregidos con test. (1) Abierta por enlace (`cofounder://legal/terms`) «Cerrar» no tenía a dónde volver → `replace('/')` sin historial. (2) `isLegalDocKey` aceptaba `constructor`/`toString` → solo propiedades propias. (3) La app empaquetaba las notas internas que la web quita → el generador usa `publishableBody` de `build-web.mjs` y el test corre `--check`. (4) La mano podía reaparecer si se tocaba antes de leer `AsyncStorage` → `dismiss` persiste siempre y una lectura tardía no la resucita.
 - [ ] Comprobación en dispositivo: la hace el usuario.
 
+## Idiomas, más ámbitos y «Otra» especialidad (2026-11-02)
+
+- [x] **[Claude]** Petición del usuario: el alta pregunta qué idiomas hablas (obligatorio, ≥1) y qué idiomas debe hablar quien buscas (opcional, con «Omitir»); son dos pasos nuevos del asistente tras «lo que busco». En edición viven en el bloque de especialidades. Catálogo de 14 idiomas (`LANGUAGE_OPTIONS`, ISO 639-1, enum `public.language`).
+- [x] **[Claude]** Diez ámbitos nuevos (IA, hardware, growth, comunidad, personas, investigación, audiovisual, ciberseguridad, e-commerce, inversión). Tope de 10 por lista validado en el formulario (lo pide el `check`).
+- [x] **[Claude]** «Otra» solo en «lo que domino»: abre un campo de texto (2-40, pasa por `content-filter`) que se guarda en `profiles.other_specialty`. Con ella, `specialties` puede ir vacío (`profiles_specialties_check` relajado). Se pinta en la ficha y en la tarjeta del deck; nunca cuenta para el encaje.
+- [x] **[Claude]** Las horas: «¿Cuántas horas puedes dedicarle?» en el alta, «Cuántas horas puedes dedicarle» en edición.
+- [x] **[Claude]** Deck: los idiomas solo **reordenan** (+1 si habla alguno de los que busco, +1 a la inversa), igual en SQL (`20261102120100_deck_languages.sql`) y en el mock. No filtran: los perfiles anteriores no tienen idiomas y un filtro duro los escondería.
+- [x] Aplicadas `20261102120000` y `20261102120100` en `grrzmzktrhksbttpbblg` (2026-11-02, MCP `apply_migration`). Verificado en remoto: tres columnas nuevas, 20 valores en `specialty`, check relajado, `discovery_deck`/`incoming_likes` devuelven las columnas nuevas y `authenticated` tiene el grant.
+- [ ] Perfiles existentes sin idiomas: al editar cualquier bloque se les pide elegir idioma («Hay algo en otra parte de tu ficha…»). Decidir si se avisa mejor.
+- [ ] Comprobación en dispositivo: el usuario.
+
 ## Recuerda
 Nadie contrata a nadie: no metas campos de "salario" o "equity que ofrezco" — eso es Modo Talento, Fase 4, fuera de este MVP.
 

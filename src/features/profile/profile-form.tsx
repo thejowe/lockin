@@ -31,9 +31,10 @@ import {
   HOURS_MAX,
   HOURS_MIN,
   HOURS_STEP,
+  OTHER_SPECIALTY_MIN_LENGTH,
   PROMPT_MAX_LENGTH,
   PROMPT_QUESTIONS,
-  SPECIALTY_OPTIONS,
+  SPECIALTIES_MAX,
   STARTING_POINT_OPTIONS,
   TIME_BAND_OPTIONS,
 } from './catalog';
@@ -47,8 +48,17 @@ import {
   Stepper,
   TextField,
 } from './controls';
+import { LanguagePicker, MasteryPicker, SeekingSpecialtyPicker } from './pickers';
 
-import type { Ambition, Profile, ProfileInput, Specialty, StartingPoint, TimeBand } from '@/data';
+import type {
+  Ambition,
+  Language,
+  Profile,
+  ProfileInput,
+  Specialty,
+  StartingPoint,
+  TimeBand,
+} from '@/data';
 
 /** Estado del formulario. Los números viven como texto mientras se teclean. */
 export interface Draft {
@@ -57,8 +67,13 @@ export interface Draft {
   location: string;
   timezone: string;
   specialties: Specialty[];
+  /** «Otra» especialidad escrita a mano. `null` = sin marcar; `''` = marcada y por escribir. */
+  otherSpecialty: string | null;
   /** Lo que quiere que domine la otra persona. Vacío = «me da igual». */
   seekingSpecialties: Specialty[];
+  languages: Language[];
+  /** Idiomas que debe hablar la otra persona. Vacío = «me da igual». */
+  seekingLanguages: Language[];
   startingPoint: StartingPoint | null;
   hoursPerWeek: number;
   bands: TimeBand[];
@@ -81,6 +96,8 @@ const FIELD_ORDER: (keyof Draft)[] = [
   'location',
   'timezone',
   'specialties',
+  'seekingSpecialties',
+  'languages',
   'startingPoint',
   'bands',
   'ambition',
@@ -118,7 +135,10 @@ export function initialDraft(profile: Profile | null, seed: ProfileSeed | null):
     location: profile?.location ?? seed?.location ?? '',
     timezone: profile?.timezone ?? deviceTimezone(),
     specialties: profile?.specialties ?? [],
+    otherSpecialty: profile?.otherSpecialty ?? null,
     seekingSpecialties: profile?.seekingSpecialties ?? [],
+    languages: profile?.languages ?? [],
+    seekingLanguages: profile?.seekingLanguages ?? [],
     startingPoint: profile?.startingPoint ?? null,
     hoursPerWeek: profile?.availability.hoursPerWeek ?? 10,
     bands: profile?.availability.bands ?? [],
@@ -151,7 +171,18 @@ export function validate(draft: Draft): Errors {
   }
   if (draft.location.trim().length < 2) errors.location = 'Ciudad o zona donde estás.';
   if (draft.timezone.trim().length === 0) errors.timezone = 'Necesitamos tu zona horaria.';
-  if (draft.specialties.length === 0) errors.specialties = 'Elige al menos una especialidad.';
+  const other = draft.otherSpecialty?.trim() ?? null;
+  if (draft.specialties.length === 0 && other === null) {
+    errors.specialties = 'Elige al menos una especialidad.';
+  } else if (other !== null && other.length < OTHER_SPECIALTY_MIN_LENGTH) {
+    errors.specialties = 'Escribe cuál es la otra, o desmárcala.';
+  } else if (draft.specialties.length > SPECIALTIES_MAX) {
+    errors.specialties = `Como mucho ${SPECIALTIES_MAX}: quédate con las que más te definen.`;
+  }
+  if (draft.seekingSpecialties.length > SPECIALTIES_MAX) {
+    errors.seekingSpecialties = `Como mucho ${SPECIALTIES_MAX}.`;
+  }
+  if (draft.languages.length === 0) errors.languages = 'Elige al menos un idioma.';
   if (!draft.startingPoint) errors.startingPoint = 'Elige tu punto de partida.';
   if (draft.bands.length === 0) errors.bands = 'Marca al menos una franja horaria.';
   if (!draft.ambition) errors.ambition = 'Elige tu nivel de compromiso.';
@@ -162,6 +193,7 @@ export function validate(draft: Draft): Errors {
   const objectionable = (text: string) => isObjectionable(text);
   if (objectionable(draft.name)) errors.name = OBJECTIONABLE_MESSAGE;
   if (objectionable(draft.location)) errors.location = OBJECTIONABLE_MESSAGE;
+  if (other !== null && objectionable(other)) errors.specialties = OBJECTIONABLE_MESSAGE;
   if (draft.prompts.some((prompt) => objectionable(prompt.answer))) {
     errors.prompts = OBJECTIONABLE_MESSAGE;
   }
@@ -184,7 +216,10 @@ export function toInput(draft: Draft): ProfileInput {
     location: draft.location.trim(),
     timezone: draft.timezone.trim(),
     specialties: draft.specialties,
+    otherSpecialty: draft.otherSpecialty?.trim() || null,
     seekingSpecialties: draft.seekingSpecialties,
+    languages: draft.languages,
+    seekingLanguages: draft.seekingLanguages,
     // Desde el 2026-10-12 el producto es solo buscar cofundador: no se pregunta
     // y todo perfil que se guarda queda en `par`, también los que eran de
     // lock-in o «ambos», para que aparezcan en el único deck que hay.
@@ -232,7 +267,7 @@ export type ProfileSection = 'basics' | 'specialties' | 'work' | 'prompts' | 'li
 /** Qué campos (con error propio) pinta cada bloque. */
 const SECTION_FIELDS: Record<ProfileSection, (keyof Draft)[]> = {
   basics: ['name', 'age', 'location'],
-  specialties: ['specialties'],
+  specialties: ['specialties', 'seekingSpecialties', 'languages'],
   work: ['timezone', 'startingPoint', 'bands', 'ambition'],
   prompts: ['prompts'],
   links: ['github'],
@@ -398,38 +433,44 @@ export function ProfileForm({
               hint="Lo que sabes hacer. Elige todas las que apliquen."
               error={errors.specialties}
               onLayout={track('specialties')}>
-              <ChipRow>
-                {SPECIALTY_OPTIONS.map((option) => (
-                  <Chip
-                    key={option.value}
-                    label={option.label}
-                    multiple
-                    selected={draft.specialties.includes(option.value)}
-                    onPress={() => update('specialties', toggle(draft.specialties, option.value))}
-                  />
-                ))}
-              </ChipRow>
+              <MasteryPicker
+                specialties={draft.specialties}
+                other={draft.otherSpecialty}
+                onSpecialtiesChange={(next) => update('specialties', next)}
+                // El error de «Otra» se pinta en `specialties`.
+                onOtherChange={(next) => {
+                  update('otherSpecialty', next);
+                  setErrors((current) => ({ ...current, specialties: undefined }));
+                }}
+              />
             </Field>
 
             <Field
               label="Lo que debe dominar quien busco"
-              hint="Lo que a ti te falta. Si lo dejas vacío, te enseñamos a todo el mundo.">
-              <ChipRow>
-                {SPECIALTY_OPTIONS.map((option) => (
-                  <Chip
-                    key={option.value}
-                    label={option.label}
-                    // Sin esto, "Desarrollo" nombraría dos chips distintos del
-                    // mismo formulario: el que domino y el que busco.
-                    accessibilityLabel={`Busco ${option.label}`}
-                    multiple
-                    selected={draft.seekingSpecialties.includes(option.value)}
-                    onPress={() =>
-                      update('seekingSpecialties', toggle(draft.seekingSpecialties, option.value))
-                    }
-                  />
-                ))}
-              </ChipRow>
+              hint="Lo que a ti te falta. Si lo dejas vacío, te enseñamos a todo el mundo."
+              error={errors.seekingSpecialties}
+              onLayout={track('seekingSpecialties')}>
+              <SeekingSpecialtyPicker
+                values={draft.seekingSpecialties}
+                onChange={(next) => update('seekingSpecialties', next)}
+              />
+            </Field>
+
+            <Field label="Idiomas que hablo" error={errors.languages} onLayout={track('languages')}>
+              <LanguagePicker
+                values={draft.languages}
+                onChange={(next) => update('languages', next)}
+              />
+            </Field>
+
+            <Field
+              label="Idiomas que debe hablar quien busco"
+              hint="Si lo dejas vacío, te da igual el idioma.">
+              <LanguagePicker
+                values={draft.seekingLanguages}
+                onChange={(next) => update('seekingLanguages', next)}
+                seeking
+              />
             </Field>
           </>
         ) : null}
@@ -450,7 +491,9 @@ export function ProfileForm({
               ))}
             </Field>
 
-            <Field label="Disponibilidad" hint="Horas reales, no las que te gustaría tener.">
+            <Field
+              label="Cuántas horas puedes dedicarle"
+              hint="Horas reales a la semana, no las que te gustaría tener.">
               <Stepper
                 value={draft.hoursPerWeek}
                 onChange={(value) => update('hoursPerWeek', value)}

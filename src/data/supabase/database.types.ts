@@ -18,6 +18,7 @@ import type {
   Ambition,
   Avatar,
   Decision,
+  Language,
   Mode,
   ModePreference,
   ProfilePrompt,
@@ -51,6 +52,10 @@ export type ProfileRow = {
    * exige al menos una.
    */
   seeking_specialties: Specialty[];
+  /** Escrita a mano, fuera de la lista. Con ella, `specialties` puede ir vacío. */
+  other_specialty: string | null;
+  languages: Language[];
+  seeking_languages: Language[];
   looking_for: ModePreference;
   starting_point: StartingPoint;
   availability_hours_per_week: number;

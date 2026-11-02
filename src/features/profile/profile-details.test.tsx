@@ -44,7 +44,7 @@ describe('ProfileDetails', () => {
 
     for (const [name, section] of [
       ['Editar nombre, edad y ubicación', 'basics'],
-      ['Editar lo que dominas y lo que buscas', 'specialties'],
+      ['Editar lo que dominas, lo que buscas e idiomas', 'specialties'],
       ['Editar cómo trabajas', 'work'],
       ['Editar enlaces y redes', 'links'],
     ] as const) {
@@ -74,6 +74,29 @@ describe('ProfileDetails', () => {
     expect(screen.getByText('Lo que busca')).toBeTruthy();
     expect(screen.getByText('Desarrollo')).toBeTruthy();
     expect(screen.getByText('Marketing')).toBeTruthy();
+  });
+
+  it('pinta la especialidad escrita a mano y los idiomas, hablados y buscados', async () => {
+    await render(
+      <ProfileDetails
+        profile={buildProfile({
+          specialties: ['dev'],
+          otherSpecialty: 'Biotecnología',
+          languages: ['es', 'en', 'ca'],
+          seekingLanguages: ['en'],
+        })}
+      />
+    );
+
+    expect(screen.getByText('Biotecnología')).toBeTruthy();
+    expect(screen.getByText('Español, inglés y catalán')).toBeTruthy();
+    expect(screen.getByText('Busca que hable inglés.')).toBeTruthy();
+  });
+
+  it('sin idiomas (perfiles anteriores) no pinta el bloque', async () => {
+    await render(<ProfileDetails profile={buildProfile({ languages: [] })} />);
+
+    expect(screen.queryByText('Idiomas')).toBeNull();
   });
 
   it('lee un seekingSpecialties vacío como "abierto", no como dato ausente', async () => {

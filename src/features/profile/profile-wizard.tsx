@@ -27,7 +27,6 @@ import {
   HOURS_STEP,
   PROMPT_MAX_LENGTH,
   PROMPT_QUESTIONS,
-  SPECIALTY_OPTIONS,
   STARTING_POINT_OPTIONS,
   TIME_BAND_OPTIONS,
 } from './catalog';
@@ -42,6 +41,7 @@ import {
   type Errors,
   type ProfileSeed,
 } from './profile-form';
+import { LanguagePicker, MasteryPicker, SeekingSpecialtyPicker } from './pickers';
 import { WizardScreen } from './wizard';
 
 import type { Profile, ProfileInput } from '@/data';
@@ -52,6 +52,8 @@ type StepKey =
   | 'location'
   | 'specialties'
   | 'seeking'
+  | 'languages'
+  | 'seekingLanguages'
   | 'startingPoint'
   | 'hours'
   | 'bands'
@@ -65,7 +67,9 @@ const STEP_FIELDS: Record<StepKey, (keyof Draft)[]> = {
   birth: ['age'],
   location: ['location'],
   specialties: ['specialties'],
-  seeking: [],
+  seeking: ['seekingSpecialties'],
+  languages: ['languages'],
+  seekingLanguages: [],
   startingPoint: ['startingPoint'],
   hours: [],
   bands: ['bands'],
@@ -74,7 +78,7 @@ const STEP_FIELDS: Record<StepKey, (keyof Draft)[]> = {
   links: ['github'],
 };
 
-const OPTIONAL: StepKey[] = ['seeking', 'prompts', 'links'];
+const OPTIONAL: StepKey[] = ['seeking', 'seekingLanguages', 'prompts', 'links'];
 
 function stepsFor(seed: ProfileSeed | null): StepKey[] {
   const basics: StepKey[] = seed ? [] : ['name', 'birth', 'location'];
@@ -82,6 +86,8 @@ function stepsFor(seed: ProfileSeed | null): StepKey[] {
     ...basics,
     'specialties',
     'seeking',
+    'languages',
+    'seekingLanguages',
     'startingPoint',
     'hours',
     'bands',
@@ -184,6 +190,7 @@ export function ProfileWizard({
   async function handleSkip() {
     let cleared = draft;
     if (step === 'seeking') cleared = { ...draft, seekingSpecialties: [] };
+    if (step === 'seekingLanguages') cleared = { ...draft, seekingLanguages: [] };
     if (step === 'prompts') {
       cleared = { ...draft, prompts: draft.prompts.map((prompt) => ({ ...prompt, answer: '' })) };
     }
@@ -262,17 +269,16 @@ export function ProfileWizard({
           title="¿Qué dominas?"
           subtitle="Lo que sabes hacer. Elige todas las que apliquen.">
           <Field label="Lo que domino" error={errors.specialties}>
-            <ChipRow>
-              {SPECIALTY_OPTIONS.map((option) => (
-                <Chip
-                  key={option.value}
-                  label={option.label}
-                  multiple
-                  selected={draft.specialties.includes(option.value)}
-                  onPress={() => update('specialties', toggle(draft.specialties, option.value))}
-                />
-              ))}
-            </ChipRow>
+            <MasteryPicker
+              specialties={draft.specialties}
+              other={draft.otherSpecialty}
+              onSpecialtiesChange={(next) => update('specialties', next)}
+              // El error de «Otra» se pinta en `specialties`.
+              onOtherChange={(next) => {
+                update('otherSpecialty', next);
+                setErrors((current) => ({ ...current, specialties: undefined }));
+              }}
+            />
           </Field>
         </WizardScreen>
       );
@@ -283,22 +289,42 @@ export function ProfileWizard({
           {...common}
           title="¿Qué le pides a tu cofundador?"
           subtitle="Lo que a ti te falta. Si lo omites, te enseñamos a todo el mundo.">
-          <Field label="Lo que debe dominar quien busco">
-            <ChipRow>
-              {SPECIALTY_OPTIONS.map((option) => (
-                <Chip
-                  key={option.value}
-                  label={option.label}
-                  // Sin esto, «Desarrollo» nombraría dos chips distintos del alta.
-                  accessibilityLabel={`Busco ${option.label}`}
-                  multiple
-                  selected={draft.seekingSpecialties.includes(option.value)}
-                  onPress={() =>
-                    update('seekingSpecialties', toggle(draft.seekingSpecialties, option.value))
-                  }
-                />
-              ))}
-            </ChipRow>
+          <Field label="Lo que debe dominar quien busco" error={errors.seekingSpecialties}>
+            <SeekingSpecialtyPicker
+              values={draft.seekingSpecialties}
+              onChange={(next) => update('seekingSpecialties', next)}
+            />
+          </Field>
+        </WizardScreen>
+      );
+
+    case 'languages':
+      return (
+        <WizardScreen
+          {...common}
+          title="¿Qué idiomas hablas?"
+          subtitle="Elige todos los que manejes con soltura.">
+          <Field label="Idiomas que hablo" error={errors.languages}>
+            <LanguagePicker
+              values={draft.languages}
+              onChange={(next) => update('languages', next)}
+            />
+          </Field>
+        </WizardScreen>
+      );
+
+    case 'seekingLanguages':
+      return (
+        <WizardScreen
+          {...common}
+          title="¿Qué idiomas debe hablar?"
+          subtitle="Los que necesitas que hable tu cofundador. Si lo omites, te da igual.">
+          <Field label="Idiomas que debe hablar quien busco">
+            <LanguagePicker
+              values={draft.seekingLanguages}
+              onChange={(next) => update('seekingLanguages', next)}
+              seeking
+            />
           </Field>
         </WizardScreen>
       );
@@ -323,7 +349,7 @@ export function ProfileWizard({
       return (
         <WizardScreen
           {...common}
-          title="¿Cuántas horas a la semana?"
+          title="¿Cuántas horas puedes dedicarle?"
           subtitle="Horas reales, no las que te gustaría tener.">
           <View style={styles.hours}>
             <ThemedText type="display" style={styles.hoursValue} accessibilityLiveRegion="polite">

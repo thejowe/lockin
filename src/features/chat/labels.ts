@@ -20,6 +20,16 @@ export const SPECIALTY_LABELS: Record<Specialty, string> = {
   finanzas: 'finanzas',
   operaciones: 'operaciones',
   contenido: 'contenido',
+  ia: 'IA',
+  hardware: 'hardware',
+  growth: 'growth',
+  comunidad: 'comunidad',
+  personas: 'personas',
+  investigacion: 'investigación',
+  audiovisual: 'audiovisual',
+  seguridad: 'ciberseguridad',
+  ecommerce: 'e-commerce',
+  inversion: 'inversión',
 };
 
 /** Franjas horarias, redactadas para caber dentro de una frase ("los dos estáis por la…"). */

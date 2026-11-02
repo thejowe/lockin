@@ -286,6 +286,9 @@ export function createMockRepositories(
         id: existing?.id ?? actorId,
         // Ausente significa «abierto a cualquiera»; ver `ProfileInput` en types.ts.
         seekingSpecialties: input.seekingSpecialties ?? [],
+        otherSpecialty: input.otherSpecialty ?? null,
+        languages: input.languages ?? [],
+        seekingLanguages: input.seekingLanguages ?? [],
         avatar: {
           initials: input.avatar?.initials ?? initialsFrom(input.name),
           accent: input.avatar?.accent ?? existing?.avatar.accent ?? 'brass',
@@ -480,14 +483,15 @@ export function createMockRepositories(
       });
       // Espejo del criterio de producto en DiscoveryRepository.getDeck.
       const score = (other: Profile): number => {
-        if (
-          !viewer ||
-          mode === 'lockin' ||
-          viewer.lookingFor === 'lockin' ||
-          other.lookingFor === 'lockin'
-        )
-          return 0;
+        if (!viewer) return 0;
+        // Idiomas: suma también en lock-in (20261102120100_deck_languages.sql).
+        const languages =
+          Number(other.languages.some((code) => viewer.seekingLanguages.includes(code))) +
+          Number(viewer.languages.some((code) => other.seekingLanguages.includes(code)));
+        if (mode === 'lockin' || viewer.lookingFor === 'lockin' || other.lookingFor === 'lockin')
+          return languages;
         return (
+          languages +
           Number(viewer.specialties.some((tag) => other.seekingSpecialties.includes(tag))) +
           Number(other.specialties.some((tag) => viewer.seekingSpecialties.includes(tag)))
         );

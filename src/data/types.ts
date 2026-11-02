@@ -50,7 +50,21 @@ export type Specialty =
   | 'producto'
   | 'finanzas'
   | 'operaciones'
-  | 'contenido';
+  | 'contenido'
+  | 'ia'
+  | 'hardware'
+  | 'growth'
+  | 'comunidad'
+  | 'personas'
+  | 'investigacion'
+  | 'audiovisual'
+  | 'seguridad'
+  | 'ecommerce'
+  | 'inversion';
+
+/** Idioma, en código ISO 639-1. Espejo del enum `public.language`. */
+export type Language =
+  'es' | 'en' | 'ca' | 'eu' | 'gl' | 'pt' | 'fr' | 'de' | 'it' | 'nl' | 'ro' | 'ar' | 'zh' | 'ru';
 
 /** Punto de partida: cuánto tiene construido ya la persona. */
 export type StartingPoint =
@@ -173,8 +187,17 @@ export interface Profile {
   /** Identificador IANA, p. ej. `Europe/Madrid`. */
   timezone: string;
   avatar: Avatar;
-  /** Lo que esta persona domina y aporta. */
+  /**
+   * Lo que esta persona domina y aporta, de la lista. Puede ir vacío solo si
+   * hay `otherSpecialty`.
+   */
   specialties: Specialty[];
+  /**
+   * Algo que domina y no está en la lista, escrito a mano (2-40 caracteres), o
+   * `null`. Solo existe en lo que se domina: lo que se busca es siempre de la
+   * lista, porque el deck lo cruza con `specialties`.
+   */
+  otherSpecialty: string | null;
   /**
    * Lo que esta persona quiere que domine la otra: el otro lado de la
    * complementariedad. Simétrico por definición — las dos personas de un match
@@ -192,6 +215,13 @@ export interface Profile {
    * (formulario o seed) mantiene esta invariante; el repositorio no la fuerza.
    */
   seekingSpecialties: Specialty[];
+  /** Idiomas que habla. Los perfiles anteriores al 2026-11-02 pueden traerlo vacío. */
+  languages: Language[];
+  /**
+   * Idiomas que debe hablar la otra persona. Vacío = «me da igual». Solo
+   * reordena el deck (como `seekingSpecialties`), no filtra.
+   */
+  seekingLanguages: Language[];
   /** Qué busca esta persona: cofundador, compañero de lock-in o ambos. */
   lookingFor: ModePreference;
   startingPoint: StartingPoint;
@@ -228,6 +258,9 @@ export type ProfileInput = Omit<
   | 'updatedAt'
   | 'avatar'
   | 'seekingSpecialties'
+  | 'otherSpecialty'
+  | 'languages'
+  | 'seekingLanguages'
   | 'githubVerification'
   | 'linkedinVerification'
 > & {
@@ -241,6 +274,10 @@ export type ProfileInput = Omit<
    * `Profile.seekingSpecialties`: vacío cuando `lookingFor` es `'lockin'`.
    */
   seekingSpecialties?: Specialty[];
+  /** Opcionales por lo mismo: ausentes se guardan `null` y `[]`. */
+  otherSpecialty?: string | null;
+  languages?: Language[];
+  seekingLanguages?: Language[];
 };
 
 /** Filtro del deck de descubrimiento. */

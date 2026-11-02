@@ -30,6 +30,7 @@ async function fillValidForm() {
   await fireEvent.changeText(screen.getByLabelText('Edad'), '31');
   await fireEvent.changeText(screen.getByLabelText('Ubicación'), 'Barcelona');
   await fireEvent.press(screen.getByLabelText('Desarrollo'));
+  await fireEvent.press(screen.getByLabelText('Español'));
   await fireEvent.press(screen.getByLabelText('Idea sin empezar'));
   await fireEvent.press(screen.getByLabelText('Noche · 20–00'));
   await fireEvent.press(screen.getByLabelText('Apostarlo todo'));
@@ -150,6 +151,42 @@ describe('ProfileForm', () => {
     expect(await screen.findByText('Una edad entre 16 y 99.')).toBeTruthy();
   });
 
+  it('pide al menos un idioma y envía también los que busca', async () => {
+    const onSubmit = jest.fn().mockResolvedValue(undefined);
+    await render(<ProfileForm submitLabel="Guardar" onSubmit={onSubmit} />);
+    await fillValidForm();
+    await fireEvent.press(screen.getByLabelText('Español'));
+    await fireEvent.press(screen.getByText('Guardar'));
+
+    expect(await screen.findByText('Elige al menos un idioma.')).toBeTruthy();
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    await fireEvent.press(screen.getByLabelText('Catalán'));
+    await fireEvent.press(screen.getByLabelText('Que hable Inglés'));
+    await fireEvent.press(screen.getByText('Guardar'));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      languages: ['ca'],
+      seekingLanguages: ['en'],
+    });
+  });
+
+  it('«Otra» se escribe a mano y viaja recortada junto a las de la lista', async () => {
+    const onSubmit = jest.fn().mockResolvedValue(undefined);
+    await render(<ProfileForm submitLabel="Guardar" onSubmit={onSubmit} />);
+    await fillValidForm();
+    await fireEvent.press(screen.getByLabelText('Otra'));
+    await fireEvent.changeText(screen.getByLabelText('Otra especialidad'), '  Biotecnología ');
+    await fireEvent.press(screen.getByText('Guardar'));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      specialties: ['dev'],
+      otherSpecialty: 'Biotecnología',
+    });
+  });
+
   it('lleva a la persona al primer campo con error en vez de dejarla buscarlo', async () => {
     await render(<ProfileForm submitLabel="Guardar" onSubmit={jest.fn()} />);
     await fillValidForm();
@@ -227,6 +264,9 @@ describe('ProfileForm', () => {
       startingPoint: 'idea-sin-empezar',
       ambition: 'todo-o-nada',
       availability: { hoursPerWeek: 10, bands: ['noche'] },
+      otherSpecialty: null,
+      languages: ['es'],
+      seekingLanguages: [],
     });
     // Los espacios sobrantes se recortan y el prompt sin respuesta no viaja.
     expect(input.prompts).toEqual([{ question: 'Lo que quiero construir es…', answer: 'Un CRM.' }]);

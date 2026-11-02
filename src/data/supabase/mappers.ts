@@ -99,6 +99,9 @@ export function toProfile(row: ProfileRow): Profile {
     },
     specialties: row.specialties,
     seekingSpecialties: row.seeking_specialties,
+    otherSpecialty: row.other_specialty ?? null,
+    languages: row.languages ?? [],
+    seekingLanguages: row.seeking_languages ?? [],
     lookingFor: row.looking_for,
     startingPoint: row.starting_point,
     availability: {
@@ -146,6 +149,10 @@ export function toProfileInsert(
     // formulario que todavía no pregunta por el campo conservara para siempre
     // un valor que su usuario ya no puede ver ni cambiar.
     seeking_specialties: input.seekingSpecialties ?? [],
+    // Igual que `seeking_specialties`: lo ausente se guarda vacío, no se hereda.
+    other_specialty: input.otherSpecialty ?? null,
+    languages: input.languages ?? [],
+    seeking_languages: input.seekingLanguages ?? [],
     looking_for: input.lookingFor,
     starting_point: input.startingPoint,
     availability_hours_per_week: input.availability.hoursPerWeek,

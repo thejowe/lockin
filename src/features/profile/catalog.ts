@@ -9,7 +9,14 @@
  * de onboarding, la edición y la ficha de perfil no se desincronizan.
  */
 
-import type { Ambition, ModePreference, Specialty, StartingPoint, TimeBand } from '@/data';
+import type {
+  Ambition,
+  Language,
+  ModePreference,
+  Specialty,
+  StartingPoint,
+  TimeBand,
+} from '@/data';
 
 /** Una opción seleccionable: código estable, etiqueta y explicación opcional. */
 export interface Option<T extends string> {
@@ -49,6 +56,40 @@ export const SPECIALTY_OPTIONS: Option<Specialty>[] = [
   { value: 'finanzas', label: 'Finanzas' },
   { value: 'operaciones', label: 'Operaciones' },
   { value: 'legal', label: 'Legal' },
+  { value: 'ia', label: 'IA y machine learning' },
+  { value: 'hardware', label: 'Hardware' },
+  { value: 'growth', label: 'Growth' },
+  { value: 'comunidad', label: 'Comunidad' },
+  { value: 'personas', label: 'Personas y RR. HH.' },
+  { value: 'investigacion', label: 'Investigación' },
+  { value: 'audiovisual', label: 'Vídeo y audiovisual' },
+  { value: 'seguridad', label: 'Ciberseguridad' },
+  { value: 'ecommerce', label: 'E-commerce' },
+  { value: 'inversion', label: 'Inversión y fundraising' },
+];
+
+/** Tope de especialidades por lista: el `check` de `profiles` lo pide así. */
+export const SPECIALTIES_MAX = 10;
+
+/** Longitud de la especialidad escrita a mano («Otra»), igual que el `check` de la base. */
+export const OTHER_SPECIALTY_MIN_LENGTH = 2;
+export const OTHER_SPECIALTY_MAX_LENGTH = 40;
+
+export const LANGUAGE_OPTIONS: Option<Language>[] = [
+  { value: 'es', label: 'Español' },
+  { value: 'en', label: 'Inglés' },
+  { value: 'ca', label: 'Catalán' },
+  { value: 'eu', label: 'Euskera' },
+  { value: 'gl', label: 'Gallego' },
+  { value: 'pt', label: 'Portugués' },
+  { value: 'fr', label: 'Francés' },
+  { value: 'de', label: 'Alemán' },
+  { value: 'it', label: 'Italiano' },
+  { value: 'nl', label: 'Neerlandés' },
+  { value: 'ro', label: 'Rumano' },
+  { value: 'ar', label: 'Árabe' },
+  { value: 'zh', label: 'Chino' },
+  { value: 'ru', label: 'Ruso' },
 ];
 
 /** Las tres opciones literales de `CONCEPTO.md`. */
@@ -129,6 +170,17 @@ export const specialtyLabel = (value: Specialty) => labelOf(SPECIALTY_OPTIONS, v
 export const startingPointLabel = (value: StartingPoint) => labelOf(STARTING_POINT_OPTIONS, value);
 export const ambitionLabel = (value: Ambition) => labelOf(AMBITION_OPTIONS, value);
 export const timeBandLabel = (value: TimeBand) => labelOf(TIME_BAND_OPTIONS, value);
+export const languageLabel = (value: Language) => labelOf(LANGUAGE_OPTIONS, value);
+
+/** "Español, inglés y catalán". */
+export function languagesSentence(values: Language[]): string {
+  const labels = values.map((value, index) =>
+    index === 0 ? languageLabel(value) : languageLabel(value).toLowerCase()
+  );
+  return labels.length <= 1
+    ? (labels[0] ?? '')
+    : `${labels.slice(0, -1).join(', ')} y ${labels[labels.length - 1]}`;
+}
 
 /**
  * Si a esta persona le tiene sentido declarar qué debe dominar la otra.

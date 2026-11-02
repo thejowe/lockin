@@ -1337,6 +1337,37 @@ export function describeRepositoryContract(backend: ContractBackend): void {
         expect(saved.seekingSpecialties).toEqual([]);
       });
 
+      it('guarda idiomas y la especialidad escrita a mano, también sin ninguna de la lista', async () => {
+        await repositories.profiles.saveCurrent(
+          buildProfileInput({
+            specialties: [],
+            otherSpecialty: 'Biotecnología',
+            languages: ['es', 'ca'],
+            seekingLanguages: ['en'],
+          })
+        );
+
+        const current = await repositories.profiles.getCurrent();
+        expect(current?.specialties).toEqual([]);
+        expect(current?.otherSpecialty).toBe('Biotecnología');
+        expect(current?.languages).toEqual(['es', 'ca']);
+        expect(current?.seekingLanguages).toEqual(['en']);
+      });
+
+      it('sin idiomas ni «otra» se guardan vacíos', async () => {
+        const saved = await repositories.profiles.saveCurrent(
+          buildProfileInput({
+            otherSpecialty: undefined,
+            languages: undefined,
+            seekingLanguages: undefined,
+          })
+        );
+
+        expect(saved.otherSpecialty).toBeNull();
+        expect(saved.languages).toEqual([]);
+        expect(saved.seekingLanguages).toEqual([]);
+      });
+
       it('deriva las iniciales del nombre si no se envía avatar', async () => {
         const profile = await repositories.profiles.saveCurrent(
           buildProfileInput({ name: 'Núria Bosch', avatar: undefined })
