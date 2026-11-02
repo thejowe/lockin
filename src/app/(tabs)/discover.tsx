@@ -7,7 +7,7 @@
  * Sin cabecera: desde el 2026-10-12 el producto es solo buscar cofundador, así
  * que el deck se lee siempre en modo `par` y la tarjeta se queda con todo el alto
  * que deja la barra de pestañas. Solo hay un botón «Filtros» (hoja con la
- * especialidad libre y los avanzados con candado para Premium). El `ProfileFilter`
+ * especialidad y la zona horaria libres, y los avanzados con candado para Premium). El `ProfileFilter`
  * vive aquí; si el servidor lo rechaza por Premium caducado, se quitan los
  * avanzados, el deck se recarga y se avisa.
  *
@@ -18,7 +18,7 @@
  */
 
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -39,6 +39,8 @@ import {
   ActionButton,
   DeckEmpty,
   DeckFilters,
+  FILTERS_STEP,
+  FiltersSpotlight,
   MatchModal,
   OutOfLikesSheet,
   SwipeDeck,
@@ -69,6 +71,9 @@ export default function DiscoverScreen() {
     : undefined;
   const [filter, setFilter] = useState<ProfileFilter>({});
   const [filtersOpen, setFiltersOpen] = useState(false);
+  /** Paso del mini tutorial de botones: el último marca «Filtros», que está aquí. */
+  const [tourStep, setTourStep] = useState<number | null>(null);
+  const filtersButton = useRef<ComponentRef<typeof View>>(null);
   const [notice, setNotice] = useState<string | null>(null);
   /** `info` para confirmaciones y avisos neutros (Boost activo, no se puede deshacer). */
   const [noticeTone, setNoticeTone] = useState<'danger' | 'info'>('danger');
@@ -144,10 +149,14 @@ export default function DiscoverScreen() {
         <View style={styles.content}>
           <View style={styles.toolbar}>
             <Pressable
+              ref={filtersButton}
+              collapsable={false}
               accessibilityRole="button"
               accessibilityLabel={
                 activeFilters > 0 ? `Filtros, ${activeFilters} activos` : 'Filtros'
               }
+              // Mientras se explican los botones, un toque en pantalla es «siguiente».
+              disabled={tourStep !== null}
               onPress={() => setFiltersOpen(true)}
               hitSlop={HitSlop.chip}>
               <ThemedText type="smallBold" themeColor="brass">
@@ -176,6 +185,8 @@ export default function DiscoverScreen() {
               </MessageState>
             ) : cards && cards.length > 0 ? (
               <SwipeDeck
+                userId={viewer?.id}
+                onTourStep={setTourStep}
                 profiles={cards}
                 onDecide={decide}
                 viewerSpecialties={viewerSpecialties}
@@ -204,6 +215,8 @@ export default function DiscoverScreen() {
           ) : null}
         </View>
       </SafeAreaView>
+
+      {tourStep === FILTERS_STEP ? <FiltersSpotlight anchorRef={filtersButton} /> : null}
 
       <Modal
         testID="deck-filters-modal"

@@ -292,6 +292,8 @@ export interface ProfileFilter {
    * no lo metas aquí sin avisar a `descubrir`, que es quien lo consume.
    */
   specialties?: Specialty[];
+  /** Diferencia horaria máxima entre las dos zonas, en horas (0–12). Gratis. */
+  timezoneWindowHours?: number;
   /*
    * Filtros avanzados: solo con Premium. Sin él, `getDeck` rechaza con
    * `PremiumRequiredError` (LQ005 en Supabase). Todos son opcionales; ausente
@@ -303,8 +305,6 @@ export interface ProfileFilter {
   timeBands?: TimeBand[];
   ambition?: Ambition[];
   startingPoint?: StartingPoint[];
-  /** Diferencia horaria máxima entre las dos zonas, en horas (0–12). */
-  timezoneWindowHours?: number;
 }
 
 /** Una carta del deck: el perfil más lo que solo el deck necesita saber. */

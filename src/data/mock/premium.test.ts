@@ -29,12 +29,15 @@ describe('usesPremiumFilters', () => {
     expect(usesPremiumFilters({ specialties: ['dev'], mode: 'par' })).toBe(false);
   });
 
+  it('la zona horaria es gratis', () => {
+    expect(usesPremiumFilters({ timezoneWindowHours: 2 })).toBe(false);
+  });
+
   it.each([
     { minHoursPerWeek: 10 },
     { timeBands: ['noche'] },
     { ambition: ['lifestyle'] },
     { startingPoint: ['solo-ganas'] },
-    { timezoneWindowHours: 2 },
   ] as const)('%j sí lo es', (filter) => {
     expect(usesPremiumFilters(filter as never)).toBe(true);
   });

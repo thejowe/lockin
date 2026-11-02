@@ -11,10 +11,10 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react-nativ
 import { buildProfile } from '@/data/test-fixtures';
 
 import { ProfileCard } from './profile-card';
-import { TAP_HINT_KEY, TapHint, useTapHint } from './tap-hint';
+import { tapHintKey, TapHint, useTapHint } from './tap-hint';
 
 function Harness() {
-  const hint = useTapHint();
+  const hint = useTapHint('u1');
   return (
     <ProfileCard profile={buildProfile()} tapHint={hint.visible} onPageChange={hint.dismiss} />
   );
@@ -37,11 +37,11 @@ it('sale la primera vez y, al tocar la tarjeta, se va para siempre', async () =>
   await fireEvent.press(screen.getByRole('button', { name: /^Ver / }));
 
   await waitFor(() => expect(screen.queryByTestId('tap-hint')).toBeNull());
-  await waitFor(async () => expect(await AsyncStorage.getItem(TAP_HINT_KEY)).toBe('1'));
+  await waitFor(async () => expect(await AsyncStorage.getItem(tapHintKey('u1'))).toBe('1'));
   await first.unmount();
 
   await render(<Harness />);
-  await waitFor(async () => expect(await AsyncStorage.getItem(TAP_HINT_KEY)).toBe('1'));
+  await waitFor(async () => expect(await AsyncStorage.getItem(tapHintKey('u1'))).toBe('1'));
   expect(screen.queryByTestId('tap-hint')).toBeNull();
 });
 
@@ -55,7 +55,7 @@ it('retirada antes de que llegue la lectura, no reaparece y queda recordada', as
   await fireEvent.press(screen.getByRole('button', { name: /^Ver / }));
   release(null);
 
-  await waitFor(async () => expect(await AsyncStorage.getItem(TAP_HINT_KEY)).toBe('1'));
+  await waitFor(async () => expect(await AsyncStorage.getItem(tapHintKey('u1'))).toBe('1'));
   expect(screen.queryByTestId('tap-hint')).toBeNull();
 });
 

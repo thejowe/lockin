@@ -26,10 +26,14 @@ import { fireEvent, render as rtlRender, screen } from '@testing-library/react-n
 import { act, useState } from 'react';
 import { AccessibilityInfo, StyleSheet } from 'react-native';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import { DataProvider } from '@/data';
 import { createMockRepositories, createMockStore } from '@/data/mock';
 import { buildProfile, buildProfileInput } from '@/data/test-fixtures';
 
+import { buttonsTourKey } from './buttons-tour';
+import { tapHintKey } from './tap-hint';
 import { cardTestId, PAN_TEST_ID, SwipeDeck } from './swipe-deck';
 
 import type { LegacyPanGesture } from 'react-native-gesture-handler';
@@ -121,7 +125,10 @@ function swipe({ translationX, velocityX = 0 }: { translationX: number; velocity
   ]);
 }
 
-beforeEach(() => {
+beforeEach(async () => {
+  // Las pistas de primera vez no son lo que se prueba aquí: tapan los botones.
+  await AsyncStorage.setItem(tapHintKey('u1'), '1');
+  await AsyncStorage.setItem(buttonsTourKey('u1'), '1');
   onDecide = jest.fn();
   mockWithTiming.mockClear();
   mockWithSpring.mockClear();

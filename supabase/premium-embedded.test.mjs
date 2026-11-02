@@ -870,15 +870,17 @@ test('Premium: tablas, cupos, deshacer, Boost, likes recibidos y deck', async (t
           "p_time_bands => array['noche']::public.time_band[]",
           "p_ambition => array['todo-o-nada']::public.ambition[]",
           "p_starting_point => array['solo-ganas']::public.starting_point[]",
-          'p_timezone_window_hours => 3',
         ]) {
           const result = await attempt(`select * from public.discovery_deck(${args})`);
           assert.equal(result.code, 'LQ005', args);
         }
-        const free = await attempt(
-          "select * from public.discovery_deck(p_specialties => array['dev']::public.specialty[])"
-        );
-        assert.equal(free.ok, true);
+        for (const args of [
+          "p_specialties => array['dev']::public.specialty[]",
+          'p_timezone_window_hours => 3',
+        ]) {
+          const free = await attempt(`select * from public.discovery_deck(${args})`);
+          assert.equal(free.ok, true, args);
+        }
         await setPremium(ME);
         await actingAs(ME);
         assert.equal(
