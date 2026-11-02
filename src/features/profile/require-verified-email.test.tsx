@@ -80,7 +80,7 @@ describe('RequireVerifiedEmail', () => {
     useGate.mockReturnValue('checking');
     await render(ui());
 
-    expect(screen.getByText('Comprobando tu cuenta…')).toBeTruthy();
+    expect(screen.getByRole('progressbar', { name: 'Comprobando tu cuenta…' })).toBeTruthy();
     expect(screen.queryByText('contenido privado')).toBeNull();
     expect(mockRedirect).not.toHaveBeenCalled();
   });

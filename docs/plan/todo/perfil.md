@@ -482,6 +482,7 @@ Decisiones del usuario: «Verificación» pasa a «Vincular cuentas» con GitHub
 - [x] **[Claude]** Las horas: «¿Cuántas horas puedes dedicarle?» en el alta, «Cuántas horas puedes dedicarle» en edición.
 - [x] **[Claude]** Deck: los idiomas solo **reordenan** (+1 si habla alguno de los que busco, +1 a la inversa), igual en SQL (`20261102120100_deck_languages.sql`) y en el mock. No filtran: los perfiles anteriores no tienen idiomas y un filtro duro los escondería.
 - [x] Aplicadas `20261102120000` y `20261102120100` en `grrzmzktrhksbttpbblg` (2026-11-02, MCP `apply_migration`). Verificado en remoto: tres columnas nuevas, 20 valores en `specialty`, check relajado, `discovery_deck`/`incoming_likes` devuelven las columnas nuevas y `authenticated` tiene el grant.
+- [x] `codex review` de `d26cd3c..914ee1c` (2026-11-02): 2 P2 corregidos. El E2E `e2e/full-journey.yaml` no tenía los pasos de idiomas ni la nueva frase de horas, y `require-verified-email.test.tsx` buscaba el texto visible que el logo de carga quitó. Ahora busca la `progressbar` por su nombre.
 - [x] **[Claude]** Perfiles existentes sin idiomas: la ficha propia los pide en el bloque de especialidades («Añadir mis idiomas» abre ese lápiz), y al guardar otro bloque el aviso explica que los idiomas son nuevos y en qué lápiz se añaden. Cualquier otro fallo fuera del bloque nombra el bloque y el error (`elsewhereMessage`) en vez del genérico «Hay algo en otra parte…».
 - [ ] Comprobación en dispositivo: el usuario.
 

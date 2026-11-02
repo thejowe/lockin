@@ -75,13 +75,23 @@ name: Alta, perfil, deck, match, mensaje y persistencia
 - tapOn: 'Busco Diseño'
 - tapOn: 'Continuar'
 - extendedWaitUntil:
+    visible: '¿Qué idiomas hablas?'
+    timeout: 10000
+- tapOn: 'Español'
+- tapOn: 'Continuar'
+# Idiomas de quien busco: opcional; se omite.
+- extendedWaitUntil:
+    visible: '¿Qué idiomas debe hablar?'
+    timeout: 10000
+- tapOn: 'Omitir'
+- extendedWaitUntil:
     visible: '¿En qué punto estás?'
     timeout: 10000
 - tapOn: 'Solo ganas'
 - tapOn: 'Continuar'
 # Horas por semana: se queda en el valor de partida.
 - extendedWaitUntil:
-    visible: '¿Cuántas horas a la semana?'
+    visible: '¿Cuántas horas puedes dedicarle?'
     timeout: 10000
 - tapOn: 'Continuar'
 - extendedWaitUntil:
