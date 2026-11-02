@@ -109,11 +109,12 @@ Las claves y los secretos los pega siempre el usuario.
 
 ## Fase 4 — legal y fichas (antes de activar productos)
 
-- [ ] Términos (borrador en `docs/tiendas/borrador-premium-legal.md`, 2026-11-01, sin publicar): sección de suscripción y desistimiento; subir `TERMS_VERSION` para que se vuelvan
-  a aceptar.
-- [ ] Privacidad: RevenueCat como encargado del tratamiento, con su transferencia internacional.
-- [ ] Fichas: «Compras dentro de la app: sí»; Data safety con «Historial de compras»; App Privacy
-  con «Purchases». Siguen sin anuncios.
+- [x] Términos: §10 «cofounder Premium» (qué incluye, precio y renovación, prueba de 3 días, cancelar, desistimiento, cambios de precio) en `terminos.md` v1.2 del 2026-11-02; `TERMS_VERSION` = `2026-11-02` y `texts.generated.ts` regenerado (`node scripts/build-legal.mjs`). Hecho el 2026-11-02 por Claude.
+- [x] Privacidad v1.4: estado de suscripción (§2), base contractual (§3), RevenueCat como encargado con transferencia a EE. UU. y Apple/Google como responsables del cobro (§5), conservación (§7). De paso declara los idiomas y la especialidad «Otra» (`535d217`) y la hora de likes, Super Likes y Boost (`like_events`, `boosts`), que faltaban.
+- [x] Fichas: App Store («Compras dentro de la app: sí», bloque SUBSCRIPTION en las notas de revisión), Google Play («Contiene compras: sí», «anuncios: no»), `cuestionario-privacidad.md` (*Purchase History* / «Historial de compras», SDK de RevenueCat) y `datos-recopilados.md`.
+- [ ] **Usuario — antes de enviar la versión con Premium:** (1) decidir el estatus de **trader (DSA)** en Apple y Google y el **aviso legal con NIF**: se decidieron «no trader» y «sin NIF» porque la app no cobraba; (2) aceptar el **DPA de RevenueCat** y anotar la base de la transferencia (CCT o DPF); (3) revisión jurídica de la renuncia al desistimiento. No es asesoramiento jurídico.
+- [ ] **Publicar la web:** `node scripts/build-web.mjs` (generado en `_site/` el 2026-11-02, sin publicar), copiar al clon de `cofounder-web`, commit y push. Mejor hacerlo cuando se vaya a enviar la build con Premium, para no anunciar una suscripción que aún no se puede comprar.
+- [ ] **[Claude] Paywall y prueba gratis (Apple 3.1.2):** el paywall no dice nada de la prueba de 3 días. Cuando exista la oferta introductoria en App Store Connect, mostrar «3 días gratis, luego X €/periodo» a partir de `product.introPrice` del SDK (y no fijo en el código, porque Apple decide quién tiene derecho a la prueba).
 
 ## Hallazgos del comprobador
 

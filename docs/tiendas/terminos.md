@@ -2,11 +2,11 @@
 
 > Documento redactado el 14 de octubre de 2026 para su revisión por el responsable antes de publicarlo. No es asesoramiento legal: conviene que lo revise una persona con formación jurídica. La versión y la fecha de este texto son las que registrará la aceptación dentro de la app.
 
-**Versión:** 1.1
+**Versión:** 1.2
 
-**Fecha de la versión:** 18 de octubre de 2026
+**Fecha de la versión:** 2 de noviembre de 2026
 
-**Entrada en vigor:** 18 de octubre de 2026.
+**Entrada en vigor:** 2 de noviembre de 2026.
 
 ## 1. Qué es cofounder y quién lo ofrece
 
@@ -70,23 +70,35 @@ Si vinculas tu cuenta de GitHub, tu perfil muestra «GitHub verificado». Ese di
 
 Lo que acordéis con otras personas a las que conozcas en cofounder es asunto vuestro. cofounder no es parte de esos acuerdos ni los supervisa, y no responde de ellos. Conviene que verifiques por tu cuenta con quién hablas y que busques asesoramiento profesional independiente antes de constituir una sociedad, firmar un acuerdo o aportar dinero.
 
-## 10. Disponibilidad y responsabilidad
+## 10. cofounder Premium
+
+**Qué incluye.** cofounder Premium es una suscripción opcional que elimina el límite diario de likes y añade Super Likes, deshacer el último gesto, Boost y ver quién te ha dado like. cofounder sigue siendo gratuito sin Premium y no muestra anuncios.
+
+**Precio y renovación.** 4,99 € al mes o 39,99 € al año, impuestos incluidos, cobrados por Apple App Store o Google Play. La suscripción se renueva sola al final de cada periodo salvo que la canceles al menos 24 horas antes de que termine. La primera vez que te suscribes tienes 3 días de prueba gratuita; si no la cancelas al menos 24 horas antes de que termine, empieza el cobro del plan elegido. La prueba es una por persona y cuenta de tienda.
+
+**Cómo cancelar.** Desde los ajustes de suscripciones de tu cuenta de Apple o de Google (la app tiene el acceso directo «Gestionar suscripción»). Borrar la cuenta de cofounder **no cancela** la suscripción en la tienda: cancélala antes.
+
+**Desistimiento y reembolsos.** El cobro lo hace la tienda, que gestiona los reembolsos según sus condiciones. Al contratar, pides acceso inmediato al contenido digital y reconoces que pierdes el derecho de desistimiento de 14 días en cuanto empieza a prestarse, salvo lo que la tienda te reconozca.
+
+**Cambios de precio y fin.** Te avisaremos antes de cambiar el precio, y la tienda te pedirá que lo confirmes. Al terminar el periodo pagado vuelves al plan gratuito sin perder tu perfil ni tus matches.
+
+## 11. Disponibilidad y responsabilidad
 
 Ofrecemos la app tal cual, sin garantía de disponibilidad continua. Podemos modificarla, interrumpirla o retirarla. En la medida en que la ley lo permita, no respondemos de los daños derivados de la conducta de otras personas ni de los acuerdos que alcancéis. Esto no limita los derechos que la ley reconozca a las personas consumidoras.
 
-## 11. Suspensión y baja
+## 12. Suspensión y baja
 
 Podemos suspender o eliminar tu cuenta si incumples estos términos o las normas. Puedes dejar de usar la app y eliminar tu cuenta en cualquier momento.
 
-## 12. Cambios y aceptación
+## 13. Cambios y aceptación
 
 Si cambiamos estos términos de forma relevante, publicaremos una nueva versión con su número y su fecha, y te pediremos que la aceptes para seguir usando la app. La app guarda la versión y la fecha de los términos que aceptas.
 
-## 13. Ley aplicable
+## 14. Ley aplicable
 
 Estos términos se rigen por la ley española. Si eres persona consumidora, mantienes los derechos que te reconozca la normativa de tu lugar de residencia y puedes acudir a los tribunales que te correspondan.
 
-## 14. Contacto
+## 15. Contacto
 
 Para cualquier duda o aviso sobre estos términos: cofounder.soporte@gmail.com.
 
@@ -96,4 +108,5 @@ Nota editorial, a retirar del texto publicado:
 
 - Cotejado con el código el 14-oct-2026: edad mínima 16 (restricción SQL 16-120 y formulario 16-99); bloquear y reportar perfiles existen (`block_profile`, `report_profile`); la foto se modera con OpenAI en la función `moderate-avatar`; el perfil lo lee cualquier cuenta autenticada.
 - 18-oct-2026: versión 1.1 (tablón, enlaces y acceso con Google o Apple). La aceptación con versión y fecha ya existe (`TERMS_VERSION`, `accept_terms`); al subir la versión todo el mundo vuelve a aceptar. El reporte de un mensaje concreto también existe (`report_message`, 20261014130000).
-- Pendiente de revisión jurídica. No se incluye ningún precio ni plan de pago porque no existen.
+- 2-nov-2026: versión 1.2, añade §10 «cofounder Premium» desde `borrador-premium-legal.md` (precios y prueba de 3 días decididos por el usuario el 1-nov-2026; productos `app.cofounder.mobile.premium.{monthly,annual}`). `TERMS_VERSION` pasa a 2026-11-02: todo el mundo vuelve a aceptar al abrir una build que la lleve.
+- Pendiente de revisión jurídica, en especial la renuncia al desistimiento (§10) y el estatus de comerciante (DSA y NIF), que se decidió como «no trader» cuando la app no cobraba.

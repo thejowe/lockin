@@ -57,7 +57,8 @@ Público objetivo: 16–17 y 18+ (D06). En el cuestionario IARC declarar interac
 - Seguridad infantil (categoría Social): URL de los estándares https://thejowe.github.io/cofounder-web/seguridad-infantil; contacto designado cofounder.soporte@gmail.com.
 - Permisos (binario final, T5): solo `CAMERA` declarado por la app, para la foto de perfil; la galería usa el selector del sistema. Sin `RECORD_AUDIO`, `SCHEDULE_EXACT_ALARM` ni notificaciones: no hay permisos sensibles que justificar. Confirmar en el manifiesto del AAB que ninguna librería añade otros (T7).
 - Políticas UGC de Google: Términos y Normas aceptados antes de publicar; reporte de perfiles y mensajes; bloqueo; filtro básico de texto y moderación de fotos; revisión de reportes (24 h / 72 h). Migraciones aplicadas en producción el 16-oct-2026; falta probarlo contra Supabase real (T7).
-- Declaración de trader (DSA): **no trader** (decidido el 16-oct-2026: app gratuita, sin anuncios, compras ni ingresos); revisarlo si se monetiza.
+- Declaración de trader (DSA): **no trader** (decidido el 16-oct-2026: app gratuita, sin anuncios, compras ni ingresos). **Reabierto el 2-nov-2026:** con Premium la app cobra; el titular debe decidir si pasa a trader antes de publicar la versión con suscripción.
+- Compras en la app: **«Contiene compras en la aplicación: sí»** (suscripción cofounder Premium, mensual o anual, con 3 días de prueba). **«Contiene anuncios: no».** Precio de la app: gratuita.
 - Cuenta de prueba por si Play pide acceso: [cuenta de prueba: pendiente].
 
 ## Límites
@@ -68,7 +69,7 @@ Público objetivo: 16–17 y 18+ (D06). En el cuestionario IARC declarar interac
 | Descripción breve | 78 caracteres | 80 |
 | Descripción completa | 1770 caracteres | 4000 |
 
-Package: `app.cofounder.mobile`; versión 1.0.0. Cuenta personal declarada no trader (DSA) y sin monetización: Play muestra el nombre del desarrollador y el país, no la dirección.
+Package: `app.cofounder.mobile`; versión 1.0.0. Cuenta personal declarada no trader (DSA): Play muestra el nombre del desarrollador y el país, no la dirección. Con Premium esto se revisa (ver la declaración de trader arriba).
 
 ## Comprobaciones previas al envío (no copiar en la consola)
 

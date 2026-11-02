@@ -1,5 +1,7 @@
 # Política de privacidad de cofounder
 
+> Revisada el 2 de noviembre de 2026 (versión 1.4): suscripción opcional cofounder Premium cobrada por Apple o Google, con RevenueCat como encargado (§2, §3, §5 y §7), e idiomas y especialidad «Otra» en el perfil (§2).
+>
 > Revisada el 29 de octubre de 2026 (sin cambiar de versión; decidir si pide 1.4): §2 y §7 explican el token técnico de Apple que se guarda para revocar el acceso al eliminar la cuenta (App Store 5.1.1(v)). Hasta que la migración `20261029120000_apple_refresh_tokens` y la función `apple-token` estén en producción con sus secretos, el servidor no guarda ni revoca nada.
 >
 > Revisada el 21 de octubre de 2026 (versión 1.3): los emails de cuenta pasan a enviarse con Brevo.
@@ -8,9 +10,9 @@
 >
 > Revisada el 18 de octubre de 2026: acceso con Google y Apple, tablón personal de fotos moderado con OpenAI, enlaces a Instagram y TikTok, y envío de correo por Supabase mientras Brevo no esté configurado. Publicada ese día en la URL pública. Ese mismo día, tras aplicar `20261018120000_profiles_block_visibility` en producción, §4 vuelve a decir que el bloqueo impide ver el perfil (antes: «la app deja de mostrar»).
 
-**Versión:** 1.3.
+**Versión:** 1.4.
 
-**Entrada en vigor:** 21 de octubre de 2026.
+**Entrada en vigor:** 2 de noviembre de 2026.
 
 ## 1. Quién es responsable de tus datos
 
@@ -34,7 +36,7 @@ Si verificas tu enlace de GitHub, se vincula tu identidad de GitHub y se publica
 
 ### Tu perfil
 
-Guardamos el nombre y la edad que indicas, tu ciudad o zona y zona horaria, iniciales y color del avatar, especialidades que dominas y que buscas, punto de partida, disponibilidad semanal y franjas horarias, nivel de ambición, enlaces opcionales a GitHub, portfolio, LinkedIn, Instagram y TikTok, y tus respuestas breves a preguntas de perfil, con las fechas de creación y modificación.
+Guardamos el nombre y la edad que indicas, tu ciudad o zona y zona horaria, iniciales y color del avatar, especialidades que dominas y que buscas (y, si eliges «Otra», el texto que escribas), idiomas que hablas y que buscas, punto de partida, disponibilidad semanal y franjas horarias, nivel de ambición, enlaces opcionales a GitHub, portfolio, LinkedIn, Instagram y TikTok, y tus respuestas breves a preguntas de perfil, con las fechas de creación y modificación.
 
 La ubicación se escribe como texto; la app no usa GPS.
 
@@ -44,7 +46,11 @@ La ubicación se escribe como texto; la app no usa GPS.
 
 ### Tu actividad y conversaciones
 
-Guardamos tus decisiones al deslizar (te interesa o pasas), los matches mutuos y los mensajes de texto del chat, con sus participantes y fechas. También guardamos los bloqueos y reportes que hagas o recibas: quién bloquea o reporta, a quién, el motivo elegido, el texto opcional que añadas (hasta 500 caracteres) y la fecha (ver §7). Los bloqueos son visibles solo para quien bloquea; los reportes no los ve ninguna otra persona de la app.
+Guardamos tus decisiones al deslizar (te interesa o pasas), la hora de cada like y Super Like y los Boost que actives (para aplicar los límites diarios y semanales), los matches mutuos y los mensajes de texto del chat, con sus participantes y fechas. También guardamos los bloqueos y reportes que hagas o recibas: quién bloquea o reporta, a quién, el motivo elegido, el texto opcional que añadas (hasta 500 caracteres) y la fecha (ver §7). Los bloqueos son visibles solo para quien bloquea; los reportes no los ve ninguna otra persona de la app.
+
+### Tu suscripción (opcional)
+
+Si contratas cofounder Premium, guardamos el estado de tu suscripción: el producto (mensual o anual), la tienda y la fecha hasta la que está pagada, con la fecha de la última actualización. Para enseñarte los planes y validar la compra usamos **RevenueCat**, que te identifica con el mismo identificador de cuenta de la app desde que abres la pantalla de Premium, compres o no. El pago lo cobran Apple o Google: no recibimos ni guardamos los datos de tu tarjeta ni de tu medio de pago.
 
 ### Datos del dispositivo y servicios técnicos
 
@@ -56,9 +62,9 @@ Los servicios de autenticación, base de datos, almacenamiento y actualizaciones
 
 ## 3. Para qué usamos los datos y con qué base jurídica
 
-Usamos los datos para mantener y recuperar tu cuenta, mostrar y editar tu perfil, mostrarte perfiles, resolver los intereses mutuos, permitir el chat con tus matches, verificar tu enlace de GitHub, permitir el acceso con Google o Apple, revisar las fotos de perfil y del tablón, atender bloqueos y reportes y servir actualizaciones de la app. No usamos SDK de publicidad ni analítica comercial.
+Usamos los datos para mantener y recuperar tu cuenta, mostrar y editar tu perfil, mostrarte perfiles, resolver los intereses mutuos, permitir el chat con tus matches, verificar tu enlace de GitHub, permitir el acceso con Google o Apple, revisar las fotos de perfil y del tablón, atender bloqueos y reportes, activar Premium si lo contratas y servir actualizaciones de la app. No usamos SDK de publicidad ni analítica comercial.
 
-- **Ejecución del servicio que solicitas** (art. 6.1.b RGPD): cuenta, perfil, swipes, matches y mensajes.
+- **Ejecución del servicio que solicitas** (art. 6.1.b RGPD): cuenta, perfil, swipes, matches y mensajes, y la suscripción Premium si la contratas.
 - **Consentimiento** (art. 6.1.a): foto de perfil, fotos del tablón, verificación de GitHub y acceso con Google o Apple, todos opcionales. Puedes retirarlo quitando las fotos, desvinculando GitHub o eliminando la cuenta.
 - **Interés legítimo** (art. 6.1.f): seguridad, prevención de abusos, revisión de fotos y de reportes y operación técnica.
 - **Obligación legal** (art. 6.1.c): atender requerimientos de las autoridades.
@@ -76,11 +82,12 @@ Usamos los datos para mantener y recuperar tu cuenta, mostrar y editar tu perfil
 - **Supabase** (encargado): autenticación, base de datos, almacenamiento de fotos y comunicación en tiempo real. Alojado en la región UE Centro (Fráncfort).
 - **OpenAI** (encargado, EE. UU.): revisión automática de las fotos de perfil y de las fotos del tablón con su texto, solo si las subes. Recibe la imagen (y, en el tablón, el texto) desde nuestro servidor. Es una transferencia fuera del EEE (ver más abajo). Usamos su servicio de moderación (`omni-moderation-latest`). Según la documentación pública de OpenAI (consultada el 16-oct-2026), los datos enviados a su API no se usan para entrenar sus modelos salvo que el cliente lo autorice, y el servicio de moderación no conserva el contenido para monitorización de abuso; una imagen que se detecte como material de abuso sexual infantil puede conservarse para revisión manual. Estas condiciones son las de OpenAI y pueden cambiar. El acuerdo de tratamiento de datos (DPA) de OpenAI forma parte de las condiciones que rigen el uso de su API.
 - **Brevo** (encargado, Sendinblue SAS, Francia): envío de los emails de confirmación y recuperación de cuenta. Recibe tu dirección de email y el contenido de ese mensaje. Brevo registra, sin asociarlo a un contacto, si el email se abre y si se pulsa su enlace, y el enlace de confirmación pasa por un servidor de Brevo antes de llegar a nosotros. Pediremos a Brevo que desactive ese seguimiento y actualizaremos este punto cuando lo haga.
+- **RevenueCat** (encargado, RevenueCat, Inc., EE. UU.): muestra los planes de Premium, valida las compras con Apple o Google y mantiene el estado de la suscripción. Recibe tu identificador de cuenta y datos técnicos del dispositivo y de la tienda cuando abres la pantalla de Premium, aunque no compres, y, si compras, los datos de la compra (producto, fechas, tienda y país). Es una transferencia fuera del EEE (ver más abajo).
 - **Expo / EAS** (encargado): distribución de actualizaciones de la app.
 - **GitHub** (responsable independiente): solo si verificas tu enlace.
-- **Google** y **Apple** (responsables independientes): solo si entras con su cuenta. Cada uno trata ese inicio de sesión según su propia política de privacidad.
+- **Google** y **Apple** (responsables independientes): si entras con su cuenta, y si contratas Premium, porque cobran la suscripción con tu cuenta de su tienda. Cada uno trata ese inicio de sesión y ese pago según su propia política de privacidad.
 
-OpenAI trata datos fuera del Espacio Económico Europeo (EE. UU.). Esa transferencia se apoya en las cláusulas contractuales tipo de la Comisión Europea o en el Marco de Privacidad de Datos UE-EE. UU. (DPF), según el caso. Puedes pedir información sobre estas garantías en cofounder.soporte@gmail.com.
+OpenAI y RevenueCat tratan datos fuera del Espacio Económico Europeo (EE. UU.). Esa transferencia se apoya en las cláusulas contractuales tipo de la Comisión Europea o en el Marco de Privacidad de Datos UE-EE. UU. (DPF), según el caso. Puedes pedir información sobre estas garantías en cofounder.soporte@gmail.com.
 
 Al abrir un enlace de portfolio, GitHub, LinkedIn, Instagram o TikTok de otra persona, visitas un servicio externo con sus propias prácticas de privacidad.
 
@@ -101,6 +108,7 @@ Conservamos tus datos mientras tu cuenta exista. Al eliminar la cuenta desde la 
 - **Fotos rechazadas o pendientes de revisión:** tras cada revisión, aprobada o rechazada, el servidor elimina el archivo de la subida pendiente. Si ese borrado fallara, una tarea programada elimina cada hora las subidas pendientes con más de 24 horas. Una foto rechazada no se publica ni se conserva.
 - **Foto aprobada:** hasta que la quites o elimines la cuenta; la copia anterior se retira al sustituirla.
 - **Fotos del tablón:** hasta que las quites o elimines la cuenta; al quitar una se borran el archivo y su texto.
+- **Estado de la suscripción:** mientras exista la cuenta; se borra con ella. Los registros de la compra los conservan Apple o Google y RevenueCat según sus propias políticas y obligaciones legales. Eliminar la cuenta no cancela la suscripción en la tienda.
 
 Al eliminar una cuenta se borran también sus matches y los mensajes de esas conversaciones, incluidos los que escribió la otra persona.
 
@@ -136,4 +144,5 @@ Nota editorial, a retirar del texto publicado:
 - **Cotejado con el código el 14-oct-2026:** los sugeridores de apertura del chat son reglas fijas, sin IA ni proveedor; la sesión se guarda con `expo-secure-store` en móvil; `expo-notifications`, WebRTC, `RECORD_AUDIO` y `SCHEDULE_EXACT_ALARM` ya no están en el binario desde T5 (no hay push ni recordatorios); `looking_for` y `active_mode` siguen escribiéndose en base de datos; `moderate-avatar` borra la subida pendiente tras cada revisión y la tarea `purge_stale_avatar_uploads()` (cada hora, aplicada en producción el 16-oct) retira las de más de 24 h; `delete_my_account` borra en servidor los objetos de la persona en `avatars` y `avatar-uploads` (límite: Supabase documenta que los bytes del backend S3 no se retiran con SQL; la dirección deja de resolver).
 - **18-oct-2026:** publicada en `cofounder-web`. El DPA de OpenAI se cita como parte de sus condiciones (el texto de feb-2024 dice que se incorpora por referencia al acuerdo que rige la API); firmar el formulario de DPA de OpenAI sigue siendo recomendable. El SMTP de Brevo no está configurado en Supabase Auth (comprobado ese día), así que el texto nombra a Supabase como emisor del correo; al configurar Brevo, volver a nombrarlo en §5.
 - **21-oct-2026 (v1.3):** SMTP de Brevo configurado en Supabase Auth y comprobado (alta de prueba entregada en bandeja de entrada). §5 nombra a Brevo y quita la frase de Supabase como emisor. El correo de prueba llevaba píxel de apertura y el enlace de confirmación reescrito por Brevo (`sendibt3.com/tr/cl/…`); en el panel solo existe «seguimiento anónimo» (activado el 21-oct), no apagarlo. §5 lo declara tal cual. Pedido a soporte de Brevo que lo apague; cuando esté apagado y comprobado en un correo real, cambiar §5 a «no se usa su seguimiento». Publicada el 21-oct en `cofounder-web` porque la 1.2 publicada nombraba a Supabase como emisor, ya falso.
+- **2-nov-2026 (v1.4):** cotejado con el código. Suscripción: `public.entitlements` (`premium_until`, `product_id`, `store`, `updated_at`, borrado en cascada con el perfil), `like_events` y `boosts` (cascada), `revenuecat_events` solo guarda el id del evento; `src/lib/purchases.ts` hace `logIn` en RevenueCat con el uid de Supabase. Idiomas (`languages`, `seeking_languages`) y `other_specialty` en `profiles` desde `20261102120000`. Entrada en vigor el mismo día y no a 30 días (§10): el tratamiento nuevo solo afecta a quien abre la pantalla de Premium (al abrirla, `getOfferings()` → `sdkReady()` ya hace `logIn(uid)` en RevenueCat, compre o no; hallazgo de `codex review`) o la contrata a partir de ahora, y los idiomas los aporta cada persona al editar su perfil; confirmarlo en la revisión jurídica. **Falta del titular:** firmar o aceptar el DPA de RevenueCat y comprobar la base de la transferencia (CCT o DPF).
 - **Pendiente de decidir o confirmar:** (1) ~~condiciones de la API de OpenAI (DPA)~~ ver la línea anterior; (2) ~~plazo de las fotos rechazadas o pendientes~~ resuelto: borrado tras cada revisión y purga de restos a las 24 h; (3) ~~proveedor de correo~~ decidido el 16-oct: Brevo, remitente cofounder.soporte@gmail.com; no empujar este texto hasta que el SMTP de Brevo esté configurado en Supabase Auth; (4) ~~fecha de publicación~~ v1.2 con entrada en vigor el 20-oct-2026, pendiente de subir a `cofounder-web`; (5) ~~job `purge_old_user_reports()`~~ confirmado activo en producción el 16-oct (03:20 diario); (6) los plazos de revisión de reportes (72 h / 24 h) son un compromiso operativo, no una regla del código.

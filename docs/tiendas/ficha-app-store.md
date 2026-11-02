@@ -59,7 +59,7 @@ Principal: **Redes sociales (Social Networking)** (D07). Secundaria: **Negocios 
 
 ## Clasificación de edad
 
-Edad mínima de uso: 16 años (D06), autodeclarada. En el cuestionario de App Store Connect declarar: contenido generado por usuarios (perfiles, fotos, respuestas y chat 1:1), mensajería entre usuarios, sin publicidad, compras, apuestas ni acceso web sin restricciones. No reducir la clasificación que calcule Apple; si es inferior a 16, elevarla.
+Edad mínima de uso: 16 años (D06), autodeclarada. En el cuestionario de App Store Connect declarar: contenido generado por usuarios (perfiles, fotos, respuestas y chat 1:1), mensajería entre usuarios, sin publicidad, apuestas ni acceso web sin restricciones. Desde la versión con Premium sí hay compras dentro de la app (suscripción); no cambia la declaración de edad. No reducir la clasificación que calcule Apple; si es inferior a 16, elevarla.
 
 | Capacidad | Esta versión |
 | --- | --- |
@@ -68,7 +68,8 @@ Edad mínima de uso: 16 años (D06), autodeclarada. En el cuestionario de App St
 | Bloquear / reportar | Sí: perfiles y mensajes concretos (confirmar en la build) |
 | Filtro de contenido | Sí: filtro básico de texto en perfil y chat, más moderación de fotos |
 | Aceptación de Términos y Normas | Sí, obligatoria antes de publicar |
-| Publicidad / compras / apuestas | No |
+| Publicidad / apuestas | No |
+| Compras dentro de la app | Sí: suscripción cofounder Premium, mensual (`app.cofounder.mobile.premium.monthly`, 4,99 €) o anual (`.annual`, 39,99 €), con 3 días de prueba gratis. Premium solo amplía funciones de la propia app |
 | Controles parentales / verificación de edad | No; edad autodeclarada |
 
 ## Límites
@@ -117,6 +118,15 @@ USER-GENERATED CONTENT (Guideline 1.2)
 - Contact: cofounder.soporte@gmail.com. Child-safety standards:
   https://thejowe.github.io/cofounder-web/seguridad-infantil
 
+SUBSCRIPTION (Guideline 3.1.2)
+- cofounder Premium is an optional auto-renewable subscription (monthly or
+  yearly, 3-day free trial for new subscribers). It removes the daily like
+  limit and adds Super Likes, undo, Boost and "who liked you". Everything else
+  stays free; there are no ads.
+- Premium only unlocks features inside the app. Purchases go through Apple
+  In-App Purchase; "Restore purchases" and "Manage subscription" are in the
+  paywall and in Settings.
+
 PERMISSIONS
 - Camera / photo library: only to take or choose the optional profile photo.
   No microphone, no location, no contacts, no push notifications, no tracking.
@@ -138,4 +148,4 @@ Minimum age 16, self-declared.
 - **Capturas:** solo pantallas actuales (perfil, deck a pantalla completa, match, chat con sugerencias, GitHub verificado, bloqueo/reporte). Ninguna con temporizador, salas, vídeo o rachas (ya no existen en la app).
 - **Cuenta de revisión:** [cuenta de prueba: pendiente] con perfil completo y al menos un match con chat para que la revisión vea las funciones.
 - **URLs públicas (D08):** privacidad, términos, normas, seguridad infantil, soporte y eliminar cuenta en https://thejowe.github.io/cofounder-web/… (`/privacidad`, `/terminos`, `/normas`, `/seguridad-infantil`, `/soporte`, `/eliminar-cuenta`) deben estar publicadas y funcionando antes de enviar [pendiente: fecha de publicación; no empujar `web/**` hasta cerrar marcadores].
-- Responsable (D01): Joel de Torres Sainz de la Maza, carrer Nou, 37, 25153 Lleida (España). DSA (Business → Compliance): **no trader** (decidido el 16-oct-2026: app gratuita, sin anuncios, compras ni ingresos); revisarlo si se monetiza. Contacto (D02): cofounder.soporte@gmail.com.
+- Responsable (D01): Joel de Torres Sainz de la Maza, carrer Nou, 37, 25153 Lleida (España). DSA (Business → Compliance): **no trader** (decidido el 16-oct-2026: app gratuita, sin anuncios, compras ni ingresos). **Reabierto el 2-nov-2026:** con Premium la app cobra; el titular debe decidir si pasa a trader (Apple publica entonces dirección, teléfono y email en la ficha de la UE) antes de enviar la versión con suscripción. Contacto (D02): cofounder.soporte@gmail.com.

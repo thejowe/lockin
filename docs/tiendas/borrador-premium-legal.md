@@ -1,4 +1,7 @@
-# Borrador legal de Premium (Fase 4) — NO publicado
+# Borrador legal de Premium (Fase 4) — fusionado el 2026-11-02
+
+**Fusionado** en `terminos.md` (§10, versión 1.2), `privacidad.md` (versión 1.4), las dos fichas y
+`cuestionario-privacidad.md`. Este archivo queda como histórico; las fuentes de verdad son esos documentos.
 
 Estado: borrador del 2026-11-01. No sustituye a `terminos.md` ni a `privacidad.md`: se fusiona en ellos
 **solo cuando existan las cuentas de Apple, Google y RevenueCat y los precios estén decididos**. Publicarlo

@@ -96,7 +96,7 @@ solo con términos aceptados; `useTermsGate` acepta versión >= vigente; `pages.
 - [x] T6 declaraciones — hecho 2026-10-15 (ver «T6 hecho»); quedan solo los marcadores `[pendiente: …]` del usuario.
 - [x] T7 `comprobador` — cerrada 2026-10-16 con mock y Supabase real (ver «T7 veredicto» y «T7 cierre»).
 - [x] Texto de `privacidad.md`/`eliminar-cuenta` sobre fotos — ya dice «borrado en servidor» (migración `20261014140000` aplicada el 2026-10-16; ver T4).
-- [ ] Subir `TERMS_VERSION` si cambia la fecha final de `terminos.md` (hoy ambas 2026-10-14).
+- [x] Subir `TERMS_VERSION` si cambia la fecha final de `terminos.md` (hoy ambas 2026-10-14). Hecho el 2026-11-02: `terminos.md` v1.2 (Premium) y `TERMS_VERSION` = `2026-11-02`.
 
 **Migraciones (aplicadas en producción el 2026-10-16; lista histórica)** (`grrzmzktrhksbttpbblg`; requieren permiso del usuario):
 `20261014120000_terms_acceptances`, `20261014130000_report_message`, `20261014140000_avatar_storage_cleanup`.

@@ -1,5 +1,13 @@
 # TODO maestro — LockIn MVP
 
+## ▶ Al retomar (2026-11-02): Fase 4 legal de Premium hecha en el repo, falta publicarla
+
+**Hecho:** términos v1.2 (§10 Premium), privacidad v1.4 (RevenueCat, suscripción, idiomas), fichas y cuestionario; `TERMS_VERSION` = `2026-11-02`. `codex review` de `d26cd3c..914ee1c` (idiomas, aviso de idiomas, logo de carga): 2 P2 corregidos (E2E `full-journey.yaml` sin los pasos de idiomas y la nueva frase de horas; `require-verified-email.test.tsx` buscaba un texto que el logo ya no pinta).
+
+**Falta (usuario):** decidir trader (DSA) y NIF ahora que se cobra; DPA de RevenueCat; publicar la web (`_site/` → `cofounder-web`) cuando se envíe la build con Premium. **Falta ([Claude]):** el paywall no menciona la prueba de 3 días (Apple 3.1.2). Detalle en `todo/premium.md` (Fase 4). El webhook de RevenueCat, el acuerdo de Apple y la compra en el sandbox siguen como en la entrada del 2026-11-01.
+
+**Avisos:** 5 tests rojos previos y ajenos (`auth.test.ts` «sin sesión…», más 4 en `test/app/{index,profile,register}` relacionados con la puerta `/phone`); `tsc` sigue con los errores de rutas `/phone` y `/settings`. En este equipo `node_modules` no tenía `react-native-purchases`: tras `git pull`, correr `npm install`. Ya no hay cambios sin commitear de otra sesión (el aviso del 2026-11-01 está superado).
+
 ## ▶ Al retomar (2026-11-01, cierre): cobro de Premium cableado en iOS; faltan Apple, prueba gratis y Android
 
 **Hecho (todo empujado; HEAD de la rama `claude/startup-cofounder-matching-app-tfeai1`):** SDK `react-native-purchases@11` tras `src/lib/purchases.ts` (ofertas, compra y restauración reales si hay clave `EXPO_PUBLIC_REVENUECAT_{IOS,ANDROID}_KEY`; `logIn` con el uid de Supabase, `logOut` al cerrar sesión; `syncEntitlement` invoca la Edge Function). Migración `20261101120000_premium_entitlement_snapshot_guard` (`save_entitlement`, cierra el P1 de Codex) **aplicada en producción** y Schema drift verde (run `41362234694`). Edge Functions `sync-entitlement` (JWT) y `revenuecat-webhook` (sin JWT) **desplegadas** (v1) y con 401 en la prueba de humo; los dos secretos de Supabase (`REVENUECAT_SECRET_KEY`, `REVENUECAT_WEBHOOK_SECRET`) los puso el usuario. App Store Connect: grupo `cofounder Premium` con `app.cofounder.mobile.premium.monthly` (4,99 €) y `.annual` (39,99 €, por adelantado), 175 países, nombre en español; siguen «En preparación para el envío». RevenueCat (proyecto `cofounder`): app iOS con clave de compras válida, productos, entitlement `premium`, offering `default` (Monthly + Annual); clave pública `appl_…` ya en `eas.json`.

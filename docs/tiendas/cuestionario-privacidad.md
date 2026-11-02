@@ -18,6 +18,7 @@ El binario enviado **ya no contiene** Lock-In (sesiones, salas, rachas, valoraci
 | `expo-updates` / EAS | presente | Actualizaciones OTA (EAS-Client-ID, plataforma, runtime) |
 | `react-native-webrtc`, `expo-notifications` | **retirados** | — |
 | Anuncios, analítica, SDK de terceros de seguimiento | ninguno | — |
+| `react-native-purchases` (RevenueCat) | presente desde `f4fe6f7` (2026-11-01) | Compra y restauración de cofounder Premium; `logIn` con el UUID de cuenta. Sin seguimiento entre apps |
 
 Procesador adicional fuera del binario: la Edge Function `moderate-avatar` envía la foto a **OpenAI** (`omni-moderation-latest`) desde el servidor para moderarla antes de publicarla; la app no habla con OpenAI directamente.
 
@@ -46,6 +47,9 @@ Fuente: [App Privacy Details](https://developer.apple.com/app-store/app-privacy-
 | Usage Data → Product Interaction | Likes/pass, matches, bloqueos | Sí | App Functionality; Product Personalization (el deck excluye decisiones previas) |
 | Diagnostics → Crash Data / Other Diagnostic Data | IDs de actualizaciones fallidas, plataforma/runtime (Expo) | Sí (conservador) | App Functionality |
 | Other Data | Edad, zona horaria | Sí | App Functionality |
+| **Purchases → Purchase History** | **Suscripción Premium: producto, tienda, fecha de fin; la valida RevenueCat** | Sí | App Functionality |
+
+Desde el 2-nov-2026 los idiomas y la especialidad «Otra» entran en «Other User Content» junto a las especialidades, y la hora de cada like, Super Like y Boost en «Product Interaction».
 
 Apple considera recogidos los datos que reciben los proveedores (OpenAI, Supabase, Expo), así que no se pueden omitir por ser encargados. Ya no se declaran Audio Data ni datos de vídeo de llamada.
 
@@ -78,8 +82,9 @@ Fuente: [guía del formulario](https://support.google.com/googleplay/android-dev
 | Contactos | Grafo de matches | Opcional | Funcionalidad |
 | Identificadores de dispositivo | EAS-Client-ID | Obligatorio | Funcionalidad |
 | Información y rendimiento → Registros de fallos / Diagnóstico | Metadatos de expo-updates | Obligatorio | Funcionalidad |
+| **Información financiera → Historial de compras** | **Suscripción Premium (producto, tienda, fecha de fin), validada por RevenueCat** | Opcional | Funcionalidad |
 
-**Compartidos (D10):** no se marcan como compartidos los datos que tratan Supabase, Expo y OpenAI si actúan como encargados del tratamiento por cuenta del responsable (Google exime a los proveedores de servicios). OpenAI se declara como **encargado** con transferencia fuera del EEE (CCT/DPF); no se hace ninguna afirmación sobre entrenamiento ni retención hasta confirmar sus condiciones. **Pregunta:** confirmar que las condiciones aplicables a la cuenta lo convierten en proveedor de servicios (sin uso propio de los datos). Si no, marcar Fotos como **compartidas** con finalidad «Seguridad, cumplimiento y prevención de fraudes». Lo que ve la otra persona por acción del usuario no se marca como compartido.
+**Compartidos (D10):** no se marcan como compartidos los datos que tratan Supabase, Expo, OpenAI y RevenueCat si actúan como encargados del tratamiento por cuenta del responsable (Google exime a los proveedores de servicios). OpenAI se declara como **encargado** con transferencia fuera del EEE (CCT/DPF); no se hace ninguna afirmación sobre entrenamiento ni retención hasta confirmar sus condiciones. **Pregunta:** confirmar que las condiciones aplicables a la cuenta lo convierten en proveedor de servicios (sin uso propio de los datos). Si no, marcar Fotos como **compartidas** con finalidad «Seguridad, cumplimiento y prevención de fraudes». Lo que ve la otra persona por acción del usuario no se marca como compartido.
 
 ## Requisitos de tienda: estado
 
@@ -88,7 +93,7 @@ Fuente: [guía del formulario](https://support.google.com/googleplay/android-dev
 | Baja de cuenta en la app (Apple 5.1.1(v), Google) | Implementada: `delete_my_account()` + borrado previo de la foto; botón en Perfil > Cuenta. Aplicada en producción según D09; el borrado de fotos en servidor (`20261014140000`) se aplicó el 16-oct. Cuentas de Apple: el token se revoca antes del borrado (`apple-token` + `20261029120000`, en el código el 29-oct) | Probar en la build final (T7), incluido que `storage.protect_delete` no bloquee el borrado y que la foto ya no se pueda firmar ni abrir. **Apple:** aplicar `20261029120000`, desplegar `apple-token` con sus cuatro secretos y probar en iPhone que tras borrar la app desaparece de Ajustes > Iniciar sesión con Apple |
 | Bloquear y reportar **perfiles** y **mensajes** (Apple 1.2, UGC de Google) | Implementado en el código: `block_profile()`, `report_profile()`, `report_message` (panel de reporte de mensaje en el chat; migración `20261014130000`) | **Migración sin aplicar en producción**; probar en la build (T7) |
 | Filtrado de contenido objetable (Apple 1.2) | Filtro básico es/en en cliente para bio, textos de perfil y mensajes (`src/features/safety/content-filter.ts`) + fotos moderadas con OpenAI en servidor + revisión de reportes | Describirlo como complemento, no como moderación completa (ver notas de revisor) |
-| Aceptación de Términos y Normas antes de publicar (Apple 1.2) | Implementada: pantalla de aceptación con versión y fecha (`TERMS_VERSION` = 2026-10-18), puerta en onboarding, chat y foto; enlaces legales en Perfil | **Migración `20261014120000` sin aplicar en producción**; la puerta del servidor aún no existe (solo cliente, decisión 9) |
+| Aceptación de Términos y Normas antes de publicar (Apple 1.2) | Implementada: pantalla de aceptación con versión y fecha (`TERMS_VERSION` = 2026-11-02 desde la sección de Premium), puerta en onboarding, chat y foto; enlaces legales en Perfil | **Migración `20261014120000` sin aplicar en producción**; la puerta del servidor aún no existe (solo cliente, decisión 9) |
 | Política y normas públicas, enlace en la app | Páginas generadas por `scripts/build-web.mjs` (privacidad, términos, normas, seguridad infantil, soporte, eliminar cuenta); enlaces en Perfil | Publicar en Pages tras cerrar los marcadores [pendiente: fecha de publicación] |
 | Seguridad infantil (Google, categoría Social) | Estándares publicados en `/seguridad-infantil/` (CSAE, vía de reporte, contacto) | Completar la declaración en Play Console [pendiente: el titular acepta ser contacto designado] |
 | Cadenas de permisos coherentes (Apple 5.1.1) | **Resuelto en T5:** solo cámara y galería, con textos de foto de perfil; sin micrófono | Verificar el manifiesto del AAB y el Info.plist de la build (T7) |
@@ -98,7 +103,9 @@ Fuente: [guía del formulario](https://support.google.com/googleplay/android-dev
 
 - ~~fecha de publicación~~ — 18-oct-2026 en privacidad, términos y normas (publicadas en `cofounder-web`).
 - ~~proveedor SMTP~~ — Brevo (decidido el 16-oct-2026), ya nombrado en la sección 5 de privacidad y en D05. Configurado en Supabase Auth → SMTP y comprobado el 21-oct-2026. Su seguimiento anónimo de aperturas y clics del correo no es «tracking» en el sentido de las tiendas (no cruza apps ni sitios de terceros), pero se declara en §5.
-- ~~trader (DSA)~~ — no trader en Apple y Google (decidido el 16-oct-2026). Sin NIF publicado (20-oct-2026): el titular no lo aporta y no se publica aviso legal con NIF mientras la app sea gratuita y sin actividad económica; confirmarlo en la revisión jurídica de `terminos.md` y reabrir si se monetiza. Si algún día se publica, el NIF nunca entra en el repo, que es público.
+- [pendiente: trader (DSA) y NIF con Premium] — reabierto el 2-nov-2026: la app empieza a cobrar una suscripción, así que deja de valer «gratuita y sin actividad económica». Decidir antes de enviar la versión con Premium: estatus de trader en Apple y Google (publica dirección, teléfono y email en la UE) y aviso legal con NIF (LSSI). No es asesoramiento jurídico.
+- [pendiente: DPA de RevenueCat] — aceptarlo o firmarlo y anotar la base de la transferencia a EE. UU. (CCT o DPF).
+- ~~trader (DSA)~~ (decisión de la etapa gratuita) — no trader en Apple y Google (decidido el 16-oct-2026). Sin NIF publicado (20-oct-2026): el titular no lo aporta y no se publica aviso legal con NIF mientras la app sea gratuita y sin actividad económica; confirmarlo en la revisión jurídica de `terminos.md` y reabrir si se monetiza. Si algún día se publica, el NIF nunca entra en el repo, que es público.
 - ~~DPA y condiciones de OpenAI~~ — 18-oct-2026: la política cita el DPA como parte de las condiciones de la API (incorporado por referencia); el titular firmó además el DPA de OpenAI por el formulario de Ironclad el 20-oct-2026 (titular persona física, entidad contratante OpenAI Ireland por estar en el EEE). De ello dependía marcar Fotos como «compartidas» en Google: ya se puede.
 - ~~categoría secundaria de App Store~~ — Negocios (decidido el 16-oct-2026).
 - [pendiente: cuenta de prueba] — credenciales para el revisor de Apple.
