@@ -99,6 +99,15 @@ describe('ProfileDetails', () => {
     expect(screen.queryByText('Idiomas')).toBeNull();
   });
 
+  it('en el perfil propio sin idiomas los pide y abre su bloque', async () => {
+    const onEdit = jest.fn();
+    await render(<ProfileDetails profile={buildProfile({ languages: [] })} onEdit={onEdit} />);
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Añadir mis idiomas' }));
+
+    expect(onEdit).toHaveBeenCalledWith('specialties');
+  });
+
   it('lee un seekingSpecialties vacío como "abierto", no como dato ausente', async () => {
     await render(
       <ProfileDetails profile={buildProfile({ lookingFor: 'ambos', seekingSpecialties: [] })} />

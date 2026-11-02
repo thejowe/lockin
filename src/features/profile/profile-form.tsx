@@ -273,6 +273,32 @@ const SECTION_FIELDS: Record<ProfileSection, (keyof Draft)[]> = {
   links: ['github'],
 };
 
+/** Cómo se llama cada bloque en el aviso de «falta algo en otra parte». */
+const SECTION_NAMES: Record<ProfileSection, string> = {
+  basics: 'Nombre, edad y ubicación',
+  specialties: 'Lo que dominas',
+  work: 'Cómo trabajas',
+  prompts: 'Tus respuestas',
+  links: 'Enlaces y redes',
+};
+
+/**
+ * Qué falta fuera del bloque que se edita y en qué lápiz se arregla.
+ *
+ * Los idiomas llevan su propio texto: los perfiles anteriores al 2026-11-02 no
+ * los tienen, y sin explicarlo parecería que la ficha se ha roto sola.
+ */
+export function elsewhereMessage(field: keyof Draft, error: string): string {
+  const owner = (Object.keys(SECTION_FIELDS) as ProfileSection[]).find((part) =>
+    SECTION_FIELDS[part].includes(field)
+  );
+  const where = owner ? `«${SECTION_NAMES[owner]}»` : 'otra parte de tu ficha';
+  if (field === 'languages') {
+    return `Ahora los perfiles muestran los idiomas y aún no has elegido los tuyos. Añádelos desde el lápiz de ${where} y podrás guardar esto.`;
+  }
+  return `Falta algo en ${where}: ${error} Corrígelo desde su lápiz y podrás guardar esto.`;
+}
+
 export function ProfileForm({
   initial = null,
   seed = null,
@@ -323,13 +349,11 @@ export function ProfileForm({
     setErrors(found);
     // Editando un solo bloque, un fallo en otro no se puede corregir aquí:
     // se dice, en vez de dejar el botón sin hacer nada.
-    if (
-      section &&
-      (Object.keys(found) as (keyof Draft)[]).some(
-        (key) => found[key] && !SECTION_FIELDS[section].includes(key)
-      )
-    ) {
-      setSaveError('Hay algo en otra parte de tu ficha que no cuadra. Revísala desde su lápiz.');
+    const elsewhere = section
+      ? FIELD_ORDER.find((key) => found[key] && !SECTION_FIELDS[section].includes(key))
+      : undefined;
+    if (elsewhere) {
+      setSaveError(elsewhereMessage(elsewhere, found[elsewhere] ?? ''));
       return;
     }
     if (Object.values(found).some(Boolean)) {

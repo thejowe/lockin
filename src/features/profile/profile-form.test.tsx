@@ -448,6 +448,46 @@ describe('ProfileForm', () => {
     });
   });
 
+  describe('editando un bloque con algo pendiente en otro', () => {
+    it('a un perfil antiguo sin idiomas le dice qué falta y en qué lápiz', async () => {
+      const onSubmit = jest.fn();
+      await render(
+        <ProfileForm
+          initial={buildProfile({ languages: [] })}
+          section="prompts"
+          submitLabel="Guardar"
+          onSubmit={onSubmit}
+        />
+      );
+      await fireEvent.press(screen.getByText('Guardar'));
+
+      expect(
+        await screen.findByText(
+          'Ahora los perfiles muestran los idiomas y aún no has elegido los tuyos. Añádelos desde el lápiz de «Lo que dominas» y podrás guardar esto.'
+        )
+      ).toBeTruthy();
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('con cualquier otro fallo nombra el bloque y el error', async () => {
+      await render(
+        <ProfileForm
+          initial={buildProfile({ timezone: ' ' })}
+          section="prompts"
+          submitLabel="Guardar"
+          onSubmit={jest.fn()}
+        />
+      );
+      await fireEvent.press(screen.getByText('Guardar'));
+
+      expect(
+        await screen.findByText(
+          'Falta algo en «Cómo trabajas»: Necesitamos tu zona horaria. Corrígelo desde su lápiz y podrás guardar esto.'
+        )
+      ).toBeTruthy();
+    });
+  });
+
   it('guarda los tres enlaces recortados', async () => {
     const onSubmit = jest.fn<Promise<void>, [ProfileInput]>().mockResolvedValue(undefined);
     await render(<ProfileForm submitLabel="Guardar" onSubmit={onSubmit} />);

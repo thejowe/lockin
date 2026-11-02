@@ -140,7 +140,34 @@ export function ProfileDetails({
           </View>
         ) : null}
 
-        {/* Perfiles anteriores al 2026-11-02 pueden no tener idiomas: entonces no se pinta. */}
+        {/*
+          Perfiles anteriores al 2026-11-02 pueden no tener idiomas. En el ajeno
+          no se pinta nada; en el propio, se pide aquí, antes de que la persona
+          se tope con ello al guardar otro bloque.
+        */}
+        {onEdit && profile.languages.length === 0 ? (
+          <View
+            style={[
+              styles.complementSide,
+              styles.complementSeeking,
+              { borderTopColor: theme.border },
+            ]}>
+            <ThemedText type="label" themeColor="textSecondary">
+              Idiomas
+            </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              Aún no has dicho qué idiomas hablas. Los pedimos para que te encuentre quien pueda
+              entenderse contigo.
+            </ThemedText>
+            <ThemedText
+              type="smallBold"
+              themeColor="brass"
+              accessibilityRole="button"
+              onPress={() => onEdit('specialties')}>
+              Añadir mis idiomas
+            </ThemedText>
+          </View>
+        ) : null}
         {profile.languages.length > 0 ? (
           <View
             style={[
