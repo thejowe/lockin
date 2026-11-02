@@ -556,3 +556,11 @@ Backend: **Supabase real** (logcat `[lockin] backend de datos: Supabase`). APK r
 - [x] **✅ Caso A, Nombre y respuesta vacíos.** Desde el fondo (`A1-antes.png`), «Guardar cambios»: sube hasta «Nombre» con «Escribe tu nombre.» en y≈225 y el campo debajo, no a la respuesta (`A2-despues.png`/`.xml`).
 - **Limpieza:** «Descartar cambios»; el perfil queda intacto (Jo, 18 · Bcn, `Z1-descartado.png`). No se guardó nada.
 - Nota: sin teclado en pantalla (AVD con `hw.keyboard=yes`); el BACK del sistema sale del formulario a Matches (no hay IME que cerrar), por eso no se usó.
+
+## Teléfono válido sin SMS (2026-11-02)
+
+- [x] `phone.ts` valida contra el plan de numeración de cada país con `libphonenumber-js/max`, sin red: `+34 123456789` ya no pasa. Guarda en E.164.
+- **Límite:** no demuestra que la línea esté activa ni que sea de quien la escribe. `+34 666666666` y los 900 pasan. Saber si la línea está activa exige un proveedor de pago (HLR/Twilio Lookup): sin contratar.
+- Las cuentas con un número falso ya guardado no se vuelven a comprobar: la puerta solo mira si hay número.
+- Los metadatos caducan: actualizar `libphonenumber-js` con regularidad, o una numeración nueva se rechazaría.
+- [x] Integrado sobre i18n (2026-11-03): mensaje con `t()` y traducido en `en.json`/`ca.json` (sustituye la clave vieja de «9 a 15 dígitos»).

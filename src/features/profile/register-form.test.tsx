@@ -154,7 +154,7 @@ describe('accountStepProblem', () => {
   it('dice qué falta, de uno en uno y en orden de pantalla', () => {
     expect(accountStepProblem({ ...ok, email: '  ' })).toMatch(/Escribe tu email/);
     expect(accountStepProblem({ ...ok, phone: '' })).toMatch(/número de teléfono/);
-    expect(accountStepProblem({ ...ok, phone: '12ab' })).toMatch(/no parece válido/);
+    expect(accountStepProblem({ ...ok, phone: '12ab' })).toMatch(/no existe/);
     expect(accountStepProblem({ ...ok, password: 'corta', repeat: 'corta' })).toMatch(/al menos 8/);
     expect(accountStepProblem({ ...ok, repeat: 'otra-clave-x' })).toMatch(/no coinciden/);
     expect(accountStepProblem({ ...ok, termsAccepted: false })).toMatch(/aceptar los Términos/);
