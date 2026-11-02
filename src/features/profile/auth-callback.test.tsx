@@ -55,7 +55,7 @@ describe('AuthCallback', () => {
     await render(<AuthCallback url={null} onDone={onDone} />);
 
     expect(gateway.completeAuthLink).not.toHaveBeenCalled();
-    expect(screen.getByText('Un momento…')).toBeTruthy();
+    expect(screen.getByText('Estamos actualizando tu cuenta.')).toBeTruthy();
   });
 
   it('el código es de un solo uso: no se canjea dos veces', async () => {

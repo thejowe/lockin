@@ -6,8 +6,11 @@
  * con huecos, tamaños y botones distintos (sólido en uno, enlace de texto en
  * otro). Aquí hay una sola forma:
  *
- * - **Cargando**: indicador en latón y una frase que dice qué se está buscando.
- *   Nunca una pantalla en blanco: en blanco no se distingue «tarda» de «roto».
+ * - **Cargando**: el logo de cofounder latiendo, como si pensara (2026-11-02,
+ *   petición del usuario: antes era un indicador y una frase visible tipo
+ *   «Abriendo cofounder…»). La frase sigue existiendo, pero solo para el lector
+ *   de pantalla. Nunca una pantalla en blanco: en blanco no se distingue
+ *   «tarda» de «roto».
  * - **Mensaje**: etiqueta opcional, titular, una línea
  *   de por qué, y las acciones debajo (botones de `Button`, la principal
  *   primero).
@@ -17,9 +20,10 @@
  * con «reducir movimiento» (`ReduceMotion.System`, su valor por defecto).
  */
 
-import { ActivityIndicator, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
+import { ThinkingLogo } from '@/components/cofounder-logo';
 import { ThemedText } from '@/components/themed-text';
 import { Duration, MaxContentWidth, Spacing, type ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -29,9 +33,9 @@ export function LoadingState({
   detail,
   style,
 }: {
-  /** Qué se está cargando: «Buscando perfiles…», «Cargando la sesión…». */
+  /** Qué se está cargando: «Buscando perfiles…». Solo lo oye el lector de pantalla. */
   label: string;
-  /** Una línea más de contexto, si la espera la necesita. */
+  /** Una línea más de contexto, si la espera la necesita. Esta sí se ve. */
   detail?: string;
   style?: StyleProp<ViewStyle>;
 }) {
@@ -41,12 +45,10 @@ export function LoadingState({
     <Animated.View
       entering={FadeIn.duration(Duration.base)}
       style={[styles.root, style]}
+      accessible
       accessibilityRole="progressbar"
-      accessibilityLabel={label}>
-      <ActivityIndicator color={theme.brass} />
-      <ThemedText type="body" themeColor="textSecondary" style={styles.centered}>
-        {label}
-      </ThemedText>
+      accessibilityLabel={detail ? `${label} ${detail}` : label}>
+      <ThinkingLogo color={theme.brass} />
       {detail ? (
         <ThemedText type="small" themeColor="textSecondary" style={styles.centered}>
           {detail}

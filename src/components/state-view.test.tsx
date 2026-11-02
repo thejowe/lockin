@@ -10,22 +10,21 @@ import { LoadingState, MessageState } from '@/components/state-view';
 import { Colors } from '@/constants/theme';
 
 describe('LoadingState', () => {
-  it('anuncia qué se está cargando', async () => {
+  it('enseña el logo latiendo y la frase solo la anuncia al lector de pantalla', async () => {
     await render(<LoadingState label="Cargando la sesión…" />);
 
-    expect(screen.getByText('Cargando la sesión…')).toBeVisible();
-    expect(screen.getByLabelText('Cargando la sesión…')).toHaveProp(
-      'accessibilityRole',
-      'progressbar'
-    );
+    expect(screen.getByRole('progressbar', { name: 'Cargando la sesión…' })).toBeTruthy();
+    expect(screen.queryByText('Cargando la sesión…')).toBeNull();
   });
 });
 
 it('LoadingState añade la línea de contexto si la hay', async () => {
   await render(<LoadingState label="Un momento…" detail="Aplicando el enlace." />);
 
-  expect(screen.getByText('Un momento…')).toBeVisible();
   expect(screen.getByText('Aplicando el enlace.')).toBeVisible();
+  expect(
+    screen.getByRole('progressbar', { name: 'Un momento… Aplicando el enlace.' })
+  ).toBeTruthy();
 });
 
 describe('MessageState', () => {

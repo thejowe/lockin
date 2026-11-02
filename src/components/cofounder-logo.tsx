@@ -16,9 +16,11 @@ import { useEffect } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
   Easing,
+  cancelAnimation,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
+  withRepeat,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
@@ -111,6 +113,48 @@ export function CofounderLogo({
         </Svg>
       </Animated.View>
     </View>
+  );
+}
+
+/** Un latido completo (crecer y volver), lento: se lee como «pensando», no como alarma. */
+const THINK_MS = 1400;
+const breathe = Easing.bezier(0.45, 0, 0.55, 1);
+
+/**
+ * El símbolo latiendo mientras la app espera algo: crece un poco y gana brillo,
+ * y vuelve, sin parar. Es el indicador de carga de pantalla completa
+ * (`LoadingState`).
+ *
+ * Con «reducir movimiento» no late: queda quieto y algo apagado, que sigue
+ * diciendo «espera» sin moverse solo.
+ */
+export function ThinkingLogo({ width = 72, color }: { width?: number; color?: string }) {
+  const reduceMotion = useReduceMotion();
+  const beat = useSharedValue(0);
+
+  useEffect(() => {
+    if (reduceMotion) {
+      cancelAnimation(beat);
+      beat.value = 0;
+      return;
+    }
+    beat.value = withRepeat(withTiming(1, { duration: THINK_MS / 2, easing: breathe }), -1, true);
+    return () => cancelAnimation(beat);
+  }, [reduceMotion, beat]);
+
+  const pulse = useAnimatedStyle(() => ({
+    opacity: 0.55 + beat.value * 0.45,
+    transform: [{ scale: 0.94 + beat.value * 0.1 }],
+  }));
+
+  return (
+    <Animated.View
+      style={pulse}
+      // El anuncio lo hace quien lo monta (la frase de la carga), no «cofounder».
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants">
+      <CofounderLogo width={width} animated={false} color={color} />
+    </Animated.View>
   );
 }
 

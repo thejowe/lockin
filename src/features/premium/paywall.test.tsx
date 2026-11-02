@@ -83,7 +83,7 @@ describe('Paywall', () => {
     (getOfferings as jest.Mock).mockReturnValue(new Promise((r) => (resolve = r)));
     await setup();
 
-    expect(screen.getByText('Cargando los planes…')).toBeTruthy();
+    expect(screen.getByRole('progressbar', { name: 'Cargando los planes…' })).toBeTruthy();
 
     resolve(OFFERS);
     expect(await screen.findByText('7,77 € al mes')).toBeTruthy();
