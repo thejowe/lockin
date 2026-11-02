@@ -86,8 +86,10 @@ describe('purchases con Supabase y SDK de RevenueCat', () => {
     product: { priceString: price, pricePerMonthString: perMonth },
   });
   let fresh: typeof import('./purchases');
+  let profileRow: { id: string } | null = { id: 'u1' };
 
   beforeEach(() => {
+    profileRow = { id: 'u1' };
     jest.resetModules();
     Object.values(sdk).forEach(
       (fn) => typeof fn === 'function' && 'mockClear' in fn && fn.mockClear()
@@ -107,6 +109,11 @@ describe('purchases con Supabase y SDK de RevenueCat', () => {
       hasSupabaseCredentials: true,
       getSupabaseClient: () => ({
         auth: { getSession: async () => ({ data: { session: { user: { id: 'u1' } } } }) },
+        from: () => ({
+          select: () => ({
+            eq: () => ({ maybeSingle: async () => ({ data: profileRow, error: null }) }),
+          }),
+        }),
       }),
     }));
     jest.doMock('react-native-purchases', () => ({ __esModule: true, default: sdk }));
@@ -153,6 +160,15 @@ describe('purchases con Supabase y SDK de RevenueCat', () => {
     sdk.purchasePackage.mockRejectedValueOnce(new Error('boom'));
     await expect(fresh.purchase('$rc_monthly')).rejects.toThrow('boom');
     await expect(fresh.purchase('$rc_nope')).rejects.toThrow('Oferta desconocida');
+  });
+
+  it('sin perfil creado no se ofrece ni se vende nada', async () => {
+    profileRow = null;
+    await expect(fresh.getOfferings()).rejects.toBeInstanceOf(fresh.PurchasesUnavailableError);
+    await expect(fresh.purchase('$rc_monthly')).rejects.toBeInstanceOf(
+      fresh.PurchasesUnavailableError
+    );
+    expect(sdk.logIn).not.toHaveBeenCalled();
   });
 
   it('sin ofertas utilizables no hay paywall', async () => {

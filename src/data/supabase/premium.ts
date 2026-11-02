@@ -190,6 +190,9 @@ export function createSupabasePremiumRepository({
       // `entitlements`. Sin ella desplegada (o sin clave) no rompe: el webhook llegará igual.
       const { error } = await getClient().functions.invoke('sync-entitlement', { body: {} });
       if (error) console.warn('[premium] sync-entitlement falló:', error.message);
+      // El servidor ya pudo cambiar `entitlements`: quien escucha los cupos (deshacer, Boost,
+      // filtros) los relee en vez de quedarse con el candado hasta el próximo cambio.
+      notifyQuotas();
     },
   };
 }

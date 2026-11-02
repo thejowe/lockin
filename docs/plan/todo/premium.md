@@ -213,7 +213,7 @@ Backend: **Supabase** (logcat: «backend de datos: Supabase»). Cuenta `1862c710
 
 **Segunda revisión de Codex (2026-11-01, `--base bd5dda5`):** corregido el 201 de RevenueCat para clientes nuevos. **Sigue abierto, P1, bloquea desplegar las funciones:** la carrera entre refrescos solapados (una `EXPIRATION` lenta puede pisar una `RENEWAL`). Arreglo: guardar de forma condicional (RPC que compare con la hora en que se pidió la instantánea, o `pg_advisory_xact_lock` por usuario), lo que exige una migración nueva.
 
-**Cierre del P1 (2026-11-01):** `save_entitlement` (migración `20261101120000`, aplicada en producción, Schema drift verde) serializa por usuario con `pg_advisory_xact_lock` y solo escribe si la instantánea se pidió después o a la vez que la guardada. Las dos funciones apuntan `snapshotAt` antes de pedir el estado. Tests: `test:schema` 192 y `test:functions` 94 en verde. **Sin `codex review`.**
+**Cierre del P1 (2026-11-01):** `save_entitlement` (migración `20261101120000`, aplicada en producción, Schema drift verde) serializa por usuario con `pg_advisory_xact_lock` y solo escribe si la instantánea se pidió después o a la vez que la guardada. Las dos funciones apuntan `snapshotAt` antes de pedir el estado. Tests: `test:schema` 192 y `test:functions` 94 en verde. **`codex review` pasado el 2026-11-01:** el P1 «ordenar por el reloj local» se cambió a `request_date_ms` de la respuesta de RevenueCat (`observedAt`); P1 «`syncEntitlement` no avisa a los cupos» corregido (`notifyQuotas`); P2 «no se vende sin perfil» corregido en `sdkReady`. Funciones en v2. Sin segunda ronda tras el último arreglo.
 
 ### 2026-11-01 — tiendas y RevenueCat (hecho con Chrome)
 

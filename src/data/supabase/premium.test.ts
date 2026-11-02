@@ -409,6 +409,8 @@ describe('createSupabasePremiumRepository: bordes', () => {
     expect(seen).toEqual([1]);
     await expect(repository.syncEntitlement()).resolves.toBeUndefined();
     expect(invoke).toHaveBeenCalledWith('sync-entitlement', { body: {} });
+    await flush();
+    expect(seen).toEqual([1, 1]);
   });
 
   it('un refresco que falla no avisa a nadie ni rompe nada', async () => {

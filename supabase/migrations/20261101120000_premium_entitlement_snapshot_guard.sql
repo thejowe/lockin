@@ -6,10 +6,11 @@
 -- gana aunque su respuesta sea la más antigua: la renovación queda caducada.
 --
 -- `save_entitlement` serializa por usuario (cerrojo consultivo de transacción) y
--- solo escribe si la instantánea se pidió DESPUÉS (o a la vez) que la guardada:
--- `p_snapshot_at` es el instante en que la función empezó a pedir el estado, no el
--- de la respuesta. Una petición que empezó antes no puede traer un estado más
--- nuevo que otra que empezó después.
+-- solo escribe si la instantánea es de DESPUÉS (o del mismo instante) que la
+-- guardada. `p_snapshot_at` es el instante en que RevenueCat vio ese estado
+-- (`request_date_ms` de su respuesta): un solo reloj, el de quien ordena los
+-- cambios. El reloj de la Edge Function no sirve: dos peticiones pueden llegar a
+-- RevenueCat en otro orden que el de salida.
 --
 -- Solo la service role la ejecuta (las Edge Functions); `entitlements` sigue
 -- cerrada a escritura para el cliente.

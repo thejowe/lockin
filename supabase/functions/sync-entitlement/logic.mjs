@@ -15,8 +15,9 @@
  *   (`body` es el JSON o `null`). Lanza si la red falla.
  * - `saveEntitlement(userId, { premiumUntil, productId, store, snapshotAt })`: escribe
  *   `entitlements` con la service role vía el RPC `save_entitlement` (`premiumUntil` es
- *   ISO o `null`; `snapshotAt` es el instante en que se EMPEZÓ a pedir el estado: el RPC
- *   descarta una instantánea más vieja que la ya guardada).
+ *   ISO o `null`; `snapshotAt` es el instante en que RevenueCat vio ese estado
+ *   (`request_date_ms` de su respuesta): el RPC descarta una instantánea más vieja que la
+ *   ya guardada).
  * - `now()` (opcional): reloj, para los tests.
  * - `log(message)`: rastro en los logs. Nunca recibe claves.
  */
@@ -68,10 +69,22 @@ export function mapSubscriber(body) {
   return { premiumUntil, productId, store };
 }
 
+/**
+ * Cuándo vio RevenueCat ese estado: `request_date_ms` de SU respuesta. Es un solo reloj, el de
+ * quien ordena los cambios, así que el orden de las instantáneas es el orden real de los
+ * estados. El reloj de la Edge Function no vale: dos peticiones pueden llegar a RevenueCat en
+ * otro orden que el de salida, y la que empezó antes traer el estado más nuevo. Sin ese campo
+ * (respuesta rara) se cae al reloj local.
+ */
+export function observedAt(body, fallbackIso) {
+  const ms = body?.request_date_ms;
+  return Number.isFinite(ms) && ms > 0 ? new Date(ms).toISOString() : fallbackIso;
+}
+
 /** Pide el estado a RevenueCat y lo escribe. Lanza si la API falla (el que llama decide el 5xx). */
 export async function refreshEntitlement(userId, deps) {
-  // Se apunta ANTES de pedir: una petición que empezó antes no puede traer un estado más nuevo.
-  const snapshotAt = (deps.now ? deps.now() : new Date()).toISOString();
+  // Reloj local, solo de reserva: se apunta ANTES de pedir.
+  const startedAt = (deps.now ? deps.now() : new Date()).toISOString();
   const response = await deps.fetchSubscriber(userId);
   // 201: RevenueCat crea al cliente si aún no lo conoce y devuelve su estado vacío.
   if (response.status !== 200 && response.status !== 201) {
@@ -82,7 +95,10 @@ export async function refreshEntitlement(userId, deps) {
     throw new Error('RevenueCat respondió 200 con un cuerpo ilegible');
   }
   const entitlement = mapSubscriber(response.body);
-  await deps.saveEntitlement(userId, { ...entitlement, snapshotAt });
+  await deps.saveEntitlement(userId, {
+    ...entitlement,
+    snapshotAt: observedAt(response.body, startedAt),
+  });
   return entitlement;
 }
 

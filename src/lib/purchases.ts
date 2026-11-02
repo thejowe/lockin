@@ -104,9 +104,18 @@ let loggedInAs: string | null = null;
  */
 async function sdkReady(): Promise<PurchasesSdk> {
   const sdk = loadSdk();
-  const { data } = await getSupabaseClient().auth.getSession();
+  const client = getSupabaseClient();
+  const { data } = await client.auth.getSession();
   const uid = data.session?.user.id;
   if (!uid) throw new PurchasesUnavailableError();
+  // `entitlements.user_id` referencia `profiles`: sin perfil el servidor no puede activar Premium
+  // y se cobraría sin entregar nada. Nunca se vende a quien aún no ha terminado el perfil.
+  const { data: profile, error } = await client
+    .from('profiles')
+    .select('id')
+    .eq('id', uid)
+    .maybeSingle();
+  if (error || !profile) throw new PurchasesUnavailableError();
   if (loggedInAs !== uid) {
     await sdk.logIn(uid);
     loggedInAs = uid;

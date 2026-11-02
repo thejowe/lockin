@@ -5,6 +5,7 @@ import {
   isUserId,
   mapSubscriber,
   readConfig,
+  observedAt,
   refreshEntitlement,
   subscriberUrl,
 } from './logic.mjs';
@@ -193,4 +194,27 @@ test('refreshEntitlement apunta el instante ANTES de pedir el estado y lo pasa a
   });
   assert.deepEqual(order, ['now', 'fetch', 'save']);
   assert.equal(saved[0].snapshotAt, '2026-11-01T10:00:00.000Z');
+});
+
+test('snapshotAt es el instante que RevenueCat da en su respuesta, no el reloj local', async () => {
+  const saved = [];
+  await refreshEntitlement('11111111-1111-4111-8111-111111111111', {
+    now: () => new Date('2026-11-01T10:00:00.000Z'),
+    fetchSubscriber: async () => ({
+      status: 200,
+      body: {
+        request_date_ms: Date.parse('2026-11-01T10:00:09.500Z'),
+        subscriber: { entitlements: {} },
+      },
+    }),
+    saveEntitlement: async (id, e) => void saved.push(e),
+  });
+  assert.equal(saved[0].snapshotAt, '2026-11-01T10:00:09.500Z');
+});
+
+test('observedAt cae al reloj local si falta o es inválido request_date_ms', () => {
+  assert.equal(observedAt({}, 'X'), 'X');
+  assert.equal(observedAt({ request_date_ms: 'abc' }, 'X'), 'X');
+  assert.equal(observedAt({ request_date_ms: 0 }, 'X'), 'X');
+  assert.equal(observedAt(null, 'X'), 'X');
 });
