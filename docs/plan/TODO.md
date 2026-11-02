@@ -1,12 +1,24 @@
 # TODO maestro — LockIn MVP
 
-## ▶ Al retomar (2026-11-02): Fase 4 legal de Premium hecha en el repo, falta publicarla
+## ▶ Al retomar (2026-11-02, cierre): legal de Premium hecho, todo en verde; falta lo del usuario y la prueba gratis en el paywall
 
-**Hecho:** términos v1.2 (§10 Premium), privacidad v1.4 (RevenueCat, suscripción, idiomas), fichas y cuestionario; `TERMS_VERSION` = `2026-11-02`. `codex review` de `d26cd3c..914ee1c` (idiomas, aviso de idiomas, logo de carga): 2 P2 corregidos (E2E `full-journey.yaml` sin los pasos de idiomas y la nueva frase de horas; `require-verified-email.test.tsx` buscaba un texto que el logo ya no pinta).
+**Estado del repo:** todo empujado. Árbol limpio. Jest completo en verde (1853 pasan, 0 fallan) y `tsc --noEmit` limpio. No queda ninguna rama sin fusionar: `premium-ci`, `premium-ci-2`, `project-thread-3zjyk6` y `codex/contraste-deck` están ya en esta rama.
 
-**Falta (usuario):** decidir trader (DSA) y NIF ahora que se cobra; DPA de RevenueCat; publicar la web (`_site/` → `cofounder-web`) cuando se envíe la build con Premium. **Falta ([Claude]):** el paywall no menciona la prueba de 3 días (Apple 3.1.2). Detalle en `todo/premium.md` (Fase 4). El webhook de RevenueCat, el acuerdo de Apple y la compra en el sandbox siguen como en la entrada del 2026-11-01.
+**Hecho hoy:**
+- `codex review` de `d26cd3c..914ee1c` (idiomas, aviso de idiomas, logo de carga): 2 P2 corregidos en `e018e20`. El E2E `full-journey.yaml` no tenía los pasos de idiomas ni la frase nueva de horas, y `require-verified-email.test.tsx` buscaba el texto que el logo quitó.
+- Fase 4 legal de Premium (`1e99c6c`, con `codex review`, 1 P2 corregido): términos v1.2 (§10 Premium), privacidad v1.4 (RevenueCat desde que se abre el paywall, suscripción, likes/Boost, idiomas), fichas y cuestionario. `TERMS_VERSION` = `2026-11-02` y `texts.generated.ts` regenerado.
+- Los 5 tests rojos antiguos (`dbbb422`, con `codex review` limpio). Los fixtures no conocían la puerta del teléfono de `b91e77a` y el aviso de «solo en este teléfono» se había movido a Ajustes.
+- Los errores de `tsc` en `/phone` y `/settings` solo existían en este equipo: `.expo/types/router.d.ts` (generado e ignorado por git) estaba viejo. Se regenera con `npx expo start`. **Ojo:** ese `expo start` instaló por su cuenta `expo-localization` en `package.json` y `app.json`; se revirtió porque nada lo usa. Si vuelve a pasar, revertirlo.
 
-**Avisos:** los 5 tests rojos de la puerta del teléfono se arreglaron el 2026-11-02 (suite completa en verde); `tsc` sigue con los errores de rutas `/phone` y `/settings`. En este equipo `node_modules` no tenía `react-native-purchases`: tras `git pull`, correr `npm install`. Ya no hay cambios sin commitear de otra sesión (el aviso del 2026-11-01 está superado).
+**Siguiente, en este orden:**
+1. **Usuario:** webhook en RevenueCat (URL y cabecera en la entrada del 2026-11-01). Comprobar el Acuerdo de apps de pago de Apple, subir la captura de cada suscripción y crear la oferta de prueba de 3 días.
+2. **[Claude], cuando exista esa oferta:** el paywall debe decir «3 días gratis, luego X €/periodo» a partir de `product.introPrice` del SDK (Apple 3.1.2). Archivos: `src/lib/purchases.ts` (exponer el precio introductorio en `PurchasePackage`) y `src/features/premium/paywall.tsx` y su test. Pasar `codex review` antes de commitear.
+3. **Usuario, antes de enviar la versión con Premium:** decidir trader (DSA) y aviso legal con NIF, porque la app pasa a cobrar; aceptar el DPA de RevenueCat; revisión jurídica de la renuncia al desistimiento.
+4. **Publicar la web** junto con esa build: `node scripts/build-web.mjs`, copiar `_site/` al clon de `cofounder-web`, commit y push (`pages.yml` no publica solo).
+5. **Usuario:** build `preview` de EAS en iOS y compra en el sandbox. Probar en el teléfono los idiomas y el logo de carga.
+6. **Android**, aparcado: verificación de Play Console y luego `[comprobador]` con *license tester*.
+
+**Avisos:** tras `git pull` en otro equipo, `npm install` (aquí faltaba `react-native-purchases`). `npm install` reescribe `package-lock.json` en local: no commitear ese cambio sin mirarlo. El detalle de cada casilla está en `todo/premium.md` (Fase 3 y 4) y `todo/perfil.md` (idiomas).
 
 ## ▶ Al retomar (2026-11-01, cierre): cobro de Premium cableado en iOS; faltan Apple, prueba gratis y Android
 
