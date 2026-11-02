@@ -41,7 +41,13 @@ const ANONIMA = {
   pendingEmail: null,
   recoverable: false,
 };
-const CONFIRMADA = { ...ANONIMA, kind: 'email', email: 'ana@example.com', recoverable: true };
+const CONFIRMADA = {
+  ...ANONIMA,
+  kind: 'email',
+  email: 'ana@example.com',
+  phone: '+34600000000',
+  recoverable: true,
+};
 
 beforeEach(() => {
   resetRepositories();

@@ -23,6 +23,7 @@ import { buildProfileInput } from '@/data/test-fixtures';
 import { renderRoute, repositories, resetRepositories, resetRouter, router } from '../routes';
 
 import ProfileScreen from '../../src/app/(tabs)/profile';
+import SettingsScreen from '../../src/app/settings';
 
 import type { ProfileFormProps } from '@/features/profile/profile-form';
 
@@ -227,13 +228,18 @@ describe('ProfileScreen', () => {
 
     /**
      * La cuenta de quien no ha vinculado email vive solo en este teléfono, y
-     * hasta la orden `P1` la app no lo decía en ninguna parte. La tab Perfil es
-     * el sitio donde se dice y el único desde el que se puede arreglar.
+     * hasta la orden `P1` la app no lo decía en ninguna parte. Desde el
+     * 2026-11-01 se dice en Ajustes (la tuerca del perfil), no en la ficha.
      */
-    it('la ficha avisa de que la cuenta vive solo en este teléfono', async () => {
+    it('la tuerca lleva a Ajustes, que avisa de que la cuenta vive solo en este teléfono', async () => {
       await withProfile();
 
       await renderRoute(<ProfileScreen />);
+      await fireEvent.press(await screen.findByRole('button', { name: 'Ajustes de la cuenta' }));
+      expect(router.push).toHaveBeenCalledWith('/settings');
+      expect(screen.queryByText('Tus datos viven solo en este teléfono')).toBeNull();
+
+      await renderRoute(<SettingsScreen />);
 
       await waitFor(() =>
         expect(screen.getByText('Tus datos viven solo en este teléfono')).toBeTruthy()

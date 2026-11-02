@@ -59,6 +59,7 @@ const CONFIRMADA = {
   userId: 'uid-1',
   email: 'ana@example.com',
   pendingEmail: null,
+  phone: '+34600000000',
   recoverable: true,
 };
 

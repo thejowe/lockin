@@ -6,7 +6,7 @@
 
 **Falta (usuario):** decidir trader (DSA) y NIF ahora que se cobra; DPA de RevenueCat; publicar la web (`_site/` → `cofounder-web`) cuando se envíe la build con Premium. **Falta ([Claude]):** el paywall no menciona la prueba de 3 días (Apple 3.1.2). Detalle en `todo/premium.md` (Fase 4). El webhook de RevenueCat, el acuerdo de Apple y la compra en el sandbox siguen como en la entrada del 2026-11-01.
 
-**Avisos:** 5 tests rojos previos y ajenos (`auth.test.ts` «sin sesión…», más 4 en `test/app/{index,profile,register}` relacionados con la puerta `/phone`); `tsc` sigue con los errores de rutas `/phone` y `/settings`. En este equipo `node_modules` no tenía `react-native-purchases`: tras `git pull`, correr `npm install`. Ya no hay cambios sin commitear de otra sesión (el aviso del 2026-11-01 está superado).
+**Avisos:** los 5 tests rojos de la puerta del teléfono se arreglaron el 2026-11-02 (suite completa en verde); `tsc` sigue con los errores de rutas `/phone` y `/settings`. En este equipo `node_modules` no tenía `react-native-purchases`: tras `git pull`, correr `npm install`. Ya no hay cambios sin commitear de otra sesión (el aviso del 2026-11-01 está superado).
 
 ## ▶ Al retomar (2026-11-01, cierre): cobro de Premium cableado en iOS; faltan Apple, prueba gratis y Android
 

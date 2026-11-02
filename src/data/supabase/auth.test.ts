@@ -674,6 +674,7 @@ describe('getAccountState', () => {
       userId: null,
       email: null,
       pendingEmail: null,
+      phone: null,
       recoverable: false,
     });
     expect(auth.getUser).not.toHaveBeenCalled();
