@@ -28,7 +28,9 @@ import type { ProfileInput } from '@/data';
 async function fillValidForm() {
   await fireEvent.changeText(screen.getByLabelText('Nombre'), 'Núria Bosch');
   await fireEvent.changeText(screen.getByLabelText('Edad'), '31');
-  await fireEvent.changeText(screen.getByLabelText('Ubicación'), 'Barcelona');
+  await fireEvent.changeText(screen.getByLabelText('País'), 'espa');
+  await fireEvent.press(screen.getByRole('button', { name: 'España' }));
+  await fireEvent.changeText(screen.getByLabelText('Ciudad'), 'Barcelona');
   await fireEvent.press(screen.getByLabelText('Desarrollo'));
   await fireEvent.press(screen.getByLabelText('Español'));
   await fireEvent.press(screen.getByLabelText('Idea sin empezar'));
@@ -54,10 +56,8 @@ const KEYBOARD_BEHAVIOUR: { placeholder: string; autoCapitalize: string }[] = [
   { placeholder: 'Cómo te llamas', autoCapitalize: 'words' },
   // Solo dígitos: no hay nada que capitalizar ni que corregir.
   { placeholder: '28', autoCapitalize: 'none' },
-  // Topónimo: también nombre propio.
-  { placeholder: 'Barcelona', autoCapitalize: 'words' },
-  // Identificador IANA, sensible a mayúsculas y ajeno al diccionario.
-  { placeholder: 'Europe/Madrid', autoCapitalize: 'none' },
+  // Topónimo: también nombre propio. La ciudad no sale hasta elegir país.
+  { placeholder: 'Escribe tu país', autoCapitalize: 'words' },
   // Respuestas libres: prosa, no nombres propios. Solo la primera letra.
   { placeholder: 'Tu respuesta', autoCapitalize: 'sentences' },
   { placeholder: 'Opcional', autoCapitalize: 'sentences' },
@@ -69,15 +69,7 @@ const KEYBOARD_BEHAVIOUR: { placeholder: string; autoCapitalize: string }[] = [
   { placeholder: 'https://tiktok.com/@tuusuario', autoCapitalize: 'none' },
 ];
 
-const TEXT_FIELD_LABELS = [
-  'Nombre',
-  'Edad',
-  'Ubicación',
-  'Zona horaria',
-  'GitHub',
-  'Portfolio',
-  'LinkedIn',
-];
+const TEXT_FIELD_LABELS = ['Nombre', 'Edad', 'País', 'GitHub', 'Portfolio', 'LinkedIn'];
 
 describe('ProfileForm', () => {
   it('con section pinta solo ese bloque y guarda la ficha entera', async () => {
@@ -89,8 +81,10 @@ describe('ProfileForm', () => {
 
     expect(screen.getByLabelText('Nombre')).toBeTruthy();
     expect(screen.getByLabelText('Edad')).toBeTruthy();
-    expect(screen.getByLabelText('Ubicación')).toBeTruthy();
-    expect(screen.queryByLabelText('Zona horaria')).toBeNull();
+    expect(screen.getByLabelText('País').props.value).toBe('España');
+    expect(screen.getByLabelText('Ciudad').props.value).toBe('Barcelona');
+    // España tiene dos zonas: la península y Canarias.
+    expect(screen.getByRole('radio', { name: 'Madrid' })).toBeSelected();
     expect(screen.queryByLabelText('GitHub')).toBeNull();
 
     await fireEvent.changeText(screen.getByLabelText('Nombre'), 'Otro Nombre');
@@ -258,7 +252,7 @@ describe('ProfileForm', () => {
     expect(input).toMatchObject({
       name: 'Núria Bosch',
       age: 31,
-      location: 'Barcelona',
+      location: 'Barcelona, España',
       specialties: ['dev'],
       lookingFor: 'par',
       startingPoint: 'idea-sin-empezar',
@@ -382,7 +376,8 @@ describe('ProfileForm', () => {
 
     expect(screen.getByLabelText('Nombre').props.value).toBe('Alba Ferrer');
     expect(screen.getByLabelText('Edad').props.value).toBe('27');
-    expect(screen.getByLabelText('Ubicación').props.value).toBe('Valencia');
+    expect(screen.getByLabelText('País').props.value).toBe('España');
+    expect(screen.getByLabelText('Ciudad').props.value).toBe('Valencia');
   });
 
   it('solo pinta el botón de cancelar cuando hay algo que cancelar', async () => {
@@ -396,55 +391,95 @@ describe('ProfileForm', () => {
     expect(onCancel).toHaveBeenCalled();
   });
 
-  describe('zona horaria', () => {
+  describe('país y zona horaria', () => {
     afterEach(() => {
       jest.restoreAllMocks();
     });
 
-    it('precarga la que expone el dispositivo', async () => {
-      jest.spyOn(Intl, 'DateTimeFormat').mockReturnValue({
-        resolvedOptions: () => ({ timeZone: 'America/Bogota' }),
-      } as unknown as Intl.DateTimeFormat);
+    /** Rellena lo válido y cambia el país (y la ciudad) por los que se pasan. */
+    async function fillWithCountry(query: string, country: string, city: string) {
+      await fillValidForm();
+      await fireEvent.changeText(screen.getByLabelText('País'), query);
+      await fireEvent.press(screen.getByRole('button', { name: country }));
+      await fireEvent.changeText(screen.getByLabelText('Ciudad'), city);
+    }
 
-      await render(<ProfileForm submitLabel="Guardar" onSubmit={jest.fn()} />);
-
-      expect(screen.getByLabelText('Zona horaria').props.value).toBe('America/Bogota');
-    });
-
-    it('cae a Europe/Madrid si el runtime no la expone', async () => {
-      // Hermes sin ICU no trae `Intl`. Sin el respaldo, el alta arrancaría con
-      // un campo obligatorio vacío y el formulario se negaría a guardar.
-      jest.spyOn(Intl, 'DateTimeFormat').mockImplementation(() => {
-        throw new Error('Intl no disponible');
-      });
-
-      await render(<ProfileForm submitLabel="Guardar" onSubmit={jest.fn()} />);
-
-      expect(screen.getByLabelText('Zona horaria').props.value).toBe('Europe/Madrid');
-    });
-
-    it('se puede corregir a mano y viaja recortada', async () => {
+    it('un país de una sola zona la fija sin preguntar', async () => {
       const onSubmit = jest.fn<Promise<void>, [ProfileInput]>().mockResolvedValue(undefined);
       await render(<ProfileForm submitLabel="Guardar" onSubmit={onSubmit} />);
 
-      await fillValidForm();
-      await fireEvent.changeText(screen.getByLabelText('Zona horaria'), '  America/Bogota  ');
+      await fillWithCountry('colo', 'Colombia', 'Medellín');
+      expect(screen.queryByRole('radio', { name: 'Bogota' })).toBeNull();
       await fireEvent.press(screen.getByText('Guardar'));
 
       await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
-      expect(onSubmit.mock.calls[0][0].timezone).toBe('America/Bogota');
+      expect(onSubmit.mock.calls[0][0]).toMatchObject({
+        location: 'Medellín, Colombia',
+        timezone: 'America/Bogota',
+      });
     });
 
-    it('no guarda si se deja vacía', async () => {
+    it('con varias, arranca en la del dispositivo si es de ese país', async () => {
+      jest.spyOn(Intl, 'DateTimeFormat').mockReturnValue({
+        resolvedOptions: () => ({ timeZone: 'America/Chicago' }),
+      } as unknown as Intl.DateTimeFormat);
+      await render(<ProfileForm submitLabel="Guardar" onSubmit={jest.fn()} />);
+
+      await fillWithCountry('estados', 'Estados Unidos', 'Chicago');
+
+      expect(screen.getByRole('radio', { name: 'Chicago' })).toBeSelected();
+    });
+
+    it('sin zona del dispositivo, la de la capital, y se puede cambiar', async () => {
+      // Hermes sin ICU no trae `Intl`.
+      jest.spyOn(Intl, 'DateTimeFormat').mockImplementation(() => {
+        throw new Error('Intl no disponible');
+      });
+      const onSubmit = jest.fn<Promise<void>, [ProfileInput]>().mockResolvedValue(undefined);
+      await render(<ProfileForm submitLabel="Guardar" onSubmit={onSubmit} />);
+
+      await fillWithCountry('estados', 'Estados Unidos', 'Seattle');
+      expect(screen.getByRole('radio', { name: 'New York' })).toBeSelected();
+      await fireEvent.press(screen.getByRole('radio', { name: 'Los Angeles' }));
+      await fireEvent.press(screen.getByText('Guardar'));
+
+      await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+      expect(onSubmit.mock.calls[0][0].timezone).toBe('America/Los_Angeles');
+    });
+
+    it('cambiar lo escrito deja el país sin elegir y no se guarda', async () => {
       const onSubmit = jest.fn();
       await render(<ProfileForm submitLabel="Guardar" onSubmit={onSubmit} />);
 
       await fillValidForm();
-      await fireEvent.changeText(screen.getByLabelText('Zona horaria'), '   ');
+      await fireEvent.changeText(screen.getByLabelText('País'), 'Españ');
+      expect(screen.queryByLabelText('Ciudad')).toBeNull();
       await fireEvent.press(screen.getByText('Guardar'));
 
-      expect(await screen.findByText('Necesitamos tu zona horaria.')).toBeTruthy();
+      expect(await screen.findByText('Elige tu país de la lista.')).toBeTruthy();
       expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('escribir el nombre entero, sin tildes, lo elige sin tocar la sugerencia', async () => {
+      await render(<ProfileForm submitLabel="Guardar" onSubmit={jest.fn()} />);
+
+      await fireEvent.changeText(screen.getByLabelText('País'), 'peru');
+
+      expect(screen.getByLabelText('Ciudad')).toBeTruthy();
+      expect(screen.queryByRole('button', { name: 'Perú' })).toBeNull();
+    });
+
+    it('un perfil con una zona que no es de ningún país de la lista lo deja por elegir', async () => {
+      await render(
+        <ProfileForm
+          initial={buildProfile({ location: 'Katmandú', timezone: 'Asia/Kathmandu' })}
+          submitLabel="Guardar"
+          onSubmit={jest.fn()}
+        />
+      );
+
+      expect(screen.getByLabelText('País').props.value).toBe('');
+      expect(screen.queryByLabelText('Ciudad')).toBeNull();
     });
   });
 
@@ -482,7 +517,7 @@ describe('ProfileForm', () => {
 
       expect(
         await screen.findByText(
-          'Falta algo en «Cómo trabajas»: Necesitamos tu zona horaria. Corrígelo desde su lápiz y podrás guardar esto.'
+          'Falta algo en «Nombre, edad y ubicación»: Elige tu país de la lista. Corrígelo desde su lápiz y podrás guardar esto.'
         )
       ).toBeTruthy();
     });

@@ -89,6 +89,18 @@ export function tk(key: string): string {
   return key;
 }
 
+/**
+ * Un texto ya traducido al idioma activo, en todos los idiomas de la app: con
+ * la app en inglés, `'Spain'` → `['España', 'Spain', 'Espanya']`.
+ */
+export function sameTextInAllLocales(text: string): string[] {
+  const dictionary = DICTIONARIES[current];
+  const key = dictionary
+    ? (Object.keys(dictionary).find((candidate) => dictionary[candidate] === text) ?? text)
+    : text;
+  return APP_LOCALES.map((locale) => DICTIONARIES[locale]?.[key] ?? key);
+}
+
 export function getLocale(): AppLocale {
   return current;
 }

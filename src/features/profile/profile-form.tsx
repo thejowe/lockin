@@ -48,6 +48,16 @@ import {
   Stepper,
   TextField,
 } from './controls';
+import { LocationFields } from './location-fields';
+import {
+  cityFromLocation,
+  countryByIso,
+  countryForTimezone,
+  deviceTimezone,
+  formatLocation,
+  timezoneForCountry,
+  timezonesOf,
+} from './locations';
 import { LanguagePicker, MasteryPicker, SeekingSpecialtyPicker } from './pickers';
 
 import type {
@@ -65,7 +75,10 @@ import { t } from '@/i18n';
 export interface Draft {
   name: string;
   age: string;
-  location: string;
+  /** ISO del país, o `''` sin elegir. */
+  country: string;
+  city: string;
+  /** Zona IANA: la fija el país (o se elige entre las suyas). */
   timezone: string;
   specialties: Specialty[];
   /** «Otra» especialidad escrita a mano. `null` = sin marcar; `''` = marcada y por escribir. */
@@ -94,7 +107,8 @@ export type Errors = Partial<Record<keyof Draft, string>>;
 const FIELD_ORDER: (keyof Draft)[] = [
   'name',
   'age',
-  'location',
+  'country',
+  'city',
   'timezone',
   'specialties',
   'seekingSpecialties',
@@ -112,17 +126,22 @@ const KEYBOARD_GAP = Spacing.five;
 /** Aire por encima del campo al llevarlo a la vista, para que se vea su etiqueta. */
 const SCROLL_MARGIN = Spacing.three;
 
-/** Zona horaria del dispositivo. Si el runtime no la expone, un valor editable. */
-function deviceTimezone(): string {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Madrid';
-  } catch {
-    return 'Europe/Madrid';
-  }
+/**
+ * País, ciudad y zona de un perfil guardado. El país no se guarda: sale de la
+ * zona. Si la zona no es de ningún país de la lista, el país queda por elegir.
+ */
+function initialLocation(profile: Profile | null): Pick<Draft, 'country' | 'city' | 'timezone'> {
+  if (!profile) return { country: '', city: '', timezone: '' };
+  const country = countryForTimezone(profile.timezone) ?? '';
+  return {
+    country,
+    city: cityFromLocation(profile.location, country),
+    timezone: country ? timezoneForCountry(country, profile.timezone) : '',
+  };
 }
 
 /** Lo que el alta ya sabe antes del formulario (ver `signup-draft.ts`). */
-export type ProfileSeed = Pick<Profile, 'name' | 'age' | 'location'>;
+export type ProfileSeed = Pick<Profile, 'name' | 'age'>;
 
 export function initialDraft(profile: Profile | null, seed: ProfileSeed | null): Draft {
   const prompts = [0, 1].map((index) => ({
@@ -133,8 +152,7 @@ export function initialDraft(profile: Profile | null, seed: ProfileSeed | null):
   return {
     name: profile?.name ?? seed?.name ?? '',
     age: profile ? String(profile.age) : seed ? String(seed.age) : '',
-    location: profile?.location ?? seed?.location ?? '',
-    timezone: profile?.timezone ?? deviceTimezone(),
+    ...initialLocation(profile),
     specialties: profile?.specialties ?? [],
     otherSpecialty: profile?.otherSpecialty ?? null,
     seekingSpecialties: profile?.seekingSpecialties ?? [],
@@ -151,6 +169,11 @@ export function initialDraft(profile: Profile | null, seed: ProfileSeed | null):
     tiktok: profile?.links.tiktok ?? '',
     prompts,
   };
+}
+
+/** Elige país (o lo deja sin elegir con `''`) y, con él, su zona horaria. */
+export function withCountry(draft: Draft, iso: string): Draft {
+  return { ...draft, country: iso, timezone: iso ? timezoneForCountry(iso, deviceTimezone()) : '' };
 }
 
 /** Añade o quita un valor de una selección múltiple. */
@@ -170,8 +193,11 @@ export function validate(draft: Draft): Errors {
   if (!Number.isInteger(age) || age < AGE_MIN || age > AGE_MAX) {
     errors.age = t('Una edad entre {AGE_MIN} y {AGE_MAX}.', { AGE_MIN, AGE_MAX });
   }
-  if (draft.location.trim().length < 2) errors.location = t('Ciudad o zona donde estás.');
-  if (draft.timezone.trim().length === 0) errors.timezone = t('Necesitamos tu zona horaria.');
+  if (!countryByIso(draft.country)) errors.country = t('Elige tu país de la lista.');
+  else if (draft.city.trim().length < 2) errors.city = t('Escribe tu ciudad.');
+  else if (!timezonesOf(draft.country).includes(draft.timezone)) {
+    errors.timezone = t('Elige tu zona horaria.');
+  }
   const other = draft.otherSpecialty?.trim() ?? null;
   if (draft.specialties.length === 0 && other === null) {
     errors.specialties = t('Elige al menos una especialidad.');
@@ -195,7 +221,7 @@ export function validate(draft: Draft): Errors {
   // Complemento del reporte, no moderación: ver `safety/content-filter.ts`.
   const objectionable = (text: string) => isObjectionable(text);
   if (objectionable(draft.name)) errors.name = t(OBJECTIONABLE_MESSAGE);
-  if (objectionable(draft.location)) errors.location = t(OBJECTIONABLE_MESSAGE);
+  if (objectionable(draft.city)) errors.city = t(OBJECTIONABLE_MESSAGE);
   if (other !== null && objectionable(other)) errors.specialties = t(OBJECTIONABLE_MESSAGE);
   if (draft.prompts.some((prompt) => objectionable(prompt.answer))) {
     errors.prompts = t(OBJECTIONABLE_MESSAGE);
@@ -216,8 +242,8 @@ export function toInput(draft: Draft): ProfileInput {
   return {
     name: draft.name.trim(),
     age: Number(draft.age),
-    location: draft.location.trim(),
-    timezone: draft.timezone.trim(),
+    location: formatLocation(draft.city, draft.country),
+    timezone: draft.timezone,
     specialties: draft.specialties,
     otherSpecialty: draft.otherSpecialty?.trim() || null,
     seekingSpecialties: draft.seekingSpecialties,
@@ -246,7 +272,7 @@ export function toInput(draft: Draft): ProfileInput {
 export interface ProfileFormProps {
   /** Perfil a editar, o `null` para un alta. */
   initial?: Profile | null;
-  /** Sin `initial`: nombre, edad y ubicación ya recogidos en el alta. */
+  /** Sin `initial`: nombre y edad ya recogidos en el alta. */
   seed?: ProfileSeed | null;
   submitLabel: string;
   /** Guarda. Si lanza, el formulario enseña el error y no se cierra. */
@@ -269,9 +295,9 @@ export type ProfileSection = 'basics' | 'specialties' | 'work' | 'prompts' | 'li
 
 /** Qué campos (con error propio) pinta cada bloque. */
 const SECTION_FIELDS: Record<ProfileSection, (keyof Draft)[]> = {
-  basics: ['name', 'age', 'location'],
+  basics: ['name', 'age', 'country', 'city', 'timezone'],
   specialties: ['specialties', 'seekingSpecialties', 'languages'],
-  work: ['timezone', 'startingPoint', 'bands', 'ambition'],
+  work: ['startingPoint', 'bands', 'ambition'],
   prompts: ['prompts'],
   links: ['github'],
 };
@@ -439,34 +465,18 @@ export function ProfileForm({
               />
             </Field>
 
-            <Field label={t('Ubicación')} error={errors.location} onLayout={track('location')}>
-              <TextField
-                value={draft.location}
-                onChangeText={(value) => update('location', value)}
-                placeholder="Barcelona"
-                autoCapitalize="words"
-                autoCorrect={false}
-                accessibilityLabel={t('Ubicación')}
-              />
-            </Field>
-          </>
-        ) : null}
-
-        {show('work') ? (
-          <Field
-            label={t('Zona horaria')}
-            hint={t('La detectamos de tu dispositivo. Cámbiala si no es la tuya.')}
-            error={errors.timezone}
-            onLayout={track('timezone')}>
-            <TextField
-              value={draft.timezone}
-              onChangeText={(value) => update('timezone', value)}
-              placeholder="Europe/Madrid"
-              autoCapitalize="none"
-              autoCorrect={false}
-              accessibilityLabel={t('Zona horaria')}
+            <LocationFields
+              value={draft}
+              errors={errors}
+              onCountryChange={(iso) => {
+                setDraft((current) => withCountry(current, iso));
+                setErrors((current) => ({ ...current, country: undefined, timezone: undefined }));
+              }}
+              onCityChange={(value) => update('city', value)}
+              onTimezoneChange={(value) => update('timezone', value)}
+              onLayoutField={track}
             />
-          </Field>
+          </>
         ) : null}
 
         {show('specialties') ? (

@@ -27,8 +27,13 @@ name: Alta, perfil, deck, match, mensaje y persistencia
     timeout: 30000
 - tapOn: 'He leído y acepto los Términos de uso y las Normas de la comunidad'
 - tapOn: 'Aceptar y continuar'
-# El asistente del perfil: una pregunta por pantalla, empezando por nombre,
-# fecha de nacimiento y dónde vives.
+# El asistente del perfil: una pregunta por pantalla. Lo primero es el idioma
+# de la app; se deja el que hay (la build de E2E fuerza el español).
+- extendedWaitUntil:
+    visible: '¿En qué idioma quieres usar la app?'
+    timeout: 30000
+- tapOn: 'Continuar'
+# Luego nombre, fecha de nacimiento y dónde vives.
 - extendedWaitUntil:
     visible: '¿Cómo te llamas?'
     timeout: 30000
@@ -54,7 +59,12 @@ name: Alta, perfil, deck, match, mensaje y persistencia
 - extendedWaitUntil:
     visible: '¿Dónde vives?'
     timeout: 30000
-- tapOn: 'De dónde eres|Barcelona'
+# País de la lista (se escribe y se elige la sugerencia) y luego la ciudad.
+# España tiene dos zonas: se queda la de la península, la primera.
+- tapOn: 'País|Escribe tu país'
+- inputText: 'Espa'
+- tapOn: 'España'
+- tapOn: 'Ciudad|Tu ciudad'
 - inputText: 'Barcelona'
 - hideKeyboard
 - tapOn: 'Continuar'

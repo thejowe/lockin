@@ -486,6 +486,14 @@ Decisiones del usuario: «Verificación» pasa a «Vincular cuentas» con GitHub
 - [x] **[Claude]** Perfiles existentes sin idiomas: la ficha propia los pide en el bloque de especialidades («Añadir mis idiomas» abre ese lápiz), y al guardar otro bloque el aviso explica que los idiomas son nuevos y en qué lápiz se añaden. Cualquier otro fallo fuera del bloque nombra el bloque y el error (`elsewhereMessage`) en vez del genérico «Hay algo en otra parte…».
 - [ ] Comprobación en dispositivo: el usuario.
 
+## Idioma primero, país + ciudad y zona por país (2026-11-03)
+
+- [x] **[Claude]** Petición del usuario: el primer paso del alta es el idioma de la app (Español / English / Català). Cambiarlo vuelve a montar la navegación (`_layout.tsx`), así que el asistente deja lo rellenado en `resumeAfterLocaleChange` y el nuevo lo recoge.
+- [x] **[Claude]** Ubicación = país de la lista + ciudad a mano (`location-fields.tsx`, `locations.ts`). El país se busca escribiendo, sin tildes, en el idioma de la app («es» → Eslovaquia, Eslovenia, España, Estados Unidos, Estonia). Se guarda en `location` como «Ciudad, País»; no hay columna nueva: el país se deduce de `timezone` al editar.
+- [x] **[Claude]** La zona horaria sale del país (`COUNTRY_TIMEZONES`, los 113 de `countries.ts`). Los que tienen varias (EE. UU., Canadá, México, Brasil, Rusia, Australia, Indonesia, España, Portugal, Chile, Ecuador) enseñan chips; arranca en la del dispositivo si es de ese país, si no en la de la capital. El campo IANA a mano de «Cómo trabajas» desaparece; la zona vive en «Nombre, edad y ubicación».
+- [ ] Perfiles con una zona que no está en la lista (p. ej. `Asia/Kathmandu`) quedan con el país por elegir: al guardar cualquier bloque se les manda a «Nombre, edad y ubicación». Si molesta, ampliar `COUNTRY_TIMEZONES` y `countries.ts`.
+- [ ] Comprobación en dispositivo (en el otro equipo): alta con idioma cambiado a mitad, búsqueda de país con teclado abierto (que las sugerencias no queden tapadas) y E2E `full-journey.yaml` con los pasos nuevos.
+
 ## Recuerda
 Nadie contrata a nadie: no metas campos de "salario" o "equity que ofrezco" — eso es Modo Talento, Fase 4, fuera de este MVP.
 

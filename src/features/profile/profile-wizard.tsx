@@ -6,15 +6,17 @@
  * validación y conversión a `ProfileInput` (`profile-form.tsx`), así que lo que
  * se acepta aquí lo acepta también allí.
  *
- * - Los pasos que `seed` ya contestó en «Sobre ti» (nombre, edad, ubicación) no
+ * - Los pasos que `seed` ya contestó en «Sobre ti» (nombre, edad) no
  *   se vuelven a preguntar; sin `seed` (alta con Google o Apple) se preguntan.
  * - Los opcionales (lo que busco, respuestas, enlaces) llevan «Omitir» arriba a
  *   la derecha; omitir vacía lo que hubiera en ese paso.
- * - La zona horaria se toma del dispositivo y no tiene paso: se corrige después
- *   desde el perfil.
+ * - Lo primero es el idioma de la app (2026-11-03): cambiarlo vuelve a montar
+ *   la navegación, así que lo rellenado se pasa al asistente nuevo.
+ * - La ubicación es país de la lista + ciudad, y el país fija la zona horaria
+ *   (`location-fields.tsx`); si el país tiene varias, se elige una.
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -37,17 +39,40 @@ import {
   toInput,
   toggle,
   validate,
+  withCountry,
   type Draft,
   type Errors,
   type ProfileSeed,
 } from './profile-form';
+import { LocationFields } from './location-fields';
 import { LanguagePicker, MasteryPicker, SeekingSpecialtyPicker } from './pickers';
 import { WizardScreen } from './wizard';
 
 import type { Profile, ProfileInput } from '@/data';
-import { t } from '@/i18n';
+import { getLocale, setLocalePreference, t, type AppLocale } from '@/i18n';
+
+/** Cada idioma escrito en sí mismo: quien no entiende el actual tiene que encontrar el suyo. */
+const APP_LANGUAGES: { value: AppLocale; label: string }[] = [
+  { value: 'es', label: 'Español' },
+  { value: 'en', label: 'English' },
+  { value: 'ca', label: 'Català' },
+];
+
+type Snapshot = { index: number; draft: Draft; birth: ReturnType<typeof splitBirthDate> };
+
+/**
+ * Cambiar de idioma vuelve a montar la navegación (`_layout.tsx`) y con ella el
+ * asistente. Lo rellenado se deja aquí justo antes y el asistente nuevo lo
+ * recoge al montarse.
+ */
+let resumeAfterLocaleChange: Snapshot | null = null;
+
+function stashForLocaleChange(snapshot: Snapshot | null) {
+  resumeAfterLocaleChange = snapshot;
+}
 
 type StepKey =
+  | 'appLanguage'
   | 'name'
   | 'birth'
   | 'location'
@@ -64,9 +89,10 @@ type StepKey =
 
 /** Campos del borrador que valida cada paso. */
 const STEP_FIELDS: Record<StepKey, (keyof Draft)[]> = {
+  appLanguage: [],
   name: ['name'],
   birth: ['age'],
-  location: ['location'],
+  location: ['country', 'city', 'timezone'],
   specialties: ['specialties'],
   seeking: ['seekingSpecialties'],
   languages: ['languages'],
@@ -82,8 +108,10 @@ const STEP_FIELDS: Record<StepKey, (keyof Draft)[]> = {
 const OPTIONAL: StepKey[] = ['seeking', 'seekingLanguages', 'prompts', 'links'];
 
 function stepsFor(seed: ProfileSeed | null): StepKey[] {
-  const basics: StepKey[] = seed ? [] : ['name', 'birth', 'location'];
+  // La ubicación se pregunta siempre: un `seed` no trae país.
+  const basics: StepKey[] = seed ? ['location'] : ['name', 'birth', 'location'];
   return [
+    'appLanguage',
     ...basics,
     'specialties',
     'seeking',
@@ -111,9 +139,14 @@ export function ProfileWizard({
   onSubmit: (input: ProfileInput) => Promise<void>;
 }) {
   const steps = stepsFor(seed);
-  const [index, setIndex] = useState(0);
-  const [draft, setDraft] = useState<Draft>(() => initialDraft(initial, seed));
-  const [birth, setBirth] = useState(() => splitBirthDate(undefined));
+  // Se lee sin vaciar: en modo estricto los inicializadores corren dos veces.
+  const [restored] = useState(() => resumeAfterLocaleChange);
+  useEffect(() => {
+    resumeAfterLocaleChange = null;
+  }, []);
+  const [index, setIndex] = useState(restored?.index ?? 0);
+  const [draft, setDraft] = useState<Draft>(() => restored?.draft ?? initialDraft(initial, seed));
+  const [birth, setBirth] = useState(() => restored?.birth ?? splitBirthDate(undefined));
   const [errors, setErrors] = useState<Errors>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -215,7 +248,38 @@ export function ProfileWizard({
     onPrimary: () => void handleNext(),
   };
 
+  function chooseLanguage(locale: AppLocale) {
+    if (locale === getLocale()) {
+      // Puede venir de «automático»: se guarda para que no cambie con el del móvil.
+      void setLocalePreference(locale);
+      return;
+    }
+    stashForLocaleChange({ index, draft, birth });
+    void setLocalePreference(locale);
+  }
+
   switch (step) {
+    case 'appLanguage':
+      return (
+        <WizardScreen
+          {...common}
+          title={t('¿En qué idioma quieres usar la app?')}
+          subtitle={t('Lo puedes cambiar cuando quieras desde Ajustes.')}>
+          <Field label={t('Idioma de la app')}>
+            <ChipRow>
+              {APP_LANGUAGES.map(({ value, label }) => (
+                <Chip
+                  key={value}
+                  label={label}
+                  selected={getLocale() === value}
+                  onPress={() => chooseLanguage(value)}
+                />
+              ))}
+            </ChipRow>
+          </Field>
+        </WizardScreen>
+      );
+
     case 'name':
       return (
         <WizardScreen {...common} title={t('¿Cómo te llamas?')}>
@@ -250,16 +314,16 @@ export function ProfileWizard({
     case 'location':
       return (
         <WizardScreen {...common} title={t('¿Dónde vives?')}>
-          <Field label={t('Ubicación')} error={errors.location}>
-            <TextField
-              value={draft.location}
-              onChangeText={(value) => update('location', value)}
-              placeholder="Barcelona"
-              autoCapitalize="words"
-              autoCorrect={false}
-              accessibilityLabel={t('Ubicación')}
-            />
-          </Field>
+          <LocationFields
+            value={draft}
+            errors={errors}
+            onCountryChange={(iso) => {
+              setDraft((current) => withCountry(current, iso));
+              setErrors({});
+            }}
+            onCityChange={(value) => update('city', value)}
+            onTimezoneChange={(value) => update('timezone', value)}
+          />
         </WizardScreen>
       );
 
