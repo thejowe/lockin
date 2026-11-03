@@ -10,7 +10,9 @@ describe('filterCountries', () => {
     const result = filterCountries('3');
     expect(result.length).toBeGreaterThan(5);
     expect(result.every((c) => c.dial.startsWith('3'))).toBe(true);
-    expect(result.map((c) => c.dial)).toEqual(expect.arrayContaining(['30', '31', '32', '33', '34']));
+    expect(result.map((c) => c.dial)).toEqual(
+      expect.arrayContaining(['30', '31', '32', '33', '34'])
+    );
   });
 
   it('con 34 queda España', () => {

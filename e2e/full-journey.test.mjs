@@ -115,7 +115,10 @@ describe('full-journey declara lo que busca la persona', () => {
     const marketing = at("- tapOn: 'Marketing'");
     assert(marketing >= 0, 'El recorrido ya no domina marketing');
     assert(marketing > at("- tapOn: 'Continuar'"), 'Se elige antes de entrar al formulario');
-    assert(marketing < at("- tapOn: 'Entrar a cofounder'"), 'Se elige después de guardar el perfil');
+    assert(
+      marketing < at("- tapOn: 'Entrar a cofounder'"),
+      'Se elige después de guardar el perfil'
+    );
   });
 
   it('relee la suya de Postgres después del reinicio', () => {

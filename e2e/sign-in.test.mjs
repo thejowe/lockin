@@ -46,9 +46,7 @@ describe('entrada y recuperación desde instalación limpia', () => {
       } else {
         // La hoja de la nueva contraseña enseña a qué cuenta se aplica.
         assert(flow.includes("assertVisible: 'Email de tu cuenta: ${EMAIL}'"));
-        assert(
-          newPassword.includes("t('Email de tu cuenta: {email}', { email: account.email })")
-        );
+        assert(newPassword.includes("t('Email de tu cuenta: {email}', { email: account.email })"));
       }
       assert(flow.includes("'Matches'"));
       assert(tabs.includes("label: 'Matches'"));

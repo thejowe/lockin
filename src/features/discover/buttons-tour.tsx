@@ -52,13 +52,16 @@ export const TOUR_STEPS = [
     title: tk('Filtros'),
     text: tk('Busca por especialidad y zona horaria. El resto de filtros son de Premium.'),
   },
-] as const
+] as const;
 
 /** Último paso: no marca un botón de la fila sino «Filtros», arriba del deck. */
 export const FILTERS_STEP = TOUR_STEPS.length - 1;
 
 /** Paso actual (índice en `TOUR_STEPS`) o `null` si no hay que enseñarlo. */
-export function useButtonsTour(ready: boolean, userId: string | null): { step: number | null; next: () => void } {
+export function useButtonsTour(
+  ready: boolean,
+  userId: string | null
+): { step: number | null; next: () => void } {
   const [unseen, setUnseen] = useState(false);
   const [index, setIndex] = useState(0);
   const finished = useRef(false);
@@ -212,7 +215,11 @@ const FILTERS_RING_Y = 8;
  * pantalla completa y mide en ventana tanto su propio origen como el del botón,
  * así no depende de dónde esté montado.
  */
-export function FiltersSpotlight({ anchorRef }: { anchorRef: RefObject<ComponentRef<typeof View> | null> }) {
+export function FiltersSpotlight({
+  anchorRef,
+}: {
+  anchorRef: RefObject<ComponentRef<typeof View> | null>;
+}) {
   const theme = useTheme();
   const ringStyle = usePulse();
   const { width: windowWidth } = useWindowDimensions();
@@ -223,7 +230,8 @@ export function FiltersSpotlight({ anchorRef }: { anchorRef: RefObject<Component
     let alive = true;
     rootRef.current?.measureInWindow((originX, originY) => {
       anchorRef.current?.measureInWindow((x, y, width, height) => {
-        if (alive) setPlaced({ originX, target: { x: x - originX, y: y - originY, width, height } });
+        if (alive)
+          setPlaced({ originX, target: { x: x - originX, y: y - originY, width, height } });
       });
     });
     return () => {

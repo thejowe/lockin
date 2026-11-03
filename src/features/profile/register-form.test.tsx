@@ -122,7 +122,13 @@ async function press(name: string) {
 
 /** Rellena el paso de cuenta entero; `overrides` estropea lo que haga falta. */
 async function fillAccount(
-  overrides: { email?: string; phone?: string; password?: string; repeat?: string; terms?: boolean } = {}
+  overrides: {
+    email?: string;
+    phone?: string;
+    password?: string;
+    repeat?: string;
+    terms?: boolean;
+  } = {}
 ) {
   const {
     email = 'ana@example.com',
@@ -145,7 +151,13 @@ async function fillAccount(
 }
 
 describe('accountStepProblem', () => {
-  const ok = { email: 'a@b.c', phone: '600123456', password: CLAVE, repeat: CLAVE, termsAccepted: true };
+  const ok = {
+    email: 'a@b.c',
+    phone: '600123456',
+    password: CLAVE,
+    repeat: CLAVE,
+    termsAccepted: true,
+  };
 
   it('no pone pegas a un paso completo', () => {
     expect(accountStepProblem(ok)).toBeNull();

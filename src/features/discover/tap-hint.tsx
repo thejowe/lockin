@@ -51,7 +51,11 @@ const REST_MS = 900;
 const easeOut = Easing.bezier(...Curves.out);
 
 /** Si hay que enseñar la pista y cómo retirarla para siempre. */
-export function useTapHint(userId: string | null): { visible: boolean; done: boolean; dismiss: () => void } {
+export function useTapHint(userId: string | null): {
+  visible: boolean;
+  done: boolean;
+  dismiss: () => void;
+} {
   const [visible, setVisible] = useState(false);
   /** La pista ya no está en juego: se vio o se retiró (arranca el tour de botones). */
   const [done, setDone] = useState(false);

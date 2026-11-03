@@ -13,7 +13,12 @@ const base = { userId: 'u', email: 'a@b.c', pendingEmail: null };
 
 describe('useRegistrationGate', () => {
   it('cuenta recuperable con móvil: open', async () => {
-    mockRead.mockResolvedValue({ ...base, kind: 'email', recoverable: true, phone: '+34600123456' });
+    mockRead.mockResolvedValue({
+      ...base,
+      kind: 'email',
+      recoverable: true,
+      phone: '+34600123456',
+    });
     const { result } = await renderHook(() => useRegistrationGate());
     await waitFor(() => expect(result.current).toBe('open'));
   });
@@ -25,7 +30,13 @@ describe('useRegistrationGate', () => {
   });
 
   it('cuenta sin asegurar: required', async () => {
-    mockRead.mockResolvedValue({ ...base, kind: 'anonymous', email: null, recoverable: false, phone: null });
+    mockRead.mockResolvedValue({
+      ...base,
+      kind: 'anonymous',
+      email: null,
+      recoverable: false,
+      phone: null,
+    });
     const { result } = await renderHook(() => useRegistrationGate());
     await waitFor(() => expect(result.current).toBe('required'));
   });

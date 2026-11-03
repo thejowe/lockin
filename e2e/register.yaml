@@ -26,6 +26,10 @@ name: Registro con email (1/2) — crear la cuenta y quedar a la espera del corr
 # Justo tras teclear: el teclado está delante seguro, así que esto no es un
 # `pressBack` que saque a la app de la pantalla (ver hide-keyboard.test.mjs).
 - hideKeyboard
+# Móvil obligatorio en el alta; valida contra el plan de numeración de España.
+- tapOn: 'Teléfono de tu cuenta, sin prefijo|600 123 456'
+- inputText: '612345678'
+- hideKeyboard
 - tapOn: 'Contraseña de tu cuenta|Tu contraseña'
 - inputText: ${PASSWORD}
 - hideKeyboard

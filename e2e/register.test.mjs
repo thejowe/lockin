@@ -52,6 +52,8 @@ describe('register.yaml y register-confirm.yaml', () => {
     assert.match(form, /placeholder="tu@email\.com"/);
     assert.match(first, /tapOn: 'Crear cuenta'/);
     assert.match(form, /: 'Crear cuenta'\}/);
+    assert.match(first, /tapOn: 'Teléfono de tu cuenta, sin prefijo\|600 123 456'/);
+    assert.match(form, /accessibilityLabel="Teléfono de tu cuenta, sin prefijo"/);
     assert.match(first, /tapOn: 'Contraseña de tu cuenta\|Tu contraseña'/);
     assert.match(form, /accessibilityLabel="Contraseña de tu cuenta"/);
     assert.match(form, /placeholder="Tu contraseña"/);

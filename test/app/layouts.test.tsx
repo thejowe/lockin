@@ -132,7 +132,8 @@ describe('OnboardingLayout', () => {
 
     await render(<OnboardingLayout />);
 
-    expect(screen.toJSON()).toBeNull();
+    // Solo declara `profile-form` (con el gesto de volver limitado al borde).
+    expect(screen.getByText('ruta:profile-form')).toBeTruthy();
   });
 });
 

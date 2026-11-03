@@ -122,6 +122,10 @@ name: Alta, perfil, deck, match, mensaje y persistencia
     below: 'Busco a alguien que…'
 - inputText: 'Una herramienta para construir en equipo'
 - hideKeyboard
+# Hay dos respuestas y el botón queda debajo: bajar hasta él.
+- scrollUntilVisible:
+    element: 'Continuar'
+    direction: DOWN
 - tapOn: 'Continuar'
 # Enlaces: opcional y último paso; omitir lo termina.
 - extendedWaitUntil:

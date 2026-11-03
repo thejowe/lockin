@@ -77,9 +77,11 @@ describe('DeckFilters', () => {
     await render(ui);
 
     const tree = JSON.stringify(screen.toJSON());
-    const [specialty, zone, hours] = ['Especialidad', 'Zona horaria', 'Horas mínimas por semana'].map(
-      (title) => tree.indexOf(title)
-    );
+    const [specialty, zone, hours] = [
+      'Especialidad',
+      'Zona horaria',
+      'Horas mínimas por semana',
+    ].map((title) => tree.indexOf(title));
     expect(specialty).toBeGreaterThan(-1);
     expect(specialty).toBeLessThan(zone);
     expect(zone).toBeLessThan(hours);
