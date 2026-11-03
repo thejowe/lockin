@@ -162,6 +162,13 @@ name: Alta, perfil, deck, match, mensaje y persistencia
       - assertVisible: '(?i)busca'
       - assertVisible: '(?i)✓ marketing'
       - assertVisible: '(?i)✓ encajas'
+# El tour de botones (Deshacer, Super Like, Boost, Filtros) tapa el deck en la primera
+# visita y cada toque solo lo avanza: se pasa antes de dar like.
+- repeat:
+    while:
+      visible: 'Siguiente explicación'
+    commands:
+      - tapOn: 'Siguiente explicación'
 # Fixture: solo likes entrantes. El like propio y el match pasan por UI/RPC.
 - tapOn: 'Like'
 - extendedWaitUntil:
