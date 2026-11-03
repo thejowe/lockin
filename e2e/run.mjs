@@ -1152,7 +1152,7 @@ if (command === 'test') {
       // un `&` del enlace partiría la orden en dos.
       run('adb', [
         'shell',
-        "am start -W -a android.intent.action.VIEW -d '" + callback + "' app.cofounder.mobile",
+        "am start -W -a android.intent.action.VIEW -d '" + callback + "' app.cofounder.android",
       ]);
 
       const confirmDir = join(dir, 'confirm');
@@ -1264,7 +1264,7 @@ if (command === 'test') {
         'shell',
         "am start -W -a android.intent.action.VIEW -d '" +
           recoveryCallback +
-          "' app.cofounder.mobile",
+          "' app.cofounder.android",
       ]);
       const resetDir = join(dir, 'password-reset-confirm');
       if (maestroFlow(resetDir, passwordResetFile, { ...resetVars, PHASE: 'confirm' }) !== 0) {

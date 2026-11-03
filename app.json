@@ -17,7 +17,7 @@
       }
     },
     "android": {
-      "package": "app.cofounder.mobile",
+      "package": "app.cofounder.android",
       "allowBackup": false,
       "adaptiveIcon": {
         "backgroundColor": "#0A0A0B",

@@ -6,7 +6,7 @@
 # `cofounder://auth/callback?code=…` que devuelve con `am start`. La segunda mitad
 # es register-confirm.yaml. `e2e/register.test.mjs` fija las etiquetas contra el
 # código.
-appId: app.cofounder.mobile
+appId: app.cofounder.android
 name: Registro con email (1/2) — crear la cuenta y quedar a la espera del correo
 ---
 - assertTrue: ${EMAIL && PASSWORD}
