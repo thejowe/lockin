@@ -238,6 +238,70 @@ describe('ProfileWizard', () => {
     });
   });
 
+  it('sin «Sobre ti»: pide nombre y fecha, y guarda respuestas y enlaces escritos', async () => {
+    const onSubmit = jest.fn().mockResolvedValue(undefined);
+    await render(<ProfileWizard submitLabel="Crear perfil" onSubmit={onSubmit} />);
+    await next(); // idioma
+
+    await fireEvent.changeText(screen.getByLabelText('Nombre'), 'Marta');
+    await next();
+    await fireEvent.changeText(screen.getByLabelText('Día'), '1x5');
+    await fireEvent.changeText(screen.getByLabelText('Mes'), '6');
+    await fireEvent.changeText(screen.getByLabelText('Año'), '1990');
+    await next();
+
+    await fireEvent.changeText(screen.getByLabelText('País'), 'esp');
+    await fireEvent.press(screen.getByRole('button', { name: 'España' }));
+    await fireEvent.changeText(screen.getByLabelText('Ciudad'), 'Vigo');
+    await next();
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Desarrollo' }));
+    await next();
+    await skip(); // lo que busco
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Español' }));
+    await next();
+    await skip(); // idiomas que busco
+    await fireEvent.press(screen.getAllByRole('radio')[0]);
+    await next();
+    await next(); // horas
+    await fireEvent.press(screen.getAllByRole('checkbox')[0]);
+    await next();
+    await fireEvent.press(screen.getAllByRole('radio')[0]);
+    await next();
+
+    // Respuestas: cambiar de pregunta y escribir.
+    await fireEvent.press(screen.getAllByText('Necesito compañía para…')[0]);
+    await fireEvent.changeText(screen.getByPlaceholderText('Tu respuesta'), 'Salir a correr');
+    await next();
+
+    await fireEvent.changeText(screen.getByLabelText('GitHub'), 'https://github.com/marta');
+    await fireEvent.changeText(screen.getByLabelText('Portfolio'), 'https://marta.dev');
+    await fireEvent.changeText(screen.getByLabelText('LinkedIn'), 'https://linkedin.com/in/marta');
+    await fireEvent.changeText(screen.getByLabelText('Instagram'), 'https://instagram.com/marta');
+    await fireEvent.changeText(screen.getByLabelText('TikTok'), 'https://tiktok.com/@marta');
+    await fireEvent.press(screen.getByRole('button', { name: 'Crear perfil' }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      name: 'Marta',
+      links: { github: 'https://github.com/marta', tiktok: 'https://tiktok.com/@marta' },
+      prompts: [{ question: 'Necesito compañía para…', answer: 'Salir a correr' }],
+    });
+  });
+
+  it('una fecha que no existe no deja pasar del nacimiento', async () => {
+    await render(<ProfileWizard submitLabel="Crear perfil" onSubmit={jest.fn()} />);
+    await next();
+    await fireEvent.changeText(screen.getByLabelText('Nombre'), 'Marta');
+    await next();
+    await fireEvent.changeText(screen.getByLabelText('Día'), '31');
+    await fireEvent.changeText(screen.getByLabelText('Mes'), '2');
+    await fireEvent.changeText(screen.getByLabelText('Año'), '1990');
+    await next();
+
+    expect(screen.getByText('Escribe una fecha que exista: día, mes y año.')).toBeTruthy();
+    expect(screen.getByText('¿Cuándo naciste?')).toBeTruthy();
+  });
+
   it('si el guardado falla se queda en el último paso y enseña el error', async () => {
     const onSubmit = jest.fn().mockRejectedValue(new Error('sin red'));
     await render(<ProfileWizard seed={SEED} submitLabel="Crear perfil" onSubmit={onSubmit} />);
