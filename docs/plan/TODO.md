@@ -1,5 +1,9 @@
 # TODO maestro — LockIn MVP
 
+## ▶ Al retomar (2026-11-03, tarde): webhook puesto, Google Play verificado, cumplimiento en revisión
+
+El usuario confirma: **webhook de RevenueCat puesto**; **cuenta de Google Play verificada** (ya se puede crear la app `app.cofounder.mobile`, el build interno, los productos y la clave `goog_…`, y luego `[comprobador]` con *license tester*); el **cumplimiento sigue en revisión** (sin resultado todavía). Velo de logo latiendo al cambiar de idioma: `2d29b5a`. Pendiente del usuario en App Store Connect: Acuerdo de apps de pago «Activo», captura de cada suscripción y oferta de prueba de 3 días (ver la entrada del 2026-11-02).
+
 ## ▶ Al retomar (2026-11-03, cierre): CI rojo tras el merge de idiomas, arreglado y a la espera de veredicto
 
 Causas: test viejo de `OnboardingLayout`, 8 archivos sin formato, umbral de cobertura (funciones 94,27 %) por código de idiomas sin test, y E2E (`register.yaml` sin teléfono, `full-journey.yaml` sin bajar a «Continuar» ni pasar el tour de botones). Commits `77ebf5a`, `ea05dfe`, `903e146`, todos empujados, con `codex review`. **Primer paso al volver:** `gh run list --limit 9` y mirar CI, Schema drift y E2E Android sobre `903e146`. En E2E, `supabase` falló una vez por «device offline» (infra, reintentar); si `mock` o `supabase` fallan de nuevo, descargar con `gh run download` y leer `maestro.log`. Jest local: 1962 pasan; `tsc` solo da los errores de rutas `/phone` y `/settings` por `.expo/types` viejo (ver abajo).
