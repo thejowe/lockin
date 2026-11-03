@@ -66,3 +66,6 @@ expo-tunnel.log
 
 # Copias temporales de `codex review` (git archive de un commit)
 .review-*/
+
+# Copias de seguridad de env del comprobador
+.env.local.bak-*
