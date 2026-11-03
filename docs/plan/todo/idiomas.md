@@ -30,6 +30,12 @@ ninguno de los tres, inglés.
 - [x] Textos legales en inglés y catalán dentro de la app.
 - [x] Plantillas de correo con los tres idiomas en el repo; la app guarda `locale` en los metadatos.
 - [x] Comprobado en web con mock (Chrome sin interfaz): detección es/en/ca/fr, selector, persistencia.
+- [x] `codex review` de `ecd3090..3cf2739` (i18n, país + ciudad, iOS; 2026-11-03): 4 P2 corregidos en
+  `4a5f26d`. (1) Guardar un enlace desde su logo vaciaba la zona de perfiles con zona fuera de la lista;
+  ahora `handleSaveLink` manda `location` y `timezone` tal cual. (2) Faltaban zonas con reglas propias
+  (Regina, Whitehorse, Adak) y alias de las equivalentes (Detroit → New_York…). (3) `verify.mjs` esperaba
+  `Barcelona` y se guarda `Barcelona, España`. (4) `register-confirm.yaml` esperaba el nombre y ahora va
+  primero el idioma. De paso: `sign-in.yaml` buscaba el correo en Perfil y está en Ajustes desde `b91e77a`.
 
 ## Pendiente
 
