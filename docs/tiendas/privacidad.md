@@ -87,7 +87,7 @@ Usamos los datos para mantener y recuperar tu cuenta, mostrar y editar tu perfil
 - **GitHub** (responsable independiente): solo si verificas tu enlace.
 - **Google** y **Apple** (responsables independientes): si entras con su cuenta, y si contratas Premium, porque cobran la suscripción con tu cuenta de su tienda. Cada uno trata ese inicio de sesión y ese pago según su propia política de privacidad.
 
-OpenAI y RevenueCat tratan datos fuera del Espacio Económico Europeo (EE. UU.). Esa transferencia se apoya en las cláusulas contractuales tipo de la Comisión Europea o en el Marco de Privacidad de Datos UE-EE. UU. (DPF), según el caso. Puedes pedir información sobre estas garantías en cofounder.soporte@gmail.com.
+OpenAI y RevenueCat tratan datos fuera del Espacio Económico Europeo (EE. UU.). En el caso de RevenueCat, la transferencia se apoya en las cláusulas contractuales tipo de la Comisión Europea, incorporadas a su acuerdo de tratamiento de datos. En el de OpenAI, en las cláusulas contractuales tipo o en el Marco de Privacidad de Datos UE-EE. UU. (DPF), según el caso. Puedes pedir información sobre estas garantías en cofounder.soporte@gmail.com.
 
 Al abrir un enlace de portfolio, GitHub, LinkedIn, Instagram o TikTok de otra persona, visitas un servicio externo con sus propias prácticas de privacidad.
 

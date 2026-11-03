@@ -116,14 +116,13 @@ export function chargeLike(
   store.state.likeEvents.push({ actorId, targetId, kind: isSuper ? 'super' : 'like', atMs: now });
 }
 
-/** ¿Pide el filtro algo que solo tiene Premium? La especialidad y el modo no. */
+/** ¿Pide el filtro algo que solo tiene Premium? La especialidad, el modo y la zona horaria no. */
 export function usesPremiumFilters(filter: ProfileFilter): boolean {
   return (
     filter.minHoursPerWeek !== undefined ||
     filter.timeBands !== undefined ||
     filter.ambition !== undefined ||
-    filter.startingPoint !== undefined ||
-    filter.timezoneWindowHours !== undefined
+    filter.startingPoint !== undefined
   );
 }
 

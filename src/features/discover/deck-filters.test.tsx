@@ -1,8 +1,8 @@
 /**
  * Tests de los filtros del deck.
  *
- * La especialidad es libre; el resto (horas, franjas, ambición, punto de
- * partida y zona horaria) son de Premium: sin él se ven con candado y tocarlos
+ * La especialidad y la zona horaria son libres; el resto (horas, franjas,
+ * ambición y punto de partida) son de Premium: sin él se ven con candado y tocarlos
  * no cambia nada, solo avisa con `onLocked` para abrir el paywall.
  *
  * Ojo: en RNTL 14 `render` y `fireEvent` son asíncronos.
@@ -49,18 +49,40 @@ describe('DeckFilters', () => {
     ['Franjas', 'Mañana'],
     ['Ambición', 'Apostarlo todo'],
     ['Punto de partida', 'Idea sin empezar'],
-    ['Zona horaria', 'Sumar diferencia horaria'],
   ])('sin Premium, «%s» tiene candado y avisa en vez de cambiar', async (section, control) => {
     const { ui, onChange, onLocked } = setup();
     await render(ui);
 
     expect(screen.getByText(section)).toBeTruthy();
-    expect(screen.getAllByLabelText('Solo con Premium').length).toBeGreaterThanOrEqual(5);
+    expect(screen.getAllByLabelText('Solo con Premium')).toHaveLength(4);
 
     await fireEvent.press(screen.getByLabelText(control));
 
     expect(onLocked).toHaveBeenCalledTimes(1);
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('la zona horaria es gratis: sin candado y cambia sin Premium', async () => {
+    const { ui, onChange, onLocked } = setup();
+    await render(ui);
+
+    await fireEvent.press(screen.getByLabelText('Sumar diferencia horaria'));
+
+    expect(onChange).toHaveBeenCalledWith({ timezoneWindowHours: 0 });
+    expect(onLocked).not.toHaveBeenCalled();
+  });
+
+  it('la zona horaria va justo debajo de la especialidad', async () => {
+    const { ui } = setup();
+    await render(ui);
+
+    const tree = JSON.stringify(screen.toJSON());
+    const [specialty, zone, hours] = ['Especialidad', 'Zona horaria', 'Horas mínimas por semana'].map(
+      (title) => tree.indexOf(title)
+    );
+    expect(specialty).toBeGreaterThan(-1);
+    expect(specialty).toBeLessThan(zone);
+    expect(zone).toBeLessThan(hours);
   });
 
   it('con Premium no hay candado y los filtros avanzados cambian', async () => {

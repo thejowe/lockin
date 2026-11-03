@@ -80,7 +80,7 @@ We use the data to maintain and recover your account, show and edit your profile
 - **GitHub** (independent controller): only if you verify your link.
 - **Google** and **Apple** (independent controllers): if you sign in with their account, and if you subscribe to Premium, because they charge the subscription with your account in their store. Each processes that sign-in and that payment under its own privacy policy.
 
-OpenAI and RevenueCat process data outside the European Economic Area (USA). That transfer relies on the European Commission's standard contractual clauses or on the EU-US Data Privacy Framework (DPF), as applicable. You can request information about these safeguards at cofounder.soporte@gmail.com.
+OpenAI and RevenueCat process data outside the European Economic Area (USA). For RevenueCat, the transfer relies on the European Commission's standard contractual clauses, incorporated into its data processing agreement. For OpenAI, on the standard contractual clauses or on the EU-US Data Privacy Framework (DPF), as applicable. You can request information about these safeguards at cofounder.soporte@gmail.com.
 
 When you open another person's portfolio, GitHub, LinkedIn, Instagram or TikTok link, you visit an external service with its own privacy practices.
 

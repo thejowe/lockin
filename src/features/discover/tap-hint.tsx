@@ -36,7 +36,8 @@ import { useReduceMotion } from '@/hooks/use-reduce-motion';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
 
-export const TAP_HINT_KEY = 'cofounder.hint.card-tap.seen';
+/** La pista es de cada cuenta, no del teléfono: una cuenta nueva la vuelve a ver. */
+export const tapHintKey = (userId: string) => `cofounder.hint.card-tap.seen.v2.${userId}`;
 
 /** Mano con el índice extendido (Material «touch_app», Apache 2.0). */
 const HAND =
@@ -50,34 +51,42 @@ const REST_MS = 900;
 const easeOut = Easing.bezier(...Curves.out);
 
 /** Si hay que enseñar la pista y cómo retirarla para siempre. */
-export function useTapHint(): { visible: boolean; dismiss: () => void } {
+export function useTapHint(userId: string | null): { visible: boolean; done: boolean; dismiss: () => void } {
   const [visible, setVisible] = useState(false);
+  /** La pista ya no está en juego: se vio o se retiró (arranca el tour de botones). */
+  const [done, setDone] = useState(false);
   /** Ya retirada en este montaje: una lectura que llegue tarde no la resucita. */
   const dismissed = useRef(false);
 
   useEffect(() => {
+    // Sin saber de quién es la sesión no se decide nada.
+    if (userId === null) return;
     let alive = true;
-    AsyncStorage.getItem(TAP_HINT_KEY).then(
+    AsyncStorage.getItem(tapHintKey(userId)).then(
       (seen) => {
-        if (alive && seen === null && !dismissed.current) setVisible(true);
+        if (!alive) return;
+        if (seen === null && !dismissed.current) setVisible(true);
+        else setDone(true);
       },
       () => undefined
     );
     return () => {
       alive = false;
     };
-  }, []);
+  }, [userId]);
 
   const dismiss = useCallback(() => {
+    if (userId === null) return;
     if (dismissed.current) return;
     // Aunque aún no se viera (la lectura no había llegado): quien ya toca o
     // decide no necesita la pista, ni ahora ni en el siguiente arranque.
     dismissed.current = true;
     setVisible(false);
-    void AsyncStorage.setItem(TAP_HINT_KEY, '1').catch(() => undefined);
-  }, []);
+    setDone(true);
+    void AsyncStorage.setItem(tapHintKey(userId), '1').catch(() => undefined);
+  }, [userId]);
 
-  return { visible, dismiss };
+  return { visible, done, dismiss };
 }
 
 export function TapHint({

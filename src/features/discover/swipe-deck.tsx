@@ -46,8 +46,8 @@
 
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
@@ -67,6 +67,7 @@ import { Curves, Duration, Elevation, Radii, Spacing, Springs } from '@/constant
 import { useReduceMotion } from '@/hooks/use-reduce-motion';
 import { useTheme, useThemeName } from '@/hooks/use-theme';
 
+import { useButtonsTour } from './buttons-tour';
 import { BlackCross, DECK_ACTIONS_SPACE, DeckActions } from './deck-actions';
 import { ProfileCard } from './profile-card';
 import { useTapHint } from './tap-hint';
@@ -74,6 +75,7 @@ import { useTapHint } from './tap-hint';
 import type { SharedValue } from 'react-native-reanimated';
 import type { DeckProfile, Decision, Specialty } from '@/data';
 import type { DaySchedule } from '@/features/profile';
+import { t } from '@/i18n';
 
 /** Desplazamiento a partir del cual soltar cuenta como decisión. */
 const SWIPE_THRESHOLD = 110;
@@ -172,6 +174,8 @@ export function SwipeDeck({
   onUndo,
   onSuperLike,
   onBoost,
+  userId,
+  onTourStep,
 }: {
   profiles: DeckProfile[];
   /** Se llama una vez por tarjeta, cuando la animación de salida termina. */
@@ -186,6 +190,10 @@ export function SwipeDeck({
   /** Super Like sobre la tarjeta superior: sale como un like y llega aquí, no a `onDecide`. */
   onSuperLike?: (profile: DeckProfile) => void;
   onBoost?: () => void;
+  /** Cuenta que mira el deck: las pistas de primera vez se recuerdan por cuenta. */
+  userId?: string | null;
+  /** Paso del mini tutorial de botones, o `null` cuando no hay (o termina). */
+  onTourStep?: (step: number | null) => void;
   /** Lo que domina quien swipea. Solo lo reenvía a la tarjeta, que lo resalta. */
   viewerSpecialties?: Specialty[];
   /** Jornada de quien swipea: la tarjeta marca en qué franjas coincidís. */
@@ -202,7 +210,7 @@ export function SwipeDeck({
   /** Bloquea nuevas decisiones mientras la tarjeta actual sale de pantalla. */
   const exiting = useSharedValue(false);
 
-  const tapHint = useTapHint();
+  const tapHint = useTapHint(userId ?? null);
   const top = profiles.length > 0 ? profiles[0] : null;
   const topId = top?.id ?? null;
   const exitDistance = width + 160;
@@ -213,6 +221,13 @@ export function SwipeDeck({
   // El panel de seguridad de la superior (bloquear/reportar) está abierto: ni el
   // gesto ni Like/Pass deciden mientras tanto.
   const [safetyOpen, setSafetyOpen] = useState(false);
+  // Tras la mano de «toca la tarjeta», explica Deshacer, Super Like y Boost.
+  const tour = useButtonsTour(tapHint.done && profiles.length > 0 && !safetyOpen, userId ?? null);
+  // La pantalla pinta el último paso (Filtros, fuera del deck) y bloquea ese botón.
+  useEffect(() => {
+    onTourStep?.(tour.step);
+    return () => onTourStep?.(null);
+  }, [tour.step, onTourStep]);
   const [turn, setTurn] = useState({ topId, count: 0 });
   if (turn.topId !== topId) {
     setTurn({ topId, count: turn.count + 1 });
@@ -410,6 +425,15 @@ export function SwipeDeck({
         de seguridad abierto no se pintan: flotarían sobre sus botones (Cancelar
         del reporte va anclado abajo) y se comerían los toques.
       */}
+      {tour.step !== null ? (
+        <Pressable
+          testID="buttons-tour-catcher"
+          accessibilityRole="button"
+          accessibilityLabel={t('Siguiente explicación')}
+          onPress={tour.next}
+          style={[StyleSheet.absoluteFill, styles.tourBackdrop]}
+        />
+      ) : null}
       {safetyOpen ? null : (
         <View style={styles.actions} pointerEvents="box-none">
           <DeckActions
@@ -421,6 +445,7 @@ export function SwipeDeck({
             onUndo={onUndo}
             onSuperLike={() => swipeAway('like', true)}
             onBoost={onBoost}
+            tourStep={tour.step}
           />
         </View>
       )}
@@ -669,6 +694,9 @@ const styles = StyleSheet.create({
     left: 0,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  tourBackdrop: {
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
   },
   androidVeil: {
     backgroundColor: 'rgba(10, 10, 11, 0.7)',

@@ -683,8 +683,9 @@ export function createSupabaseRepositories({
         p_mode: filter.mode ?? null,
         p_specialties: filter.specialties?.length ? filter.specialties : null,
         p_exclude_ids: filter.excludeIds?.length ? filter.excludeIds : null,
-        // Filtros avanzados: solo Premium. Sin él, el RPC contesta LQ005 y sale
-        // como `PremiumRequiredError`. Ausente o vacío = «sin filtro» (null).
+        // Filtros avanzados: solo Premium (menos la zona horaria, que es gratis).
+        // Sin él, el RPC contesta LQ005 y sale como `PremiumRequiredError`.
+        // Ausente o vacío = «sin filtro» (null).
         p_min_hours_per_week: filter.minHoursPerWeek ?? null,
         p_time_bands: filter.timeBands?.length ? filter.timeBands : null,
         p_ambition: filter.ambition?.length ? filter.ambition : null,

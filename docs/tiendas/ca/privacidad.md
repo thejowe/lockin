@@ -80,7 +80,7 @@ Fem servir les dades per mantenir i recuperar el teu compte, mostrar i editar el
 - **GitHub** (responsable independent): només si verifiques el teu enllaç.
 - **Google** i **Apple** (responsables independents): si entres amb el seu compte, i si contractes Premium, perquè cobren la subscripció amb el teu compte de la seva botiga. Cadascun tracta aquest inici de sessió i aquest pagament segons la seva pròpia política de privacitat.
 
-OpenAI i RevenueCat tracten dades fora de l'Espai Econòmic Europeu (EUA). Aquesta transferència es basa en les clàusules contractuals tipus de la Comissió Europea o en el Marc de Privacitat de Dades UE-EUA (DPF), segons el cas. Pots demanar informació sobre aquestes garanties a cofounder.soporte@gmail.com.
+OpenAI i RevenueCat tracten dades fora de l'Espai Econòmic Europeu (EUA). En el cas de RevenueCat, la transferència es basa en les clàusules contractuals tipus de la Comissió Europea, incorporades al seu acord de tractament de dades. En el d'OpenAI, en les clàusules contractuals tipus o en el Marc de Privacitat de Dades UE-EUA (DPF), segons el cas. Pots demanar informació sobre aquestes garanties a cofounder.soporte@gmail.com.
 
 En obrir un enllaç de portfolio, GitHub, LinkedIn, Instagram o TikTok d'una altra persona, visites un servei extern amb les seves pròpies pràctiques de privacitat.
 

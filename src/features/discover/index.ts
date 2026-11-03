@@ -6,6 +6,7 @@
  */
 
 export { ActionButton } from './action-button';
+export { FILTERS_STEP, FiltersSpotlight } from './buttons-tour';
 export { Chip, type ChipTone } from './chip';
 export { complementWith } from './complement';
 export { DeckActions } from './deck-actions';

@@ -1133,7 +1133,6 @@ const supabaseBackend: ContractBackend = {
       { p_ambition: [] },
       { p_starting_point: ['idea-sin-empezar'] },
       { p_starting_point: [] },
-      { p_timezone_window_hours: 0 },
     ])('discovery_deck rechaza cada filtro Premium con LQ005: %j', async (filter) => {
       const { data, error } = await viewer.client.rpc('discovery_deck', filter);
       expect(data).toBeNull();

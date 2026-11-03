@@ -1,8 +1,8 @@
 /**
  * Filtros del deck.
  *
- * La especialidad es libre. El resto (horas mínimas, franjas, ambición, punto
- * de partida y zona horaria) son de Premium: sin él se ven con candado, tocarlos
+ * La especialidad y la zona horaria son libres. El resto (horas mínimas,
+ * franjas, ambición y punto de partida) son de Premium: sin él se ven con candado, tocarlos
  * no cambia el filtro y avisa con `onLocked` (la pantalla abre el paywall).
  *
  * Las opciones y sus textos salen de `features/profile/catalog.ts`: no hay
@@ -40,7 +40,6 @@ const PREMIUM_KEYS = [
   'timeBands',
   'ambition',
   'startingPoint',
-  'timezoneWindowHours',
 ] as const satisfies readonly (keyof ProfileFilter)[];
 
 /** ¿Lleva el filtro algo que solo Premium puede pedir? */
@@ -108,6 +107,19 @@ export function DeckFilters({
         />
       </Section>
 
+      <Section title={t('Zona horaria')}>
+        <Counter
+          noun={t('diferencia horaria')}
+          value={value.timezoneWindowHours}
+          step={1}
+          min={0}
+          max={ZONE_MAX}
+          anyLabel={t('Cualquiera')}
+          format={(hours) => t('Hasta {hours} h', { hours })}
+          onChange={(next) => update({ timezoneWindowHours: next })}
+        />
+      </Section>
+
       <Section title={t('Horas mínimas por semana')} locked={!isPremium}>
         <Counter
           noun={t('horas mínimas')}
@@ -142,19 +154,6 @@ export function DeckFilters({
           options={STARTING_POINT_OPTIONS}
           selected={value.startingPoint}
           onToggle={(item) => premium({ startingPoint: toggled(value.startingPoint, item) })}
-        />
-      </Section>
-
-      <Section title={t('Zona horaria')} locked={!isPremium}>
-        <Counter
-          noun={t('diferencia horaria')}
-          value={value.timezoneWindowHours}
-          step={1}
-          min={0}
-          max={ZONE_MAX}
-          anyLabel={t('Cualquiera')}
-          format={(hours) => t('Hasta {hours} h', { hours })}
-          onChange={(next) => premium({ timezoneWindowHours: next })}
         />
       </Section>
     </View>

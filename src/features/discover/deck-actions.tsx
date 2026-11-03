@@ -17,7 +17,9 @@
  * encima de la fila lo cuenta.
  */
 
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useRef, useState, type ComponentRef } from 'react';
+import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import type { LayoutChangeEvent } from 'react-native';
 import Animated, {
   Extrapolation,
   interpolate,
@@ -32,6 +34,8 @@ import { Opacity, Spacing } from '@/constants/theme';
 import { openPaywall } from '@/features/premium';
 import { usePressScale } from '@/hooks/use-press-scale';
 import { useTheme } from '@/hooks/use-theme';
+
+import { TourSpotlight, type TourTarget } from './buttons-tour';
 
 import type { SharedValue } from 'react-native-reanimated';
 import type { Decision } from '@/data';
@@ -67,6 +71,7 @@ export function DeckActions({
   onUndo,
   onSuperLike,
   onBoost,
+  tourStep = null,
 }: {
   onDecide: (decision: Decision) => void;
   disabled?: boolean;
@@ -79,13 +84,23 @@ export function DeckActions({
   onUndo?: () => void;
   onSuperLike?: () => void;
   onBoost?: () => void;
+  /** Paso del mini tutorial de botones (0 Deshacer, 1 Super Like, 2 Boost) o `null`. */
+  tourStep?: number | null;
 }) {
+  const { width: windowWidth } = useWindowDimensions();
+  const rowRef = useRef<ComponentRef<typeof View>>(null);
+  const [rowBox, setRowBox] = useState({ x: 0, height: 0 });
+  const [targets, setTargets] = useState<Record<number, TourTarget>>({});
+  const track = (index: number) => (event: LayoutChangeEvent) => {
+    const { x, y, width, height } = event.nativeEvent.layout;
+    setTargets((current) => ({ ...current, [index]: { x, y, width, height } }));
+  };
   const idle = useSharedValue(0);
   const value = progress ?? idle;
   const lowLikes = likesLeft !== null && likesLeft >= 0 && likesLeft <= LOW_LIKES;
 
   return (
-    <View style={styles.column}>
+    <View style={styles.column} pointerEvents={tourStep === null ? 'auto' : 'none'}>
       <View style={styles.notice} pointerEvents="none">
         {lowLikes ? (
           <ThemedText type="smallBold" style={styles.noticeText}>
@@ -96,8 +111,15 @@ export function DeckActions({
         ) : null}
       </View>
 
-      <View style={styles.row}>
+      <View
+        ref={rowRef}
+        style={styles.row}
+        onLayout={(event) => {
+          const height = event.nativeEvent.layout.height;
+          rowRef.current?.measureInWindow((x) => setRowBox({ x, height }));
+        }}>
         <SmallAction
+          onLayout={track(0)}
           label={t('Deshacer')}
           hint={isPremium ? t('Recuperar el último perfil') : t('Requiere Premium')}
           icon="back"
@@ -114,6 +136,7 @@ export function DeckActions({
           onPress={() => onDecide('pass')}
         />
         <SmallAction
+          onLayout={track(1)}
           label="Super Like"
           hint={t('Decirle que te interesa mucho')}
           icon="sparkle"
@@ -129,6 +152,7 @@ export function DeckActions({
           onPress={() => onDecide('like')}
         />
         <SmallAction
+          onLayout={track(2)}
           label="Boost"
           hint={isPremium ? t('Aparecer antes durante 30 minutos') : t('Requiere Premium')}
           icon="flame"
@@ -136,6 +160,15 @@ export function DeckActions({
           locked={!isPremium}
           onPress={() => (isPremium ? onBoost?.() : openPaywall())}
         />
+        {tourStep !== null && targets[tourStep] ? (
+          <TourSpotlight
+            step={tourStep}
+            target={targets[tourStep]}
+            rowX={rowBox.x}
+            rowHeight={rowBox.height}
+            windowWidth={windowWidth}
+          />
+        ) : null}
       </View>
     </View>
   );
@@ -149,7 +182,9 @@ function SmallAction({
   disabled,
   locked = false,
   onPress,
+  onLayout,
 }: {
+  onLayout?: (event: LayoutChangeEvent) => void;
   label: string;
   hint: string;
   icon: IconName;
@@ -162,7 +197,7 @@ function SmallAction({
   const press = usePressScale();
 
   return (
-    <Animated.View style={press.style}>
+    <Animated.View style={press.style} onLayout={onLayout}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={label}
