@@ -41,6 +41,7 @@ Si no hay `brotli`, prueba `gunzip`; si nada, usa `node -e` con `zlib.brotliDeco
 | errorCode / síntoma | Causa típica | Arreglo |
 |---|---|---|
 | `EAS_BUILD_INCOMPATIBLE_PODS_ERROR` + «None of your spec sources contain a spec satisfying `X (= v)`» | Un paquete npm pide un pod aún no publicado en CocoaPods | Bajar el paquete npm a la última versión cuyo pod sí exista (ver §3) |
+| `UNKNOWN_ERROR` en Install dependencies + «`npm ci` can only install packages when your package.json and package-lock.json … are in sync» | Lockfile generado con otro npm (local npm 11 vs EAS Node 22 / npm 10) | `npx -y npm@10 install --package-lock-only`; validar con `npx -y npm@10 ci --dry-run` **y** `npm ci --dry-run` (0 errores en ambos) |
 | Pods incompatibles entre dos libs | Dos libs piden versiones distintas del mismo pod | `npx expo install --check` / alinear con las versiones de Expo SDK |
 | Podfile.lock cacheado | `cache` en `eas.json` | Relanzar con `--clear-cache` |
 | Errores de firma / provisioning | Credenciales | `npx eas-cli credentials -p ios` — **pide al usuario que lo haga él** (interactivo, `! npx eas-cli credentials -p ios`) |
@@ -65,6 +66,7 @@ Caso conocido (2026-11-03): `react-native-purchases@11.0.0` pedía `PurchasesHyb
 
 ## 4. Arreglar y verificar
 
+- Si tocas dependencias, instala con `npx -y npm@10 install …` (mismo npm que EAS) y comprueba `npx -y npm@10 ci --dry-run` antes del commit.
 - Cambio mínimo. Versiones fijadas exactas (`--save-exact`) cuando bajes una lib por un pod.
 - Verifica: `npm run typecheck` y los tests afectados (`npx jest <ruta>`).
 - Commit en la rama actual (nunca en la principal; si estás en ella, crea rama), mensaje `fix(ios): …` explicando la causa.
