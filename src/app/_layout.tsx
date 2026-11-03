@@ -8,6 +8,7 @@ import { AppState } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 
+import { LocaleSwitchVeil } from '@/components/locale-switch-veil';
 import { BrandFonts } from '@/constants/fonts';
 import { Colors, FontFamily } from '@/constants/theme';
 import { DataProvider } from '@/data';
@@ -147,6 +148,8 @@ export default function RootLayout() {
           </DataProvider>
         </ThemeProvider>
       </KeyboardProvider>
+      {/* Tapa el remontaje de arriba al cambiar de idioma: sin él, un pantallazo negro. */}
+      <LocaleSwitchVeil locale={locale} />
     </GestureHandlerRootView>
   );
 }
