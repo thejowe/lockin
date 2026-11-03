@@ -8,7 +8,8 @@ const read = (file) =>
 const signIn = read('sign-in.yaml');
 const reset = read('password-reset.yaml');
 const form = read('../src/features/profile/sign-in-form.tsx');
-const account = read('../src/features/profile/account-section.tsx');
+const personalInfo = read('../src/features/profile/personal-info.tsx');
+const profileTab = read('../src/app/(tabs)/profile.tsx');
 const newPassword = read('../src/features/profile/new-password-form.tsx');
 const register = read('../src/features/profile/register-form.tsx');
 const welcome = read('../src/app/(onboarding)/mode.tsx');
@@ -36,8 +37,19 @@ describe('entrada y recuperación desde instalación limpia', () => {
       assert(flow.includes("assertNotVisible: 'Crea tu cuenta'"));
       assert(flow.includes('visible: ${PROFILE_NAME}'));
       assert(details.includes('{profile.name}'));
-      assert(flow.includes("assertVisible: 'Email de tu cuenta: ${EMAIL}'"));
-      assert(account.includes('accessibilityLabel={`Email de tu cuenta: ${account.email}`}'));
+      if (name === 'sign-in') {
+        // El correo de la cuenta vive en Ajustes (tuerca del Perfil) desde el 2026-11-01.
+        assert(flow.includes("tapOn: 'Ajustes de la cuenta'"));
+        assert(profileTab.includes('accessibilityLabel="Ajustes de la cuenta"'));
+        assert(flow.includes("assertVisible: 'Correo de tu cuenta: ${EMAIL}'"));
+        assert(personalInfo.includes("t('Correo de tu cuenta: {v}', { v: email"));
+      } else {
+        // La hoja de la nueva contraseña enseña a qué cuenta se aplica.
+        assert(flow.includes("assertVisible: 'Email de tu cuenta: ${EMAIL}'"));
+        assert(
+          newPassword.includes("t('Email de tu cuenta: {email}', { email: account.email })")
+        );
+      }
       assert(flow.includes("'Matches'"));
       assert(tabs.includes("label: 'Matches'"));
     });

@@ -18,7 +18,7 @@ export async function verifyPersistence(status, profileName, message) {
   const birthday = new Date(now.getFullYear(), 5, 15);
   const age = now.getFullYear() - 1990 - (now < birthday ? 1 : 0);
   assert.equal(profile.age, age);
-  assert.equal(profile.location, 'Barcelona');
+  assert.equal(profile.location, 'Barcelona, España');
   // Solo cofundador desde el 2026-10-12: ni la bienvenida ni el formulario preguntan.
   assert.equal(profile.looking_for, 'par');
   assert.deepEqual(profile.specialties, ['dev', 'marketing']);

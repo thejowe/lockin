@@ -80,6 +80,24 @@ describe('zona del país', () => {
     expect(countryForTimezone('Asia/Calcutta')).toBe('IN');
     expect(countryForTimezone('Asia/Kathmandu')).toBeUndefined();
   });
+
+  it('reconoce zonas regionales: las de reglas propias se pueden elegir y las demás son alias', () => {
+    // Saskatchewan no cambia de hora: Winnipeg o Toronto le darían otra hora media año.
+    expect(countryForTimezone('America/Regina')).toBe('CA');
+    expect(timezoneForCountry('CA', 'America/Regina')).toBe('America/Regina');
+    // Detroit cambia de hora igual que Nueva York: se reconoce el país.
+    expect(countryForTimezone('America/Detroit')).toBe('US');
+    expect(timezoneForCountry('US', 'America/Detroit')).toBe('America/New_York');
+    expect(countryForTimezone('Australia/Melbourne')).toBe('AU');
+  });
+
+  it('todas las zonas de la lista existen en este runtime', () => {
+    for (const zones of Object.values(COUNTRY_TIMEZONES)) {
+      for (const zone of zones) {
+        expect(() => new Intl.DateTimeFormat('en', { timeZone: zone })).not.toThrow();
+      }
+    }
+  });
 });
 
 describe('location', () => {

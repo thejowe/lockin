@@ -45,6 +45,9 @@ export const COUNTRY_TIMEZONES: Readonly<Record<string, readonly string[]>> = {
     'America/Vancouver',
     'America/Edmonton',
     'America/Winnipeg',
+    // Saskatchewan y Yukón no cambian de hora: no valen Winnipeg ni Edmonton.
+    'America/Regina',
+    'America/Whitehorse',
     'America/Halifax',
     'America/St_Johns',
   ],
@@ -156,6 +159,7 @@ export const COUNTRY_TIMEZONES: Readonly<Record<string, readonly string[]>> = {
     'America/Phoenix',
     'America/Los_Angeles',
     'America/Anchorage',
+    'America/Adak',
     'Pacific/Honolulu',
   ],
   UY: ['America/Montevideo'],
@@ -164,8 +168,23 @@ export const COUNTRY_TIMEZONES: Readonly<Record<string, readonly string[]>> = {
   ZA: ['Africa/Johannesburg'],
 };
 
-/** Nombres antiguos o alias que pueden venir del dispositivo o de perfiles viejos. */
+/**
+ * Nombres antiguos o alias que pueden venir del dispositivo o de perfiles viejos.
+ * También zonas regionales con las mismas reglas que una de la lista (Detroit
+ * cambia de hora igual que Nueva York), para que su país se reconozca.
+ */
 const TIMEZONE_ALIASES: Readonly<Record<string, string>> = {
+  'America/Detroit': 'America/New_York',
+  'America/Indiana/Indianapolis': 'America/New_York',
+  'America/Kentucky/Louisville': 'America/New_York',
+  'America/Indiana/Knox': 'America/Chicago',
+  'America/Menominee': 'America/Chicago',
+  'America/Boise': 'America/Denver',
+  'America/Juneau': 'America/Anchorage',
+  'America/Montreal': 'America/Toronto',
+  'America/Moncton': 'America/Halifax',
+  'Australia/Melbourne': 'Australia/Sydney',
+  'Australia/Hobart': 'Australia/Sydney',
   'Europe/Kyiv': 'Europe/Kiev',
   'Asia/Calcutta': 'Asia/Kolkata',
   'Asia/Saigon': 'Asia/Ho_Chi_Minh',

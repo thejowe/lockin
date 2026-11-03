@@ -9,10 +9,11 @@ name: Registro con email (2/2) — volver del correo, contraseña aplicada y per
 - assertTrue: ${EMAIL && PASSWORD}
 # El callback, sin perfil todavía, devuelve a `/register`: la cuenta ya es
 # recuperable, así que pone la contraseña elegida en la primera mitad (la que
-# esperaba en el almacén seguro) y sigue al formulario de perfil. run.mjs
+# esperaba en el almacén seguro) y sigue al asistente del perfil, que empieza
+# por el idioma. run.mjs
 # comprueba después contra GoTrue que esa contraseña entra.
 - extendedWaitUntil:
-    visible: '¿Cómo te llamas?'
+    visible: '¿En qué idioma quieres usar la app?'
     timeout: 60000
 - assertNotVisible: 'Elige tu contraseña'
 # Y la puerta sigue abierta tras reiniciar: pregunta al servidor en cada montaje,
@@ -21,6 +22,6 @@ name: Registro con email (2/2) — volver del correo, contraseña aplicada y per
 - launchApp:
     clearState: false
 - extendedWaitUntil:
-    visible: '¿Cómo te llamas?'
+    visible: '¿En qué idioma quieres usar la app?'
     timeout: 60000
 - assertNotVisible: 'Crea tu cuenta'

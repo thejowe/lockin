@@ -101,6 +101,9 @@ export default function ProfileScreen() {
     const input = toInput(initialDraft(profile, null));
     await repositories.profiles.saveCurrent({
       ...input,
+      // Tal cual estaban: el borrador vacía la zona si no está en la lista de países.
+      location: profile.location,
+      timezone: profile.timezone,
       links: { ...input.links, [app]: url ?? undefined },
     });
     refresh();

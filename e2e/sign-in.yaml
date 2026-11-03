@@ -30,7 +30,9 @@ name: Entrar en la cuenta existente desde una instalación limpia
 - extendedWaitUntil:
     visible: ${PROFILE_NAME}
     timeout: 30000
+# El correo de la cuenta está en Ajustes, tras la tuerca del Perfil.
+- tapOn: 'Ajustes de la cuenta'
 - scrollUntilVisible:
-    element: 'Email de tu cuenta: ${EMAIL}'
+    element: 'Correo de tu cuenta: ${EMAIL}'
     direction: DOWN
-- assertVisible: 'Email de tu cuenta: ${EMAIL}'
+- assertVisible: 'Correo de tu cuenta: ${EMAIL}'

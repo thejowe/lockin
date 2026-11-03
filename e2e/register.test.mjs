@@ -38,9 +38,10 @@ describe('register.yaml y register-confirm.yaml', () => {
     assert.match(welcome, /: 'Registrarse'\}/);
   });
 
-  it('el asistente del perfil empieza por el nombre, que es donde espera la segunda mitad', () => {
-    assert.match(second, /visible: '¿Cómo te llamas\?'/);
-    assert.match(wizard, /title="¿Cómo te llamas\?"/);
+  it('el asistente del perfil empieza por el idioma, que es donde espera la segunda mitad', () => {
+    assert.match(second, /visible: '¿En qué idioma quieres usar la app\?'/);
+    assert.match(wizard, /title="¿En qué idioma quieres usar la app\?"/);
+    assert.doesNotMatch(second, /visible: '¿Cómo te llamas\?'/);
   });
 
   it('tocan etiquetas que existen en el formulario de registro', () => {
@@ -66,7 +67,7 @@ describe('register.yaml y register-confirm.yaml', () => {
     assert.match(form, /<ThemedText type="title">Verifica tu email<\/ThemedText>/);
 
     // La segunda mitad no teclea la contraseña: la pone sola la que esperaba.
-    assert.match(second, /visible: '¿Cómo te llamas\?'/);
+    assert.match(second, /visible: '¿En qué idioma quieres usar la app\?'/);
     assert.match(second, /assertNotVisible: 'Elige tu contraseña'/);
     assert.match(form, /<ThemedText type="title">Elige tu contraseña<\/ThemedText>/);
     assert.doesNotMatch(second, /inputText: \$\{PASSWORD\}/);
