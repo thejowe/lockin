@@ -1,5 +1,11 @@
 # TODO maestro — LockIn MVP
 
+## ▶ Al retomar (2026-11-03, noche): Android con paquete nuevo y primer AAB listo; falta subirlo a Play
+
+`app.cofounder.mobile` ya era de otro desarrollador en Play, así que Android pasa a **`app.cofounder.android`** (`bf47d99`; iOS sigue en `app.cofounder.mobile`). Los flujos de E2E, `run.mjs` y `comprobador` ya apuntan al nuevo. App creada en Play Console (cuenta `7166558137802576901`, app `4973036227760863975`; el paquete no se pudo leer en pantalla, comprobarlo). Cumplimiento de **Apple** en revisión. Primer build `production` de Android: EAS `0bb3922b-cdbb-4510-8318-50d34e7e0ffc`, versionCode 2, keystore generado por EAS en remoto, AAB en `https://expo.dev/artifacts/eas/chfkmQRleCE6QlzxNDkr8MLanXryGKq7u9KGPJXlpe0.aab` (sin la clave `goog_…`: el paywall de Android no cobra todavía).
+
+**Siguiente:** (1) usuario: subir el AAB a Prueba interna y añadirse como tester; (2) sacar **dos SHA-1** para un cliente de Android de Google Cloud con el paquete nuevo: el del keystore de EAS (`! npx eas-cli credentials -p android`, solo interactivo) y el de firma de la app de Play (Configuración → Integridad de la app, aparece tras subir el AAB); (3) usuario: productos de suscripción en Play, app de Android en RevenueCat con el paquete nuevo y cuenta de servicio de Google; (4) [Claude] poner la clave `goog_…` en `eas.json`, rebuild y `[comprobador]` con *license tester*.
+
 ## ▶ Al retomar (2026-11-03, tarde): webhook puesto, Google Play verificado, cumplimiento en revisión
 
 El usuario confirma: **webhook de RevenueCat puesto**; **cuenta de Google Play verificada** (ya se puede crear la app `app.cofounder.mobile`, el build interno, los productos y la clave `goog_…`, y luego `[comprobador]` con *license tester*); el **cumplimiento sigue en revisión** (sin resultado todavía). Velo de logo latiendo al cambiar de idioma: `2d29b5a`. Pendiente del usuario en App Store Connect: Acuerdo de apps de pago «Activo», captura de cada suscripción y oferta de prueba de 3 días (ver la entrada del 2026-11-02).
