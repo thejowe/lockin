@@ -63,14 +63,21 @@ describe('full-journey declara lo que busca la persona', () => {
     // existe en Postgres. Con el mock el deck lo ordena `src/data/mock/seed.ts`
     // y arriba hay otra persona, así que allí no se pueden cumplir — y el
     // control negativo tiene que llegar al `stopApp` para significar algo.
-    const gate = journey.indexOf("true: ${DECK_FIXTURE == 'postgres'}");
+    const gate = journey.lastIndexOf("true: ${DECK_FIXTURE == 'postgres'}");
     assert(gate >= 0, 'El bloque del deck ya no está condicionado al backend real');
-    // Un único `runFlow` en todo el recorrido: nadie ha colado más pasos fuera
-    // de la variante que decide el color, que es la que lleva credenciales.
+    // Solo dos `runFlow` en todo el recorrido, ambos con la misma condición: el
+    // primero vuelve a la página «Busca» de la tarjeta de Núria (el tour la deja
+    // en otra) y el segundo lleva las cuatro aserciones. Nadie ha colado más
+    // pasos fuera de la variante que decide el color, la que lleva credenciales.
     assert.equal(
       journey.split('- runFlow:').length - 1,
-      1,
-      'Hay más de un bloque condicional: el recorrido ha dejado de ser el mismo en las dos variantes'
+      2,
+      'Hay más de dos bloques condicionales: el recorrido ha dejado de ser el mismo en las dos variantes'
+    );
+    assert.equal(
+      journey.split("true: ${DECK_FIXTURE == 'postgres'}").length - 1,
+      2,
+      'Los dos bloques condicionales deben depender solo del backend real'
     );
     // Se lee el bloque entero, no solo su presencia: lo condicionado tiene que
     // ser EXACTAMENTE esas cuatro líneas. Si algo más se cuela aquí dentro deja
