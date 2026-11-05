@@ -73,18 +73,37 @@ describe('purchases con Supabase y SDK de RevenueCat', () => {
     getOfferings: jest.fn(),
     purchasePackage: jest.fn(),
     restorePurchases: jest.fn().mockResolvedValue({}),
+    checkTrialOrIntroductoryPriceEligibility: jest.fn(),
     PURCHASES_ERROR_CODE: { PAYMENT_PENDING_ERROR: '20' },
+    INTRO_ELIGIBILITY_STATUS: {
+      INTRO_ELIGIBILITY_STATUS_UNKNOWN: 0,
+      INTRO_ELIGIBILITY_STATUS_ELIGIBLE: 2,
+    },
   };
   const pkg = (
     identifier: string,
     packageType: string,
     price: string,
-    perMonth: string | null
+    perMonth: string | null,
+    introPrice: Record<string, unknown> | null = null
   ) => ({
     identifier,
     packageType,
-    product: { priceString: price, pricePerMonthString: perMonth },
+    product: {
+      identifier: `prod${identifier}`,
+      priceString: price,
+      pricePerMonthString: perMonth,
+      introPrice,
+    },
   });
+  const threeDaysFree = {
+    price: 0,
+    priceString: '0,00 €',
+    cycles: 1,
+    period: 'P3D',
+    periodUnit: 'DAY',
+    periodNumberOfUnits: 3,
+  };
   let fresh: typeof import('./purchases');
   let profileRow: { id: string } | null = { id: 'u1' };
 
@@ -133,9 +152,59 @@ describe('purchases con Supabase y SDK de RevenueCat', () => {
 
     expect(sdk.logIn).toHaveBeenCalledWith('u1');
     expect(offers).toEqual([
-      { id: '$rc_monthly', period: 'month', priceString: '4,99 €', pricePerMonthString: '4,99 €' },
-      { id: '$rc_annual', period: 'year', priceString: '39,99 €', pricePerMonthString: '3,33 €' },
+      {
+        id: '$rc_monthly',
+        period: 'month',
+        priceString: '4,99 €',
+        pricePerMonthString: '4,99 €',
+        freeTrial: null,
+      },
+      {
+        id: '$rc_annual',
+        period: 'year',
+        priceString: '39,99 €',
+        pricePerMonthString: '3,33 €',
+        freeTrial: null,
+      },
     ]);
+    // Sin precio introductorio no hace falta preguntar a la tienda.
+    expect(sdk.checkTrialOrIntroductoryPriceEligibility).not.toHaveBeenCalled();
+  });
+
+  describe('prueba gratis en iOS', () => {
+    beforeEach(() => {
+      sdk.getOfferings.mockResolvedValue({
+        current: {
+          availablePackages: [
+            pkg('$rc_monthly', 'MONTHLY', '4,99 €', null, threeDaysFree),
+            pkg('$rc_annual', 'ANNUAL', '39,99 €', '3,33 €', threeDaysFree),
+          ],
+        },
+      });
+    });
+
+    it('solo se anuncia en los productos que la tienda dice ELIGIBLE', async () => {
+      sdk.checkTrialOrIntroductoryPriceEligibility.mockResolvedValueOnce({
+        prod$rc_monthly: { status: 2 },
+        prod$rc_annual: { status: 0 },
+      });
+
+      const offers = await fresh.getOfferings();
+
+      expect(sdk.checkTrialOrIntroductoryPriceEligibility).toHaveBeenCalledWith([
+        'prod$rc_monthly',
+        'prod$rc_annual',
+      ]);
+      expect(offers.map((offer) => offer.freeTrial)).toEqual([{ count: 3, unit: 'day' }, null]);
+    });
+
+    it('si la consulta de derecho falla, no se promete ninguna', async () => {
+      sdk.checkTrialOrIntroductoryPriceEligibility.mockRejectedValueOnce(new Error('red'));
+
+      const offers = await fresh.getOfferings();
+
+      expect(offers.map((offer) => offer.freeTrial)).toEqual([null, null]);
+    });
   });
 
   it('no repite logIn para el mismo uid y lo repite tras logOut', async () => {
@@ -181,5 +250,83 @@ describe('purchases con Supabase y SDK de RevenueCat', () => {
     delete process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY;
     await expect(fresh.getOfferings()).rejects.toBeInstanceOf(fresh.PurchasesUnavailableError);
     expect(sdk.configure).not.toHaveBeenCalled();
+  });
+});
+
+describe('freeTrialOf', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { freeTrialOf } = require('./purchases') as typeof import('./purchases');
+  type Product = Parameters<typeof freeTrialOf>[0];
+  const product = (fields: Record<string, unknown>) => fields as unknown as Product;
+  const intro = (fields: Record<string, unknown>) => ({
+    price: 0,
+    priceString: '0,00 €',
+    cycles: 1,
+    period: 'P3D',
+    periodUnit: 'DAY',
+    periodNumberOfUnits: 3,
+    ...fields,
+  });
+
+  it('iOS: prueba gratis solo con derecho confirmado', () => {
+    const p = product({ introPrice: intro({}) });
+    expect(freeTrialOf(p, 'ios', true)).toEqual({ count: 3, unit: 'day' });
+    expect(freeTrialOf(p, 'ios', false)).toBeNull();
+  });
+
+  it('iOS: un precio introductorio de pago no es una prueba gratis', () => {
+    const p = product({ introPrice: intro({ price: 0.99, priceString: '0,99 €' }) });
+    expect(freeTrialOf(p, 'ios', true)).toBeNull();
+  });
+
+  it('iOS: sin oferta introductoria o con unidad desconocida, nada', () => {
+    expect(freeTrialOf(product({ introPrice: null }), 'ios', true)).toBeNull();
+    expect(
+      freeTrialOf(product({ introPrice: intro({ periodUnit: 'UNKNOWN' }) }), 'ios', true)
+    ).toBeNull();
+  });
+
+  it('iOS: varios ciclos de una semana suman semanas', () => {
+    const p = product({
+      introPrice: intro({ cycles: 2, period: 'P1W', periodUnit: 'WEEK', periodNumberOfUnits: 1 }),
+    });
+    expect(freeTrialOf(p, 'ios', true)).toEqual({ count: 2, unit: 'week' });
+  });
+
+  it('Android: la fase gratuita de la opción que se compra', () => {
+    const p = product({
+      introPrice: null,
+      defaultOption: {
+        freePhase: {
+          billingPeriod: { unit: 'DAY', value: 3, iso8601: 'P3D' },
+          billingCycleCount: 1,
+        },
+      },
+    });
+    // En Android el derecho ya lo filtra Play: no depende de la consulta de iOS.
+    expect(freeTrialOf(p, 'android', false)).toEqual({ count: 3, unit: 'day' });
+  });
+
+  it('Android: con una fase de pago rebajada tras la prueba, no se anuncia', () => {
+    const p = product({
+      defaultOption: {
+        freePhase: {
+          billingPeriod: { unit: 'DAY', value: 3, iso8601: 'P3D' },
+          billingCycleCount: 1,
+        },
+        introPhase: {
+          billingPeriod: { unit: 'MONTH', value: 1, iso8601: 'P1M' },
+          billingCycleCount: 1,
+        },
+      },
+    });
+    expect(freeTrialOf(p, 'android', false)).toBeNull();
+  });
+
+  it('Android: sin fase gratuita, nada', () => {
+    expect(
+      freeTrialOf(product({ defaultOption: { freePhase: null } }), 'android', false)
+    ).toBeNull();
+    expect(freeTrialOf(product({ defaultOption: null }), 'android', false)).toBeNull();
   });
 });

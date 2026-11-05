@@ -27,6 +27,16 @@ export interface PurchasePackage {
   priceString: string;
   /** El equivalente mensual, para comparar el plan anual con el mensual. */
   pricePerMonthString: string;
+  /**
+   * Prueba gratis a la que ESTA persona tiene derecho, o `null`. La decide la tienda
+   * (Apple 3.1.2): si no se sabe con certeza, no se anuncia ninguna.
+   */
+  freeTrial: FreeTrial | null;
+}
+
+export interface FreeTrial {
+  count: number;
+  unit: 'day' | 'week' | 'month' | 'year';
 }
 
 export type PurchaseResult = 'purchased' | 'cancelled' | 'pending';
@@ -47,12 +57,14 @@ const FAKE_OFFERINGS: PurchasePackage[] = [
     period: 'month',
     priceString: '4,99 €',
     pricePerMonthString: '4,99 €',
+    freeTrial: null,
   },
   {
     id: 'mock_year',
     period: 'year',
     priceString: '39,99 €',
     pricePerMonthString: '3,33 €',
+    freeTrial: { count: 3, unit: 'day' },
   },
 ];
 
@@ -62,6 +74,7 @@ function usesMockStore(): boolean {
 
 type PurchasesSdk = typeof import('react-native-purchases').default;
 type SdkPackage = import('react-native-purchases').PurchasesPackage;
+type SdkProduct = SdkPackage['product'];
 
 /**
  * Claves PÚBLICAS del SDK de RevenueCat (`goog_…` / `appl_…`), una por tienda. Se
@@ -145,11 +158,70 @@ function periodOf(pkg: SdkPackage): 'month' | 'year' | null {
   return null;
 }
 
+const TRIAL_UNITS: Record<string, FreeTrial['unit']> = {
+  DAY: 'day',
+  WEEK: 'week',
+  MONTH: 'month',
+  YEAR: 'year',
+};
+
+function trialOf(unit: string, count: number): FreeTrial | null {
+  const mapped = TRIAL_UNITS[unit];
+  return mapped && Number.isInteger(count) && count > 0 ? { count, unit: mapped } : null;
+}
+
+/**
+ * La prueba gratis de un producto, solo si la tienda dice que esta persona tiene derecho.
+ *
+ * - Android: Play solo devuelve las ofertas a las que se tiene derecho, y `purchasePackage`
+ *   compra la `defaultOption`; su fase gratuita es justo lo que se va a cobrar. Si tras la
+ *   prueba hay una fase introductoria de pago, «luego X €/periodo» sería falso: no se anuncia.
+ * - iOS: `introPrice` describe la oferta del producto, no a quien la ve; hace falta que
+ *   `checkTrialOrIntroductoryPriceEligibility` diga ELIGIBLE. Desconocido = sin prueba.
+ *   Un precio introductorio que no es gratis no se anuncia como prueba.
+ */
+export function freeTrialOf(
+  product: SdkProduct,
+  platform: string,
+  iosEligible: boolean
+): FreeTrial | null {
+  if (platform === 'android') {
+    const option = product.defaultOption;
+    const phase = option?.freePhase;
+    if (!phase || option?.introPhase) return null;
+    const cycles = phase.billingCycleCount ?? 1;
+    return trialOf(phase.billingPeriod.unit, phase.billingPeriod.value * cycles);
+  }
+  const intro = product.introPrice;
+  if (!iosEligible || !intro || intro.price !== 0) return null;
+  return trialOf(intro.periodUnit, intro.periodNumberOfUnits * (intro.cycles || 1));
+}
+
+/** Productos de iOS con derecho a la prueba. Si la consulta falla, ninguno. */
+async function iosTrialEligible(sdk: PurchasesSdk, packages: SdkPackage[]): Promise<Set<string>> {
+  const eligible = new Set<string>();
+  if (Platform.OS !== 'ios') return eligible;
+  const ids = packages.filter((pkg) => pkg.product.introPrice).map((pkg) => pkg.product.identifier);
+  if (ids.length === 0) return eligible;
+  try {
+    const result = await sdk.checkTrialOrIntroductoryPriceEligibility(ids);
+    for (const id of ids) {
+      if (result[id]?.status === sdk.INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_ELIGIBLE) {
+        eligible.add(id);
+      }
+    }
+  } catch {
+    // Sin respuesta de la tienda no se promete ninguna prueba.
+  }
+  return eligible;
+}
+
 export async function getOfferings(): Promise<PurchasePackage[]> {
   if (usesMockStore()) return FAKE_OFFERINGS.map((offer) => ({ ...offer }));
   const sdk = await sdkReady();
   const offerings = await sdk.getOfferings();
-  const available = offerings.current?.availablePackages ?? [];
+  const available = (offerings.current?.availablePackages ?? []).filter((pkg) => periodOf(pkg));
+  const eligible = await iosTrialEligible(sdk, available);
   sdkPackages.clear();
   const result: PurchasePackage[] = [];
   for (const pkg of available) {
@@ -162,6 +234,7 @@ export async function getOfferings(): Promise<PurchasePackage[]> {
       period,
       priceString: price,
       pricePerMonthString: pkg.product.pricePerMonthString ?? price,
+      freeTrial: freeTrialOf(pkg.product, Platform.OS, eligible.has(pkg.product.identifier)),
     });
   }
   // Nunca se enseña un paywall sin nada que cobrar.

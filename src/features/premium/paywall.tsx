@@ -27,6 +27,7 @@ import {
   getOfferings,
   purchase,
   restore,
+  type FreeTrial,
   type PurchasePackage,
 } from '@/lib/purchases';
 
@@ -56,6 +57,34 @@ function periodLabel(offer: PurchasePackage): string {
 
 function periodSuffix(offer: PurchasePackage): string {
   return offer.period === 'month' ? t('al mes') : t('al año');
+}
+
+/** «3 días gratis». Sin plurales en `t`, cada unidad lleva su singular y su plural. */
+function trialLength(trial: FreeTrial): string {
+  const one = trial.count === 1;
+  switch (trial.unit) {
+    case 'day':
+      return one ? t('1 día gratis') : t('{count} días gratis', { count: trial.count });
+    case 'week':
+      return one ? t('1 semana gratis') : t('{count} semanas gratis', { count: trial.count });
+    case 'month':
+      return one ? t('1 mes gratis') : t('{count} meses gratis', { count: trial.count });
+    case 'year':
+      return one ? t('1 año gratis') : t('{count} años gratis', { count: trial.count });
+  }
+}
+
+/**
+ * «3 días gratis, luego 4,99 € al mes» (Apple 3.1.2: qué se cobra al acabar la prueba).
+ * Solo existe si la tienda dice que esta persona tiene derecho a la prueba.
+ */
+function trialText(offer: PurchasePackage): string | null {
+  if (!offer.freeTrial) return null;
+  return t('{trial}, luego {price} {period}', {
+    trial: trialLength(offer.freeTrial),
+    price: offer.priceString,
+    period: periodSuffix(offer),
+  });
 }
 
 export function Paywall({
@@ -175,6 +204,9 @@ export function Paywall({
   }
 
   const showSimulator = __DEV__ && !hasSupabaseCredentials;
+  const selectedOffer =
+    state.status === 'ready' ? state.offers.find((offer) => offer.id === selectedId) : undefined;
+  const selectedTrial = selectedOffer ? trialText(selectedOffer) : null;
 
   return (
     <ScrollView
@@ -204,12 +236,17 @@ export function Paywall({
           <View style={styles.plans}>
             {state.offers.map((offer) => {
               const selected = offer.id === selectedId;
+              const trial = trialText(offer);
               return (
                 <Pressable
                   key={offer.id}
                   accessibilityRole="radio"
                   accessibilityState={{ selected }}
-                  accessibilityLabel={`${periodLabel(offer)}, ${offer.priceString} ${periodSuffix(offer)}`}
+                  accessibilityLabel={
+                    trial
+                      ? `${periodLabel(offer)}, ${trial}`
+                      : `${periodLabel(offer)}, ${offer.priceString} ${periodSuffix(offer)}`
+                  }
                   onPress={() => setSelectedId(offer.id)}
                   style={[
                     styles.plan,
@@ -222,7 +259,12 @@ export function Paywall({
                     <ThemedText type="heading">{periodLabel(offer)}</ThemedText>
                     {offer.period === 'year' ? (
                       <ThemedText type="small" themeColor="textSecondary">
-                        {`${offer.pricePerMonthString} al mes`}
+                        {`${offer.pricePerMonthString} ${t('al mes')}`}
+                      </ThemedText>
+                    ) : null}
+                    {offer.freeTrial ? (
+                      <ThemedText type="small" themeColor="brass">
+                        {trialLength(offer.freeTrial)}
                       </ThemedText>
                     ) : null}
                   </View>
@@ -263,6 +305,11 @@ export function Paywall({
               disabled={busy !== null || selectedId === null}
               onPress={() => void handleBuy()}
             />
+            {selectedTrial ? (
+              <ThemedText type="small" themeColor="textSecondary" style={styles.centered}>
+                {selectedTrial}
+              </ThemedText>
+            ) : null}
             <ThemedText type="caption" themeColor="textMuted" style={styles.centered}>
               {t(RENEWAL)}
             </ThemedText>

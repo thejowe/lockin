@@ -29,8 +29,20 @@ jest.mock('@/lib/purchases', () => ({
 }));
 
 const OFFERS: PurchasePackage[] = [
-  { id: 'm', period: 'month', priceString: '7,77 €', pricePerMonthString: '7,77 €' },
-  { id: 'y', period: 'year', priceString: '31,31 €', pricePerMonthString: '2,61 €' },
+  {
+    id: 'm',
+    period: 'month',
+    priceString: '7,77 €',
+    pricePerMonthString: '7,77 €',
+    freeTrial: null,
+  },
+  {
+    id: 'y',
+    period: 'year',
+    priceString: '31,31 €',
+    pricePerMonthString: '2,61 €',
+    freeTrial: null,
+  },
 ];
 
 let repositories: Repositories;
@@ -63,6 +75,41 @@ describe('Paywall', () => {
     expect(screen.getByText('7,77 € al mes')).toBeTruthy();
     expect(screen.getByText('31,31 € al año')).toBeTruthy();
     expect(screen.getByText('2,61 € al mes')).toBeTruthy();
+  });
+
+  it('sin derecho a prueba no promete ninguna', async () => {
+    await setup();
+
+    await screen.findByText('7,77 € al mes');
+    expect(screen.queryByText(/gratis/)).toBeNull();
+  });
+
+  it('con prueba gratis dice cuánto dura y qué se cobra después (Apple 3.1.2)', async () => {
+    (getOfferings as jest.Mock).mockResolvedValue([
+      OFFERS[0],
+      { ...OFFERS[1], freeTrial: { count: 3, unit: 'day' } },
+    ]);
+    await setup();
+
+    // El anual viene seleccionado: la frase completa va junto al botón de compra.
+    expect(await screen.findByText('3 días gratis, luego 31,31 € al año')).toBeTruthy();
+    expect(screen.getByText('3 días gratis')).toBeTruthy();
+    expect(
+      screen.getByRole('radio', { name: 'Anual, 3 días gratis, luego 31,31 € al año' })
+    ).toBeTruthy();
+
+    // El mensual no tiene prueba: al elegirlo, la frase desaparece.
+    await fireEvent.press(screen.getByRole('radio', { name: 'Mensual, 7,77 € al mes' }));
+    expect(screen.queryByText('3 días gratis, luego 31,31 € al año')).toBeNull();
+  });
+
+  it('una prueba de una unidad va en singular', async () => {
+    (getOfferings as jest.Mock).mockResolvedValue([
+      { ...OFFERS[0], freeTrial: { count: 1, unit: 'week' } },
+    ]);
+    await setup();
+
+    expect(await screen.findByText('1 semana gratis, luego 7,77 € al mes')).toBeTruthy();
   });
 
   it('avisa de la renovación y enlaza Términos y Privacidad', async () => {

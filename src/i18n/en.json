@@ -1019,5 +1019,14 @@
   "Busca por especialidad y zona horaria. El resto de filtros son de Premium.": "Search by specialty and time zone. The other filters are Premium.",
   "Toca para empezar": "Tap to start",
   "Toca para seguir": "Tap to continue",
-  "Siguiente explicación": "Next tip"
+  "Siguiente explicación": "Next tip",
+  "1 día gratis": "1 day free",
+  "{count} días gratis": "{count} days free",
+  "1 semana gratis": "1 week free",
+  "{count} semanas gratis": "{count} weeks free",
+  "1 mes gratis": "1 month free",
+  "{count} meses gratis": "{count} months free",
+  "1 año gratis": "1 year free",
+  "{count} años gratis": "{count} years free",
+  "{trial}, luego {price} {period}": "{trial}, then {price} {period}"
 }

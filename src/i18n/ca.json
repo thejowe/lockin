@@ -1019,5 +1019,14 @@
   "Busca por especialidad y zona horaria. El resto de filtros son de Premium.": "Cerca per especialitat i zona horària. La resta de filtres són de Premium.",
   "Toca para empezar": "Toca per començar",
   "Toca para seguir": "Toca per continuar",
-  "Siguiente explicación": "Següent explicació"
+  "Siguiente explicación": "Següent explicació",
+  "1 día gratis": "1 dia gratis",
+  "{count} días gratis": "{count} dies gratis",
+  "1 semana gratis": "1 setmana gratis",
+  "{count} semanas gratis": "{count} setmanes gratis",
+  "1 mes gratis": "1 mes gratis",
+  "{count} meses gratis": "{count} mesos gratis",
+  "1 año gratis": "1 any gratis",
+  "{count} años gratis": "{count} anys gratis",
+  "{trial}, luego {price} {period}": "{trial}, després {price} {period}"
 }
