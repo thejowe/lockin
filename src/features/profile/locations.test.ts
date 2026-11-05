@@ -42,6 +42,7 @@ describe('searchCountries', () => {
       'España',
       'Estados Unidos',
       'Estonia',
+      'Esuatini',
     ]);
   });
 
@@ -78,7 +79,18 @@ describe('zona del país', () => {
     expect(countryForTimezone('Europe/Madrid')).toBe('ES');
     expect(countryForTimezone('Atlantic/Canary')).toBe('ES');
     expect(countryForTimezone('Asia/Calcutta')).toBe('IN');
-    expect(countryForTimezone('Asia/Kathmandu')).toBeUndefined();
+    expect(countryForTimezone('Asia/Kathmandu')).toBe('NP');
+    expect(timezoneForCountry('NP', 'Asia/Kathmandu')).toBe('Asia/Katmandu');
+    expect(countryForTimezone('Etc/UTC')).toBeUndefined();
+  });
+
+  it('toda zona habitada que conoce el runtime tiene país', () => {
+    // Bases antárticas, islas sin gente y territorios en disputa se quedan fuera
+    // a propósito: quien las tenga elige el país a mano.
+    const outside =
+      /^(Antarctica\/|Etc\/|UTC$|Pacific\/(Wake|Midway|Pitcairn)$|Indian\/(Chagos|Christmas|Cocos|Kerguelen)$|Atlantic\/South_Georgia$|Africa\/El_Aaiun$|Europe\/Simferopol$)/;
+    const zones = Intl.supportedValuesOf('timeZone').filter((zone) => !outside.test(zone));
+    expect(zones.filter((zone) => !countryForTimezone(zone))).toEqual([]);
   });
 
   it('reconoce zonas regionales: las de reglas propias se pueden elegir y las demás son alias', () => {

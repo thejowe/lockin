@@ -489,7 +489,7 @@ describe('ProfileForm', () => {
     it('un perfil con una zona que no es de ningún país de la lista lo deja por elegir', async () => {
       await render(
         <ProfileForm
-          initial={buildProfile({ location: 'Katmandú', timezone: 'Asia/Kathmandu' })}
+          initial={buildProfile({ location: 'Base Troll', timezone: 'Antarctica/Troll' })}
           submitLabel="Guardar"
           onSubmit={jest.fn()}
         />
@@ -497,6 +497,19 @@ describe('ProfileForm', () => {
 
       expect(screen.getByLabelText('País').props.value).toBe('');
       expect(screen.queryByLabelText('Ciudad')).toBeNull();
+    });
+
+    it('una zona con nombre nuevo (Asia/Kathmandu) encuentra su país', async () => {
+      await render(
+        <ProfileForm
+          initial={buildProfile({ location: 'Katmandú', timezone: 'Asia/Kathmandu' })}
+          submitLabel="Guardar"
+          onSubmit={jest.fn()}
+        />
+      );
+
+      expect(screen.getByLabelText('País').props.value).toBe('Nepal');
+      expect(screen.getByLabelText('Ciudad').props.value).toBe('Katmandú');
     });
   });
 
