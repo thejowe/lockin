@@ -33,7 +33,9 @@ export type IconName =
   | 'camera'
   | 'pencil'
   | 'menu'
-  | 'diamond';
+  | 'diamond'
+  | 'eye'
+  | 'eye-off';
 
 export function Icon({
   name,
@@ -176,6 +178,22 @@ export function Icon({
               <>
                 <Path d="M6.5 4h11L22 9.5 12 20.5 2 9.5z" {...stroke} />
                 <Path d="M2 9.5h20M9.5 4L7.5 9.5 12 20.5l4.5-11L14.5 4" {...stroke} fill="none" />
+              </>
+            );
+          case 'eye':
+            // Ojo abierto: la contraseña se ve.
+            return (
+              <>
+                <Path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" {...stroke} />
+                <Circle cx={12} cy={12} r={3} {...stroke} />
+              </>
+            );
+          case 'eye-off':
+            // Ojo cerrado: párpado con pestañas.
+            return (
+              <>
+                <Path d="M3 10c2.2 3.4 5.4 5 9 5s6.8-1.6 9-5" {...stroke} />
+                <Path d="M6 13.2l-1.8 2.3M10 15l-.8 2.8M14 15l.8 2.8M18 13.2l1.8 2.3" {...stroke} />
               </>
             );
           case 'document':

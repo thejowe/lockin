@@ -200,6 +200,7 @@ export function TextField({
   showCount = false,
   onFocus,
   onBlur,
+  secureTextEntry,
   ...rest
 }: TextInputProps & {
   value: string;
@@ -210,10 +211,13 @@ export function TextField({
   const theme = useTheme();
   // El foco se ve: el canto del cristal pasa a brasa mientras se escribe.
   const [focused, setFocused] = useState(false);
+  // Campos de contraseña: el ojo de la derecha alterna ver / ocultar.
+  const [revealed, setRevealed] = useState(false);
 
   return (
     <View>
       <TextInput
+        secureTextEntry={secureTextEntry ? !revealed : undefined}
         value={value}
         onChangeText={onChangeText}
         multiline={multiline}
@@ -232,6 +236,7 @@ export function TextField({
         style={[
           styles.input,
           multiline && styles.inputMultiline,
+          secureTextEntry && styles.inputWithEye,
           {
             backgroundColor: focused ? theme.backgroundSelected : theme.backgroundElement,
             borderColor: focused ? theme.brass : theme.border,
@@ -241,6 +246,17 @@ export function TextField({
         ]}
         {...rest}
       />
+
+      {secureTextEntry ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={revealed ? t('Ocultar contraseña') : t('Mostrar contraseña')}
+          hitSlop={HitSlop.inline}
+          onPress={() => setRevealed((current) => !current)}
+          style={styles.eye}>
+          <Icon name={revealed ? 'eye' : 'eye-off'} size={22} color={theme.textSecondary} />
+        </Pressable>
+      ) : null}
 
       {showCount && maxLength ? (
         <ThemedText type="caption" themeColor="textMuted" style={styles.count}>
@@ -569,6 +585,18 @@ const styles = StyleSheet.create({
     borderWidth: Stroke.hairline,
     fontFamily: Typography.body.fontFamily,
     fontSize: Typography.body.fontSize,
+  },
+  inputWithEye: {
+    paddingRight: Control.minTouch + Spacing.one,
+  },
+  eye: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    height: Control.field,
+    width: Control.minTouch,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   inputMultiline: {
     minHeight: Control.textArea,

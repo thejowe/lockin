@@ -18,6 +18,14 @@ export default function SettingsScreen() {
   const scrollRef = useRef<ScrollViewInstance>(null);
   const reduceMotion = useReduceMotion();
 
+  // Ajustes es una ruta apilada y no pasa por la puerta del correo: sin sesión
+  // se queda pintada con solo el idioma. Se vacía la pila (para que atrás no
+  // vuelva a pantallas con datos) y se arranca de nuevo: `/` decide la bienvenida.
+  function backToStart() {
+    if (router.canDismiss()) router.dismissAll();
+    router.replace('/');
+  }
+
   return (
     <Screen ambient="plum">
       <SafeAreaView style={styles.root} edges={['bottom']}>
@@ -25,7 +33,8 @@ export default function SettingsScreen() {
           <LanguageSection />
           <AccountSection
             personalInfo={<PersonalInfo />}
-            onDeleted={() => router.replace('/')}
+            onDeleted={backToStart}
+            onSignedOut={backToStart}
             onConfirmationShown={() => scrollRef.current?.scrollToEnd({ animated: !reduceMotion })}>
             <LegalLinks />
           </AccountSection>

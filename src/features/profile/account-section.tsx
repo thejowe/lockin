@@ -75,6 +75,8 @@ export interface AccountSectionProps {
   children?: React.ReactNode;
   /** Corre cuando la cuenta ya está borrada: la pantalla vuelve al arranque. */
   onDeleted?: () => void;
+  /** Corre cuando la sesión ya está cerrada: la pantalla vuelve al arranque. */
+  onSignedOut?: () => void;
   /**
    * Corre cuando una confirmación (cerrar sesión sin acceso, eliminar cuenta)
    * ya está pintada. Las confirmaciones crecen hacia abajo, justo bajo la barra
@@ -109,6 +111,7 @@ export function AccountSection({
   personalInfo,
   children,
   onDeleted,
+  onSignedOut,
   onConfirmationShown,
 }: AccountSectionProps = {}) {
   const theme = useTheme();
@@ -207,7 +210,7 @@ export function AccountSection({
     void run(
       'salir',
       () => signOut(),
-      undefined,
+      onSignedOut,
       (cause) => {
         if (cause instanceof AccountError && cause.reason === 'unrecoverable-account') {
           setConfirmingLeave(true);
@@ -426,7 +429,10 @@ export function AccountSection({
                 void run(
                   'salir',
                   () => signOut({ acceptDataLoss: true }),
-                  () => setConfirmingLeave(false)
+                  () => {
+                    setConfirmingLeave(false);
+                    onSignedOut?.();
+                  }
                 )
               }
             />
