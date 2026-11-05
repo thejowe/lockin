@@ -3,6 +3,7 @@ import { setLocalePreference } from '@/i18n';
 import { COUNTRIES } from './countries';
 import {
   COUNTRY_TIMEZONES,
+  TIMEZONE_ALIASES,
   cityFromLocation,
   countryForTimezone,
   formatLocation,
@@ -101,6 +102,27 @@ describe('zona del país', () => {
     expect(countryForTimezone('America/Detroit')).toBe('US');
     expect(timezoneForCountry('US', 'America/Detroit')).toBe('America/New_York');
     expect(countryForTimezone('Australia/Melbourne')).toBe('AU');
+  });
+
+  it('ningún alias cambia la hora: ni en invierno ni en verano', () => {
+    const offset = (zone: string, date: Date) =>
+      new Intl.DateTimeFormat('en', { timeZone: zone, timeZoneName: 'longOffset' })
+        .formatToParts(date)
+        .find((part) => part.type === 'timeZoneName')?.value;
+    const dates = [new Date('2026-01-15T12:00:00Z'), new Date('2026-07-15T12:00:00Z')];
+    const shifted = Object.entries(TIMEZONE_ALIASES).filter(([from, to]) =>
+      dates.some((date) => offset(from, date) !== offset(to, date))
+    );
+    expect(shifted).toEqual([]);
+  });
+
+  it('las zonas con reglas propias se conservan al elegir su país', () => {
+    // Urumqi (UTC+6) como Shanghái (UTC+8) movía dos horas a quien guardara el perfil.
+    expect(countryForTimezone('Asia/Urumqi')).toBe('CN');
+    expect(timezoneForCountry('CN', 'Asia/Urumqi')).toBe('Asia/Urumqi');
+    expect(timezoneForCountry('CN')).toBe('Asia/Shanghai');
+    expect(timezoneForCountry('GL', 'America/Danmarkshavn')).toBe('America/Danmarkshavn');
+    expect(timezoneForCountry('NZ', 'Pacific/Chatham')).toBe('Pacific/Chatham');
   });
 
   it('todas las zonas de la lista existen en este runtime', () => {

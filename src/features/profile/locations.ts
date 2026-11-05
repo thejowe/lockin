@@ -35,6 +35,9 @@ export const COUNTRY_TIMEZONES: Readonly<Record<string, readonly string[]>> = {
     'Australia/Adelaide',
     'Australia/Darwin',
     'Australia/Perth',
+    // Reglas propias: con un alias, guardar el perfil les movería la hora.
+    'Australia/Eucla',
+    'Australia/Lord_Howe',
   ],
   AW: ['America/Aruba'],
   AZ: ['Asia/Baku'],
@@ -68,6 +71,10 @@ export const COUNTRY_TIMEZONES: Readonly<Record<string, readonly string[]>> = {
     'America/Whitehorse',
     'America/Halifax',
     'America/St_Johns',
+    // No cambian de hora: Toronto y Halifax les darían otra hora medio año.
+    'America/Atikokan',
+    'America/Coral_Harbour',
+    'America/Blanc-Sablon',
   ],
   CD: ['Africa/Kinshasa', 'Africa/Lubumbashi'],
   CF: ['Africa/Bangui'],
@@ -77,7 +84,8 @@ export const COUNTRY_TIMEZONES: Readonly<Record<string, readonly string[]>> = {
   CK: ['Pacific/Rarotonga'],
   CL: ['America/Santiago', 'Pacific/Easter', 'America/Punta_Arenas'],
   CM: ['Africa/Douala'],
-  CN: ['Asia/Shanghai'],
+  // Urumqi va en UTC+6, dos horas por detrás de Shanghái.
+  CN: ['Asia/Shanghai', 'Asia/Urumqi'],
   CO: ['America/Bogota'],
   CR: ['America/Costa_Rica'],
   CU: ['America/Havana'],
@@ -110,7 +118,7 @@ export const COUNTRY_TIMEZONES: Readonly<Record<string, readonly string[]>> = {
   GF: ['America/Cayenne'],
   GH: ['Africa/Accra'],
   GI: ['Europe/Gibraltar'],
-  GL: ['America/Godthab'],
+  GL: ['America/Godthab', 'America/Danmarkshavn', 'America/Thule'],
   GM: ['Africa/Banjul'],
   GN: ['Africa/Conakry'],
   GP: ['America/Guadeloupe'],
@@ -199,7 +207,7 @@ export const COUNTRY_TIMEZONES: Readonly<Record<string, readonly string[]>> = {
   NP: ['Asia/Katmandu'],
   NR: ['Pacific/Nauru'],
   NU: ['Pacific/Niue'],
-  NZ: ['Pacific/Auckland'],
+  NZ: ['Pacific/Auckland', 'Pacific/Chatham'],
   OM: ['Asia/Muscat'],
   PA: ['America/Panama'],
   PE: ['America/Lima'],
@@ -302,8 +310,11 @@ export const COUNTRY_TIMEZONES: Readonly<Record<string, readonly string[]>> = {
  * Nombres antiguos o alias que pueden venir del dispositivo o de perfiles viejos.
  * También zonas regionales con las mismas reglas que una de la lista (Detroit
  * cambia de hora igual que Nueva York), para que su país se reconozca.
+ *
+ * Un alias NUNCA puede cambiar la hora: al editar el perfil se guarda la zona
+ * de destino. Una zona con reglas propias va en `COUNTRY_TIMEZONES`, no aquí.
  */
-const TIMEZONE_ALIASES: Readonly<Record<string, string>> = {
+export const TIMEZONE_ALIASES: Readonly<Record<string, string>> = {
   'America/Detroit': 'America/New_York',
   'America/Indiana/Indianapolis': 'America/New_York',
   'America/Kentucky/Louisville': 'America/New_York',
@@ -401,7 +412,6 @@ const TIMEZONE_ALIASES: Readonly<Record<string, string>> = {
   'Australia/Lindeman': 'Australia/Brisbane',
   'Asia/Pontianak': 'Asia/Jakarta',
   'Asia/Kuching': 'Asia/Kuala_Lumpur',
-  'Asia/Urumqi': 'Asia/Shanghai',
   'Asia/Famagusta': 'Asia/Nicosia',
   'Asia/Gaza': 'Asia/Hebron',
   'Asia/Samarkand': 'Asia/Tashkent',
@@ -436,16 +446,6 @@ const TIMEZONE_ALIASES: Readonly<Record<string, string>> = {
   'Europe/Mariehamn': 'Europe/Helsinki',
   'Europe/Vatican': 'Europe/Rome',
   'Arctic/Longyearbyen': 'Europe/Oslo',
-  // Reglas propias y muy poca gente: se reconoce el país y se les propone la
-  // zona más parecida de la lista, que puede ir una hora o menos desfasada parte del año.
-  'America/Atikokan': 'America/Toronto',
-  'America/Coral_Harbour': 'America/Toronto',
-  'America/Blanc-Sablon': 'America/Halifax',
-  'America/Danmarkshavn': 'America/Godthab',
-  'America/Thule': 'America/Godthab',
-  'Australia/Eucla': 'Australia/Perth',
-  'Australia/Lord_Howe': 'Australia/Sydney',
-  'Pacific/Chatham': 'Pacific/Auckland',
 };
 
 /** Las que no se leen bien con el nombre IANA. */
