@@ -1,5 +1,15 @@
 # TODO maestro — LockIn MVP
 
+## ▶ Al retomar (2026-11-06): CI arreglada; quedan comprobaciones del usuario y tiendas
+
+**Del 2026-11-05 (sin registrar hasta hoy):** `ff3eda1`/`3a809a4` todas las zonas horarias con país y ningún alias cambia la hora; `c77ed4f` el paywall anuncia la prueba gratis solo a quien tiene derecho (casilla de `todo/premium.md` abierta hasta verlo en tienda); `9ffee56` cerrar sesión vuelve a la bienvenida y ojo para ver la contraseña.
+
+**Hoy:** la CI estaba roja desde `9ffee56` y el E2E `supabase` desde el 2026-11-01. Causas: faltaban en/ca de «Mostrar/Ocultar contraseña»; `src/components/icon.tsx` sin formato; `e2e/sign-in-abandon.yaml` seguía buscando «Email de tu cuenta» en el Perfil, cuando el correo vive en Ajustes («Correo de tu cuenta: …»). Arreglado en `db02ebf` y en el commit de formato siguiente, ambos con `codex review` limpio. En `db02ebf` el E2E `supabase` pasó entero, `mock` llegó al control negativo y `registro` cayó por infraestructura (el emulador no arrancó; relanzado).
+
+**Vigilar:** dos runs de `mock` (`3a809a4`, `9ffee56`) fallaron porque la burbuja del mensaje recién enviado no estaba visible tras enviarlo; en `db02ebf` pasó. Diagnóstico de Codex: el envío mock funciona; la hipótesis sin confirmar es que la entrada `FadeInDown` de `src/features/chat/message-bubble.tsx:49` se quede en opacidad 0. Si vuelve a pasar, probar sin `entering` en el E2E.
+
+**Siguiente:** comprobaciones del usuario en el teléfono (idiomas, ojo de la contraseña, cerrar sesión, alta con zona rara, paywall en el sandbox de iOS) y lo de tiendas de la entrada del 2026-11-03 (noche).
+
 ## ▶ Al retomar (2026-11-03, noche): Android con paquete nuevo y primer AAB listo; falta subirlo a Play
 
 `app.cofounder.mobile` ya era de otro desarrollador en Play, así que Android pasa a **`app.cofounder.android`** (`bf47d99`; iOS sigue en `app.cofounder.mobile`). Los flujos de E2E, `run.mjs` y `comprobador` ya apuntan al nuevo. App creada en Play Console (cuenta `7166558137802576901`, app `4973036227760863975`; el paquete no se pudo leer en pantalla, comprobarlo). Cumplimiento de **Apple** en revisión. Primer build `production` de Android: EAS `0bb3922b-cdbb-4510-8318-50d34e7e0ffc`, versionCode 2, keystore generado por EAS en remoto, AAB en `https://expo.dev/artifacts/eas/chfkmQRleCE6QlzxNDkr8MLanXryGKq7u9KGPJXlpe0.aab` (sin la clave `goog_…`: el paywall de Android no cobra todavía).
