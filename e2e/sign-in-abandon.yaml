@@ -61,7 +61,9 @@ name: Entrar en otra cuenta abandonando el perfil anónimo
     visible: ${PROFILE_NAME}
     timeout: 30000
 - assertNotVisible: ${ANON_PROFILE_NAME}
+# El correo de la cuenta está en Ajustes, tras la tuerca del Perfil.
+- tapOn: 'Ajustes de la cuenta'
 - scrollUntilVisible:
-    element: 'Email de tu cuenta: ${EMAIL}'
+    element: 'Correo de tu cuenta: ${EMAIL}'
     direction: DOWN
-- assertVisible: 'Email de tu cuenta: ${EMAIL}'
+- assertVisible: 'Correo de tu cuenta: ${EMAIL}'

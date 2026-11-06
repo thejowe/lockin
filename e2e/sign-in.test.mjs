@@ -166,7 +166,11 @@ describe('entrar en otra cuenta dejando atrás el perfil anónimo', () => {
     assert(abandon.includes("'Matches'"));
     assert(tabs.includes("label: 'Matches'"));
     assert(tabs.includes("label: 'Perfil'"));
-    assert(abandon.includes("assertVisible: 'Email de tu cuenta: ${EMAIL}'"));
+    // El correo de la cuenta vive en Ajustes (tuerca del Perfil) desde el 2026-11-01.
+    assert(abandon.includes("tapOn: 'Ajustes de la cuenta'"));
+    assert(profileTab.includes('accessibilityLabel="Ajustes de la cuenta"'));
+    assert(abandon.includes("assertVisible: 'Correo de tu cuenta: ${EMAIL}'"));
+    assert(personalInfo.includes("t('Correo de tu cuenta: {v}', { v: email"));
   });
 
   it('hereda el perfil anónimo: sin clearState y por el deep link a /sign-in', () => {

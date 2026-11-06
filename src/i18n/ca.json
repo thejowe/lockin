@@ -1028,5 +1028,7 @@
   "{count} meses gratis": "{count} mesos gratis",
   "1 año gratis": "1 any gratis",
   "{count} años gratis": "{count} anys gratis",
-  "{trial}, luego {price} {period}": "{trial}, després {price} {period}"
+  "{trial}, luego {price} {period}": "{trial}, després {price} {period}",
+  "Mostrar contraseña": "Mostra la contrasenya",
+  "Ocultar contraseña": "Amaga la contrasenya"
 }
