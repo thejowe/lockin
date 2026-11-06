@@ -793,11 +793,13 @@ export async function completeAuthLink(url: string): Promise<AccountState> {
     }
 
     // Vuelta en frío: el proceso que abrió GitHub ya no existe, así que nadie
-    // más va a poner el sello. Lo dice el servidor, no una marca local: solo si
-    // la cuenta TIENE identidad de GitHub (el RPC sin ella vaciaría `link_github`).
-    // Si eso falla, el canje ya está hecho: el error es de GitHub, no del correo.
+    // más va a poner el sello. Solo si el canje trajo token de proveedor (un
+    // enlace de correo no lo trae) y la cuenta TIENE identidad de GitHub; el
+    // sello lo comprueba el servidor con ese token. Si eso falla, el canje ya
+    // está hecho: el error es de GitHub, no del correo.
+    const providerToken = providerTokenOf(exchanged);
     if (githubPending) {
-      await adoptGithubReturn(code).catch((cause: unknown) => {
+      await sealGithubReturn(code, providerToken).catch((cause: unknown) => {
         throw githubFailure(cause);
       });
     }
@@ -808,8 +810,8 @@ export async function completeAuthLink(url: string): Promise<AccountState> {
     if (await readLinkedinAttempt()) {
       await AsyncStorage.removeItem(LINKEDIN_ATTEMPT_KEY).catch(() => undefined);
       // El canje ya está hecho: si el sello falla, se dice, y «Vincular
-      // LinkedIn» lo vuelve a intentar (empieza por `adoptLinkedinIdentity`).
-      await adoptLinkedinIdentity().catch((cause: unknown) => {
+      // LinkedIn» lo vuelve a intentar (desvincula y vuelve a pasar por LinkedIn).
+      await sealLinkedinReturn(providerToken).catch((cause: unknown) => {
         throw new AccountError(
           'unknown',
           t(
@@ -1022,44 +1024,52 @@ async function hasGithubIdentity(): Promise<boolean> {
   return data.identities.some((identity) => identity.provider === 'github');
 }
 
-/**
- * Pone el sello si la cuenta ya tiene GitHub vinculado. Para «Verificar con
- * GitHub» antes de abrir el navegador.
- *
- * GoTrue vincula la identidad en su propio callback, antes de devolver el code a
- * la app. Si esa vuelta se pierde por el camino —Android mató el proceso con
- * GitHub delante y el deep link entró por `onNewIntent` antes de que React
- * existiera—, la cuenta queda vinculada y sin sello, y volver a vincular choca
- * con «Identity is already linked». La identidad solo existe si alguien pasó por
- * GitHub con esta cuenta: sellarla no abre un camino que se salte el navegador.
- *
- * @returns `false` si la cuenta no tiene GitHub vinculado.
- */
-export async function adoptLinkedGithubIdentity(): Promise<boolean> {
-  if (!(await hasGithubIdentity())) return false;
-
-  const { error } = await getSupabaseClient().rpc('sync_github_verification');
-  if (error) throw error;
-
-  await AsyncStorage.removeItem(GITHUB_ATTEMPT_KEY);
-  return true;
+/** El `provider_token` de un canje de OAuth: solo viene en la vuelta de un proveedor. */
+function providerTokenOf(exchanged: unknown): string | null {
+  const token = (exchanged as { session?: { provider_token?: unknown } | null } | null)?.session
+    ?.provider_token;
+  return typeof token === 'string' && token !== '' ? token : null;
 }
 
 /**
- * Pone el sello tras una vuelta de GitHub, si de verdad dejó GitHub vinculado.
+ * Pide al servidor el sello de `provider` (Edge Function `verify-identity`).
  *
- * La verdad la escribe Postgres leyendo `auth.identities`: aquí no viaja ningún
- * handle. Y el RPC solo se llama con la identidad presente, porque su rama «no
- * hay identidad de GitHub» vacía `link_github`, que sin sello es lo que la
- * persona escribió a mano.
- *
- * @returns `false` si la cuenta no tiene GitHub: ese code no lo vinculó.
+ * Que la identidad esté vinculada no basta: GoTrue la escribe en su propio
+ * callback, antes de devolver el code y sin ligarla al navegador que empezó, así
+ * que alguien podía hacer que OTRA persona completara su vínculo y quedarse con
+ * su sello (auditoría de seguridad run-1, 2026-11-06). El `provider_token` solo
+ * lo devuelve el canje del code, que solo puede hacer quien guarda el
+ * verificador PKCE: el servidor pregunta al proveedor de quién es y solo sella
+ * si coincide con la identidad vinculada. El cliente ya no puede encender el
+ * sello (`sync_*` solo lo apagan, migración 20261106140000).
  */
-async function adoptGithubReturn(code: string): Promise<boolean> {
-  if (!(await hasGithubIdentity())) return false;
+async function sealVerifiedIdentity(
+  provider: 'github' | 'linkedin_oidc',
+  providerToken: string
+): Promise<void> {
+  const { error } = await getSupabaseClient().functions.invoke('verify-identity', {
+    body: { provider, providerToken },
+  });
+  if (error) {
+    throw new AccountError(
+      'unknown',
+      t('No hemos podido comprobar esa cuenta. Vuelve a intentarlo.'),
+      error
+    );
+  }
+}
 
-  const { error } = await getSupabaseClient().rpc('sync_github_verification');
-  if (error) throw error;
+/**
+ * Pone el sello tras una vuelta de GitHub, si de verdad dejó GitHub vinculado y
+ * el canje trajo el token del proveedor.
+ *
+ * @returns `false` si no hay GitHub vinculado o el canje no era de GitHub (sin
+ *   token): ese code no lo vinculó.
+ */
+async function sealGithubReturn(code: string, providerToken: string | null): Promise<boolean> {
+  if (!providerToken || !(await hasGithubIdentity())) return false;
+
+  await sealVerifiedIdentity('github', providerToken);
 
   await AsyncStorage.setItem(GITHUB_CONSUMED_CODE_KEY, code);
   await AsyncStorage.removeItem(GITHUB_ATTEMPT_KEY);
@@ -1071,11 +1081,11 @@ async function adoptGithubReturn(code: string): Promise<boolean> {
  * automáticamente (confirmado en la Tarea 1, commit 360d693).
  */
 async function settleGithubCode(code: string): Promise<void> {
-  const { error } = await getSupabaseClient().auth.exchangeCodeForSession(code);
+  const { data, error } = await getSupabaseClient().auth.exchangeCodeForSession(code);
   // Un canje fallido es un fallo aunque la cuenta ya tenga GitHub: eso no
   // prueba que este code la vinculara (codex review del 2026-10-02).
   if (error) throw error;
-  if (await adoptGithubReturn(code)) return;
+  if (await sealGithubReturn(code, providerTokenOf(data))) return;
   throw new Error(t('GitHub no ha quedado vinculado a tu cuenta. Vuelve a intentarlo.'));
 }
 
@@ -1138,6 +1148,12 @@ function githubCodeFrom(result: WebBrowser.WebBrowserAuthSessionResult): string 
 export async function linkGithubIdentity(): Promise<boolean> {
   const client = getSupabaseClient();
   const redirectTo = authRedirectUrl();
+
+  // Una vuelta de GitHub perdida deja la identidad vinculada sin sello, y
+  // vincular otra vez choca con «Identity is already linked». Antes se sellaba
+  // sin más; ya no se puede (el sello exige el token de un canje), así que se
+  // desvincula y se vuelve a pasar por GitHub.
+  await dropUnsealedIdentity('github');
 
   const { data, error } = await client.auth.linkIdentity({
     provider: 'github',
@@ -1246,16 +1262,52 @@ async function hasIdentity(provider: string): Promise<boolean> {
 }
 
 /**
- * Pone el sello de LinkedIn si la cuenta tiene LinkedIn vinculado. La verdad la
- * lee Postgres de `auth.identities` (`sync_linkedin_verification`): aquí no
- * viaja ningún nombre.
- *
- * @returns `false` si la cuenta no tiene LinkedIn vinculado.
+ * Si la cuenta tiene `provider` vinculado pero el perfil no tiene su sello, lo
+ * desvincula para poder volver a pasar por el proveedor: el sello solo se pone
+ * con el token de un canje, y una identidad ya vinculada no da otro.
  */
-export async function adoptLinkedinIdentity(): Promise<boolean> {
-  if (!(await hasIdentity(LINKEDIN))) return false;
-  const { error } = await getSupabaseClient().rpc('sync_linkedin_verification');
+async function dropUnsealedIdentity(provider: 'github' | 'linkedin_oidc'): Promise<void> {
+  const client = getSupabaseClient();
+  const { data, error } = await client.auth.getUserIdentities();
   if (error) throw error;
+  const identity = data.identities.find((candidate) => candidate.provider === provider);
+  if (!identity) return;
+
+  const sealColumn = provider === 'github' ? 'github_handle' : 'linkedin_name';
+  const { data: session } = await client.auth.getSession();
+  const userId = session.session?.user.id;
+  if (!userId) return;
+  const { data: profile, error: profileError } = await client
+    .from('profiles')
+    .select(sealColumn)
+    .eq('id', userId)
+    .maybeSingle();
+  if (profileError) throw profileError;
+  if ((profile as Record<string, unknown> | null)?.[sealColumn]) return;
+
+  const { error: unlinkError } = await client.auth.unlinkIdentity(identity);
+  if (unlinkError) {
+    throw new AccountError(
+      'unknown',
+      t(
+        'Esa cuenta ya está vinculada, pero sin verificar, y no se puede desvincular porque es tu única forma de entrar. Escríbenos a cofounder.soporte@gmail.com.'
+      ),
+      unlinkError
+    );
+  }
+}
+
+/**
+ * Pone el sello de LinkedIn tras una vuelta de LinkedIn: lo pide al servidor con
+ * el token del canje (ver `sealVerifiedIdentity`). El nombre lo lee Postgres de
+ * `auth.identities`: aquí no viaja ninguno.
+ *
+ * @returns `false` si la cuenta no tiene LinkedIn vinculado o el canje no trajo
+ *   token (no era una vuelta de LinkedIn).
+ */
+async function sealLinkedinReturn(providerToken: string | null): Promise<boolean> {
+  if (!providerToken || !(await hasIdentity(LINKEDIN))) return false;
+  await sealVerifiedIdentity(LINKEDIN, providerToken);
   return true;
 }
 
@@ -1267,8 +1319,9 @@ export async function adoptLinkedinIdentity(): Promise<boolean> {
  * @returns `true` si el usuario completó el flujo; `false` si lo canceló.
  */
 export async function linkLinkedinIdentity(): Promise<boolean> {
-  // Ya vinculado (una vuelta anterior perdida): basta con sellarlo.
-  if (await adoptLinkedinIdentity()) return true;
+  // Ya vinculado sin sello (una vuelta anterior perdida): se desvincula y se
+  // vuelve a pasar por LinkedIn, que es lo único que da el token del sello.
+  await dropUnsealedIdentity(LINKEDIN);
 
   const client = getSupabaseClient();
   const redirectTo = authRedirectUrl();
@@ -1292,9 +1345,10 @@ export async function linkLinkedinIdentity(): Promise<boolean> {
   await AsyncStorage.setItem(LINKEDIN_ATTEMPT_KEY, String(Date.now()));
   try {
     const outcome = await runOAuth(data.url, redirectTo, async (code) => {
-      const { error: exchangeError } = await client.auth.exchangeCodeForSession(code);
+      const { data: exchanged, error: exchangeError } =
+        await client.auth.exchangeCodeForSession(code);
       if (exchangeError) throw exchangeError;
-      if (!(await adoptLinkedinIdentity())) {
+      if (!(await sealLinkedinReturn(providerTokenOf(exchanged)))) {
         throw new Error(t('LinkedIn no ha quedado vinculado a tu cuenta. Vuelve a intentarlo.'));
       }
     });

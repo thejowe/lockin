@@ -6,7 +6,6 @@ import { Platform } from 'react-native';
 
 import {
   AccountError,
-  adoptLinkedGithubIdentity,
   changeAccountPassword,
   completeAuthLink,
   currentUserId,
@@ -49,6 +48,15 @@ const auth = {
   signInWithOAuth: jest.fn(),
 };
 const rpc = jest.fn();
+/** Edge Functions: `verify-identity` pone el sello con el token del canje. */
+const functions = { invoke: jest.fn() };
+/** El sello actual del perfil, para `dropUnsealedIdentity` (por defecto, ya sellado). */
+const profileSeal = jest.fn();
+const from = jest.fn(() => ({
+  select: () => ({ eq: () => ({ maybeSingle: profileSeal }) }),
+}));
+/** El token de proveedor que trae el canje de una vuelta de OAuth. */
+const PROVIDER_TOKEN = 'gho_token-del-canje';
 
 /** Donde `auth.ts` deja abierto el intento de GitHub por si el proceso muere. */
 const GITHUB_ATTEMPT_KEY = 'lockin.supabase.github-link-attempt';
@@ -87,17 +95,25 @@ beforeEach(async () => {
     data: { url: 'https://github.com/login/oauth' },
     error: null,
   });
-  auth.exchangeCodeForSession.mockResolvedValue({ error: null });
+  auth.exchangeCodeForSession.mockResolvedValue({
+    data: { session: { provider_token: PROVIDER_TOKEN } },
+    error: null,
+  });
   auth.getUserIdentities.mockResolvedValue({
     data: { identities: [{ provider: 'email' }, { provider: 'github' }] },
     error: null,
   });
   rpc.mockResolvedValue({ error: null });
+  functions.invoke.mockResolvedValue({ data: { ok: true }, error: null });
+  profileSeal.mockResolvedValue({
+    data: { github_handle: 'ana', linkedin_name: 'Ana' },
+    error: null,
+  });
   jest.mocked(WebBrowser.openAuthSessionAsync).mockResolvedValue({
     type: 'success',
     url: `cofounder://auth/callback?code=${githubCode}`,
   });
-  const shared = { auth, rpc } as unknown as ReturnType<typeof getSupabaseClient>;
+  const shared = { auth, rpc, functions, from } as unknown as ReturnType<typeof getSupabaseClient>;
   jest.mocked(getSupabaseClient).mockReturnValue(shared);
   jest.mocked(peekSupabaseClient).mockReturnValue(shared);
 });
@@ -128,32 +144,48 @@ it('currentUserId distingue un fallo de una sesión ausente', async () => {
   await expect(currentUserId()).resolves.toBeNull();
 });
 
-describe('adoptLinkedGithubIdentity', () => {
-  it('con GitHub ya vinculado y sin sello, lo pone sin abrir el navegador', async () => {
-    // Una vuelta en frío perdida deja la identidad en GoTrue y el sello sin poner.
-    await AsyncStorage.setItem(GITHUB_ATTEMPT_KEY, JSON.stringify({ startedAt: 1 }));
+describe('el sello de GitHub lo pone el servidor con el token del canje', () => {
+  it('tras el canje, pide el sello a verify-identity con el provider_token; el cliente no lo enciende', async () => {
+    await expect(linkGithubIdentity()).resolves.toBe(true);
 
-    await expect(adoptLinkedGithubIdentity()).resolves.toBe(true);
+    expect(functions.invoke).toHaveBeenCalledWith('verify-identity', {
+      body: { provider: 'github', providerToken: PROVIDER_TOKEN },
+    });
+    expect(rpc).not.toHaveBeenCalledWith('sync_github_verification');
+  });
 
-    expect(rpc).toHaveBeenCalledWith('sync_github_verification');
+  it('un canje sin provider_token no sella y se dice', async () => {
+    auth.exchangeCodeForSession.mockResolvedValueOnce({ data: { session: {} }, error: null });
+
+    await expect(linkGithubIdentity()).rejects.toThrow('GitHub no ha quedado vinculado');
+    expect(functions.invoke).not.toHaveBeenCalled();
+  });
+
+  it('si el servidor no sella (token de otra cuenta), es un error', async () => {
+    functions.invoke.mockResolvedValueOnce({ data: null, error: new Error('403') });
+
+    await expect(linkGithubIdentity()).rejects.toThrow('No hemos podido comprobar esa cuenta');
+  });
+
+  it('GitHub ya vinculado sin sello: se desvincula y se vuelve a pasar por GitHub', async () => {
+    // Una vuelta perdida deja la identidad en GoTrue y el sello sin poner; ya no
+    // se puede sellar sin un canje nuevo.
+    profileSeal.mockResolvedValueOnce({ data: { github_handle: null }, error: null });
+    auth.unlinkIdentity.mockResolvedValueOnce({ error: null });
+
+    await expect(linkGithubIdentity()).resolves.toBe(true);
+
+    expect(auth.unlinkIdentity).toHaveBeenCalledWith({ provider: 'github' });
+    expect(auth.linkIdentity).toHaveBeenCalled();
+    expect(functions.invoke).toHaveBeenCalledWith('verify-identity', expect.anything());
+  });
+
+  it('si esa identidad sin sello no se puede desvincular, lo explica', async () => {
+    profileSeal.mockResolvedValueOnce({ data: { github_handle: null }, error: null });
+    auth.unlinkIdentity.mockResolvedValueOnce({ error: new Error('single identity') });
+
+    await expect(linkGithubIdentity()).rejects.toThrow('es tu única forma de entrar');
     expect(auth.linkIdentity).not.toHaveBeenCalled();
-    expect(WebBrowser.openAuthSessionAsync).not.toHaveBeenCalled();
-    expect(await AsyncStorage.getItem(GITHUB_ATTEMPT_KEY)).toBeNull();
-  });
-
-  it('sin GitHub vinculado no llama al RPC, que vaciaría el enlace escrito a mano', async () => {
-    withoutGithubIdentity();
-
-    await expect(adoptLinkedGithubIdentity()).resolves.toBe(false);
-
-    expect(rpc).not.toHaveBeenCalled();
-  });
-
-  it('propaga un fallo del RPC', async () => {
-    const error = new Error('sin red');
-    rpc.mockResolvedValueOnce({ error });
-
-    await expect(adoptLinkedGithubIdentity()).rejects.toBe(error);
   });
 });
 
@@ -250,8 +282,10 @@ describe('linkGithubIdentity', () => {
 
   it('pone el sello en cuanto GitHub queda vinculado', async () => {
     await expect(linkGithubIdentity()).resolves.toBe(true);
-    expect(rpc).toHaveBeenCalledWith('sync_github_verification');
-    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(functions.invoke).toHaveBeenCalledWith('verify-identity', {
+      body: { provider: 'github', providerToken: PROVIDER_TOKEN },
+    });
+    expect(functions.invoke).toHaveBeenCalledTimes(1);
   });
 
   it('si el canje no deja GitHub vinculado no pisa el enlace escrito a mano', async () => {
@@ -272,7 +306,7 @@ describe('linkGithubIdentity', () => {
  */
 describe('la vuelta de GitHub por la ruta de callback', () => {
   it('navegador primero: la ruta espera al canje en curso y no canjea otra vez', async () => {
-    const exchange = deferred<{ error: Error | null }>();
+    const exchange = deferred<{ data?: unknown; error: Error | null }>();
     auth.exchangeCodeForSession.mockReturnValueOnce(exchange.promise);
     browserReturns('g-nav-diferido');
     signedInAs({ is_anonymous: true });
@@ -283,16 +317,16 @@ describe('la vuelta de GitHub por la ruta de callback', () => {
     await flush();
     expect(route.settled).toBe(false);
 
-    exchange.resolve({ error: null });
+    exchange.resolve({ data: { session: { provider_token: PROVIDER_TOKEN } }, error: null });
     await expect(linking).resolves.toBe(true);
     await expect(route.promise).resolves.toMatchObject({ kind: 'anonymous' });
     expect(auth.exchangeCodeForSession).toHaveBeenCalledTimes(1);
-    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(functions.invoke).toHaveBeenCalledTimes(1);
     expect(AsyncStorage.removeItem).not.toHaveBeenCalledWith('lockin.supabase.device-account');
   });
 
   it('navegador primero: si el canje falla, la ruta también lo dice', async () => {
-    const exchange = deferred<{ error: Error | null }>();
+    const exchange = deferred<{ data?: unknown; error: Error | null }>();
     auth.exchangeCodeForSession.mockReturnValueOnce(exchange.promise);
     browserReturns('g-nav-rechazado');
     withoutGithubIdentity();
@@ -313,7 +347,7 @@ describe('la vuelta de GitHub por la ruta de callback', () => {
 
   it('ruta primero: espera al navegador y comparte su canje', async () => {
     const browser = pendingBrowser();
-    const exchange = deferred<{ error: Error | null }>();
+    const exchange = deferred<{ data?: unknown; error: Error | null }>();
     auth.exchangeCodeForSession.mockReturnValueOnce(exchange.promise);
     signedInAs({ is_anonymous: true });
 
@@ -328,17 +362,17 @@ describe('la vuelta de GitHub por la ruta de callback', () => {
     await flush();
     expect(route.settled).toBe(false);
 
-    exchange.resolve({ error: null });
+    exchange.resolve({ data: { session: { provider_token: PROVIDER_TOKEN } }, error: null });
     await expect(linking).resolves.toBe(true);
     await expect(route.promise).resolves.toMatchObject({ kind: 'anonymous' });
     expect(auth.exchangeCodeForSession).toHaveBeenCalledTimes(1);
     expect(auth.exchangeCodeForSession).toHaveBeenCalledWith('g-ruta-diferido');
-    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(functions.invoke).toHaveBeenCalledTimes(1);
   });
 
   it('ruta primero: si el canje falla, los dos lo dicen y nadie lo repite', async () => {
     const browser = pendingBrowser();
-    const exchange = deferred<{ error: Error | null }>();
+    const exchange = deferred<{ data?: unknown; error: Error | null }>();
     auth.exchangeCodeForSession.mockReturnValueOnce(exchange.promise);
     withoutGithubIdentity();
 
@@ -424,7 +458,9 @@ describe('la vuelta de GitHub en frío', () => {
     });
     expect(auth.exchangeCodeForSession).toHaveBeenCalledTimes(1);
     expect(auth.exchangeCodeForSession).toHaveBeenCalledWith('g-frio');
-    expect(rpc).toHaveBeenCalledWith('sync_github_verification');
+    expect(functions.invoke).toHaveBeenCalledWith('verify-identity', {
+      body: { provider: 'github', providerToken: PROVIDER_TOKEN },
+    });
   });
 
   // Revisión del 2026-10-02 (codex review, P2): que la cuenta tenga GitHub no
@@ -459,7 +495,10 @@ describe('la vuelta de GitHub en frío', () => {
       'la consulta de identidades',
       () => auth.getUserIdentities.mockResolvedValue({ data: null, error: new Error('Sin red') }),
     ],
-    ['el RPC del sello', () => rpc.mockResolvedValue({ error: new Error('Sin red') })],
+    [
+      'la función del sello',
+      () => functions.invoke.mockResolvedValue({ data: null, error: new Error('Sin red') }),
+    ],
   ])('en frío, si falla %s tras el canje, el error es de GitHub', async (_caso, breakIt) => {
     const forgetOldProcess = await githubOpenWhenProcessDies();
     await forgetOldProcess();

@@ -21,7 +21,6 @@
 import { createSupabaseAgreementRepository } from './agreement';
 import { createAvatarSigner } from './avatar-urls';
 import {
-  adoptLinkedGithubIdentity,
   deleteMyAccount,
   ensureUserId,
   linkGithubIdentity,
@@ -45,7 +44,7 @@ import { fetchAllPages } from './pagination';
 import { createSupabasePremiumRepository, toPremiumError } from './premium';
 import { closeLiveChannels } from './live-channels';
 import { createSupabaseRoomRepository } from './rooms';
-import { subscribeResyncingOnRejoin } from './realtime';
+import { PRIVATE_CHANNEL, subscribeResyncingOnRejoin } from './realtime';
 import { createSupabaseSessionRepository } from './sessions';
 import { GITHUB_VERIFICATION_CANCELLED, LINKEDIN_VERIFICATION_CANCELLED } from '../repositories';
 
@@ -467,16 +466,16 @@ export function createSupabaseRepositories({
       if (error) throw toSafetyError(error);
     },
     async verifyGithub() {
-      // Una vuelta de GitHub perdida deja la identidad vinculada sin sello, y
-      // volver a vincular choca con «Identity is already linked»: si ya está,
-      // basta con sellarla (ver `adoptLinkedGithubIdentity`).
-      const completed = (await adoptLinkedGithubIdentity()) || (await linkGithubIdentity());
-      if (!completed) throw new Error(GITHUB_VERIFICATION_CANCELLED);
+      // Una vuelta de GitHub perdida deja la identidad vinculada sin sello:
+      // `linkGithubIdentity` la desvincula y vuelve a pasar por GitHub, porque
+      // el sello solo se pone con el token de un canje.
+      if (!(await linkGithubIdentity())) throw new Error(GITHUB_VERIFICATION_CANCELLED);
 
-      // El sello ya lo ha puesto `linkGithubIdentity` (`sync_github_verification`,
-      // que lee auth.identities: aquí no viaja ningún handle). Vive allí y no
-      // aquí porque la vuelta en frío —Android mató el proceso con GitHub
-      // abierto— solo pasa por `completeAuthLink`, y tiene que poder ponerlo.
+      // El sello ya lo ha puesto `linkGithubIdentity` (Edge Function
+      // `verify-identity`, que comprueba el token con GitHub: aquí no viaja
+      // ningún handle). Vive allí y no aquí porque la vuelta en frío —Android
+      // mató el proceso con GitHub abierto— solo pasa por `completeAuthLink`, y
+      // tiene que poder ponerlo.
       const profile = await profiles.getCurrent();
       if (!profile) throw new Error(t('No hay perfil que verificar todavía.'));
       return profile;
@@ -509,8 +508,8 @@ export function createSupabaseRepositories({
     },
 
     async verifyLinkedin() {
-      // El sello lo pone `linkLinkedinIdentity` (`sync_linkedin_verification`,
-      // que lee auth.identities): aquí no viaja ningún nombre.
+      // El sello lo pone `linkLinkedinIdentity` (Edge Function `verify-identity`,
+      // que comprueba el token con LinkedIn): aquí no viaja ningún nombre.
       if (!(await linkLinkedinIdentity())) throw new Error(LINKEDIN_VERIFICATION_CANCELLED);
       const profile = await profiles.getCurrent();
       if (!profile) throw new Error(t('No hay perfil que verificar todavía.'));
@@ -810,7 +809,7 @@ export function createSupabaseRepositories({
       return subscribeTo(MATCHES_TOPIC, listener, () =>
         subscribeResyncingOnRejoin(
           getClient()
-            .channel('lockin:matches')
+            .channel('lockin:matches', PRIVATE_CHANNEL)
             // RLS filtra el stream de realtime en INSERT y UPDATE, así que por
             // estos dos solo llegan matches y mensajes del usuario.
             //
@@ -896,7 +895,7 @@ export function createSupabaseRepositories({
       return subscribeTo(topic, listener, () =>
         subscribeResyncingOnRejoin(
           getClient()
-            .channel(`lockin:${topic}`)
+            .channel(`lockin:${topic}`, PRIVATE_CHANNEL)
             .on(
               'postgres_changes',
               {

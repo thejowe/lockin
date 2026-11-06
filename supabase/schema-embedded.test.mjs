@@ -884,13 +884,46 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       `update public.profiles set link_github = 'https://github.com/loquesea' where id = '${ana}';`
     );
     await db.exec('reset role');
-    // Con identidad, la función enciende el sello y deriva el enlace. La
-    // identidad la escribe GoTrue, no el cliente: por eso se siembra fuera del
-    // rol `authenticated`, que no tiene nada que hacer en el esquema `auth`.
+    // La identidad la escribe GoTrue, no el cliente: por eso se siembra fuera
+    // del rol `authenticated`, que no tiene nada que hacer en el esquema `auth`.
     await db.exec(`insert into auth.identities (provider_id, user_id, identity_data, provider)
       values ('12345', '${ana}', '{"user_name":"anagarcia"}'::jsonb, 'github');`);
+    // Tener la identidad ya NO basta (20261106140000): GoTrue la vincula sin
+    // ligarla al navegador que empezó, así que el cliente no puede encender el
+    // sello. `sync_*` solo apaga.
     await db.exec('set local role authenticated');
     await db.exec('select public.sync_github_verification();');
+    assert.equal(
+      (await db.query(`select github_handle from public.profiles where id = '${ana}';`)).rows[0]
+        .github_handle,
+      null,
+      'el cliente no enciende el sello aunque la identidad esté'
+    );
+    await rechaza(
+      `select public.seal_identity_verification('${ana}', 'github', '12345');`,
+      /permission denied/i,
+      'encender es cosa de service_role (Edge Function verify-identity)'
+    );
+    // Lo enciende el servidor, y solo con el provider_id que dio la API de GitHub.
+    await db.exec('reset role; set local role service_role');
+    assert.equal(
+      (
+        await db.query(
+          `select public.seal_identity_verification('${ana}', 'github', '99999') as ok`
+        )
+      ).rows[0].ok,
+      false,
+      'un token de otra cuenta de GitHub no sella'
+    );
+    assert.equal(
+      (
+        await db.query(
+          `select public.seal_identity_verification('${ana}', 'github', '12345') as ok`
+        )
+      ).rows[0].ok,
+      true
+    );
+    await db.exec('reset role; set local role authenticated');
     const sello = await db.query(
       `select github_handle, github_verified_at, link_github from public.profiles where id = '${ana}';`
     );
@@ -901,8 +934,12 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       'el enlace que el usuario había escrito a mano queda sustituido por el de la identidad'
     );
     assert.ok(sello.rows[0].github_verified_at, 'la fecha debe quedar puesta');
-    // Resincronizar no rejuvenece un sello que ya existía.
+    // Resellar no rejuvenece un sello que ya existía, y `sync_*` con la
+    // identidad presente no lo toca.
     await db.exec('select public.sync_github_verification();');
+    await db.exec('reset role; set local role service_role');
+    await db.exec(`select public.seal_identity_verification('${ana}', 'github', '12345');`);
+    await db.exec('reset role; set local role authenticated');
     const resello = await db.query(
       `select github_verified_at from public.profiles where id = '${ana}';`
     );
@@ -924,6 +961,22 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
       values ('li-1', '${ana}', '{"given_name":"Ana","family_name":"García"}'::jsonb, 'linkedin_oidc');`);
     await db.exec('set local role authenticated');
     await db.exec('select public.sync_linkedin_verification();');
+    assert.equal(
+      (await db.query(`select linkedin_name from public.profiles where id = '${ana}';`)).rows[0]
+        .linkedin_name,
+      null,
+      'tampoco el de LinkedIn'
+    );
+    await db.exec('reset role; set local role service_role');
+    assert.equal(
+      (
+        await db.query(
+          `select public.seal_identity_verification('${ana}', 'linkedin_oidc', 'li-1') as ok`
+        )
+      ).rows[0].ok,
+      true
+    );
+    await db.exec('reset role; set local role authenticated');
     const selloLinkedin = await db.query(
       `select linkedin_name, linkedin_verified_at from public.profiles where id = '${ana}';`
     );
@@ -2320,8 +2373,18 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
                 `select public.is_session_topic_member('lockin:${kind}:${session(9)}') as ok`
               )
             ).rows[0].ok;
+          // Canales de postgres_changes (20261106130000): mensajes y sesiones por
+          // match, solo sus miembros sin bloqueo; matches y salas, cualquier sesión.
+          const changes = async (topic) =>
+            (await db.query(`select public.is_changes_topic_member('${topic}') as ok`)).rows[0].ok;
           for (const actor of [blkH, blkX]) {
             await actingAs(actor);
+            assert.equal(await changes(`lockin:messages:${matchXid}`), true);
+            assert.equal(await changes(`lockin:sessions:${matchXid}`), true);
+            assert.equal(await changes('lockin:matches'), true);
+            assert.equal(await changes('lockin:rooms'), true);
+            assert.equal(await changes('lockin:messages:no-es-uuid'), false);
+            assert.equal(await changes('lockin:video:' + matchXid), false);
             assert.equal(await open('presence'), true);
             assert.equal(await open('video'), true);
             assert.equal(
@@ -2334,6 +2397,8 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
             await actingAs(actor);
             assert.equal(await open('presence'), false);
             assert.equal(await open('video'), false);
+            assert.equal(await changes(`lockin:messages:${matchXid}`), false);
+            assert.equal(await changes(`lockin:sessions:${matchXid}`), false);
             assert.deepEqual(
               (await db.query(`select * from public.active_session('${matchXid}')`)).rows,
               []

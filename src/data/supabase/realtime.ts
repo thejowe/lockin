@@ -29,6 +29,18 @@
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 /**
+ * Opciones de todos los canales de `postgres_changes`: privados.
+ *
+ * Los datos los sigue filtrando la RLS de cada tabla; `private: true` hace que
+ * Realtime exija además la política de `realtime.messages`
+ * (`is_changes_topic_member`, 20261106130000) para unirse. Con todos los
+ * canales privados se puede apagar «Allow public access» en el panel, que es lo
+ * que impide abrir los topics de vídeo, presencia y salas como públicos y
+ * saltarse sus políticas (auditoría de seguridad run-1, 2026-11-06).
+ */
+export const PRIVATE_CHANNEL = { config: { private: true } } as const;
+
+/**
  * Suscribe `channel` y llama a `onRejoin` cada vez que vuelve a engancharse
  * tras haberlo estado, nunca en el primer `join`.
  */

@@ -5,7 +5,7 @@ import { ensureUserId } from './auth';
 import { getSupabaseClient } from './client';
 import { toProfile } from './mappers';
 import { fetchAllPages } from './pagination';
-import { subscribeResyncingOnRejoin } from './realtime';
+import { PRIVATE_CHANNEL, subscribeResyncingOnRejoin } from './realtime';
 import { toSessionError } from './sessions';
 
 import type { LockInSupabaseClient } from './client';
@@ -196,7 +196,7 @@ export function createSupabaseRoomRepository(
         channel = subscribeResyncingOnRejoin(
           deps
             .getClient()
-            .channel('lockin:rooms')
+            .channel('lockin:rooms', PRIVATE_CHANNEL)
             .on(
               'postgres_changes',
               { event: 'UPDATE', schema: 'public', table: 'lockin_rooms' },

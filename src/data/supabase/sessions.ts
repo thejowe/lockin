@@ -15,7 +15,7 @@ import {
 } from '../session-errors';
 import { ensureUserId } from './auth';
 import { getSupabaseClient } from './client';
-import { subscribeResyncingOnRejoin } from './realtime';
+import { PRIVATE_CHANNEL, subscribeResyncingOnRejoin } from './realtime';
 
 import type { LockInSupabaseClient } from './client';
 import type {
@@ -276,7 +276,7 @@ export function createSupabaseSessionRepository(
         // aquí: proponer, responder, cancelar, entrar y salir son INSERT o
         // UPDATE de los RPC. Solo borra la cascada de un match o una cuenta
         // borrados, y entonces no queda sesión que pintar.
-        let channel = deps.getClient().channel(`lockin:sessions:${matchId}`);
+        let channel = deps.getClient().channel(`lockin:sessions:${matchId}`, PRIVATE_CHANNEL);
         for (const event of ['INSERT', 'UPDATE'] as const) {
           channel = channel
             .on(

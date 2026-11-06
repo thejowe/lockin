@@ -74,6 +74,52 @@ archivos.
     en verde.
   - **Pendiente:** aplicar la migración en producción (`supabase db push`). Hasta entonces,
     schema-drift remoto en rojo por esta migración, esperado.
+- [ ] **[Claude] Sello de GitHub/LinkedIn comprobado en servidor** (2026-11-06, auditoría run-1,
+  lead 3).
+  - **El hueco:** `sync_*_verification()` sellaba con cualquier identidad de ese proveedor en
+    `auth.identities`. GoTrue la vincula en su callback sin ligarla al navegador que empezó
+    `linkIdentity`, así que alguien podía mandar su URL de vínculo a otra persona y quedarse con
+    su sello.
+  - **El arreglo:**
+    - El sello lo pone la Edge Function nueva `verify-identity`. Recibe el `provider_token` que
+      devuelve el canje del code, pregunta a la API de GitHub/LinkedIn de quién es y llama a
+      `seal_identity_verification` (solo `service_role`), que exige el mismo `provider_id` que la
+      identidad vinculada. Lo hace la migración `20261106140000_identity_seal_server_verified.sql`.
+    - `sync_*` siguen siendo del cliente, pero solo apagan.
+    - Cliente (`auth.ts`): sella tras el canje en caliente y en frío; si hay identidad vinculada
+      sin sello, la desvincula y vuelve a pasar por el proveedor. Se ha quitado
+      `adoptLinkedGithubIdentity`.
+  - **Tests:** `verify-identity/logic.test.mjs` 7/7 y PGlite 192/192 (incluye que `authenticated`
+    no puede llamar a `seal_identity_verification`). Jest en verde.
+  - **Pendiente (en este orden):**
+    1. Aplicar la migración.
+    2. `supabase functions deploy verify-identity` (con `verify_jwt: true`).
+    3. Build nueva.
+    4. **[comprobador]** Verificar GitHub y LinkedIn en el dispositivo contra Supabase real: el
+       canje de `linkIdentity` debe traer `provider_token`. Es un supuesto sobre GoTrue que aquí no
+       se ha podido observar.
+  - **Ojo, orden:** con la migración aplicada y la build vieja, verificar no sella (las builds
+    viejas llaman a `sync_*`, que ya no enciende). Mejor desplegar función + build antes, o a la
+    vez.
+- [ ] **[Claude] Canales de Realtime todos privados** (2026-11-06, auditoría run-1, lead 4).
+  - **El hueco:** con «Allow public access» activado, un topic de vídeo, presencia o sala se podía
+    abrir sin `private: true` y saltarse las políticas de `realtime.messages`. El acceso público
+    seguía activado solo porque los canales de `postgres_changes` eran públicos.
+  - **El arreglo:**
+    - Los cuatro canales (`lockin:matches`, `lockin:messages:<match>`, `lockin:rooms`,
+      `lockin:sessions:<match>`) se abren con `PRIVATE_CHANNEL` (`realtime.ts`).
+    - La migración `20261106130000_realtime_changes_private.sql` les da su política: solo SELECT;
+      mensajes y sesiones, solo los miembros del match sin bloqueo.
+  - **Tests:** jest con los canales privados y PGlite con `is_changes_topic_member`.
+  - **Pendiente (en este orden):**
+    1. Aplicar la migración.
+    2. Publicar la build.
+    3. **[comprobador]** Confirmar que siguen llegando matches, mensajes y sesiones en vivo con
+       canales privados. Que Realtime autorice así un canal privado de `postgres_changes` no se ha
+       podido observar aquí.
+    4. Cuando las builds viejas dejen de usarse, desactivar «Allow public access» en Realtime →
+       Settings. Ese paso es el que cierra el hueco; antes, las builds viejas perderían el
+       refresco en vivo.
 - [x] **[Claude]** URLs del perfil (2026-10-11): se abren con `openBrowserAsync` (navegador
   integrado, no `Linking.openURL`). El servidor ya tenía `check (… ~* '^https?://')` y el formulario
   valida igual; añadido el mismo filtro en `ProfileDetails` por defensa en profundidad (la URL sale

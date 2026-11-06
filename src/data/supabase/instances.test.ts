@@ -13,7 +13,7 @@
 
 import { buildProfile } from '@/data/test-fixtures';
 
-import { adoptLinkedGithubIdentity, deleteMyAccount, linkGithubIdentity } from './auth';
+import { deleteMyAccount, linkGithubIdentity } from './auth';
 import { createSupabaseRepositories } from './index';
 import { getSupabaseClient } from './client';
 
@@ -28,7 +28,6 @@ jest.mock('./client', () => ({
 
 jest.mock('./auth', () => ({
   ensureUserId: jest.fn(async () => 'user-a'),
-  adoptLinkedGithubIdentity: jest.fn(async () => false),
   linkGithubIdentity: jest.fn(),
   deleteMyAccount: jest.fn(async () => undefined),
   unlinkGithubIdentity: jest.fn(),
@@ -109,6 +108,21 @@ describe('dos juegos de repositorios de Supabase', () => {
       { event: 'INSERT', schema: 'public', table: 'matches' },
       { event: 'UPDATE', schema: 'public', table: 'matches' },
       { event: 'INSERT', schema: 'public', table: 'messages' },
+    ]);
+  });
+
+  it('los canales de matches y de mensajes son privados', () => {
+    const { client } = fakeClient();
+    asMock.mockReturnValue(client);
+
+    const repositories = createSupabaseRepositories();
+    repositories.matches.subscribe(jest.fn());
+    repositories.messages.subscribe('match-1', jest.fn());
+
+    // Con el acceso público de Realtime apagado, un canal público no se une.
+    expect((client.channel as jest.Mock).mock.calls).toEqual([
+      ['lockin:matches', { config: { private: true } }],
+      ['lockin:messages:match-1', { config: { private: true } }],
     ]);
   });
 
@@ -219,20 +233,15 @@ describe('recordDecision contra el RPC', () => {
 });
 
 describe('verifyGithub', () => {
-  it('con GitHub ya vinculado sin sello, lo sella sin volver a abrir GitHub', async () => {
-    // Una vuelta en frío perdida: la identidad está en GoTrue y el sello no.
+  it('cancelar GitHub es cancelar: no da el perfil por verificado', async () => {
     asMock.mockReturnValue(fakeClient().client);
-    jest.mocked(adoptLinkedGithubIdentity).mockResolvedValueOnce(true);
+    jest.mocked(linkGithubIdentity).mockResolvedValueOnce(false);
     const repositories = createSupabaseRepositories();
-    const verified = buildProfile({ id: 'user-a' });
-    jest.spyOn(repositories.profiles, 'getCurrent').mockResolvedValue(verified);
 
-    await expect(repositories.profiles.verifyGithub()).resolves.toBe(verified);
-
-    expect(linkGithubIdentity).not.toHaveBeenCalled();
+    await expect(repositories.profiles.verifyGithub()).rejects.toThrow();
   });
 
-  it('sin GitHub vinculado abre el flujo de siempre', async () => {
+  it('siempre pasa por GitHub: el sello exige el token de un canje', async () => {
     asMock.mockReturnValue(fakeClient().client);
     jest.mocked(linkGithubIdentity).mockResolvedValueOnce(true);
     const repositories = createSupabaseRepositories();
@@ -240,7 +249,6 @@ describe('verifyGithub', () => {
 
     await repositories.profiles.verifyGithub();
 
-    expect(adoptLinkedGithubIdentity).toHaveBeenCalled();
     expect(linkGithubIdentity).toHaveBeenCalledTimes(1);
   });
 });

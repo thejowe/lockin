@@ -17,7 +17,6 @@ import { Platform } from 'react-native';
 
 import {
   AccountError,
-  adoptLinkedinIdentity,
   changeAccountPassword,
   completeAuthLink,
   currentSignInProvider,
@@ -70,6 +69,16 @@ const auth = {
   signInWithOAuth: jest.fn(),
 };
 const rpc = jest.fn();
+/** Edge Functions: `verify-identity` pone el sello con el token del canje. */
+const functions = { invoke: jest.fn() };
+/** El sello actual del perfil, para `dropUnsealedIdentity`. */
+const profileSeal = jest.fn();
+const from = jest.fn(() => ({
+  select: () => ({ eq: () => ({ maybeSingle: profileSeal }) }),
+}));
+/** El canje de una vuelta de LinkedIn trae el token del proveedor. */
+const LINKEDIN_TOKEN = 'li-token-del-canje';
+const linkedinExchange = { data: { session: { provider_token: LINKEDIN_TOKEN } }, error: null };
 
 const DEVICE_ACCOUNT_KEY = 'lockin.supabase.device-account';
 const LINKEDIN_ATTEMPT_KEY = 'lockin.supabase.linkedin-attempt';
@@ -117,12 +126,14 @@ beforeEach(async () => {
   jest.mocked(Linking.createURL).mockReturnValue('cofounder://auth/callback');
   auth.exchangeCodeForSession.mockResolvedValue({ data: {}, error: null });
   rpc.mockResolvedValue({ error: null });
+  functions.invoke.mockResolvedValue({ data: { ok: true }, error: null });
+  profileSeal.mockResolvedValue({ data: { linkedin_name: null }, error: null });
   identities('email');
   jest.mocked(WebBrowser.openAuthSessionAsync).mockResolvedValue({
     type: 'success',
     url: `cofounder://auth/callback?code=${code}`,
   });
-  const shared = { auth, rpc } as unknown as ReturnType<typeof getSupabaseClient>;
+  const shared = { auth, rpc, functions, from } as unknown as ReturnType<typeof getSupabaseClient>;
   jest.mocked(getSupabaseClient).mockReturnValue(shared);
   jest.mocked(peekSupabaseClient).mockReturnValue(shared);
 });
@@ -448,44 +459,30 @@ describe('LinkedIn', () => {
     });
   });
 
-  describe('adoptLinkedinIdentity', () => {
-    it('sin LinkedIn vinculado no toca el sello', async () => {
-      await expect(adoptLinkedinIdentity()).resolves.toBe(false);
-      expect(rpc).not.toHaveBeenCalled();
-    });
-
-    it('con LinkedIn vinculado pone el sello en Postgres', async () => {
-      identities('email', 'linkedin_oidc');
-
-      await expect(adoptLinkedinIdentity()).resolves.toBe(true);
-      expect(rpc).toHaveBeenCalledWith('sync_linkedin_verification');
-    });
-
-    it('propaga un fallo al leer identidades o al sellar', async () => {
-      const readFailure = new Error('identidades');
-      auth.getUserIdentities.mockResolvedValueOnce({ data: null, error: readFailure });
-      await expect(adoptLinkedinIdentity()).rejects.toBe(readFailure);
-
-      identities('linkedin_oidc');
-      const rpcFailure = new Error('rpc');
-      rpc.mockResolvedValueOnce({ error: rpcFailure });
-      await expect(adoptLinkedinIdentity()).rejects.toBe(rpcFailure);
-    });
-  });
-
   describe('linkLinkedinIdentity', () => {
-    it('ya vinculado de una vuelta perdida: sella sin abrir el navegador', async () => {
+    it('ya vinculado sin sello (vuelta perdida): desvincula y vuelve a pasar por LinkedIn', async () => {
+      // Sellar sin un canje nuevo ya no se puede: el sello exige su token.
       identities('email', 'linkedin_oidc');
+      auth.getSession.mockResolvedValue({
+        data: { session: { user: { id: 'u1' } } },
+        error: null,
+      });
+      auth.unlinkIdentity.mockResolvedValueOnce({ error: null });
+      auth.exchangeCodeForSession.mockResolvedValue(linkedinExchange);
 
       await expect(linkLinkedinIdentity()).resolves.toBe(true);
-      expect(auth.linkIdentity).not.toHaveBeenCalled();
-      expect(WebBrowser.openAuthSessionAsync).not.toHaveBeenCalled();
+      expect(auth.unlinkIdentity).toHaveBeenCalledWith({
+        provider: 'linkedin_oidc',
+        id: 'linkedin_oidc-id',
+      });
+      expect(auth.linkIdentity).toHaveBeenCalled();
+      expect(rpc).not.toHaveBeenCalledWith('sync_linkedin_verification');
     });
 
     it('vincula LinkedIn a la cuenta actual, canjea el code y pone el sello', async () => {
       auth.exchangeCodeForSession.mockImplementation(async () => {
         identities('email', 'linkedin_oidc');
-        return { data: {}, error: null };
+        return linkedinExchange;
       });
 
       await expect(linkLinkedinIdentity()).resolves.toBe(true);
@@ -499,7 +496,10 @@ describe('LinkedIn', () => {
         'cofounder://auth/callback'
       );
       expect(auth.exchangeCodeForSession).toHaveBeenCalledWith(code);
-      expect(rpc).toHaveBeenCalledWith('sync_linkedin_verification');
+      expect(functions.invoke).toHaveBeenCalledWith('verify-identity', {
+        body: { provider: 'linkedin_oidc', providerToken: LINKEDIN_TOKEN },
+      });
+      expect(rpc).not.toHaveBeenCalledWith('sync_linkedin_verification');
       // El intento se cierra al volver: no queda nada para la vuelta en frío.
       expect(await AsyncStorage.getItem(LINKEDIN_ATTEMPT_KEY)).toBeNull();
     });
@@ -581,20 +581,24 @@ describe('LinkedIn', () => {
     it('con un intento abierto, la ruta de callback canjea el code y pone el sello', async () => {
       await AsyncStorage.setItem(LINKEDIN_ATTEMPT_KEY, String(Date.now()));
       identities('email', 'linkedin_oidc');
+      auth.exchangeCodeForSession.mockResolvedValue(linkedinExchange);
 
       await expect(
         completeAuthLink(`cofounder://auth/callback?code=${code}`)
       ).resolves.toMatchObject({ userId: 'u1' });
 
       expect(auth.exchangeCodeForSession).toHaveBeenCalledWith(code);
-      expect(rpc).toHaveBeenCalledWith('sync_linkedin_verification');
+      expect(functions.invoke).toHaveBeenCalledWith('verify-identity', {
+        body: { provider: 'linkedin_oidc', providerToken: LINKEDIN_TOKEN },
+      });
       expect(await AsyncStorage.getItem(LINKEDIN_ATTEMPT_KEY)).toBeNull();
     });
 
     it('si el sello falla, dice que LinkedIn quedó vinculado y cómo terminar', async () => {
       await AsyncStorage.setItem(LINKEDIN_ATTEMPT_KEY, String(Date.now()));
       identities('linkedin_oidc');
-      rpc.mockResolvedValue({ error: new Error('rpc caído') });
+      auth.exchangeCodeForSession.mockResolvedValue(linkedinExchange);
+      functions.invoke.mockResolvedValue({ data: null, error: new Error('función caída') });
 
       await expect(completeAuthLink(`cofounder://auth/callback?code=${code}`)).rejects.toThrow(
         /no hemos podido poner el sello/

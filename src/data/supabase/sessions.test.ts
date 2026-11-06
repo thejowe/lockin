@@ -561,6 +561,10 @@ describe('createSupabaseSessionRepository', () => {
     const first = repository.subscribe('match-1', jest.fn());
     const second = repository.subscribe('match-1', jest.fn());
     expect(client.channel).toHaveBeenCalledTimes(1);
+    // Privado: con el acceso público apagado, un canal público no se une.
+    expect(client.channel).toHaveBeenCalledWith('lockin:sessions:match-1', {
+      config: { private: true },
+    });
 
     first();
     expect(client.removeChannel).not.toHaveBeenCalled();

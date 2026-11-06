@@ -367,7 +367,8 @@ describe('salas Supabase', () => {
     const b = jest.fn();
     const stopA = f.repo.subscribe(a);
     const stopB = f.repo.subscribe(b);
-    expect(f.client.channel.mock.calls).toEqual([['lockin:rooms']]);
+    // Privado: con el acceso público apagado, un canal público no se une.
+    expect(f.client.channel.mock.calls).toEqual([['lockin:rooms', { config: { private: true } }]]);
     expect(f.channel.on.mock.calls).toEqual([
       [
         'postgres_changes',
