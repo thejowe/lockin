@@ -5,11 +5,17 @@
  * con el perfil del otro lado del match — nunca con un id de usuario cableado,
  * para que siga funcionando cuando los mensajes vengan del backend real.
  *
- * Un mensaje recién llegado (enviado hace menos de `FRESH_MS`) entra subiendo
- * y fundiendo: es la confirmación de que ha salido o de que acaba de llegar. El
- * historial que ya estaba al abrir el chat no se anima — veinte burbujas
- * entrando a la vez son ruido, no información. Reanimated apaga la entrada con
- * «reducir movimiento» (`ReduceMotion.System`, su valor por defecto).
+ * Un mensaje ajeno recién llegado (enviado hace menos de `FRESH_MS`) entra
+ * subiendo y fundiendo: es el aviso de que acaba de llegar. El historial que ya
+ * estaba al abrir el chat no se anima — veinte burbujas entrando a la vez son
+ * ruido, no información. Reanimated apaga la entrada con «reducir movimiento»
+ * (`ReduceMotion.System`, su valor por defecto).
+ *
+ * El mensaje propio aparece sin entrada: la confirmación de que ha salido ya es
+ * el editor vaciándose. Con la entrada, la burbuja se montaba en el mismo frame
+ * del envío (teclado abierto, `scrollToEnd` en marcha) y en Android a veces se
+ * quedaba en la opacidad 0 inicial de `FadeInDown`: el E2E `mock`, que envía
+ * sin red, no la veía en 3 de 4 runs (2026-11-05/06; ver `docs/plan/TODO.md`).
  */
 
 import { useState } from 'react';
@@ -42,7 +48,7 @@ export function MessageBubble({
 }) {
   const theme = useTheme();
   // Se decide una vez, al montar: la burbuja no vuelve a entrar si se repinta.
-  const [fresh] = useState(() => Date.now() - Date.parse(message.sentAt) < FRESH_MS);
+  const [fresh] = useState(() => !isMine && Date.now() - Date.parse(message.sentAt) < FRESH_MS);
 
   return (
     <Animated.View
