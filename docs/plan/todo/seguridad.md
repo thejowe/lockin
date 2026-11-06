@@ -55,6 +55,25 @@ archivos.
   change» manda dos enlaces por petición. `codex review` en 2 rondas: la primera cazó que se
   rompían el alta por `signUp` y el segundo enlace del cambio de email (corregidos); la segunda
   sin hallazgos. Tests en `auth.test.ts`.
+  **Revisado 2026-11-06 (auditoría run-1, lead 2):** la marca de 24 h no bastaba. No guardaba
+  email ni tipo, no se borraba al usarla ni en `signOut`, y `sendPasswordReset` la ponía para
+  cualquier dirección. Con eso, el `token_hash` de recuperación de la cuenta de un atacante seguía
+  entrando. Como las plantillas solo mandan `{{ .ConfirmationURL }}` (PKCE, `?code=`), se ha
+  **quitado la rama `token_hash`**: `completeAuthLink` la rechaza siempre y ya no llama a
+  `verifyOtp`; la marca `lockin.supabase.email-link-request` ha desaparecido. Si algún día se
+  cambia una plantilla a `{{ .TokenHash }}`, esto hay que rediseñarlo, no reactivarlo.
+- [ ] **[Claude] Perfil: sin DELETE directo** (2026-11-06, auditoría run-1, lead 1).
+  - **El hueco:** `authenticated` podía borrar su fila de `profiles` y recrearla con el mismo uid.
+    La cascada se llevaba los `user_blocks` que otros le habían puesto (el bloqueado reaparecía en
+    el deck de quien le bloqueó) y ponía a cero `like_events` y `boosts` (cuotas de likes, tope
+    antiabuso, Super Likes y cooldown de Boost).
+  - **El arreglo:** la migración `20261106120000_profiles_no_direct_delete.sql` quita la policy
+    «profiles: solo borras el tuyo» y revoca `DELETE` a `anon`/`authenticated`/`public`. Borrar la
+    cuenta sigue yendo por `delete_my_account()`.
+  - **Tests:** `schema-embedded.test.mjs` ahora espera 42501 en el `DELETE` directo; 192/192 PGlite
+    en verde.
+  - **Pendiente:** aplicar la migración en producción (`supabase db push`). Hasta entonces,
+    schema-drift remoto en rojo por esta migración, esperado.
 - [x] **[Claude]** URLs del perfil (2026-10-11): se abren con `openBrowserAsync` (navegador
   integrado, no `Linking.openURL`). El servidor ya tenía `check (… ~* '^https?://')` y el formulario
   valida igual; añadido el mismo filtro en `ProfileDetails` por defensa en profundidad (la URL sale

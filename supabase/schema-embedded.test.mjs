@@ -2845,16 +2845,28 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
         ('${dirEmpezada}', '${dirAna}', 'aceptada', now()),
         ('${dirCascada}', '${dirBea}', 'aceptada', now());`);
 
-    // Borrado directo del perfil como `authenticated`, sin pasar por el RPC.
+    // El cliente ya no puede borrar su perfil a pelo (20261106120000): borrar y
+    // recrear la fila con el mismo uid se llevaba los bloqueos ajenos y los
+    // contadores de cuota. La única puerta es `delete_my_account`.
     await actingAs(dirAna);
-    await db.exec(`delete from public.profiles where id = '${dirAna}';`);
-    await db.exec('reset role;');
     assert.equal(
-      (await db.query(`select count(*)::int as n from public.profiles where id = '${dirAna}'`))
-        .rows[0].n,
-      0,
-      'el DELETE directo del perfil se ejecuta como authenticated'
+      await sonda(`delete from public.profiles where id = '${dirAna}'`),
+      '42501',
+      'authenticated no tiene DELETE sobre profiles'
     );
+    await db.exec('reset role;');
+    assert.deepEqual(
+      (
+        await db.query(`select
+          has_table_privilege('authenticated', 'public.profiles', 'DELETE') as authenticated,
+          has_table_privilege('anon', 'public.profiles', 'DELETE') as anon,
+          exists (select 1 from pg_policies where schemaname = 'public'
+            and tablename = 'profiles' and cmd = 'DELETE') as policy`)
+      ).rows[0],
+      { authenticated: false, anon: false, policy: false }
+    );
+    // El trigger de salas sigue saltando en cualquier borrado de la fila.
+    await db.exec(`delete from public.profiles where id = '${dirAna}';`);
     assert.deepEqual(await roomOf(dirFutura), { host_id: null, cancelada: true, miembros: null });
     assert.deepEqual(await roomOf(dirEmpezada), {
       host_id: null,

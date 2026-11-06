@@ -342,13 +342,10 @@ describe('email y contraseña', () => {
     });
   });
 
-  it('signUpWithEmail da de alta y apunta el correo pedido, que habilita su token_hash', async () => {
+  it('signUpWithEmail da de alta y devuelve el uid', async () => {
     auth.signUp.mockResolvedValue({ data: { user: { id: 'u-nueva' } }, error: null });
 
     await expect(signUpWithEmail('nueva@example.com', 'pw')).resolves.toBe('u-nueva');
-    expect(
-      Number(await AsyncStorage.getItem('lockin.supabase.email-link-request'))
-    ).toBeGreaterThan(0);
   });
 
   it('signUpWithEmail sin usuario devuelto da null, y un rechazo se traduce', async () => {

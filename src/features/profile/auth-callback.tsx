@@ -7,8 +7,8 @@
  * una recuperación de contraseña se queda directamente a medias: es el canje
  * del `code` lo que abre la sesión en la que después se pone la nueva.
  *
- * El trabajo de verdad lo hace `completeAuthLink`, que ya distingue las dos
- * formas del enlace (`?code=` de PKCE y `?token_hash=&type=`) y traduce los
+ * El trabajo de verdad lo hace `completeAuthLink`, que canjea el `?code=` de
+ * PKCE, rechaza `?token_hash=` (no va ligado a este dispositivo) y traduce los
  * enlaces caducados. Aquí solo se le pasa cada URL una vez —`handled` evita que
  * un segundo render de la misma URL intente canjear un código de un solo uso ya
  * gastado— y se enseña el resultado.
@@ -44,8 +44,12 @@ import { AccountError, completeAuthLink } from './account-gateway';
 import { SecondaryButton } from './controls';
 import { t } from '@/i18n';
 
-/** Los parámetros que `completeAuthLink` sabe leer de un enlace de cuenta. */
-const AUTH_LINK_PARAMS = ['code', 'token_hash', 'type', 'error', 'error_description'] as const;
+/**
+ * Los parámetros que `completeAuthLink` sabe leer de un enlace de cuenta.
+ * `token_hash` pasa solo para que `completeAuthLink` lo rechace con su mensaje,
+ * en vez de caer en «no trae el código».
+ */
+const AUTH_LINK_PARAMS = ['code', 'token_hash', 'error', 'error_description'] as const;
 
 /**
  * Rehace el enlace a partir de los parámetros de la ruta, o `null` si no trae

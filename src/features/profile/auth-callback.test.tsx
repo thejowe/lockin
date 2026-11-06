@@ -158,10 +158,10 @@ describe('authLinkFromParams', () => {
     expect(authLinkFromParams({ code: 'abc123' })).toBe(ENLACE);
   });
 
-  it('conserva token_hash, type y los errores, y toma el primero de un array', () => {
+  it('conserva token_hash (para rechazarlo) y los errores, y toma el primero de un array', () => {
     const url = authLinkFromParams({ token_hash: ['h1', 'h2'], type: 'email_change' });
     expect(new URL(url!).searchParams.get('token_hash')).toBe('h1');
-    expect(new URL(url!).searchParams.get('type')).toBe('email_change');
+    expect(new URL(url!).searchParams.get('type')).toBeNull();
     const failed = authLinkFromParams({ error: 'access_denied', error_description: 'expired' });
     expect(new URL(failed!).searchParams.get('error_description')).toBe('expired');
   });

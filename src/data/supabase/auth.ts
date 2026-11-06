@@ -77,7 +77,7 @@ import { secureAuthStorage } from './secure-storage';
 
 import type { LockInSupabaseClient } from './client';
 import type { SignOutOptions } from '../types';
-import type { EmailOtpType, User } from '@supabase/supabase-js';
+import type { User } from '@supabase/supabase-js';
 import { getLocale, t } from '@/i18n';
 
 /** Credenciales de la cuenta de dispositivo del paso 3. */
@@ -502,7 +502,6 @@ export async function linkEmailToCurrentUser(email: string): Promise<AccountStat
     { emailRedirectTo: authRedirectUrl() }
   );
   if (error) throw toAccountError(error);
-  await markEmailLinkRequested();
 
   return data.user ? describeUser(data.user) : getAccountState();
 }
@@ -679,7 +678,6 @@ export async function sendPasswordReset(email: string): Promise<void> {
     redirectTo: authRedirectUrl(),
   });
   if (error) throw toAccountError(error);
-  await markEmailLinkRequested();
 }
 
 /** Esperas entre intentos cuando la petición del enlace no llega a salir. */
@@ -706,10 +704,10 @@ async function retryWhileOffline<T extends { error: unknown }>(call: () => Promi
  * Cierra el enlace que llega por `cofounder://auth/callback`: confirmación de
  * email o recuperación de contraseña.
  *
- * Acepta las dos formas en que Supabase puede devolverlo según la plantilla de
- * correo del proyecto: `?code=` (PKCE, que es el flujo de este cliente) y
- * `?token_hash=&type=`. Si el enlace trae un error lo traduce, en vez de fallar
- * en silencio dejando al usuario esperando una confirmación que nunca llega.
+ * Solo acepta `?code=` (PKCE, que es el flujo de este cliente y lo que mandan
+ * las plantillas con `{{ .ConfirmationURL }}`). `?token_hash=` se rechaza: no va
+ * ligado a este dispositivo. Si el enlace trae un error lo traduce, en vez de
+ * fallar en silencio dejando al usuario esperando una confirmación que nunca llega.
  *
  * Cuando el enlace deja la cuenta ya recuperable se olvidan las credenciales de
  * dispositivo: seguir guardándolas dejaría una segunda puerta a la misma cuenta
@@ -749,8 +747,6 @@ export async function completeAuthLink(url: string): Promise<AccountState> {
   }
 
   const code = params.get('code');
-  const tokenHash = params.get('token_hash');
-  const type = params.get('type');
 
   if (code) {
     // La vuelta de LinkedIn, Google o Apple de este proceso: su canje ya está en
@@ -823,31 +819,22 @@ export async function completeAuthLink(url: string): Promise<AccountState> {
         );
       });
     }
-  } else if (tokenHash && type) {
+  } else if (params.has('token_hash')) {
     // A diferencia del `code`, que solo canjea el verificador PKCE de ESTE
     // dispositivo, un `token_hash` no va ligado a nadie: quien tenga uno válido de
     // su propia cuenta podría abrir `cofounder://auth/callback?token_hash=…` en el
-    // teléfono ajeno y dejarlo dentro de la cuenta del atacante. Por eso solo se
-    // acepta con un correo pedido desde aquí hace poco y con un tipo de los que
-    // esta app manda.
-    if (!EMAIL_LINK_TYPES.has(type) || !(await hasPendingEmailLinkRequest())) {
-      throw new AccountError(
-        'unknown',
-        t(
-          'Ese enlace no corresponde a ninguna petición hecha desde este teléfono. Pide otro correo desde tu perfil.'
-        )
-      );
-    }
-    const { data: verified, error } = await retryWhileOffline(() =>
-      client.auth.verifyOtp({
-        token_hash: tokenHash,
-        type: type as EmailOtpType,
-      })
+    // teléfono ajeno y dejarlo dentro de la cuenta del atacante. Antes se
+    // aceptaba si este teléfono había pedido CUALQUIER correo en las últimas 24 h,
+    // una marca sin email ni tipo que ni `signOut` borraba (auditoría de
+    // seguridad run-1, 2026-11-06). Las plantillas usan `{{ .ConfirmationURL }}`
+    // (PKCE, `?code=`), así que esta forma no la manda ningún correo de la app:
+    // se rechaza siempre.
+    throw new AccountError(
+      'unknown',
+      t(
+        'Ese enlace no corresponde a ninguna petición hecha desde este teléfono. Pide otro correo desde tu perfil.'
+      )
     );
-    if (!error && type === 'recovery') await markPasswordRecovery(verified?.user?.id ?? null);
-    // La petición no se borra: con «Secure email change» llegan dos enlaces (el
-    // correo viejo y el nuevo) para una sola petición. Caduca por su cuenta.
-    if (error) throw toAccountError(error);
   } else {
     throw new AccountError(
       'unknown',
@@ -858,29 +845,6 @@ export async function completeAuthLink(url: string): Promise<AccountState> {
   const state = await getAccountState();
   if (state.recoverable) await secureAuthStorage.removeItem(DEVICE_ACCOUNT_KEY);
   return state;
-}
-
-/** Cuándo se pidió el último correo de cuenta desde este dispositivo. */
-const EMAIL_LINK_REQUEST_KEY = 'lockin.supabase.email-link-request';
-
-/** Cuánto vale ese correo pedido: pasado esto, un `token_hash` ya no se acepta. */
-const EMAIL_LINK_REQUEST_TTL_MS = 24 * 60 * 60 * 1000;
-
-/** Los tipos de correo de cuenta que manda esta app (ascenso, recuperación, alta). */
-const EMAIL_LINK_TYPES: ReadonlySet<string> = new Set([
-  'email_change',
-  'recovery',
-  'signup',
-  'email',
-]);
-
-async function markEmailLinkRequested(): Promise<void> {
-  await AsyncStorage.setItem(EMAIL_LINK_REQUEST_KEY, String(Date.now()));
-}
-
-async function hasPendingEmailLinkRequest(): Promise<boolean> {
-  const requestedAt = Number(await AsyncStorage.getItem(EMAIL_LINK_REQUEST_KEY));
-  return Number.isFinite(requestedAt) && Date.now() - requestedAt <= EMAIL_LINK_REQUEST_TTL_MS;
 }
 
 /** Login con email y contraseña, para recuperar la cuenta en otro dispositivo. */
@@ -898,7 +862,6 @@ export async function signUpWithEmail(email: string, password: string): Promise<
     options: { data: { locale: getLocale() } },
   });
   if (error) throw toAccountError(error);
-  await markEmailLinkRequested();
   return data.user?.id ?? null;
 }
 
