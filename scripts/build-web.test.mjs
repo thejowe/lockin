@@ -11,6 +11,7 @@ import {
   LEGAL_PAGES,
   OWN_PAGES,
   SITE_URL,
+  localizeSiteLinks,
   markdownToHtml,
   page,
   pagePath,
@@ -232,6 +233,29 @@ test('el sitio generado tiene las rutas de cada idioma, lang correcto y sin enla
             : href.startsWith(`${prefix}/`);
         assert.ok(inLang, `${href} sale del idioma ${lang} en ${file}`);
       }
+    }
+  }
+});
+
+test('los enlaces entre textos legales conservan el idioma de la página', () => {
+  const md = `Ver [normas](${SITE_URL}/normas) y ${SITE_URL}/seguridad-infantil.`;
+  assert.equal(localizeSiteLinks(md, 'es'), md);
+  assert.equal(
+    localizeSiteLinks(md, 'en'),
+    `Ver [normas](${SITE_URL}/en/normas) y ${SITE_URL}/en/seguridad-infantil.`
+  );
+  assert.ok(localizeSiteLinks(md, 'ca').includes(`${SITE_URL}/ca/normas)`));
+});
+
+test('en el sitio generado no queda ningún enlace legal sin prefijo en en/ca', async () => {
+  for (const code of ['en', 'ca']) {
+    for (const { dir } of LEGAL_PAGES) {
+      const html = await readFile(join(root, '_site', code, dir, 'index.html'), 'utf8');
+      const main = html.slice(html.indexOf('<main>'), html.indexOf('</main>'));
+      const unprefixed = new RegExp(
+        `${SITE_URL.replace('.', '[.]')}/(privacidad|terminos|normas|seguridad-infantil|eliminar-cuenta|soporte)`
+      );
+      assert.doesNotMatch(main, unprefixed, `${code}/${dir}`);
     }
   }
 });

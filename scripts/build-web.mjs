@@ -191,6 +191,27 @@ export function pagePath(lang, dir) {
  * Marcadores que todavía esperan una decisión del responsable (`[fecha de
  * publicación…]`, `[pendiente…]`, `[PROPUESTA…]`) en el texto publicable.
  */
+/**
+ * Los textos legales enlazan entre sí con la URL española (`SITE_URL/normas`).
+ * En en/ca esos enlaces deben quedarse en el idioma de la página: se les pone
+ * el prefijo (`SITE_URL/en/normas`). El español queda tal cual.
+ */
+export function localizeSiteLinks(markdown, lang) {
+  const { prefix } = LANGS.find((l) => l.code === lang);
+  if (!prefix) return markdown;
+  const dirs = [
+    'privacidad',
+    'terminos',
+    'normas',
+    'seguridad-infantil',
+    'eliminar-cuenta',
+    'soporte',
+  ];
+  const host = SITE_URL.replace(/[.]/g, '[.]');
+  const re = new RegExp(host + '/(' + dirs.join('|') + ')(?![A-Za-z0-9_-])', 'g');
+  return markdown.replace(re, `${SITE_URL}${prefix}/$1`);
+}
+
 export function pendingMarkers(markdown) {
   const pattern = /\[(?:fecha de publicaci[oó]n|pendiente|propuesta|proveedor)[^\]]*\]/gi;
   return [...markdown.matchAll(pattern)].map((match) => match[0]);
@@ -282,7 +303,7 @@ async function main() {
           `AVISO ${code}/${source}: marcador pendiente en el texto publicable: ${marker}`
         );
       }
-      await write(code, dir, titles[code], markdownToHtml(body));
+      await write(code, dir, titles[code], markdownToHtml(localizeSiteLinks(body, code)));
     }
   }
   console.log('Sitio generado en _site/');
