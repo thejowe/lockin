@@ -4249,3 +4249,33 @@ aquí porque hasta hoy ninguna de las dos se había ejecutado junto a la otra.
       una entrada atascada (el velo del `Modal` no anima con Reanimated):
       puede ser que el swipe o la decisión no lleguen. Sin diagnosticar; lo
       siguiente es mirar la jerarquía del fallo en el artefacto.
+      Diagnóstico parcial (2026-11-07, artefactos de 42314328887 contra el
+      verde 42319077440): el fallo es «el like no se registró», no «el match
+      no se pinta». Pruebas: (1) en `window.xml` la mano de «Toca para ver más»
+      sigue en pantalla, y `settle` la retira (`tapHint.dismiss`) en cada
+      decisión, así que no hubo decisión; (2) `Marc Oller` es `TopCard`
+      (`GestureDetector`, botones propios) y no una `BehindCard` promovida
+      — sin modal, sin velo, sin aviso de fallo de guardado; (3) en el verde,
+      el toque a «Like» (mismo `(708, 1970)`) cambia la jerarquía y el logcat
+      abre la ventana del `Modal` 0,7 s después; en el rojo Maestro da el
+      toque por completado a los 0,4 s sin «Something has changed» y el
+      logcat de la app no registra nada. Descartado en el código: el tour
+      (no arranca hasta decidir la primera tarjeta; `pointerEvents` del
+      contenedor de botones sigue en `auto`), `likeLocked`, `exiting` pegado,
+      el gesto Pan (no recibe el toque), y `344547a` (el flake es anterior).
+      Lo que NO se ha podido fijar: por qué el `Pressable` de «Like» ignora ese
+      toque (el build de release no vuelca logs de JS y no hay traza del
+      evento). Sospechas sin confirmar: toque que llega mientras el hilo de UI
+      está a 800 ms por fotograma (`Davey! duration=817ms` en el verde) con
+      `disable-animations: true`; la lectura asíncrona de `useReduceMotion`.
+      Mitigación en `e2e/full-journey.yaml` (con guardia en
+      `full-journey.test.mjs`): tras el toque se espera el match 8 s y, solo
+      si la mano sigue visible (= ninguna decisión), se repite el toque una
+      vez; el `extendedWaitUntil` de 30 s sigue siendo duro. Cuesta ~7 s en el
+      recorrido verde (la condición `visible` de Maestro espera su tiempo de
+      búsqueda al no encontrar la mano). Casilla abierta: sin causa raíz.
+      Para cerrarla, correr en CI la variante `mock` y `supabase` varias veces
+      y mirar si el reintento llega a dispararse (si dispara, se ve el
+      segundo `Tap on "Like"` en `maestro.log`); si hace falta más señal,
+      una build de E2E con un `console.warn` en `swipeAway` y en el
+      `onPress` de «Like».

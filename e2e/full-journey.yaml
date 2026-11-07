@@ -181,6 +181,25 @@ name: Alta, perfil, deck, match, mensaje y persistencia
       - assertVisible: '(?i)✓ encajas'
 # Fixture: solo likes entrantes. El like propio y el match pasan por UI/RPC.
 - tapOn: 'Like'
+# Flake conocido (runs 42314328887 mock, 0e54090/77ebf5a/bf47d99 supabase): a
+# veces el toque llega a Maestro como completado pero el botón no lo registra —
+# sin modal, sin velo, la misma tarjeta arriba y la mano de «Toca para ver más»
+# aún en pantalla (la mano solo se retira al decidir una tarjeta, así que su
+# presencia prueba que NO hubo decisión). Se espera el match unos segundos y,
+# SOLO si la mano sigue ahí, se repite el toque UNA vez. Con una decisión ya
+# tomada no se repite (se daría like a la siguiente persona), y si el botón no
+# responde de verdad, el segundo toque tampoco lo arregla y la espera final de
+# abajo sigue fallando. No sustituye al diagnóstico: ver `docs/plan/todo/calidad.md`.
+- extendedWaitUntil:
+    visible: '¡Match!'
+    timeout: 8000
+    optional: true
+- repeat:
+    times: 1
+    while:
+      visible: 'Toca para ver más'
+    commands:
+      - tapOn: 'Like'
 - extendedWaitUntil:
     visible: '¡Match!'
     timeout: 30000

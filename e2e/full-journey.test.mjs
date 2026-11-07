@@ -58,6 +58,20 @@ describe('full-journey declara lo que busca la persona', () => {
     assert(at("- assertVisible: '(?i)✓ encajas'") >= 0, 'Falta el ✓ de la cabecera');
   });
 
+  it('repite el like una sola vez y solo si la mano de la tarjeta sigue en pantalla', () => {
+    // La mano se retira al decidir: si sigue ahí, el toque no se registró.
+    // Repetir sin esa condición daría like a la persona siguiente.
+    const first = at("- tapOn: 'Like'");
+    const retry = journey.indexOf('- repeat:', first);
+    assert(retry > first, 'Falta el reintento acotado del like');
+    const block = journey.slice(retry, journey.indexOf('- extendedWaitUntil', retry));
+    assert.match(block, /times: 1\s/, 'El reintento del like no está acotado a una vez');
+    assert.match(block, /visible: 'Toca para ver más'/, 'El reintento no depende de la mano');
+    assert.equal((block.match(/tapOn: 'Like'/g) ?? []).length, 1);
+    const wait = journey.indexOf("visible: '¡Match!'", retry);
+    assert(wait > retry, 'Tras el reintento tiene que seguir una espera dura de «¡Match!»');
+  });
+
   it('esas cuatro, y solo esas, corren únicamente con el backend real', () => {
     // Dependen del `update` de `created_at` de `incoming-likes.sql`, que solo
     // existe en Postgres. Con el mock el deck lo ordena `src/data/mock/seed.ts`
