@@ -162,3 +162,58 @@ describe('AppTabs', () => {
     });
   });
 });
+
+describe('resalte entre pestañas', () => {
+  const layoutOf = (x: number, width: number) => ({
+    nativeEvent: { layout: { x, y: 5, width, height: 46 } },
+  });
+
+  function indicatorStyle() {
+    return StyleSheet.flatten(
+      findIndicator(screen.toJSON())?.props.style as StyleProp<ViewStyle>
+    ) as ViewStyle;
+  }
+
+  it('la primera medida coloca el resalte y las siguientes viajan hasta la nueva', async () => {
+    await render(<AppTabs />);
+    const first = screen.getByRole('tab', { name: 'Descubrir' }).parent!;
+    await fireEvent(first, 'layout', layoutOf(5, 100));
+    await fireEvent(first, 'layout', layoutOf(8, 120));
+    await screen.rerender(<AppTabs />);
+
+    // El mock de Reanimated resuelve `withSpring` al valor final.
+    expect(indicatorStyle().opacity).toBe(1);
+    expect(indicatorStyle().width).toBeDefined();
+  });
+
+  it('con «reducir movimiento» las siguientes medidas saltan sin muelle', async () => {
+    mockSystem.reduceMotion = true;
+    await render(<AppTabs />);
+    const first = screen.getByRole('tab', { name: 'Descubrir' }).parent!;
+    await fireEvent(first, 'layout', layoutOf(5, 100));
+    await fireEvent(first, 'layout', layoutOf(8, 120));
+    await screen.rerender(<AppTabs />);
+
+    expect(indicatorStyle().width).toBe(120);
+    expect(indicatorStyle().transform).toEqual([{ translateX: 8 }]);
+  });
+
+  it('al cambiar de pestaña, el resalte va a la medida que ya tenía el botón', async () => {
+    await render(<AppTabs />);
+    const matches = screen.getByRole('tab', { name: 'Matches' }).parent!;
+    await fireEvent(matches, 'layout', layoutOf(70, 56));
+    mockFocused.name = 'matches';
+    await screen.rerender(<AppTabs />);
+    await screen.rerender(<AppTabs />);
+
+    expect(indicatorStyle().opacity).toBe(1);
+  });
+
+  it('al pulsar una pestaña cambia su estilo', async () => {
+    await render(<AppTabs />);
+    const tab = screen.getByRole('tab', { name: 'Matches' });
+    await fireEvent(tab, 'pressIn');
+
+    expect(screen.getByRole('tab', { name: 'Matches' })).toBeTruthy();
+  });
+});

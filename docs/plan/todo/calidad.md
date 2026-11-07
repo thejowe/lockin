@@ -4279,3 +4279,5 @@ aquí porque hasta hoy ninguna de las dos se había ejecutado junto a la otra.
       segundo `Tap on "Like"` en `maestro.log`); si hace falta más señal,
       una build de E2E con un `console.warn` en `swipeAway` y en el
       `onPress` de «Like».
+
+- [x] **Umbral de ramas rojo en `344547a` (89,50 % < 89,52 %), arreglado solo con tests (2026-11-07).** Los commits de seguridad y tabs (`2d1005a`, `0e54090`, `083ecd0`, `344547a`) dejaron ramas de `auth.ts`, `app-tabs.tsx` y `motion.ts` sin test. Nuevos: `src/data/supabase/auth-branches.test.ts`, `src/components/motion-tabs.test.ts` y un bloque «resalte entre pestañas» en `app-tabs.test.tsx`. Ramas: 89,50 % -> 90,03 % (1997 tests pasan), umbral intacto. Pendiente de cubrir: `profile.tsx`, `settings.tsx` (0 % ramas, sin test de pantalla).
