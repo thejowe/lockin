@@ -79,7 +79,7 @@ test('términos, normas y seguridad infantil cubren lo exigido', async () => {
   for (const md of [terminos, normas, infantil]) {
     assert.match(md, /tolerancia cero/i);
     assert.match(md, /16 años o más/);
-    assert.match(md, /cofounder\.soporte@gmail\.com/);
+    assert.match(md, /soporte@getcofounder\.app/);
   }
   assert.match(terminos, /no es una app de citas/i);
   assert.match(terminos, /bolsa de empleo/i);
