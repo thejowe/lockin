@@ -33,7 +33,7 @@ VERIFIED GITHUB
 You can link your GitHub account to show "GitHub verified" on your profile. It indicates that the GitHub link belongs to whoever publishes it; it does not verify the person's identity or knowledge.
 
 SAFETY AND CONTROL
-You can block or report anyone from the app. You can delete your account and your data whenever you want from Profile > Account.
+You can block or report anyone from the app. You can delete your account and your data whenever you want from Settings > Account.
 
 WHAT IT IS NOT
 cofounder is not a dating app or a job board. It offers no legal advice or funding, and does not guarantee results: it helps you meet people to build with; what you do together is up to you.
@@ -55,7 +55,7 @@ Target audience: 16–17 and 18+ (D06). In the IARC questionnaire, declare user 
 ## Data safety, account deletion and permissions
 
 - Data safety answers: see `cuestionario-privacidad.md`.
-- Account deletion: in the app (Profile > Account > Delete my account) and web URL https://getcofounder.app/eliminar-cuenta (mandatory and working; explains how to request it by email without the app).
+- Account deletion: in the app (Settings > Account > Delete my account) and web URL https://getcofounder.app/eliminar-cuenta (mandatory and working; explains how to request it by email without the app).
 - Child safety (Social category): standards URL https://getcofounder.app/seguridad-infantil; designated contact soporte@getcofounder.app.
 - Permissions (final binary, T5): only `CAMERA` declared by the app, for the profile photo; the gallery uses the system picker. No `RECORD_AUDIO`, `SCHEDULE_EXACT_ALARM` or notifications: there are no sensitive permissions to justify. Confirm in the AAB manifest that no library adds others (T7).
 - Google UGC policies: Terms and Guidelines accepted before publishing; reporting of profiles and messages; blocking; basic text filter and photo moderation; review of reports (24 h / 72 h).

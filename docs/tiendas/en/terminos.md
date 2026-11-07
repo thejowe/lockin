@@ -3,11 +3,11 @@
 # cofounder Terms of Use
 
 
-**Version:** 1.3
+**Version:** 1.4
 
-**Version date:** 7 November 2026
+**Version date:** 8 November 2026
 
-**Effective date:** 7 November 2026.
+**Effective date:** 8 November 2026.
 
 ## 1. What cofounder is and who provides it
 
@@ -33,7 +33,7 @@ You must be **16 or older**. Age is self-declared. If you state an age that is n
 - You are responsible for the activity on your account and for the accuracy of the information on your profile.
 - You may only have one active account for yourself. You may not create fake profiles or impersonate anyone.
 - An account created without an email is lost if you sign out or uninstall the app. Adding and confirming an email lets you recover it. An account created with Google or Apple is recovered by signing in again with that same service.
-- You can delete your account whenever you want from Profile > Account > Delete my account, or by following the instructions at https://getcofounder.app/eliminar-cuenta.
+- You can delete your account whenever you want from Settings > Account > Delete my account, or by following the instructions at https://getcofounder.app/eliminar-cuenta.
 
 ## 5. Content you post
 

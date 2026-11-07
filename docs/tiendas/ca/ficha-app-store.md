@@ -37,7 +37,7 @@ GITHUB VERIFICAT
 Pots vincular el teu compte de GitHub per mostrar «GitHub verificat» al teu perfil. Indica que l'enllaç de GitHub pertany a qui el publica; no verifica la identitat de la persona ni els seus coneixements.
 
 SEGURETAT I CONTROL
-Pots bloquejar o reportar qualsevol persona des de l'app. Pots eliminar el teu compte i les teves dades quan vulguis des de Perfil > Compte.
+Pots bloquejar o reportar qualsevol persona des de l'app. Pots eliminar el teu compte i les teves dades quan vulguis des de Ajustos > Compte.
 
 QUÈ NO ÉS
 cofounder no és una app de cites ni una borsa de treball. No ofereix assessorament legal ni finançament, ni garanteix resultats: t'ajuda a conèixer persones amb qui construir; el que feu depèn de vosaltres.
@@ -102,7 +102,7 @@ HOW TO TEST
 2. Accept the Terms of Use and Community Guidelines when prompted.
 3. Open the Discover tab to see profiles, swipe to like/pass; the demo account
    already has a match with a chat in the Matches tab.
-4. Profile > Account: Delete my account (in-app account deletion, Guideline 5.1.1(v)).
+4. Settings > Account: Delete my account (in-app account deletion, Guideline 5.1.1(v)).
 
 DEMO ACCOUNT
 [test account: pending]
@@ -118,7 +118,7 @@ USER-GENERATED CONTENT (Guideline 1.2)
   content; Spanish and English) blocks submission of profile text and messages;
   profile photos are moderated server-side with OpenAI's moderation API and are
   only published after approval (fail-closed).
-- Account deletion: Profile > Account > Delete my account removes profile,
+- Account deletion: Settings > Account > Delete my account removes profile,
   matches, messages and photo.
 - Contact: soporte@getcofounder.app. Child-safety standards:
   https://getcofounder.app/seguridad-infantil

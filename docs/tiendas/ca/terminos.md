@@ -3,11 +3,11 @@
 # Termes d'ús de cofounder
 
 
-**Versió:** 1.3
+**Versió:** 1.4
 
-**Data de la versió:** 7 de novembre de 2026
+**Data de la versió:** 8 de novembre de 2026
 
-**Entrada en vigor:** 7 de novembre de 2026.
+**Entrada en vigor:** 8 de novembre de 2026.
 
 ## 1. Què és cofounder i qui l'ofereix
 
@@ -33,7 +33,7 @@ Has de tenir **16 anys o més**. L'edat és autodeclarada. Si indiques una edat 
 - Ets responsable de l'activitat del teu compte i de la veracitat de la informació del teu perfil.
 - Només pots tenir un compte actiu per a tu. No pots crear perfils falsos ni suplantar ningú.
 - Un compte creat sense correu es perd si tanques la sessió o desinstal·les l'app. Afegir i confirmar un correu permet recuperar-lo. Un compte creat amb Google o Apple es recupera entrant una altra vegada amb aquest mateix servei.
-- Pots eliminar el teu compte quan vulguis des de Perfil > Compte > Elimina el meu compte, o seguint les instruccions de https://getcofounder.app/eliminar-cuenta.
+- Pots eliminar el teu compte quan vulguis des de Ajustos > Compte > Elimina el meu compte, o seguint les instruccions de https://getcofounder.app/eliminar-cuenta.
 
 ## 5. Contingut que publiques
 

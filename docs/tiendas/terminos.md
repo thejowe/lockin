@@ -2,11 +2,11 @@
 
 > Documento redactado el 14 de octubre de 2026 para su revisión por el responsable antes de publicarlo. No es asesoramiento legal: conviene que lo revise una persona con formación jurídica. La versión y la fecha de este texto son las que registrará la aceptación dentro de la app.
 
-**Versión:** 1.3
+**Versión:** 1.4
 
-**Fecha de la versión:** 7 de noviembre de 2026
+**Fecha de la versión:** 8 de noviembre de 2026
 
-**Entrada en vigor:** 7 de noviembre de 2026.
+**Entrada en vigor:** 8 de noviembre de 2026.
 
 ## 1. Qué es cofounder y quién lo ofrece
 
@@ -32,7 +32,7 @@ Debes tener **16 años o más**. La edad es autodeclarada. Si indicas una edad q
 - Eres responsable de la actividad de tu cuenta y de la veracidad de la información de tu perfil.
 - Solo puedes tener una cuenta activa para ti. No puedes crear perfiles falsos ni suplantar a nadie.
 - Una cuenta creada sin email se pierde si cierras sesión o desinstalas la app. Añadir y confirmar un email permite recuperarla. Una cuenta creada con Google o Apple se recupera entrando otra vez con ese mismo servicio.
-- Puedes eliminar tu cuenta cuando quieras desde Perfil > Cuenta > Eliminar mi cuenta, o siguiendo las instrucciones de https://getcofounder.app/eliminar-cuenta.
+- Puedes eliminar tu cuenta cuando quieras desde Ajustes > Cuenta > Eliminar mi cuenta, o siguiendo las instrucciones de https://getcofounder.app/eliminar-cuenta.
 
 ## 5. Contenido que publicas
 
@@ -110,4 +110,5 @@ Nota editorial, a retirar del texto publicado:
 - 18-oct-2026: versión 1.1 (tablón, enlaces y acceso con Google o Apple). La aceptación con versión y fecha ya existe (`TERMS_VERSION`, `accept_terms`); al subir la versión todo el mundo vuelve a aceptar. El reporte de un mensaje concreto también existe (`report_message`, 20261014130000).
 - 2-nov-2026: versión 1.2, añade §10 «cofounder Premium» desde `borrador-premium-legal.md` (precios y prueba de 3 días decididos por el usuario el 1-nov-2026; productos `app.cofounder.mobile.premium.{monthly,annual}`). `TERMS_VERSION` pasa a 2026-11-02: todo el mundo vuelve a aceptar al abrir una build que la lleve.
 - 7-nov-2026: versión 1.3, la prueba gratuita de §10 pasa a 7 días en el plan anual y 3 en el mensual; `TERMS_VERSION` = `2026-11-07`, todo el mundo vuelve a aceptar. El contacto pasa a `soporte@getcofounder.app` y los enlaces a `getcofounder.app` (1.3 aún no había llegado a ningún usuario: no se sube de versión otra vez).
+- 8-nov-2026: versión 1.4, la baja de cuenta está en Ajustes > Cuenta (antes decía Perfil > Cuenta); `TERMS_VERSION` = `2026-11-08`, todo el mundo vuelve a aceptar.
 - Pendiente de revisión jurídica, en especial la renuncia al desistimiento (§10) y el estatus de comerciante (DSA y NIF), que se decidió como «no trader» cuando la app no cobraba.

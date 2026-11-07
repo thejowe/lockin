@@ -7,7 +7,7 @@
  * sube aquí y todo el mundo vuelve a aceptar. La base valida el mismo formato
  * (`accept_terms`).
  */
-export const TERMS_VERSION = '2026-11-07';
+export const TERMS_VERSION = '2026-11-08';
 
 /** Raíz de las páginas públicas (GitHub Pages con dominio propio). Sin barra final. */
 export const LEGAL_BASE_URL = 'https://getcofounder.app';

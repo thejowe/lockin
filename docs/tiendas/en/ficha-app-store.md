@@ -37,7 +37,7 @@ VERIFIED GITHUB
 You can link your GitHub account to show "GitHub verified" on your profile. It indicates that the GitHub link belongs to whoever publishes it; it does not verify the person's identity or knowledge.
 
 SAFETY AND CONTROL
-You can block or report anyone from the app. You can delete your account and your data whenever you want from Profile > Account.
+You can block or report anyone from the app. You can delete your account and your data whenever you want from Settings > Account.
 
 WHAT IT IS NOT
 cofounder is not a dating app or a job board. It offers no legal advice or funding, and does not guarantee results: it helps you meet people to build with; what you do together is up to you.
@@ -102,7 +102,7 @@ HOW TO TEST
 2. Accept the Terms of Use and Community Guidelines when prompted.
 3. Open the Discover tab to see profiles, swipe to like/pass; the demo account
    already has a match with a chat in the Matches tab.
-4. Profile > Account: Delete my account (in-app account deletion, Guideline 5.1.1(v)).
+4. Settings > Account: Delete my account (in-app account deletion, Guideline 5.1.1(v)).
 
 DEMO ACCOUNT
 [test account: pending]
@@ -118,7 +118,7 @@ USER-GENERATED CONTENT (Guideline 1.2)
   content; Spanish and English) blocks submission of profile text and messages;
   profile photos are moderated server-side with OpenAI's moderation API and are
   only published after approval (fail-closed).
-- Account deletion: Profile > Account > Delete my account removes profile,
+- Account deletion: Settings > Account > Delete my account removes profile,
   matches, messages and photo.
 - Contact: soporte@getcofounder.app. Child-safety standards:
   https://getcofounder.app/seguridad-infantil

@@ -33,7 +33,7 @@ GITHUB VERIFICAT
 Pots vincular el teu compte de GitHub per mostrar «GitHub verificat» al teu perfil. Indica que l'enllaç de GitHub pertany a qui el publica; no verifica la identitat de la persona ni els seus coneixements.
 
 SEGURETAT I CONTROL
-Pots bloquejar o reportar qualsevol persona des de l'app. Pots eliminar el teu compte i les teves dades quan vulguis des de Perfil > Compte.
+Pots bloquejar o reportar qualsevol persona des de l'app. Pots eliminar el teu compte i les teves dades quan vulguis des de Ajustos > Compte.
 
 QUÈ NO ÉS
 cofounder no és una app de cites ni una borsa de treball. No ofereix assessorament legal ni finançament, ni garanteix resultats: t'ajuda a conèixer persones amb qui construir; el que feu depèn de vosaltres.
@@ -55,7 +55,7 @@ Públic objectiu: 16–17 i 18+ (D06). Al qüestionari IARC cal declarar interac
 ## Data safety, eliminació de compte i permisos
 
 - Respostes de Data safety: vegeu `cuestionario-privacidad.md`.
-- Eliminació de compte: a l'app (Perfil > Compte > Eliminar el meu compte) i URL web https://getcofounder.app/eliminar-cuenta (obligatòria i funcionant; explica com demanar-la per correu sense l'app).
+- Eliminació de compte: a l'app (Ajustos > Compte > Eliminar el meu compte) i URL web https://getcofounder.app/eliminar-cuenta (obligatòria i funcionant; explica com demanar-la per correu sense l'app).
 - Seguretat infantil (categoria Social): URL dels estàndards https://getcofounder.app/seguridad-infantil; contacte designat soporte@getcofounder.app.
 - Permisos (binari final, T5): només `CAMERA` declarat per l'app, per a la foto de perfil; la galeria usa el selector del sistema. Sense `RECORD_AUDIO`, `SCHEDULE_EXACT_ALARM` ni notificacions: no hi ha permisos sensibles per justificar. Confirmar al manifest de l'AAB que cap llibreria n'afegeix d'altres (T7).
 - Polítiques UGC de Google: Termes i Normes acceptats abans de publicar; reporte de perfils i missatges; bloqueig; filtre bàsic de text i moderació de fotos; revisió dels reports (24 h / 72 h).

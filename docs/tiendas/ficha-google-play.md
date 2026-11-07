@@ -31,7 +31,7 @@ GITHUB VERIFICADO
 Puedes vincular tu cuenta de GitHub para mostrar «GitHub verificado» en tu perfil. Indica que el enlace de GitHub pertenece a quien lo publica; no verifica la identidad de la persona ni sus conocimientos.
 
 SEGURIDAD Y CONTROL
-Puedes bloquear o reportar a cualquier persona desde la app. Puedes eliminar tu cuenta y tus datos cuando quieras desde Perfil > Cuenta.
+Puedes bloquear o reportar a cualquier persona desde la app. Puedes eliminar tu cuenta y tus datos cuando quieras desde Ajustes > Cuenta.
 
 LO QUE NO ES
 cofounder no es una app de citas ni una bolsa de empleo. No ofrece asesoramiento legal ni financiación, ni garantiza resultados: te ayuda a conocer a personas con las que construir; lo que hagáis depende de vosotros.
@@ -53,7 +53,7 @@ Público objetivo: 16–17 y 18+ (D06). En el cuestionario IARC declarar interac
 ## Data safety, eliminación de cuenta y permisos
 
 - Respuestas de Data safety: ver `cuestionario-privacidad.md`.
-- Eliminación de cuenta: en la app (Perfil > Cuenta > Eliminar mi cuenta) y URL web https://getcofounder.app/eliminar-cuenta (obligatoria y funcionando; explica cómo pedirla por correo sin la app).
+- Eliminación de cuenta: en la app (Ajustes > Cuenta > Eliminar mi cuenta) y URL web https://getcofounder.app/eliminar-cuenta (obligatoria y funcionando; explica cómo pedirla por correo sin la app).
 - Seguridad infantil (categoría Social): URL de los estándares https://getcofounder.app/seguridad-infantil; contacto designado soporte@getcofounder.app.
 - Permisos (binario final, T5): solo `CAMERA` declarado por la app, para la foto de perfil; la galería usa el selector del sistema. Sin `RECORD_AUDIO`, `SCHEDULE_EXACT_ALARM` ni notificaciones: no hay permisos sensibles que justificar. Confirmar en el manifiesto del AAB que ninguna librería añade otros (T7).
 - Políticas UGC de Google: Términos y Normas aceptados antes de publicar; reporte de perfiles y mensajes; bloqueo; filtro básico de texto y moderación de fotos; revisión de reportes (24 h / 72 h). Migraciones aplicadas en producción el 16-oct-2026; falta probarlo contra Supabase real (T7).
