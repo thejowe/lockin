@@ -62,7 +62,7 @@ archivos.
   **quitado la rama `token_hash`**: `completeAuthLink` la rechaza siempre y ya no llama a
   `verifyOtp`; la marca `lockin.supabase.email-link-request` ha desaparecido. Si algún día se
   cambia una plantilla a `{{ .TokenHash }}`, esto hay que rediseñarlo, no reactivarlo.
-- [ ] **[Claude] Perfil: sin DELETE directo** (2026-11-06, auditoría run-1, lead 1).
+- [x] **[Claude] Perfil: sin DELETE directo** (2026-11-06, auditoría run-1, lead 1).
   - **El hueco:** `authenticated` podía borrar su fila de `profiles` y recrearla con el mismo uid.
     La cascada se llevaba los `user_blocks` que otros le habían puesto (el bloqueado reaparecía en
     el deck de quien le bloqueó) y ponía a cero `like_events` y `boosts` (cuotas de likes, tope
@@ -74,6 +74,7 @@ archivos.
     en verde.
   - **Pendiente:** aplicar la migración en producción (`supabase db push`). Hasta entonces,
     schema-drift remoto en rojo por esta migración, esperado.
+  - **Cerrado (2026-11-07):** migración aplicada en producción y Schema drift verde (run 42376442883).
 - [ ] **[Claude] Sello de GitHub/LinkedIn comprobado en servidor** (2026-11-06, auditoría run-1,
   lead 3).
   - **El hueco:** `sync_*_verification()` sellaba con cualquier identidad de ese proveedor en
@@ -92,8 +93,8 @@ archivos.
   - **Tests:** `verify-identity/logic.test.mjs` 7/7 y PGlite 192/192 (incluye que `authenticated`
     no puede llamar a `seal_identity_verification`). Jest en verde.
   - **Pendiente (en este orden):**
-    1. Aplicar la migración.
-    2. `supabase functions deploy verify-identity` (con `verify_jwt: true`).
+    1. ~~Aplicar la migración.~~ Hecho (2026-11-07, Schema drift verde).
+    2. ~~`supabase functions deploy verify-identity`~~ Hecho: v1 activa con `verify_jwt=true` (2026-11-07).
     3. Build nueva.
     4. **[comprobador]** Verificar GitHub y LinkedIn en el dispositivo contra Supabase real: el
        canje de `linkIdentity` debe traer `provider_token`. Es un supuesto sobre GoTrue que aquí no
@@ -112,7 +113,7 @@ archivos.
       mensajes y sesiones, solo los miembros del match sin bloqueo.
   - **Tests:** jest con los canales privados y PGlite con `is_changes_topic_member`.
   - **Pendiente (en este orden):**
-    1. Aplicar la migración.
+    1. ~~Aplicar la migración.~~ Hecho (2026-11-07, Schema drift verde).
     2. Publicar la build.
     3. **[comprobador]** Confirmar que siguen llegando matches, mensajes y sesiones en vivo con
        canales privados. Que Realtime autorice así un canal privado de `postgres_changes` no se ha

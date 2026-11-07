@@ -117,9 +117,7 @@ describe('legalDocForUrl', () => {
   it('reconoce las páginas publicadas y deja fuera el resto', () => {
     expect(legalDocForUrl('https://getcofounder.app/normas')).toBe('guidelines');
     expect(legalDocForUrl('https://getcofounder.app/privacidad/')).toBe('privacy');
-    expect(legalDocForUrl('https://getcofounder.app/seguridad-infantil')).toBe(
-      'childSafety'
-    );
+    expect(legalDocForUrl('https://getcofounder.app/seguridad-infantil')).toBe('childSafety');
     expect(legalDocForUrl('https://getcofounder.app/soporte')).toBeNull();
     expect(legalDocForUrl('https://www.aepd.es')).toBeNull();
   });
