@@ -6,12 +6,15 @@
 
 import { act, render as rtlRender, screen } from '@testing-library/react-native';
 import { Text } from 'react-native';
+
+import { useTabEntering } from '@/components/motion';
 import { GestureHandlerRootView, State, type LegacyPanGesture } from 'react-native-gesture-handler';
 import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-handler/jest-utils';
 
 import {
   PAGER_PAN_TEST_ID,
   PagerPage,
+  usePageFocused,
   SwipeBetweenTabs,
   useLockTabSwipe,
 } from '@/components/swipe-between-tabs';
@@ -185,5 +188,35 @@ describe('PagerPage', () => {
     );
 
     expect(screen.getByText('suelta')).toBeOnTheScreen();
+  });
+  it('cuenta a lo de dentro si se ve: fuera de pantalla no hay entradas', async () => {
+    function Probe({ label }: { label: string }) {
+      const entering = useTabEntering();
+      const focused = usePageFocused();
+      return (
+        <Text>
+          {label}: {focused ? 'enfocada' : 'fuera'},{' '}
+          {entering.up(0) === undefined ? 'sin entrada' : 'con entrada'}
+        </Text>
+      );
+    }
+
+    await render(
+      <>
+        <PagerPage index={0} isFocused>
+          <Probe label="a" />
+        </PagerPage>
+        <PagerPage index={1} isFocused={false}>
+          <Probe label="b" />
+        </PagerPage>
+        <Probe label="c" />
+      </>
+    );
+
+    expect(screen.getByText('a: enfocada, con entrada')).toBeOnTheScreen();
+    // Oculta al lector de pantalla: hay que pedirla incluyendo lo inaccesible.
+    expect(screen.getByText('b: fuera, sin entrada', { includeHiddenElements: true })).toBeTruthy();
+    // Fuera del pager (cualquier otra pantalla) siempre se ve.
+    expect(screen.getByText('c: enfocada, con entrada')).toBeOnTheScreen();
   });
 });

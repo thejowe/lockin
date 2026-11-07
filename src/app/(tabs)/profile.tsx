@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/ambient-background';
 import { Icon } from '@/components/icon';
-import { enterUp } from '@/components/motion';
+import { useTabEntering } from '@/components/motion';
 import { LoadingState, MessageState } from '@/components/state-view';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, Control, MaxContentWidth, Opacity, Spacing } from '@/constants/theme';
@@ -46,6 +46,7 @@ export default function ProfileScreen() {
   const [editSection, setEditSection] = useState<ProfileSection | null>(null);
   const scrollRef = useRef<ScrollViewInstance>(null);
   const theme = useTheme();
+  const entering = useTabEntering();
   const terms = useTermsGate();
   const {
     data: profile,
@@ -196,7 +197,7 @@ export default function ProfileScreen() {
             </Pressable>
           </View>
 
-          <Animated.View entering={enterUp(0)}>
+          <Animated.View entering={entering.up(0)}>
             <ProfileDetails
               profile={profile}
               onAvatarPress={terms.gate === 'accepted' ? () => setPhotoOpen(true) : undefined}
@@ -226,7 +227,7 @@ export default function ProfileScreen() {
           ) : terms.gate === 'required' ? (
             // Quien creó el perfil antes de esta versión de los textos los
             // acepta primero; luego ya edita cada bloque con su lápiz.
-            <Animated.View entering={enterUp(1)} style={styles.termsGate}>
+            <Animated.View entering={entering.up(1)} style={styles.termsGate}>
               <ThemedText type="body" themeColor="textSecondary">
                 {t('Para editar tu perfil o publicar una foto acepta antes los Términos y Normas.')}
               </ThemedText>
@@ -235,11 +236,11 @@ export default function ProfileScreen() {
           ) : null}
 
           {/* El tablón propio: fotos del trabajo y de una misma (2026-10-17). */}
-          <Animated.View entering={enterUp(2)}>
+          <Animated.View entering={entering.up(2)}>
             <Board ownerId={profile.id} ownerName={profile.name} editable />
           </Animated.View>
 
-          <Animated.View entering={enterUp(2)}>
+          <Animated.View entering={entering.up(2)}>
             <LinkAccounts
               profile={profile}
               onChange={refresh}

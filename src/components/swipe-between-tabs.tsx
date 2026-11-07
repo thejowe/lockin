@@ -93,6 +93,17 @@ type PagerContextValue = {
 const PagerContext = createContext<PagerContextValue | null>(null);
 
 /**
+ * Si la página que envuelve a quien pregunta es la que se ve. Fuera del pager
+ * (cualquier otra pantalla), siempre `true`.
+ */
+const PageFocusContext = createContext(true);
+
+/** `false` mientras esta pestaña está montada pero fuera de pantalla. */
+export function usePageFocused(): boolean {
+  return useContext(PageFocusContext);
+}
+
+/**
  * La pantalla de Descubrir llama a esto con `true` mientras su deck tiene
  * tarjetas (el gesto horizontal es de la tarjeta) y con `false` cuando no.
  */
@@ -210,7 +221,7 @@ export function PagerPage({
       pointerEvents={isFocused ? 'auto' : 'none'}
       accessibilityElementsHidden={!isFocused}
       importantForAccessibility={isFocused ? 'auto' : 'no-hide-descendants'}>
-      {children}
+      <PageFocusContext.Provider value={isFocused}>{children}</PageFocusContext.Provider>
     </Animated.View>
   );
 }

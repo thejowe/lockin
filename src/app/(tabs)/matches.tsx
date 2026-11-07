@@ -13,7 +13,7 @@ import Animated from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AmbientBackground } from '@/components/ambient-background';
-import { enterFade } from '@/components/motion';
+import { useTabEntering } from '@/components/motion';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useQuery, useRepositories } from '@/data';
@@ -24,6 +24,7 @@ import { t } from '@/i18n';
 
 export default function MatchesScreen() {
   const theme = useTheme();
+  const entering = useTabEntering();
   const { data, loading, error, refresh } = useMatches();
   const matches = data ?? [];
   const router = useRouter();
@@ -56,7 +57,7 @@ export default function MatchesScreen() {
           renderItem={({ item, index }) => (
             // Las filas forman un solo bloque: entran con un fundido escalonado y
             // sin desplazarse, para que el bloque no se vea partido mientras llega.
-            <Animated.View entering={enterFade(Math.min(index, 6))}>
+            <Animated.View entering={entering.fade(Math.min(index, 6))}>
               <MatchRow match={item} first={index === 0} last={index === matches.length - 1} />
             </Animated.View>
           )}

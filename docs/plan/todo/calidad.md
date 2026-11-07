@@ -4225,3 +4225,27 @@ aquí porque hasta hoy ninguna de las dos se había ejecutado junto a la otra.
   siempre en `full-journey.test.mjs:118` (`git ls-files --eol` →
   `i/lf w/crlf`).
 - Sin emulador en esta máquina: nada lanzado en dispositivo.
+
+## Entradas de Reanimated que no terminan en Android (2026-11-07)
+
+- [x] **`sign-in-abandon` con el Perfil vacío.** Desde `0e54090` (canales
+      Realtime privados) el E2E `supabase` falló 2/2: tras «Entrar y dejar
+      este perfil», la tab Perfil tenía el perfil cargado pero sus tres
+      `Animated.View entering={enterUp(n)}` no estaban en la jerarquía en los
+      30 s de espera. Causa: las tres pestañas siguen montadas en el pager
+      (`app-tabs.tsx`), `router.replace('/')` relee la ficha mientras se mira
+      Matches, y una entrada que arranca fuera de pantalla a veces se queda en
+      la opacidad 0 inicial. Los canales privados solo movían el momento en
+      que llega el perfil: la rama de diagnóstico
+      `diag/e2e-sin-canales-privados` (canales públicos) dio `supabase` verde
+      en el run 42314328887. Arreglo: `usePageFocused()` en `PagerPage` y
+      `useTabEntering()` en `src/components/motion.ts`; Perfil y Matches no
+      animan lo que se monta fuera de pantalla. Mismo patrón que la burbuja
+      propia de `083ecd0`.
+- [ ] **Flake conocido: «¡Match!» no visible** en `full-journey.yaml` (comando
+      74). Salió en `mock` (run 42314328887) y en `supabase` (primer intento
+      con `0e54090`; antes en `77ebf5a` y `bf47d99`). En la captura la tarjeta
+      sigue en el deck y no hay modal ni velo, así que no encaja del todo con
+      una entrada atascada (el velo del `Modal` no anima con Reanimated):
+      puede ser que el swipe o la decisión no lleguen. Sin diagnosticar; lo
+      siguiente es mirar la jerarquía del fallo en el artefacto.
