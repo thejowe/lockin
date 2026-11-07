@@ -84,3 +84,20 @@ footer {
   color: var(--muted);
   font-size: 1.1rem;
 }
+
+.lang {
+  float: right;
+  font-size: 0.9rem;
+}
+
+.lang a {
+  font-weight: 400;
+  font-size: inherit;
+  color: var(--accent);
+}
+
+.lang a[aria-current='page'] {
+  color: var(--fg);
+  font-weight: 700;
+  text-decoration: none;
+}

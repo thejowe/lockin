@@ -49,6 +49,6 @@ ninguno de los tres, inglés.
   cambio de idioma del móvil con la app abierta en Android, permisos en cada idioma. En este equipo no hay emulador.
 - [x] Fichas de App Store y Play en inglés y catalán (`docs/tiendas/{en,ca}/ficha-*.md`, 2026-11-07). Sin revisión nativa;
   los enlaces legales siguen sin prefijo de idioma hasta la web multilingüe.
-- [ ] Web pública (`web/`, `build-web.mjs`): sigue solo en español, y los enlaces legales de las tiendas apuntan ahí.
+- [x] Web pública (`web/`, `build-web.mjs`): en tres idiomas, es en la raíz (URL sin cambios) y en `/en/`, `/ca/`, con selector, `lang` y `hreflang`. Pendiente solo el deploy a mano a cofounder-web.
 - [ ] El documento legal dice «Perfil > Cuenta > Eliminar mi cuenta» y desde el 2026-11-01 está en Ajustes
   (también en español): corregirlo sube la versión.

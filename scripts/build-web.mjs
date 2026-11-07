@@ -1,9 +1,16 @@
 // Construye el sitio público (`_site/`) que sirve GitHub Pages.
 //
-// Las páginas estáticas viven en `web/`. Los documentos legales NO se duplican:
-// se generan desde `docs/tiendas/*.md` (privacidad, términos, normas y
-// seguridad infantil), que son la fuente de verdad, para que la web y el texto
-// que revisan las tiendas —y que acepta la app— no diverjan.
+// El sitio sale en tres idiomas. El español vive en la raíz (esas URL ya están
+// en App Store, Play y la app, y no pueden cambiar); el inglés y el catalán
+// cuelgan de `/en/` y `/ca/` con las mismas carpetas.
+//
+// - Recursos estáticos: `web/` (se copia tal cual, salvo `web/_content`).
+// - Páginas propias (portada, soporte, eliminar cuenta): fragmentos HTML en
+//   `web/_content/<idioma>/<página>.html`.
+// - Documentos legales: NO se duplican; se generan desde `docs/tiendas/*.md`
+//   (es), `docs/tiendas/en/*.md` y `docs/tiendas/ca/*.md`, que son la fuente de
+//   verdad, para que la web y el texto que revisan las tiendas —y que acepta la
+//   app— no diverjan.
 //
 // Uso: node scripts/build-web.mjs
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
@@ -96,17 +103,89 @@ export function publishableBody(markdown) {
     .join('\n');
 }
 
-/** Documentos legales: archivo fuente → carpeta publicada y título. */
+/** Dominio público: base de las URL absolutas de canonical y hreflang. */
+export const SITE_URL = 'https://getcofounder.app';
+
+/**
+ * Idiomas del sitio. `prefix` es la carpeta pública (vacía para el español) y
+ * `legalDir` la subcarpeta de `docs/tiendas` con los textos legales.
+ */
+export const LANGS = [
+  { code: 'es', name: 'Español', prefix: '', legalDir: '' },
+  { code: 'en', name: 'English', prefix: '/en', legalDir: 'en' },
+  { code: 'ca', name: 'Català', prefix: '/ca', legalDir: 'ca' },
+];
+
+/** Documentos legales: archivo fuente → carpeta publicada y título por idioma. */
 export const LEGAL_PAGES = [
-  { source: 'privacidad.md', dir: 'privacidad', title: 'Política de privacidad · cofounder' },
-  { source: 'terminos.md', dir: 'terminos', title: 'Términos de uso · cofounder' },
-  { source: 'normas.md', dir: 'normas', title: 'Normas de la comunidad · cofounder' },
+  {
+    source: 'privacidad.md',
+    dir: 'privacidad',
+    titles: {
+      es: 'Política de privacidad · cofounder',
+      en: 'Privacy policy · cofounder',
+      ca: 'Política de privacitat · cofounder',
+    },
+  },
+  {
+    source: 'terminos.md',
+    dir: 'terminos',
+    titles: {
+      es: 'Términos de uso · cofounder',
+      en: 'Terms of use · cofounder',
+      ca: "Termes d'ús · cofounder",
+    },
+  },
+  {
+    source: 'normas.md',
+    dir: 'normas',
+    titles: {
+      es: 'Normas de la comunidad · cofounder',
+      en: 'Community guidelines · cofounder',
+      ca: 'Normes de la comunitat · cofounder',
+    },
+  },
   {
     source: 'seguridad-infantil.md',
     dir: 'seguridad-infantil',
-    title: 'Estándares de seguridad infantil · cofounder',
+    titles: {
+      es: 'Estándares de seguridad infantil · cofounder',
+      en: 'Child safety standards · cofounder',
+      ca: 'Estàndards de seguretat infantil · cofounder',
+    },
   },
 ];
+
+/** Páginas propias: fragmentos `web/_content/<idioma>/<nombre>.html`. */
+export const OWN_PAGES = ['index', 'soporte', 'eliminar-cuenta'];
+
+/** Carpeta publicada de una página propia ('' para la portada). */
+const ownDir = (name) => (name === 'index' ? '' : name);
+
+const FOOTER_DIRS = [
+  'privacidad',
+  'terminos',
+  'normas',
+  'seguridad-infantil',
+  'soporte',
+  'eliminar-cuenta',
+];
+const FOOTER_LABELS = {
+  es: ['Privacidad', 'Términos', 'Normas', 'Seguridad infantil', 'Soporte', 'Eliminar cuenta'],
+  en: ['Privacy', 'Terms', 'Guidelines', 'Child safety', 'Support', 'Delete account'],
+  ca: ['Privacitat', 'Termes', 'Normes', 'Seguretat infantil', 'Suport', 'Eliminar compte'],
+};
+const ADDRESS_LINE = {
+  es: '© 2026 Joel de Torres Sainz de la Maza · carrer Nou, 37, 25153 Lleida (España)',
+  en: '© 2026 Joel de Torres Sainz de la Maza · carrer Nou, 37, 25153 Lleida (Spain)',
+  ca: '© 2026 Joel de Torres Sainz de la Maza · carrer Nou, 37, 25153 Lleida (Espanya)',
+};
+
+/** Ruta pública (absoluta, con barra final) de una página en un idioma. */
+export function pagePath(lang, dir) {
+  const { prefix } = LANGS.find((l) => l.code === lang);
+  return `${prefix}/${dir ? `${dir}/` : ''}`;
+}
 
 /**
  * Marcadores que todavía esperan una decisión del responsable (`[fecha de
@@ -117,42 +196,94 @@ export function pendingMarkers(markdown) {
   return [...markdown.matchAll(pattern)].map((match) => match[0]);
 }
 
-export const page = (title, body) => `<!doctype html>
-<html lang="es">
+/** Documento HTML completo: `dir` es la carpeta de la página ('' = portada). */
+export function page({ lang, title, body, dir = '' }) {
+  const alternates = LANGS.map(
+    (l) =>
+      `    <link rel="alternate" hreflang="${l.code}" href="${SITE_URL}${pagePath(l.code, dir)}" />`
+  );
+  alternates.push(
+    `    <link rel="alternate" hreflang="x-default" href="${SITE_URL}${pagePath('es', dir)}" />`
+  );
+  const switcher = LANGS.map((l) => {
+    const current = l.code === lang ? ' aria-current="page"' : '';
+    return `<a href="${pagePath(l.code, dir)}" hreflang="${l.code}" lang="${l.code}"${current}>${l.name}</a>`;
+  }).join(' · ');
+  const labels = FOOTER_LABELS[lang];
+  const nav = FOOTER_DIRS.map((d, i) => `<a href="${pagePath(lang, d)}">${labels[i]}</a>`).join(
+    ' · '
+  );
+  return `<!doctype html>
+<html lang="${lang}">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${escapeHtml(title)}</title>
-    <link rel="stylesheet" href="../style.css" />
+    <link rel="canonical" href="${SITE_URL}${pagePath(lang, dir)}" />
+${alternates.join('\n')}
+    <link rel="stylesheet" href="/style.css" />
   </head>
   <body>
-    <header><a href="../">cofounder</a></header>
+    <header>
+      <nav class="lang" aria-label="Language">${switcher}</nav>
+      <a href="${pagePath(lang, '')}">cofounder</a>
+    </header>
     <main>
 ${body}
     </main>
     <footer>
-      <a href="../privacidad/">Privacidad</a> · <a href="../terminos/">Términos</a> ·
-      <a href="../normas/">Normas</a> · <a href="../seguridad-infantil/">Seguridad infantil</a> ·
-      <a href="../soporte/">Soporte</a> · <a href="../eliminar-cuenta/">Eliminar cuenta</a>
+      <p>${nav}</p>
+      <p>
+        ${ADDRESS_LINE[lang]} ·
+        <a href="mailto:soporte@getcofounder.app">soporte@getcofounder.app</a>
+      </p>
     </footer>
   </body>
 </html>
 `;
+}
+
+/** Lee un fragmento de página propia: título (primer comentario) y cuerpo. */
+export function parseFragment(raw, lang) {
+  const match = /^<!--\s*title:\s*(.*?)\s*-->\r?\n/.exec(raw);
+  if (!match) throw new Error('Fragmento sin <!-- title: … -->');
+  const { prefix } = LANGS.find((l) => l.code === lang);
+  const body = raw.slice(match[0].length).trimEnd().replaceAll('{{base}}', prefix);
+  return { title: match[1], body };
+}
 
 async function main() {
   const out = join(root, '_site');
   await rm(out, { recursive: true, force: true });
   await mkdir(out, { recursive: true });
-  await cp(join(root, 'web'), out, { recursive: true });
+  // Solo los recursos estáticos: los fragmentos de `_content` se montan abajo.
+  await cp(join(root, 'web'), out, {
+    recursive: true,
+    filter: (src) => !/[\\/]_content(?:[\\/]|$)/.test(src),
+  });
 
-  for (const { source, dir, title } of LEGAL_PAGES) {
-    const markdown = await readFile(join(root, 'docs', 'tiendas', source), 'utf8');
-    const body = publishableBody(markdown);
-    for (const marker of pendingMarkers(body)) {
-      console.warn(`AVISO ${source}: marcador pendiente en el texto publicable: ${marker}`);
+  const write = async (lang, dir, title, body) => {
+    const target = join(out, ...pagePath(lang, dir).split('/').filter(Boolean));
+    await mkdir(target, { recursive: true });
+    await writeFile(join(target, 'index.html'), page({ lang, title, body, dir }));
+  };
+
+  for (const { code, legalDir } of LANGS) {
+    for (const name of OWN_PAGES) {
+      const raw = await readFile(join(root, 'web', '_content', code, `${name}.html`), 'utf8');
+      const { title, body } = parseFragment(raw, code);
+      await write(code, ownDir(name), title, body);
     }
-    await mkdir(join(out, dir), { recursive: true });
-    await writeFile(join(out, dir, 'index.html'), page(title, markdownToHtml(body)));
+    for (const { source, dir, titles } of LEGAL_PAGES) {
+      const markdown = await readFile(join(root, 'docs', 'tiendas', legalDir, source), 'utf8');
+      const body = publishableBody(markdown);
+      for (const marker of pendingMarkers(body)) {
+        console.warn(
+          `AVISO ${code}/${source}: marcador pendiente en el texto publicable: ${marker}`
+        );
+      }
+      await write(code, dir, titles[code], markdownToHtml(body));
+    }
   }
   console.log('Sitio generado en _site/');
 }
