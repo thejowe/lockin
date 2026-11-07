@@ -69,7 +69,7 @@ Edad mínima de uso: 16 años (D06), autodeclarada. En el cuestionario de App St
 | Filtro de contenido | Sí: filtro básico de texto en perfil y chat, más moderación de fotos |
 | Aceptación de Términos y Normas | Sí, obligatoria antes de publicar |
 | Publicidad / apuestas | No |
-| Compras dentro de la app | Sí: suscripción cofounder Premium, mensual (`app.cofounder.mobile.premium.monthly`, 4,99 €) o anual (`.annual`, 39,99 €), con 3 días de prueba gratis. Premium solo amplía funciones de la propia app |
+| Compras dentro de la app | Sí: suscripción cofounder Premium, mensual (`app.cofounder.mobile.premium.monthly`, 4,99 €) o anual (`.annual`, 39,99 €), con prueba gratis (7 días en el anual, 3 en el mensual). Premium solo amplía funciones de la propia app |
 | Controles parentales / verificación de edad | No; edad autodeclarada |
 
 ## Límites
@@ -120,7 +120,7 @@ USER-GENERATED CONTENT (Guideline 1.2)
 
 SUBSCRIPTION (Guideline 3.1.2)
 - cofounder Premium is an optional auto-renewable subscription (monthly or
-  yearly, 3-day free trial for new subscribers). It removes the daily like
+  yearly; free trial for new subscribers: 7 days on yearly, 3 on monthly). It removes the daily like
   limit and adds Super Likes, undo, Boost and "who liked you". Everything else
   stays free; there are no ads.
 - Premium only unlocks features inside the app. Purchases go through Apple

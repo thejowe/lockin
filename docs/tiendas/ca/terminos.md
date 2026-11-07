@@ -3,11 +3,11 @@
 # Termes d'ús de cofounder
 
 
-**Versió:** 1.2
+**Versió:** 1.3
 
-**Data de la versió:** 2 de novembre de 2026
+**Data de la versió:** 7 de novembre de 2026
 
-**Entrada en vigor:** 2 de novembre de 2026.
+**Entrada en vigor:** 7 de novembre de 2026.
 
 ## 1. Què és cofounder i qui l'ofereix
 
@@ -75,7 +75,7 @@ El que acordeu amb altres persones que coneguis a cofounder és cosa vostra. cof
 
 **Què inclou.** cofounder Premium és una subscripció opcional que elimina el límit diari de likes i afegeix Super Likes, desfer l'últim gest, Boost i veure qui t'ha fet like. cofounder continua sent gratuït sense Premium i no mostra anuncis.
 
-**Preu i renovació.** 4,99 € al mes o 39,99 € l'any, impostos inclosos, cobrats per Apple App Store o Google Play. La subscripció es renova sola al final de cada període llevat que la cancel·lis almenys 24 hores abans que acabi. La primera vegada que et subscrius tens 3 dies de prova gratuïta; si no la cancel·les almenys 24 hores abans que acabi, comença el cobrament del pla triat. La prova és una per persona i compte de botiga.
+**Preu i renovació.** 4,99 € al mes o 39,99 € l'any, impostos inclosos, cobrats per Apple App Store o Google Play. La subscripció es renova sola al final de cada període llevat que la cancel·lis almenys 24 hores abans que acabi. La primera vegada que et subscrius tens 7 dies de prova gratuïta al pla anual i 3 al mensual; si no la cancel·les almenys 24 hores abans que acabi, comença el cobrament del pla triat. La prova és una per persona i compte de botiga.
 
 **Com cancel·lar.** Des dels ajustos de subscripcions del teu compte d'Apple o de Google (l'app té l'accés directe «Gestiona la subscripció»). Esborrar el compte de cofounder **no cancel·la** la subscripció a la botiga: cancel·la-la abans.
 

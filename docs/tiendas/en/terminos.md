@@ -3,11 +3,11 @@
 # cofounder Terms of Use
 
 
-**Version:** 1.2
+**Version:** 1.3
 
-**Version date:** 2 November 2026
+**Version date:** 7 November 2026
 
-**Effective date:** 2 November 2026.
+**Effective date:** 7 November 2026.
 
 ## 1. What cofounder is and who provides it
 
@@ -75,7 +75,7 @@ Whatever you agree with other people you meet on cofounder is your own business.
 
 **What it includes.** cofounder Premium is an optional subscription that removes the daily like limit and adds Super Likes, undoing your last swipe, Boost and seeing who liked you. cofounder remains free without Premium and shows no ads.
 
-**Price and renewal.** €4.99 per month or €39.99 per year, taxes included, charged by the Apple App Store or Google Play. The subscription renews automatically at the end of each period unless you cancel at least 24 hours before it ends. The first time you subscribe you get a 3-day free trial; if you do not cancel at least 24 hours before it ends, charging for the chosen plan begins. The trial is limited to one per person and store account.
+**Price and renewal.** €4.99 per month or €39.99 per year, taxes included, charged by the Apple App Store or Google Play. The subscription renews automatically at the end of each period unless you cancel at least 24 hours before it ends. The first time you subscribe you get a 7-day free trial on the annual plan and a 3-day one on the monthly plan; if you do not cancel at least 24 hours before it ends, charging for the chosen plan begins. The trial is limited to one per person and store account.
 
 **How to cancel.** From the subscription settings of your Apple or Google account (the app has a direct "Manage subscription" shortcut). Deleting your cofounder account **does not cancel** the subscription in the store: cancel it first.
 

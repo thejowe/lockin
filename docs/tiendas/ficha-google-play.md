@@ -58,7 +58,7 @@ Público objetivo: 16–17 y 18+ (D06). En el cuestionario IARC declarar interac
 - Permisos (binario final, T5): solo `CAMERA` declarado por la app, para la foto de perfil; la galería usa el selector del sistema. Sin `RECORD_AUDIO`, `SCHEDULE_EXACT_ALARM` ni notificaciones: no hay permisos sensibles que justificar. Confirmar en el manifiesto del AAB que ninguna librería añade otros (T7).
 - Políticas UGC de Google: Términos y Normas aceptados antes de publicar; reporte de perfiles y mensajes; bloqueo; filtro básico de texto y moderación de fotos; revisión de reportes (24 h / 72 h). Migraciones aplicadas en producción el 16-oct-2026; falta probarlo contra Supabase real (T7).
 - Declaración de trader (DSA): **no trader** (decidido el 16-oct-2026: app gratuita, sin anuncios, compras ni ingresos). **Reabierto el 2-nov-2026:** con Premium la app cobra; el titular debe decidir si pasa a trader antes de publicar la versión con suscripción.
-- Compras en la app: **«Contiene compras en la aplicación: sí»** (suscripción cofounder Premium, mensual o anual, con 3 días de prueba). **«Contiene anuncios: no».** Precio de la app: gratuita.
+- Compras en la app: **«Contiene compras en la aplicación: sí»** (suscripción cofounder Premium, mensual o anual, con prueba gratis: 7 días en el anual, 3 en el mensual). **«Contiene anuncios: no».** Precio de la app: gratuita.
 - Cuenta de prueba por si Play pide acceso: [cuenta de prueba: pendiente].
 
 ## Límites

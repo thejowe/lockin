@@ -7,7 +7,7 @@
  * sube aquí y todo el mundo vuelve a aceptar. La base valida el mismo formato
  * (`accept_terms`).
  */
-export const TERMS_VERSION = '2026-11-02';
+export const TERMS_VERSION = '2026-11-07';
 
 /** Raíz de las páginas públicas (GitHub Pages del repo). Sin barra final. */
 export const LEGAL_BASE_URL = 'https://thejowe.github.io/cofounder-web';

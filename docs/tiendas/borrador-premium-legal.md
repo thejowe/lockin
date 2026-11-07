@@ -18,7 +18,7 @@ Premium y no muestra anuncios.
 
 **Precio y renovación.** 4,99 € al mes o 39,99 € al año, impuestos incluidos, cobrados por Apple
 App Store o Google Play. La suscripción se renueva sola al final de cada periodo salvo que la canceles al menos
-24 horas antes. La primera vez que te suscribes tienes 3 días de prueba gratuita; si no cancelas al menos 24 horas antes de que termine, empieza el cobro del plan elegido. La prueba es una por persona y cuenta de tienda.
+24 horas antes. La primera vez que te suscribes tienes 7 días de prueba gratuita en el plan anual y 3 en el mensual; si no cancelas al menos 24 horas antes de que termine, empieza el cobro del plan elegido. La prueba es una por persona y cuenta de tienda.
 
 **Cómo cancelar.** Desde los ajustes de suscripciones de tu cuenta de Apple o Google (la app tiene el acceso
 directo «Gestionar suscripción»). Borrar la cuenta de cofounder **no cancela** la suscripción en la tienda:

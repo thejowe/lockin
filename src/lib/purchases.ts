@@ -64,7 +64,7 @@ const FAKE_OFFERINGS: PurchasePackage[] = [
     period: 'year',
     priceString: '39,99 €',
     pricePerMonthString: '3,33 €',
-    freeTrial: { count: 3, unit: 'day' },
+    freeTrial: { count: 7, unit: 'day' },
   },
 ];
 

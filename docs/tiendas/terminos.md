@@ -2,11 +2,11 @@
 
 > Documento redactado el 14 de octubre de 2026 para su revisión por el responsable antes de publicarlo. No es asesoramiento legal: conviene que lo revise una persona con formación jurídica. La versión y la fecha de este texto son las que registrará la aceptación dentro de la app.
 
-**Versión:** 1.2
+**Versión:** 1.3
 
-**Fecha de la versión:** 2 de noviembre de 2026
+**Fecha de la versión:** 7 de noviembre de 2026
 
-**Entrada en vigor:** 2 de noviembre de 2026.
+**Entrada en vigor:** 7 de noviembre de 2026.
 
 ## 1. Qué es cofounder y quién lo ofrece
 
@@ -74,7 +74,7 @@ Lo que acordéis con otras personas a las que conozcas en cofounder es asunto vu
 
 **Qué incluye.** cofounder Premium es una suscripción opcional que elimina el límite diario de likes y añade Super Likes, deshacer el último gesto, Boost y ver quién te ha dado like. cofounder sigue siendo gratuito sin Premium y no muestra anuncios.
 
-**Precio y renovación.** 4,99 € al mes o 39,99 € al año, impuestos incluidos, cobrados por Apple App Store o Google Play. La suscripción se renueva sola al final de cada periodo salvo que la canceles al menos 24 horas antes de que termine. La primera vez que te suscribes tienes 3 días de prueba gratuita; si no la cancelas al menos 24 horas antes de que termine, empieza el cobro del plan elegido. La prueba es una por persona y cuenta de tienda.
+**Precio y renovación.** 4,99 € al mes o 39,99 € al año, impuestos incluidos, cobrados por Apple App Store o Google Play. La suscripción se renueva sola al final de cada periodo salvo que la canceles al menos 24 horas antes de que termine. La primera vez que te suscribes tienes 7 días de prueba gratuita en el plan anual y 3 en el mensual; si no la cancelas al menos 24 horas antes de que termine, empieza el cobro del plan elegido. La prueba es una por persona y cuenta de tienda.
 
 **Cómo cancelar.** Desde los ajustes de suscripciones de tu cuenta de Apple o de Google (la app tiene el acceso directo «Gestionar suscripción»). Borrar la cuenta de cofounder **no cancela** la suscripción en la tienda: cancélala antes.
 
@@ -109,4 +109,5 @@ Nota editorial, a retirar del texto publicado:
 - Cotejado con el código el 14-oct-2026: edad mínima 16 (restricción SQL 16-120 y formulario 16-99); bloquear y reportar perfiles existen (`block_profile`, `report_profile`); la foto se modera con OpenAI en la función `moderate-avatar`; el perfil lo lee cualquier cuenta autenticada.
 - 18-oct-2026: versión 1.1 (tablón, enlaces y acceso con Google o Apple). La aceptación con versión y fecha ya existe (`TERMS_VERSION`, `accept_terms`); al subir la versión todo el mundo vuelve a aceptar. El reporte de un mensaje concreto también existe (`report_message`, 20261014130000).
 - 2-nov-2026: versión 1.2, añade §10 «cofounder Premium» desde `borrador-premium-legal.md` (precios y prueba de 3 días decididos por el usuario el 1-nov-2026; productos `app.cofounder.mobile.premium.{monthly,annual}`). `TERMS_VERSION` pasa a 2026-11-02: todo el mundo vuelve a aceptar al abrir una build que la lleve.
+- 7-nov-2026: versión 1.3, la prueba gratuita de §10 pasa a 7 días en el plan anual y 3 en el mensual; `TERMS_VERSION` = `2026-11-07`, todo el mundo vuelve a aceptar.
 - Pendiente de revisión jurídica, en especial la renuncia al desistimiento (§10) y el estatus de comerciante (DSA y NIF), que se decidió como «no trader» cuando la app no cobraba.
