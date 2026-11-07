@@ -47,7 +47,8 @@ ninguno de los tres, inglés.
   `supabase/templates/README.md`. Mientras tanto, los correos salen en español.
 - [ ] [comprobador] Build nativa nueva (`expo-localization` no llega por OTA): idioma del sistema, selector,
   cambio de idioma del móvil con la app abierta en Android, permisos en cada idioma. En este equipo no hay emulador.
-- [ ] Fichas de App Store y Play en inglés y catalán.
+- [x] Fichas de App Store y Play en inglés y catalán (`docs/tiendas/{en,ca}/ficha-*.md`, 2026-11-07). Sin revisión nativa;
+  los enlaces legales siguen sin prefijo de idioma hasta la web multilingüe.
 - [ ] Web pública (`web/`, `build-web.mjs`): sigue solo en español, y los enlaces legales de las tiendas apuntan ahí.
 - [ ] El documento legal dice «Perfil > Cuenta > Eliminar mi cuenta» y desde el 2026-11-01 está en Ajustes
   (también en español): corregirlo sube la versión.
