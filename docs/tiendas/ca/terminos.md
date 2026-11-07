@@ -13,9 +13,9 @@
 
 cofounder és una app per conèixer altres persones que volen començar alguna cosa i valorar si encaixeu com a cofundadors. Permet crear un perfil, veure perfils d'altres persones, indicar interès, fer match quan l'interès és mutu i conversar per xat.
 
-L'ofereix **Joel de Torres Sainz de la Maza**, amb domicili al carrer Nou, 37, 25153 Lleida (Catalunya, Espanya). Contacte: **cofounder.soporte@gmail.com**.
+L'ofereix **Joel de Torres Sainz de la Maza**, amb domicili al carrer Nou, 37, 25153 Lleida (Catalunya, Espanya). Contacte: **soporte@getcofounder.app**.
 
-En crear un compte o fer servir l'app acceptes aquests termes, les [normes de la comunitat](https://thejowe.github.io/cofounder-web/normas) i la [política de privacitat](https://thejowe.github.io/cofounder-web/privacidad).
+En crear un compte o fer servir l'app acceptes aquests termes, les [normes de la comunitat](https://getcofounder.app/normas) i la [política de privacitat](https://getcofounder.app/privacidad).
 
 ## 2. El que cofounder no és
 
@@ -33,7 +33,7 @@ Has de tenir **16 anys o més**. L'edat és autodeclarada. Si indiques una edat 
 - Ets responsable de l'activitat del teu compte i de la veracitat de la informació del teu perfil.
 - Només pots tenir un compte actiu per a tu. No pots crear perfils falsos ni suplantar ningú.
 - Un compte creat sense correu es perd si tanques la sessió o desinstal·les l'app. Afegir i confirmar un correu permet recuperar-lo. Un compte creat amb Google o Apple es recupera entrant una altra vegada amb aquest mateix servei.
-- Pots eliminar el teu compte quan vulguis des de Perfil > Compte > Elimina el meu compte, o seguint les instruccions de https://thejowe.github.io/cofounder-web/eliminar-cuenta.
+- Pots eliminar el teu compte quan vulguis des de Perfil > Compte > Elimina el meu compte, o seguint les instruccions de https://getcofounder.app/eliminar-cuenta.
 
 ## 5. Contingut que publiques
 
@@ -54,7 +54,7 @@ cofounder té **tolerància zero amb el contingut i les conductes abusives**. En
 - Compartir dades personals de tercers sense el seu permís.
 - Qualsevol activitat il·legal.
 
-El detall és a les [normes de la comunitat](https://thejowe.github.io/cofounder-web/normas).
+El detall és a les [normes de la comunitat](https://getcofounder.app/normas).
 
 ## 7. Moderació, bloquejos i denúncies
 
@@ -101,4 +101,4 @@ Aquests termes es regeixen per la llei espanyola. Si ets persona consumidora, ma
 
 ## 15. Contacte
 
-Per a qualsevol dubte o avís sobre aquests termes: cofounder.soporte@gmail.com.
+Per a qualsevol dubte o avís sobre aquests termes: soporte@getcofounder.app.

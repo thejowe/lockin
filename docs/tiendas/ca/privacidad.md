@@ -3,15 +3,15 @@
 # Política de privacitat de cofounder
 
 
-**Versió:** 1.4.
+**Versió:** 1.5.
 
-**Entrada en vigor:** 2 de novembre de 2026.
+**Entrada en vigor:** 7 de novembre de 2026.
 
 ## 1. Qui és responsable de les teves dades
 
 cofounder és una app per trobar cofundador o cofundadora entre iguals.
 
-El responsable del tractament és **Joel de Torres Sainz de la Maza**, amb domicili al carrer Nou, 37, 25153 Lleida (Catalunya, Espanya). Per a privacitat o suport: **cofounder.soporte@gmail.com**.
+El responsable del tractament és **Joel de Torres Sainz de la Maza**, amb domicili al carrer Nou, 37, 25153 Lleida (Catalunya, Espanya). Per a privacitat o suport: **privacidad@getcofounder.app**.
 
 Publiquem l'app a Espanya i a la resta de l'Espai Econòmic Europeu. S'hi apliquen el Reglament (UE) 2016/679 (RGPD) i la Llei orgànica 3/2018 (LOPDGDD). L'autoritat de control és l'Agència Espanyola de Protecció de Dades ([aepd.es](https://www.aepd.es)); a Catalunya també pots acudir a l'Autoritat Catalana de Protecció de Dades.
 
@@ -33,9 +33,9 @@ Desem el nom i l'edat que indiques, la teva ciutat o zona i zona horària, inici
 
 La ubicació s'escriu com a text; l'app no fa servir GPS.
 
-**Foto de perfil (opcional).** Si puges una foto, es desa primer en un espai privat i el nostre servidor l'envia a **OpenAI** (només la imatge, sense el teu nom ni la resta del perfil) amb l'única finalitat de comprovar que és apropiada. La revisió és automàtica. Només es publica, visible per a altres persones de l'app, si supera aquesta revisió. Si el servei de revisió no està disponible, la foto no es publica. Si creus que s'ha rebutjat per error, escriu-nos a cofounder.soporte@gmail.com i una persona la revisarà (vegeu §8). La pots treure quan vulguis i es retira en esborrar el teu compte (vegeu §7).
+**Foto de perfil (opcional).** Si puges una foto, es desa primer en un espai privat i el nostre servidor l'envia a **OpenAI** (només la imatge, sense el teu nom ni la resta del perfil) amb l'única finalitat de comprovar que és apropiada. La revisió és automàtica. Només es publica, visible per a altres persones de l'app, si supera aquesta revisió. Si el servei de revisió no està disponible, la foto no es publica. Si creus que s'ha rebutjat per error, escriu-nos a soporte@getcofounder.app i una persona la revisarà (vegeu §8). La pots treure quan vulguis i es retira en esborrar el teu compte (vegeu §7).
 
-**Tauler (opcional).** Pots publicar al teu perfil fins a 12 fotos, per exemple de la teva feina, cadascuna amb un text opcional de fins a 280 caràcters. Abans de publicar-se, el nostre servidor envia la foto i el seu text a **OpenAI** (sense el teu nom ni la resta del perfil) per comprovar que són apropiats; si no superen la revisió o no es pot fer, no es publiquen. Si creus que s'ha rebutjat una foto per error, escriu-nos a cofounder.soporte@gmail.com i una persona la revisarà (vegeu §8). Pots treure cada foto quan vulguis.
+**Tauler (opcional).** Pots publicar al teu perfil fins a 12 fotos, per exemple de la teva feina, cadascuna amb un text opcional de fins a 280 caràcters. Abans de publicar-se, el nostre servidor envia la foto i el seu text a **OpenAI** (sense el teu nom ni la resta del perfil) per comprovar que són apropiats; si no superen la revisió o no es pot fer, no es publiquen. Si creus que s'ha rebutjat una foto per error, escriu-nos a soporte@getcofounder.app i una persona la revisarà (vegeu §8). Pots treure cada foto quan vulguis.
 
 ### La teva activitat i converses
 
@@ -80,7 +80,7 @@ Fem servir les dades per mantenir i recuperar el teu compte, mostrar i editar el
 - **GitHub** (responsable independent): només si verifiques el teu enllaç.
 - **Google** i **Apple** (responsables independents): si entres amb el seu compte, i si contractes Premium, perquè cobren la subscripció amb el teu compte de la seva botiga. Cadascun tracta aquest inici de sessió i aquest pagament segons la seva pròpia política de privacitat.
 
-OpenAI i RevenueCat tracten dades fora de l'Espai Econòmic Europeu (EUA). En el cas de RevenueCat, la transferència es basa en les clàusules contractuals tipus de la Comissió Europea, incorporades al seu acord de tractament de dades. En el d'OpenAI, en les clàusules contractuals tipus o en el Marc de Privacitat de Dades UE-EUA (DPF), segons el cas. Pots demanar informació sobre aquestes garanties a cofounder.soporte@gmail.com.
+OpenAI i RevenueCat tracten dades fora de l'Espai Econòmic Europeu (EUA). En el cas de RevenueCat, la transferència es basa en les clàusules contractuals tipus de la Comissió Europea, incorporades al seu acord de tractament de dades. En el d'OpenAI, en les clàusules contractuals tipus o en el Marc de Privacitat de Dades UE-EUA (DPF), segons el cas. Pots demanar informació sobre aquestes garanties a soporte@getcofounder.app.
 
 En obrir un enllaç de portfolio, GitHub, LinkedIn, Instagram o TikTok d'una altra persona, visites un servei extern amb les seves pròpies pràctiques de privacitat.
 
@@ -92,7 +92,7 @@ Per completar el perfil, l'app demana nom, edat, zona, disponibilitat i almenys 
 
 ## 7. Quant de temps es conserven
 
-Conservem les teves dades mentre existeixi el teu compte. En eliminar el compte des de l'app (Perfil > Compte > Elimina el meu compte) s'esborren de seguida el teu perfil i les dades associades. En esborrar el compte, el servidor intenta eliminar també les teves fotos de l'emmagatzematge (la de perfil, les del tauler i qualsevol pujada pendent) i, en tot cas, deixen de ser accessibles. Si alguna d'aquestes retirades falla, pot quedar un fitxer sense enllaç ni metadades a l'emmagatzematge fins que el retirem, i els sistemes de còpia del proveïdor poden conservar un residu tècnic; si necessites una confirmació de retirada, escriu-nos a cofounder.soporte@gmail.com. Si vas entrar amb Apple des d'un iPhone, abans d'esborrar el compte demanem a Apple que retiri l'accés de l'app al teu Apple ID; si Apple no respon, el compte s'esborra igualment i pots retirar aquest accés tu mateix a Configuració > el teu nom > Inicia sessió amb Apple.
+Conservem les teves dades mentre existeixi el teu compte. En eliminar el compte des de l'app (Perfil > Compte > Elimina el meu compte) s'esborren de seguida el teu perfil i les dades associades. En esborrar el compte, el servidor intenta eliminar també les teves fotos de l'emmagatzematge (la de perfil, les del tauler i qualsevol pujada pendent) i, en tot cas, deixen de ser accessibles. Si alguna d'aquestes retirades falla, pot quedar un fitxer sense enllaç ni metadades a l'emmagatzematge fins que el retirem, i els sistemes de còpia del proveïdor poden conservar un residu tècnic; si necessites una confirmació de retirada, escriu-nos a soporte@getcofounder.app. Si vas entrar amb Apple des d'un iPhone, abans d'esborrar el compte demanem a Apple que retiri l'accés de l'app al teu Apple ID; si Apple no respon, el compte s'esborra igualment i pots retirar aquest accés tu mateix a Configuració > el teu nom > Inicia sessió amb Apple.
 
 - **Comptes inactius:** no els eliminem per inactivitat. Si en el futur ho fem, ho indicarem aquí amb el termini i avisarem abans qui tingui correu.
 - **Còpies de seguretat del proveïdor:** poden conservar dades eliminades fins a 30 dies més.
@@ -111,9 +111,9 @@ Tancar la sessió o desinstal·lar l'app no esborra les dades del servidor. Tanc
 
 Pots editar el teu perfil, treure la teva foto i les fotos del tauler i desvincular GitHub (es retiren el distintiu i l'enllaç derivat). L'app no permet editar ni esborrar missatges individuals.
 
-La revisió de les fotos de perfil i del tauler és automàtica (§2). Tens dret que una persona revisi un rebuig, a expressar el teu punt de vista i a impugnar la decisió: escriu a cofounder.soporte@gmail.com i responem en el mateix termini de 30 dies.
+La revisió de les fotos de perfil i del tauler és automàtica (§2). Tens dret que una persona revisi un rebuig, a expressar el teu punt de vista i a impugnar la decisió: escriu a privacidad@getcofounder.app i responem en el mateix termini de 30 dies.
 
-Pots eliminar el teu compte des de l'app o demanar-ho a cofounder.soporte@gmail.com o a https://thejowe.github.io/cofounder-web/eliminar-cuenta; responem en un màxim de 30 dies. Tens a més dret d'accés, rectificació, supressió, oposició, limitació i portabilitat, que pots exercir pel mateix correu, i a reclamar davant l'AEPD.
+Pots eliminar el teu compte des de l'app o demanar-ho a soporte@getcofounder.app o a https://getcofounder.app/eliminar-cuenta; responem en un màxim de 30 dies. Tens a més dret d'accés, rectificació, supressió, oposició, limitació i portabilitat, que pots exercir pel mateix correu, i a reclamar davant l'AEPD.
 
 ## 9. Menors
 
@@ -125,6 +125,6 @@ Les persones de 16 i 17 anys són menors d'edat i poden fer servir l'app. El seu
 
 El servidor aplica controls d'accés per compte i per pertinença a un match. Les connexions amb els nostres proveïdors fan servir TLS. No prometem xifratge d'extrem a extrem ni certificacions de seguretat.
 
-Pots **bloquejar i denunciar** una altra persona des de l'app. Revisem les denúncies i actuem sobre el contingut o els comptes que incompleixin les [normes de la comunitat](https://thejowe.github.io/cofounder-web/normas) i els [termes d'ús](https://thejowe.github.io/cofounder-web/terminos). Els nostres estàndards de seguretat infantil són a https://thejowe.github.io/cofounder-web/seguridad-infantil.
+Pots **bloquejar i denunciar** una altra persona des de l'app. Revisem les denúncies i actuem sobre el contingut o els comptes que incompleixin les [normes de la comunitat](https://getcofounder.app/normas) i els [termes d'ús](https://getcofounder.app/terminos). Els nostres estàndards de seguretat infantil són a https://getcofounder.app/seguridad-infantil.
 
 Si canviem aquesta política de manera rellevant, ho avisarem a l'app i, si tens correu, per correu, almenys 30 dies abans que entri en vigor.

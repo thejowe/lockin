@@ -9,8 +9,8 @@
  */
 export const TERMS_VERSION = '2026-11-07';
 
-/** Raíz de las páginas públicas (GitHub Pages del repo). Sin barra final. */
-export const LEGAL_BASE_URL = 'https://thejowe.github.io/cofounder-web';
+/** Raíz de las páginas públicas (GitHub Pages con dominio propio). Sin barra final. */
+export const LEGAL_BASE_URL = 'https://getcofounder.app';
 
 export const LEGAL_URLS = {
   privacy: `${LEGAL_BASE_URL}/privacidad`,

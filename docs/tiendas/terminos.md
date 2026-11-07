@@ -12,9 +12,9 @@
 
 cofounder es una app para conocer a otras personas que quieren empezar algo y valorar si encajáis como cofundadores. Permite crear un perfil, ver perfiles de otras personas, indicar interés, hacer match cuando el interés es mutuo y conversar por chat.
 
-Lo ofrece **Joel de Torres Sainz de la Maza**, con domicilio en carrer Nou, 37, 25153 Lleida (Catalunya, España). Contacto: **cofounder.soporte@gmail.com**.
+Lo ofrece **Joel de Torres Sainz de la Maza**, con domicilio en carrer Nou, 37, 25153 Lleida (Catalunya, España). Contacto: **soporte@getcofounder.app**.
 
-Al crear una cuenta o usar la app aceptas estos términos, las [normas de la comunidad](https://thejowe.github.io/cofounder-web/normas) y la [política de privacidad](https://thejowe.github.io/cofounder-web/privacidad).
+Al crear una cuenta o usar la app aceptas estos términos, las [normas de la comunidad](https://getcofounder.app/normas) y la [política de privacidad](https://getcofounder.app/privacidad).
 
 ## 2. Lo que cofounder no es
 
@@ -32,7 +32,7 @@ Debes tener **16 años o más**. La edad es autodeclarada. Si indicas una edad q
 - Eres responsable de la actividad de tu cuenta y de la veracidad de la información de tu perfil.
 - Solo puedes tener una cuenta activa para ti. No puedes crear perfiles falsos ni suplantar a nadie.
 - Una cuenta creada sin email se pierde si cierras sesión o desinstalas la app. Añadir y confirmar un email permite recuperarla. Una cuenta creada con Google o Apple se recupera entrando otra vez con ese mismo servicio.
-- Puedes eliminar tu cuenta cuando quieras desde Perfil > Cuenta > Eliminar mi cuenta, o siguiendo las instrucciones de https://thejowe.github.io/cofounder-web/eliminar-cuenta.
+- Puedes eliminar tu cuenta cuando quieras desde Perfil > Cuenta > Eliminar mi cuenta, o siguiendo las instrucciones de https://getcofounder.app/eliminar-cuenta.
 
 ## 5. Contenido que publicas
 
@@ -53,7 +53,7 @@ cofounder tiene **tolerancia cero con el contenido y las conductas abusivas**. E
 - Compartir datos personales de terceros sin su permiso.
 - Cualquier actividad ilegal.
 
-El detalle está en las [normas de la comunidad](https://thejowe.github.io/cofounder-web/normas).
+El detalle está en las [normas de la comunidad](https://getcofounder.app/normas).
 
 ## 7. Moderación, bloqueos y reportes
 
@@ -100,7 +100,7 @@ Estos términos se rigen por la ley española. Si eres persona consumidora, mant
 
 ## 15. Contacto
 
-Para cualquier duda o aviso sobre estos términos: cofounder.soporte@gmail.com.
+Para cualquier duda o aviso sobre estos términos: soporte@getcofounder.app.
 
 ---
 
@@ -109,5 +109,5 @@ Nota editorial, a retirar del texto publicado:
 - Cotejado con el código el 14-oct-2026: edad mínima 16 (restricción SQL 16-120 y formulario 16-99); bloquear y reportar perfiles existen (`block_profile`, `report_profile`); la foto se modera con OpenAI en la función `moderate-avatar`; el perfil lo lee cualquier cuenta autenticada.
 - 18-oct-2026: versión 1.1 (tablón, enlaces y acceso con Google o Apple). La aceptación con versión y fecha ya existe (`TERMS_VERSION`, `accept_terms`); al subir la versión todo el mundo vuelve a aceptar. El reporte de un mensaje concreto también existe (`report_message`, 20261014130000).
 - 2-nov-2026: versión 1.2, añade §10 «cofounder Premium» desde `borrador-premium-legal.md` (precios y prueba de 3 días decididos por el usuario el 1-nov-2026; productos `app.cofounder.mobile.premium.{monthly,annual}`). `TERMS_VERSION` pasa a 2026-11-02: todo el mundo vuelve a aceptar al abrir una build que la lleve.
-- 7-nov-2026: versión 1.3, la prueba gratuita de §10 pasa a 7 días en el plan anual y 3 en el mensual; `TERMS_VERSION` = `2026-11-07`, todo el mundo vuelve a aceptar.
+- 7-nov-2026: versión 1.3, la prueba gratuita de §10 pasa a 7 días en el plan anual y 3 en el mensual; `TERMS_VERSION` = `2026-11-07`, todo el mundo vuelve a aceptar. El contacto pasa a `soporte@getcofounder.app` y los enlaces a `getcofounder.app` (1.3 aún no había llegado a ningún usuario: no se sube de versión otra vez).
 - Pendiente de revisión jurídica, en especial la renuncia al desistimiento (§10) y el estatus de comerciante (DSA y NIF), que se decidió como «no trader» cuando la app no cobraba.

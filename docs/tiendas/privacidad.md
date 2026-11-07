@@ -1,5 +1,7 @@
 # Política de privacidad de cofounder
 
+> Revisada el 7 de noviembre de 2026 (versión 1.5): dominio propio `getcofounder.app`; contacto `privacidad@getcofounder.app` (derechos y revisión humana) y `soporte@getcofounder.app` (soporte y baja).
+>
 > Revisada el 2 de noviembre de 2026 (versión 1.4): suscripción opcional cofounder Premium cobrada por Apple o Google, con RevenueCat como encargado (§2, §3, §5 y §7), e idiomas y especialidad «Otra» en el perfil (§2).
 >
 > Revisada el 29 de octubre de 2026 (sin cambiar de versión; decidir si pide 1.4): §2 y §7 explican el token técnico de Apple que se guarda para revocar el acceso al eliminar la cuenta (App Store 5.1.1(v)). Hasta que la migración `20261029120000_apple_refresh_tokens` y la función `apple-token` estén en producción con sus secretos, el servidor no guarda ni revoca nada.
@@ -10,15 +12,15 @@
 >
 > Revisada el 18 de octubre de 2026: acceso con Google y Apple, tablón personal de fotos moderado con OpenAI, enlaces a Instagram y TikTok, y envío de correo por Supabase mientras Brevo no esté configurado. Publicada ese día en la URL pública. Ese mismo día, tras aplicar `20261018120000_profiles_block_visibility` en producción, §4 vuelve a decir que el bloqueo impide ver el perfil (antes: «la app deja de mostrar»).
 
-**Versión:** 1.4.
+**Versión:** 1.5.
 
-**Entrada en vigor:** 2 de noviembre de 2026.
+**Entrada en vigor:** 7 de noviembre de 2026.
 
 ## 1. Quién es responsable de tus datos
 
 cofounder es una app para encontrar cofundador o cofundadora entre pares.
 
-El responsable del tratamiento es **Joel de Torres Sainz de la Maza**, con domicilio en carrer Nou, 37, 25153 Lleida (Catalunya, España). Para privacidad o soporte: **cofounder.soporte@gmail.com**.
+El responsable del tratamiento es **Joel de Torres Sainz de la Maza**, con domicilio en carrer Nou, 37, 25153 Lleida (Catalunya, España). Para privacidad o soporte: **privacidad@getcofounder.app**.
 
 Publicamos la app en España y el resto del Espacio Económico Europeo. Se aplican el Reglamento (UE) 2016/679 (RGPD) y la Ley Orgánica 3/2018 (LOPDGDD). La autoridad de control es la Agencia Española de Protección de Datos ([aepd.es](https://www.aepd.es)); en Catalunya también puedes acudir a la Autoritat Catalana de Protecció de Dades.
 
@@ -40,9 +42,9 @@ Guardamos el nombre y la edad que indicas, tu ciudad o zona y zona horaria, inic
 
 La ubicación se escribe como texto; la app no usa GPS.
 
-**Foto de perfil (opcional).** Si subes una foto, se guarda primero en un espacio privado y nuestro servidor la envía a **OpenAI** (solo la imagen, sin tu nombre ni el resto del perfil) con el único fin de comprobar que es apropiada. La revisión es automática. Solo se publica, visible para otras personas de la app, si supera esa revisión. Si el servicio de revisión no está disponible, la foto no se publica. Si crees que se ha rechazado por error, escríbenos a cofounder.soporte@gmail.com y una persona la revisará (ver §8). Puedes quitarla cuando quieras y se retira al borrar tu cuenta (ver §7).
+**Foto de perfil (opcional).** Si subes una foto, se guarda primero en un espacio privado y nuestro servidor la envía a **OpenAI** (solo la imagen, sin tu nombre ni el resto del perfil) con el único fin de comprobar que es apropiada. La revisión es automática. Solo se publica, visible para otras personas de la app, si supera esa revisión. Si el servicio de revisión no está disponible, la foto no se publica. Si crees que se ha rechazado por error, escríbenos a soporte@getcofounder.app y una persona la revisará (ver §8). Puedes quitarla cuando quieras y se retira al borrar tu cuenta (ver §7).
 
-**Tablón (opcional).** Puedes publicar en tu perfil hasta 12 fotos, por ejemplo de tu trabajo, cada una con un texto opcional de hasta 280 caracteres. Antes de publicarse, nuestro servidor envía la foto y su texto a **OpenAI** (sin tu nombre ni el resto del perfil) para comprobar que son apropiados; si no superan la revisión o no se puede hacer, no se publican. Si crees que se ha rechazado una foto por error, escríbenos a cofounder.soporte@gmail.com y una persona la revisará (ver §8). Puedes quitar cada foto cuando quieras.
+**Tablón (opcional).** Puedes publicar en tu perfil hasta 12 fotos, por ejemplo de tu trabajo, cada una con un texto opcional de hasta 280 caracteres. Antes de publicarse, nuestro servidor envía la foto y su texto a **OpenAI** (sin tu nombre ni el resto del perfil) para comprobar que son apropiados; si no superan la revisión o no se puede hacer, no se publican. Si crees que se ha rechazado una foto por error, escríbenos a soporte@getcofounder.app y una persona la revisará (ver §8). Puedes quitar cada foto cuando quieras.
 
 ### Tu actividad y conversaciones
 
@@ -87,7 +89,7 @@ Usamos los datos para mantener y recuperar tu cuenta, mostrar y editar tu perfil
 - **GitHub** (responsable independiente): solo si verificas tu enlace.
 - **Google** y **Apple** (responsables independientes): si entras con su cuenta, y si contratas Premium, porque cobran la suscripción con tu cuenta de su tienda. Cada uno trata ese inicio de sesión y ese pago según su propia política de privacidad.
 
-OpenAI y RevenueCat tratan datos fuera del Espacio Económico Europeo (EE. UU.). En el caso de RevenueCat, la transferencia se apoya en las cláusulas contractuales tipo de la Comisión Europea, incorporadas a su acuerdo de tratamiento de datos. En el de OpenAI, en las cláusulas contractuales tipo o en el Marco de Privacidad de Datos UE-EE. UU. (DPF), según el caso. Puedes pedir información sobre estas garantías en cofounder.soporte@gmail.com.
+OpenAI y RevenueCat tratan datos fuera del Espacio Económico Europeo (EE. UU.). En el caso de RevenueCat, la transferencia se apoya en las cláusulas contractuales tipo de la Comisión Europea, incorporadas a su acuerdo de tratamiento de datos. En el de OpenAI, en las cláusulas contractuales tipo o en el Marco de Privacidad de Datos UE-EE. UU. (DPF), según el caso. Puedes pedir información sobre estas garantías en soporte@getcofounder.app.
 
 Al abrir un enlace de portfolio, GitHub, LinkedIn, Instagram o TikTok de otra persona, visitas un servicio externo con sus propias prácticas de privacidad.
 
@@ -99,7 +101,7 @@ Para completar el perfil, la app pide nombre, edad, zona, disponibilidad y al me
 
 ## 7. Cuánto tiempo se conservan
 
-Conservamos tus datos mientras tu cuenta exista. Al eliminar la cuenta desde la app (Perfil > Cuenta > Eliminar mi cuenta) se borran de inmediato tu perfil y los datos asociados. Al borrar la cuenta, el servidor intenta eliminar también tus fotos del almacenamiento (la de perfil, las del tablón y cualquier subida pendiente) y, en todo caso, dejan de ser accesibles. Si alguna de esas retiradas falla, puede quedar un archivo sin enlace ni metadatos en el almacenamiento hasta que lo retiremos, y los sistemas de copia del proveedor pueden conservar un residuo técnico; si necesitas una confirmación de retirada, escríbenos a cofounder.soporte@gmail.com. Si entraste con Apple desde un iPhone, antes de borrar la cuenta pedimos a Apple que retire el acceso de la app a tu Apple ID; si Apple no responde, la cuenta se borra igualmente y puedes retirar ese acceso tú en Ajustes > tu nombre > Iniciar sesión con Apple.
+Conservamos tus datos mientras tu cuenta exista. Al eliminar la cuenta desde la app (Perfil > Cuenta > Eliminar mi cuenta) se borran de inmediato tu perfil y los datos asociados. Al borrar la cuenta, el servidor intenta eliminar también tus fotos del almacenamiento (la de perfil, las del tablón y cualquier subida pendiente) y, en todo caso, dejan de ser accesibles. Si alguna de esas retiradas falla, puede quedar un archivo sin enlace ni metadatos en el almacenamiento hasta que lo retiremos, y los sistemas de copia del proveedor pueden conservar un residuo técnico; si necesitas una confirmación de retirada, escríbenos a soporte@getcofounder.app. Si entraste con Apple desde un iPhone, antes de borrar la cuenta pedimos a Apple que retire el acceso de la app a tu Apple ID; si Apple no responde, la cuenta se borra igualmente y puedes retirar ese acceso tú en Ajustes > tu nombre > Iniciar sesión con Apple.
 
 - **Cuentas inactivas:** no las eliminamos por inactividad. Si en el futuro lo hacemos, lo indicaremos aquí con el plazo y avisaremos antes a quien tenga email.
 - **Copias de seguridad del proveedor:** pueden conservar datos eliminados hasta 30 días más.
@@ -118,9 +120,9 @@ Cerrar sesión o desinstalar la app no borra los datos del servidor. Cerrar sesi
 
 Puedes editar tu perfil, quitar tu foto y las fotos del tablón y desvincular GitHub (se retiran el distintivo y el enlace derivado). La app no permite editar ni borrar mensajes individuales.
 
-La revisión de las fotos de perfil y del tablón es automática (§2). Tienes derecho a que una persona revise un rechazo, a expresar tu punto de vista y a impugnar la decisión: escribe a cofounder.soporte@gmail.com y respondemos en el mismo plazo de 30 días.
+La revisión de las fotos de perfil y del tablón es automática (§2). Tienes derecho a que una persona revise un rechazo, a expresar tu punto de vista y a impugnar la decisión: escribe a privacidad@getcofounder.app y respondemos en el mismo plazo de 30 días.
 
-Puedes eliminar tu cuenta desde la app o pedirlo en cofounder.soporte@gmail.com o en https://thejowe.github.io/cofounder-web/eliminar-cuenta; respondemos en un máximo de 30 días. Tienes además derecho de acceso, rectificación, supresión, oposición, limitación y portabilidad, que puedes ejercer por el mismo correo, y a reclamar ante la AEPD.
+Puedes eliminar tu cuenta desde la app o pedirlo en soporte@getcofounder.app o en https://getcofounder.app/eliminar-cuenta; respondemos en un máximo de 30 días. Tienes además derecho de acceso, rectificación, supresión, oposición, limitación y portabilidad, que puedes ejercer por el mismo correo, y a reclamar ante la AEPD.
 
 ## 9. Menores
 
@@ -132,7 +134,7 @@ Las personas de 16 y 17 años son menores de edad y pueden usar la app. Su perfi
 
 El servidor aplica controles de acceso por cuenta y por pertenencia a un match. Las conexiones con nuestros proveedores usan TLS. No prometemos cifrado de extremo a extremo ni certificaciones de seguridad.
 
-Puedes **bloquear y reportar** a otra persona desde la app. Revisamos los reportes y actuamos sobre el contenido o las cuentas que incumplan las [normas de la comunidad](https://thejowe.github.io/cofounder-web/normas) y los [términos de uso](https://thejowe.github.io/cofounder-web/terminos). Nuestros estándares de seguridad infantil están en https://thejowe.github.io/cofounder-web/seguridad-infantil.
+Puedes **bloquear y reportar** a otra persona desde la app. Revisamos los reportes y actuamos sobre el contenido o las cuentas que incumplan las [normas de la comunidad](https://getcofounder.app/normas) y los [términos de uso](https://getcofounder.app/terminos). Nuestros estándares de seguridad infantil están en https://getcofounder.app/seguridad-infantil.
 
 Si cambiamos esta política de forma relevante, lo avisaremos en la app y, si tienes email, por correo, al menos 30 días antes de que entre en vigor.
 
@@ -145,4 +147,5 @@ Nota editorial, a retirar del texto publicado:
 - **18-oct-2026:** publicada en `cofounder-web`. El DPA de OpenAI se cita como parte de sus condiciones (el texto de feb-2024 dice que se incorpora por referencia al acuerdo que rige la API); firmar el formulario de DPA de OpenAI sigue siendo recomendable. El SMTP de Brevo no está configurado en Supabase Auth (comprobado ese día), así que el texto nombra a Supabase como emisor del correo; al configurar Brevo, volver a nombrarlo en §5.
 - **21-oct-2026 (v1.3):** SMTP de Brevo configurado en Supabase Auth y comprobado (alta de prueba entregada en bandeja de entrada). §5 nombra a Brevo y quita la frase de Supabase como emisor. El correo de prueba llevaba píxel de apertura y el enlace de confirmación reescrito por Brevo (`sendibt3.com/tr/cl/…`); en el panel solo existe «seguimiento anónimo» (activado el 21-oct), no apagarlo. §5 lo declara tal cual. Pedido a soporte de Brevo que lo apague; cuando esté apagado y comprobado en un correo real, cambiar §5 a «no se usa su seguimiento». Publicada el 21-oct en `cofounder-web` porque la 1.2 publicada nombraba a Supabase como emisor, ya falso.
 - **2-nov-2026 (v1.4):** cotejado con el código. Suscripción: `public.entitlements` (`premium_until`, `product_id`, `store`, `updated_at`, borrado en cascada con el perfil), `like_events` y `boosts` (cascada), `revenuecat_events` solo guarda el id del evento; `src/lib/purchases.ts` hace `logIn` en RevenueCat con el uid de Supabase. Idiomas (`languages`, `seeking_languages`) y `other_specialty` en `profiles` desde `20261102120000`. Entrada en vigor el mismo día y no a 30 días (§10): el tratamiento nuevo solo afecta a quien abre la pantalla de Premium (al abrirla, `getOfferings()` → `sdkReady()` ya hace `logIn(uid)` en RevenueCat, compre o no; hallazgo de `codex review`) o la contrata a partir de ahora, y los idiomas los aporta cada persona al editar su perfil; confirmarlo en la revisión jurídica. **Falta del titular:** firmar o aceptar el DPA de RevenueCat y comprobar la base de la transferencia (CCT o DPF).
-- **Pendiente de decidir o confirmar:** (1) ~~condiciones de la API de OpenAI (DPA)~~ ver la línea anterior; (2) ~~plazo de las fotos rechazadas o pendientes~~ resuelto: borrado tras cada revisión y purga de restos a las 24 h; (3) ~~proveedor de correo~~ decidido el 16-oct: Brevo, remitente cofounder.soporte@gmail.com; no empujar este texto hasta que el SMTP de Brevo esté configurado en Supabase Auth; (4) ~~fecha de publicación~~ v1.2 con entrada en vigor el 20-oct-2026, pendiente de subir a `cofounder-web`; (5) ~~job `purge_old_user_reports()`~~ confirmado activo en producción el 16-oct (03:20 diario); (6) los plazos de revisión de reportes (72 h / 24 h) son un compromiso operativo, no una regla del código.
+- **7-nov-2026 (v1.5):** dominio `getcofounder.app` (web en GitHub Pages, correo en Zoho Mail EU con alias `soporte@`, `legal@`, `privacidad@`); los enlaces y el contacto de este texto pasan al dominio nuevo.
+- **Pendiente de decidir o confirmar:** (1) ~~condiciones de la API de OpenAI (DPA)~~ ver la línea anterior; (2) ~~plazo de las fotos rechazadas o pendientes~~ resuelto: borrado tras cada revisión y purga de restos a las 24 h; (3) ~~proveedor de correo~~ decidido el 16-oct: Brevo, remitente soporte@getcofounder.app; no empujar este texto hasta que el SMTP de Brevo esté configurado en Supabase Auth; (4) ~~fecha de publicación~~ v1.2 con entrada en vigor el 20-oct-2026, pendiente de subir a `cofounder-web`; (5) ~~job `purge_old_user_reports()`~~ confirmado activo en producción el 16-oct (03:20 diario); (6) los plazos de revisión de reportes (72 h / 24 h) son un compromiso operativo, no una regla del código.

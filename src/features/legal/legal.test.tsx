@@ -115,12 +115,12 @@ describe('parseMarkdown', () => {
 
 describe('legalDocForUrl', () => {
   it('reconoce las páginas publicadas y deja fuera el resto', () => {
-    expect(legalDocForUrl('https://thejowe.github.io/cofounder-web/normas')).toBe('guidelines');
-    expect(legalDocForUrl('https://thejowe.github.io/cofounder-web/privacidad/')).toBe('privacy');
-    expect(legalDocForUrl('https://thejowe.github.io/cofounder-web/seguridad-infantil')).toBe(
+    expect(legalDocForUrl('https://getcofounder.app/normas')).toBe('guidelines');
+    expect(legalDocForUrl('https://getcofounder.app/privacidad/')).toBe('privacy');
+    expect(legalDocForUrl('https://getcofounder.app/seguridad-infantil')).toBe(
       'childSafety'
     );
-    expect(legalDocForUrl('https://thejowe.github.io/cofounder-web/soporte')).toBeNull();
+    expect(legalDocForUrl('https://getcofounder.app/soporte')).toBeNull();
     expect(legalDocForUrl('https://www.aepd.es')).toBeNull();
   });
 });

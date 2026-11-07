@@ -1290,7 +1290,7 @@ async function dropUnsealedIdentity(provider: 'github' | 'linkedin_oidc'): Promi
     throw new AccountError(
       'unknown',
       t(
-        'Esa cuenta ya está vinculada, pero sin verificar, y no se puede desvincular porque es tu única forma de entrar. Escríbenos a cofounder.soporte@gmail.com.'
+        'Esa cuenta ya está vinculada, pero sin verificar, y no se puede desvincular porque es tu única forma de entrar. Escríbenos a soporte@getcofounder.app.'
       ),
       unlinkError
     );

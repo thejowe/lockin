@@ -7,7 +7,7 @@
 
 **Data de la versió:** 18 d'octubre de 2026
 
-cofounder connecta persones per valorar si poden fundar alguna cosa juntes. Perquè sigui un lloc segur, aquestes normes valen en perfils, fotos, taulers, respostes, enllaços i missatges. Formen part dels [termes d'ús](https://thejowe.github.io/cofounder-web/terminos).
+cofounder connecta persones per valorar si poden fundar alguna cosa juntes. Perquè sigui un lloc segur, aquestes normes valen en perfils, fotos, taulers, respostes, enllaços i missatges. Formen part dels [termes d'ús](https://getcofounder.app/terminos).
 
 ## Tolerància zero
 
@@ -39,11 +39,11 @@ La foto de perfil i les fotos del tauler són opcionals. Es revisen automàticam
 
 ## Seguretat infantil
 
-Tolerància zero amb l'abús i l'explotació sexual infantil (CSAE). Qualsevol contingut o conducta que posi en risc una persona menor es retira, se suspèn el compte i es comunica a les autoritats competents. Els detalls són als nostres [estàndards de seguretat infantil](https://thejowe.github.io/cofounder-web/seguridad-infantil).
+Tolerància zero amb l'abús i l'explotació sexual infantil (CSAE). Qualsevol contingut o conducta que posi en risc una persona menor es retira, se suspèn el compte i es comunica a les autoritats competents. Els detalls són als nostres [estàndards de seguretat infantil](https://getcofounder.app/seguridad-infantil).
 
 ## Com bloquejar i denunciar
 
-Des del perfil de qualsevol persona, al deck o al xat, la pots **bloquejar** (deixa de poder-te veure i escriure) o **denunciar**, triant un motiu i, si vols, afegint un text. Al xat també pots denunciar un missatge concret. També ens pots escriure a cofounder.soporte@gmail.com.
+Des del perfil de qualsevol persona, al deck o al xat, la pots **bloquejar** (deixa de poder-te veure i escriure) o **denunciar**, triant un motiu i, si vols, afegint un text. Al xat també pots denunciar un missatge concret. També ens pots escriure a soporte@getcofounder.app.
 
 ## Què fem amb una denúncia
 

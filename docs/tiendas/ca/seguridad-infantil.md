@@ -28,12 +28,12 @@ L'incompliment suposa la retirada immediata del contingut i l'eliminació del co
 - Les fotos de perfil i les del tauler es revisen automàticament abans de publicar-se. La revisió rebutja les imatges amb contingut sexual o amb indicis de contingut sexual amb menors i, si no es pot fer, la foto no es publica.
 - El xat només s'obre entre dues persones després d'un match mutu.
 - Qualsevol persona en pot bloquejar una altra: el bloqueig impedeix veure's i escriure's en les dues direccions.
-- Les [normes de la comunitat](https://thejowe.github.io/cofounder-web/normas) i els [termes d'ús](https://thejowe.github.io/cofounder-web/terminos) prohibeixen aquest contingut de manera expressa.
+- Les [normes de la comunitat](https://getcofounder.app/normas) i els [termes d'ús](https://getcofounder.app/terminos) prohibeixen aquest contingut de manera expressa.
 
 ## Com denunciar
 
 - **A l'app:** des del perfil de qualsevol persona, al deck o al xat, tria «Denuncia», indica el motiu i, si vols, un text.
-- **Per correu:** cofounder.soporte@gmail.com, amb l'assumpte «Seguretat infantil».
+- **Per correu:** soporte@getcofounder.app, amb l'assumpte «Seguretat infantil».
 
 ## Com responem
 
@@ -47,4 +47,4 @@ Quan tenim coneixement de contingut d'abús o explotació sexual infantil, el co
 
 ## Contacte designat
 
-Responsable de seguretat infantil: Joel de Torres Sainz de la Maza. Correu: **cofounder.soporte@gmail.com**.
+Responsable de seguretat infantil: Joel de Torres Sainz de la Maza. Correu: **soporte@getcofounder.app**.

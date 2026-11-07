@@ -1,5 +1,18 @@
 # TODO maestro — LockIn MVP
 
+## ▶ Al retomar (2026-11-07, noche): dominio getcofounder.app puesto; Apple en revisión; falta Play
+
+**Código (todo empujado salvo el commit de esta entrada):** CI, Schema drift y Web pública del 2026-11-07 verdes sobre `6be4f67` (cobertura de ramas 90,03 %, `3b39a74`); reintento acotado del like en el E2E (`6edca87`), flake de «¡Match!» **sin causa raíz**, ver `todo/calidad.md`; términos v1.3 con prueba de 7 días anual / 3 mensual y `TERMS_VERSION` = `2026-11-07` (`6be4f67`). **Dominio:** enlaces legales y contacto pasan a `https://getcofounder.app`; `soporte@getcofounder.app` (soporte, baja) y `privacidad@getcofounder.app` (derechos RGPD, revisión humana); privacidad v1.5. Términos siguen en 1.3 (no había llegado a nadie). La web de GitHub Pages ya sirve el dominio, con HTTPS forzado y despliegue desde `pages.yml`.
+
+**Estado no-código (Brodie, 2026-11-07):**
+- **Supabase** (`grrzmzktrhksbttpbblg`): migraciones `20261106120000/130000/140000` aplicadas (historial renombrado a esas versiones), Schema drift verde (run 42376442883), `verify-identity` v1 activa con `verify_jwt=true`, advisors sin errores. Pendiente: desactivar Realtime «Allow public access» cuando las builds viejas ya no se usen.
+- **Apple:** iOS 1.0 (build 26) + Premium mensual + anual en *Waiting for Review*. Prueba gratis creada: 7 días anual, 3 mensual.
+- **Google Play** (`app.cofounder.android`): ficha lista, sin AAB, 0 testers en pruebas cerradas (hacen falta 12 durante 14 días). SHA-1 de firma de la app de Play: `EA:5E:9A:D9:59:78:54:AD:2A:33:56:17:FC:E3:57:BD:F6:0E:BD:BE`; el de subida sale con el primer AAB. Suscripciones bloqueadas hasta crear la cuenta de comerciante de Google Payments (Joel). AAB compilándose con `eas build --local` en el equipo de Brodie (límite de EAS alcanzado). Falta la clave `goog_…` de RevenueCat en `eas.json` (sale al crear la app Android en RevenueCat, tras los productos de Play).
+- **Dominio y correo:** `getcofounder.app` en Name.com; Zoho Mail (EU) con buzón `hola@` y alias `soporte@`, `legal@`, `privacidad@`; MX, SPF y DKIM verificados. **Falta (Brodie/Joel):** cambiar el remitente de Supabase Auth/Brevo de `no-reply@secondthought.store` al dominio nuevo, con DKIM/DMARC; actualizar el soporte en App Store Connect y Play Console; publicar la web con privacidad v1.5.
+- **Decisiones pendientes:** estatus trader (recomendado: persona física) y aviso legal con NIF. LinkedIn aparcado (la página exige DNI). Sentry aparcado. POEditor sin reclamar en el Pack.
+
+**Siguiente [Claude]:** web multilingüe y fichas en inglés y catalán (`todo/idiomas.md`); corregir «Perfil > Cuenta > Eliminar mi cuenta» en los términos (ahora está en Ajustes; sube versión); poner la clave `goog_…` cuando exista, rebuild y `[comprobador]` con *license tester*.
+
 ## ▶ Al retomar (2026-11-06): CI arreglada; quedan comprobaciones del usuario y tiendas
 
 **Del 2026-11-05 (sin registrar hasta hoy):** `ff3eda1`/`3a809a4` todas las zonas horarias con país y ningún alias cambia la hora; `c77ed4f` el paywall anuncia la prueba gratis solo a quien tiene derecho (casilla de `todo/premium.md` abierta hasta verlo en tienda); `9ffee56` cerrar sesión vuelve a la bienvenida y ojo para ver la contraseña.

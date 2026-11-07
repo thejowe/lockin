@@ -7,7 +7,7 @@
 
 **Version date:** 18 October 2026
 
-cofounder connects people so they can work out whether they could found something together. To keep it a safe place, these guidelines apply to profiles, photos, boards, answers, links and messages. They are part of the [terms of use](https://thejowe.github.io/cofounder-web/terminos).
+cofounder connects people so they can work out whether they could found something together. To keep it a safe place, these guidelines apply to profiles, photos, boards, answers, links and messages. They are part of the [terms of use](https://getcofounder.app/terminos).
 
 ## Zero tolerance
 
@@ -39,11 +39,11 @@ The profile photo and board photos are optional. They are automatically reviewed
 
 ## Child safety
 
-Zero tolerance for child sexual abuse and exploitation (CSAE). Any content or conduct that endangers a minor is removed, the account is suspended and it is reported to the competent authorities. The details are in our [child safety standards](https://thejowe.github.io/cofounder-web/seguridad-infantil).
+Zero tolerance for child sexual abuse and exploitation (CSAE). Any content or conduct that endangers a minor is removed, the account is suspended and it is reported to the competent authorities. The details are in our [child safety standards](https://getcofounder.app/seguridad-infantil).
 
 ## How to block and report
 
-From anyone's profile, in the deck or in the chat, you can **block** them (they can no longer see you or write to you) or **report** them, choosing a reason and, if you want, adding some text. In the chat you can also report a specific message. You can also write to us at cofounder.soporte@gmail.com.
+From anyone's profile, in the deck or in the chat, you can **block** them (they can no longer see you or write to you) or **report** them, choosing a reason and, if you want, adding some text. In the chat you can also report a specific message. You can also write to us at soporte@getcofounder.app.
 
 ## What we do with a report
 

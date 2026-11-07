@@ -28,12 +28,12 @@ Breaches result in the immediate removal of the content and deletion of the acco
 - Profile and board photos are automatically reviewed before being published. The review rejects images with sexual content or signs of sexual content involving minors and, if it cannot be done, the photo is not published.
 - Chat only opens between two people after a mutual match.
 - Anyone can block another person: a block prevents them from seeing and writing to each other in both directions.
-- The [community guidelines](https://thejowe.github.io/cofounder-web/normas) and the [terms of use](https://thejowe.github.io/cofounder-web/terminos) expressly prohibit this content.
+- The [community guidelines](https://getcofounder.app/normas) and the [terms of use](https://getcofounder.app/terminos) expressly prohibit this content.
 
 ## How to report
 
 - **In the app:** from anyone's profile, in the deck or in the chat, choose "Report", give the reason and, if you want, some text.
-- **By email:** cofounder.soporte@gmail.com, with the subject "Child safety".
+- **By email:** soporte@getcofounder.app, with the subject "Child safety".
 
 ## How we respond
 
@@ -47,4 +47,4 @@ When we become aware of child sexual abuse or exploitation content, we report it
 
 ## Designated contact
 
-Child safety officer: Joel de Torres Sainz de la Maza. Email: **cofounder.soporte@gmail.com**.
+Child safety officer: Joel de Torres Sainz de la Maza. Email: **soporte@getcofounder.app**.

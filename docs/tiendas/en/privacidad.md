@@ -3,15 +3,15 @@
 # cofounder Privacy Policy
 
 
-**Version:** 1.4.
+**Version:** 1.5.
 
-**Effective date:** 2 November 2026.
+**Effective date:** 7 November 2026.
 
 ## 1. Who is responsible for your data
 
 cofounder is an app for finding a cofounder among peers.
 
-The data controller is **Joel de Torres Sainz de la Maza**, residing at carrer Nou, 37, 25153 Lleida (Catalonia, Spain). For privacy or support: **cofounder.soporte@gmail.com**.
+The data controller is **Joel de Torres Sainz de la Maza**, residing at carrer Nou, 37, 25153 Lleida (Catalonia, Spain). For privacy or support: **privacidad@getcofounder.app**.
 
 We publish the app in Spain and the rest of the European Economic Area. Regulation (EU) 2016/679 (GDPR) and Spanish Organic Law 3/2018 (LOPDGDD) apply. The supervisory authority is the Spanish Data Protection Agency ([aepd.es](https://www.aepd.es)); in Catalonia you can also go to the Autoritat Catalana de Protecció de Dades.
 
@@ -33,9 +33,9 @@ We store the name and age you give, your city or area and time zone, avatar init
 
 Location is written as text; the app does not use GPS.
 
-**Profile photo (optional).** If you upload a photo, it is first stored in a private space and our server sends it to **OpenAI** (only the image, without your name or the rest of your profile) for the sole purpose of checking that it is appropriate. The review is automatic. It is only published, visible to other people on the app, if it passes that review. If the review service is not available, the photo is not published. If you think it was rejected by mistake, write to us at cofounder.soporte@gmail.com and a person will review it (see §8). You can remove it whenever you want and it is removed when you delete your account (see §7).
+**Profile photo (optional).** If you upload a photo, it is first stored in a private space and our server sends it to **OpenAI** (only the image, without your name or the rest of your profile) for the sole purpose of checking that it is appropriate. The review is automatic. It is only published, visible to other people on the app, if it passes that review. If the review service is not available, the photo is not published. If you think it was rejected by mistake, write to us at soporte@getcofounder.app and a person will review it (see §8). You can remove it whenever you want and it is removed when you delete your account (see §7).
 
-**Board (optional).** You can post up to 12 photos on your profile, for example of your work, each with optional text of up to 280 characters. Before publication, our server sends the photo and its text to **OpenAI** (without your name or the rest of your profile) to check that they are appropriate; if they do not pass the review or it cannot be done, they are not published. If you think a photo was rejected by mistake, write to us at cofounder.soporte@gmail.com and a person will review it (see §8). You can remove each photo whenever you want.
+**Board (optional).** You can post up to 12 photos on your profile, for example of your work, each with optional text of up to 280 characters. Before publication, our server sends the photo and its text to **OpenAI** (without your name or the rest of your profile) to check that they are appropriate; if they do not pass the review or it cannot be done, they are not published. If you think a photo was rejected by mistake, write to us at soporte@getcofounder.app and a person will review it (see §8). You can remove each photo whenever you want.
 
 ### Your activity and conversations
 
@@ -80,7 +80,7 @@ We use the data to maintain and recover your account, show and edit your profile
 - **GitHub** (independent controller): only if you verify your link.
 - **Google** and **Apple** (independent controllers): if you sign in with their account, and if you subscribe to Premium, because they charge the subscription with your account in their store. Each processes that sign-in and that payment under its own privacy policy.
 
-OpenAI and RevenueCat process data outside the European Economic Area (USA). For RevenueCat, the transfer relies on the European Commission's standard contractual clauses, incorporated into its data processing agreement. For OpenAI, on the standard contractual clauses or on the EU-US Data Privacy Framework (DPF), as applicable. You can request information about these safeguards at cofounder.soporte@gmail.com.
+OpenAI and RevenueCat process data outside the European Economic Area (USA). For RevenueCat, the transfer relies on the European Commission's standard contractual clauses, incorporated into its data processing agreement. For OpenAI, on the standard contractual clauses or on the EU-US Data Privacy Framework (DPF), as applicable. You can request information about these safeguards at soporte@getcofounder.app.
 
 When you open another person's portfolio, GitHub, LinkedIn, Instagram or TikTok link, you visit an external service with its own privacy practices.
 
@@ -92,7 +92,7 @@ To complete the profile, the app asks for name, age, area, availability and at l
 
 ## 7. How long they are kept
 
-We keep your data while your account exists. When you delete the account from the app (Profile > Account > Delete my account) your profile and associated data are deleted immediately. When the account is deleted, the server also tries to remove your photos from storage (the profile photo, the board photos and any pending upload) and, in any case, they stop being accessible. If any of these removals fails, a file with no link or metadata may remain in storage until we remove it, and the provider's backup systems may keep a technical residue; if you need confirmation of removal, write to us at cofounder.soporte@gmail.com. If you signed in with Apple from an iPhone, before deleting the account we ask Apple to remove the app's access to your Apple ID; if Apple does not respond, the account is deleted anyway and you can remove that access yourself in Settings > your name > Sign in with Apple.
+We keep your data while your account exists. When you delete the account from the app (Profile > Account > Delete my account) your profile and associated data are deleted immediately. When the account is deleted, the server also tries to remove your photos from storage (the profile photo, the board photos and any pending upload) and, in any case, they stop being accessible. If any of these removals fails, a file with no link or metadata may remain in storage until we remove it, and the provider's backup systems may keep a technical residue; if you need confirmation of removal, write to us at soporte@getcofounder.app. If you signed in with Apple from an iPhone, before deleting the account we ask Apple to remove the app's access to your Apple ID; if Apple does not respond, the account is deleted anyway and you can remove that access yourself in Settings > your name > Sign in with Apple.
 
 - **Inactive accounts:** we do not delete them for inactivity. If we do so in the future, we will state it here with the period and will notify anyone with an email beforehand.
 - **Provider backups:** may retain deleted data for up to 30 more days.
@@ -111,9 +111,9 @@ Signing out or uninstalling the app does not delete data from the server. Signin
 
 You can edit your profile, remove your photo and board photos and unlink GitHub (the badge and the derived link are removed). The app does not allow editing or deleting individual messages.
 
-The review of profile and board photos is automatic (§2). You have the right to have a person review a rejection, to express your point of view and to challenge the decision: write to cofounder.soporte@gmail.com and we will respond within the same 30-day period.
+The review of profile and board photos is automatic (§2). You have the right to have a person review a rejection, to express your point of view and to challenge the decision: write to privacidad@getcofounder.app and we will respond within the same 30-day period.
 
-You can delete your account from the app or request it at cofounder.soporte@gmail.com or at https://thejowe.github.io/cofounder-web/eliminar-cuenta; we respond within 30 days at most. You also have the right of access, rectification, erasure, objection, restriction and portability, which you can exercise through the same email, and the right to complain to the AEPD.
+You can delete your account from the app or request it at soporte@getcofounder.app or at https://getcofounder.app/eliminar-cuenta; we respond within 30 days at most. You also have the right of access, rectification, erasure, objection, restriction and portability, which you can exercise through the same email, and the right to complain to the AEPD.
 
 ## 9. Minors
 
@@ -125,6 +125,6 @@ People aged 16 and 17 are minors and may use the app. Their profile, like anyone
 
 The server applies access controls by account and by membership of a match. Connections with our providers use TLS. We do not promise end-to-end encryption or security certifications.
 
-You can **block and report** another person from the app. We review reports and act on content or accounts that breach the [community guidelines](https://thejowe.github.io/cofounder-web/normas) and the [terms of use](https://thejowe.github.io/cofounder-web/terminos). Our child safety standards are at https://thejowe.github.io/cofounder-web/seguridad-infantil.
+You can **block and report** another person from the app. We review reports and act on content or accounts that breach the [community guidelines](https://getcofounder.app/normas) and the [terms of use](https://getcofounder.app/terminos). Our child safety standards are at https://getcofounder.app/seguridad-infantil.
 
 If we change this policy in a significant way, we will notify you in the app and, if you have an email, by email, at least 30 days before it takes effect.

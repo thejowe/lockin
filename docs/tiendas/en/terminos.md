@@ -13,9 +13,9 @@
 
 cofounder is an app for meeting other people who want to start something and working out whether you fit as cofounders. It lets you create a profile, see other people's profiles, show interest, match when the interest is mutual and talk by chat.
 
-It is provided by **Joel de Torres Sainz de la Maza**, residing at carrer Nou, 37, 25153 Lleida (Catalonia, Spain). Contact: **cofounder.soporte@gmail.com**.
+It is provided by **Joel de Torres Sainz de la Maza**, residing at carrer Nou, 37, 25153 Lleida (Catalonia, Spain). Contact: **soporte@getcofounder.app**.
 
-By creating an account or using the app you accept these terms, the [community guidelines](https://thejowe.github.io/cofounder-web/normas) and the [privacy policy](https://thejowe.github.io/cofounder-web/privacidad).
+By creating an account or using the app you accept these terms, the [community guidelines](https://getcofounder.app/normas) and the [privacy policy](https://getcofounder.app/privacidad).
 
 ## 2. What cofounder is not
 
@@ -33,7 +33,7 @@ You must be **16 or older**. Age is self-declared. If you state an age that is n
 - You are responsible for the activity on your account and for the accuracy of the information on your profile.
 - You may only have one active account for yourself. You may not create fake profiles or impersonate anyone.
 - An account created without an email is lost if you sign out or uninstall the app. Adding and confirming an email lets you recover it. An account created with Google or Apple is recovered by signing in again with that same service.
-- You can delete your account whenever you want from Profile > Account > Delete my account, or by following the instructions at https://thejowe.github.io/cofounder-web/eliminar-cuenta.
+- You can delete your account whenever you want from Profile > Account > Delete my account, or by following the instructions at https://getcofounder.app/eliminar-cuenta.
 
 ## 5. Content you post
 
@@ -54,7 +54,7 @@ cofounder has **zero tolerance for abusive content and conduct**. In particular,
 - Sharing other people's personal data without their permission.
 - Any illegal activity.
 
-The details are in the [community guidelines](https://thejowe.github.io/cofounder-web/normas).
+The details are in the [community guidelines](https://getcofounder.app/normas).
 
 ## 7. Moderation, blocks and reports
 
@@ -101,4 +101,4 @@ These terms are governed by Spanish law. If you are a consumer, you keep the rig
 
 ## 15. Contact
 
-For any question or notice about these terms: cofounder.soporte@gmail.com.
+For any question or notice about these terms: soporte@getcofounder.app.

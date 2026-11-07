@@ -6,7 +6,7 @@
 
 **Fecha de la versión:** 18 de octubre de 2026
 
-cofounder conecta a personas para valorar si pueden fundar algo juntas. Para que sea un sitio seguro, estas normas valen en perfiles, fotos, tablones, respuestas, enlaces y mensajes. Forman parte de los [términos de uso](https://thejowe.github.io/cofounder-web/terminos).
+cofounder conecta a personas para valorar si pueden fundar algo juntas. Para que sea un sitio seguro, estas normas valen en perfiles, fotos, tablones, respuestas, enlaces y mensajes. Forman parte de los [términos de uso](https://getcofounder.app/terminos).
 
 ## Tolerancia cero
 
@@ -38,11 +38,11 @@ La foto de perfil y las fotos del tablón son opcionales. Se revisan automática
 
 ## Seguridad infantil
 
-Tolerancia cero con el abuso y la explotación sexual infantil (CSAE). Cualquier contenido o conducta que ponga en riesgo a una persona menor se retira, se suspende la cuenta y se comunica a las autoridades competentes. Los detalles están en nuestros [estándares de seguridad infantil](https://thejowe.github.io/cofounder-web/seguridad-infantil).
+Tolerancia cero con el abuso y la explotación sexual infantil (CSAE). Cualquier contenido o conducta que ponga en riesgo a una persona menor se retira, se suspende la cuenta y se comunica a las autoridades competentes. Los detalles están en nuestros [estándares de seguridad infantil](https://getcofounder.app/seguridad-infantil).
 
 ## Cómo bloquear y reportar
 
-Desde el perfil de cualquier persona, en el deck o en el chat, puedes **bloquearla** (deja de poder verte y escribirte) o **reportarla**, eligiendo un motivo y, si quieres, añadiendo un texto. En el chat también puedes reportar un mensaje concreto. También puedes escribirnos a cofounder.soporte@gmail.com.
+Desde el perfil de cualquier persona, en el deck o en el chat, puedes **bloquearla** (deja de poder verte y escribirte) o **reportarla**, eligiendo un motivo y, si quieres, añadiendo un texto. En el chat también puedes reportar un mensaje concreto. También puedes escribirnos a soporte@getcofounder.app.
 
 ## Qué hacemos con un reporte
 

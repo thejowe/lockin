@@ -27,12 +27,12 @@ El incumplimiento supone la retirada inmediata del contenido y la eliminación d
 - Las fotos de perfil y las del tablón se revisan automáticamente antes de publicarse. La revisión rechaza las imágenes con contenido sexual o con indicios de contenido sexual con menores y, si no puede hacerse, la foto no se publica.
 - El chat solo se abre entre dos personas tras un match mutuo.
 - Cualquier persona puede bloquear a otra: el bloqueo impide verse y escribirse en las dos direcciones.
-- Las [normas de la comunidad](https://thejowe.github.io/cofounder-web/normas) y los [términos de uso](https://thejowe.github.io/cofounder-web/terminos) prohíben este contenido de forma expresa.
+- Las [normas de la comunidad](https://getcofounder.app/normas) y los [términos de uso](https://getcofounder.app/terminos) prohíben este contenido de forma expresa.
 
 ## Cómo reportar
 
 - **En la app:** desde el perfil de cualquier persona, en el deck o en el chat, elige «Reportar», indica el motivo y, si quieres, un texto.
-- **Por correo:** cofounder.soporte@gmail.com, con el asunto «Seguridad infantil».
+- **Por correo:** soporte@getcofounder.app, con el asunto «Seguridad infantil».
 
 ## Cómo respondemos
 
@@ -46,7 +46,7 @@ Cuando tenemos conocimiento de contenido de abuso o explotación sexual infantil
 
 ## Contacto designado
 
-Responsable de seguridad infantil: Joel de Torres Sainz de la Maza. Correo: **cofounder.soporte@gmail.com**.
+Responsable de seguridad infantil: Joel de Torres Sainz de la Maza. Correo: **soporte@getcofounder.app**.
 
 ---
 
