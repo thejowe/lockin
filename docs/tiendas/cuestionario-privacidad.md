@@ -1,6 +1,6 @@
 # cofounder — cuestionario de privacidad de las tiendas
 
-Revisado el 15 de octubre de 2026 contra el **binario final tras T5** (commits `cf18086` y `10f4ff5`). Fuente factual: [inventario](datos-recopilados.md).
+Revisado el 15 de octubre de 2026 contra el **binario final tras T5** (commits `cf18086` y `10f4ff5`); actualizado el 8 de noviembre de 2026 con el acceso con Google y Apple, el tablón de fotos, Brevo y RevenueCat. Fuente factual: [inventario](datos-recopilados.md).
 
 El binario enviado **ya no contiene** Lock-In (sesiones, salas, rachas, valoraciones, acuerdo), WebRTC/vídeo/audio, STUN de Google ni `expo-notifications`: se borró el código, no solo se ocultó. Por tanto no se declaran audio, vídeo de llamada, interacciones de sesión ni recordatorios. Si alguna vez se restaura Lock-In (git, commit anterior a `cf18086`), reabrir este documento antes de publicar.
 
@@ -20,7 +20,11 @@ El binario enviado **ya no contiene** Lock-In (sesiones, salas, rachas, valoraci
 | Anuncios, analítica, SDK de terceros de seguimiento | ninguno | — |
 | `react-native-purchases` (RevenueCat) | presente desde `f4fe6f7` (2026-11-01) | Compra y restauración de cofounder Premium; `logIn` con el UUID de cuenta. Sin seguimiento entre apps |
 
-Procesador adicional fuera del binario: la Edge Function `moderate-avatar` envía la foto a **OpenAI** (`omni-moderation-latest`) desde el servidor para moderarla antes de publicarla; la app no habla con OpenAI directamente.
+Procesadores adicionales fuera del binario:
+
+- **OpenAI:** la Edge Function `moderate-avatar` envía a `omni-moderation-latest`, desde el servidor, la foto de perfil y cada foto del tablón **con su texto opcional (hasta 280 caracteres)** para moderarlas antes de publicarlas, sin el nombre ni el resto del perfil. La app no habla con OpenAI directamente.
+- **Brevo (SMTP):** envía los emails de confirmación y recuperación de cuenta (remitente `soporte@getcofounder.app`). Recibe la dirección de email y el contenido del mensaje; registra, sin asociarlo a un contacto, aperturas y clics.
+- **RevenueCat:** valida la compra de Premium (ver la fila de Purchases).
 
 ## Apple — App Privacy
 
@@ -38,10 +42,9 @@ Fuente: [App Privacy Details](https://developer.apple.com/app-store/app-privacy-
 | Contact Info → Name | Nombre del perfil | Sí | App Functionality |
 | Contact Info → Email Address | Email opcional de la cuenta | Sí | App Functionality |
 | Location → Coarse Location | Ciudad/zona escrita por el usuario | Sí | App Functionality |
-| **User Content → Photos or Videos** | **Foto de perfil opcional; se envía a OpenAI para moderarla** | Sí | App Functionality |
+| **User Content → Photos or Videos** | **Foto de perfil opcional y hasta 12 fotos del tablón; se envían a OpenAI para moderarlas** | Sí | App Functionality |
 | User Content → Emails or Text Messages | Mensajes del chat | Sí | App Functionality |
-| User Content → Other User Content | Respuestas breves, enlaces, especialidades, disponibilidad, ambición, contenido de reportes | Sí | App Functionality; Product Personalization si las especialidades ordenan el deck |
-| Contacts → Contacts | Grafo de matches y bloqueos (no se importa la agenda) | Sí | App Functionality |
+| User Content → Other User Content | Respuestas breves, enlaces, especialidades, disponibilidad, ambición, **textos de las fotos del tablón (también se envían a OpenAI)**, contenido de reportes | Sí | App Functionality; Product Personalization si las especialidades ordenan el deck |
 | Identifiers → User ID | UUID de cuenta, handle de GitHub | Sí | App Functionality |
 | Identifiers → Device ID | EAS-Client-ID de expo-updates | Sí (conservador) | App Functionality |
 | Usage Data → Product Interaction | Likes/pass, matches, bloqueos | Sí | App Functionality; Product Personalization (el deck excluye decisiones previas) |
@@ -51,7 +54,9 @@ Fuente: [App Privacy Details](https://developer.apple.com/app-store/app-privacy-
 
 Desde el 2-nov-2026 los idiomas y la especialidad «Otra» entran en «Other User Content» junto a las especialidades, y la hora de cada like, Super Like y Boost en «Product Interaction».
 
-Apple considera recogidos los datos que reciben los proveedores (OpenAI, Supabase, Expo), así que no se pueden omitir por ser encargados. Ya no se declaran Audio Data ni datos de vídeo de llamada.
+No se declara «Contacts»: la app nunca lee la agenda del teléfono, y el grafo de matches y bloqueos ya está en «Product Interaction».
+
+Apple considera recogidos los datos que reciben los proveedores (OpenAI, Supabase, Expo, Brevo, RevenueCat), así que no se pueden omitir por ser encargados. Ya no se declaran Audio Data ni datos de vídeo de llamada.
 
 Entrar con Apple (iOS, desde el 29-oct-2026 en el código): el servidor guarda el **refresh token de Apple** en `apple_refresh_tokens` (tabla solo de service role, Edge Function `apple-token`) con el único fin de revocarlo en `appleid.apple.com/auth/revoke` al eliminar la cuenta (5.1.1(v)). Es una credencial técnica de autenticación, no un dato que la app use ni muestre; queda cubierto por «Identifiers → User ID» (App Functionality) y no cambia ninguna respuesta. No afecta a Google Play: el botón de Apple solo sale en iOS.
 
@@ -62,8 +67,8 @@ Fuente: [guía del formulario](https://support.google.com/googleplay/android-dev
 | Pregunta | Respuesta |
 | --- | --- |
 | ¿Recoge o comparte datos? | **Sí** |
-| ¿Cifrado en tránsito? | **Sí** (HTTPS/WSS a Supabase, HTTPS a Expo y OpenAI). Confirmar que la URL de Supabase de la build es `https://` |
-| Métodos de creación de cuenta | Usuario y contraseña (email), OAuth (GitHub, solo para verificar), Otros (anónima) |
+| ¿Cifrado en tránsito? | **Sí** (HTTPS/WSS a Supabase, HTTPS a Expo, OpenAI, Brevo y RevenueCat). Confirmar que la URL de Supabase de la build es `https://` |
+| Métodos de creación de cuenta | Usuario y contraseña (email), OAuth (Google; Apple solo en iOS), Otros (anónima). GitHub se vincula solo para verificar el enlace, no para crear la cuenta |
 | ¿Eliminación de cuenta desde la app? | **Sí**: Ajustes > Cuenta > Eliminar mi cuenta (aplicado en producción el 10-oct-2026 según D09; probar en la build final) |
 | URL web de eliminación | https://getcofounder.app/eliminar-cuenta (obligatoria, debe funcionar sin instalar la app) |
 | ¿Revisión de seguridad independiente? | No |
@@ -71,20 +76,19 @@ Fuente: [guía del formulario](https://support.google.com/googleplay/android-dev
 | Categoría / tipo | Datos | Opcional | Finalidad |
 | --- | --- | --- | --- |
 | Información personal → Nombre | Nombre | Obligatorio | Funcionalidad, gestión de cuentas |
-| Información personal → Dirección de correo | Email | Opcional | Gestión de cuentas |
+| Información personal → Dirección de correo | Email (también el de Google o Apple si se entra con ellos); lo procesa Brevo para enviar los correos de cuenta | Opcional | Gestión de cuentas |
 | Información personal → IDs de usuario | UUID, handle GitHub | UUID obligatorio | Funcionalidad, gestión de cuentas |
 | Información personal → Otra información | Edad, zona horaria, datos estructurados del perfil | Obligatorio | Funcionalidad |
 | Ubicación → Ubicación aproximada | Ciudad/zona escrita | Obligatorio | Funcionalidad |
-| **Fotos y vídeos → Fotos** | **Foto de perfil, moderada con OpenAI** | Opcional | Funcionalidad; seguridad/prevención de fraudes y abusos |
+| **Fotos y vídeos → Fotos** | **Foto de perfil y fotos del tablón, moderadas con OpenAI** | Opcional | Funcionalidad; seguridad/prevención de fraudes y abusos |
 | Mensajes → Otros mensajes en la aplicación | Chat | Opcional | Funcionalidad |
 | Actividad en la aplicación → Interacciones | Likes/pass, matches, bloqueos | Obligatorio | Funcionalidad |
-| Actividad en la aplicación → Otro contenido generado por usuarios | Respuestas breves, enlaces, texto de reportes | Obligatorio (al menos una respuesta) | Funcionalidad; seguridad |
-| Contactos | Grafo de matches | Opcional | Funcionalidad |
+| Actividad en la aplicación → Otro contenido generado por usuarios | Respuestas breves, enlaces, textos de las fotos del tablón (también se envían a OpenAI), texto de reportes | Obligatorio (al menos una respuesta) | Funcionalidad; seguridad |
 | Identificadores de dispositivo | EAS-Client-ID | Obligatorio | Funcionalidad |
 | Información y rendimiento → Registros de fallos / Diagnóstico | Metadatos de expo-updates | Obligatorio | Funcionalidad |
 | **Información financiera → Historial de compras** | **Suscripción Premium (producto, tienda, fecha de fin), validada por RevenueCat** | Opcional | Funcionalidad |
 
-**Compartidos (D10):** no se marcan como compartidos los datos que tratan Supabase, Expo, OpenAI y RevenueCat si actúan como encargados del tratamiento por cuenta del responsable (Google exime a los proveedores de servicios). OpenAI se declara como **encargado** con transferencia fuera del EEE (CCT/DPF); no se hace ninguna afirmación sobre entrenamiento ni retención hasta confirmar sus condiciones. **Pregunta:** confirmar que las condiciones aplicables a la cuenta lo convierten en proveedor de servicios (sin uso propio de los datos). Si no, marcar Fotos como **compartidas** con finalidad «Seguridad, cumplimiento y prevención de fraudes». Lo que ve la otra persona por acción del usuario no se marca como compartido.
+**Compartidos (D10):** no se marcan como compartidos los datos que tratan Supabase, Expo, OpenAI, Brevo y RevenueCat si actúan como encargados del tratamiento por cuenta del responsable (Google exime a los proveedores de servicios). OpenAI se declara como **encargado** con transferencia fuera del EEE (CCT/DPF); no se hace ninguna afirmación sobre entrenamiento ni retención hasta confirmar sus condiciones. **Pregunta:** confirmar que las condiciones aplicables a la cuenta lo convierten en proveedor de servicios (sin uso propio de los datos). Si no, marcar Fotos como **compartidas** con finalidad «Seguridad, cumplimiento y prevención de fraudes». Lo que ve la otra persona por acción del usuario no se marca como compartido. En Google tampoco se declara «Contactos»: la app no accede a la agenda.
 
 ## Requisitos de tienda: estado
 

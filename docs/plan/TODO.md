@@ -15,6 +15,8 @@
 - **Trader y aviso legal:** faltan dirección, teléfono y NIF públicos. Realtime «Allow public access»: quitarlo cuando las builds viejas ya no se usen. LinkedIn y Sentry aparcados.
 - **Decisiones pendientes:** estatus trader (recomendado: persona física) y aviso legal con NIF. LinkedIn aparcado (la página exige DNI). Sentry aparcado. POEditor sin reclamar en el Pack.
 
+**Revisión legal del 2026-11-08:** de 6 puntos externos, 2 ya estaban hechos (ruta de baja en Ajustes > Cuenta, términos v1.4; enlaces y correo en getcofounder.app en `texts.generated.ts` y `ficha-google-play.md`) y 1 más (remitente de Brevo = `soporte@getcofounder.app` en `datos-recopilados.md`). El cuestionario de privacidad se actualiza hoy (Google/Apple, fotos y textos del tablón a OpenAI, Brevo, RevenueCat; fuera Contactos). LinkedIn: la política solo cita el enlace, no su verificación, y la app lo oculta si `linkedin_oidc` no está activo. Instagram y TikTok sí existen en el perfil (`link_instagram`, `link_tiktok`): la política es correcta.
+
 **Siguiente [Claude]:** web multilingüe y fichas en inglés y catalán (`todo/idiomas.md`); corregir «Perfil > Cuenta > Eliminar mi cuenta» en los términos (ahora está en Ajustes; sube versión); poner la clave `goog_…` cuando exista, rebuild y `[comprobador]` con *license tester*.
 
 ## ▶ Al retomar (2026-11-06): CI arreglada; quedan comprobaciones del usuario y tiendas
