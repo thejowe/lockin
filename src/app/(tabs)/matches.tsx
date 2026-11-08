@@ -13,7 +13,7 @@ import Animated from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AmbientBackground } from '@/components/ambient-background';
-import { useTabEntering } from '@/components/motion';
+import { layoutShift, useTabEntering } from '@/components/motion';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useQuery, useRepositories } from '@/data';
@@ -69,9 +69,11 @@ export default function MatchesScreen() {
               </ThemedText>
               <ThemedText type="title">{t('Con quién has conectado')}</ThemedText>
               {error && (
-                <ThemedText type="small" themeColor="danger">
-                  {t('No hemos podido cargar tus matches. Desliza hacia abajo para reintentar.')}
-                </ThemedText>
+                <Animated.View entering={entering.fade()} layout={layoutShift()}>
+                  <ThemedText type="small" themeColor="danger">
+                    {t('No hemos podido cargar tus matches. Desliza hacia abajo para reintentar.')}
+                  </ThemedText>
+                </Animated.View>
               )}
               <LikesRow count={likes.data ?? 0} onPress={() => router.push('/likes' as Href)} />
             </View>

@@ -26,9 +26,11 @@ import {
   KeyboardAvoidingView,
   useWindowDimensions as useKeyboardWindowDimensions,
 } from 'react-native-keyboard-controller';
+import Animated from 'react-native-reanimated';
 
 import { AmbientBackground } from '@/components/ambient-background';
 import { Button } from '@/components/button';
+import { appear, disappear, layoutShift } from '@/components/motion';
 import { LoadingState, MessageState } from '@/components/state-view';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -244,11 +246,13 @@ function ChatScreenContent() {
             </ScrollView>
 
             {sendError && (
-              <ThemedText type="small" themeColor="danger" style={styles.sendError}>
-                {sendError instanceof ObjectionableContentError
-                  ? sendError.message
-                  : t('No se ha podido enviar. Inténtalo otra vez.')}
-              </ThemedText>
+              <Animated.View entering={appear()} exiting={disappear()} layout={layoutShift()}>
+                <ThemedText type="small" themeColor="danger" style={styles.sendError}>
+                  {sendError instanceof ObjectionableContentError
+                    ? sendError.message
+                    : t('No se ha podido enviar. Inténtalo otra vez.')}
+                </ThemedText>
+              </Animated.View>
             )}
 
             <MessageComposer

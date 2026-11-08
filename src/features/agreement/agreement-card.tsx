@@ -7,9 +7,10 @@
  */
 
 import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
+import { ScalePressable } from '@/components/scale-pressable';
 import { ThemedText } from '@/components/themed-text';
 import { Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -50,20 +51,21 @@ function ParAgreementCard({ match }: { match: MatchWithProfile }) {
       : null;
 
   return (
-    <Pressable
+    <ScalePressable
       accessibilityRole="button"
       accessibilityLabel={[t('Acuerdo de socios'), headline, ahead].filter(Boolean).join('. ')}
       onPress={() =>
         router.push({ pathname: '/agreement/[matchId]', params: { matchId: match.id } })
       }
-      style={({ pressed }) => [
+      style={[
         styles.card,
         {
           borderColor: theme.border,
-          backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement,
+          backgroundColor: theme.backgroundElement,
           boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
         },
-      ]}>
+      ]}
+      pressedStyle={{ backgroundColor: theme.backgroundSelected }}>
       <View style={styles.header}>
         <View style={[styles.badge, { backgroundColor: theme.backgroundSelected }]}>
           <Icon name="document" size={18} color={theme.brass} />
@@ -80,7 +82,7 @@ function ParAgreementCard({ match }: { match: MatchWithProfile }) {
           {ahead}
         </ThemedText>
       )}
-    </Pressable>
+    </ScalePressable>
   );
 }
 

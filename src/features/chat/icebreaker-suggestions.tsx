@@ -6,8 +6,11 @@
  * por uno que suene a plantilla enviada sin mirar.
  */
 
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
+import { enterUp } from '@/components/motion';
+import { ScalePressable } from '@/components/scale-pressable';
 import { ThemedText } from '@/components/themed-text';
 import { HitSlop, Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -31,26 +34,25 @@ export function IcebreakerSuggestions({
         {t('Para romper el hielo')}
       </ThemedText>
 
-      {suggestions.map((suggestion) => (
-        <Pressable
-          key={suggestion}
-          accessibilityRole="button"
-          accessibilityHint={t(
-            'Escribe esta frase en el campo de mensaje para que puedas editarla'
-          )}
-          // Una sugerencia de una línea mide 36 px: el hitSlop la lleva por encima de los 44
-          // mínimos sin separar las sugerencias entre sí.
-          hitSlop={HitSlop.chip}
-          onPress={() => onPick(suggestion)}
-          style={({ pressed }) => [
-            styles.chip,
-            {
-              backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement,
-              borderColor: theme.border,
-            },
-          ]}>
-          <ThemedText type="small">{suggestion}</ThemedText>
-        </Pressable>
+      {suggestions.map((suggestion, index) => (
+        <Animated.View key={suggestion} entering={enterUp(index)}>
+          <ScalePressable
+            accessibilityRole="button"
+            accessibilityHint={t(
+              'Escribe esta frase en el campo de mensaje para que puedas editarla'
+            )}
+            // Una sugerencia de una línea mide 36 px: el hitSlop la lleva por encima de los 44
+            // mínimos sin separar las sugerencias entre sí.
+            hitSlop={HitSlop.chip}
+            onPress={() => onPick(suggestion)}
+            style={[
+              styles.chip,
+              { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+            ]}
+            pressedStyle={{ backgroundColor: theme.backgroundSelected }}>
+            <ThemedText type="small">{suggestion}</ThemedText>
+          </ScalePressable>
+        </Animated.View>
       ))}
     </View>
   );

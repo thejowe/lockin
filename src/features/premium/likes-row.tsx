@@ -5,9 +5,10 @@
  * Premium, pero cuánta gente lo ha hecho lo ve cualquiera. Sin likes no se pinta.
  */
 
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
+import { ScalePressable } from '@/components/scale-pressable';
 import { ThemedText } from '@/components/themed-text';
 import { Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -20,17 +21,12 @@ export function LikesRow({ count, onPress }: { count: number; onPress: () => voi
   const label = t('Te han dado like ({count})', { count });
 
   return (
-    <Pressable
+    <ScalePressable
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.root,
-        {
-          backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement,
-          borderColor: theme.border,
-        },
-      ]}>
+      style={[styles.root, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}
+      pressedStyle={{ backgroundColor: theme.backgroundSelected }}>
       <View style={[styles.icon, { backgroundColor: theme.brassSoft }]}>
         <Icon name="heart" size={18} color={theme.brass} />
       </View>
@@ -38,7 +34,7 @@ export function LikesRow({ count, onPress }: { count: number; onPress: () => voi
         {label}
       </ThemedText>
       <Icon name="chevrons" size={18} color={theme.textMuted} />
-    </Pressable>
+    </ScalePressable>
   );
 }
 

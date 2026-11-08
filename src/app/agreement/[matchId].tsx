@@ -8,9 +8,11 @@
 
 import { Link, Stack, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { AmbientBackground } from '@/components/ambient-background';
 import { Button } from '@/components/button';
+import { appear, disappear, layoutShift } from '@/components/motion';
 import { LoadingState, MessageState } from '@/components/state-view';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Radii, Spacing } from '@/constants/theme';
@@ -64,7 +66,7 @@ function AgreementScreenContent() {
             <ThemedText type="small">{t(LEGAL_NOTICE)}</ThemedText>
           </View>
           {(Object.keys(SECTION_LABELS) as AgreementSection[]).map((section) => (
-            <View key={section} style={styles.section}>
+            <Animated.View key={section} layout={layoutShift()} style={styles.section}>
               <ThemedText type="subtitle">{SECTION_LABELS[section]}</ThemedText>
               {AGREEMENT_CATALOG.filter((topic) => topic.section === section).map((topic) => (
                 <TopicRow
@@ -76,18 +78,22 @@ function AgreementScreenContent() {
                   onSave={(option, note) => void agreement.answer(topic.key, option, note)}
                 />
               ))}
-            </View>
+            </Animated.View>
           ))}
           {agreement.saveError && (
-            <ThemedText type="small" themeColor="danger">
-              {t('No se ha podido guardar. Inténtalo de nuevo.')}
-            </ThemedText>
+            <Animated.View entering={appear()} exiting={disappear()} layout={layoutShift()}>
+              <ThemedText type="small" themeColor="danger">
+                {t('No se ha podido guardar. Inténtalo de nuevo.')}
+              </ThemedText>
+            </Animated.View>
           )}
           <Link href={{ pathname: '/chat/[matchId]', params: { matchId } }} asChild>
-            <Pressable accessibilityRole="link" style={styles.back}>
-              <ThemedText type="bodyStrong" style={{ color: theme.brass }}>
-                {t('Habladlo en el chat')}
-              </ThemedText>
+            <Pressable accessibilityRole="link">
+              <Animated.View layout={layoutShift()} style={styles.back}>
+                <ThemedText type="bodyStrong" style={{ color: theme.brass }}>
+                  {t('Habladlo en el chat')}
+                </ThemedText>
+              </Animated.View>
             </Pressable>
           </Link>
         </ScrollView>

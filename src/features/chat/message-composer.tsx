@@ -7,10 +7,11 @@
  */
 
 import { forwardRef } from 'react';
-import { Pressable, StyleSheet, TextInput, View, type TextInputInstance } from 'react-native';
+import { StyleSheet, TextInput, View, type TextInputInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/icon';
+import { ScalePressable } from '@/components/scale-pressable';
 import {
   Control,
   FontFamily,
@@ -78,26 +79,24 @@ export const MessageComposer = forwardRef<TextInputInstance, MessageComposerProp
           cursorColor={theme.brass}
         />
 
-        <Pressable
+        <ScalePressable
           accessibilityRole="button"
           accessibilityLabel={t('Enviar mensaje')}
           accessibilityState={{ disabled: !canSend }}
           disabled={!canSend}
           onPress={onSend}
-          style={({ pressed }) => [
+          style={[
             styles.send,
-            {
-              backgroundColor: canSend ? theme.brass : theme.backgroundSelected,
-              opacity: pressed ? Opacity.pressed : 1,
-            },
-          ]}>
+            { backgroundColor: canSend ? theme.brass : theme.backgroundSelected },
+          ]}
+          pressedStyle={{ opacity: Opacity.pressed }}>
           <Icon
             name="send"
             size={20}
             strokeWidth={2.4}
             color={canSend ? theme.onAccent : theme.textMuted}
           />
-        </Pressable>
+        </ScalePressable>
       </View>
     );
   }

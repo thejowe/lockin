@@ -7,7 +7,11 @@
  */
 
 import { useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { StyleSheet, TextInput, View } from 'react-native';
+import Animated from 'react-native-reanimated';
+
+import { appear, disappear, layoutShift } from '@/components/motion';
+import { ScalePressable } from '@/components/scale-pressable';
 
 import { ThemedText } from '@/components/themed-text';
 import { Control, Opacity, Radii, Spacing } from '@/constants/theme';
@@ -109,8 +113,8 @@ export function TopicRow({
   }`;
 
   return (
-    <View style={[styles.card, { borderColor: theme.border }]}>
-      <Pressable
+    <Animated.View layout={layoutShift()} style={[styles.card, { borderColor: theme.border }]}>
+      <ScalePressable
         accessibilityRole="button"
         accessibilityLabel={a11y}
         accessibilityState={{ expanded: open }}
@@ -126,15 +130,15 @@ export function TopicRow({
             {line}
           </ThemedText>
         ))}
-      </Pressable>
+      </ScalePressable>
 
       {open && (
-        <View style={styles.editor}>
+        <Animated.View entering={appear()} exiting={disappear()} style={styles.editor}>
           <View style={styles.chips}>
             {optionsOf(topic).map((candidate) => {
               const checked = candidate.key === option;
               return (
-                <Pressable
+                <ScalePressable
                   key={candidate.key}
                   accessibilityRole="radio"
                   accessibilityLabel={candidate.label}
@@ -148,7 +152,7 @@ export function TopicRow({
                     },
                   ]}>
                   <ThemedText type="small">{candidate.label}</ThemedText>
-                </Pressable>
+                </ScalePressable>
               );
             })}
           </View>
@@ -169,11 +173,13 @@ export function TopicRow({
             {note.length}/{AGREEMENT_NOTE_MAX}
           </ThemedText>
           {noteError ? (
-            <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
-              {noteError}
-            </ThemedText>
+            <Animated.View entering={appear()} exiting={disappear()}>
+              <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
+                {noteError}
+              </ThemedText>
+            </Animated.View>
           ) : null}
-          <Pressable
+          <ScalePressable
             accessibilityRole="button"
             accessibilityLabel={t('Guardar respuesta')}
             accessibilityState={{ disabled: option === null || saving }}
@@ -196,10 +202,10 @@ export function TopicRow({
             <ThemedText type="bodyStrong" style={{ color: theme.onAccent }}>
               {t('Guardar')}
             </ThemedText>
-          </Pressable>
-        </View>
+          </ScalePressable>
+        </Animated.View>
       )}
-    </View>
+    </Animated.View>
   );
 }
 

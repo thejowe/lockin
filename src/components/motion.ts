@@ -11,7 +11,7 @@
  * (`ReduceMotion.System`, su valor por defecto): no hace falta ramificar aquí.
  */
 
-import { Easing, FadeIn, FadeInUp } from 'react-native-reanimated';
+import { Easing, FadeIn, FadeInUp, FadeOut, LinearTransition } from 'react-native-reanimated';
 
 import { usePageFocused } from '@/components/swipe-between-tabs';
 import { Curves, Duration, Stagger } from '@/constants/theme';
@@ -28,6 +28,25 @@ export function enterUp(index = 0) {
 /** Un fundido corto, para lo que sustituye a otra cosa en el mismo sitio. */
 export function enterFade(index = 0) {
   return FadeIn.duration(Duration.base).delay(index * Stagger);
+}
+
+/**
+ * Puente para un cambio de tamaño: lo que se desplaza porque otra pieza crece o
+ * se encoge (el editor de una fila que se abre) se mueve a su sitio en vez de
+ * saltar. Va en el contenedor que cambia y en lo que queda debajo.
+ */
+export function layoutShift() {
+  return LinearTransition.duration(Duration.base).easing(Easing.bezier(...Curves.inOut));
+}
+
+/** Entrada de una pieza que aparece dentro de otra ya visible (editor, error). */
+export function appear() {
+  return FadeIn.duration(Duration.base).easing(easeOut);
+}
+
+/** Salida de esa misma pieza: más corta que la entrada, no se queda estorbando. */
+export function disappear() {
+  return FadeOut.duration(Duration.fast);
 }
 
 /**
