@@ -104,7 +104,8 @@ Las claves y los secretos los pega siempre el usuario.
 
 - [x] `react-native-purchases` (v11.0.0, peer RN ≥0.80) tras `src/lib/purchases.ts`; `logIn` con el uid y `logOut` al cerrar sesión. Hecho el 2026-11-01 (`f4fe6f7`); **sin probar con una compra real** (hace falta el acuerdo de Apple activo y un build).
 - [x] Edge Functions `revenuecat-webhook` y `sync-entitlement`, con sus tests (spec §8). Escritas y con 38 tests verdes (`supabase/functions/{revenuecat-webhook,sync-entitlement}`, lógica compartida en `sync-entitlement/logic.mjs`). Desplegadas el 2026-11-01 (v1, `sync-entitlement` con JWT, `revenuecat-webhook` sin); secretos puestos por el usuario; 401 en la prueba de humo. **Falta:** configurar el webhook en RevenueCat (URL `…/functions/v1/revenuecat-webhook`, Authorization = `REVENUECAT_WEBHOOK_SECRET`).
-- [ ] [comprobador] Compra de prueba con *license tester* en un track interno de Play.
+- [x] Play Console y RevenueCat de Android (Brodie, informado el 2026-11-08): perfil de pagos, suscripción `premium` con `premium-monthly` (4,99 €, `trial-3d`) y `premium-annual` (39,99 €, `trial-7d`) en 175 países, app de Play en RevenueCat (`app4dde6e852c`), entitlement y offering `default` enlazados, clave `goog_…` en `eas.json` (`1c6f38e`) y cuenta de servicio con su JSON subido. **Abierto:** la validación de RevenueCat dice «No application was found» hasta publicar una release o pasar 36 h; Pub/Sub sin conectar; el AAB 1.0.0 (3) no lleva la clave, hay que recompilar.
+- [ ] [comprobador] Compra de prueba con *license tester* en un track interno de Play. Bloqueada por la validación de RevenueCat y un AAB con la clave `goog_`.
 - [ ] Compra en el sandbox de iOS (la hace el usuario: no hay macOS ni iPhone en el emulador).
 
 ## Fase 4 — legal y fichas (antes de activar productos)

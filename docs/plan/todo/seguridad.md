@@ -96,7 +96,7 @@ archivos.
     1. ~~Aplicar la migración.~~ Hecho (2026-11-07, Schema drift verde).
     2. ~~`supabase functions deploy verify-identity`~~ Hecho: v1 activa con `verify_jwt=true` (2026-11-07).
     3. Build nueva.
-    4. **[comprobador]** Verificar GitHub y LinkedIn en el dispositivo contra Supabase real: el
+    4. **[usuario, 2026-11-08: GitHub OK; LinkedIn no disponible aún]** Verificar GitHub y LinkedIn en el dispositivo contra Supabase real: el
        canje de `linkIdentity` debe traer `provider_token`. Es un supuesto sobre GoTrue que aquí no
        se ha podido observar.
   - **Ojo, orden:** con la migración aplicada y la build vieja, verificar no sella (las builds
@@ -115,7 +115,7 @@ archivos.
   - **Pendiente (en este orden):**
     1. ~~Aplicar la migración.~~ Hecho (2026-11-07, Schema drift verde).
     2. Publicar la build.
-    3. **[comprobador]** Confirmar que siguen llegando matches, mensajes y sesiones en vivo con
+    3. **[usuario, 2026-11-08: comprobado, llegan en vivo]** Confirmar que siguen llegando matches, mensajes y sesiones en vivo con
        canales privados. Que Realtime autorice así un canal privado de `postgres_changes` no se ha
        podido observar aquí.
     4. Cuando las builds viejas dejen de usarse, desactivar «Allow public access» en Realtime →
