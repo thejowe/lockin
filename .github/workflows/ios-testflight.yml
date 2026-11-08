@@ -1,0 +1,35 @@
+name: iOS a TestFlight (build local)
+
+# Alternativa al build en la nube de EAS cuando se agota la cuota del plan Free:
+# `eas build --local` compila en este runner macOS (no gasta cuota de builds) y
+# `eas submit` sube el .ipa a App Store Connect. Se lanza a mano desde Actions.
+# Necesita el secreto EXPO_TOKEN (token de acceso de la cuenta thejowe en expo.dev).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-testflight
+  cancel-in-progress: false
+
+jobs:
+  testflight:
+    runs-on: macos-15
+    timeout-minutes: 90
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EAS_NO_VCS: 0
+      EXPO_NO_TELEMETRY: 1
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build local de iOS (perfil production)
+        run: npx eas-cli build -p ios --profile production --local --non-interactive --output "$RUNNER_TEMP/lockin.ipa"
+      - name: Subir a TestFlight
+        run: npx eas-cli submit -p ios --profile production --path "$RUNNER_TEMP/lockin.ipa" --non-interactive
