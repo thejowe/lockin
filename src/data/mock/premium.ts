@@ -124,7 +124,9 @@ export function usesPremiumFilters(filter: ProfileFilter): boolean {
     filter.ambition !== undefined ||
     filter.startingPoint !== undefined ||
     filter.minAge !== undefined ||
-    filter.maxAge !== undefined
+    filter.maxAge !== undefined ||
+    filter.requireGithub !== undefined ||
+    filter.requireLinkedin !== undefined
   );
 }
 
@@ -167,6 +169,8 @@ export function matchesPremiumFilters(
   // La edad es gratis, como la zona horaria: vive aquí para no abrir otro paso del deck.
   if (filter.minAge !== undefined && candidate.age < filter.minAge) return false;
   if (filter.maxAge !== undefined && candidate.age > filter.maxAge) return false;
+  if (filter.requireGithub && !candidate.githubVerification) return false;
+  if (filter.requireLinkedin && !candidate.linkedinVerification) return false;
   if (filter.minHoursPerWeek !== undefined && availability.hoursPerWeek < filter.minHoursPerWeek) {
     return false;
   }

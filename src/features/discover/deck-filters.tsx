@@ -38,6 +38,12 @@ const ZONE_MAX = 12;
 const AGE_STEP = 5;
 const AGE_FILTER_MIN = 20;
 
+/** Cuentas que se pueden exigir vinculadas; los nombres propios no se traducen. */
+const LINKED_OPTIONS: Option<'github' | 'linkedin'>[] = [
+  { value: 'github', label: 'GitHub' },
+  { value: 'linkedin', label: 'LinkedIn' },
+];
+
 /** Las claves de `ProfileFilter` que exigen Premium. */
 const PREMIUM_KEYS = [
   'minHoursPerWeek',
@@ -46,6 +52,8 @@ const PREMIUM_KEYS = [
   'startingPoint',
   'minAge',
   'maxAge',
+  'requireGithub',
+  'requireLinkedin',
 ] as const satisfies readonly (keyof ProfileFilter)[];
 
 /** ¿Lleva el filtro algo que solo Premium puede pedir? */
@@ -160,6 +168,23 @@ export function DeckFilters({
                 ? { minAge: next }
                 : {}),
             })
+          }
+        />
+      </Section>
+
+      <Section title={t('Cuentas vinculadas')} locked={!isPremium}>
+        <Choices
+          options={LINKED_OPTIONS}
+          selected={[
+            ...(value.requireGithub ? (['github'] as const) : []),
+            ...(value.requireLinkedin ? (['linkedin'] as const) : []),
+          ]}
+          onToggle={(item) =>
+            premium(
+              item === 'github'
+                ? { requireGithub: value.requireGithub ? undefined : true }
+                : { requireLinkedin: value.requireLinkedin ? undefined : true }
+            )
           }
         />
       </Section>

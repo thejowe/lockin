@@ -46,6 +46,7 @@ describe('DeckFilters', () => {
 
   it.each([
     ['Edad', 'Sumar edad mínima'],
+    ['Cuentas vinculadas', 'GitHub'],
     ['Horas mínimas por semana', 'Sumar horas mínimas'],
     ['Franjas', 'Mañana'],
     ['Ambición', 'Apostarlo todo'],
@@ -55,12 +56,23 @@ describe('DeckFilters', () => {
     await render(ui);
 
     expect(screen.getByText(section)).toBeTruthy();
-    expect(screen.getAllByLabelText('Solo con Premium')).toHaveLength(5);
+    expect(screen.getAllByLabelText('Solo con Premium')).toHaveLength(6);
 
     await fireEvent.press(screen.getByLabelText(control));
 
     expect(onLocked).toHaveBeenCalledTimes(1);
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('con Premium, exigir GitHub y LinkedIn se enciende y se apaga', async () => {
+    const { ui, onChange } = setup({ requireGithub: true }, true);
+    await render(ui);
+
+    await fireEvent.press(screen.getByLabelText('LinkedIn'));
+    expect(onChange).toHaveBeenLastCalledWith({ requireGithub: true, requireLinkedin: true });
+
+    await fireEvent.press(screen.getByLabelText('GitHub'));
+    expect(onChange).toHaveBeenLastCalledWith({});
   });
 
   it('la zona horaria es gratis: sin candado y cambia sin Premium', async () => {

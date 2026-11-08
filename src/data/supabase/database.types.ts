@@ -474,6 +474,9 @@ export type Database = {
           /** Edad inclusiva, solo Premium (20261108140000). */
           p_min_age?: number | null;
           p_max_age?: number | null;
+          /** Solo perfiles con el sello verificado, solo Premium (20261108150000). */
+          p_require_github?: boolean | null;
+          p_require_linkedin?: boolean | null;
         };
         Returns: DeckRow[];
       };

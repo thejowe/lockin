@@ -352,7 +352,7 @@ test('Premium: tablas, cupos, deshacer, Boost, likes recibidos y deck', async (t
         'public.premium_quotas()',
         'public.incoming_likes_count()',
         'public.incoming_likes(integer,timestamptz,boolean,uuid)',
-        'public.discovery_deck(public.mode_preference,public.specialty[],integer,uuid[],integer,public.time_band[],public.ambition[],public.starting_point[],integer)',
+        'public.discovery_deck(public.mode_preference,public.specialty[],integer,uuid[],integer,public.time_band[],public.ambition[],public.starting_point[],integer,integer,integer,boolean,boolean)',
       ];
       for (const sig of sigs) {
         assert.deepEqual(

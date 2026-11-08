@@ -694,6 +694,9 @@ export function createSupabaseRepositories({
         // migración siga resolviendo la llamada de nueve argumentos de siempre.
         ...(filter.minAge !== undefined ? { p_min_age: filter.minAge } : {}),
         ...(filter.maxAge !== undefined ? { p_max_age: filter.maxAge } : {}),
+        // Cuentas vinculadas (20261108150000): igual, solo viajan si hay filtro.
+        ...(filter.requireGithub ? { p_require_github: true } : {}),
+        ...(filter.requireLinkedin ? { p_require_linkedin: true } : {}),
       });
       if (error) throw toPremiumError(error);
 

@@ -55,6 +55,7 @@ import { useReduceMotion } from '@/hooks/use-reduce-motion';
 import { useTheme } from '@/hooks/use-theme';
 import { SafetyMenuButton, SafetyPanel } from '@/features/safety/safety-panel';
 
+import { BoardPins, useBoardPosts } from './board-pins';
 import { Chip } from './chip';
 import { complementWith } from './complement';
 import { TapHint } from './tap-hint';
@@ -70,7 +71,7 @@ import { t } from '@/i18n';
  * Páginas de la ficha, en orden de lectura. El prompt solo si lo hay, y las
  * redes (2026-10-30, decisión del usuario) solo si tiene alguna conectada.
  */
-type Page = 'about' | 'schedule' | 'prompt' | 'socials';
+type Page = 'about' | 'schedule' | 'prompt' | 'board' | 'socials';
 
 /** Nombre de cada página para el lector de pantalla: dice adónde lleva el toque. */
 /** Altura de la mano sobre el borde inferior: encima del nombre y su bloque. */
@@ -84,6 +85,30 @@ const SOCIAL_NAMES: Record<ConnectedApp, string> = {
   portfolio: 'web',
 };
 
+const SEAL_LOGO_SIZE = 24;
+const GITHUB_HANDLE = /^[A-Za-z0-9-]{1,39}$/;
+const SAFE_URL = /^https?:\/\/\S+$/i;
+
+/**
+ * Cuentas vinculadas (sello verificado) de esa persona, para el logo junto al
+ * nombre. GitHub lleva siempre a `github.com/<handle>`; el sello de LinkedIn no
+ * trae URL, así que solo es pulsable si el perfil tiene su enlace.
+ */
+function verifiedAccountLinks(
+  profile: Profile
+): { app: 'github' | 'linkedin'; url: string | null }[] {
+  const out: { app: 'github' | 'linkedin'; url: string | null }[] = [];
+  const handle = profile.githubVerification?.handle;
+  if (handle && GITHUB_HANDLE.test(handle)) {
+    out.push({ app: 'github', url: `https://github.com/${handle}` });
+  }
+  if (profile.linkedinVerification) {
+    const link = profile.links.linkedin?.trim();
+    out.push({ app: 'linkedin', url: link && SAFE_URL.test(link) ? link : null });
+  }
+  return out;
+}
+
 const PAGE_NAMES: Record<Page, string> = {
   get about() {
     return t('quién es');
@@ -93,6 +118,9 @@ const PAGE_NAMES: Record<Page, string> = {
   },
   get prompt() {
     return t('su respuesta');
+  },
+  get board() {
+    return t('su tablón');
   },
   get socials() {
     return t('sus redes');
@@ -157,10 +185,13 @@ export function ProfileCard({
   const superLiked = 'superLikedMe' in profile && profile.superLikedMe;
 
   const socials = connectedApps(profile);
+  const linkedAccounts = verifiedAccountLinks(profile);
+  const boardPosts = useBoardPosts(profile.id);
   const pages: Page[] = [
     'about',
     'schedule',
     ...(prompt ? (['prompt'] as const) : []),
+    ...(boardPosts.length > 0 ? (['board'] as const) : []),
     ...(socials.length > 0 ? (['socials'] as const) : []),
   ];
   const page = pages[Math.min(pageIndex, pages.length - 1)];
@@ -267,17 +298,52 @@ export function ProfileCard({
         perfil: ahí el bloque deja pasar los toques solo a ellos.
       */}
       <View
-        pointerEvents={page === 'socials' ? 'box-none' : 'none'}
+        pointerEvents="box-none"
         style={[styles.info, { paddingBottom: bottomInset + Spacing.four }]}>
-        <View pointerEvents="none" style={styles.heading}>
-          <View style={styles.identity}>
-            <ThemedText type="title" numberOfLines={1} style={styles.name}>
-              {profile.name}
-            </ThemedText>
-            <PremiumBadge profileId={profile.id} size={22} />
-            <ThemedText type="subtitle" style={styles.age}>
-              {profile.age}
-            </ThemedText>
+        <View pointerEvents="box-none" style={styles.heading}>
+          <View style={styles.identity} pointerEvents="box-none">
+            <View style={styles.nameGroup} pointerEvents="none">
+              <ThemedText type="title" numberOfLines={1} style={styles.name}>
+                {profile.name}
+              </ThemedText>
+              <PremiumBadge profileId={profile.id} size={22} />
+              <ThemedText type="subtitle" style={styles.age}>
+                {profile.age}
+              </ThemedText>
+            </View>
+            {/* Cuentas vinculadas: el logo, y al pulsarlo, a su página. */}
+            {linkedAccounts.map(({ app, url }) => {
+              const glyph = <Glyph app={app} color={theme.text} size={SEAL_LOGO_SIZE} brand />;
+              const label = t('Abrir el {v} de {name}', {
+                v: SOCIAL_NAMES[app],
+                name: profile.name,
+              });
+              return url ? (
+                <Pressable
+                  key={app}
+                  testID={`profile-card-linked-${app}`}
+                  accessibilityRole="link"
+                  accessibilityLabel={label}
+                  hitSlop={HitSlop.inline}
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    void Linking.openURL(url).catch(() => undefined);
+                  }}
+                  style={({ pressed }) => [styles.linkedLogo, { opacity: pressed ? 0.6 : 1 }]}>
+                  {glyph}
+                </Pressable>
+              ) : (
+                <View
+                  key={app}
+                  testID={`profile-card-linked-${app}`}
+                  accessible
+                  accessibilityLabel={SOCIAL_NAMES[app]}
+                  pointerEvents="none"
+                  style={styles.linkedLogo}>
+                  {glyph}
+                </View>
+              );
+            })}
           </View>
           <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
             {profile.location}
@@ -285,7 +351,7 @@ export function ProfileCard({
         </View>
 
         {page === 'about' ? (
-          <View style={styles.section}>
+          <View style={styles.section} pointerEvents="none">
             {superLiked ||
             complement.length > 0 ||
             profile.githubVerification ||
@@ -342,7 +408,7 @@ export function ProfileCard({
         ) : null}
 
         {page === 'schedule' ? (
-          <View style={styles.section}>
+          <View style={styles.section} pointerEvents="none">
             <DayStrip
               hoursPerWeek={profile.availability.hoursPerWeek}
               bands={profile.availability.bands}
@@ -360,7 +426,7 @@ export function ProfileCard({
         ) : null}
 
         {page === 'prompt' && prompt ? (
-          <View style={styles.section}>
+          <View style={styles.section} pointerEvents="none">
             <ThemedText type="caption" themeColor="textSecondary">
               {t(prompt.question)}
             </ThemedText>
@@ -368,6 +434,17 @@ export function ProfileCard({
             <ThemedText type="subtitle" numberOfLines={5}>
               {prompt.answer}
             </ThemedText>
+          </View>
+        ) : null}
+
+        {page === 'board' ? (
+          <View style={styles.section} pointerEvents="box-none">
+            <View pointerEvents="none">
+              <ThemedText type="caption" themeColor="textSecondary">
+                {t('Tablón')}
+              </ThemedText>
+            </View>
+            <BoardPins posts={boardPosts} ownerName={profile.name} />
           </View>
         ) : null}
 
@@ -678,8 +755,18 @@ const styles = StyleSheet.create({
   },
   identity: {
     flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  nameGroup: {
+    flexShrink: 1,
+    flexDirection: 'row',
     alignItems: 'baseline',
     gap: Spacing.two,
+  },
+  linkedLogo: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   name: {
     flexShrink: 1,

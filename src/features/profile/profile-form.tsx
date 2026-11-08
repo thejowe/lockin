@@ -48,6 +48,7 @@ import {
   Stepper,
   TextField,
 } from './controls';
+import { Board } from './board';
 import { LocationFields } from './location-fields';
 import {
   cityFromLocation,
@@ -634,6 +635,14 @@ export function ProfileForm({
               </View>
             ))}
           </Field>
+        ) : null}
+
+        {/*
+          El tablón se sube al instante (cada foto pasa por la moderación del
+          servidor), no con «Guardar». Necesita perfil ya creado: en el alta no sale.
+        */}
+        {section === undefined && initial ? (
+          <Board ownerId={initial.id} ownerName={initial.name} editable />
         ) : null}
 
         {show('links') ? (

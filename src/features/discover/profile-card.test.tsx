@@ -41,6 +41,46 @@ function contrastRatio(ink: string, background: string, scrim?: string, opacity 
 const HIDDEN = { includeHiddenElements: true };
 
 describe('ProfileCard', () => {
+  describe('logos de cuentas vinculadas junto al nombre', () => {
+    const seal = '2026-09-16T10:00:00.000Z';
+
+    it('GitHub verificado: logo que abre github.com/<handle>', async () => {
+      const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+      await render(
+        <ProfileCard
+          profile={buildProfile({
+            name: 'Ana',
+            githubVerification: { handle: 'anagarcia', verifiedAt: seal },
+          })}
+        />
+      );
+      await fireEvent.press(screen.getByTestId('profile-card-linked-github'));
+      expect(openURL).toHaveBeenCalledWith('https://github.com/anagarcia');
+      openURL.mockRestore();
+    });
+
+    it('LinkedIn verificado con enlace: logo que abre su página', async () => {
+      const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+      await render(
+        <ProfileCard
+          profile={buildProfile({
+            links: { linkedin: 'https://linkedin.com/in/ana' },
+            linkedinVerification: { name: 'Ana', verifiedAt: seal },
+          })}
+        />
+      );
+      await fireEvent.press(screen.getByTestId('profile-card-linked-linkedin'));
+      expect(openURL).toHaveBeenCalledWith('https://linkedin.com/in/ana');
+      openURL.mockRestore();
+    });
+
+    it('sin sello no hay logos', async () => {
+      await render(<ProfileCard profile={buildProfile({ githubVerification: null, links: {} })} />);
+      expect(screen.queryByTestId('profile-card-linked-github')).toBeNull();
+      expect(screen.queryByTestId('profile-card-linked-linkedin')).toBeNull();
+    });
+  });
+
   it('ofrece Bloquear y Reportar desde las opciones de la tarjeta', async () => {
     await render(<ProfileCard profile={buildProfile({ name: 'Núria' })} />);
     await fireEvent.press(screen.getByRole('button', { name: 'Opciones de Núria' }));

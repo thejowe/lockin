@@ -297,6 +297,9 @@ export interface ProfileFilter {
   /** Edad mínima y máxima del perfil, ambas inclusivas. Solo Premium; ausente = sin límite. */
   minAge?: number;
   maxAge?: number;
+  /** Solo perfiles con GitHub / LinkedIn vinculado (sello verificado). Solo Premium; `true` o ausente. */
+  requireGithub?: true;
+  requireLinkedin?: true;
   /*
    * Filtros avanzados: solo con Premium. Sin él, `getDeck` rechaza con
    * `PremiumRequiredError` (LQ005 en Supabase). Todos son opcionales; ausente
