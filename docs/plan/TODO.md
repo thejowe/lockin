@@ -17,6 +17,8 @@
 
 **Estado Android (usuario, 2026-11-08):** la release está subida y **en revisión de Google**. Lo único que queda es el aviso «No application was found» de la validación de RevenueCat, que se quitará solo cuando Google apruebe la release. No hay más trabajo de código pendiente.
 
+**Decidido (usuario, 2026-11-08): no podar el código de Lock-In en `src/data`** (sessions, rooms, streaks, presence, video-signal): se conserva oculto para poder recuperarlo. Los agentes `.claude/agents/{salas,video,sesiones}.md` ya no existen; las menciones de más abajo a esa deuda son históricas.
+
 **Pendiente (del usuario/Brodie):** 12 testers y 14 días en alpha; confirmar el ingreso de prueba de Google; revisión de Apple; validación de RevenueCat (reintentar tras publicar la release o pasadas 36 h) y Pub/Sub; terminar la Seguridad de datos (pasa de borrador a enviada); comprobar que la entrada «admin» del acceso a la app ya no está. **Más adelante:** estado de comerciante (trader) y aviso legal con NIF; desactivar Realtime «Allow public access» en Supabase cuando las builds viejas no se usen.
 **Siguiente [Claude]:** rebuild hecho (versionCode 4, en revisión). Con la validación de RevenueCat verde, `[comprobador]` con *license tester* (`todo/premium.md`).
 
