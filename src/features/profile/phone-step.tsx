@@ -10,6 +10,7 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { RevealStack } from '@/components/reveal-stack';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 
@@ -25,13 +26,13 @@ export function PhoneStep({ onDone }: { onDone: () => void }) {
   const [phone, setPhone] = useState('');
 
   return (
-    <View style={styles.root}>
-      <View style={styles.header}>
+    <RevealStack style={styles.root}>
+      <>
         <ThemedText type="title">{t('Tu teléfono')}</ThemedText>
         <ThemedText type="body" themeColor="textSecondary">
           {t('Necesitamos un número de contacto para tu cuenta. Es privado: no sale en tu perfil.')}
         </ThemedText>
-      </View>
+      </>
 
       <Field label={t('Teléfono')}>
         <View style={styles.phoneRow}>
@@ -59,11 +60,11 @@ export function PhoneStep({ onDone }: { onDone: () => void }) {
       />
 
       {notice ? (
-        <ThemedText type="small" themeColor={notice.tone} accessibilityRole="alert">
+        <ThemedText key="notice" type="small" themeColor={notice.tone} accessibilityRole="alert">
           {notice.text}
         </ThemedText>
       ) : null}
-    </View>
+    </RevealStack>
   );
 }
 

@@ -43,6 +43,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { RevealStack } from '@/components/reveal-stack';
 import { ThemedText } from '@/components/themed-text';
 import { Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
 import { useRepositories } from '@/data';
@@ -191,8 +192,8 @@ export function SignInForm({
 
   if (forgot) {
     return (
-      <View style={styles.root}>
-        <View style={styles.header}>
+      <RevealStack style={styles.root} revealKey="forgot">
+        <>
           <ThemedText type="label" themeColor="textSecondary">
             {t('Ya tengo cuenta')}
           </ThemedText>
@@ -202,7 +203,7 @@ export function SignInForm({
               'Escribe el email de tu cuenta y te mandamos un enlace para elegir una contraseña nueva.'
             )}
           </ThemedText>
-        </View>
+        </>
 
         <Field label={t('Email')}>
           <TextField
@@ -226,17 +227,17 @@ export function SignInForm({
         />
 
         {notice ? (
-          <ThemedText type="small" themeColor={notice.tone} accessibilityRole="alert">
+          <ThemedText key="notice" type="small" themeColor={notice.tone} accessibilityRole="alert">
             {notice.text}
           </ThemedText>
         ) : null}
-      </View>
+      </RevealStack>
     );
   }
 
   return (
-    <View style={styles.root}>
-      <View style={styles.header}>
+    <RevealStack style={styles.root} revealKey="signin">
+      <>
         <ThemedText type="label" themeColor="textSecondary">
           {t('Ya tengo cuenta')}
         </ThemedText>
@@ -246,7 +247,7 @@ export function SignInForm({
             'Entra con el email y la contraseña que pusiste al asegurar tu cuenta y recuperas tu perfil, tus matches y tus conversaciones.'
           )}
         </ThemedText>
-      </View>
+      </>
 
       <Field label={t('Email')}>
         <TextField
@@ -327,15 +328,15 @@ export function SignInForm({
       )}
 
       {notice ? (
-        <ThemedText type="small" themeColor={notice.tone} accessibilityRole="alert">
+        <ThemedText key="notice" type="small" themeColor={notice.tone} accessibilityRole="alert">
           {notice.text}
         </ThemedText>
       ) : null}
 
       {confirmingLeave ? null : (
-        <ProviderButtons onSignedIn={onSignedIn} disabled={busy !== null} />
+        <ProviderButtons key="providers" onSignedIn={onSignedIn} disabled={busy !== null} />
       )}
-    </View>
+    </RevealStack>
   );
 }
 

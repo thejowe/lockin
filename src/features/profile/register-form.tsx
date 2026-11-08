@@ -41,6 +41,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { RevealStack } from '@/components/reveal-stack';
 import { ThemedText } from '@/components/themed-text';
 import { TERMS_VERSION } from '@/constants/legal';
 import { Spacing } from '@/constants/theme';
@@ -302,8 +303,8 @@ export function RegisterForm({
   }
 
   return (
-    <View style={styles.root}>
-      <View style={styles.header}>
+    <RevealStack style={styles.root} revealKey={step}>
+      <>
         <ThemedText type="label" themeColor="textSecondary">
           {step === 'confirm'
             ? (steps?.confirm ?? t('Casi está'))
@@ -348,7 +349,7 @@ export function RegisterForm({
             </ThemedText>
           </>
         ) : null}
-      </View>
+      </>
 
       {step === 'account' ? (
         <>
@@ -442,7 +443,7 @@ export function RegisterForm({
       ) : null}
 
       {notice ? (
-        <ThemedText type="small" themeColor={notice.tone} accessibilityRole="alert">
+        <ThemedText key="notice" type="small" themeColor={notice.tone} accessibilityRole="alert">
           {notice.text}
         </ThemedText>
       ) : null}
@@ -450,7 +451,7 @@ export function RegisterForm({
       {step === 'password' ? null : (
         <SecondaryButton label={t('Ya tengo cuenta')} onPress={onSignIn} />
       )}
-    </View>
+    </RevealStack>
   );
 }
 
