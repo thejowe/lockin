@@ -31,11 +31,11 @@ import { useReduceMotion } from '@/hooks/use-reduce-motion';
 import { useTheme } from '@/hooks/use-theme';
 
 /** Caja del símbolo en la rejilla de 64 unidades (ver el SVG de marca). */
-const VIEW_BOX = '5 14 54 36';
-const ASPECT = 54 / 36;
+export const VIEW_BOX = '5 14 54 36';
+export const ASPECT = 54 / 36;
 
-const LEFT = 'M32 15.88 A18 18 0 1 0 32 48.12 A18 18 0 0 1 32 15.88 Z';
-const RIGHT = 'M32 15.88 A18 18 0 1 1 32 48.12 A18 18 0 0 0 32 15.88 Z';
+export const LEFT = 'M32 15.88 A18 18 0 1 0 32 48.12 A18 18 0 0 1 32 15.88 Z';
+export const RIGHT = 'M32 15.88 A18 18 0 1 1 32 48.12 A18 18 0 0 0 32 15.88 Z';
 
 /** Cuánto llegan desplazadas las mitades, en fracción del ancho. */
 const TRAVEL = 0.22;
