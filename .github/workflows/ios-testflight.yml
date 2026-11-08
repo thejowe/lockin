@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   testflight:
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 90
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
@@ -28,10 +28,10 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Xcode 26 (el SDK 58 de Expo no compila con 16.4)
+      - name: El Xcode más nuevo (la nube de EAS compila con SDK 27; 26.3 falla en expo-modules-jsi)
         run: |
           ls -d /Applications/Xcode*.app
-          x=$(ls -d /Applications/Xcode_26*.app | sort -V | tail -n1)
+          x=$(ls -d /Applications/Xcode_[0-9]*.app | sort -V | tail -n1)
           sudo xcode-select -s "$x/Contents/Developer"
           xcodebuild -version
       - run: npm ci
