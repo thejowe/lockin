@@ -75,7 +75,7 @@ archivos.
   - **Pendiente:** aplicar la migración en producción (`supabase db push`). Hasta entonces,
     schema-drift remoto en rojo por esta migración, esperado.
   - **Cerrado (2026-11-07):** migración aplicada en producción y Schema drift verde (run 42376442883).
-- [ ] **[Claude] Sello de GitHub/LinkedIn comprobado en servidor** (2026-11-06, auditoría run-1,
+- [x] **[Claude] Sello de GitHub/LinkedIn comprobado en servidor** (2026-11-06, auditoría run-1,
   lead 3).
   - **El hueco:** `sync_*_verification()` sellaba con cualquier identidad de ese proveedor en
     `auth.identities`. GoTrue la vincula en su callback sin ligarla al navegador que empezó
@@ -95,14 +95,14 @@ archivos.
   - **Pendiente (en este orden):**
     1. ~~Aplicar la migración.~~ Hecho (2026-11-07, Schema drift verde).
     2. ~~`supabase functions deploy verify-identity`~~ Hecho: v1 activa con `verify_jwt=true` (2026-11-07).
-    3. Build nueva.
-    4. **[usuario, 2026-11-08: GitHub OK; LinkedIn no disponible aún]** Verificar GitHub y LinkedIn en el dispositivo contra Supabase real: el
+    3. ~~Build nueva.~~ Hecho (2026-11-08, versionCode 4, en revisión de Google).
+    4. **[usuario, 2026-11-08: GitHub OK; LinkedIn no disponible aún, aparcado]** Cerrado para GitHub; LinkedIn se comprobará cuando exista la app (`perfil.md`). Verificar GitHub y LinkedIn en el dispositivo contra Supabase real: el
        canje de `linkIdentity` debe traer `provider_token`. Es un supuesto sobre GoTrue que aquí no
        se ha podido observar.
   - **Ojo, orden:** con la migración aplicada y la build vieja, verificar no sella (las builds
     viejas llaman a `sync_*`, que ya no enciende). Mejor desplegar función + build antes, o a la
     vez.
-- [ ] **[Claude] Canales de Realtime todos privados** (2026-11-06, auditoría run-1, lead 4).
+- [x] **[Claude] Canales de Realtime todos privados** (el paso 4, desactivar «Allow public access», sigue siendo del usuario cuando las builds viejas ya no se usen) (2026-11-06, auditoría run-1, lead 4).
   - **El hueco:** con «Allow public access» activado, un topic de vídeo, presencia o sala se podía
     abrir sin `private: true` y saltarse las políticas de `realtime.messages`. El acceso público
     seguía activado solo porque los canales de `postgres_changes` eran públicos.
@@ -114,8 +114,8 @@ archivos.
   - **Tests:** jest con los canales privados y PGlite con `is_changes_topic_member`.
   - **Pendiente (en este orden):**
     1. ~~Aplicar la migración.~~ Hecho (2026-11-07, Schema drift verde).
-    2. Publicar la build.
-    3. **[usuario, 2026-11-08: comprobado, llegan en vivo]** Confirmar que siguen llegando matches, mensajes y sesiones en vivo con
+    2. ~~Publicar la build.~~ Hecho (2026-11-08, versionCode 4).
+    3. ~~**[usuario, 2026-11-08: comprobado, llegan en vivo]**~~ Hecho: Confirmar que siguen llegando matches, mensajes y sesiones en vivo con
        canales privados. Que Realtime autorice así un canal privado de `postgres_changes` no se ha
        podido observar aquí.
     4. Cuando las builds viejas dejen de usarse, desactivar «Allow public access» en Realtime →
