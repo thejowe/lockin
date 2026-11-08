@@ -28,6 +28,12 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Xcode 26 (el SDK 58 de Expo no compila con 16.4)
+        run: |
+          ls -d /Applications/Xcode*.app
+          x=$(ls -d /Applications/Xcode_26*.app | sort -V | tail -n1)
+          sudo xcode-select -s "$x/Contents/Developer"
+          xcodebuild -version
       - run: npm ci
       - name: Build local de iOS (perfil production)
         run: npx eas-cli build -p ios --profile production --local --non-interactive --output "$RUNNER_TEMP/lockin.ipa"
