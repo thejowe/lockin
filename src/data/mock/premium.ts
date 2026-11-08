@@ -306,6 +306,10 @@ export function createMockPremiumRepository(
       return iso(endsAtMs);
     },
 
+    async listBadges(profileIds) {
+      return profileIds.filter((id) => isMockPremium(store, id));
+    },
+
     async countIncomingLikes() {
       return incoming().length;
     },

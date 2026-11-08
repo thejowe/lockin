@@ -501,6 +501,7 @@ export type Database = {
       activate_boost: { Args: Record<string, never>; Returns: string };
       premium_quotas: { Args: Record<string, never>; Returns: PremiumQuotasRow[] };
       incoming_likes_count: { Args: Record<string, never>; Returns: number };
+      premium_badges: { Args: { p_ids: string[] }; Returns: string[] };
       incoming_likes: {
         Args: {
           p_limit?: number | null;

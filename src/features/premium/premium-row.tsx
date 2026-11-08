@@ -79,13 +79,16 @@ export function PremiumRow({
       ) : quotas ? (
         <PremiumCta />
       ) : null}
-      <Button
-        variant="secondary"
-        compact
-        label={restoring ? t('Restaurando…') : t('Restaurar compras')}
-        disabled={restoring}
-        onPress={() => void handleRestore()}
-      />
+      {/* Con Premium activo no hay nada que comprar ni restaurar. */}
+      {quotas?.isPremium ? null : (
+        <Button
+          variant="secondary"
+          compact
+          label={restoring ? t('Restaurando…') : t('Restaurar compras')}
+          disabled={restoring}
+          onPress={() => void handleRestore()}
+        />
+      )}
       {notice ? (
         <ThemedText type="body" themeColor="textSecondary">
           {notice}

@@ -6,6 +6,7 @@
  * `descubrir` puede reutilizarla para el detalle de una tarjeta si le sirve.
  */
 
+import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Icon } from '@/components/icon';
@@ -25,6 +26,7 @@ import { DayStrip } from './day-strip';
 import { GithubSeal } from './github-seal';
 import { LinkedinSeal } from './linkedin-seal';
 import { ProfileAvatar } from './profile-avatar';
+import { PremiumBadge } from '@/features/premium/premium-badge';
 
 import type { ProfileSection } from './profile-form';
 
@@ -36,8 +38,11 @@ export function ProfileDetails({
   onAvatarPress,
   onEdit,
   onSaveLink,
+  trailing,
 }: {
   profile: Profile;
+  /** Solo en el perfil propio: lo que va al extremo derecho de la fila de identidad (el diamante Premium). */
+  trailing?: ReactNode;
   /**
    * Solo en el perfil propio: «Redes y enlaces» enseña todos los logos y cada
    * uno despliega su campo; sustituye al lápiz de ese bloque (2026-11-01).
@@ -81,6 +86,8 @@ export function ProfileDetails({
             <ThemedText type="title" style={styles.name}>
               {profile.name}
             </ThemedText>
+            {/* En el perfil propio el «Premium» va arriba, en la barra. */}
+            {onEdit ? null : <PremiumBadge profileId={profile.id} size={22} />}
             {pencil('basics')}
           </View>
           <ThemedText type="body" themeColor="textSecondary">
@@ -88,6 +95,7 @@ export function ProfileDetails({
           </ThemedText>
           {/* La zona horaria la nombra la jornada, más abajo: aquí sobraba. */}
         </View>
+        {trailing}
       </View>
 
       {/*
@@ -407,6 +415,7 @@ const styles = StyleSheet.create({
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: Spacing.one,
   },
   name: {
     flexShrink: 1,

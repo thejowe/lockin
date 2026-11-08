@@ -22,6 +22,8 @@ import {
   SectionEditSheet,
   type ProfileSection,
 } from '@/features/profile';
+import { PremiumGemButton } from '@/features/premium/premium-cta';
+import { usePremium } from '@/features/premium/use-premium';
 import { accountsAvailable, enabledAuthProviders } from '@/features/profile/account-gateway';
 import type { ConnectedApp } from '@/features/profile/connected-apps';
 import { PrimaryButton, SecondaryButton } from '@/features/profile/controls';
@@ -48,6 +50,7 @@ export default function ProfileScreen() {
   const theme = useTheme();
   const entering = useTabEntering();
   const terms = useTermsGate();
+  const { quotas } = usePremium();
   const {
     data: profile,
     loading,
@@ -188,6 +191,13 @@ export default function ProfileScreen() {
             <ThemedText type="label" themeColor="textSecondary">
               {t('Perfil')}
             </ThemedText>
+            {quotas?.isPremium ? (
+              <View pointerEvents="none" style={styles.premiumTag}>
+                <ThemedText type="label" style={{ color: theme.diamond }}>
+                  {t('Premium')}
+                </ThemedText>
+              </View>
+            ) : null}
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t('Ajustes de la cuenta')}
@@ -203,6 +213,8 @@ export default function ProfileScreen() {
               onAvatarPress={terms.gate === 'accepted' ? () => setPhotoOpen(true) : undefined}
               onEdit={terms.gate === 'accepted' ? setEditSection : undefined}
               onSaveLink={terms.gate === 'accepted' ? handleSaveLink : undefined}
+              // Atajo a los planes, bajo el menú; con Premium activo (o sin saberlo aún) no se ofrece.
+              trailing={quotas && !quotas.isPremium ? <PremiumGemButton /> : undefined}
             />
           </Animated.View>
 
@@ -270,6 +282,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  /** «Premium» centrado en la barra de arriba, con el azul del diamante. */
+  premiumTag: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
   },
   gear: {
     width: Control.minTouch,

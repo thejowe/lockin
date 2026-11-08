@@ -23,7 +23,7 @@ import Animated, {
 
 import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
-import { Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
+import { Control, Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
 import { useReduceMotion } from '@/hooks/use-reduce-motion';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -31,6 +31,8 @@ import { openPaywall } from './open-paywall';
 import { t } from '@/i18n';
 
 const GEM = 72;
+/** El diamante del perfil: crece con el mismo `COVER_SCALE`, así que el gesto es idéntico. */
+const GEM_SMALL = 30;
 /** Cuántas veces crece el diamante: de sobra para tapar cualquier pantalla desde cualquier punto. */
 const COVER_SCALE = 60;
 const GROW_MS = 650;
@@ -38,7 +40,11 @@ const GROW_MS = 650;
 const HOLD_MS = 450;
 const FADE_MS = 300;
 
-export function PremiumCta() {
+/**
+ * La animación del diamante que crece hasta tapar la pantalla y abre el paywall.
+ * La comparten el botón grande de Ajustes y el diamante pequeño del perfil.
+ */
+function useGemTakeover(size: number) {
   const theme = useTheme();
   const reduceMotion = useReduceMotion();
   const gemRef = useRef<ViewInstance>(null);
@@ -85,6 +91,35 @@ export function PremiumCta() {
     });
   }
 
+  const overlay = (
+    <Modal transparent statusBarTranslucent animationType="none" visible={origin !== null}>
+      {origin ? (
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          <Animated.View
+            style={[
+              styles.gem,
+              {
+                width: size,
+                height: size,
+                left: origin.x - size / 2,
+                top: origin.y - size / 2,
+              },
+              overlayGem,
+            ]}>
+            <Icon name="diamond" size={size} color={theme.diamond} fill={theme.diamond} />
+          </Animated.View>
+        </View>
+      ) : null}
+    </Modal>
+  );
+
+  return { gemRef, handlePress, overlay };
+}
+
+export function PremiumCta() {
+  const theme = useTheme();
+  const { gemRef, handlePress, overlay } = useGemTakeover(GEM);
+
   return (
     <>
       <Pressable
@@ -106,21 +141,31 @@ export function PremiumCta() {
           {t('Hazte Premium')}
         </ThemedText>
       </Pressable>
+      {overlay}
+    </>
+  );
+}
 
-      <Modal transparent statusBarTranslucent animationType="none" visible={origin !== null}>
-        {origin ? (
-          <View style={StyleSheet.absoluteFill} pointerEvents="none">
-            <Animated.View
-              style={[
-                styles.gem,
-                { left: origin.x - GEM / 2, top: origin.y - GEM / 2 },
-                overlayGem,
-              ]}>
-              <Icon name="diamond" size={GEM} color={theme.diamond} fill={theme.diamond} />
-            </Animated.View>
-          </View>
-        ) : null}
-      </Modal>
+/**
+ * El diamante pequeño del perfil: mismo gesto que «Hazte Premium» de Ajustes
+ * (el diamante crece, tapa la pantalla y se abren los planes), sin entrar al menú.
+ */
+export function PremiumGemButton() {
+  const theme = useTheme();
+  const { gemRef, handlePress, overlay } = useGemTakeover(GEM_SMALL);
+
+  return (
+    <>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t('Hazte Premium')}
+        onPress={handlePress}
+        style={({ pressed }) => [styles.gemButton, { opacity: pressed ? Opacity.pressed : 1 }]}>
+        <View ref={gemRef} collapsable={false}>
+          <Icon name="diamond" size={GEM_SMALL} color={theme.diamond} strokeWidth={1.6} />
+        </View>
+      </Pressable>
+      {overlay}
     </>
   );
 }
@@ -137,9 +182,14 @@ const styles = StyleSheet.create({
   title: {
     textAlign: 'center',
   },
+  gemButton: {
+    width: Control.minTouch,
+    height: Control.minTouch,
+    marginRight: -Spacing.two,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   gem: {
     position: 'absolute',
-    width: GEM,
-    height: GEM,
   },
 });

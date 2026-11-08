@@ -185,6 +185,15 @@ export function createSupabasePremiumRepository({
       }));
     },
 
+    async listBadges(profileIds) {
+      if (profileIds.length === 0) return [];
+      const client = getClient();
+      await getUserId();
+      const { data, error } = await client.rpc('premium_badges', { p_ids: profileIds });
+      if (error) throw toPremiumError(error);
+      return (data ?? []) as string[];
+    },
+
     async syncEntitlement() {
       // Tras comprar o restaurar: la función pregunta a RevenueCat por NUESTRO uid y escribe
       // `entitlements`. Sin ella desplegada (o sin clave) no rompe: el webhook llegará igual.

@@ -17,6 +17,8 @@ import { Radii, Spacing, Stroke } from '@/constants/theme';
 import { usePressScale } from '@/hooks/use-press-scale';
 import { useTheme } from '@/hooks/use-theme';
 
+import { PremiumBadge } from '@/features/premium/premium-badge';
+
 import { formatRelative } from './format';
 import { ProfileAvatar } from './profile-avatar';
 
@@ -99,9 +101,12 @@ export function MatchRow({
 
             <View style={styles.body}>
               <View style={styles.topLine}>
-                <ThemedText type="heading" numberOfLines={1} style={styles.name}>
-                  {counterpart.name}
-                </ThemedText>
+                <View style={styles.nameGroup}>
+                  <ThemedText type="heading" numberOfLines={1} style={styles.name}>
+                    {counterpart.name}
+                  </ThemedText>
+                  <PremiumBadge profileId={counterpart.id} size={16} />
+                </View>
                 <ThemedText type="mono" themeColor="textMuted">
                   {timestamp}
                 </ThemedText>
@@ -180,6 +185,12 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
     justifyContent: 'space-between',
     gap: Spacing.two,
+  },
+  nameGroup: {
+    flexShrink: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
   },
   name: {
     flexShrink: 1,

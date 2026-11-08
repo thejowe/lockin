@@ -403,6 +403,11 @@ export interface PremiumRepository {
   listIncomingLikes(page?: { before?: string; limit?: number }): Promise<IncomingLike[]>;
   /** Pide al servidor que relea la suscripción de la tienda. El mock no hace nada. */
   syncEntitlement(): Promise<void>;
+  /**
+   * De estos perfiles, los que tienen Premium vigente (para el distintivo del
+   * diamante). Solo dice quién, nunca hasta cuándo. Máximo 100 ids por llamada.
+   */
+  listBadges(profileIds: string[]): Promise<string[]>;
 }
 
 /**

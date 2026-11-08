@@ -72,13 +72,13 @@ describe('PremiumRow', () => {
       );
     }
 
-    it('está siempre: con Premium, sin él y con los cupos aún sin conocer', async () => {
+    it('está sin Premium y con los cupos aún sin conocer; con Premium no hay nada que restaurar', async () => {
       const { unmount } = await row(BASE);
       expect(screen.getByRole('button', { name: 'Restaurar compras' })).toBeTruthy();
       await unmount();
 
       const second = await row({ ...BASE, isPremium: true });
-      expect(screen.getByRole('button', { name: 'Restaurar compras' })).toBeTruthy();
+      expect(screen.queryByRole('button', { name: 'Restaurar compras' })).toBeNull();
       await second.unmount();
 
       await row(null);

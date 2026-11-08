@@ -61,6 +61,8 @@ import { TapHint } from './tap-hint';
 
 import type { ChipTone } from './chip';
 
+import { PremiumBadge } from '@/features/premium/premium-badge';
+
 import type { DeckProfile, Profile, Specialty } from '@/data';
 import { t } from '@/i18n';
 
@@ -272,6 +274,7 @@ export function ProfileCard({
             <ThemedText type="title" numberOfLines={1} style={styles.name}>
               {profile.name}
             </ThemedText>
+            <PremiumBadge profileId={profile.id} size={22} />
             <ThemedText type="subtitle" style={styles.age}>
               {profile.age}
             </ThemedText>

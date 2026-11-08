@@ -7,7 +7,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react-nativ
 import { AccessibilityInfo, View } from 'react-native';
 
 import { openPaywall } from './open-paywall';
-import { PremiumCta } from './premium-cta';
+import { PremiumCta, PremiumGemButton } from './premium-cta';
 
 jest.mock('./open-paywall', () => ({ openPaywall: jest.fn() }));
 
@@ -41,6 +41,18 @@ describe('PremiumCta', () => {
     jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
     proto.measureInWindow = (cb) => cb(100, 200, 72, 72);
     await render(<PremiumCta />);
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Hazte Premium' }));
+
+    await waitFor(() => expect(openPaywall).toHaveBeenCalledTimes(1));
+  });
+});
+
+describe('PremiumGemButton', () => {
+  it('con movimiento hace la misma animación y abre el paywall', async () => {
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
+    proto.measureInWindow = (cb) => cb(300, 80, 30, 30);
+    await render(<PremiumGemButton />);
 
     await fireEvent.press(screen.getByRole('button', { name: 'Hazte Premium' }));
 

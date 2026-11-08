@@ -35,6 +35,7 @@ import { ProfileAvatar } from '@/features/profile';
 import { useTheme } from '@/hooks/use-theme';
 
 import { openPaywall } from './open-paywall';
+import { PremiumBadge } from './premium-badge';
 import { usePremium } from './use-premium';
 
 import type { Blocked, MatchEvent } from '@/features/discover';
@@ -80,9 +81,12 @@ function Tile({ like, onPress }: { like: IncomingLike; onPress: () => void }) {
         },
       ]}>
       <ProfileAvatar avatar={profile.avatar} size="large" />
-      <ThemedText type="heading" numberOfLines={1} style={styles.centered}>
-        {profile.name}
-      </ThemedText>
+      <View style={styles.nameRow}>
+        <ThemedText type="heading" numberOfLines={1} style={styles.nameText}>
+          {profile.name}
+        </ThemedText>
+        <PremiumBadge profileId={profile.id} size={16} />
+      </View>
       {like.isSuper ? (
         <View style={[styles.badge, { backgroundColor: theme.brassSoft }]}>
           <Icon name="sparkle" size={12} color={theme.brass} strokeWidth={2.2} />
@@ -361,6 +365,16 @@ const styles = StyleSheet.create({
     borderRadius: Radii.pill,
   },
   centered: {
+    textAlign: 'center',
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.one,
+  },
+  nameText: {
+    flexShrink: 1,
     textAlign: 'center',
   },
   backdrop: {
