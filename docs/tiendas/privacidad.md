@@ -20,7 +20,7 @@
 
 cofounder es una app para encontrar cofundador o cofundadora entre pares.
 
-El responsable del tratamiento es **Joel de Torres Sainz de la Maza**, con domicilio en carrer Nou, 37, 25153 Lleida (Catalunya, España). Para privacidad o soporte: **privacidad@getcofounder.app**.
+El responsable del tratamiento es **Joel de Torres Sainz de la Maza**, con domicilio en carrer Nou, 37, 25153 Puigverd de Lleida (Catalunya, España). Para privacidad o soporte: **privacidad@getcofounder.app**.
 
 Publicamos la app en España y el resto del Espacio Económico Europeo. Se aplican el Reglamento (UE) 2016/679 (RGPD) y la Ley Orgánica 3/2018 (LOPDGDD). La autoridad de control es la Agencia Española de Protección de Datos ([aepd.es](https://www.aepd.es)); en Catalunya también puedes acudir a la Autoritat Catalana de Protecció de Dades.
 

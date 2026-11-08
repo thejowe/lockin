@@ -11,7 +11,7 @@
 
 cofounder is an app for finding a cofounder among peers.
 
-The data controller is **Joel de Torres Sainz de la Maza**, residing at carrer Nou, 37, 25153 Lleida (Catalonia, Spain). For privacy or support: **privacidad@getcofounder.app**.
+The data controller is **Joel de Torres Sainz de la Maza**, residing at carrer Nou, 37, 25153 Puigverd de Lleida (Catalonia, Spain). For privacy or support: **privacidad@getcofounder.app**.
 
 We publish the app in Spain and the rest of the European Economic Area. Regulation (EU) 2016/679 (GDPR) and Spanish Organic Law 3/2018 (LOPDGDD) apply. The supervisory authority is the Spanish Data Protection Agency ([aepd.es](https://www.aepd.es)); in Catalonia you can also go to the Autoritat Catalana de Protecció de Dades.
 

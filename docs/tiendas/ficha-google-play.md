@@ -59,7 +59,7 @@ Público objetivo: 16–17 y 18+ (D06). En el cuestionario IARC declarar interac
 - Políticas UGC de Google: Términos y Normas aceptados antes de publicar; reporte de perfiles y mensajes; bloqueo; filtro básico de texto y moderación de fotos; revisión de reportes (24 h / 72 h). Migraciones aplicadas en producción el 16-oct-2026; falta probarlo contra Supabase real (T7).
 - Declaración de trader (DSA): **no trader** (decidido el 16-oct-2026: app gratuita, sin anuncios, compras ni ingresos). **Reabierto el 2-nov-2026:** con Premium la app cobra; el titular debe decidir si pasa a trader antes de publicar la versión con suscripción.
 - Compras en la app: **«Contiene compras en la aplicación: sí»** (suscripción cofounder Premium, mensual o anual, con prueba gratis: 7 días en el anual, 3 en el mensual). **«Contiene anuncios: no».** Precio de la app: gratuita.
-- Cuenta de prueba por si Play pide acceso: [cuenta de prueba: pendiente].
+- Cuenta de prueba por si Play pide acceso: hola+playreview@getcofounder.app (la contraseña no va en el repo; se introduce en Play Console > Acceso a la app).
 
 ## Límites
 
@@ -69,13 +69,13 @@ Público objetivo: 16–17 y 18+ (D06). En el cuestionario IARC declarar interac
 | Descripción breve | 78 caracteres | 80 |
 | Descripción completa | 1770 caracteres | 4000 |
 
-Package: `app.cofounder.mobile`; versión 1.0.0. Cuenta personal declarada no trader (DSA): Play muestra el nombre del desarrollador y el país, no la dirección. Con Premium esto se revisa (ver la declaración de trader arriba).
+Package: `app.cofounder.android`; versión 1.0.0. Cuenta personal declarada no trader (DSA): Play muestra el nombre del desarrollador y el país, no la dirección. Con Premium esto se revisa (ver la declaración de trader arriba).
 
 ## Comprobaciones previas al envío (no copiar en la consola)
 
 - **Binario final (T5, `cf18086`):** sin Lock-In, WebRTC, `expo-notifications`, `RECORD_AUDIO` ni `SCHEDULE_EXACT_ALARM`; solo `CAMERA` y galería para la foto de perfil, `expo-secure-store` y `ITSAppUsesNonExemptEncryption=false`. Falta mirar el manifiesto del AAB y el Info.plist generado (T7).
 - **Bloquear, reportar perfiles y mensajes, aceptación de Términos y Normas, filtro, baja de cuenta:** implementados en el código (T3a, T3b). Las migraciones `20261014120000` (aceptación), `20261014130000` (reportar mensaje) y `20261014140000` (limpieza de fotos) están aplicadas en producción desde el 16-oct-2026. Falta probarlo contra Supabase real en la build final (T7).
 - **Capturas:** solo pantallas actuales (perfil, deck a pantalla completa, match, chat con sugerencias, GitHub verificado, bloqueo/reporte). Ninguna con temporizador, salas, vídeo o rachas (ya no existen en la app).
-- **Cuenta de revisión:** [cuenta de prueba: pendiente] con perfil completo y al menos un match con chat para que la revisión vea las funciones.
+- **Cuenta de revisión:** hola+playreview@getcofounder.app (la contraseña no va en el repo; se introduce en Play Console > Acceso a la app) con perfil completo y al menos un match con chat para que la revisión vea las funciones.
 - **URLs públicas (D08):** privacidad, términos, normas, seguridad infantil, soporte y eliminar cuenta en https://getcofounder.app/… (`/privacidad`, `/terminos`, `/normas`, `/seguridad-infantil`, `/soporte`, `/eliminar-cuenta`) deben estar publicadas y funcionando antes de enviar [pendiente: fecha de publicación; no empujar `web/**` hasta cerrar marcadores].
-- Responsable (D01): Joel de Torres Sainz de la Maza, carrer Nou, 37, 25153 Lleida (España). DSA: no trader. Contacto (D02): soporte@getcofounder.app.
+- Responsable (D01): Joel de Torres Sainz de la Maza, carrer Nou, 37, 25153 Puigverd de Lleida (España). DSA: no trader. Contacto (D02): soporte@getcofounder.app.

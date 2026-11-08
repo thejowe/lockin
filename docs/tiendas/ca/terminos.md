@@ -13,7 +13,7 @@
 
 cofounder és una app per conèixer altres persones que volen començar alguna cosa i valorar si encaixeu com a cofundadors. Permet crear un perfil, veure perfils d'altres persones, indicar interès, fer match quan l'interès és mutu i conversar per xat.
 
-L'ofereix **Joel de Torres Sainz de la Maza**, amb domicili al carrer Nou, 37, 25153 Lleida (Catalunya, Espanya). Contacte: **soporte@getcofounder.app**.
+L'ofereix **Joel de Torres Sainz de la Maza**, amb domicili al carrer Nou, 37, 25153 Puigverd de Lleida (Catalunya, Espanya). Contacte: **soporte@getcofounder.app**.
 
 En crear un compte o fer servir l'app acceptes aquests termes, les [normes de la comunitat](https://getcofounder.app/normas) i la [política de privacitat](https://getcofounder.app/privacidad).
 
@@ -33,7 +33,7 @@ Has de tenir **16 anys o més**. L'edat és autodeclarada. Si indiques una edat 
 - Ets responsable de l'activitat del teu compte i de la veracitat de la informació del teu perfil.
 - Només pots tenir un compte actiu per a tu. No pots crear perfils falsos ni suplantar ningú.
 - Un compte creat sense correu es perd si tanques la sessió o desinstal·les l'app. Afegir i confirmar un correu permet recuperar-lo. Un compte creat amb Google o Apple es recupera entrant una altra vegada amb aquest mateix servei.
-- Pots eliminar el teu compte quan vulguis des de Ajustos > Compte > Elimina el meu compte, o seguint les instruccions de https://getcofounder.app/eliminar-cuenta.
+- Pots eliminar el teu compte quan vulguis des d'Ajustos > Compte > Elimina el meu compte, o seguint les instruccions de https://getcofounder.app/eliminar-cuenta.
 
 ## 5. Contingut que publiques
 

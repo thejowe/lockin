@@ -11,7 +11,7 @@
 
 cofounder és una app per trobar cofundador o cofundadora entre iguals.
 
-El responsable del tractament és **Joel de Torres Sainz de la Maza**, amb domicili al carrer Nou, 37, 25153 Lleida (Catalunya, Espanya). Per a privacitat o suport: **privacidad@getcofounder.app**.
+El responsable del tractament és **Joel de Torres Sainz de la Maza**, amb domicili al carrer Nou, 37, 25153 Puigverd de Lleida (Catalunya, Espanya). Per a privacitat o suport: **privacidad@getcofounder.app**.
 
 Publiquem l'app a Espanya i a la resta de l'Espai Econòmic Europeu. S'hi apliquen el Reglament (UE) 2016/679 (RGPD) i la Llei orgànica 3/2018 (LOPDGDD). L'autoritat de control és l'Agència Espanyola de Protecció de Dades ([aepd.es](https://www.aepd.es)); a Catalunya també pots acudir a l'Autoritat Catalana de Protecció de Dades.
 
@@ -29,7 +29,7 @@ Si verifiques el teu enllaç de GitHub, es vincula la teva identitat de GitHub i
 
 ### El teu perfil
 
-Desem el nom i l'edat que indiques, la teva ciutat o zona i zona horària, inicials i color de l'avatar, especialitats que domines i que busques (i, si tries «Una altra», el text que escriguis), llengües que parles i que busques, punt de partida, disponibilitat setmanal i franges horàries, nivell d'ambició, enllaços opcionals a GitHub, portfolio, LinkedIn, Instagram i TikTok, i les teves respostes breus a preguntes de perfil, amb les dates de creació i modificació.
+Desem el nom i l'edat que indiques, la teva ciutat o zona i zona horària, inicials i color de l'avatar, especialitats que domines i que busques (i, si tries «Una altra», el text que escriguis), llengües que parles i que busques, punt de partida, disponibilitat setmanal i franges horàries, nivell d'ambició, enllaços opcionals a GitHub, portafoli, LinkedIn, Instagram i TikTok, i les teves respostes breus a preguntes de perfil, amb les dates de creació i modificació.
 
 La ubicació s'escriu com a text; l'app no fa servir GPS.
 
@@ -82,7 +82,7 @@ Fem servir les dades per mantenir i recuperar el teu compte, mostrar i editar el
 
 OpenAI i RevenueCat tracten dades fora de l'Espai Econòmic Europeu (EUA). En el cas de RevenueCat, la transferència es basa en les clàusules contractuals tipus de la Comissió Europea, incorporades al seu acord de tractament de dades. En el d'OpenAI, en les clàusules contractuals tipus o en el Marc de Privacitat de Dades UE-EUA (DPF), segons el cas. Pots demanar informació sobre aquestes garanties a soporte@getcofounder.app.
 
-En obrir un enllaç de portfolio, GitHub, LinkedIn, Instagram o TikTok d'una altra persona, visites un servei extern amb les seves pròpies pràctiques de privacitat.
+En obrir un enllaç de portafoli, GitHub, LinkedIn, Instagram o TikTok d'una altra persona, visites un servei extern amb les seves pròpies pràctiques de privacitat.
 
 ## 6. Permisos
 

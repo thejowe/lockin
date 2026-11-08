@@ -109,7 +109,7 @@ DEMO ACCOUNT
 
 USER-GENERATED CONTENT (Guideline 1.2)
 - Terms and Community Guidelines must be accepted (versioned, with date) before
-  publishing content or chatting; links to them are in Profile.
+  publishing content or chatting; links to them are in Settings.
 - Report: any profile (Discover/chat safety panel) and any individual message
   (message report panel in the chat). Reports go to a private table reviewed
   by the operator; target response time is 24 h for severe content and 72 h otherwise.
@@ -137,7 +137,7 @@ PERMISSIONS
   No microphone, no location, no contacts, no push notifications, no tracking.
 - Encryption: standard HTTPS/TLS only (ITSAppUsesNonExemptEncryption = false).
 - Sign in with GitHub is optional and only used to show a "GitHub verified"
-  badge. The app also supports email/password and anonymous accounts, so GitHub
+  badge. The app also supports Sign in with Apple, Google, email/password and anonymous accounts, so GitHub
   is not the only login option.
 
 AGE

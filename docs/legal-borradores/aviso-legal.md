@@ -8,7 +8,7 @@ En cumplimiento del artículo 10 de la Ley 34/2002, de 11 de julio, de servicios
 
 - **Titular:** Joel de Torres Sainz de la Maza
 - **NIF:** [PENDIENTE: NIF]
-- **Domicilio:** carrer Nou, 37, 25153 Lleida (Catalunya, España)
+- **Domicilio:** carrer Nou, 37, 25153 Puigverd de Lleida (Catalunya, España)
 - **Email de contacto:** cofounder.soporte@gmail.com
 - **Sitio web:** https://thejowe.github.io/cofounder-web/
 - **App:** cofounder (iOS y Android), identificador técnico `app.cofounder.mobile`

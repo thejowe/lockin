@@ -59,8 +59,8 @@ Target audience: 16–17 and 18+ (D06). In the IARC questionnaire, declare user 
 - Child safety (Social category): standards URL https://getcofounder.app/seguridad-infantil; designated contact soporte@getcofounder.app.
 - Permissions (final binary, T5): only `CAMERA` declared by the app, for the profile photo; the gallery uses the system picker. No `RECORD_AUDIO`, `SCHEDULE_EXACT_ALARM` or notifications: there are no sensitive permissions to justify. Confirm in the AAB manifest that no library adds others (T7).
 - Google UGC policies: Terms and Guidelines accepted before publishing; reporting of profiles and messages; blocking; basic text filter and photo moderation; review of reports (24 h / 72 h).
-- In-app purchases: **"Contains in-app purchases: yes"** (cofounder Premium subscription, monthly or annual, with a free trial: 7 days on the annual plan, 3 on the monthly; monthly €4.99, annual €39.99; product ids `app.cofounder.mobile.premium.monthly` and `.annual`). **"Contains ads: no".** App price: free.
-- Test account in case Play asks for access: [test account: pending].
+- In-app purchases: **"Contains in-app purchases: yes"** (cofounder Premium subscription, monthly or annual, with a free trial: 7 days on the annual plan, 3 on the monthly; monthly €4.99, annual €39.99; subscription `premium`, base plans `premium-monthly` (offer `trial-3d`) and `premium-annual` (offer `trial-7d`)). **"Contains ads: no".** App price: free.
+- Test account in case Play asks for access: hola+playreview@getcofounder.app (the password is not in the repo; enter it in Play Console > App access).
 
 ## Limits
 
@@ -70,4 +70,4 @@ Target audience: 16–17 and 18+ (D06). In the IARC questionnaire, declare user 
 | Short description | 58 characters | 80 |
 | Full description | 1675 characters | 4000 |
 
-Package: `app.cofounder.mobile`; version 1.0.0. The pre-submission checklist, trader (DSA) status and internal notes stay in the Spanish listing.
+Package: `app.cofounder.android`; version 1.0.0. The pre-submission checklist, trader (DSA) status and internal notes stay in the Spanish listing.

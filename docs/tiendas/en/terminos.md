@@ -13,7 +13,7 @@
 
 cofounder is an app for meeting other people who want to start something and working out whether you fit as cofounders. It lets you create a profile, see other people's profiles, show interest, match when the interest is mutual and talk by chat.
 
-It is provided by **Joel de Torres Sainz de la Maza**, residing at carrer Nou, 37, 25153 Lleida (Catalonia, Spain). Contact: **soporte@getcofounder.app**.
+It is provided by **Joel de Torres Sainz de la Maza**, residing at carrer Nou, 37, 25153 Puigverd de Lleida (Catalonia, Spain). Contact: **soporte@getcofounder.app**.
 
 By creating an account or using the app you accept these terms, the [community guidelines](https://getcofounder.app/normas) and the [privacy policy](https://getcofounder.app/privacidad).
 

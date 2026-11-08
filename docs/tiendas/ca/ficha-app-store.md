@@ -23,7 +23,7 @@ Tens ganes de construir alguna cosa i et falta amb qui? cofounder t'ajuda a trob
 No cal tenir res construït. Pots no tenir cap idea encara, tenir una idea sense començar o haver provat alguna cosa petita. Aquí ningú no contracta ningú: la relació és entre iguals, i tots dos hi aporteu i decidiu junts.
 
 EL TEU PERFIL
-Explica qui ets i què hi aportes: nom, edat, ubicació i zona horària, especialitats, punt de partida, disponibilitat i nivell d'ambició. Respon una o dues preguntes breus perquè es noti com penses, no només què saps fer. Si vols, afegeix enllaços a GitHub, portfolio o LinkedIn.
+Explica qui ets i què hi aportes: nom, edat, ubicació i zona horària, especialitats, punt de partida, disponibilitat i nivell d'ambició. Respon una o dues preguntes breus perquè es noti com penses, no només què saps fer. Si vols, afegeix enllaços a GitHub, portafoli o LinkedIn.
 
 També pots afegir una foto. És opcional i només es publica després de passar una revisió automàtica de seguretat.
 
@@ -37,7 +37,7 @@ GITHUB VERIFICAT
 Pots vincular el teu compte de GitHub per mostrar «GitHub verificat» al teu perfil. Indica que l'enllaç de GitHub pertany a qui el publica; no verifica la identitat de la persona ni els seus coneixements.
 
 SEGURETAT I CONTROL
-Pots bloquejar o reportar qualsevol persona des de l'app. Pots eliminar el teu compte i les teves dades quan vulguis des de Ajustos > Compte.
+Pots bloquejar o reportar qualsevol persona des de l'app. Pots eliminar el teu compte i les teves dades quan vulguis des d'Ajustos > Compte.
 
 QUÈ NO ÉS
 cofounder no és una app de cites ni una borsa de treball. No ofereix assessorament legal ni finançament, ni garanteix resultats: t'ajuda a conèixer persones amb qui construir; el que feu depèn de vosaltres.
@@ -109,7 +109,7 @@ DEMO ACCOUNT
 
 USER-GENERATED CONTENT (Guideline 1.2)
 - Terms and Community Guidelines must be accepted (versioned, with date) before
-  publishing content or chatting; links to them are in Profile.
+  publishing content or chatting; links to them are in Settings.
 - Report: any profile (Discover/chat safety panel) and any individual message
   (message report panel in the chat). Reports go to a private table reviewed
   by the operator; target response time is 24 h for severe content and 72 h otherwise.
@@ -137,7 +137,7 @@ PERMISSIONS
   No microphone, no location, no contacts, no push notifications, no tracking.
 - Encryption: standard HTTPS/TLS only (ITSAppUsesNonExemptEncryption = false).
 - Sign in with GitHub is optional and only used to show a "GitHub verified"
-  badge. The app also supports email/password and anonymous accounts, so GitHub
+  badge. The app also supports Sign in with Apple, Google, email/password and anonymous accounts, so GitHub
   is not the only login option.
 
 AGE
