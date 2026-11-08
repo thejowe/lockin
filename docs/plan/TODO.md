@@ -13,6 +13,8 @@
 
 **Hecho por Claude (2026-11-08):** dependencias de Expo y RN alineadas con el SDK (`expo` 58.0.23, `react-native` 0.88.1, `expo-router`, `expo-updates`, etc.) con `expo install --fix`. **`jest` se queda en 29 a propósito:** `jest-expo` 58.0.14 exige Jest 30 y quita `globalThis.originalfetch`, que `contract.test.ts` necesita; `expo install --check` seguirá avisando solo de `jest` y `@types/jest`. Jest 1997 pasan, `codex review` limpio. Falta la build.
 
+**Build Android lanzada (2026-11-08):** `production`, versionCode 4, con la clave `goog_` y las dependencias alineadas, sobre `4210e33`. EAS `50f17970-81a3-49cd-bb61-5a1e07804f72` (https://expo.dev/accounts/thejowe/projects/lockin/builds/50f17970-81a3-49cd-bb61-5a1e07804f72). **Siguiente (usuario):** bajar el AAB, sustituir el borrador «1.0.0 (3)» de Alpha por este y reintentar la validación de RevenueCat tras publicar la release.
+
 **Pendiente (del usuario/Brodie):** 12 testers y 14 días en alpha; confirmar el ingreso de prueba de Google; revisión de Apple; validación de RevenueCat (reintentar tras publicar la release o pasadas 36 h) y Pub/Sub; terminar la Seguridad de datos (pasa de borrador a enviada); comprobar que la entrada «admin» del acceso a la app ya no está. **Más adelante:** estado de comerciante (trader) y aviso legal con NIF; desactivar Realtime «Allow public access» en Supabase cuando las builds viejas no se usen.
 **Siguiente [Claude]:** rebuild de Android con la clave `goog_` (el AAB 1.0.0 (3) es anterior y no la lleva) y, con la validación de RevenueCat verde, `[comprobador]` con *license tester* (`todo/premium.md`).
 
