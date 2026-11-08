@@ -132,7 +132,7 @@ PERMISSIONS
   No microphone, no location, no contacts, no push notifications, no tracking.
 - Encryption: standard HTTPS/TLS only (ITSAppUsesNonExemptEncryption = false).
 - Sign in with GitHub is optional and only used to show a "GitHub verified"
-  badge. The app also supports email/password and anonymous accounts, so GitHub
+  badge. The app also supports Sign in with Apple, Google, email/password and anonymous accounts, so GitHub
   is not the only login option.
 
 AGE
