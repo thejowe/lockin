@@ -294,6 +294,9 @@ export interface ProfileFilter {
   specialties?: Specialty[];
   /** Diferencia horaria máxima entre las dos zonas, en horas (0–12). Gratis. */
   timezoneWindowHours?: number;
+  /** Edad mínima y máxima del perfil, ambas inclusivas. Solo Premium; ausente = sin límite. */
+  minAge?: number;
+  maxAge?: number;
   /*
    * Filtros avanzados: solo con Premium. Sin él, `getDeck` rechaza con
    * `PremiumRequiredError` (LQ005 en Supabase). Todos son opcionales; ausente

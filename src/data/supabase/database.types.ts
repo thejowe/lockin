@@ -471,6 +471,9 @@ export type Database = {
           p_ambition?: Ambition[] | null;
           p_starting_point?: StartingPoint[] | null;
           p_timezone_window_hours?: number | null;
+          /** Edad inclusiva, solo Premium (20261108140000). */
+          p_min_age?: number | null;
+          p_max_age?: number | null;
         };
         Returns: DeckRow[];
       };

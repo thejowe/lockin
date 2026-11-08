@@ -690,6 +690,10 @@ export function createSupabaseRepositories({
         p_ambition: filter.ambition?.length ? filter.ambition : null,
         p_starting_point: filter.startingPoint?.length ? filter.startingPoint : null,
         p_timezone_window_hours: filter.timezoneWindowHours ?? null,
+        // Edad (20261108130000): solo viaja si hay filtro, para que un despliegue sin esa
+        // migración siga resolviendo la llamada de nueve argumentos de siempre.
+        ...(filter.minAge !== undefined ? { p_min_age: filter.minAge } : {}),
+        ...(filter.maxAge !== undefined ? { p_max_age: filter.maxAge } : {}),
       });
       if (error) throw toPremiumError(error);
 

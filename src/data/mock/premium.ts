@@ -116,13 +116,15 @@ export function chargeLike(
   store.state.likeEvents.push({ actorId, targetId, kind: isSuper ? 'super' : 'like', atMs: now });
 }
 
-/** ¿Pide el filtro algo que solo tiene Premium? La especialidad, el modo y la zona horaria no. */
+/** ¿Pide el filtro algo que solo tiene Premium? La especialidad, el modo y la zona horaria no; la edad sí. */
 export function usesPremiumFilters(filter: ProfileFilter): boolean {
   return (
     filter.minHoursPerWeek !== undefined ||
     filter.timeBands !== undefined ||
     filter.ambition !== undefined ||
-    filter.startingPoint !== undefined
+    filter.startingPoint !== undefined ||
+    filter.minAge !== undefined ||
+    filter.maxAge !== undefined
   );
 }
 
@@ -162,6 +164,9 @@ export function matchesPremiumFilters(
   nowMs: number
 ): boolean {
   const { availability } = candidate;
+  // La edad es gratis, como la zona horaria: vive aquí para no abrir otro paso del deck.
+  if (filter.minAge !== undefined && candidate.age < filter.minAge) return false;
+  if (filter.maxAge !== undefined && candidate.age > filter.maxAge) return false;
   if (filter.minHoursPerWeek !== undefined && availability.hoursPerWeek < filter.minHoursPerWeek) {
     return false;
   }

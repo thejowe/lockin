@@ -489,6 +489,20 @@ describe('discovery sobre Supabase con Premium', () => {
     );
   });
 
+  it('getDeck manda la edad solo cuando hay filtro de edad', async () => {
+    const { repositories, rpc } = repositoriesWith({ discovery_deck: { data: [], error: null } });
+
+    await repositories.discovery.getDeck();
+    expect(rpc.mock.calls.at(-1)?.[1]).not.toHaveProperty('p_min_age');
+    expect(rpc.mock.calls.at(-1)?.[1]).not.toHaveProperty('p_max_age');
+
+    await repositories.discovery.getDeck({ minAge: 25, maxAge: 40 });
+    expect(rpc).toHaveBeenLastCalledWith(
+      'discovery_deck',
+      expect.objectContaining({ p_min_age: 25, p_max_age: 40 })
+    );
+  });
+
   it('getDeck con filtros premium sin Premium rechaza con PremiumRequiredError', async () => {
     const { repositories } = repositoriesWith({
       discovery_deck: { data: null, error: { code: 'LQ005', message: 'premium' } },

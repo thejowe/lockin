@@ -45,6 +45,7 @@ describe('DeckFilters', () => {
   });
 
   it.each([
+    ['Edad', 'Sumar edad mínima'],
     ['Horas mínimas por semana', 'Sumar horas mínimas'],
     ['Franjas', 'Mañana'],
     ['Ambición', 'Apostarlo todo'],
@@ -54,7 +55,7 @@ describe('DeckFilters', () => {
     await render(ui);
 
     expect(screen.getByText(section)).toBeTruthy();
-    expect(screen.getAllByLabelText('Solo con Premium')).toHaveLength(4);
+    expect(screen.getAllByLabelText('Solo con Premium')).toHaveLength(5);
 
     await fireEvent.press(screen.getByLabelText(control));
 
@@ -70,6 +71,32 @@ describe('DeckFilters', () => {
 
     expect(onChange).toHaveBeenCalledWith({ timezoneWindowHours: 0 });
     expect(onLocked).not.toHaveBeenCalled();
+  });
+
+  it('con Premium la edad avanza de 5 en 5 desde 20', async () => {
+    const { ui, onChange, onLocked } = setup({}, true);
+    await render(ui);
+
+    await fireEvent.press(screen.getByLabelText('Sumar edad mínima'));
+    expect(onChange).toHaveBeenLastCalledWith({ minAge: 20 });
+
+    await fireEvent.press(screen.getByLabelText('Sumar edad máxima'));
+    expect(onChange).toHaveBeenLastCalledWith({ maxAge: 20 });
+
+    expect(onLocked).not.toHaveBeenCalled();
+  });
+
+  it('subir la mínima por encima de la máxima arrastra a la máxima, y al revés', async () => {
+    const up = setup({ minAge: 30, maxAge: 30 }, true);
+    await render(up.ui);
+    await fireEvent.press(screen.getByLabelText('Sumar edad mínima'));
+    expect(up.onChange).toHaveBeenCalledWith({ minAge: 35, maxAge: 35 });
+    await screen.unmount();
+
+    const down = setup({ minAge: 30, maxAge: 30 }, true);
+    await render(down.ui);
+    await fireEvent.press(screen.getByLabelText('Restar edad máxima'));
+    expect(down.onChange).toHaveBeenCalledWith({ minAge: 25, maxAge: 25 });
   });
 
   it('la zona horaria va justo debajo de la especialidad', async () => {

@@ -35,6 +35,8 @@ describe('usesPremiumFilters', () => {
 
   it.each([
     { minHoursPerWeek: 10 },
+    { minAge: 25 },
+    { maxAge: 40 },
     { timeBands: ['noche'] },
     { ambition: ['lifestyle'] },
     { startingPoint: ['solo-ganas'] },
@@ -79,6 +81,15 @@ describe('matchesPremiumFilters', () => {
     expect(matchesPremiumFilters(candidate, viewer, { startingPoint: ['solo-ganas'] }, NOW)).toBe(
       true
     );
+  });
+
+  it('la edad es un rango inclusivo, abierto por el lado que falte', () => {
+    const thirty = buildProfile({ age: 30 });
+    expect(matchesPremiumFilters(thirty, viewer, { minAge: 30, maxAge: 30 }, NOW)).toBe(true);
+    expect(matchesPremiumFilters(thirty, viewer, { minAge: 31 }, NOW)).toBe(false);
+    expect(matchesPremiumFilters(thirty, viewer, { maxAge: 29 }, NOW)).toBe(false);
+    expect(matchesPremiumFilters(thirty, viewer, { minAge: 20 }, NOW)).toBe(true);
+    expect(matchesPremiumFilters(thirty, viewer, { maxAge: 99 }, NOW)).toBe(true);
   });
 
   describe('ventana de zona horaria', () => {

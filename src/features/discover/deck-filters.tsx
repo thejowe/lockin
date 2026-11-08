@@ -1,7 +1,7 @@
 /**
  * Filtros del deck.
  *
- * La especialidad y la zona horaria son libres. El resto (horas mínimas,
+ * La especialidad y la zona horaria son libres. El resto (edad, horas mínimas,
  * franjas, ambición y punto de partida) son de Premium: sin él se ven con candado, tocarlos
  * no cambia el filtro y avisa con `onLocked` (la pantalla abre el paywall).
  *
@@ -16,6 +16,7 @@ import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { HitSlop, Opacity, Radii, Spacing } from '@/constants/theme';
 import {
+  AGE_MAX,
   AMBITION_OPTIONS,
   HOURS_MAX,
   SPECIALTY_OPTIONS,
@@ -33,6 +34,9 @@ import { t } from '@/i18n';
 /** Paso de las horas mínimas y tope de la diferencia horaria (0–12 h). */
 const HOURS_STEP = 5;
 const ZONE_MAX = 12;
+/** La edad avanza de 5 en 5 desde los 20: de uno en uno serían 80 toques. */
+const AGE_STEP = 5;
+const AGE_FILTER_MIN = 20;
 
 /** Las claves de `ProfileFilter` que exigen Premium. */
 const PREMIUM_KEYS = [
@@ -40,6 +44,8 @@ const PREMIUM_KEYS = [
   'timeBands',
   'ambition',
   'startingPoint',
+  'minAge',
+  'maxAge',
 ] as const satisfies readonly (keyof ProfileFilter)[];
 
 /** ¿Lleva el filtro algo que solo Premium puede pedir? */
@@ -117,6 +123,44 @@ export function DeckFilters({
           anyLabel={t('Cualquiera')}
           format={(hours) => t('Hasta {hours} h', { hours })}
           onChange={(next) => update({ timezoneWindowHours: next })}
+        />
+      </Section>
+
+      <Section title={t('Edad')} locked={!isPremium}>
+        <Counter
+          noun={t('edad mínima')}
+          value={value.minAge}
+          step={AGE_STEP}
+          min={AGE_FILTER_MIN}
+          max={AGE_MAX}
+          anyLabel={t('Sin mínimo')}
+          format={(age) => t('Desde {age} años', { age })}
+          onChange={(next) =>
+            // Si la mínima pasa a la máxima, la máxima sube con ella: nunca un rango vacío.
+            premium({
+              minAge: next,
+              ...(next !== undefined && value.maxAge !== undefined && next > value.maxAge
+                ? { maxAge: next }
+                : {}),
+            })
+          }
+        />
+        <Counter
+          noun={t('edad máxima')}
+          value={value.maxAge}
+          step={AGE_STEP}
+          min={AGE_FILTER_MIN}
+          max={AGE_MAX}
+          anyLabel={t('Sin máximo')}
+          format={(age) => t('Hasta {age} años', { age })}
+          onChange={(next) =>
+            premium({
+              maxAge: next,
+              ...(next !== undefined && value.minAge !== undefined && next < value.minAge
+                ? { minAge: next }
+                : {}),
+            })
+          }
         />
       </Section>
 
