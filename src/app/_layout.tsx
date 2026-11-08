@@ -8,6 +8,7 @@ import { AppState } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 
+import { AppIntro } from '@/components/app-intro';
 import { LocaleSwitchVeil } from '@/components/locale-switch-veil';
 import { BrandFonts } from '@/constants/fonts';
 import { Colors, FontFamily } from '@/constants/theme';
@@ -68,6 +69,7 @@ export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts(BrandFonts);
   const locale = useLocale();
   const [localeLoaded, setLocaleLoaded] = useState(false);
+  const [introVisible, setIntroVisible] = useState(true);
   const fontsSettled = fontsLoaded || Boolean(fontError);
 
   useEffect(() => {
@@ -150,6 +152,8 @@ export default function RootLayout() {
       </KeyboardProvider>
       {/* Tapa el remontaje de arriba al cambiar de idioma: sin él, un pantallazo negro. */}
       <LocaleSwitchVeil locale={locale} />
+      {/* La intro de cada arranque: tapa la app (que se monta debajo) y se retira sola. */}
+      {introVisible && <AppIntro onDone={() => setIntroVisible(false)} />}
     </GestureHandlerRootView>
   );
 }
