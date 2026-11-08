@@ -68,7 +68,9 @@
         {
           "supportedLocales": ["es", "en", "ca"]
         }
-      ]
+      ],
+      "expo-image",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
