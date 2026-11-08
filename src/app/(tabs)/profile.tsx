@@ -210,6 +210,7 @@ export default function ProfileScreen() {
           <Animated.View entering={entering.up(0)}>
             <ProfileDetails
               profile={profile}
+              premium={!!quotas?.isPremium}
               onAvatarPress={terms.gate === 'accepted' ? () => setPhotoOpen(true) : undefined}
               onEdit={terms.gate === 'accepted' ? setEditSection : undefined}
               onSaveLink={terms.gate === 'accepted' ? handleSaveLink : undefined}

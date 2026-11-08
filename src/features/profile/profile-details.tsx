@@ -39,8 +39,11 @@ export function ProfileDetails({
   onEdit,
   onSaveLink,
   trailing,
+  premium = false,
 }: {
   profile: Profile;
+  /** Solo en el perfil propio: con Premium activo, los bloques llevan un sombreado azul del diamante. */
+  premium?: boolean;
   /** Solo en el perfil propio: lo que va al extremo derecho de la fila de identidad (el diamante Premium). */
   trailing?: ReactNode;
   /**
@@ -60,6 +63,13 @@ export function ProfileDetails({
   onEdit?: (section: ProfileSection) => void;
 }) {
   const theme = useTheme();
+  // Sombreado azul de Premium: borde y halo con el azul del diamante.
+  const glow: ViewStyle | null = premium
+    ? {
+        borderColor: `${theme.diamond}80`,
+        boxShadow: `0px 0px 14px ${theme.diamond}59, inset 0px 1px 0px ${theme.glassHighlight}`,
+      }
+    : null;
   const pencil = (section: ProfileSection, style?: StyleProp<ViewStyle>) =>
     onEdit ? <EditPencil section={section} onPress={() => onEdit(section)} style={style} /> : null;
 
@@ -113,6 +123,7 @@ export function ProfileDetails({
             borderColor: theme.border,
             boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
           },
+          glow,
         ]}>
         <View style={styles.complementSide}>
           <ThemedText type="label" themeColor="textSecondary">
@@ -215,6 +226,7 @@ export function ProfileDetails({
             borderColor: theme.border,
             boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
           },
+          glow,
         ]}>
         <Section title={t('Punto de partida')} bare>
           <ThemedText type="body">{startingPointSentence(profile.startingPoint)}</ThemedText>
@@ -242,6 +254,7 @@ export function ProfileDetails({
               borderColor: theme.border,
               boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
             },
+            glow,
           ]}>
           <ThemedText type="small" themeColor="textSecondary">
             {t(prompt.question)}
@@ -261,6 +274,7 @@ export function ProfileDetails({
               borderColor: theme.border,
               boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
             },
+            glow,
           ]}>
           <ThemedText type="small" themeColor="textSecondary">
             {t('Tus respuestas')}
