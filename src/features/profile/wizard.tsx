@@ -18,6 +18,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { BackArrow } from '@/components/back-arrow';
+import { enterRise } from '@/components/motion';
 import { ThemedText } from '@/components/themed-text';
 import {
   Control,
@@ -116,19 +117,27 @@ export function WizardScreen({
         bottomOffset={Spacing.five}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled">
+        {/*
+          Cada página se arma de abajo arriba, pieza a pieza: título, campos y
+          botón. El `key` por paso hace que la siguiente página entre de nuevo
+          aunque el armazón sea el mismo; con «reducir movimiento» Reanimated
+          apaga la entrada solo.
+        */}
         <View style={styles.body}>
-          <View style={styles.header}>
+          <Animated.View key={`header-${step}`} entering={enterRise(0)} style={styles.header}>
             <ThemedText type="title">{title}</ThemedText>
             {subtitle ? (
               <ThemedText type="body" themeColor="textSecondary">
                 {subtitle}
               </ThemedText>
             ) : null}
-          </View>
-          {children}
+          </Animated.View>
+          <Animated.View key={`fields-${step}`} entering={enterRise(1)} style={styles.fields}>
+            {children}
+          </Animated.View>
         </View>
 
-        <View style={styles.actions}>
+        <Animated.View key={`actions-${step}`} entering={enterRise(2)} style={styles.actions}>
           <PrimaryButton label={primaryLabel} disabled={busy} onPress={onPrimary} />
           {error ? (
             <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
@@ -136,7 +145,7 @@ export function WizardScreen({
             </ThemedText>
           ) : null}
           {below}
-        </View>
+        </Animated.View>
       </KeyboardAwareScrollView>
     </View>
   );
@@ -190,6 +199,9 @@ const styles = StyleSheet.create({
   },
   header: {
     gap: Spacing.two,
+  },
+  fields: {
+    gap: Spacing.four,
   },
   actions: {
     gap: Spacing.three,

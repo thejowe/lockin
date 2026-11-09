@@ -1,12 +1,13 @@
 import { Redirect, useRouter } from 'expo-router';
-import { useState } from 'react';
-import { StyleSheet, useWindowDimensions, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { StyleSheet, useWindowDimensions, View, type HostInstance } from 'react-native';
 import Animated, { Easing, FadeInUp } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/ambient-background';
 import { CofounderLogo } from '@/components/cofounder-logo';
 import { GlassButton } from '@/components/glass-button';
+import { introHandoff, useIntroActive } from '@/components/intro-handoff';
 import { ThemedText } from '@/components/themed-text';
 import { Curves, Duration, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useRepositories } from '@/data';
@@ -20,6 +21,8 @@ const easeOut = Easing.bezier(...Curves.out);
 const WORDMARK_DELAY_MS = 900;
 /** Y los botones, cuando el nombre ya se lee. */
 const ACTIONS_DELAY_MS = 1250;
+/** Si el logo llega volando desde la intro, los botones entran justo después. */
+const ACTIONS_AFTER_INTRO_MS = 200;
 
 /**
  * La bienvenida: lo primero que ve quien abre cofounder sin perfil.
@@ -47,6 +50,11 @@ export default function WelcomeScreen() {
   const repositories = useRepositories();
   const gate = useRegistrationGate();
   const { width } = useWindowDimensions();
+  // Si la bienvenida se monta con la intro en pantalla, el logo llega volando
+  // desde ella: aquí se esconde y se pinta quieto hasta que aterriza.
+  const introActive = useIntroActive();
+  const [duringIntro] = useState(introActive);
+  const logoRef = useRef<HostInstance>(null);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,21 +75,57 @@ export default function WelcomeScreen() {
   if (registrationRequired && gate === 'phone') return <Redirect href="/phone" />;
   if (registrationRequired && gate === 'open') return <Redirect href="/profile-form" />;
 
+  // Dice a la intro dónde está el logo. Se mide dos veces: al montar la pantalla
+  // puede seguir deslizándose al entrar, y la segunda medida ya es la definitiva.
+  const publishLogoTarget = () => {
+    if (!introHandoff.get().active) return;
+    const measure = (settled: boolean) =>
+      logoRef.current?.measureInWindow((x, y, w) => {
+        if (w) introHandoff.setTarget({ x, y, width: w, settled });
+      });
+    measure(false);
+    setTimeout(() => measure(true), 450);
+  };
+
   const logoWidth = Math.min(width * 0.56, 260);
+
+  const wordmarkText = (
+    <>
+      <ThemedText type="display">cofounder</ThemedText>
+      <ThemedText type="body" themeColor="textSecondary" style={styles.tagline}>
+        {t('Encuentra con quién construir.')}
+      </ThemedText>
+    </>
+  );
 
   return (
     <Screen ambient="ember">
       <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
         <View style={styles.brand}>
-          <CofounderLogo width={logoWidth} />
-          <Animated.View
-            entering={FadeInUp.duration(Duration.slow).easing(easeOut).delay(WORDMARK_DELAY_MS)}
-            style={styles.wordmark}>
-            <ThemedText type="display">cofounder</ThemedText>
-            <ThemedText type="body" themeColor="textSecondary" style={styles.tagline}>
-              {t('Encuentra con quién construir.')}
-            </ThemedText>
-          </Animated.View>
+          <View
+            ref={logoRef}
+            collapsable={false}
+            onLayout={publishLogoTarget}
+            style={{ opacity: introActive ? 0 : 1 }}>
+            <CofounderLogo width={logoWidth} animated={!duringIntro} />
+          </View>
+          {introActive ? (
+            // Ocupa su sitio (para que el logo no se mueva al llegar el texto).
+            <View
+              style={[styles.wordmark, { opacity: 0 }]}
+              importantForAccessibility="no-hide-descendants"
+              accessibilityElementsHidden>
+              {wordmarkText}
+            </View>
+          ) : (
+            <Animated.View
+              entering={FadeInUp.duration(Duration.slow)
+                .easing(easeOut)
+                .delay(duringIntro ? 0 : WORDMARK_DELAY_MS)}
+              style={styles.wordmark}>
+              {wordmarkText}
+            </Animated.View>
+          )}
         </View>
 
         {/*
@@ -90,28 +134,32 @@ export default function WelcomeScreen() {
           veía hasta pulsarlo). Cada botón aparece solo con `revealDelay`.
         */}
         <View style={styles.actions}>
-          {error ? (
-            <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
-              {error}
-            </ThemedText>
-          ) : null}
+          {introActive ? null : (
+            <>
+              {error ? (
+                <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
+                  {error}
+                </ThemedText>
+              ) : null}
 
-          {/* Sin capa de cuentas (mock) no hay a qué entrar: ver `sign-in.tsx`. */}
-          {accountsAvailable ? (
-            <GlassButton
-              label={t('Iniciar sesión')}
-              tint="light"
-              revealDelay={ACTIONS_DELAY_MS}
-              onPress={() => router.push('/sign-in')}
-            />
-          ) : null}
-          <GlassButton
-            label={saving ? t('Un momento…') : t('Registrarse')}
-            tint="dark"
-            revealDelay={ACTIONS_DELAY_MS}
-            disabled={saving}
-            onPress={() => void handleRegister()}
-          />
+              {/* Sin capa de cuentas (mock) no hay a qué entrar: ver `sign-in.tsx`. */}
+              {accountsAvailable ? (
+                <GlassButton
+                  label={t('Iniciar sesión')}
+                  tint="light"
+                  revealDelay={duringIntro ? ACTIONS_AFTER_INTRO_MS : ACTIONS_DELAY_MS}
+                  onPress={() => router.push('/sign-in')}
+                />
+              ) : null}
+              <GlassButton
+                label={saving ? t('Un momento…') : t('Registrarse')}
+                tint="dark"
+                revealDelay={duringIntro ? ACTIONS_AFTER_INTRO_MS : ACTIONS_DELAY_MS}
+                disabled={saving}
+                onPress={() => void handleRegister()}
+              />
+            </>
+          )}
         </View>
       </SafeAreaView>
     </Screen>

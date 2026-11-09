@@ -1,9 +1,11 @@
 import { Redirect } from 'expo-router';
+import { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AmbientBackground } from '@/components/ambient-background';
 import { Button } from '@/components/button';
+import { introHandoff } from '@/components/intro-handoff';
 import { LoadingState, MessageState } from '@/components/state-view';
 import { useQuery, useRepositories } from '@/data';
 import { useRegistrationGate } from '@/features/profile';
@@ -29,6 +31,18 @@ export default function IndexRoute() {
     'signup:pending-password',
     hasPendingPassword
   );
+
+  // Le dice a la intro a dónde va el arranque: si acaba en la bienvenida, el logo
+  // de la intro viaja hasta el de esa pantalla; si no, la intro se funde.
+  const settled = !(loading || pendingLoading || gate === 'checking');
+  const toWelcome =
+    settled &&
+    !error &&
+    !onboarded &&
+    !(registrationRequired && (gate === 'open' || gate === 'phone'));
+  useEffect(() => {
+    introHandoff.setDestination(!settled ? 'unknown' : toWelcome ? 'welcome' : 'app');
+  }, [settled, toWelcome]);
 
   // Nunca en blanco: con Supabase esta consulta cruza la red, y una pantalla
   // vacía no distingue «tarda» de «se ha colgado».

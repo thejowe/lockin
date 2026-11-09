@@ -11,7 +11,14 @@
  * (`ReduceMotion.System`, su valor por defecto): no hace falta ramificar aquí.
  */
 
-import { Easing, FadeIn, FadeInUp, FadeOut, LinearTransition } from 'react-native-reanimated';
+import {
+  Easing,
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+  FadeOut,
+  LinearTransition,
+} from 'react-native-reanimated';
 
 import { usePageFocused } from '@/components/swipe-between-tabs';
 import { Curves, Duration, Stagger } from '@/constants/theme';
@@ -21,6 +28,17 @@ const easeOut = Easing.bezier(...Curves.out);
 /** El elemento `index` de una lista que entra en escalera. */
 export function enterUp(index = 0) {
   return FadeInUp.duration(Duration.slow)
+    .easing(easeOut)
+    .delay(index * Stagger);
+}
+
+/**
+ * El elemento `index` de una página que se arma: sube desde abajo unos píxeles
+ * mientras se enciende y se coloca. Para las preguntas de un formulario por pasos,
+ * donde cada página nueva llega pieza a pieza (título, campos, botón).
+ */
+export function enterRise(index = 0) {
+  return FadeInDown.duration(Duration.slow)
     .easing(easeOut)
     .delay(index * Stagger);
 }
