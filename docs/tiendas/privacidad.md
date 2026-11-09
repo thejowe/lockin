@@ -1,5 +1,7 @@
 # Política de privacidad de cofounder
 
+> Revisada el 9 de noviembre de 2026 (versión 1.7): función Grupos (pertenencia, perfiles buscados, swipes de grupo, chat de grupo, Realtime, denuncias y borrado) (§2, §3, §4, §7 y §10).
+>
 > Revisada el 9 de noviembre de 2026 (versión 1.6): al eliminar la cuenta se conserva una huella cifrada del correo para impedir que se reutilice, con una vía para pedir el desbloqueo (§2, §3, §7 y §8); teléfono de contacto opcional (§2).
 >
 > Revisada el 7 de noviembre de 2026 (versión 1.5): dominio propio `getcofounder.app`; contacto `privacidad@getcofounder.app` (derechos y revisión humana) y `soporte@getcofounder.app` (soporte y baja).
@@ -14,7 +16,7 @@
 >
 > Revisada el 18 de octubre de 2026: acceso con Google y Apple, tablón personal de fotos moderado con OpenAI, enlaces a Instagram y TikTok, y envío de correo por Supabase mientras Brevo no esté configurado. Publicada ese día en la URL pública. Ese mismo día, tras aplicar `20261018120000_profiles_block_visibility` en producción, §4 vuelve a decir que el bloqueo impide ver el perfil (antes: «la app deja de mostrar»).
 
-**Versión:** 1.6.
+**Versión:** 1.7.
 
 **Entrada en vigor:** 9 de noviembre de 2026.
 
@@ -56,6 +58,21 @@ La ubicación se escribe como texto; la app no usa GPS.
 
 Guardamos tus decisiones al deslizar (te interesa o pasas), la hora de cada like y Super Like y los Boost que actives (para aplicar los límites diarios y semanales), los matches mutuos y los mensajes de texto del chat, con sus participantes y fechas. También guardamos los bloqueos y reportes que hagas o recibas: quién bloquea o reporta, a quién, el motivo elegido, el texto opcional que añadas (hasta 500 caracteres) y la fecha (ver §7). Los bloqueos son visibles solo para quien bloquea; los reportes no los ve ninguna otra persona de la app.
 
+### Grupos
+
+Si creas o te unes a un grupo, tratamos además:
+
+- **Datos del grupo:** nombre, descripción o proyecto, quién es la persona administradora, fecha de creación y aforo (máximo 6 personas).
+- **Perfiles que busca el grupo:** las especialidades y el número de plazas abiertas o cubiertas que define la persona administradora (no es una oferta de empleo).
+- **Pertenencia:** quién forma parte del grupo, qué perfil cubre dentro del grupo y la fecha de entrada.
+- **Swipes de grupo:** si das like o pasas a un grupo, y si la persona administradora da like o pasa a una persona candidata (ligado al perfil que cubriría).
+- **Mensajes del chat de grupo:** el texto, quién lo envía, el grupo y las fechas. Los ven todas las personas miembros del grupo. Hay un filtro básico de contenido en el cliente y puedes reportar un mensaje concreto.
+- **Bloqueos y denuncias de grupo:** si bloqueas un grupo (queda como «pasar» definitivo y se bloquea a la persona administradora) o lo denuncias (el reporte se registra contra la persona administradora, con el grupo anotado).
+
+La parte pública que puede ver quien busca grupo (nombre, descripción, perfiles buscados y perfiles públicos de los miembros actuales) se expone solo a través de las funciones del deck, no como lectura libre de las tablas internas. Los datos internos del grupo (incluida la pertenencia detallada y el chat) solo son accesibles a quienes son miembros, según los controles del servidor.
+
+**Token de notificaciones push:** si permites las notificaciones, guardamos un identificador técnico de tu dispositivo (token de Expo, que a su vez usa Apple Push Notification service o Firebase Cloud Messaging de Google) para avisarte de mensajes nuevos del chat de grupo. El aviso muestra el nombre del grupo como título y el nombre del remitente (si está disponible) con un fragmento del mensaje de hasta 140 caracteres como cuerpo. Base jurídica: ejecución del contrato. Lo borramos al cerrar sesión, al desactivar las notificaciones o al eliminar tu cuenta. Encargados: Expo (650 Industries, EE. UU.), Apple y Google, con cláusulas contractuales tipo/Marco de Privacidad de Datos UE-EE. UU.
+
 ### Tu suscripción (opcional)
 
 Si contratas cofounder Premium, guardamos el estado de tu suscripción: el producto (mensual o anual), la tienda y la fecha hasta la que está pagada, con la fecha de la última actualización. Para enseñarte los planes y validar la compra usamos **RevenueCat**, que te identifica con el mismo identificador de cuenta de la app desde que abres la pantalla de Premium, compres o no. El pago lo cobran Apple o Google: no recibimos ni guardamos los datos de tu tarjeta ni de tu medio de pago.
@@ -70,9 +87,9 @@ Los servicios de autenticación, base de datos, almacenamiento y actualizaciones
 
 ## 3. Para qué usamos los datos y con qué base jurídica
 
-Usamos los datos para mantener y recuperar tu cuenta, mostrar y editar tu perfil, mostrarte perfiles, resolver los intereses mutuos, permitir el chat con tus matches, verificar tu enlace de GitHub, permitir el acceso con Google o Apple, revisar las fotos de perfil y del tablón, atender bloqueos y reportes, activar Premium si lo contratas y servir actualizaciones de la app. No usamos SDK de publicidad ni analítica comercial.
+Usamos los datos para mantener y recuperar tu cuenta, mostrar y editar tu perfil, mostrarte perfiles, resolver los intereses mutuos, permitir el chat con tus matches, crear y unirte a grupos, conversar en el chat de grupo, verificar tu enlace de GitHub, permitir el acceso con Google o Apple, revisar las fotos de perfil y del tablón, atender bloqueos y reportes, activar Premium si lo contratas y servir actualizaciones de la app. No usamos SDK de publicidad ni analítica comercial.
 
-- **Ejecución del servicio que solicitas** (art. 6.1.b RGPD): cuenta, perfil, swipes, matches y mensajes, la suscripción Premium si la contratas y la solicitud de desbloqueo si la envías.
+- **Ejecución del servicio que solicitas** (art. 6.1.b RGPD): cuenta, perfil, swipes, matches y mensajes (incluidos los del chat de grupo), pertenencia a grupos y swipes de grupo, la suscripción Premium si la contratas y la solicitud de desbloqueo si la envías.
 - **Consentimiento** (art. 6.1.a): teléfono, foto de perfil, fotos del tablón, verificación de GitHub y acceso con Google o Apple, todos opcionales. Puedes retirarlo quitando el teléfono o las fotos, desvinculando GitHub o eliminando la cuenta.
 - **Interés legítimo** (art. 6.1.f): seguridad, prevención de abusos (incluido impedir que se reutilice el correo de una cuenta eliminada), revisión de fotos y de reportes y operación técnica.
 - **Obligación legal** (art. 6.1.c): atender requerimientos de las autoridades.
@@ -83,7 +100,10 @@ Usamos los datos para mantener y recuperar tu cuenta, mostrar y editar tu perfil
 - **Las fotos aprobadas (de perfil y del tablón) se guardan en un espacio privado y solo se sirven con enlaces temporales** (caducan en una hora) a las personas con sesión iniciada en la app; no hay una dirección pública permanente. Un enlace temporal que alguien ya tuviera sigue funcionando hasta que caduque.
 - Solo tú ves tus decisiones al deslizar; el sistema las usa para detectar el interés mutuo.
 - Solo las dos personas de un match ven su conversación.
-- Los operadores con acceso administrativo y los proveedores pueden acceder a datos en la medida necesaria para prestar el servicio. El chat se guarda en la base de datos y no tiene cifrado de extremo a extremo.
+- El nombre, la descripción, los perfiles que busca un grupo y los perfiles públicos de sus miembros actuales pueden verlos las personas con cuenta que usan el deck de Grupos (por ejemplo, para decidir si les interesa el grupo).
+- Solo las personas miembros de un grupo ven su chat de grupo y los datos internos de pertenencia.
+- Si hay un bloqueo entre tú y un miembro de un grupo, ese grupo no te aparece en el deck; la persona administradora no ve candidaturas bloqueadas con cualquier miembro; y en el chat de grupo no ves los mensajes de quien has bloqueado.
+- Los operadores con acceso administrativo y los proveedores pueden acceder a datos en la medida necesaria para prestar el servicio. El chat (1:1 y de grupo) se guarda en la base de datos y no tiene cifrado de extremo a extremo.
 
 ## 5. Servicios externos y transferencias
 
@@ -91,7 +111,7 @@ Usamos los datos para mantener y recuperar tu cuenta, mostrar y editar tu perfil
 - **OpenAI** (encargado, EE. UU.): revisión automática de las fotos de perfil y de las fotos del tablón con su texto, solo si las subes. Recibe la imagen (y, en el tablón, el texto) desde nuestro servidor. Es una transferencia fuera del EEE (ver más abajo). Usamos su servicio de moderación (`omni-moderation-latest`). Según la documentación pública de OpenAI (consultada el 16-oct-2026), los datos enviados a su API no se usan para entrenar sus modelos salvo que el cliente lo autorice, y el servicio de moderación no conserva el contenido para monitorización de abuso; una imagen que se detecte como material de abuso sexual infantil puede conservarse para revisión manual. Estas condiciones son las de OpenAI y pueden cambiar. El acuerdo de tratamiento de datos (DPA) de OpenAI forma parte de las condiciones que rigen el uso de su API.
 - **Brevo** (encargado, Sendinblue SAS, Francia): envío de los emails de confirmación y recuperación de cuenta. Recibe tu dirección de email y el contenido de ese mensaje. Brevo registra, sin asociarlo a un contacto, si el email se abre y si se pulsa su enlace, y el enlace de confirmación pasa por un servidor de Brevo antes de llegar a nosotros. Pediremos a Brevo que desactive ese seguimiento y actualizaremos este punto cuando lo haga.
 - **RevenueCat** (encargado, RevenueCat, Inc., EE. UU.): muestra los planes de Premium, valida las compras con Apple o Google y mantiene el estado de la suscripción. Recibe tu identificador de cuenta y datos técnicos del dispositivo y de la tienda cuando abres la pantalla de Premium, aunque no compres, y, si compras, los datos de la compra (producto, fechas, tienda y país). Es una transferencia fuera del EEE (ver más abajo).
-- **Expo / EAS** (encargado): distribución de actualizaciones de la app.
+- **Expo / EAS** (encargado, 650 Industries, EE. UU.): distribución de actualizaciones de la app y envío de notificaciones push del chat de grupo. Para entregar los avisos intervienen también **Apple Push Notification service** y **Firebase Cloud Messaging de Google** como encargados; reciben el token y el contenido del aviso (§2), con cláusulas contractuales tipo/Marco de Privacidad de Datos UE-EE. UU.
 - **GitHub** (responsable independiente): solo si verificas tu enlace.
 - **Google** y **Apple** (responsables independientes): si entras con su cuenta, y si contratas Premium, porque cobran la suscripción con tu cuenta de su tienda. Cada uno trata ese inicio de sesión y ese pago según su propia política de privacidad.
 
@@ -119,8 +139,10 @@ Conservamos tus datos mientras tu cuenta exista. Al eliminar la cuenta desde la 
 - **Huella del correo de una cuenta eliminada:** se conserva mientras el correo siga bloqueado, sin plazo fijo, y se borra cuando aprobamos una solicitud de desbloqueo. Puedes oponerte escribiendo a privacidad@getcofounder.app (§8).
 - **Solicitudes de desbloqueo:** el correo y el motivo se conservan mientras revisamos la solicitud y, después, como registro de la decisión. Hoy no se borran automáticamente; puedes pedir que las borremos en privacidad@getcofounder.app.
 - **Estado de la suscripción:** mientras exista la cuenta; se borra con ella. Los registros de la compra los conservan Apple o Google y RevenueCat según sus propias políticas y obligaciones legales. Eliminar la cuenta no cancela la suscripción en la tienda.
+- **Pertenencia a grupos y swipes de grupo:** mientras existan la cuenta y el grupo. Si sales, te expulsan o eliminas la cuenta, se borra tu pertenencia y tus swipes con ese grupo (los likes previos entre tú y el grupo se convierten en «pasar» para que no vuelvas a entrar solo). Si la persona administradora elimina su cuenta o sale, el liderazgo pasa a la persona miembro más antigua; si el grupo queda vacío, se borra el grupo y su chat.
+- **Mensajes del chat de grupo:** mientras el grupo exista; se borran con el grupo o al eliminar las cuentas asociadas según las reglas de borrado del servicio.
 
-Al eliminar una cuenta se borran también sus matches y los mensajes de esas conversaciones, incluidos los que escribió la otra persona.
+Al eliminar una cuenta se borran también sus matches y los mensajes de esas conversaciones (incluidos los que escribió la otra persona), su pertenencia a grupos, sus swipes de grupo y se aplica la regla de liderazgo o borrado del grupo si quedaba vacío.
 
 Cerrar sesión o desinstalar la app no borra los datos del servidor. Cerrar sesión puede dejar irrecuperable una cuenta sin email confirmado.
 
@@ -142,9 +164,9 @@ Las personas de 16 y 17 años son menores de edad y pueden usar la app. Su perfi
 
 ## 10. Seguridad, moderación y cambios
 
-El servidor aplica controles de acceso por cuenta y por pertenencia a un match. Las conexiones con nuestros proveedores usan TLS. No prometemos cifrado de extremo a extremo ni certificaciones de seguridad.
+El servidor aplica controles de acceso por cuenta, por pertenencia a un match y por pertenencia a un grupo. La comunicación en tiempo real del chat de grupo solo se autoriza a las personas miembros. Las conexiones con nuestros proveedores usan TLS. No prometemos cifrado de extremo a extremo ni certificaciones de seguridad.
 
-Puedes **bloquear y reportar** a otra persona desde la app. Revisamos los reportes y actuamos sobre el contenido o las cuentas que incumplan las [normas de la comunidad](https://getcofounder.app/normas) y los [términos de uso](https://getcofounder.app/terminos). Nuestros estándares de seguridad infantil están en https://getcofounder.app/seguridad-infantil.
+Puedes **bloquear y reportar** a otra persona desde la app. También puedes bloquear o denunciar un grupo (la denuncia se registra contra la persona administradora) y reportar mensajes del chat de grupo. Revisamos los reportes y actuamos sobre el contenido o las cuentas que incumplan las [normas de la comunidad](https://getcofounder.app/normas) y los [términos de uso](https://getcofounder.app/terminos). Nuestros estándares de seguridad infantil están en https://getcofounder.app/seguridad-infantil.
 
 Si cambiamos esta política de forma relevante, lo avisaremos en la app y, si tienes email, por correo, al menos 30 días antes de que entre en vigor.
 
@@ -152,6 +174,7 @@ Si cambiamos esta política de forma relevante, lo avisaremos en la app y, si ti
 
 Nota editorial, a retirar del texto publicado:
 
+- **9-nov-2026 (v1.7):** Grupos en §2, §3, §4, §7 y §10 y tokens push en §2/§5. `notify-group-message/logic.mjs` usa el nombre del grupo como título y el nombre del remitente (si existe) más un fragmento de hasta 140 caracteres como cuerpo; hoy solo hay push de grupo. **Diferencia pendiente con el texto solicitado:** `registerForPush()` devuelve `denied` al revocar el permiso y no elimina el token del servidor; al cerrar sesión la baja es de mejor esfuerzo y al borrar la cuenta se aplica cascada. Resolver el borrado al desactivar antes de publicar esta promesa; no se ha cambiado código de producto ni activado push en esta tarea. Las notas anteriores sobre ausencia de `expo-notifications` describen T5, no la build con Grupos.
 - Se han retirado sesiones Lock-In, salas, videollamada, STUN de Google, rachas, valoraciones, acuerdo, recordatorios y alarmas exactas porque ya no están en la UI. El código y las tablas siguen en el repositorio y en la base de datos de producción, vacías: los datos de prueba de `lockin_sessions`, `session_attendance` y `lockin_rooms` se borraron el 16-oct-2026.
 - **Cotejado con el código el 14-oct-2026:** los sugeridores de apertura del chat son reglas fijas, sin IA ni proveedor; la sesión se guarda con `expo-secure-store` en móvil; `expo-notifications`, WebRTC, `RECORD_AUDIO` y `SCHEDULE_EXACT_ALARM` ya no están en el binario desde T5 (no hay push ni recordatorios); `looking_for` y `active_mode` siguen escribiéndose en base de datos; `moderate-avatar` borra la subida pendiente tras cada revisión y la tarea `purge_stale_avatar_uploads()` (cada hora, aplicada en producción el 16-oct) retira las de más de 24 h; `delete_my_account` borra en servidor los objetos de la persona en `avatars` y `avatar-uploads` (límite: Supabase documenta que los bytes del backend S3 no se retiran con SQL; la dirección deja de resolver).
 - **18-oct-2026:** publicada en `cofounder-web`. El DPA de OpenAI se cita como parte de sus condiciones (el texto de feb-2024 dice que se incorpora por referencia al acuerdo que rige la API); firmar el formulario de DPA de OpenAI sigue siendo recomendable. El SMTP de Brevo no está configurado en Supabase Auth (comprobado ese día), así que el texto nombra a Supabase como emisor del correo; al configurar Brevo, volver a nombrarlo en §5.

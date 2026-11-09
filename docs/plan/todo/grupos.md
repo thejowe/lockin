@@ -43,7 +43,15 @@ de los dos lados y dentro no hay jerarquía más allá de administrar (expulsar,
 - [x] El usuario autoriza aplicar migraciones, commitear y hacer push (2026-11-09).
 - [ ] `[comprobador]` Recorrido en el emulador: crear grupo, like recíproco, chat de grupo,
   salir/expulsar. No se ha hecho.
-- [ ] Política de privacidad y Términos: no mencionan el chat de grupo ni los datos de grupo.
+- [x] Textos legales de Grupos (2026-11-09): Privacidad v1.7, Términos v1.5 (§10 Grupos,
+  Premium pasa a §11) y Normas v1.2 en es/en/ca; `TERMS_VERSION = 2026-11-09`.
+  Fichas de ambas tiendas en los tres idiomas, cuestionario e inventario actualizados también
+  con chat de grupo, controles UGC y tokens push. Generado con `build-legal.mjs`, sin publicar web.
+- [ ] Diferencia entre Privacidad v1.7 solicitada y código push: al revocar el permiso,
+  `registerForPush()` devuelve `denied` pero no elimina el token del servidor; el texto promete
+  borrarlo al desactivar notificaciones. Resolver antes de publicar. La baja al cerrar sesión
+  es de mejor esfuerzo; borrar la cuenta sí elimina sus tokens por cascada. Sin cambios de
+  producto en esta actualización documental.
 - [ ] Push: guardar los ids de los tickets aceptados y consultar sus recibos para retirar también
   los tokens que APNs/FCM rechazan después. Ver hallazgo P2 de la revisión.
 - [ ] Activación de push: build nativa nueva (`expo-notifications` vuelve a `package.json` y
@@ -153,6 +161,19 @@ Asesor de seguridad consultado: informa de RPC `security definer` accesibles par
 autenticados y de `group_swipes`/`push_tokens` con RLS sin políticas, como exige el diseño de
 acceso solo por RPC. Se comprobaron los permisos de las funciones nuevas; no se abrieron las
 tablas para silenciar esos avisos.
+
+## Verificación de textos legales (2026-11-09)
+
+- `node scripts/build-legal.mjs` y `node scripts/build-legal.mjs --check`: pasan.
+- Jest legal/i18n: **23/23**, tres suites (`src/i18n/i18n.test.ts`,
+  `src/features/legal/legal.test.tsx`, `test/app/legal.test.tsx`). Comprueba también que las
+  traducciones conservan secciones, enlaces y cifras, y que la app excluye notas editoriales.
+- Jest aceptación/registro: **25/25**, dos suites (`src/features/profile/terms.test.tsx`,
+  `src/features/profile/register-form.test.tsx`); avisos de React `act`, sin fallos.
+- Descripciones y notas de revisión dentro del límite de 4000 caracteres. Se conserva «Ajustos»
+  en rutas de la app en catalán; «Configuració» solo queda en la ruta del sistema iOS.
+- Sin regenerar `_site/`, publicar Pages, modificar consolas de tiendas, commit ni push.
+  El pendiente de borrado del token al desactivar notificaciones sigue abierto arriba.
 
 ## Verificación final de la revisión previa (2026-11-09)
 

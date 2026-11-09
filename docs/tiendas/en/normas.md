@@ -3,11 +3,11 @@
 # cofounder Community Guidelines
 
 
-**Version:** 1.1
+**Version:** 1.2
 
-**Version date:** 18 October 2026
+**Version date:** 9 November 2026
 
-cofounder connects people so they can work out whether they could found something together. To keep it a safe place, these guidelines apply to profiles, photos, boards, answers, links and messages. They are part of the [terms of use](https://getcofounder.app/terminos).
+cofounder connects people so they can work out whether they could found something together. To keep it a safe place, these guidelines apply to profiles, photos, boards, answers, links and messages, group names and descriptions, profiles a group is looking for and group chat messages. They are part of the [terms of use](https://getcofounder.app/terminos).
 
 ## Zero tolerance
 
@@ -43,7 +43,7 @@ Zero tolerance for child sexual abuse and exploitation (CSAE). Any content or co
 
 ## How to block and report
 
-From anyone's profile, in the deck or in the chat, you can **block** them (they can no longer see you or write to you) or **report** them, choosing a reason and, if you want, adding some text. In the chat you can also report a specific message. You can also write to us at soporte@getcofounder.app.
+From anyone's profile, in the deck or in the chat, you can **block** them (they can no longer see you or write to you) or **report** them, choosing a reason and, if you want, adding some text. In the chat you can also report a specific message. You can also block or report a group and report a group chat message. You can also write to us at soporte@getcofounder.app.
 
 ## What we do with a report
 

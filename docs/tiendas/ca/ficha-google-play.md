@@ -4,6 +4,8 @@
 
 Revisada el 7 de novembre de 2026 contra la fitxa en castellà. Copia únicament el contingut de cada camp.
 
+Actualitzada el 9 de novembre de 2026 amb Grups, xat de grup i notificacions push opcionals; contingut preparat per a la build amb Grups.
+
 ## Nom de l'aplicació
 
 cofounder
@@ -29,11 +31,14 @@ Els perfils apareixen a pantalla completa, un a un. Llisca per indicar que t'int
 MATCH I XAT
 Quan l'interès és mutu, feu match i s'obre un xat privat entre els dos. Per trencar el gel, l'app et suggereix algunes preguntes per començar.
 
+GRUPS
+A més del match 1:1, pots crear o unir-te a un grup per complementar perfils en un projecte (màxim 6 persones), veure qui en forma part i parlar en un xat de grup. Aquí ningú no contracta ningú: la relació continua sent entre iguals.
+
 GITHUB VERIFICAT
 Pots vincular el teu compte de GitHub per mostrar «GitHub verificat» al teu perfil. Indica que l'enllaç de GitHub pertany a qui el publica; no verifica la identitat de la persona ni els seus coneixements.
 
 SEGURETAT I CONTROL
-Pots bloquejar o reportar qualsevol persona des de l'app. Pots eliminar el teu compte i les teves dades quan vulguis des d'Ajustos > Compte.
+Pots bloquejar o reportar qualsevol persona des de l'app. També pots bloquejar o denunciar un grup i denunciar un missatge del xat de grup. Pots eliminar el teu compte i les teves dades quan vulguis des d'Ajustos > Compte.
 
 QUÈ NO ÉS
 cofounder no és una app de cites ni una borsa de treball. No ofereix assessorament legal ni finançament, ni garanteix resultats: t'ajuda a conèixer persones amb qui construir; el que feu depèn de vosaltres.
@@ -57,8 +62,8 @@ Públic objectiu: 16–17 i 18+ (D06). Al qüestionari IARC cal declarar interac
 - Respostes de Data safety: vegeu `cuestionario-privacidad.md`.
 - Eliminació de compte: a l'app (Ajustos > Compte > Elimina el meu compte) i URL web https://getcofounder.app/eliminar-cuenta (obligatòria i funcionant; explica com demanar-la per correu sense l'app).
 - Seguretat infantil (categoria Social): URL dels estàndards https://getcofounder.app/seguridad-infantil; contacte designat soporte@getcofounder.app.
-- Permisos (binari final, T5): només `CAMERA` declarat per l'app, per a la foto de perfil; la galeria usa el selector del sistema. Sense `RECORD_AUDIO`, `SCHEDULE_EXACT_ALARM` ni notificacions: no hi ha permisos sensibles per justificar. Confirmar al manifest de l'AAB que cap llibreria n'afegeix d'altres (T7).
-- Polítiques UGC de Google: Termes i Normes acceptats abans de publicar; report de perfils i missatges; bloqueig; filtre bàsic de text i moderació de fotos; revisió dels reports (24 h / 72 h).
+- Permisos (build amb Grups): càmera i galeria per a fotos, i notificacions opcionals per als missatges del xat de grup (`expo-notifications`; comprovar el permís d'Android 13+). Sense `RECORD_AUDIO` ni `SCHEDULE_EXACT_ALARM`. Confirmar el manifest final de l'AAB.
+- Polítiques UGC de Google: Termes i Normes acceptats abans de publicar; denúncia de perfils i missatges 1:1 i de grup; bloqueig de perfils i bloqueig/denúncia de grups; filtre bàsic de text i moderació de fotos; revisió dels reports (24 h / 72 h).
 - Compres a l'app: **«Conté compres a l'aplicació: sí»** (subscripció cofounder Premium, mensual o anual, amb prova gratuïta: 7 dies a l'anual, 3 al mensual; mensual 4,99 €, anual 39,99 €; subscripció `premium`, plans base `premium-monthly` (oferta `trial-3d`) i `premium-annual` (oferta `trial-7d`)). **«Conté anuncis: no».** Preu de l'app: gratuïta.
 - Compte de prova per si Play demana accés: hola+playreview@getcofounder.app (la contrasenya no és al repo; s'introdueix a Play Console > Accés a l'app).
 
@@ -68,6 +73,6 @@ Públic objectiu: 16–17 i 18+ (D06). Al qüestionari IARC cal declarar interac
 | --- | --- | --- |
 | Nom | 9 caràcters | 30 |
 | Descripció breu | 68 caràcters | 80 |
-| Descripció completa | 1716 caràcters | 4000 |
+| Descripció completa | 2040 caràcters | 4000 |
 
 Package: `app.cofounder.android`; versió 1.0.0. La llista de comprovacions prèvies, l'estat de trader (DSA) i les notes internes es queden a la fitxa en castellà.

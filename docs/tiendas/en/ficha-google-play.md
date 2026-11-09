@@ -4,6 +4,8 @@
 
 Reviewed on 7 November 2026 against the Spanish listing. Copy only the content of each field.
 
+Updated on 9 November 2026 with Groups, group chat and optional push notifications; content prepared for the build with Groups.
+
 ## App name
 
 cofounder
@@ -29,11 +31,14 @@ Profiles appear full screen, one by one. Swipe to show you're interested in some
 MATCH AND CHAT
 When the interest is mutual, you match and a private chat opens between the two of you. To break the ice, the app suggests a few questions to start with.
 
+GROUPS
+Besides 1:1 matching, you can create or join a group to complement profiles on a project (max 6 people), see who is in it and talk in a group chat. Nobody hires anybody: it remains peer-to-peer.
+
 VERIFIED GITHUB
 You can link your GitHub account to show "GitHub verified" on your profile. It indicates that the GitHub link belongs to whoever publishes it; it does not verify the person's identity or knowledge.
 
 SAFETY AND CONTROL
-You can block or report anyone from the app. You can delete your account and your data whenever you want from Settings > Account.
+You can block or report anyone from the app. You can also block or report a group and report a group chat message. You can delete your account and your data whenever you want from Settings > Account.
 
 WHAT IT IS NOT
 cofounder is not a dating app or a job board. It offers no legal advice or funding, and does not guarantee results: it helps you meet people to build with; what you do together is up to you.
@@ -57,8 +62,8 @@ Target audience: 16–17 and 18+ (D06). In the IARC questionnaire, declare user 
 - Data safety answers: see `cuestionario-privacidad.md`.
 - Account deletion: in the app (Settings > Account > Delete my account) and web URL https://getcofounder.app/eliminar-cuenta (mandatory and working; explains how to request it by email without the app).
 - Child safety (Social category): standards URL https://getcofounder.app/seguridad-infantil; designated contact soporte@getcofounder.app.
-- Permissions (final binary, T5): only `CAMERA` declared by the app, for the profile photo; the gallery uses the system picker. No `RECORD_AUDIO`, `SCHEDULE_EXACT_ALARM` or notifications: there are no sensitive permissions to justify. Confirm in the AAB manifest that no library adds others (T7).
-- Google UGC policies: Terms and Guidelines accepted before publishing; reporting of profiles and messages; blocking; basic text filter and photo moderation; review of reports (24 h / 72 h).
+- Permissions (build with Groups): camera and photo library for photos, and optional notifications for group chat messages (`expo-notifications`; check the Android 13+ permission). No `RECORD_AUDIO` or `SCHEDULE_EXACT_ALARM`. Confirm the final AAB manifest.
+- Google UGC policies: Terms and Guidelines accepted before publishing; reporting of profiles and 1:1 and group chat messages; profile blocking and group blocking/reporting; basic text filter and photo moderation; review of reports (24 h / 72 h).
 - In-app purchases: **"Contains in-app purchases: yes"** (cofounder Premium subscription, monthly or annual, with a free trial: 7 days on the annual plan, 3 on the monthly; monthly €4.99, annual €39.99; subscription `premium`, base plans `premium-monthly` (offer `trial-3d`) and `premium-annual` (offer `trial-7d`)). **"Contains ads: no".** App price: free.
 - Test account in case Play asks for access: hola+playreview@getcofounder.app (the password is not in the repo; enter it in Play Console > App access).
 
@@ -68,6 +73,6 @@ Target audience: 16–17 and 18+ (D06). In the IARC questionnaire, declare user 
 | --- | --- | --- |
 | Name | 9 characters | 30 |
 | Short description | 58 characters | 80 |
-| Full description | 1675 characters | 4000 |
+| Full description | 1949 characters | 4000 |
 
 Package: `app.cofounder.android`; version 1.0.0. The pre-submission checklist, trader (DSA) status and internal notes stay in the Spanish listing.

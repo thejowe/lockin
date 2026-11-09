@@ -3,15 +3,15 @@
 # cofounder Terms of Use
 
 
-**Version:** 1.4
+**Version:** 1.5
 
-**Version date:** 8 November 2026
+**Version date:** 9 November 2026
 
-**Effective date:** 8 November 2026.
+**Effective date:** 9 November 2026.
 
 ## 1. What cofounder is and who provides it
 
-cofounder is an app for meeting other people who want to start something and working out whether you fit as cofounders. It lets you create a profile, see other people's profiles, show interest, match when the interest is mutual and talk by chat.
+cofounder is an app for meeting other people who want to start something and working out whether you fit as cofounders. It lets you create a profile, see other people's profiles, show interest, match when the interest is mutual, talk by chat, and create or join **groups** of people looking to complement profiles for a project, with a group chat among members.
 
 It is provided by **Joel de Torres Sainz de la Maza**, residing at carrer Nou, 37, 25153 Puigverd de Lleida (Catalonia, Spain). Contact: **soporte@getcofounder.app**.
 
@@ -37,9 +37,9 @@ You must be **16 or older**. Age is self-declared. If you state an age that is n
 
 ## 5. Content you post
 
-You are responsible for what you post: profile, photo, board photos and text, answers, links and messages. You grant us the non-exclusive permission, limited to what is needed to provide the service, to store that content and show it to other people on the app as described in the privacy policy. You keep the rights to your content, and you may not post content you do not own or do not have permission to use.
+You are responsible for what you post: profile, photo, board photos and text, answers, links, messages (including group chat messages) and, if you create or administer a group, the name, description and profiles the group is looking for. You grant us the non-exclusive permission, limited to what is needed to provide the service, to store that content and show it to other people on the app as described in the privacy policy. You keep the rights to your content, and you may not post content you do not own or do not have permission to use.
 
-Your profile, including your approved photo, your board and your links, can be seen by anyone with an account on the app. Conversations can only be seen by the two people in the match.
+Your profile, including your approved photo, your board and your links, can be seen by anyone with an account on the app. 1:1 conversations can only be seen by the two people in the match. A group chat can only be seen by members of that group. The name, description, profiles a group is looking for and the public profiles of its members can be seen by people using the Groups deck.
 
 ## 6. Conduct and zero tolerance
 
@@ -71,9 +71,25 @@ If you link your GitHub account, your profile shows "GitHub verified". That badg
 
 Whatever you agree with other people you meet on cofounder is your own business. cofounder is not a party to those agreements, does not supervise them and is not liable for them. You should verify for yourself who you are talking to and seek independent professional advice before forming a company, signing an agreement or contributing money.
 
-## 10. cofounder Premium
+## 10. Groups
 
-**What it includes.** cofounder Premium is an optional subscription that removes the daily like limit and adds Super Likes, undoing your last swipe, Boost and seeing who liked you. cofounder remains free without Premium and shows no ads.
+You can create a group or join one to complement profiles on a peer-to-peer project.
+
+**Creation.** The person who creates the group is the admin. They set the name, description and the **profiles the group is looking for** (specialties and slots, up to a maximum of 6 people in total). Creating a group is free for now; in the future we may require cofounder Premium to create one. If we do, we will say so in the app and in these terms.
+
+**Joining.** If you like a group and the admin likes you (in either order), you join the group in the agreed profile and the group chat opens (or you are added to it).
+
+**Group chat.** Group chat messages are visible to all members. The same conduct rules as for 1:1 chat apply (§6). You can report a specific message. There is a basic content filter; it does not guarantee full moderation.
+
+**Administration.** The admin may remove a member. Any member may leave. If you leave or are removed, the slot opens again and you do not rejoin on your own from prior likes. If the admin leaves or deletes their account, leadership passes to the longest-standing member; if the group is empty, it is deleted.
+
+**Blocking and reporting.** You can block or report a group. Blocking a group means a permanent pass on it and blocking its admin. Reporting a group is filed against the admin.
+
+**Not employment.** A group does not create an employment, services or company relationship among you or with cofounder. “Profiles we are looking for” describes peer complementarity, not a job offer. Whatever members agree among themselves is your own business (§9).
+
+## 11. cofounder Premium
+
+**What it includes.** cofounder Premium is an optional subscription that removes the daily like limit and adds Super Likes, undoing your last swipe, Boost and seeing who liked you. cofounder remains free without Premium and shows no ads. Creating a group is free for now; if we later require Premium to create one, we will say so here and in the app.
 
 **Price and renewal.** €4.99 per month or €39.99 per year, taxes included, charged by the Apple App Store or Google Play. The subscription renews automatically at the end of each period unless you cancel at least 24 hours before it ends. The first time you subscribe you get a 7-day free trial on the annual plan and a 3-day one on the monthly plan; if you do not cancel at least 24 hours before it ends, charging for the chosen plan begins. The trial is limited to one per person and store account.
 
@@ -83,22 +99,22 @@ Whatever you agree with other people you meet on cofounder is your own business.
 
 **Price changes and ending.** We will notify you before changing the price, and the store will ask you to confirm it. At the end of the paid period you return to the free plan without losing your profile or your matches.
 
-## 11. Availability and liability
+## 12. Availability and liability
 
 We offer the app as is, with no guarantee of continuous availability. We may modify, interrupt or withdraw it. To the extent permitted by law, we are not liable for damage arising from the conduct of other people or from the agreements you reach. This does not limit the rights the law grants to consumers.
 
-## 12. Suspension and leaving
+## 13. Suspension and leaving
 
 We may suspend or delete your account if you breach these terms or the guidelines. You can stop using the app and delete your account at any time.
 
-## 13. Changes and acceptance
+## 14. Changes and acceptance
 
 If we change these terms in a significant way, we will publish a new version with its number and date, and we will ask you to accept it to keep using the app. The app stores the version and date of the terms you accept.
 
-## 14. Governing law
+## 15. Governing law
 
 These terms are governed by Spanish law. If you are a consumer, you keep the rights granted to you by the rules of your place of residence and you may go to the courts that correspond to you.
 
-## 15. Contact
+## 16. Contact
 
 For any question or notice about these terms: soporte@getcofounder.app.

@@ -1,10 +1,12 @@
 # cofounder — cuestionario de privacidad de las tiendas
 
-Revisado el 15 de octubre de 2026 contra el **binario final tras T5** (commits `cf18086` y `10f4ff5`); actualizado el 8 de noviembre de 2026 con el acceso con Google y Apple, el tablón de fotos, Brevo y RevenueCat. Fuente factual: [inventario](datos-recopilados.md).
+Revisado el 15 de octubre de 2026 contra el **binario final tras T5** (commits `cf18086` y `10f4ff5`); actualizado el 8 de noviembre de 2026 con el acceso con Google y Apple, el tablón de fotos, Brevo y RevenueCat, y el 9 de noviembre de 2026 con Grupos y push. Fuente factual: [inventario](datos-recopilados.md).
 
-El binario enviado **ya no contiene** Lock-In (sesiones, salas, rachas, valoraciones, acuerdo), WebRTC/vídeo/audio, STUN de Google ni `expo-notifications`: se borró el código, no solo se ocultó. Por tanto no se declaran audio, vídeo de llamada, interacciones de sesión ni recordatorios. Si alguna vez se restaura Lock-In (git, commit anterior a `cf18086`), reabrir este documento antes de publicar.
+**9-nov-2026: Grupos; mensajes = 1:1 + `group_messages`; interacciones incluyen swipes/pertenencia de grupo**, además del bloqueo de grupo. Los nombres, descripciones y perfiles que busca un grupo se incluyen en «Other User Content» / «Otro contenido generado por usuarios». El token push entra en «Identifiers → Device ID» / «Device or other IDs» con finalidad de funcionalidad de la app, **no tracking**. No se añade una categoría nueva por el chat de grupo; al publicar la build con Grupos, confirmar en las consolas que Messages/Chat, Product Interaction y los identificadores ya declarados siguen describiendo con exactitud estos usos. No se han cambiado las consolas en esta tarea.
 
-### Inventario del binario final (app.json y package.json tras T5)
+La UI sigue sin Lock-In (sesiones, salas, rachas, valoraciones, acuerdo), WebRTC/vídeo/audio ni STUN de Google. No se declaran audio, vídeo de llamada, interacciones de sesión ni recordatorios. `expo-notifications`, retirado en T5, **vuelve para el chat de grupo** en el código del 9-nov-2026; requiere una build nativa nueva y la activación de push descrita en `docs/plan/todo/grupos.md`.
+
+### Inventario de la build con Grupos (app.json y package.json, 9-nov-2026)
 
 | Elemento | Estado | Uso |
 | --- | --- | --- |
@@ -16,7 +18,8 @@ El binario enviado **ya no contiene** Lock-In (sesiones, salas, rachas, valoraci
 | `expo-secure-store` | presente | Sesión Auth y copia de respaldo del dispositivo en Keychain/Keystore |
 | `expo-image-picker` | presente, solo galería y cámara | Foto de perfil opcional |
 | `expo-updates` / EAS | presente | Actualizaciones OTA (EAS-Client-ID, plataforma, runtime) |
-| `react-native-webrtc`, `expo-notifications` | **retirados** | — |
+| `react-native-webrtc` | **retirado** | — |
+| `expo-notifications` | presente en código; requiere build nativa nueva y credenciales APNs/FCM | Avisos opcionales de mensajes del chat de grupo; verificar el permiso de notificaciones en Android 13+ en el manifiesto final |
 | Anuncios, analítica, SDK de terceros de seguimiento | ninguno | — |
 | `react-native-purchases` (RevenueCat) | presente desde `f4fe6f7` (2026-11-01) | Compra y restauración de cofounder Premium; `logIn` con el UUID de cuenta. Sin seguimiento entre apps |
 
@@ -25,6 +28,9 @@ Procesadores adicionales fuera del binario:
 - **OpenAI:** la Edge Function `moderate-avatar` envía a `omni-moderation-latest`, desde el servidor, la foto de perfil y cada foto del tablón **con su texto opcional (hasta 280 caracteres)** para moderarlas antes de publicarlas, sin el nombre ni el resto del perfil. La app no habla con OpenAI directamente.
 - **Brevo (SMTP):** envía los emails de confirmación y recuperación de cuenta (remitente `soporte@getcofounder.app`). Recibe la dirección de email y el contenido del mensaje; registra, sin asociarlo a un contacto, aperturas y clics.
 - **RevenueCat:** valida la compra de Premium (ver la fila de Purchases).
+- **Expo (650 Industries, EE. UU.), Apple Push Notification service y Firebase Cloud Messaging de Google:** entregan los avisos push de grupo. El título es el nombre del grupo; el cuerpo, el nombre del remitente si existe y un fragmento del mensaje de hasta 140 caracteres. El payload incluye además el identificador y la ruta del grupo para abrir el chat. Sin publicidad ni tracking.
+
+**Retención push cotejada con el código:** `push_tokens` se borra en cascada al eliminar la cuenta y la app intenta retirar el token del dispositivo al cerrar sesión (mejor esfuerzo). Los tokens rechazados por Expo con `DeviceNotRegistered` en el ticket se eliminan. **Pendiente:** revocar el permiso de notificaciones no borra automáticamente el token; `registerForPush()` solo devuelve `denied`. El texto solicitado de Privacidad v1.7 promete borrarlo al desactivar las notificaciones: resolver esa diferencia antes de publicar. También quedan pendientes los recibos posteriores de Expo y la activación del envío; ver `docs/plan/todo/grupos.md`.
 
 ## Apple — App Privacy
 
@@ -44,11 +50,11 @@ Fuente: [App Privacy Details](https://developer.apple.com/app-store/app-privacy-
 | Contact Info → Phone Number | Teléfono de contacto opcional (Ajustes > Información personal); privado, no se publica | Sí | App Functionality |
 | Location → Coarse Location | Ciudad/zona escrita por el usuario | Sí | App Functionality |
 | **User Content → Photos or Videos** | **Foto de perfil opcional y hasta 12 fotos del tablón; se envían a OpenAI para moderarlas** | Sí | App Functionality |
-| User Content → Emails or Text Messages | Mensajes del chat | Sí | App Functionality |
-| User Content → Other User Content | Respuestas breves, enlaces, especialidades, disponibilidad, ambición, **textos de las fotos del tablón (también se envían a OpenAI)**, contenido de reportes | Sí | App Functionality; Product Personalization si las especialidades ordenan el deck |
+| User Content → Emails or Text Messages | Mensajes del chat 1:1 y de grupo (`messages` y `group_messages`); fragmento del mensaje en el aviso push | Sí | App Functionality |
+| User Content → Other User Content | Respuestas breves, enlaces, especialidades, disponibilidad, ambición, **textos de las fotos del tablón (también se envían a OpenAI)**, contenido de reportes; nombre, descripción y perfiles que busca un grupo | Sí | App Functionality; Product Personalization si las especialidades ordenan el deck |
 | Identifiers → User ID | UUID de cuenta, handle de GitHub | Sí | App Functionality |
-| Identifiers → Device ID | EAS-Client-ID de expo-updates | Sí (conservador) | App Functionality |
-| Usage Data → Product Interaction | Likes/pass, matches, bloqueos | Sí | App Functionality; Product Personalization (el deck excluye decisiones previas) |
+| Identifiers → Device ID | EAS-Client-ID de expo-updates y token push de Expo (opcional, si se permiten notificaciones); no tracking | Sí (conservador) | App Functionality |
+| Usage Data → Product Interaction | Likes/pass, matches, bloqueos; swipes, pertenencia y bloqueo de grupo | Sí | App Functionality; Product Personalization (el deck excluye decisiones previas) |
 | Diagnostics → Crash Data / Other Diagnostic Data | IDs de actualizaciones fallidas, plataforma/runtime (Expo) | Sí (conservador) | App Functionality |
 | Other Data | Edad, zona horaria | Sí | App Functionality |
 | **Purchases → Purchase History** | **Suscripción Premium: producto, tienda, fecha de fin; la valida RevenueCat** | Sí | App Functionality |
@@ -83,10 +89,10 @@ Fuente: [guía del formulario](https://support.google.com/googleplay/android-dev
 | Información personal → Otra información | Edad, zona horaria, datos estructurados del perfil | Obligatorio | Funcionalidad |
 | Ubicación → Ubicación aproximada | Ciudad/zona escrita | Obligatorio | Funcionalidad |
 | **Fotos y vídeos → Fotos** | **Foto de perfil y fotos del tablón, moderadas con OpenAI** | Opcional | Funcionalidad; seguridad/prevención de fraudes y abusos |
-| Mensajes → Otros mensajes en la aplicación | Chat | Opcional | Funcionalidad |
-| Actividad en la aplicación → Interacciones | Likes/pass, matches, bloqueos | Obligatorio | Funcionalidad |
-| Actividad en la aplicación → Otro contenido generado por usuarios | Respuestas breves, enlaces, textos de las fotos del tablón (también se envían a OpenAI), texto de reportes | Obligatorio (al menos una respuesta) | Funcionalidad; seguridad |
-| Identificadores de dispositivo | EAS-Client-ID | Obligatorio | Funcionalidad |
+| Mensajes → Otros mensajes en la aplicación | Chat 1:1 y de grupo (`messages` y `group_messages`); fragmento del mensaje en el aviso push | Opcional | Funcionalidad |
+| Actividad en la aplicación → Interacciones | Likes/pass, matches, bloqueos; swipes, pertenencia y bloqueo de grupo | Obligatorio | Funcionalidad |
+| Actividad en la aplicación → Otro contenido generado por usuarios | Respuestas breves, enlaces, textos de las fotos del tablón (también se envían a OpenAI), texto de reportes; nombre, descripción y perfiles que busca un grupo | Obligatorio (al menos una respuesta) | Funcionalidad; seguridad |
+| Identificadores de dispositivo (Device or other IDs) | EAS-Client-ID y token push de Expo; no tracking | EAS obligatorio; token push opcional | Funcionalidad |
 | Información y rendimiento → Registros de fallos / Diagnóstico | Metadatos de expo-updates | Obligatorio | Funcionalidad |
 | **Información financiera → Historial de compras** | **Suscripción Premium (producto, tienda, fecha de fin), validada por RevenueCat** | Opcional | Funcionalidad |
 
@@ -97,9 +103,9 @@ Fuente: [guía del formulario](https://support.google.com/googleplay/android-dev
 | Requisito | Estado según los docs | Pendiente |
 | --- | --- | --- |
 | Baja de cuenta en la app (Apple 5.1.1(v), Google) | Implementada: `delete_my_account()` + borrado previo de la foto; botón en Ajustes > Cuenta. Aplicada en producción según D09; el borrado de fotos en servidor (`20261014140000`) se aplicó el 16-oct. Cuentas de Apple: el token se revoca antes del borrado (`apple-token` + `20261029120000`, en el código el 29-oct) | Probar en la build final (T7), incluido que `storage.protect_delete` no bloquee el borrado y que la foto ya no se pueda firmar ni abrir. **Apple:** aplicar `20261029120000`, desplegar `apple-token` con sus cuatro secretos y probar en iPhone que tras borrar la app desaparece de Ajustes > Iniciar sesión con Apple |
-| Bloquear y reportar **perfiles** y **mensajes** (Apple 1.2, UGC de Google) | Implementado en el código: `block_profile()`, `report_profile()`, `report_message` (panel de reporte de mensaje en el chat; migración `20261014130000`) | **Migración sin aplicar en producción**; probar en la build (T7) |
+| Bloquear y reportar **perfiles**, **grupos** y **mensajes** (Apple 1.2, UGC de Google) | Implementado en el código: `block_profile()`, `report_profile()`, `report_message`; Grupos añade `block_group()`, `report_group()` y `report_group_message()` (denuncia de grupo contra el admin, con el grupo anotado) | Probar también chat de grupo, bloqueo/denuncia de grupo y reporte de mensajes de grupo en la build con Grupos |
 | Filtrado de contenido objetable (Apple 1.2) | Filtro básico es/en en cliente para bio, textos de perfil y mensajes (`src/features/safety/content-filter.ts`) + fotos moderadas con OpenAI en servidor + revisión de reportes | Describirlo como complemento, no como moderación completa (ver notas de revisor) |
-| Aceptación de Términos y Normas antes de publicar (Apple 1.2) | Implementada: pantalla de aceptación con versión y fecha (`TERMS_VERSION` = 2026-11-02 desde la sección de Premium), puerta en onboarding, chat y foto; enlaces legales en Perfil | **Migración `20261014120000` sin aplicar en producción**; la puerta del servidor aún no existe (solo cliente, decisión 9) |
+| Aceptación de Términos y Normas antes de publicar (Apple 1.2) | Implementada: pantalla de aceptación con versión y fecha (`TERMS_VERSION` = 2026-11-09; Términos v1.5 y Normas v1.2 con Grupos), puerta en onboarding, chat y foto; enlaces legales en Ajustes | Confirmar la nueva aceptación en la build con Grupos |
 | Política y normas públicas, enlace en la app | Páginas generadas por `scripts/build-web.mjs` (privacidad, términos, normas, seguridad infantil, soporte, eliminar cuenta); enlaces en Perfil | Publicar en Pages tras cerrar los marcadores [pendiente: fecha de publicación] |
 | Seguridad infantil (Google, categoría Social) | Estándares publicados en `/seguridad-infantil/` (CSAE, vía de reporte, contacto) | Completar la declaración en Play Console [pendiente: el titular acepta ser contacto designado] |
 | Cadenas de permisos coherentes (Apple 5.1.1) | **Resuelto en T5:** solo cámara y galería, con textos de foto de perfil; sin micrófono | Verificar el manifiesto del AAB y el Info.plist de la build (T7) |

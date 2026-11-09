@@ -4,6 +4,8 @@
 
 Reviewed on 7 November 2026 against the Spanish listing. Copy only the content of each field.
 
+Updated on 9 November 2026 with Groups, group chat and optional push notifications; content prepared for the build with Groups.
+
 ## Name
 
 cofounder
@@ -33,11 +35,14 @@ Profiles appear full screen, one by one. Swipe to show you're interested in some
 MATCH AND CHAT
 When the interest is mutual, you match and a private chat opens between the two of you. To break the ice, the app suggests a few questions to start with.
 
+GROUPS
+Besides 1:1 matching, you can create or join a group to complement profiles on a project (max 6 people), see who is in it and talk in a group chat. Nobody hires anybody: it remains peer-to-peer.
+
 VERIFIED GITHUB
 You can link your GitHub account to show "GitHub verified" on your profile. It indicates that the GitHub link belongs to whoever publishes it; it does not verify the person's identity or knowledge.
 
 SAFETY AND CONTROL
-You can block or report anyone from the app. You can delete your account and your data whenever you want from Settings > Account.
+You can block or report anyone from the app. You can also block or report a group and report a group chat message. You can delete your account and your data whenever you want from Settings > Account.
 
 WHAT IT IS NOT
 cofounder is not a dating app or a job board. It offers no legal advice or funding, and does not guarantee results: it helps you meet people to build with; what you do together is up to you.
@@ -69,13 +74,13 @@ Primary: **Social Networking** (D07). Secondary: **Business**.
 
 ## Age rating
 
-Minimum age: 16, self-declared. In the App Store Connect questionnaire, declare: user-generated content (profiles, photos, answers and 1:1 chat), messaging between users, no advertising, no gambling and no unrestricted web access. Since the Premium version there are in-app purchases (subscription); this does not change the age declaration. Do not lower the rating Apple calculates; if it is below 16, raise it.
+Minimum age: 16, self-declared. In the App Store Connect questionnaire, declare: user-generated content (profiles, photos, answers, groups and 1:1 and group chat), messaging between users, no advertising, no gambling and no unrestricted web access. Since the Premium version there are in-app purchases (subscription); this does not change the age declaration. Do not lower the rating Apple calculates; if it is below 16, raise it.
 
 | Capability | This version |
 | --- | --- |
-| User-generated content | Yes: profile, optional photo (moderated before publication), short answers and messages |
-| Messaging / chat | Yes, 1:1 after a mutual match |
-| Block / report | Yes: profiles and individual messages (confirm in the build) |
+| User-generated content | Yes: profile, optional photo (moderated before publication), short answers, group names and descriptions, sought profiles and messages |
+| Messaging / chat | Yes, 1:1 after a mutual match and group chat among members |
+| Block / report | Yes: profiles, group blocking/reporting and individual 1:1 and group chat messages (confirm in the build) |
 | Content filter | Yes: basic text filter on profile and chat, plus photo moderation |
 | Acceptance of Terms and Guidelines | Yes, mandatory before publishing |
 | Advertising / gambling | No |
@@ -89,9 +94,9 @@ Minimum age: 16, self-declared. In the App Store Connect questionnaire, declare:
 | Name | 9 characters | 30 |
 | Subtitle | 22 characters | 30 |
 | Promotional text | 126 characters | 170 |
-| Description | 2055 characters | 4000 |
+| Description | 2328 characters | 4000 |
 | Keywords | 98 bytes | 100 |
-| App Review Notes | 2545 characters | 4000 |
+| App Review Notes | 3379 characters | 4000 |
 
 The keywords do not repeat the name or the category (Apple already indexes them) and use no third-party names except "github", which describes a real feature (GitHub verified). Bundle ID: `app.cofounder.mobile`; version 1.0.0.
 
@@ -102,13 +107,16 @@ Text to paste into App Store Connect (in English, the reviewer reads it in that 
 ```
 cofounder is a peer-to-peer app for finding a startup co-founder. Users create a
 profile, swipe through other profiles, and chat 1:1 after a mutual match.
+Users can also create or join groups of up to 6 people with a group chat.
 
 HOW TO TEST
 1. Sign in with the demo account below (or create an account; email is optional).
 2. Accept the Terms of Use and Community Guidelines when prompted.
 3. Open the Discover tab to see profiles, swipe to like/pass; the demo account
    already has a match with a chat in the Matches tab.
-4. Settings > Account: Delete my account (in-app account deletion, Guideline 5.1.1(v)).
+4. Discover > Groups: create a group with sought profiles, or like a group;
+   a mutual like with its admin adds you to the group chat.
+5. Settings > Account: Delete my account (in-app account deletion, Guideline 5.1.1(v)).
 
 DEMO ACCOUNT
 [test account: pending]
@@ -117,15 +125,20 @@ USER-GENERATED CONTENT (Guideline 1.2)
 - Terms and Community Guidelines must be accepted (versioned, with date) before
   publishing content or chatting; links to them are in Settings.
 - Report: any profile (Discover/chat safety panel) and any individual message
-  (message report panel in the chat). Reports go to a private table reviewed
+  (message report panel in 1:1 and group chat). Groups can also be reported;
+  the report is filed against the admin, with the group noted. Reports go to a private table reviewed
   by the operator; target response time is 24 h for severe content and 72 h otherwise.
 - Block: any user, from Discover or chat; blocking is mutual and immediate.
+  Blocking a group permanently passes on it and blocks its admin.
 - Filter: a basic objectionable-text filter (insults, threats, explicit sexual
-  content; Spanish and English) blocks submission of profile text and messages;
+  content; Spanish and English) blocks submission of profile text and messages
+  (including group chat);
   profile photos are moderated server-side with OpenAI's moderation API and are
   only published after approval (fail-closed).
 - Account deletion: Settings > Account > Delete my account removes profile,
-  matches, messages and photo.
+  matches, messages, photo, group membership, group swipes and push tokens.
+  If the admin leaves or deletes their account, the longest-standing member
+  becomes admin; an empty group and its chat are deleted.
 - Contact: soporte@getcofounder.app. Child-safety standards:
   https://getcofounder.app/seguridad-infantil
 
@@ -140,7 +153,10 @@ SUBSCRIPTION (Guideline 3.1.2)
 
 PERMISSIONS
 - Camera / photo library: only to take or choose the optional profile photo.
-  No microphone, no location, no contacts, no push notifications, no tracking.
+  No microphone, no location, no contacts, no tracking.
+- Optional push notifications for group chat: permission is requested when
+  joining a group or opening its chat. Title: group name; body: sender name
+  (if available) and a message snippet of up to 140 characters. Delivered via Expo/APNs/FCM.
 - Encryption: standard HTTPS/TLS only (ITSAppUsesNonExemptEncryption = false).
 - Sign in with GitHub is optional and only used to show a "GitHub verified"
   badge. The app also supports Sign in with Apple, Google, email/password and anonymous accounts, so GitHub

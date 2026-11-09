@@ -2,6 +2,8 @@
 
 Revisada el 15 de octubre de 2026 contra el binario final tras T5 (Lock-In fuera del binario). Copiar únicamente el contenido de cada campo.
 
+Actualizada el 9 de noviembre de 2026 con Grupos, chat de grupo y notificaciones push opcionales; contenido preparado para la build con Grupos.
+
 ## Nombre de la aplicación
 
 cofounder
@@ -27,11 +29,14 @@ Los perfiles aparecen a pantalla completa, uno a uno. Desliza para indicar que t
 MATCH Y CHAT
 Cuando el interés es mutuo, hacéis match y se abre un chat privado entre los dos. Para romper el hielo, la app te sugiere algunas preguntas con las que empezar.
 
+GRUPOS
+Además del match 1:1, puedes crear o unirte a un grupo para complementar perfiles en un proyecto (máximo 6 personas), ver quién forma parte y hablar en un chat de grupo. Aquí nadie contrata a nadie: la relación sigue siendo entre pares.
+
 GITHUB VERIFICADO
 Puedes vincular tu cuenta de GitHub para mostrar «GitHub verificado» en tu perfil. Indica que el enlace de GitHub pertenece a quien lo publica; no verifica la identidad de la persona ni sus conocimientos.
 
 SEGURIDAD Y CONTROL
-Puedes bloquear o reportar a cualquier persona desde la app. Puedes eliminar tu cuenta y tus datos cuando quieras desde Ajustes > Cuenta.
+Puedes bloquear o reportar a cualquier persona desde la app. También puedes bloquear o denunciar un grupo y reportar un mensaje del chat de grupo. Puedes eliminar tu cuenta y tus datos cuando quieras desde Ajustes > Cuenta.
 
 LO QUE NO ES
 cofounder no es una app de citas ni una bolsa de empleo. No ofrece asesoramiento legal ni financiación, ni garantiza resultados: te ayuda a conocer a personas con las que construir; lo que hagáis depende de vosotros.
@@ -55,8 +60,8 @@ Público objetivo: 16–17 y 18+ (D06). En el cuestionario IARC declarar interac
 - Respuestas de Data safety: ver `cuestionario-privacidad.md`.
 - Eliminación de cuenta: en la app (Ajustes > Cuenta > Eliminar mi cuenta) y URL web https://getcofounder.app/eliminar-cuenta (obligatoria y funcionando; explica cómo pedirla por correo sin la app).
 - Seguridad infantil (categoría Social): URL de los estándares https://getcofounder.app/seguridad-infantil; contacto designado soporte@getcofounder.app.
-- Permisos (binario final, T5): solo `CAMERA` declarado por la app, para la foto de perfil; la galería usa el selector del sistema. Sin `RECORD_AUDIO`, `SCHEDULE_EXACT_ALARM` ni notificaciones: no hay permisos sensibles que justificar. Confirmar en el manifiesto del AAB que ninguna librería añade otros (T7).
-- Políticas UGC de Google: Términos y Normas aceptados antes de publicar; reporte de perfiles y mensajes; bloqueo; filtro básico de texto y moderación de fotos; revisión de reportes (24 h / 72 h). Migraciones aplicadas en producción el 16-oct-2026; falta probarlo contra Supabase real (T7).
+- Permisos (build con Grupos): cámara y galería para fotos, y notificaciones opcionales para mensajes del chat de grupo (`expo-notifications`; comprobar permiso de Android 13+). Sin `RECORD_AUDIO` ni `SCHEDULE_EXACT_ALARM`. Confirmar el manifiesto final del AAB.
+- Políticas UGC de Google: Términos y Normas aceptados antes de publicar; reporte de perfiles y mensajes 1:1 y de grupo; bloqueo de perfiles y bloqueo/denuncia de grupos; filtro básico de texto y moderación de fotos; revisión de reportes (24 h / 72 h). Migraciones aplicadas en producción el 16-oct-2026; falta probarlo contra Supabase real (T7).
 - Declaración de trader (DSA): **no trader** (decidido el 16-oct-2026: app gratuita, sin anuncios, compras ni ingresos). **Reabierto el 2-nov-2026:** con Premium la app cobra; el titular debe decidir si pasa a trader antes de publicar la versión con suscripción.
 - Compras en la app: **«Contiene compras en la aplicación: sí»** (suscripción cofounder Premium, mensual o anual, con prueba gratis: 7 días en el anual, 3 en el mensual). **«Contiene anuncios: no».** Precio de la app: gratuita.
 - Cuenta de prueba por si Play pide acceso: hola+playreview@getcofounder.app (la contraseña no va en el repo; se introduce en Play Console > Acceso a la app).
@@ -67,13 +72,14 @@ Público objetivo: 16–17 y 18+ (D06). En el cuestionario IARC declarar interac
 | --- | --- | --- |
 | Nombre | 9 caracteres | 30 |
 | Descripción breve | 78 caracteres | 80 |
-| Descripción completa | 1770 caracteres | 4000 |
+| Descripción completa | 2102 caracteres | 4000 |
 
 Package: `app.cofounder.android`; versión 1.0.0. Cuenta personal declarada no trader (DSA): Play muestra el nombre del desarrollador y el país, no la dirección. Con Premium esto se revisa (ver la declaración de trader arriba).
 
 ## Comprobaciones previas al envío (no copiar en la consola)
 
-- **Binario final (T5, `cf18086`):** sin Lock-In, WebRTC, `expo-notifications`, `RECORD_AUDIO` ni `SCHEDULE_EXACT_ALARM`; solo `CAMERA` y galería para la foto de perfil, `expo-secure-store` y `ITSAppUsesNonExemptEncryption=false`. Falta mirar el manifiesto del AAB y el Info.plist generado (T7).
+- **Build con Grupos (9-nov-2026):** sin Lock-In, WebRTC, `RECORD_AUDIO` ni `SCHEDULE_EXACT_ALARM`; cámara y galería para fotos, `expo-secure-store` y `ITSAppUsesNonExemptEncryption=false`. `expo-notifications` vuelve para el chat de grupo: falta build nativa nueva, credenciales APNs/FCM y activación del envío; comprobar el manifiesto del AAB y el Info.plist generado. Ver `docs/plan/todo/grupos.md`.
+- **Grupos:** comprobar chat entre miembros, bloqueo/denuncia del grupo y reporte de un mensaje de grupo; grupos y perfiles buscados son contenido generado por usuarios.
 - **Bloquear, reportar perfiles y mensajes, aceptación de Términos y Normas, filtro, baja de cuenta:** implementados en el código (T3a, T3b). Las migraciones `20261014120000` (aceptación), `20261014130000` (reportar mensaje) y `20261014140000` (limpieza de fotos) están aplicadas en producción desde el 16-oct-2026. Falta probarlo contra Supabase real en la build final (T7).
 - **Capturas:** solo pantallas actuales (perfil, deck a pantalla completa, match, chat con sugerencias, GitHub verificado, bloqueo/reporte). Ninguna con temporizador, salas, vídeo o rachas (ya no existen en la app).
 - **Cuenta de revisión:** hola+playreview@getcofounder.app (la contraseña no va en el repo; se introduce en Play Console > Acceso a la app) con perfil completo y al menos un match con chat para que la revisión vea las funciones.

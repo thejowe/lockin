@@ -3,15 +3,15 @@
 # Termes d'ús de cofounder
 
 
-**Versió:** 1.4
+**Versió:** 1.5
 
-**Data de la versió:** 8 de novembre de 2026
+**Data de la versió:** 9 de novembre de 2026
 
-**Entrada en vigor:** 8 de novembre de 2026.
+**Entrada en vigor:** 9 de novembre de 2026.
 
 ## 1. Què és cofounder i qui l'ofereix
 
-cofounder és una app per conèixer altres persones que volen començar alguna cosa i valorar si encaixeu com a cofundadors. Permet crear un perfil, veure perfils d'altres persones, indicar interès, fer match quan l'interès és mutu i conversar per xat.
+cofounder és una app per conèixer altres persones que volen començar alguna cosa i valorar si encaixeu com a cofundadors. Permet crear un perfil, veure perfils d'altres persones, indicar interès, fer match quan l'interès és mutu, conversar per xat, i crear o unir-te a **grups** de persones que busquen complementar perfils per a un projecte, amb un xat de grup entre membres.
 
 L'ofereix **Joel de Torres Sainz de la Maza**, amb domicili al carrer Nou, 37, 25153 Puigverd de Lleida (Catalunya, Espanya). Contacte: **soporte@getcofounder.app**.
 
@@ -37,9 +37,9 @@ Has de tenir **16 anys o més**. L'edat és autodeclarada. Si indiques una edat 
 
 ## 5. Contingut que publiques
 
-Ets responsable del que publiques: perfil, foto, fotos i textos del tauler, respostes, enllaços i missatges. Ens concedeixes el permís, no exclusiu i limitat al que és necessari per prestar el servei, d'emmagatzemar i mostrar aquest contingut a altres persones de l'app segons es descriu a la política de privacitat. Conserves els drets sobre el teu contingut, i no pots publicar contingut del qual no siguis titular o sobre el qual no tinguis permís.
+Ets responsable del que publiques: perfil, foto, fotos i textos del tauler, respostes, enllaços, missatges (inclosos els del xat de grup) i, si crees o administres un grup, el nom, la descripció i els perfils que busca el grup. Ens concedeixes el permís, no exclusiu i limitat al que és necessari per prestar el servei, d'emmagatzemar i mostrar aquest contingut a altres persones de l'app segons es descriu a la política de privacitat. Conserves els drets sobre el teu contingut, i no pots publicar contingut del qual no siguis titular o sobre el qual no tinguis permís.
 
-El teu perfil, incloent-hi la foto aprovada, el tauler i els teus enllaços, el pot veure qualsevol persona amb compte a l'app. Les converses només les veuen les dues persones del match.
+El teu perfil, incloent-hi la foto aprovada, el tauler i els teus enllaços, el pot veure qualsevol persona amb compte a l'app. Les converses 1:1 només les veuen les dues persones del match. El xat d'un grup només el veuen les persones membres d'aquest grup. El nom, la descripció, els perfils que busca un grup i els perfils públics dels seus membres els poden veure qui fa servir el deck de Grups.
 
 ## 6. Conducta i tolerància zero
 
@@ -71,9 +71,25 @@ Si vincules el teu compte de GitHub, el teu perfil mostra «GitHub verificat». 
 
 El que acordeu amb altres persones que coneguis a cofounder és cosa vostra. cofounder no és part d'aquests acords ni els supervisa, i no en respon. Convé que verifiquis pel teu compte amb qui parles i que busquis assessorament professional independent abans de constituir una societat, signar un acord o aportar diners.
 
-## 10. cofounder Premium
+## 10. Grups
 
-**Què inclou.** cofounder Premium és una subscripció opcional que elimina el límit diari de likes i afegeix Super Likes, desfer l'últim gest, Boost i veure qui t'ha fet like. cofounder continua sent gratuït sense Premium i no mostra anuncis.
+Pots crear un grup o unir-t'hi per complementar perfils en un projecte entre iguals.
+
+**Creació.** Qui crea el grup és la persona administradora. Defineix el nom, la descripció i els **perfils que busca** (especialitats i places, fins a un màxim de 6 persones en total). Crear un grup és gratuït ara; en el futur podem exigir cofounder Premium per crear-lo. Si ho fem, ho indicarem a l'app i en aquests termes.
+
+**Unió.** Si fas like a un grup i la persona administradora et fa like (en qualsevol ordre), entres al grup en el perfil acordat i s'obre (o se t'afegeix a) el xat de grup.
+
+**Xat de grup.** Els missatges del xat de grup els veuen totes les persones membres. S'hi apliquen les mateixes normes de conducta que al xat 1:1 (§6). Pots denunciar un missatge concret. Hi ha un filtre bàsic de contingut; no garanteix moderació completa.
+
+**Administració.** La persona administradora pot expulsar un membre. Qualsevol membre pot sortir. Si surts o t'expulsen, la plaça torna a quedar oberta i no hi tornes a entrar sol per likes previs. Si la persona administradora surt o elimina el seu compte, el lideratge passa a la persona membre més antiga; si el grup queda buit, s'esborra.
+
+**Bloqueig i denúncia.** Pots bloquejar o denunciar un grup. Bloquejar un grup implica passar-ne de forma definitiva i bloquejar-ne la persona administradora. Denunciar un grup es registra contra la persona administradora.
+
+**No és feina.** Un grup no crea relació laboral, de prestació de serveis ni de societat entre vosaltres ni amb cofounder. «Perfils que busquem» descriu complementarietat entre iguals, no una oferta de feina. El que acordeu entre membres és cosa vostra (§9).
+
+## 11. cofounder Premium
+
+**Què inclou.** cofounder Premium és una subscripció opcional que elimina el límit diari de likes i afegeix Super Likes, desfer l'últim gest, Boost i veure qui t'ha fet like. cofounder continua sent gratuït sense Premium i no mostra anuncis. Crear un grup és gratuït ara; si més endavant exigim Premium per crear-lo, ho avisarem aquí i a l'app.
 
 **Preu i renovació.** 4,99 € al mes o 39,99 € l'any, impostos inclosos, cobrats per Apple App Store o Google Play. La subscripció es renova sola al final de cada període llevat que la cancel·lis almenys 24 hores abans que acabi. La primera vegada que et subscrius tens 7 dies de prova gratuïta al pla anual i 3 al mensual; si no la cancel·les almenys 24 hores abans que acabi, comença el cobrament del pla triat. La prova és una per persona i compte de botiga.
 
@@ -83,22 +99,22 @@ El que acordeu amb altres persones que coneguis a cofounder és cosa vostra. cof
 
 **Canvis de preu i final.** T'avisarem abans de canviar el preu, i la botiga et demanarà que el confirmis. En acabar el període pagat tornes al pla gratuït sense perdre el teu perfil ni els teus matches.
 
-## 11. Disponibilitat i responsabilitat
+## 12. Disponibilitat i responsabilitat
 
 Oferim l'app tal com és, sense garantia de disponibilitat contínua. La podem modificar, interrompre o retirar. En la mesura que la llei ho permeti, no responem dels danys derivats de la conducta d'altres persones ni dels acords a què arribeu. Això no limita els drets que la llei reconegui a les persones consumidores.
 
-## 12. Suspensió i baixa
+## 13. Suspensió i baixa
 
 Podem suspendre o eliminar el teu compte si incompleixes aquests termes o les normes. Pots deixar de fer servir l'app i eliminar el teu compte en qualsevol moment.
 
-## 13. Canvis i acceptació
+## 14. Canvis i acceptació
 
 Si canviem aquests termes de manera rellevant, publicarem una nova versió amb el seu número i la seva data, i et demanarem que l'acceptis per continuar fent servir l'app. L'app desa la versió i la data dels termes que acceptes.
 
-## 14. Llei aplicable
+## 15. Llei aplicable
 
 Aquests termes es regeixen per la llei espanyola. Si ets persona consumidora, mantens els drets que et reconegui la normativa del teu lloc de residència i pots acudir als tribunals que et corresponguin.
 
-## 15. Contacte
+## 16. Contacte
 
 Per a qualsevol dubte o avís sobre aquests termes: soporte@getcofounder.app.

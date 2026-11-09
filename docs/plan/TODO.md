@@ -14,7 +14,12 @@ Descubrir gana la sección «Grupos» (bloque 16 de `PLAN.md`): crear y editar u
 - [ ] `[comprobador]` Recorrido en emulador; build nativa nueva y configuración/despliegue de push.
 - [ ] **P2 de la revisión:** falta consultar los recibos posteriores de Expo para retirar tokens
   que APNs/FCM den de baja después de aceptar el ticket. Detalle en `todo/grupos.md`.
-- [ ] Privacidad/Términos no cubren el chat de grupo.
+- [x] Grupos en Privacidad v1.7, Términos v1.5 y Normas v1.2 (es/en/ca), con tokens push;
+  `TERMS_VERSION = 2026-11-09`. Fichas de ambas tiendas, cuestionario e inventario actualizados;
+  textos de app regenerados, sin generar ni publicar la web.
+- [ ] Antes de publicar Privacidad v1.7: resolver la promesa de borrar el token al desactivar
+  notificaciones; el código actual solo devuelve `denied`, sin baja en servidor. Detalle en
+  `todo/grupos.md` y en la nota editorial de privacidad.
 - [ ] **Ojo, comprobaciones globales:** cobertura bajo el suelo; `npm run lint` falla en
   `premium-badge.tsx` y `tsc` en un artefacto Deno local y la ruta `/unblock` (archivos fuera del bloque).
   Jest completo: 2179 pasan; cobertura 94,82 / 89,17 / 93,98 / 96,09 %. Resultados y suelos en

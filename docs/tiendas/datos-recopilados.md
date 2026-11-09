@@ -1,9 +1,10 @@
 # cofounder — inventario de datos recopilados
 
-Actualizado el 15 de octubre de 2026 tras T5 (binario sin Lock-In). Revisado el 14 de octubre de 2026 sobre el inventario del 9-oct (commit `0cddbbb…`), tras el pivote del 12-oct-2026 (solo cofundador) y la foto de perfil del 12-oct. Describe lo que recoge la UI actual. No certifica la configuración de producción.
+Actualizado el 9 de noviembre de 2026 con Grupos y tokens push sobre el inventario del 15 de octubre de 2026 tras T5 (binario sin Lock-In). Revisado el 14 de octubre de 2026 sobre el inventario del 9-oct (commit `0cddbbb…`), tras el pivote del 12-oct-2026 (solo cofundador) y la foto de perfil del 12-oct. Describe lo que recoge la UI actual. No certifica la configuración de producción.
 
 ## Cambios respecto a la versión anterior
 
+- **9-nov-2026, Grupos y push:** `groups`, `group_roles`, `group_members`, `group_swipes`, `group_messages` y `push_tokens`; nombres/descripciones y perfiles buscados como contenido de usuario, swipes/pertenencia/bloqueo como interacciones, chat 1:1 y de grupo como mensajes in-app y token de Expo como identificador de dispositivo para funcionalidad, sin tracking. Detalle de acceso, payload y retención abajo.
 - **2-nov-2026, Premium e idiomas:** `public.entitlements` (`premium_until`, `product_id`, `store`, `updated_at`), `like_events` (hora y tipo de cada like o Super Like) y `boosts`, todas con borrado en cascada desde `profiles`; `revenuecat_events` solo guarda el id del evento del webhook. **RevenueCat** (encargado, EE. UU.) recibe el UUID de cuenta (`logIn` en `src/lib/purchases.ts`) y los datos de la compra; las Edge Functions `sync-entitlement` y `revenuecat-webhook` escriben el estado. En `profiles`: `languages`, `seeking_languages` y `other_specialty` (`20261102120000`). Sin datos de tarjeta: cobran Apple o Google.
 - Añadida la **foto de perfil**: buckets `avatar-uploads` (privado) y `avatars` (privado; se sirve con URL firmada tras moderación), columna `profiles.avatar_url`, envío a **OpenAI** (Edge Function `moderate-avatar`, falla cerrado) y permisos de galería/cámara de `expo-image-picker` (la versión anterior decía que no había permiso de fotos).
 - Añadidas las tablas de **bloqueo y reporte** (migraciones `20261009224000`, `20261009231000` y `20261010120000`; D09 las da por aplicadas en producción el 10-oct y D11 decía «pendientes de aplicar»: resuelto a favor de D09, **confirmar contra producción**). Columnas completadas desde las migraciones.
@@ -103,6 +104,25 @@ Almacén: Supabase Postgres, tabla `public.messages`. Fuente: [20260905000300_de
 | `body` | `body` | Texto del mensaje (1–4000 caracteres, no solo espacios). | M | R3 |
 | `sent_at` | `sentAt` | Fecha de envío. | M | R3 |
 
+### Grupos y notificaciones push
+
+Fuentes: [Grupos](../../supabase/migrations/20261109130000_groups.sql), [edición](../../supabase/migrations/20261109140000_groups_edit.sql), [push](../../supabase/migrations/20261109150000_group_message_push.sql), [payload](../../supabase/functions/notify-group-message/logic.mjs) y [registro/baja del token](../../src/lib/push.ts).
+
+| Tabla / campos | Qué se guarda | Quién lo ve | Retención |
+| --- | --- | --- | --- |
+| `groups`: `id`, `name`, `description`, `admin_id`, `max_members`, `created_at`, `updated_at` | Nombre, proyecto/descripción, admin, máximo de personas (hasta 6) y fechas | Lectura directa solo miembros; el deck expone el nombre, descripción, perfiles buscados y los perfiles públicos de miembros actuales a cuentas que buscan grupo | Mientras exista el grupo; al salir o borrar la cuenta del admin, hereda el miembro más antiguo por `joined_at`; si queda vacío, se borra |
+| `group_roles`: `id`, `group_id`, `specialty`, `slots`, `filled` | Perfiles que busca el grupo: especialidad y plazas abiertas/cubiertas | Miembros; datos necesarios en el deck por RPC | Se borran con el grupo |
+| `group_members`: `group_id`, `user_id`, `role_id`, `joined_at` | Pertenencia, perfil que cubre cada persona y fecha de entrada | Datos internos solo miembros; el deck entrega los identificadores necesarios para abrir perfiles públicos | Se borra al salir, ser expulsado, borrar la cuenta o borrar el grupo |
+| `group_swipes`: `group_id`, `user_id`, `direction`, `decision`, `role_id`, `actor_id`, `created_at` | Like/pass en ambos sentidos y perfil que cubriría la persona; admin que deslizó | Sin lectura directa desde la app; solo funciones del servidor | Hasta borrar la cuenta o el grupo; al salir/expulsar, los likes previos se convierten en pass para evitar reentrada automática |
+| `group_messages`: `id`, `group_id`, `sender_id`, `body`, `sent_at` | Texto (hasta 4000 caracteres), remitente, grupo y fecha | Solo miembros; Realtime con controles de pertenencia. El cliente oculta mensajes de personas bloqueadas; permite reportar mensajes concretos y filtra contenido básico | Se borran con el grupo o la cuenta del remitente; salir del grupo no borra por sí solo los mensajes |
+| `push_tokens`: `token`, `user_id`, `platform`, `updated_at` | Token de Expo por dispositivo, cuenta, plataforma iOS/Android y fecha | Sin lectura directa desde la app; registro/baja por RPC, destinatarios solo por función de servidor | Cascada con la cuenta; baja al cerrar sesión de mejor esfuerzo; tokens `DeviceNotRegistered` del ticket de Expo se retiran |
+
+Bloquear un grupo fija un pass definitivo y bloquea al admin. Denunciarlo crea un reporte contra el admin con el grupo anotado; los reportes y los de mensajes de grupo siguen la retención de abuso de 12 meses. El deck excluye grupos/candidaturas con bloqueos entre la persona y cualquier miembro.
+
+**Push:** hoy solo para mensajes del chat de grupo, con permiso de notificaciones. Expo (650 Industries, EE. UU.) entrega por APNs de Apple / FCM de Google; recibe el token y el aviso. `title` = nombre del grupo; `body` = nombre del remitente (si existe) y fragmento de hasta 140 caracteres; `data` = ruta e identificador del grupo y `threadId` = hilo del grupo. No se avisa al remitente ni a personas bloqueadas en cualquier sentido. La app guarda el token en AsyncStorage (`lockin.push-token`) para intentar retirarlo incluso tras reiniciar.
+
+**Diferencia pendiente:** revocar el permiso de notificaciones no elimina automáticamente el token del servidor (`registerForPush()` devuelve `denied`); el texto solicitado de Privacidad v1.7 promete borrarlo al desactivar. Resolver antes de publicar. Los recibos posteriores de Expo y la configuración/despliegue/build nativa de push también siguen pendientes en `docs/plan/todo/grupos.md`.
+
 ### Bloqueos y reportes
 
 Fuente: [20261009224000_block_report.sql](../../supabase/migrations/20261009224000_block_report.sql) y [20261010120000_reports_retention_and_block_followups.sql](../../supabase/migrations/20261010120000_reports_retention_and_block_followups.sql). Ninguna tabla se publica en Realtime y ninguna admite escritura directa del cliente: se escribe con las funciones `block_profile()` y `report_profile()`.
@@ -146,6 +166,7 @@ Decisión D05: SMTP propio gratuito antes del lanzamiento — Brevo (plan gratui
 - `expo-secure-store` (Keystore / Keychain): sesión Auth y `lockin.supabase.device-account` (`src/data/supabase/secure-storage.ts`). Si el almacén seguro no admite la escritura, cae a AsyncStorage. En web, solo AsyncStorage (localStorage).
 - AsyncStorage: claves temporales de vinculación GitHub y, en el caso descrito, la copia de reserva de la sesión.
 - Expo/EAS: EAS-Client-ID, plataforma, runtime, IDs de actualización actual/incluida/fallida; IP en peticiones.
+- Expo push: token en `push_tokens` y en AsyncStorage (`lockin.push-token`), nombre del grupo y remitente y fragmento del mensaje para el aviso; identificador de dispositivo para funcionalidad de la app, no tracking.
 - Supabase y OpenAI: IP y metadatos de peticiones en sus registros.
 
 ## Permisos (app.json, tras T5)
@@ -156,9 +177,9 @@ Decisión D05: SMTP propio gratuito antes del lanzamiento — Brevo (plan gratui
 | Cámara (`android.permission.CAMERA`, iOS `cameraPermission`) | Hacer la foto de perfil | Presente |
 | Micrófono (`RECORD_AUDIO`, `NSMicrophoneUsageDescription`) | Ninguno | **Retirado** (`microphonePermission: false` en `expo-image-picker`) |
 | `SCHEDULE_EXACT_ALARM` | Ninguno | **Retirado** |
-| Notificaciones (`expo-notifications`) | Ninguno | **Retirado** (no hay push ni recordatorios) |
+| Notificaciones (`expo-notifications`) | Avisos opcionales de mensajes del chat de grupo | **Reincorporado el 9-nov-2026**; requiere build nativa nueva y credenciales APNs/FCM. Sin recordatorios Lock-In |
 
-Plugins restantes: `expo-router`, `expo-splash-screen`, `expo-image-picker`, `expo-secure-store` y el plugin local `with-new-intent-initial-url`. `ITSAppUsesNonExemptEncryption=false` en iOS. Falta contrastar con el manifiesto del AAB generado (el prebuild no se ejecutó en T5).
+Plugins: `expo-router`, `expo-splash-screen`, `expo-image-picker`, `expo-secure-store`, `expo-notifications` y el plugin local `with-new-intent-initial-url`. `ITSAppUsesNonExemptEncryption=false` en iOS. Falta contrastar los permisos de notificaciones con el manifiesto del AAB y el Info.plist de la build con Grupos.
 
 ## Tablas y flujos inactivos (Lock-In, fuera del binario desde T5)
 

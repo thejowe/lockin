@@ -4,6 +4,8 @@
 
 Revisada el 7 de novembre de 2026 contra la fitxa en castellà. Copia únicament el contingut de cada camp.
 
+Actualitzada el 9 de novembre de 2026 amb Grups, xat de grup i notificacions push opcionals; contingut preparat per a la build amb Grups.
+
 ## Nom
 
 cofounder
@@ -33,11 +35,14 @@ Els perfils apareixen a pantalla completa, un a un. Llisca per indicar que t'int
 MATCH I XAT
 Quan l'interès és mutu, feu match i s'obre un xat privat entre els dos. Per trencar el gel, l'app et suggereix algunes preguntes per començar.
 
+GRUPS
+A més del match 1:1, pots crear o unir-te a un grup per complementar perfils en un projecte (màxim 6 persones), veure qui en forma part i parlar en un xat de grup. Aquí ningú no contracta ningú: la relació continua sent entre iguals.
+
 GITHUB VERIFICAT
 Pots vincular el teu compte de GitHub per mostrar «GitHub verificat» al teu perfil. Indica que l'enllaç de GitHub pertany a qui el publica; no verifica la identitat de la persona ni els seus coneixements.
 
 SEGURETAT I CONTROL
-Pots bloquejar o reportar qualsevol persona des de l'app. Pots eliminar el teu compte i les teves dades quan vulguis des d'Ajustos > Compte.
+Pots bloquejar o reportar qualsevol persona des de l'app. També pots bloquejar o denunciar un grup i denunciar un missatge del xat de grup. Pots eliminar el teu compte i les teves dades quan vulguis des d'Ajustos > Compte.
 
 QUÈ NO ÉS
 cofounder no és una app de cites ni una borsa de treball. No ofereix assessorament legal ni finançament, ni garanteix resultats: t'ajuda a conèixer persones amb qui construir; el que feu depèn de vosaltres.
@@ -69,13 +74,13 @@ Principal: **Xarxes socials (Social Networking)** (D07). Secundària: **Negocis 
 
 ## Classificació d'edat
 
-Edat mínima d'ús: 16 anys, autodeclarada. Al qüestionari d'App Store Connect cal declarar: contingut generat per usuaris (perfils, fotos, respostes i xat 1:1), missatgeria entre usuaris, sense publicitat, apostes ni accés web sense restriccions. Des de la versió amb Premium sí que hi ha compres dins l'app (subscripció); no canvia la declaració d'edat. No reduir la classificació que calculi Apple; si és inferior a 16, elevar-la.
+Edat mínima d'ús: 16 anys, autodeclarada. Al qüestionari d'App Store Connect cal declarar: contingut generat per usuaris (perfils, fotos, respostes, grups i xat 1:1 i de grup), missatgeria entre usuaris, sense publicitat, apostes ni accés web sense restriccions. Des de la versió amb Premium sí que hi ha compres dins l'app (subscripció); no canvia la declaració d'edat. No reduir la classificació que calculi Apple; si és inferior a 16, elevar-la.
 
 | Capacitat | Aquesta versió |
 | --- | --- |
-| Contingut generat per usuaris | Sí: perfil, foto opcional (moderada abans de publicar-se), respostes breus i missatges |
-| Missatgeria / xat | Sí, 1:1 després d'un match mutu |
-| Bloquejar / reportar | Sí: perfils i missatges concrets (confirmar a la build) |
+| Contingut generat per usuaris | Sí: perfil, foto opcional (moderada abans de publicar-se), respostes breus, noms i descripcions de grups, perfils buscats i missatges |
+| Missatgeria / xat | Sí, 1:1 després d'un match mutu i xat de grup entre membres |
+| Bloquejar / reportar | Sí: perfils, bloqueig/denúncia de grups i missatges concrets de xat 1:1 i de grup (confirmar a la build) |
 | Filtre de contingut | Sí: filtre bàsic de text al perfil i al xat, més moderació de fotos |
 | Acceptació de Termes i Normes | Sí, obligatòria abans de publicar |
 | Publicitat / apostes | No |
@@ -89,9 +94,9 @@ Edat mínima d'ús: 16 anys, autodeclarada. Al qüestionari d'App Store Connect 
 | Nom | 9 caràcters | 30 |
 | Subtítol | 20 caràcters | 30 |
 | Text promocional | 134 caràcters | 170 |
-| Descripció | 2154 caràcters | 4000 |
+| Descripció | 2431 caràcters | 4000 |
 | Paraules clau | 99 bytes | 100 |
-| Notes per a la revisió | 2545 caràcters | 4000 |
+| Notes per a la revisió | 3379 caràcters | 4000 |
 
 Les paraules clau no repeteixen el nom ni la categoria (Apple ja els indexa) i no usen noms de tercers tret de «github», que descriu una funció real (GitHub verificat). Bundle ID: `app.cofounder.mobile`; versió 1.0.0.
 
@@ -102,13 +107,16 @@ Text per enganxar a App Store Connect. Va en anglès a totes les localitzacions 
 ```
 cofounder is a peer-to-peer app for finding a startup co-founder. Users create a
 profile, swipe through other profiles, and chat 1:1 after a mutual match.
+Users can also create or join groups of up to 6 people with a group chat.
 
 HOW TO TEST
 1. Sign in with the demo account below (or create an account; email is optional).
 2. Accept the Terms of Use and Community Guidelines when prompted.
 3. Open the Discover tab to see profiles, swipe to like/pass; the demo account
    already has a match with a chat in the Matches tab.
-4. Settings > Account: Delete my account (in-app account deletion, Guideline 5.1.1(v)).
+4. Discover > Groups: create a group with sought profiles, or like a group;
+   a mutual like with its admin adds you to the group chat.
+5. Settings > Account: Delete my account (in-app account deletion, Guideline 5.1.1(v)).
 
 DEMO ACCOUNT
 [test account: pending]
@@ -117,15 +125,20 @@ USER-GENERATED CONTENT (Guideline 1.2)
 - Terms and Community Guidelines must be accepted (versioned, with date) before
   publishing content or chatting; links to them are in Settings.
 - Report: any profile (Discover/chat safety panel) and any individual message
-  (message report panel in the chat). Reports go to a private table reviewed
+  (message report panel in 1:1 and group chat). Groups can also be reported;
+  the report is filed against the admin, with the group noted. Reports go to a private table reviewed
   by the operator; target response time is 24 h for severe content and 72 h otherwise.
 - Block: any user, from Discover or chat; blocking is mutual and immediate.
+  Blocking a group permanently passes on it and blocks its admin.
 - Filter: a basic objectionable-text filter (insults, threats, explicit sexual
-  content; Spanish and English) blocks submission of profile text and messages;
+  content; Spanish and English) blocks submission of profile text and messages
+  (including group chat);
   profile photos are moderated server-side with OpenAI's moderation API and are
   only published after approval (fail-closed).
 - Account deletion: Settings > Account > Delete my account removes profile,
-  matches, messages and photo.
+  matches, messages, photo, group membership, group swipes and push tokens.
+  If the admin leaves or deletes their account, the longest-standing member
+  becomes admin; an empty group and its chat are deleted.
 - Contact: soporte@getcofounder.app. Child-safety standards:
   https://getcofounder.app/seguridad-infantil
 
@@ -140,7 +153,10 @@ SUBSCRIPTION (Guideline 3.1.2)
 
 PERMISSIONS
 - Camera / photo library: only to take or choose the optional profile photo.
-  No microphone, no location, no contacts, no push notifications, no tracking.
+  No microphone, no location, no contacts, no tracking.
+- Optional push notifications for group chat: permission is requested when
+  joining a group or opening its chat. Title: group name; body: sender name
+  (if available) and a message snippet of up to 140 characters. Delivered via Expo/APNs/FCM.
 - Encryption: standard HTTPS/TLS only (ITSAppUsesNonExemptEncryption = false).
 - Sign in with GitHub is optional and only used to show a "GitHub verified"
   badge. The app also supports Sign in with Apple, Google, email/password and anonymous accounts, so GitHub

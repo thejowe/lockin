@@ -3,7 +3,7 @@
 # cofounder Privacy Policy
 
 
-**Version:** 1.6.
+**Version:** 1.7.
 
 **Effective date:** 9 November 2026.
 
@@ -45,6 +45,21 @@ Location is written as text; the app does not use GPS.
 
 We store your swipe decisions (interested or pass), the time of each like and Super Like and the Boosts you activate (to apply the daily and weekly limits), mutual matches and chat text messages, with their participants and dates. We also store the blocks and reports you make or receive: who blocks or reports, whom, the chosen reason, the optional text you add (up to 500 characters) and the date (see §7). Blocks are visible only to the person blocking; reports are not seen by any other person on the app.
 
+### Groups
+
+If you create or join a group, we also process:
+
+- **Group data:** name, description or project, who the admin is, creation date and capacity (maximum 6 people).
+- **Profiles the group is looking for:** the specialties and number of open or filled slots set by the admin (this is not a job offer).
+- **Membership:** who belongs to the group, which profile they cover in the group and the join date.
+- **Group swipes:** whether you like or pass on a group, and whether the admin likes or passes on a candidate (tied to the profile they would cover).
+- **Group chat messages:** the text, who sent it, the group and the dates. All group members can see them. There is a basic on-device content filter and you can report a specific message.
+- **Group blocks and reports:** if you block a group (it becomes a permanent pass and the admin is blocked) or report it (the report is filed against the admin, with the group noted).
+
+The public part shown to people looking for a group (name, description, sought profiles and current members' public profiles) is exposed only through the deck functions, not as free reads of the internal tables. Internal group data (including detailed membership and chat) is accessible only to members, under the server's access controls.
+
+**Push notification token:** if you allow notifications, we store a technical identifier for your device (an Expo token, which uses Apple Push Notification service or Google Firebase Cloud Messaging) to notify you of new group chat messages. The notification shows the group name as the title and the sender's name (if available) with a message snippet of up to 140 characters as the body. Legal basis: performance of the contract. We delete it when you sign out, turn off notifications or delete your account. Processors: Expo (650 Industries, USA), Apple and Google, under Standard Contractual Clauses / the EU-US Data Privacy Framework.
+
 ### Your subscription (optional)
 
 If you subscribe to cofounder Premium, we store the status of your subscription: the product (monthly or yearly), the store and the date until which it is paid, with the date of the last update. To show you the plans and validate the purchase we use **RevenueCat**, which identifies you with the same app account identifier from the moment you open the Premium screen, whether you buy or not. Payment is charged by Apple or Google: we do not receive or store your card or payment method details.
@@ -59,9 +74,9 @@ The authentication, database, storage and update services receive network data s
 
 ## 3. What we use the data for and on what legal basis
 
-We use the data to maintain and recover your account, show and edit your profile, show you profiles, resolve mutual interest, enable chat with your matches, verify your GitHub link, enable sign-in with Google or Apple, review profile and board photos, handle blocks and reports, activate Premium if you subscribe and serve app updates. We do not use advertising SDKs or commercial analytics.
+We use the data to maintain and recover your account, show and edit your profile, show you profiles, resolve mutual interest, enable chat with your matches, create and join groups, talk in the group chat, verify your GitHub link, enable sign-in with Google or Apple, review profile and board photos, handle blocks and reports, activate Premium if you subscribe and serve app updates. We do not use advertising SDKs or commercial analytics.
 
-- **Performance of the service you request** (art. 6.1.b GDPR): account, profile, swipes, matches and messages, the Premium subscription if you subscribe and the unblock request if you send one.
+- **Performance of the service you request** (art. 6.1.b GDPR): account, profile, swipes, matches and messages (including group chat messages), group membership and group swipes, the Premium subscription if you subscribe and the unblock request if you send one.
 - **Consent** (art. 6.1.a): phone, profile photo, board photos, GitHub verification and sign-in with Google or Apple, all optional. You can withdraw it by removing the phone or the photos, unlinking GitHub or deleting the account.
 - **Legitimate interest** (art. 6.1.f): security, abuse prevention (including preventing the email of a deleted account from being reused), review of photos and reports and technical operation.
 - **Legal obligation** (art. 6.1.c): responding to requests from the authorities.
@@ -72,7 +87,10 @@ We use the data to maintain and recover your account, show and edit your profile
 - **Approved photos (profile and board) are stored in a private space and only served through temporary links** (they expire in one hour) to people signed in to the app; there is no permanent public address. A temporary link someone already had keeps working until it expires.
 - Only you see your swipe decisions; the system uses them to detect mutual interest.
 - Only the two people in a match see their conversation.
-- Operators with administrative access and providers may access data to the extent necessary to provide the service. Chat is stored in the database and does not have end-to-end encryption.
+- The name, description, profiles a group is looking for and the public profiles of its current members can be seen by people with an account who use the Groups deck (for example, to decide whether the group interests them).
+- Only group members see their group chat and the internal membership data.
+- If there is a block between you and a member of a group, that group does not appear in your deck; the admin does not see candidates blocked with any member; and in the group chat you do not see messages from someone you have blocked.
+- Operators with administrative access and providers may access data to the extent necessary to provide the service. Chat (1:1 and group) is stored in the database and does not have end-to-end encryption.
 
 ## 5. External services and transfers
 
@@ -80,7 +98,7 @@ We use the data to maintain and recover your account, show and edit your profile
 - **OpenAI** (processor, USA): automatic review of profile photos and board photos with their text, only if you upload them. It receives the image (and, on the board, the text) from our server. This is a transfer outside the EEA (see below). We use its moderation service (`omni-moderation-latest`). According to OpenAI's public documentation (consulted on 16 Oct 2026), data sent to its API is not used to train its models unless the customer authorises it, and the moderation service does not retain content for abuse monitoring; an image detected as child sexual abuse material may be retained for manual review. These conditions are OpenAI's and may change. OpenAI's data processing agreement (DPA) is part of the conditions governing the use of its API.
 - **Brevo** (processor, Sendinblue SAS, France): sending account confirmation and recovery emails. It receives your email address and the content of that message. Brevo records, without associating it with a contact, whether the email is opened and whether its link is tapped, and the confirmation link passes through a Brevo server before reaching us. We will ask Brevo to turn off this tracking and will update this point when it does.
 - **RevenueCat** (processor, RevenueCat, Inc., USA): shows the Premium plans, validates purchases with Apple or Google and maintains the subscription status. It receives your account identifier and technical data about the device and the store when you open the Premium screen, even if you do not buy, and, if you buy, the purchase data (product, dates, store and country). This is a transfer outside the EEA (see below).
-- **Expo / EAS** (processor): distribution of app updates.
+- **Expo / EAS** (processor, 650 Industries, USA): distribution of app updates and delivery of group chat push notifications. **Apple Push Notification service** and **Google Firebase Cloud Messaging** also act as processors to deliver notifications; they receive the token and notification content (§2), under Standard Contractual Clauses / the EU-US Data Privacy Framework.
 - **GitHub** (independent controller): only if you verify your link.
 - **Google** and **Apple** (independent controllers): if you sign in with their account, and if you subscribe to Premium, because they charge the subscription with your account in their store. Each processes that sign-in and that payment under its own privacy policy.
 
@@ -108,8 +126,10 @@ We keep your data while your account exists. When you delete the account from th
 - **Email fingerprint of a deleted account:** kept while the email remains blocked, with no fixed period, and deleted when we approve an unblock request. You can object by writing to privacidad@getcofounder.app (§8).
 - **Unblock requests:** the email and the reason are kept while we review the request and, afterwards, as a record of the decision. They are not currently deleted automatically; you can ask us to delete them at privacidad@getcofounder.app.
 - **Subscription status:** while the account exists; it is deleted with it. Purchase records are kept by Apple or Google and RevenueCat under their own policies and legal obligations. Deleting the account does not cancel the subscription in the store.
+- **Group membership and group swipes:** while the account and the group exist. If you leave, are removed or delete your account, your membership and swipes with that group are deleted (prior likes between you and the group become a permanent pass so you do not rejoin on your own). If the admin deletes their account or leaves, leadership passes to the longest-standing member; if the group is empty, the group and its chat are deleted.
+- **Group chat messages:** while the group exists; they are deleted with the group or when the associated accounts are deleted under the service's deletion rules.
 
-Deleting an account also deletes its matches and the messages in those conversations, including those written by the other person.
+Deleting an account also deletes its matches and the messages in those conversations (including those written by the other person), its group membership and group swipes, and applies the leadership or group deletion rule if the group was left empty.
 
 Signing out or uninstalling the app does not delete data from the server. Signing out can make an account without a confirmed email unrecoverable.
 
@@ -131,8 +151,8 @@ People aged 16 and 17 are minors and may use the app. Their profile, like anyone
 
 ## 10. Security, moderation and changes
 
-The server applies access controls by account and by membership of a match. Connections with our providers use TLS. We do not promise end-to-end encryption or security certifications.
+The server applies access controls by account, by membership of a match and by membership of a group. Real-time group chat communication is authorised only for members. Connections with our providers use TLS. We do not promise end-to-end encryption or security certifications.
 
-You can **block and report** another person from the app. We review reports and act on content or accounts that breach the [community guidelines](https://getcofounder.app/normas) and the [terms of use](https://getcofounder.app/terminos). Our child safety standards are at https://getcofounder.app/seguridad-infantil.
+You can **block and report** another person from the app. You can also block or report a group (the report is filed against the admin) and report group chat messages. We review reports and act on content or accounts that breach the [community guidelines](https://getcofounder.app/normas) and the [terms of use](https://getcofounder.app/terminos). Our child safety standards are at https://getcofounder.app/seguridad-infantil.
 
 If we change this policy in a significant way, we will notify you in the app and, if you have an email, by email, at least 30 days before it takes effect.

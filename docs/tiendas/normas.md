@@ -1,12 +1,14 @@
 # Normas de la comunidad de cofounder
 
+> Revisada el 9 de noviembre de 2026 (versión 1.2): amplía las normas a Grupos y su chat; TERMS_VERSION = 2026-11-09.
+>
 > Documento redactado el 14 de octubre de 2026 a partir de las normas que ya publicaba la web. La versión y la fecha son las que registrará la aceptación dentro de la app.
 
-**Versión:** 1.1
+**Versión:** 1.2
 
-**Fecha de la versión:** 18 de octubre de 2026
+**Fecha de la versión:** 9 de noviembre de 2026
 
-cofounder conecta a personas para valorar si pueden fundar algo juntas. Para que sea un sitio seguro, estas normas valen en perfiles, fotos, tablones, respuestas, enlaces y mensajes. Forman parte de los [términos de uso](https://getcofounder.app/terminos).
+cofounder conecta a personas para valorar si pueden fundar algo juntas. Para que sea un sitio seguro, estas normas valen en perfiles, fotos, tablones, respuestas, enlaces y mensajes, nombres y descripciones de grupos, perfiles que busca un grupo y mensajes del chat de grupo. Forman parte de los [términos de uso](https://getcofounder.app/terminos).
 
 ## Tolerancia cero
 
@@ -42,7 +44,7 @@ Tolerancia cero con el abuso y la explotación sexual infantil (CSAE). Cualquier
 
 ## Cómo bloquear y reportar
 
-Desde el perfil de cualquier persona, en el deck o en el chat, puedes **bloquearla** (deja de poder verte y escribirte) o **reportarla**, eligiendo un motivo y, si quieres, añadiendo un texto. En el chat también puedes reportar un mensaje concreto. También puedes escribirnos a soporte@getcofounder.app.
+Desde el perfil de cualquier persona, en el deck o en el chat, puedes **bloquearla** (deja de poder verte y escribirte) o **reportarla**, eligiendo un motivo y, si quieres, añadiendo un texto. En el chat también puedes reportar un mensaje concreto. También puedes bloquear o denunciar un grupo y reportar un mensaje del chat de grupo. También puedes escribirnos a soporte@getcofounder.app.
 
 ## Qué hacemos con un reporte
 
@@ -57,6 +59,7 @@ Si estás en peligro inmediato, llama al 112. Si eres menor y necesitas ayuda, e
 
 Nota editorial, a retirar del texto publicado:
 
+- 9-nov-2026: versión 1.2, añade nombres, descripciones y perfiles buscados de Grupos, bloqueo/denuncia de grupo y reporte de mensajes del chat de grupo; acompaña a Privacidad v1.7 y Términos v1.5, TERMS_VERSION = 2026-11-09.
 - Los plazos de 72 h y 24 h son un compromiso operativo del responsable (D11), no una regla del código. La conservación de 12 meses sí la impone `purge_old_user_reports()`.
 - Reportar existe para perfiles (`report_profile`) y, desde el 14-oct, para un mensaje concreto (`report_message`, `message-report-panel.tsx`).
 - El bloqueo funciona en las dos direcciones: comprobado en `has_profile_block` (20261009224000).

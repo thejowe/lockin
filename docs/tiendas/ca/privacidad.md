@@ -3,7 +3,7 @@
 # Política de privacitat de cofounder
 
 
-**Versió:** 1.6.
+**Versió:** 1.7.
 
 **Entrada en vigor:** 9 de novembre de 2026.
 
@@ -45,6 +45,21 @@ La ubicació s'escriu com a text; l'app no fa servir GPS.
 
 Desem les teves decisions en lliscar (t'interessa o passes), l'hora de cada like i Super Like i els Boost que activis (per aplicar els límits diaris i setmanals), els matches mutus i els missatges de text del xat, amb els seus participants i dates. També desem els bloquejos i les denúncies que facis o rebis: qui bloqueja o denuncia, a qui, el motiu triat, el text opcional que afegeixis (fins a 500 caràcters) i la data (vegeu §7). Els bloquejos són visibles només per a qui bloqueja; les denúncies no les veu cap altra persona de l'app.
 
+### Grups
+
+Si crees o t'uneixes a un grup, tractem a més:
+
+- **Dades del grup:** nom, descripció o projecte, qui és la persona administradora, data de creació i aforament (màxim 6 persones).
+- **Perfils que busca el grup:** les especialitats i el nombre de places obertes o cobertes que defineix la persona administradora (no és una oferta de feina).
+- **Pertinença:** qui forma part del grup, quin perfil cobreix dins del grup i la data d'entrada.
+- **Swipes de grup:** si fas like o passes a un grup, i si la persona administradora fa like o passa a una persona candidata (lligat al perfil que cobriria).
+- **Missatges del xat de grup:** el text, qui l'envia, el grup i les dates. Els veuen totes les persones membres del grup. Hi ha un filtre bàsic de contingut al client i pots denunciar un missatge concret.
+- **Bloquejos i denúncies de grup:** si bloqueges un grup (queda com a «passar» definitiu i es bloqueja la persona administradora) o el denuncies (la denúncia es registra contra la persona administradora, amb el grup anotat).
+
+La part pública que pot veure qui busca grup (nom, descripció, perfils buscats i perfils públics dels membres actuals) s'exposa només a través de les funcions del deck, no com a lectura lliure de les taules internes. Les dades internes del grup (inclosa la pertinença detallada i el xat) només són accessibles a qui en són membres, segons els controls del servidor.
+
+**Token de notificacions push:** si permets les notificacions, desem un identificador tècnic del teu dispositiu (token d'Expo, que fa servir Apple Push Notification service o Firebase Cloud Messaging de Google) per avisar-te de missatges nous del xat de grup. L'avís mostra el nom del grup com a títol i el nom del remitent (si està disponible) amb un fragment del missatge de fins a 140 caràcters com a cos. Base jurídica: execució del contracte. L'esborrem quan tanques la sessió, desactives les notificacions o elimines el compte. Encarregats: Expo (650 Industries, EUA), Apple i Google, amb clàusules contractuals tipus / Marc de Privadesa de Dades UE-EUA.
+
 ### La teva subscripció (opcional)
 
 Si contractes cofounder Premium, desem l'estat de la teva subscripció: el producte (mensual o anual), la botiga i la data fins a la qual està pagada, amb la data de l'última actualització. Per ensenyar-te els plans i validar la compra fem servir **RevenueCat**, que t'identifica amb el mateix identificador de compte de l'app des que obres la pantalla de Premium, tant si compres com si no. El pagament el cobren Apple o Google: no rebem ni desem les dades de la teva targeta ni del teu mitjà de pagament.
@@ -59,9 +74,9 @@ Els serveis d'autenticació, base de dades, emmagatzematge i actualitzacions reb
 
 ## 3. Per a què fem servir les dades i amb quina base jurídica
 
-Fem servir les dades per mantenir i recuperar el teu compte, mostrar i editar el teu perfil, mostrar-te perfils, resoldre els interessos mutus, permetre el xat amb els teus matches, verificar el teu enllaç de GitHub, permetre l'accés amb Google o Apple, revisar les fotos de perfil i del tauler, atendre bloquejos i denúncies, activar Premium si el contractes i servir actualitzacions de l'app. No fem servir SDK de publicitat ni analítica comercial.
+Fem servir les dades per mantenir i recuperar el teu compte, mostrar i editar el teu perfil, mostrar-te perfils, resoldre els interessos mutus, permetre el xat amb els teus matches, crear i unir-te a grups, conversar al xat de grup, verificar el teu enllaç de GitHub, permetre l'accés amb Google o Apple, revisar les fotos de perfil i del tauler, atendre bloquejos i denúncies, activar Premium si el contractes i servir actualitzacions de l'app. No fem servir SDK de publicitat ni analítica comercial.
 
-- **Execució del servei que sol·licites** (art. 6.1.b RGPD): compte, perfil, swipes, matches i missatges, la subscripció Premium si la contractes i la sol·licitud de desbloqueig si l'envies.
+- **Execució del servei que sol·licites** (art. 6.1.b RGPD): compte, perfil, swipes, matches i missatges (inclosos els del xat de grup), pertinença a grups i swipes de grup, la subscripció Premium si la contractes i la sol·licitud de desbloqueig si l'envies.
 - **Consentiment** (art. 6.1.a): telèfon, foto de perfil, fotos del tauler, verificació de GitHub i accés amb Google o Apple, tots opcionals. El pots retirar traient el telèfon o les fotos, desvinculant GitHub o eliminant el compte.
 - **Interès legítim** (art. 6.1.f): seguretat, prevenció d'abusos (inclòs impedir que es reutilitzi el correu d'un compte eliminat), revisió de fotos i de denúncies i operació tècnica.
 - **Obligació legal** (art. 6.1.c): atendre requeriments de les autoritats.
@@ -72,7 +87,10 @@ Fem servir les dades per mantenir i recuperar el teu compte, mostrar i editar el
 - **Les fotos aprovades (de perfil i del tauler) es desen en un espai privat i només se serveixen amb enllaços temporals** (caduquen en una hora) a les persones amb sessió iniciada a l'app; no hi ha una adreça pública permanent. Un enllaç temporal que algú ja tingués continua funcionant fins que caduqui.
 - Només tu veus les teves decisions en lliscar; el sistema les fa servir per detectar l'interès mutu.
 - Només les dues persones d'un match veuen la seva conversa.
-- Els operadors amb accés administratiu i els proveïdors poden accedir a dades en la mesura necessària per prestar el servei. El xat es desa a la base de dades i no té xifratge d'extrem a extrem.
+- El nom, la descripció, els perfils que busca un grup i els perfils públics dels seus membres actuals els poden veure les persones amb compte que fan servir el deck de Grups (per exemple, per decidir si els interessa el grup).
+- Només les persones membres d'un grup veuen el seu xat de grup i les dades internes de pertinença.
+- Si hi ha un bloqueig entre tu i un membre d'un grup, aquest grup no et surt al deck; la persona administradora no veu candidatures bloquejades amb qualsevol membre; i al xat de grup no veus els missatges de qui has bloquejat.
+- Els operadors amb accés administratiu i els proveïdors poden accedir a dades en la mesura necessària per prestar el servei. El xat (1:1 i de grup) es desa a la base de dades i no té xifratge d'extrem a extrem.
 
 ## 5. Serveis externs i transferències
 
@@ -80,7 +98,7 @@ Fem servir les dades per mantenir i recuperar el teu compte, mostrar i editar el
 - **OpenAI** (encarregat, EUA): revisió automàtica de les fotos de perfil i de les fotos del tauler amb el seu text, només si les puges. Rep la imatge (i, al tauler, el text) des del nostre servidor. És una transferència fora de l'EEE (vegeu més avall). Fem servir el seu servei de moderació (`omni-moderation-latest`). Segons la documentació pública d'OpenAI (consultada el 16-oct-2026), les dades enviades a la seva API no es fan servir per entrenar els seus models llevat que el client ho autoritzi, i el servei de moderació no conserva el contingut per a monitoratge d'abús; una imatge que es detecti com a material d'abús sexual infantil es pot conservar per a revisió manual. Aquestes condicions són les d'OpenAI i poden canviar. L'acord de tractament de dades (DPA) d'OpenAI forma part de les condicions que regeixen l'ús de la seva API.
 - **Brevo** (encarregat, Sendinblue SAS, França): enviament dels correus de confirmació i recuperació de compte. Rep la teva adreça de correu i el contingut d'aquest missatge. Brevo registra, sense associar-ho a un contacte, si el correu s'obre i si es prem el seu enllaç, i l'enllaç de confirmació passa per un servidor de Brevo abans d'arribar a nosaltres. Demanarem a Brevo que desactivi aquest seguiment i actualitzarem aquest punt quan ho faci.
 - **RevenueCat** (encarregat, RevenueCat, Inc., EUA): mostra els plans de Premium, valida les compres amb Apple o Google i manté l'estat de la subscripció. Rep el teu identificador de compte i dades tècniques del dispositiu i de la botiga quan obres la pantalla de Premium, encara que no compris, i, si compres, les dades de la compra (producte, dates, botiga i país). És una transferència fora de l'EEE (vegeu més avall).
-- **Expo / EAS** (encarregat): distribució d'actualitzacions de l'app.
+- **Expo / EAS** (encarregat, 650 Industries, EUA): distribució d'actualitzacions de l'app i enviament de notificacions push del xat de grup. Per lliurar els avisos intervenen també **Apple Push Notification service** i **Firebase Cloud Messaging de Google** com a encarregats; reben el token i el contingut de l'avís (§2), amb clàusules contractuals tipus / Marc de Privadesa de Dades UE-EUA.
 - **GitHub** (responsable independent): només si verifiques el teu enllaç.
 - **Google** i **Apple** (responsables independents): si entres amb el seu compte, i si contractes Premium, perquè cobren la subscripció amb el teu compte de la seva botiga. Cadascun tracta aquest inici de sessió i aquest pagament segons la seva pròpia política de privacitat.
 
@@ -108,8 +126,10 @@ Conservem les teves dades mentre existeixi el teu compte. En eliminar el compte 
 - **Empremta del correu d'un compte eliminat:** es conserva mentre el correu continuï bloquejat, sense termini fix, i s'esborra quan aprovem una sol·licitud de desbloqueig. T'hi pots oposar escrivint a privacidad@getcofounder.app (§8).
 - **Sol·licituds de desbloqueig:** el correu i el motiu es conserven mentre revisem la sol·licitud i, després, com a registre de la decisió. Ara com ara no s'esborren automàticament; pots demanar que les esborrem a privacidad@getcofounder.app.
 - **Estat de la subscripció:** mentre existeixi el compte; s'esborra amb ell. Els registres de la compra els conserven Apple o Google i RevenueCat segons les seves pròpies polítiques i obligacions legals. Eliminar el compte no cancel·la la subscripció a la botiga.
+- **Pertinença a grups i swipes de grup:** mentre existeixin el compte i el grup. Si surts, t'expulsen o elimines el compte, s'esborren la teva pertinença i els teus swipes amb aquest grup (els likes previs entre tu i el grup es converteixen en «passar» perquè no hi tornis a entrar sol). Si la persona administradora elimina el seu compte o surt, el lideratge passa a la persona membre més antiga; si el grup queda buit, s'esborren el grup i el seu xat.
+- **Missatges del xat de grup:** mentre el grup existeixi; s'esborren amb el grup o en eliminar els comptes associats segons les regles d'esborrat del servei.
 
-En eliminar un compte s'esborren també els seus matches i els missatges d'aquestes converses, inclosos els que va escriure l'altra persona.
+En eliminar un compte s'esborren també els seus matches i els missatges d'aquestes converses (inclosos els que va escriure l'altra persona), la seva pertinença a grups, els seus swipes de grup i s'aplica la regla de lideratge o esborrat del grup si quedava buit.
 
 Tancar la sessió o desinstal·lar l'app no esborra les dades del servidor. Tancar la sessió pot deixar irrecuperable un compte sense correu confirmat.
 
@@ -131,8 +151,8 @@ Les persones de 16 i 17 anys són menors d'edat i poden fer servir l'app. El seu
 
 ## 10. Seguretat, moderació i canvis
 
-El servidor aplica controls d'accés per compte i per pertinença a un match. Les connexions amb els nostres proveïdors fan servir TLS. No prometem xifratge d'extrem a extrem ni certificacions de seguretat.
+El servidor aplica controls d'accés per compte, per pertinença a un match i per pertinença a un grup. La comunicació en temps real del xat de grup només s'autoritza a les persones membres. Les connexions amb els nostres proveïdors fan servir TLS. No prometem xifratge d'extrem a extrem ni certificacions de seguretat.
 
-Pots **bloquejar i denunciar** una altra persona des de l'app. Revisem les denúncies i actuem sobre el contingut o els comptes que incompleixin les [normes de la comunitat](https://getcofounder.app/normas) i els [termes d'ús](https://getcofounder.app/terminos). Els nostres estàndards de seguretat infantil són a https://getcofounder.app/seguridad-infantil.
+Pots **bloquejar i denunciar** una altra persona des de l'app. També pots bloquejar o denunciar un grup (la denúncia es registra contra la persona administradora) i denunciar missatges del xat de grup. Revisem les denúncies i actuem sobre el contingut o els comptes que incompleixin les [normes de la comunitat](https://getcofounder.app/normas) i els [termes d'ús](https://getcofounder.app/terminos). Els nostres estàndards de seguretat infantil són a https://getcofounder.app/seguridad-infantil.
 
 Si canviem aquesta política de manera rellevant, ho avisarem a l'app i, si tens correu, per correu, almenys 30 dies abans que entri en vigor.

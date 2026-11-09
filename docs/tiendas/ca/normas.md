@@ -3,11 +3,11 @@
 # Normes de la comunitat de cofounder
 
 
-**Versió:** 1.1
+**Versió:** 1.2
 
-**Data de la versió:** 18 d'octubre de 2026
+**Data de la versió:** 9 de novembre de 2026
 
-cofounder connecta persones per valorar si poden fundar alguna cosa juntes. Perquè sigui un lloc segur, aquestes normes valen en perfils, fotos, taulers, respostes, enllaços i missatges. Formen part dels [termes d'ús](https://getcofounder.app/terminos).
+cofounder connecta persones per valorar si poden fundar alguna cosa juntes. Perquè sigui un lloc segur, aquestes normes valen en perfils, fotos, taulers, respostes, enllaços i missatges, noms i descripcions de grups, perfils que busca un grup i missatges del xat de grup. Formen part dels [termes d'ús](https://getcofounder.app/terminos).
 
 ## Tolerància zero
 
@@ -43,7 +43,7 @@ Tolerància zero amb l'abús i l'explotació sexual infantil (CSAE). Qualsevol c
 
 ## Com bloquejar i denunciar
 
-Des del perfil de qualsevol persona, al deck o al xat, la pots **bloquejar** (deixa de poder-te veure i escriure) o **denunciar**, triant un motiu i, si vols, afegint un text. Al xat també pots denunciar un missatge concret. També ens pots escriure a soporte@getcofounder.app.
+Des del perfil de qualsevol persona, al deck o al xat, la pots **bloquejar** (deixa de poder-te veure i escriure) o **denunciar**, triant un motiu i, si vols, afegint un text. Al xat també pots denunciar un missatge concret. També pots bloquejar o denunciar un grup i denunciar un missatge del xat de grup. També ens pots escriure a soporte@getcofounder.app.
 
 ## Què fem amb una denúncia
 

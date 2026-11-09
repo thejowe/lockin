@@ -2,6 +2,8 @@
 
 Revisada el 15 de octubre de 2026 contra el binario final tras T5 (solo búsqueda de cofundador; Lock-In fuera del binario). Copiar únicamente el contenido de cada campo.
 
+Actualizada el 9 de noviembre de 2026 con Grupos, chat de grupo y notificaciones push opcionales; contenido preparado para la build con Grupos.
+
 ## Nombre
 
 cofounder
@@ -31,11 +33,14 @@ Los perfiles aparecen a pantalla completa, uno a uno. Desliza para indicar que t
 MATCH Y CHAT
 Cuando el interés es mutuo, hacéis match y se abre un chat privado entre los dos. Para romper el hielo, la app te sugiere algunas preguntas con las que empezar.
 
+GRUPOS
+Además del match 1:1, puedes crear o unirte a un grupo para complementar perfiles en un proyecto (máximo 6 personas), ver quién forma parte y hablar en un chat de grupo. Aquí nadie contrata a nadie: la relación sigue siendo entre pares.
+
 GITHUB VERIFICADO
 Puedes vincular tu cuenta de GitHub para mostrar «GitHub verificado» en tu perfil. Indica que el enlace de GitHub pertenece a quien lo publica; no verifica la identidad de la persona ni sus conocimientos.
 
 SEGURIDAD Y CONTROL
-Puedes bloquear o reportar a cualquier persona desde la app. Puedes eliminar tu cuenta y tus datos cuando quieras desde Ajustes > Cuenta.
+Puedes bloquear o reportar a cualquier persona desde la app. También puedes bloquear o denunciar un grupo y reportar un mensaje del chat de grupo. Puedes eliminar tu cuenta y tus datos cuando quieras desde Ajustes > Cuenta.
 
 LO QUE NO ES
 cofounder no es una app de citas ni una bolsa de empleo. No ofrece asesoramiento legal ni financiación, ni garantiza resultados: te ayuda a conocer a personas con las que construir; lo que hagáis depende de vosotros.
@@ -65,13 +70,13 @@ Principal: **Redes sociales (Social Networking)** (D07). Secundaria: **Negocios 
 
 ## Clasificación de edad
 
-Edad mínima de uso: 16 años (D06), autodeclarada. En el cuestionario de App Store Connect declarar: contenido generado por usuarios (perfiles, fotos, respuestas y chat 1:1), mensajería entre usuarios, sin publicidad, apuestas ni acceso web sin restricciones. Desde la versión con Premium sí hay compras dentro de la app (suscripción); no cambia la declaración de edad. No reducir la clasificación que calcule Apple; si es inferior a 16, elevarla.
+Edad mínima de uso: 16 años (D06), autodeclarada. En el cuestionario de App Store Connect declarar: contenido generado por usuarios (perfiles, fotos, respuestas, grupos y chat 1:1 y de grupo), mensajería entre usuarios, sin publicidad, apuestas ni acceso web sin restricciones. Desde la versión con Premium sí hay compras dentro de la app (suscripción); no cambia la declaración de edad. No reducir la clasificación que calcule Apple; si es inferior a 16, elevarla.
 
 | Capacidad | Esta versión |
 | --- | --- |
-| Contenido generado por usuarios | Sí: perfil, foto opcional (moderada antes de publicarse), respuestas breves y mensajes |
-| Mensajería / chat | Sí, 1:1 tras match mutuo |
-| Bloquear / reportar | Sí: perfiles y mensajes concretos (confirmar en la build) |
+| Contenido generado por usuarios | Sí: perfil, foto opcional (moderada antes de publicarse), respuestas breves, nombres y descripciones de grupos, perfiles buscados y mensajes |
+| Mensajería / chat | Sí, 1:1 tras match mutuo y chat de grupo entre miembros |
+| Bloquear / reportar | Sí: perfiles, bloqueo/denuncia de grupos y mensajes concretos de chat 1:1 y de grupo (confirmar en la build) |
 | Filtro de contenido | Sí: filtro básico de texto en perfil y chat, más moderación de fotos |
 | Aceptación de Términos y Normas | Sí, obligatoria antes de publicar |
 | Publicidad / apuestas | No |
@@ -85,7 +90,7 @@ Edad mínima de uso: 16 años (D06), autodeclarada. En el cuestionario de App St
 | Nombre | 9 caracteres | 30 |
 | Subtítulo | 26 caracteres | 30 |
 | Texto promocional | 142 caracteres | 170 |
-| Descripción | 2199 caracteres | 4000 |
+| Descripción | 2496 caracteres | 4000 |
 | Palabras clave | 99 bytes | 100 |
 
 Las palabras clave no repiten el nombre ni la categoría (Apple ya los indexa) y no usan nombres de terceros salvo «github», que describe una función real (GitHub verificado). Bundle ID: `app.cofounder.mobile`; versión 1.0.0.
@@ -97,30 +102,38 @@ Texto para pegar en App Store Connect (en inglés, el revisor lo lee en ese idio
 ```
 cofounder is a peer-to-peer app for finding a startup co-founder. Users create a
 profile, swipe through other profiles, and chat 1:1 after a mutual match.
+Users can also create or join groups of up to 6 people with a group chat.
 
 HOW TO TEST
 1. Sign in with the demo account below (or create an account; email is optional).
 2. Accept the Terms of Use and Community Guidelines when prompted.
 3. Open the Discover tab to see profiles, swipe to like/pass; the demo account
    already has a match with a chat in the Matches tab.
-4. Settings > Account: Delete my account (in-app account deletion, Guideline 5.1.1(v)).
+4. Discover > Groups: create a group with sought profiles, or like a group;
+   a mutual like with its admin adds you to the group chat.
+5. Settings > Account: Delete my account (in-app account deletion, Guideline 5.1.1(v)).
 
 DEMO ACCOUNT
 [cuenta de prueba: pendiente]
 
 USER-GENERATED CONTENT (Guideline 1.2)
 - Terms and Community Guidelines must be accepted (versioned, with date) before
-  publishing content or chatting; links to them are in Profile.
+  publishing content or chatting; links to them are in Settings.
 - Report: any profile (Discover/chat safety panel) and any individual message
-  (message report panel in the chat). Reports go to a private table reviewed
+  (message report panel in 1:1 and group chat). Groups can also be reported;
+  the report is filed against the admin, with the group noted. Reports go to a private table reviewed
   by the operator; target response time is 24 h for severe content and 72 h otherwise.
 - Block: any user, from Discover or chat; blocking is mutual and immediate.
+  Blocking a group permanently passes on it and blocks its admin.
 - Filter: a basic objectionable-text filter (insults, threats, explicit sexual
-  content; Spanish and English) blocks submission of profile text and messages;
+  content; Spanish and English) blocks submission of profile text and messages
+  (including group chat);
   profile photos are moderated server-side with OpenAI's moderation API and are
   only published after approval (fail-closed).
 - Account deletion: Settings > Account > Delete my account removes profile,
-  matches, messages and photo.
+  matches, messages, photo, group membership, group swipes and push tokens.
+  If the admin leaves or deletes their account, the longest-standing member
+  becomes admin; an empty group and its chat are deleted.
 - Contact: soporte@getcofounder.app. Child-safety standards:
   https://getcofounder.app/seguridad-infantil
 
@@ -135,7 +148,10 @@ SUBSCRIPTION (Guideline 3.1.2)
 
 PERMISSIONS
 - Camera / photo library: only to take or choose the optional profile photo.
-  No microphone, no location, no contacts, no push notifications, no tracking.
+  No microphone, no location, no contacts, no tracking.
+- Optional push notifications for group chat: permission is requested when
+  joining a group or opening its chat. Title: group name; body: sender name
+  (if available) and a message snippet of up to 140 characters. Delivered via Expo/APNs/FCM.
 - Encryption: standard HTTPS/TLS only (ITSAppUsesNonExemptEncryption = false).
 - Sign in with GitHub is optional and only used to show a "GitHub verified"
   badge. The app also supports Sign in with Apple, Google, email/password and anonymous accounts, so GitHub
@@ -149,7 +165,8 @@ Minimum age 16, self-declared.
 
 ## Comprobaciones previas al envío (no copiar en la consola)
 
-- **Binario final (T5, `cf18086`):** sin Lock-In, WebRTC, `expo-notifications`, `RECORD_AUDIO` ni `SCHEDULE_EXACT_ALARM`; solo `CAMERA` y galería para la foto de perfil, `expo-secure-store` y `ITSAppUsesNonExemptEncryption=false`. Falta mirar el manifiesto del AAB y el Info.plist generado (T7).
+- **Build con Grupos (9-nov-2026):** sin Lock-In, WebRTC, `RECORD_AUDIO` ni `SCHEDULE_EXACT_ALARM`; cámara y galería para fotos, `expo-secure-store` y `ITSAppUsesNonExemptEncryption=false`. `expo-notifications` vuelve para el chat de grupo: falta build nativa nueva, credenciales APNs/FCM y activación del envío; comprobar el manifiesto del AAB y el Info.plist generado. Ver `docs/plan/todo/grupos.md`.
+- **Grupos:** comprobar chat entre miembros, bloqueo/denuncia del grupo y reporte de un mensaje de grupo; grupos y perfiles buscados son contenido generado por usuarios.
 - **Bloquear, reportar perfiles y mensajes, aceptación de Términos y Normas, filtro, baja de cuenta:** implementados en el código (T3a, T3b). Las migraciones `20261014120000` (aceptación), `20261014130000` (reportar mensaje) y `20261014140000` (limpieza de fotos) están aplicadas en producción desde el 16-oct-2026. Falta probarlo todo contra Supabase real en la build final (T7).
 - **Capturas:** solo pantallas actuales (perfil, deck a pantalla completa, match, chat con sugerencias, GitHub verificado, bloqueo/reporte). Ninguna con temporizador, salas, vídeo o rachas (ya no existen en la app).
 - **Cuenta de revisión:** [cuenta de prueba: pendiente] con perfil completo y al menos un match con chat para que la revisión vea las funciones.
