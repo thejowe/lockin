@@ -62,7 +62,7 @@ describe('quien busca grupo', () => {
 
     expect(screen.getByText('Taller Abierto')).toBeTruthy();
     expect(screen.getByText('2 de 6 miembros')).toBeTruthy();
-    expect(screen.getByText('Tu puesto sería')).toBeTruthy();
+    expect(screen.getByText('Encajas como')).toBeTruthy();
     expect(screen.getByText('✓ Desarrollo')).toBeTruthy();
     expect(screen.getByText('Desarrollo · 2 de 2 libres')).toBeTruthy();
     expect(screen.getByText('Marketing · completo')).toBeTruthy();
@@ -260,7 +260,7 @@ describe('quien administra un grupo', () => {
     const onDeckActive = jest.fn();
     await renderSection(onDeckActive);
 
-    expect(screen.getByText('Reclutando para Mi Equipo')).toBeTruthy();
+    expect(screen.getByText('Buscando gente para Mi Equipo')).toBeTruthy();
     expect(
       screen.getAllByText('Cubriría: Desarrollo', { includeHiddenElements: true }).length
     ).toBe(2);

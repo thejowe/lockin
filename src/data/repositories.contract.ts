@@ -2600,6 +2600,162 @@ function describeSafetyContract(backend: ContractBackend): void {
       return match!.id;
     }
 
+    describe('grupos', () => {
+      // A administra; B y C dominan desarrollo y buscan grupo. Los grupos de
+      // otras pasadas (o, en Supabase, de gente real) pueden salir en los
+      // decks: cada caso mira solo el suyo.
+      const ROLES = [{ specialty: 'dev' as const, slots: 1 }];
+      const DESCRIPTION = 'Un proyecto del contrato con descripción.';
+
+      beforeEach(async () => {
+        await b.profiles.saveCurrent(
+          buildProfileInput({ name: 'Seguridad B', lookingFor: 'par', specialties: ['dev'] })
+        );
+        await c.profiles.saveCurrent(
+          buildProfileInput({ name: 'Seguridad C', lookingFor: 'par', specialties: ['dev'] })
+        );
+      });
+
+      async function createGroup(slots = 1) {
+        const view = await a.groups.create({
+          name: 'Contrato',
+          description: DESCRIPTION,
+          roles: [{ specialty: 'dev', slots }],
+        });
+        return { groupId: view.group.id, roleId: view.roles[0].id };
+      }
+
+      it('like recíproco en los dos órdenes: la persona entra en ese perfil', async () => {
+        const { groupId, roleId } = await createGroup(2);
+        expect((await b.groups.getDeck()).map((card) => card.group.id)).toContain(groupId);
+        expect((await a.groups.getRecruitDeck()).map((entry) => entry.profile.id)).toEqual(
+          expect.arrayContaining([bId, cId])
+        );
+
+        // Primero la persona, después el grupo: el segundo like une.
+        expect(await b.groups.swipeGroup(groupId, 'like')).toEqual({
+          decision: 'like',
+          joined: false,
+        });
+        expect(await a.groups.swipeCandidate(bId, roleId, 'like')).toEqual({
+          decision: 'like',
+          joined: true,
+        });
+        // Primero el grupo, después la persona.
+        expect((await a.groups.swipeCandidate(cId, roleId, 'like')).joined).toBe(false);
+        expect((await c.groups.swipeGroup(groupId, 'like')).joined).toBe(true);
+
+        const mine = await b.groups.getMine();
+        expect(mine?.group.id).toBe(groupId);
+        expect(mine?.isAdmin).toBe(false);
+        expect(mine?.roles[0]).toMatchObject({ slots: 2, filled: 2 });
+        expect(mine?.members.map((entry) => entry.member.userId)).toEqual([aId, bId, cId]);
+        expect(mine?.members.find((entry) => entry.member.userId === bId)?.member.roleId).toBe(
+          roleId
+        );
+        // Ya dentro, el chat es de los tres.
+        await b.groups.sendMessage(groupId, 'Hola equipo');
+        expect((await c.groups.listMessages(groupId)).map((message) => message.body)).toEqual([
+          'Hola equipo',
+        ]);
+      });
+
+      it('la última plaza no se da dos veces, y nadie entra en dos grupos', async () => {
+        const { groupId, roleId } = await createGroup(1);
+        await b.groups.swipeGroup(groupId, 'like');
+        await c.groups.swipeGroup(groupId, 'like');
+
+        const decisions = await Promise.all([
+          a.groups.swipeCandidate(bId, roleId, 'like'),
+          a.groups.swipeCandidate(cId, roleId, 'like'),
+        ]);
+        expect(decisions.map((decision) => decision.joined).sort()).toEqual([false, true]);
+        const winner = decisions[0].joined ? b : c;
+        const loser = decisions[0].joined ? c : b;
+        expect((await a.groups.getMine())?.roles[0]).toMatchObject({ slots: 1, filled: 1 });
+        expect(await loser.groups.getMine()).toBeNull();
+        expect((await loser.groups.getDeck()).map((card) => card.group.id)).not.toContain(groupId);
+
+        // Quien entró ya tiene grupo: ni crea otro ni desliza.
+        await expect(
+          winner.groups.create({ name: 'Otro', description: DESCRIPTION, roles: ROLES })
+        ).rejects.toMatchObject({ reason: 'already-in-group' });
+        expect(await winner.groups.getDeck()).toEqual([]);
+      });
+
+      it('editar: solo el admin, sin quitar un perfil ocupado', async () => {
+        const { groupId, roleId } = await createGroup(1);
+        await b.groups.swipeGroup(groupId, 'like');
+        await a.groups.swipeCandidate(bId, roleId, 'like');
+
+        await expect(
+          b.groups.update({ name: 'Mío', description: DESCRIPTION, roles: ROLES })
+        ).rejects.toMatchObject({ reason: 'admin-only' });
+        await expect(
+          a.groups.update({
+            name: 'Contrato',
+            description: DESCRIPTION,
+            roles: [{ specialty: 'legal', slots: 1 }],
+          })
+        ).rejects.toMatchObject({ reason: 'invalid' });
+
+        // Ampliar desarrollo reabre plaza: C vuelve a ver el grupo y puede entrar.
+        expect((await c.groups.getDeck()).map((card) => card.group.id)).not.toContain(groupId);
+        const view = await a.groups.update({
+          name: 'Contrato 2',
+          description: DESCRIPTION,
+          roles: [{ specialty: 'dev', slots: 2 }],
+        });
+        expect(view.group.name).toBe('Contrato 2');
+        expect(view.roles).toEqual([expect.objectContaining({ id: roleId, slots: 2, filled: 1 })]);
+        expect((await c.groups.getDeck()).map((card) => card.group.id)).toContain(groupId);
+        await c.groups.swipeGroup(groupId, 'like');
+        expect((await a.groups.swipeCandidate(cId, roleId, 'like')).joined).toBe(true);
+      });
+
+      it('al borrar su cuenta, el admin cede el grupo al miembro más antiguo', async () => {
+        const { groupId, roleId } = await createGroup(2);
+        await b.groups.swipeGroup(groupId, 'like');
+        await a.groups.swipeCandidate(bId, roleId, 'like');
+        await c.groups.swipeGroup(groupId, 'like');
+        await a.groups.swipeCandidate(cId, roleId, 'like');
+
+        await a.session.deleteMyAccount();
+
+        const forB = await b.groups.getMine();
+        expect(forB?.group.adminId).toBe(bId);
+        expect(forB?.isAdmin).toBe(true);
+        expect(forB?.members.map((entry) => entry.member.userId)).toEqual([bId, cId]);
+        expect((await c.groups.getMine())?.group.adminId).toBe(bId);
+        // La plaza de A no existía (el admin no ocupa perfil): siguen 2 de 2.
+        expect(forB?.roles[0]).toMatchObject({ slots: 2, filled: 2 });
+
+        // Y si se borra el nuevo admin, pasa a C; sin nadie, el grupo desaparece.
+        await b.session.deleteMyAccount();
+        expect((await c.groups.getMine())?.group.adminId).toBe(cId);
+        await c.groups.leave();
+        expect(await c.groups.getMine()).toBeNull();
+        expect((await c.groups.getDeck()).map((card) => card.group.id)).not.toContain(groupId);
+      });
+
+      it('expulsar libera la plaza y quien sale no vuelve a entrar solo', async () => {
+        const { groupId, roleId } = await createGroup(1);
+        await b.groups.swipeGroup(groupId, 'like');
+        await a.groups.swipeCandidate(bId, roleId, 'like');
+
+        await expect(c.groups.kick(bId)).rejects.toMatchObject({ reason: 'admin-only' });
+        await a.groups.kick(bId);
+
+        expect(await b.groups.getMine()).toBeNull();
+        expect((await a.groups.getMine())?.roles[0]).toMatchObject({ filled: 0 });
+        expect((await a.groups.getRecruitDeck()).map((entry) => entry.profile.id)).not.toContain(
+          bId
+        );
+        expect((await b.groups.getDeck()).map((card) => card.group.id)).not.toContain(groupId);
+        expect(await b.groups.listMessages(groupId)).toEqual([]);
+      });
+    });
+
     it('A bloquea a B: desaparecen mutuamente del deck', async () => {
       expect((await a.discovery.getDeck()).map((p) => p.id)).toContain(bId);
       expect((await b.discovery.getDeck()).map((p) => p.id)).toContain(aId);

@@ -68,6 +68,7 @@ import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
 
+import { forgetPushToken } from '@/lib/push';
 import { logOutPurchases } from '@/lib/purchases';
 
 import { deleteAvatar } from './avatar';
@@ -973,6 +974,14 @@ export async function signOut(options: SignOutOptions = {}): Promise<void> {
       );
     }
   }
+
+  // Con la sesión aún viva: después ya no se puede decir de quién era el token.
+  await forgetPushToken(async (token) => {
+    const { error: pushError } = await getSupabaseClient().rpc('unregister_push_token', {
+      p_token: token,
+    });
+    if (pushError) throw pushError;
+  });
 
   const auth = getSupabaseClient().auth;
   const { error } = options.scope

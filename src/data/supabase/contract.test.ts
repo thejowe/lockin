@@ -641,11 +641,16 @@ const supabaseBackend: ContractBackend = {
       },
       async close() {
         for (const { client } of actors) {
-          const { error } = await client.rpc('delete_my_account');
-          if (error) throw error;
+          // Un caso puede haber borrado ya la cuenta con `deleteMyAccount()`,
+          // que además cierra la sesión: sin sesión no queda nada que borrar.
+          const { data } = await client.auth.getSession();
+          if (data.session) {
+            const { error } = await client.rpc('delete_my_account');
+            if (error) throw error;
+          }
           await client.removeAllChannels();
           client.realtime.disconnect();
-          await client.auth.signOut();
+          if (data.session) await client.auth.signOut();
         }
       },
     };

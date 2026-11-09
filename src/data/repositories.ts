@@ -19,6 +19,7 @@ import type {
   DecisionResult,
   GroupDeckCard,
   GroupInput,
+  GroupUpdateInput,
   GroupMessage,
   GroupReportInput,
   GroupSwipeResult,
@@ -431,6 +432,11 @@ export interface GroupRepository {
   /** Crea el grupo: el usuario pasa a ser su admin y su primer miembro. */
   create(input: GroupInput): Promise<GroupView>;
   /**
+   * Solo admin: cambia nombre, proyecto y los perfiles que se buscan. No deja
+   * quitar un perfil ocupado ni bajarlo de las personas que ya tiene.
+   */
+  update(input: GroupUpdateInput): Promise<GroupView>;
+  /**
    * Deck de quien busca grupo: grupos no llenos con un puesto abierto que
    * encaja con lo que domina. Vacío si ya está en un grupo.
    */
@@ -464,6 +470,18 @@ export interface GroupRepository {
 }
 
 /**
+ * Tokens push de este dispositivo (ver `src/lib/push.ts` y
+ * `supabase/migrations/20261109150000_group_message_push.sql`). Solo escritura:
+ * nadie lee tokens desde la app.
+ */
+export interface PushRepository {
+  /** Guarda el token de este dispositivo para la cuenta actual (si era de otra, pasa a esta). */
+  register(token: string, platform: 'ios' | 'android'): Promise<void>;
+  /** Este dispositivo deja de recibir los avisos de la cuenta actual. */
+  unregister(token: string): Promise<void>;
+}
+
+/**
  * Punto único de acceso a datos. Cualquier implementación (mock, Supabase)
  * debe devolver un objeto con esta forma exacta.
  */
@@ -478,6 +496,7 @@ export interface Repositories {
   rooms: RoomRepository;
   premium: PremiumRepository;
   groups: GroupRepository;
+  push: PushRepository;
 }
 
 /** Fábrica de una implementación completa. Lo que exporta cada backend. */

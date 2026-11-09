@@ -286,6 +286,37 @@ describe('escrituras', () => {
     expect(view.group.id).toBe('g1');
   });
 
+  it('update llama al RPC con el conjunto de perfiles, avisa y relee el grupo', async () => {
+    const { repository, rpcCalls } = setup();
+    const listener = jest.fn();
+    repository.subscribe(listener);
+
+    const view = await repository.update({
+      name: 'Equipo',
+      description: 'Un proyecto',
+      roles: [{ specialty: 'legal', slots: 1 }],
+    });
+
+    expect(rpcCalls[0]).toEqual([
+      'update_group',
+      {
+        p_name: 'Equipo',
+        p_description: 'Un proyecto',
+        p_roles: [{ specialty: 'legal', slots: 1 }],
+      },
+    ]);
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(view.group.id).toBe('g1');
+
+    const input = { name: 'x', description: 'y', roles: [] };
+    await expect(
+      setup({ update_group: fail('LG004') }).repository.update(input)
+    ).rejects.toMatchObject({ reason: 'admin-only' });
+    await expect(
+      setup({ 'group_members:membership': ok(null) }).repository.update(input)
+    ).rejects.toMatchObject({ reason: 'unavailable' });
+  });
+
   it('create traduce el rechazo y falla si el grupo no se puede leer después', async () => {
     await expect(
       setup({ create_group: fail('LG002') }).repository.create({

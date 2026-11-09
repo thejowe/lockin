@@ -398,6 +398,29 @@ en `src/i18n/en.json` y `ca.json`**, sea cual sea el bloque que lo escriba.
 - Cruza la capa de texto de todos los bloques, sin cambiar lógica ni datos.
 - Depende de: nada abierto. **Del usuario**: revisión legal de las traducciones y aplicar las plantillas de correo.
 
+### 16. `grupos` — Grupos de hasta 6 personas
+
+Entrega: Descubrir tiene dos secciones, «Cofundador» (el deck de siempre) y «Grupos». Un grupo es
+un proyecto con admin y puestos (especialidad + plazas); se entra por like recíproco entre la
+persona y el grupo, y cada grupo tiene su chat. Detalle, decisiones y pendientes en
+`docs/plan/todo/grupos.md`.
+
+- Archivos propios: `src/features/groups/`, `src/app/group/`, `src/data/groups.ts`,
+  `src/data/{mock,supabase}/groups.ts`, `supabase/migrations/20261109130000_groups.sql`,
+  `supabase/groups-embedded.test.mjs`.
+- Ampliación (2026-11-09): edición (`20261109140000_groups_edit.sql`), push
+  (`20261109150000_group_message_push.sql`, `supabase/functions/notify-group-message/`,
+  `src/data/{mock,supabase}/push.ts`, `src/lib/push.ts`, `src/components/push-bridge.tsx`,
+  `src/features/groups/use-group-push.ts`) y sus tests. Cruces declarados: configuración nativa,
+  layout raíz, cierre de sesión, tipos/repositorios y suite de contrato.
+- Toca archivos de `descubrir` (`src/app/(tabs)/discover.tsx`), `chat` (`matches.tsx`) y `datos`
+  (`repositories.ts`, `types.ts`, `mock/store.ts`): no se lanza a la vez que ellos ni que `visual`.
+- Crear grupo es gratis; el flag para cobrarlo está en `src/data/groups.ts` **y** en la función SQL
+  `group_creation_requires_premium()`.
+- Depende de: `descubrir`, `chat`, `datos`. Las tres migraciones del bloque están aplicadas en
+  producción (contenido y permisos verificados el 2026-11-09). Push pendiente de configuración,
+  despliegue de la Edge Function y build nativa; detalle en `todo/grupos.md`.
+
 ## Orden recomendado de trabajo
 
 1. `arquitecto` primero y solo — es la base de todo lo demás.

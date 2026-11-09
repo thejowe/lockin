@@ -43,6 +43,7 @@ test('ve las tablas cerradas a authenticated (solo service role)', () => {
     'boosts',
     'group_swipes',
     'like_events',
+    'push_tokens',
     'revenuecat_events',
     'user_reports',
   ]);

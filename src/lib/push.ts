@@ -1,0 +1,183 @@
+/**
+ * Notificaciones push (hoy, solo las del chat de grupo) sobre `expo-notifications`.
+ *
+ * El módulo se carga de forma perezosa y a prueba de fallos: en web no hay push
+ * de Expo, en Expo Go de Android importar el paquete lanza (ver
+ * `docs/plan/todo/sesiones.md`), y en un simulador no hay token. En todos esos
+ * casos lo de aquí no hace nada y la app sigue igual.
+ *
+ * Tres piezas:
+ *
+ * - `registerForPush`: pide permiso (si se le deja) y guarda el token de Expo
+ *   de este dispositivo en el servidor. Se llama al entrar en un grupo o en su
+ *   chat, no al abrir la app: el permiso se pide cuando se entiende para qué.
+ * - `installPushHandlers`: tocar un aviso abre su chat; con el chat abierto, el
+ *   aviso de ese mismo grupo no se enseña.
+ * - `forgetPushToken`: al cerrar sesión, el dispositivo deja de recibir los
+ *   avisos de esa cuenta.
+ */
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
+import { Platform } from 'react-native';
+
+import { t } from '@/i18n';
+
+type NotificationsModule = typeof import('expo-notifications');
+
+export type PushPlatform = 'ios' | 'android';
+export type PushRegistration = 'registered' | 'denied' | 'unavailable';
+
+/** Canal de Android de los avisos de grupo; el servidor manda `channelId` con este nombre. */
+export const GROUP_CHANNEL_ID = 'group-messages';
+const PUSH_TOKEN_KEY = 'lockin.push-token';
+
+let cached: NotificationsModule | null | undefined;
+let token: string | null = null;
+let activeGroupChat: string | null = null;
+let pending: Promise<unknown> = Promise.resolve();
+
+// Salir espera a cualquier registro en curso antes de dar de baja el token.
+function enqueue<T>(operation: () => Promise<T>): Promise<T> {
+  const result = pending.then(operation);
+  pending = result.catch(() => undefined);
+  return result;
+}
+
+function load(): NotificationsModule | null {
+  if (cached !== undefined) return cached;
+  cached = null;
+  if (Platform.OS !== 'ios' && Platform.OS !== 'android') return cached;
+  if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) return cached;
+  try {
+    // Debe ser síncrono y perezoso: importar el módulo en Expo Go puede lanzar.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    cached = require('expo-notifications') as NotificationsModule;
+  } catch {
+    cached = null;
+  }
+  return cached;
+}
+
+/** Solo para tests: vuelve a decidir si hay módulo y olvida el estado. */
+export function resetPushForTests(): void {
+  cached = undefined;
+  token = null;
+  activeGroupChat = null;
+  pending = Promise.resolve();
+}
+
+/** El token que este dispositivo registró en esta sesión de la app, si hay. */
+export function currentPushToken(): string | null {
+  return token;
+}
+
+/**
+ * Pide permiso (solo con `prompt`) y registra el token con `save`. Nunca lanza:
+ * un fallo aquí no puede romper la pantalla que lo llama.
+ */
+export function registerForPush(
+  save: (token: string, platform: PushPlatform) => Promise<void>,
+  { prompt }: { prompt: boolean }
+): Promise<PushRegistration> {
+  return enqueue(() => register(save, prompt));
+}
+
+async function register(
+  save: (token: string, platform: PushPlatform) => Promise<void>,
+  prompt: boolean
+): Promise<PushRegistration> {
+  const Notifications = load();
+  if (!Notifications) return 'unavailable';
+  try {
+    if (Platform.OS === 'android') {
+      // En Android 13+ el diálogo de permiso solo sale si ya existe un canal.
+      await Notifications.setNotificationChannelAsync(GROUP_CHANNEL_ID, {
+        name: t('Grupos'),
+        importance: Notifications.AndroidImportance.HIGH,
+      });
+    }
+    let { status } = await Notifications.getPermissionsAsync();
+    if (status !== 'granted' && prompt) {
+      ({ status } = await Notifications.requestPermissionsAsync());
+    }
+    if (status !== 'granted') return 'denied';
+
+    // El de `app.json` (`extra.eas.projectId`); en builds de EAS también va en `easConfig`.
+    const projectId = (Constants.expoConfig?.extra?.eas?.projectId ??
+      Constants.easConfig?.projectId) as string | undefined;
+    const { data } = await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : {});
+    // Se conserva entre arranques, incluso si el RPC falla después de escribir.
+    await AsyncStorage.setItem(PUSH_TOKEN_KEY, data);
+    await save(data, Platform.OS as PushPlatform);
+    token = data;
+    return 'registered';
+  } catch (cause) {
+    console.warn('[lockin] no se ha podido activar el aviso push', cause);
+    return 'unavailable';
+  }
+}
+
+/** El chat de grupo que se está viendo: sus avisos no se enseñan encima. */
+export function setActiveGroupChat(groupId: string | null): void {
+  activeGroupChat = groupId;
+}
+
+function routeOf(data: unknown): string | null {
+  const url = (data as { url?: unknown } | null | undefined)?.url;
+  return typeof url === 'string' && /^\/group\/[0-9a-zA-Z-]+$/.test(url) ? url : null;
+}
+
+/**
+ * Engancha cómo se enseñan los avisos y qué hace tocarlos. Devuelve cómo
+ * soltarlo. `open` recibe una ruta interna ya validada (`/group/<id>`).
+ */
+export function installPushHandlers(open: (route: string) => void): () => void {
+  const Notifications = load();
+  if (!Notifications) return () => undefined;
+
+  Notifications.setNotificationHandler({
+    handleNotification: async (notification) => {
+      const groupId = (notification.request.content.data as { groupId?: unknown } | null)?.groupId;
+      const hidden = typeof groupId === 'string' && groupId === activeGroupChat;
+      return {
+        shouldShowBanner: !hidden,
+        shouldShowList: !hidden,
+        shouldPlaySound: !hidden,
+        shouldSetBadge: false,
+      };
+    },
+  });
+
+  const handle = (response: { notification: { request: { content: { data?: unknown } } } }) => {
+    const route = routeOf(response.notification.request.content.data);
+    if (route) open(route);
+  };
+  // Arranque en frío desde un aviso: la respuesta ya estaba ahí antes de montar.
+  const last = Notifications.getLastNotificationResponse();
+  if (last) {
+    handle(last);
+    Notifications.clearLastNotificationResponse();
+  }
+  const subscription = Notifications.addNotificationResponseReceivedListener(handle);
+  return () => {
+    subscription.remove();
+    Notifications.setNotificationHandler(null);
+  };
+}
+
+/** Al cerrar sesión. Mejor esfuerzo: un fallo no impide salir. */
+export function forgetPushToken(remove: (token: string) => Promise<void>): Promise<void> {
+  return enqueue(async () => {
+    try {
+      const current = token ?? (await AsyncStorage.getItem(PUSH_TOKEN_KEY));
+      token = null;
+      if (!current) return;
+      await remove(current);
+      await AsyncStorage.removeItem(PUSH_TOKEN_KEY);
+    } catch (cause) {
+      // Si falla la baja, se conserva para poder reintentar.
+      console.warn('[lockin] no se ha podido olvidar el token push', cause);
+    }
+  });
+}

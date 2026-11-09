@@ -6,7 +6,7 @@
  * sus funciones: si cambia una, cambian las dos.
  */
 
-import type { GroupInput, GroupRole, Specialty } from './types';
+import type { GroupInput, GroupRole, GroupUpdateInput, Specialty } from './types';
 
 /**
  * ¿Crear un grupo exige Premium? Hoy es gratis. Para cobrarlo: `true` aquí (la
@@ -71,6 +71,27 @@ export function firstOpenRoleFor<T extends Pick<GroupRole, 'specialty' | 'slots'
   return roles.find((role) => openSlots(role) > 0 && specialties.includes(role.specialty)) ?? null;
 }
 
+/**
+ * `null` si el grupo se puede dejar así; si no, el error que lanzar. Además de
+ * las reglas de crear: no se quita un perfil que alguien ocupa ni se le dejan
+ * menos plazas que personas dentro (para eso está expulsar).
+ */
+export function validateGroupUpdate(
+  input: GroupUpdateInput,
+  current: {
+    maxMembers: number;
+    roles: readonly Pick<GroupRole, 'specialty' | 'filled'>[];
+  }
+): GroupError | null {
+  const invalid = validateGroupInput({ ...input, maxMembers: current.maxMembers });
+  if (invalid) return invalid;
+  const wanted = new Map(input.roles.map((role) => [role.specialty, role.slots]));
+  if (current.roles.some((role) => role.filled > (wanted.get(role.specialty) ?? 0))) {
+    return new GroupError('invalid', 'Hay personas en ese perfil.');
+  }
+  return null;
+}
+
 /** `null` si el grupo se puede crear; si no, el error que lanzar. */
 export function validateGroupInput(input: GroupInput): GroupError | null {
   const name = input.name.trim();
@@ -90,7 +111,7 @@ export function validateGroupInput(input: GroupInput): GroupError | null {
     return new GroupError('invalid', 'Un grupo tiene entre 2 y 6 miembros.');
   }
   if (input.roles.length < 1 || input.roles.length > GROUP_MAX_ROLE_SLOTS) {
-    return new GroupError('invalid', 'Elige al menos un puesto.');
+    return new GroupError('invalid', 'Elige al menos un perfil.');
   }
   if (new Set(input.roles.map((role) => role.specialty)).size !== input.roles.length) {
     return new GroupError('invalid', 'Hay un puesto repetido.');

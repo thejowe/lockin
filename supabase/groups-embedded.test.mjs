@@ -490,6 +490,175 @@ test('Grupos: crear, decks, unión, salida, liderazgo, chat y denuncias', async 
       })
     );
 
+    await t.test('editar: solo el admin, sin tocar a quien ya está dentro', () =>
+      tx(async () => {
+        const group = await createGroup();
+        await admit(group, ADMIN, DEV1, 'dev');
+        const update = (roles, name = 'Equipo Nuevo', description = DESCRIPTION) =>
+          code(`select public.update_group('${name}', '${description}', '${roles}'::jsonb)`);
+        const roles = async () => {
+          await db.exec('reset role;');
+          return (
+            await db.query(
+              `select specialty, slots, filled from public.group_roles
+               where group_id = '${group}' order by specialty`
+            )
+          ).rows.map((row) => `${row.specialty}:${row.slots}/${row.filled}`);
+        };
+
+        // Quien no administra, no edita.
+        await actingAs(DEV1);
+        assert.equal(await update('[{"specialty":"dev","slots":2}]'), 'LG004');
+
+        await actingAs(ADMIN);
+        // Ni quitar un perfil ocupado ni dejarlo con menos plazas que personas.
+        assert.equal(await update('[{"specialty":"diseno","slots":1}]'), 'LG001');
+        await admit(group, ADMIN, DEV2, 'dev');
+        await actingAs(ADMIN);
+        assert.equal(await update('[{"specialty":"dev","slots":1}]'), 'LG001');
+        // Las mismas reglas que al crear: aforo, repetidos, textos.
+        assert.equal(
+          await update('[{"specialty":"dev","slots":5},{"specialty":"legal","slots":1}]'),
+          'LG001'
+        );
+        assert.equal(
+          await update('[{"specialty":"dev","slots":2},{"specialty":"dev","slots":1}]'),
+          'LG001'
+        );
+        assert.equal(await update('[]'), 'LG001');
+        assert.equal(await update('[{"specialty":"dev","slots":2}]', 'x'), 'LG001');
+        assert.equal(await update('[{"specialty":"dev","slots":2}]', 'Equipo', 'corta'), 'LG001');
+        assert.deepEqual(await roles(), ['diseno:1/0', 'dev:2/2']);
+
+        // El admin le había dado like a la diseñadora para el perfil de diseño…
+        const design = await roleId(group, 'diseno');
+        assert.equal(await swipeCandidate(ADMIN, DESIGNER, design), false);
+
+        // …y ahora quita diseño, amplía desarrollo y abre legal.
+        await actingAs(ADMIN);
+        assert.equal(
+          await update('[{"specialty":"dev","slots":3},{"specialty":"legal","slots":1}]'),
+          'sin error'
+        );
+        assert.deepEqual(await roles(), ['dev:3/2', 'legal:1/0']);
+        await db.exec('reset role;');
+        const row = await one(`select name, description from public.groups where id = '${group}'`);
+        assert.equal(row.name, 'Equipo Nuevo');
+        assert.equal(
+          (
+            await one(
+              `select role_id from public.group_swipes
+               where group_id = '${group}' and user_id = '${DESIGNER}'`
+            )
+          ).role_id,
+          null,
+          'el like del grupo sobrevive sin perfil concreto'
+        );
+        // Sin perfil que encaje, su like de vuelta ya no la mete.
+        assert.equal(await swipeGroup(DESIGNER, group), false);
+        // El perfil nuevo recluta de inmediato.
+        await admit(group, ADMIN, LAWYER, 'legal');
+        assert.deepEqual(await roles(), ['dev:3/2', 'legal:1/1']);
+
+        await actingAs(DEV3);
+        assert.equal(await update('[{"specialty":"dev","slots":2}]'), 'LG004');
+      })
+    );
+
+    await t.test('push: tokens propios, destinatarios sin quien escribe ni bloqueos', () =>
+      tx(async () => {
+        const group = await createGroup();
+        await admit(group, ADMIN, DEV1, 'dev');
+        await admit(group, ADMIN, DESIGNER, 'diseno');
+        const token = (n) => `ExponentPushToken[contrato${n}]`;
+
+        // Cada cual registra su dispositivo; nadie lee la tabla directamente.
+        for (const [uid, n] of [
+          [ADMIN, 1],
+          [DEV1, 2],
+          [DESIGNER, 3],
+        ]) {
+          await actingAs(uid);
+          assert.equal(
+            await code(`select public.register_push_token('${token(n)}', 'ios')`),
+            'sin error'
+          );
+        }
+        assert.equal(await code(`select * from public.push_tokens`), '42501');
+        assert.equal(await code(`select public.register_push_token('basura', 'ios')`), '23514');
+        assert.equal(
+          await code(`select public.register_push_token('${token(9)}', 'web')`),
+          '23514'
+        );
+        // El mismo dispositivo con otra cuenta: el token pasa a ella.
+        await actingAs(DEV1);
+        await one(`select public.register_push_token('${token(3)}', 'android')`);
+        await db.exec('reset role;');
+        assert.equal(
+          (await one(`select user_id from public.push_tokens where token = '${token(3)}'`)).user_id,
+          DEV1
+        );
+        await actingAs(DESIGNER);
+        await one(`select public.register_push_token('${token(3)}', 'ios')`);
+        // Borrar un token ajeno no hace nada.
+        await actingAs(DEV1);
+        await one(`select public.unregister_push_token('${token(3)}')`);
+        await db.exec('reset role;');
+        assert.equal((await one(`select count(*)::int as n from public.push_tokens`)).n, 3);
+
+        // El trigger no estorba: sin Vault ni pg_net, el mensaje se guarda.
+        await actingAs(ADMIN);
+        const message = (
+          await one(
+            `insert into public.group_messages (group_id, sender_id, body)
+             values ('${group}', '${ADMIN}', 'Hola') returning id`
+          )
+        ).id;
+        const targets = async () => {
+          await db.exec('reset role; set local role service_role;');
+          const rows = (
+            await db.query(
+              `select token, group_name, body from public.group_message_push_targets('${message}') order by token`
+            )
+          ).rows;
+          await db.exec('reset role;');
+          return rows;
+        };
+        assert.deepEqual(
+          (await targets()).map((row) => row.token),
+          [token(2), token(3)]
+        );
+        assert.equal((await targets())[0].body, 'Hola');
+
+        // Con un bloqueo entre quien escribe y una destinataria, a ella no le llega.
+        await owner(
+          `insert into public.user_blocks (blocker_id, blocked_id) values ('${DESIGNER}', '${ADMIN}')`
+        );
+        assert.deepEqual(
+          (await targets()).map((row) => row.token),
+          [token(2)]
+        );
+
+        // Solo `service_role` pide destinatarios u olvida tokens.
+        await actingAs(DEV1);
+        assert.equal(
+          await code(`select * from public.group_message_push_targets('${message}')`),
+          '42501'
+        );
+        assert.equal(await code(`select public.forget_push_tokens(array['${token(2)}'])`), '42501');
+        await db.exec('reset role; set local role service_role;');
+        await db.query(`select public.forget_push_tokens(array['${token(2)}'])`);
+        await db.exec('reset role;');
+        assert.equal((await one(`select count(*)::int as n from public.push_tokens`)).n, 2);
+
+        // Al salir, su token sigue (es del dispositivo), pero ya no es destinatario.
+        await actingAs(DEV1);
+        await one(`select public.register_push_token('${token(2)}', 'ios')`);
+        await one(`select public.leave_group()`);
+        assert.deepEqual(await targets(), []);
+      })
+    );
+
     await t.test(
       'el flag de Premium está apagado y la unión toma el cerrojo antes de mirar',
       async () => {

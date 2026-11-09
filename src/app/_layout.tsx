@@ -10,6 +10,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 import { AppIntro } from '@/components/app-intro';
 import { LocaleSwitchVeil } from '@/components/locale-switch-veil';
+import { PushBridge } from '@/components/push-bridge';
 import { BrandFonts } from '@/constants/fonts';
 import { Colors, FontFamily } from '@/constants/theme';
 import { DataProvider } from '@/data';
@@ -112,6 +113,7 @@ export default function RootLayout() {
         <ThemeProvider value={navigationTheme(scheme)}>
           <DataProvider>
             <StatusBar style="light" />
+            <PushBridge />
             {/* La `key` vuelve a montar las pantallas al cambiar de idioma: ver `@/i18n`. */}
             <Stack
               key={locale}
@@ -127,6 +129,10 @@ export default function RootLayout() {
               {/* Grupos: el chat del grupo, «Tu grupo» y el formulario de creación. */}
               <Stack.Screen name="group/[groupId]" options={stackHeader} />
               <Stack.Screen name="group/info" options={{ ...stackHeader, title: t('Tu grupo') }} />
+              <Stack.Screen
+                name="group/edit"
+                options={{ ...stackHeader, title: t('Editar grupo') }}
+              />
               <Stack.Screen
                 name="group/new"
                 options={{ ...stackHeader, title: t('Crear grupo') }}

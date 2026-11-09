@@ -190,6 +190,20 @@ export function createSupabaseGroupRepository(
       return view;
     },
 
+    async update(input) {
+      await deps.getUserId();
+      const { error } = await deps.getClient().rpc('update_group', {
+        p_name: input.name,
+        p_description: input.description,
+        p_roles: input.roles.map((role) => ({ specialty: role.specialty, slots: role.slots })),
+      });
+      if (error) throw toGroupError(error);
+      notify();
+      const view = await repository.getMine();
+      if (!view) throw new GroupError('unavailable', 'El grupo no está disponible');
+      return view;
+    },
+
     async getDeck() {
       await deps.getUserId();
       const { data, error } = await deps.getClient().rpc('group_deck', {});

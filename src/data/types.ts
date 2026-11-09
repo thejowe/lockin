@@ -661,6 +661,17 @@ export interface GroupInput {
   maxMembers?: number;
 }
 
+/**
+ * Datos para editar un grupo que ya existe. `roles` es el conjunto completo
+ * deseado: lo que no venga se quita (solo si nadie lo ocupa) y lo que venga
+ * nuevo se crea vacío. El aforo no cambia.
+ */
+export interface GroupUpdateInput {
+  name: string;
+  description: string;
+  roles: GroupRoleInput[];
+}
+
 /** Resultado de un swipe de grupos. */
 export interface GroupSwipeResult {
   decision: Decision;

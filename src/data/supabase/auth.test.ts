@@ -23,6 +23,8 @@ import {
   unlinkGithubIdentity,
 } from './auth';
 import { getSupabaseClient, peekSupabaseClient } from './client';
+import { registerForPush } from '@/lib/push';
+import * as Notifications from 'expo-notifications';
 
 jest.mock('./client', () => ({ getSupabaseClient: jest.fn(), peekSupabaseClient: jest.fn() }));
 jest.mock('expo-linking', () => ({ createURL: jest.fn() }));
@@ -1119,6 +1121,38 @@ describe('signOut', () => {
     await expect(signOut({ acceptDataLoss: true })).resolves.toBeUndefined();
     expect(auth.getSession).not.toHaveBeenCalled();
     expect(auth.signOut).toHaveBeenCalled();
+  });
+});
+
+describe('signOut y el token push', () => {
+  it('antes de cerrar sesión, el dispositivo deja de recibir los avisos de la cuenta', async () => {
+    jest.mocked(Notifications.getPermissionsAsync).mockResolvedValueOnce({
+      status: 'granted',
+    } as never);
+    await registerForPush(() => Promise.resolve(), { prompt: false });
+    rpc.mockResolvedValueOnce({ data: null, error: null });
+    auth.signOut.mockResolvedValueOnce({ error: null });
+
+    await expect(signOut({ acceptDataLoss: true })).resolves.toBeUndefined();
+
+    expect(rpc).toHaveBeenCalledWith('unregister_push_token', {
+      p_token: 'ExponentPushToken[test]',
+    });
+    expect(rpc.mock.invocationCallOrder[0]).toBeLessThan(auth.signOut.mock.invocationCallOrder[0]);
+  });
+
+  it('si el servidor no lo olvida, la sesión se cierra igual', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    jest.mocked(Notifications.getPermissionsAsync).mockResolvedValueOnce({
+      status: 'granted',
+    } as never);
+    await registerForPush(() => Promise.resolve(), { prompt: false });
+    rpc.mockResolvedValueOnce({ data: null, error: { code: '42501', message: 'x' } });
+    auth.signOut.mockResolvedValueOnce({ error: null });
+
+    await expect(signOut({ acceptDataLoss: true })).resolves.toBeUndefined();
+    expect(auth.signOut).toHaveBeenCalled();
+    warn.mockRestore();
   });
 });
 

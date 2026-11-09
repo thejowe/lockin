@@ -616,6 +616,19 @@ export type Database = {
         };
         Returns: GroupRow;
       };
+      register_push_token: {
+        Args: { p_token: string; p_platform: 'ios' | 'android' };
+        Returns: undefined;
+      };
+      unregister_push_token: { Args: { p_token: string }; Returns: undefined };
+      update_group: {
+        Args: {
+          p_name: string;
+          p_description: string;
+          p_roles: { specialty: Specialty; slots: number }[];
+        };
+        Returns: undefined;
+      };
       /** `true` si con este like la persona ha entrado en el grupo. */
       swipe_group: { Args: { p_group_id: string; p_decision: Decision }; Returns: boolean };
       swipe_group_candidate: {

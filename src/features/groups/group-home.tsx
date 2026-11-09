@@ -81,9 +81,9 @@ export function GroupHome({
                     'Tu sitio queda libre y el grupo pasa a quien lleva más tiempo dentro. Dejarás de ver su chat.'
                   )
                 : t('Eres la única persona del grupo: al salir, el grupo se borra.')
-              : t('Tu plaza queda libre y dejarás de ver el chat del grupo.')
+              : t('Tu sitio queda libre y dejarás de ver el chat del grupo.')
             : t(
-                'Su plaza queda libre y dejará de ver el chat del grupo. No recibirá ningún aviso.'
+                'Su sitio queda libre y dejará de ver el chat del grupo. No recibirá ningún aviso.'
               )}
         </ThemedText>
         {error ? (
@@ -190,7 +190,7 @@ export function GroupHome({
 
       <View style={styles.block}>
         <ThemedText type="label" themeColor="textSecondary">
-          {t('Puestos del grupo')}
+          {t('Perfiles que buscamos')}
         </ThemedText>
         {roles.map((role) => (
           <ThemedText key={role.id} type="small">
@@ -198,6 +198,10 @@ export function GroupHome({
           </ThemedText>
         ))}
       </View>
+
+      {isAdmin ? (
+        <Button label={t('Editar grupo')} variant="secondary" href={'/group/edit' as Href} />
+      ) : null}
 
       <Button
         label={t('Salir del grupo')}

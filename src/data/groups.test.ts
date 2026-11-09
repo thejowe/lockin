@@ -7,6 +7,7 @@ import {
   GroupError,
   openSlots,
   validateGroupInput,
+  validateGroupUpdate,
 } from './groups';
 
 import type { GroupInput } from './types';
@@ -67,6 +68,32 @@ describe('reglas de los grupos', () => {
     const error = validateGroupInput(input(overrides));
     expect(error).toBeInstanceOf(GroupError);
     expect(error?.reason).toBe('invalid');
+  });
+
+  it('al editar, no se quita un perfil ocupado ni se baja de quien ya está', () => {
+    const current = {
+      maxMembers: 6,
+      roles: [
+        { specialty: 'dev' as const, filled: 2 },
+        { specialty: 'diseno' as const, filled: 0 },
+      ],
+    };
+    expect(
+      validateGroupUpdate(input({ roles: [{ specialty: 'dev', slots: 2 }] }), current)
+    ).toBeNull();
+    expect(
+      validateGroupUpdate(input({ roles: [{ specialty: 'dev', slots: 1 }] }), current)?.reason
+    ).toBe('invalid');
+    expect(
+      validateGroupUpdate(input({ roles: [{ specialty: 'diseno', slots: 1 }] }), current)?.reason
+    ).toBe('invalid');
+    // El aforo es el del grupo, no el de un grupo nuevo.
+    expect(
+      validateGroupUpdate(input({ roles: [{ specialty: 'dev', slots: 3 }] }), {
+        ...current,
+        maxMembers: 3,
+      })?.reason
+    ).toBe('invalid');
   });
 
   it('cuenta las plazas libres sin bajar de cero', () => {

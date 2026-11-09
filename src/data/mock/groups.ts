@@ -9,7 +9,7 @@
  * reglas, mismo orden de comprobaciones y mismos códigos (`GroupError.reason`).
  */
 
-import { firstOpenRoleFor, GroupError, validateGroupInput } from '../groups';
+import { firstOpenRoleFor, GroupError, validateGroupInput, validateGroupUpdate } from '../groups';
 import { REPORT_MAX_LENGTH, REPORT_REASONS } from '../types';
 import { defaultMockStore, isBlockedPair, removeMockGroupMember } from './store';
 
@@ -205,6 +205,42 @@ export function createMockGroupRepository(
         roleId: null,
         joinedAt: group.createdAt,
       });
+      changed(group.id);
+      return toView(group);
+    },
+
+    async update(input) {
+      const state = getState();
+      const group = adminGroup();
+      const current = rolesOf(group.id);
+      const invalid = validateGroupUpdate(input, { maxMembers: group.maxMembers, roles: current });
+      if (invalid) throw invalid;
+
+      const wanted = new Map(input.roles.map((role) => [role.specialty, role.slots]));
+      const removed = new Set(
+        current.filter((role) => !wanted.has(role.specialty)).map((role) => role.id)
+      );
+      state.groupRoles = state.groupRoles.filter((role) => !removed.has(role.id));
+      // Como `on delete set null`: el like del grupo sigue, sin perfil concreto.
+      state.groupSwipes.forEach((swipe) => {
+        if (swipe.roleId && removed.has(swipe.roleId)) swipe.roleId = null;
+      });
+      for (const [specialty, slots] of wanted) {
+        const existing = state.groupRoles.find(
+          (role) => role.groupId === group.id && role.specialty === specialty
+        );
+        if (existing) existing.slots = slots;
+        else
+          state.groupRoles.push({
+            id: store.createId('group-role'),
+            groupId: group.id,
+            specialty,
+            slots,
+            filled: 0,
+          });
+      }
+      group.name = input.name.trim();
+      group.description = input.description.trim();
       changed(group.id);
       return toView(group);
     },

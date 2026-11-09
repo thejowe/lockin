@@ -102,7 +102,7 @@ export function GroupCard({
 
         <View style={styles.block}>
           <ThemedText type="label" themeColor="textSecondary">
-            {t('Tu puesto sería')}
+            {t('Encajas como')}
           </ThemedText>
           <View style={styles.chips}>
             <Chip label={`✓ ${specialtyLabel(myRole.specialty)}`} tone="match" />
@@ -111,7 +111,7 @@ export function GroupCard({
 
         <View style={styles.block}>
           <ThemedText type="label" themeColor="textSecondary">
-            {t('Puestos del grupo')}
+            {t('Perfiles que buscamos')}
           </ThemedText>
           {roles.map((role) => (
             <ThemedText key={role.id} type="small">

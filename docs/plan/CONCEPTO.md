@@ -15,6 +15,8 @@ Una app estilo swipe para gente que **no tiene nada construido todavía** —ni 
 
 **Nadie contrata a nadie.** Ambos lados de un match son pares, en igualdad de condiciones. Esto descarta cualquier campo o flujo que huela a "founder busca empleado" dentro del MVP.
 
+> **Matiz desde el 2026-11-09 (decisión del usuario): Grupos.** Un grupo de hasta 6 personas sí tiene admin y puestos con plazas, lo que roza este principio. Se acota así: entrar exige like de los dos lados, el admin solo administra (no «contrata») y la sección Cofundador sigue igual, entre pares. Detalle en `docs/plan/todo/grupos.md`.
+
 ## Modos
 
 - **Modo Par** (cofundador simétrico): dos o más personas en igualdad de condiciones, filtran por skills complementarios + compatibilidad de ambición y estilo de trabajo.

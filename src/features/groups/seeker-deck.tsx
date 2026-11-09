@@ -95,7 +95,7 @@ export function SeekerDeck({
       <MessageState
         title={t('Ningún grupo busca ahora lo que dominas')}
         body={t(
-          'Cuando un grupo abra un puesto que encaje contigo, saldrá aquí. También puedes crear el tuyo.'
+          'Cuando un grupo busque un perfil como el tuyo, saldrá aquí. También puedes crear el tuyo.'
         )}>
         <Button label={t('Crear grupo')} onPress={createGroup} />
         <Button label={t('Volver a comprobar')} variant="secondary" onPress={refresh} />

@@ -11,7 +11,7 @@
  * ofrece volver. Mismas puertas que el chat 1:1: correo confirmado y Términos.
  */
 
-import { Stack, useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { Fragment, useCallback, useMemo, useRef, useState } from 'react';
 import {
   Pressable,
@@ -41,12 +41,13 @@ import {
   isSameDayIso,
   keyboardVerticalOffset,
 } from '@/features/chat';
-import { useGroupConversation } from '@/features/groups';
+import { useGroupConversation, useGroupPush } from '@/features/groups';
 import { RequireVerifiedEmail, TermsAcceptance, useTermsGate } from '@/features/profile';
 import { ObjectionableContentError } from '@/features/safety/content-filter';
 import { ReportForm } from '@/features/safety/report-form';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
+import { setActiveGroupChat } from '@/lib/push';
 
 function GroupChatContent() {
   const theme = useTheme();
@@ -57,6 +58,14 @@ function GroupChatContent() {
 
   const { view, messages, loading, error, sending, sendError, send } =
     useGroupConversation(groupId);
+  useGroupPush(!!view);
+  // Con este chat delante, sus avisos push no se enseñan encima.
+  useFocusEffect(
+    useCallback(() => {
+      setActiveGroupChat(groupId);
+      return () => setActiveGroupChat(null);
+    }, [groupId])
+  );
   const { data: me } = useQuery('profile:current', () => repositories.profiles.getCurrent());
 
   const [draft, setDraft] = useState('');

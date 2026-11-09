@@ -24,6 +24,7 @@ import { t } from '@/i18n';
 import { GroupHome } from './group-home';
 import { RecruitDeck } from './recruit-deck';
 import { SeekerDeck } from './seeker-deck';
+import { useGroupPush } from './use-group-push';
 import { useMyGroup } from './use-my-group';
 
 export type DiscoverSection = 'cofounder' | 'groups';
@@ -77,6 +78,8 @@ export function GroupsSection({
   const mine = useMyGroup();
   const [justJoined, setJustJoined] = useState(false);
   const refreshMine = mine.refresh;
+  // Estar en un grupo es cuando los avisos de su chat tienen sentido.
+  useGroupPush(!!mine.group);
 
   const onJoined = useCallback(() => {
     setJustJoined(true);

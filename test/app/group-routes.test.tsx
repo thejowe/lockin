@@ -7,12 +7,22 @@
  */
 
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { ScrollView } from 'react-native';
+import * as Notifications from 'expo-notifications';
 
 import { TERMS_VERSION } from '@/constants/legal';
-import { GroupError, PremiumRequiredError } from '@/data';
-import { createMockRepositories, defaultMockStore } from '@/data/mock';
+import { DataProvider, GroupError, PremiumRequiredError } from '@/data';
+import { PushBridge } from '@/components/push-bridge';
+import {
+  CURRENT_USER_ID,
+  createMockRepositories,
+  defaultMockStore,
+  mockPushTokens,
+} from '@/data/mock';
+import { resetGroupPushForTests } from '@/features/groups/use-group-push';
 import { buildProfileInput } from '@/data/test-fixtures';
 import { groupErrorMessage, memberRoleLabel } from '@/features/groups';
+import { installPushHandlers, resetPushForTests } from '@/lib/push';
 
 import {
   renderRoute,
@@ -24,12 +34,22 @@ import {
 } from '../routes';
 
 import GroupChatScreen from '../../src/app/group/[groupId]';
+import EditGroupRoute from '../../src/app/group/edit';
 import GroupInfoRoute from '../../src/app/group/info';
 import NewGroupRoute from '../../src/app/group/new';
 
 import type { GroupInput, Specialty } from '@/data';
 
-jest.mock('expo-router', () => require('../routes').expoRouterMock());
+let mockChatFocused = true;
+
+jest.mock('expo-router', () => ({
+  ...jest.requireActual('../routes').expoRouterMock(),
+  useFocusEffect: (effect: () => void | (() => void)) => {
+    const React = jest.requireActual('react');
+    const focused = mockChatFocused;
+    React.useEffect(() => (focused ? effect() : undefined), [effect, focused]);
+  },
+}));
 
 const INPUT: GroupInput = {
   name: 'Mi Equipo',
@@ -55,6 +75,10 @@ async function adminWithMember() {
 
 beforeEach(() => {
   resetRepositories();
+  resetGroupPushForTests();
+  resetPushForTests();
+  mockChatFocused = true;
+  mockPushTokens(defaultMockStore).clear();
   resetRouter();
   setSearchParams({});
 });
@@ -100,7 +124,7 @@ describe('/group/new', () => {
 
     expect(screen.getByText('El nombre necesita entre 2 y 60 caracteres.')).toBeTruthy();
     expect(screen.getByText('Cuenta el proyecto en al menos 10 caracteres.')).toBeTruthy();
-    expect(screen.getByText('Elige al menos un puesto.')).toBeTruthy();
+    expect(screen.getByText('Elige al menos un perfil.')).toBeTruthy();
     expect(create).not.toHaveBeenCalled();
   });
 
@@ -108,22 +132,22 @@ describe('/group/new', () => {
     await withProfile();
     await renderRoute(<NewGroupRoute />);
 
-    await fireEvent.press(screen.getByRole('checkbox', { name: 'Puesto: Desarrollo' }));
-    expect(screen.getByText('1 plaza')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Perfil: Desarrollo' }));
+    expect(screen.getByText('1 persona')).toBeTruthy();
     for (let i = 0; i < 3; i += 1) {
       await fireEvent.press(screen.getByRole('button', { name: 'Sumar' }));
     }
-    expect(screen.getByText('4 plazas')).toBeTruthy();
+    expect(screen.getByText('4 personas')).toBeTruthy();
 
-    await fireEvent.press(screen.getByRole('checkbox', { name: 'Puesto: Diseño' }));
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Perfil: Diseño' }));
     expect(screen.getByText(/Te quedan 0/)).toBeTruthy();
     // Sin sitio, un tercer puesto no se añade.
-    await fireEvent.press(screen.getByRole('checkbox', { name: 'Puesto: Marketing' }));
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Perfil: Marketing' }));
     expect(screen.queryByText('Marketing', { exact: true })).toBeTruthy();
-    expect(screen.getAllByText('1 plaza')).toHaveLength(1);
+    expect(screen.getAllByText('1 persona')).toHaveLength(1);
 
     // Quitar un puesto devuelve su sitio.
-    await fireEvent.press(screen.getByRole('checkbox', { name: 'Puesto: Diseño' }));
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Perfil: Diseño' }));
     expect(screen.getByText(/Te quedan 1/)).toBeTruthy();
   });
 
@@ -131,7 +155,7 @@ describe('/group/new', () => {
     await withProfile();
     await renderRoute(<NewGroupRoute />);
     await fill();
-    await fireEvent.press(screen.getByRole('checkbox', { name: 'Puesto: Desarrollo' }));
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Perfil: Desarrollo' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Sumar' }));
 
     await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
@@ -151,7 +175,7 @@ describe('/group/new', () => {
       .mockRejectedValueOnce(new GroupError('already-in-group', 'ya'));
     await renderRoute(<NewGroupRoute />);
     await fill();
-    await fireEvent.press(screen.getByRole('checkbox', { name: 'Puesto: Desarrollo' }));
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Perfil: Desarrollo' }));
 
     await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
     await waitFor(() => expect(screen.getByText(/Ya estás en un grupo/)).toBeTruthy());
@@ -159,6 +183,88 @@ describe('/group/new', () => {
 
     await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/discover'));
+  });
+});
+
+describe('/group/edit', () => {
+  it('quien no administra no edita, y vuelve', async () => {
+    await withProfile();
+    await repositories.groups.swipeGroup(TALLER, 'like');
+    router.canGoBack.mockReturnValue(false);
+    await renderRoute(<EditGroupRoute />);
+
+    await waitFor(() => expect(screen.getByText('No puedes editar este grupo')).toBeTruthy());
+    await fireEvent.press(screen.getByRole('button', { name: 'Volver' }));
+    expect(router.replace).toHaveBeenCalledWith('/group/info');
+  });
+
+  it('el admin cambia nombre y perfiles; el ocupado no se puede quitar', async () => {
+    await adminWithMember();
+    const update = jest.spyOn(repositories.groups, 'update');
+    await renderRoute(<EditGroupRoute />);
+
+    await waitFor(() =>
+      expect(screen.getByLabelText('Nombre del grupo').props.value).toBe('Mi Equipo')
+    );
+    expect(screen.getByText('Ya hay 1 persona.')).toBeTruthy();
+
+    // Desarrollo tiene a Inés: el chip no se deselecciona y lo explica.
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Perfil: Desarrollo' }));
+    expect(screen.getByText(/En Desarrollo ya hay gente/)).toBeTruthy();
+    expect(
+      screen.getByRole('checkbox', { name: 'Perfil: Desarrollo' }).props.accessibilityState
+    ).toMatchObject({
+      checked: true,
+    });
+
+    await fireEvent.changeText(screen.getByLabelText('Nombre del grupo'), 'Equipo Nuevo');
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Perfil: Legal' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+    await waitFor(() => expect(router.back).toHaveBeenCalled());
+    expect(update).toHaveBeenCalledWith({
+      name: 'Equipo Nuevo',
+      description: INPUT.description,
+      roles: [
+        { specialty: 'dev', slots: 2 },
+        { specialty: 'legal', slots: 1 },
+      ],
+    });
+    const mine = await repositories.groups.getMine();
+    expect(mine?.group.name).toBe('Equipo Nuevo');
+    expect(mine?.roles.map((role) => role.specialty).sort()).toEqual(['dev', 'legal']);
+  });
+
+  it('un perfil libre sí se quita, y un rechazo del servidor se explica', async () => {
+    await adminWithMember();
+    await renderRoute(<EditGroupRoute />);
+    await waitFor(() => expect(screen.getByLabelText('Nombre del grupo')).toBeTruthy());
+
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Perfil: Legal' }));
+    expect(screen.getAllByText('Legal')).toHaveLength(2);
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Perfil: Legal' }));
+    expect(screen.getAllByText('Legal')).toHaveLength(1);
+
+    jest
+      .spyOn(repositories.groups, 'update')
+      .mockRejectedValueOnce(new GroupError('admin-only', ''));
+    await fireEvent.press(screen.getByRole('button', { name: 'Guardar cambios' }));
+    await waitFor(() =>
+      expect(screen.getByText('Solo puede hacerlo quien administra el grupo.')).toBeTruthy()
+    );
+    // Datos que no valen: ni se envía.
+    await fireEvent.changeText(screen.getByLabelText('Nombre del grupo'), 'x');
+    const update = jest.spyOn(repositories.groups, 'update');
+    update.mockClear();
+    await fireEvent.press(screen.getByRole('button', { name: 'Guardar cambios' }));
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it('«Tu grupo» enseña «Editar grupo» solo a quien administra', async () => {
+    await adminWithMember();
+    await renderRoute(<GroupInfoRoute />);
+    await waitFor(() => expect(screen.getByText('Inés Aranda')).toBeTruthy());
+    expect(screen.getByRole('button', { name: 'Editar grupo' })).toBeTruthy();
   });
 });
 
@@ -263,7 +369,7 @@ describe('/group/info', () => {
     expect(screen.queryByText('Expulsar')).toBeNull();
     await fireEvent.press(screen.getByRole('button', { name: 'Salir del grupo' }));
     expect(
-      screen.getByText('Tu plaza queda libre y dejarás de ver el chat del grupo.')
+      screen.getByText('Tu sitio queda libre y dejarás de ver el chat del grupo.')
     ).toBeTruthy();
   });
 });
@@ -377,6 +483,103 @@ describe('/group/[groupId]', () => {
     expect(report).toHaveBeenCalledWith({ messageId: message.id, reason: 'acoso', details: '' });
     await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
     expect(screen.getByText('mensaje raro')).toBeTruthy();
+  });
+
+  it('el hilo baja al final cuando crece, y el alto de la vista se mide una vez', async () => {
+    const scrollToEnd = jest.spyOn(ScrollView.prototype, 'scrollToEnd');
+    await inTaller();
+    await as('seed-marc').groups.sendMessage(TALLER, 'Hola');
+    await renderRoute(<GroupChatScreen />);
+    await waitFor(() => expect(screen.getByText('Hola')).toBeTruthy());
+    scrollToEnd.mockClear();
+
+    await fireEvent(screen.getByText('Hola'), 'contentSizeChange', 320, 900);
+    expect(scrollToEnd).toHaveBeenCalledWith({ animated: true });
+
+    // El layout sube hasta el `KeyboardAvoidingView`; repetir la misma medida no rompe nada.
+    const layout = { nativeEvent: { layout: { x: 0, y: 0, width: 320, height: 640 } } };
+    await fireEvent(screen.getByText('Hola'), 'layout', layout);
+    await fireEvent(screen.getByText('Hola'), 'layout', layout);
+    expect(screen.getByLabelText('Mensaje')).toBeTruthy();
+    scrollToEnd.mockRestore();
+  });
+
+  it('al entrar en el chat pide los avisos y registra este dispositivo', async () => {
+    jest.mocked(Notifications.requestPermissionsAsync).mockClear();
+    jest.mocked(Notifications.requestPermissionsAsync).mockResolvedValueOnce({
+      status: 'granted',
+    } as never);
+    await inTaller();
+    await renderRoute(<GroupChatScreen />);
+
+    await waitFor(() =>
+      expect(mockPushTokens(defaultMockStore).get('ExponentPushToken[test]')).toEqual({
+        userId: CURRENT_USER_ID,
+        platform: 'ios',
+      })
+    );
+    // Una vez por arranque: volver al chat no vuelve a preguntar.
+    await renderRoute(<GroupChatScreen />);
+    expect(Notifications.requestPermissionsAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it('tocar un aviso de grupo abre su chat', async () => {
+    await renderRoute(<PushBridge />);
+    const listener = jest.mocked(Notifications.addNotificationResponseReceivedListener).mock
+      .calls[0][0];
+    listener({
+      notification: { request: { content: { data: { url: `/group/${TALLER}` } } } },
+    } as never);
+    expect(router.push).toHaveBeenCalledWith(`/group/${TALLER}`);
+  });
+
+  it('el chat solo silencia sus avisos mientras tiene el foco', async () => {
+    await inTaller();
+    const uninstall = installPushHandlers(jest.fn());
+    const { handleNotification } = jest
+      .mocked(Notifications.setNotificationHandler)
+      .mock.calls.at(-1)![0]!;
+    const notification = {
+      request: { content: { data: { groupId: TALLER } } },
+    } as unknown as Notifications.Notification;
+
+    await renderRoute(<GroupChatScreen />);
+    expect(await handleNotification(notification)).toMatchObject({ shouldShowBanner: false });
+
+    // La pantalla sigue montada bajo otra ruta de la pila.
+    mockChatFocused = false;
+    await fireEvent.changeText(screen.getByLabelText('Mensaje'), 'borrador');
+    expect(await handleNotification(notification)).toMatchObject({ shouldShowBanner: true });
+    uninstall();
+  });
+
+  it('otra cuenta en el mismo arranque vuelve a registrar el dispositivo sin pedir permiso', async () => {
+    await inTaller();
+    const firstRegister = jest.spyOn(repositories.push, 'register');
+    jest
+      .mocked(Notifications.getPermissionsAsync)
+      .mockResolvedValueOnce({ status: 'granted' } as never);
+    const mounted = await renderRoute(<GroupChatScreen />);
+    await waitFor(() => expect(firstRegister).toHaveBeenCalled());
+    await mounted.unmount();
+
+    jest
+      .mocked(Notifications.getPermissionsAsync)
+      .mockResolvedValueOnce({ status: 'granted' } as never);
+    const other = as('seed-marc');
+    await other.session.acceptTerms(TERMS_VERSION);
+    await other.session.setProfileId('seed-marc');
+    const register = jest.spyOn(other.push, 'register');
+    await renderRoute(
+      <DataProvider value={other}>
+        <GroupChatScreen />
+      </DataProvider>
+    );
+
+    await waitFor(() => expect(register).toHaveBeenCalledWith('ExponentPushToken[test]', 'ios'));
+    expect(mockPushTokens(defaultMockStore).get('ExponentPushToken[test]')?.userId).toBe(
+      'seed-marc'
+    );
   });
 
   it('el mensaje de quien ya salió del grupo se queda, sin su nombre', async () => {

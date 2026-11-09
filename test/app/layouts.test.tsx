@@ -55,6 +55,7 @@ jest.mock('expo-router', () => {
 
   return {
     Stack,
+    useRouter: () => ({ push: jest.fn() }),
     DefaultTheme: { dark: false, colors: { primary: '#000' } },
     DarkTheme: { dark: true, colors: { primary: '#fff' } },
     ThemeProvider: ({ value, children }: { value: unknown; children: React.ReactNode }) => {

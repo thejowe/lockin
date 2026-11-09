@@ -1,5 +1,28 @@
 # TODO maestro — LockIn MVP
 
+## ▶ Nuevo bloque (2026-11-09): Grupos — migraciones verificadas en producción
+
+Descubrir gana la sección «Grupos» (bloque 16 de `PLAN.md`): crear y editar un grupo con perfiles y plazas, decks de reclutamiento y búsqueda, unión por like recíproco, chat, push, salir/expulsar con herencia del admin, reportar y bloquear. Migraciones `20261109130000_groups.sql`, `20261109140000_groups_edit.sql` y `20261109150000_group_message_push.sql` **aplicadas en producción**: historial y contenido cotejados con los archivos locales el 2026-11-09. Detalle y versiones remotas en [`todo/grupos.md`](todo/grupos.md).
+
+- [x] Edición, push, cinco casos de contrato compartidos y textos de perfiles. `test:schema` 239/239;
+  Edge Function 7/7. Contrato mock 5/5; Supabase pendiente de CI.
+- [x] Revisión por Codex del trabajo recibido: tres fallos de push corregidos (reinicio/cierre de
+  sesión, cambio de cuenta y foco del chat), prueba concurrente de última plaza y limpieza del arnés.
+  Prettier y ESLint del alcance en verde.
+- [x] Usuario autoriza aplicar migraciones, commit y push. Las tres migraciones ya constan en
+  producción con el mismo SQL; comprobados RLS, permisos y trigger, sin repetir su aplicación.
+- [ ] `[comprobador]` Recorrido en emulador; build nativa nueva y configuración/despliegue de push.
+- [ ] **P2 de la revisión:** falta consultar los recibos posteriores de Expo para retirar tokens
+  que APNs/FCM den de baja después de aceptar el ticket. Detalle en `todo/grupos.md`.
+- [ ] Privacidad/Términos no cubren el chat de grupo.
+- [ ] **Ojo, comprobaciones globales:** cobertura bajo el suelo; `npm run lint` falla en
+  `premium-badge.tsx` y `tsc` en un artefacto Deno local y la ruta `/unblock` (archivos fuera del bloque).
+  Jest completo: 2179 pasan; cobertura 94,82 / 89,17 / 93,98 / 96,09 %. Resultados y suelos en
+  `todo/grupos.md`; no se han bajado umbrales.
+- [x] **Git:** la prohibición anterior de commitear Grupos queda levantada por la orden del
+  usuario del 2026-11-09. El commit `dd35f15` había incluido parte del bloque; se publica ahora
+  el resto revisado, excluyendo la configuración local de Claude.
+
 ## ▶ Al retomar (2026-11-08): Play Console y RevenueCat de Android listos; faltan testers y validaciones
 
 **Hecho por Brodie en las consolas (lo que no es código; informado por GrokBot, sin verificar por Claude en pantalla):**

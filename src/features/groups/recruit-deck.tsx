@@ -78,7 +78,7 @@ export function RecruitDeck({
     <View style={styles.root}>
       <View style={styles.toolbar}>
         <ThemedText type="small" themeColor="textSecondary" style={styles.hint} numberOfLines={1}>
-          {t('Reclutando para {name}', { name: view.group.name })}
+          {t('Buscando gente para {name}', { name: view.group.name })}
         </ThemedText>
         <Button
           label={t('Tu grupo')}
@@ -112,8 +112,8 @@ export function RecruitDeck({
           title={full ? t('Tu grupo está completo') : t('No queda nadie por ver')}
           body={
             full
-              ? t('Todas las plazas están cubiertas. Ya podéis poneros a construir.')
-              : t('Cuando se apunte alguien que encaje en un puesto abierto, saldrá aquí.')
+              ? t('El grupo está completo. Ya podéis poneros a construir.')
+              : t('Cuando se apunte alguien que encaje con lo que buscáis, saldrá aquí.')
           }>
           <Button label={t('Abrir el chat del grupo')} href={`/group/${view.group.id}` as Href} />
           <Button label={t('Volver a comprobar')} variant="secondary" onPress={refresh} />
