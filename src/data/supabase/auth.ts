@@ -126,6 +126,9 @@ export type AccountErrorReason =
   | 'needs-confirmed-email'
   | 'unrecoverable-account'
   | 'no-session'
+  | 'account-blocked'
+  | 'unblock-pending'
+  | 'not-blocked'
   | 'offline'
   | 'unknown';
 
@@ -161,6 +164,23 @@ function httpStatus(error: unknown): number | undefined {
   return typeof value === 'number' ? value : undefined;
 }
 
+/** Mínimo de caracteres del motivo de una solicitud de desbloqueo (igual que el SQL). */
+export const UNBLOCK_REASON_MIN = 30;
+
+/**
+ * El correo es de una cuenta eliminada (migración 20261109120000): no se puede
+ * volver a usar hasta que se apruebe una solicitud de desbloqueo.
+ */
+function blockedEmailError(cause?: unknown): AccountError {
+  return new AccountError(
+    'account-blocked',
+    t(
+      'La cuenta de ese correo se eliminó y el correo está bloqueado. Para volver a usarlo, solicita el desbloqueo.'
+    ),
+    cause
+  );
+}
+
 /**
  * Traduce un error de GoTrue a un `AccountError`.
  *
@@ -184,9 +204,40 @@ function toAccountError(error: unknown): AccountError {
     );
   }
 
+  // El trigger de correos bloqueados (LI011) corta la creación del usuario o el
+  // vínculo del proveedor, y GoTrue lo devuelve como «Database error …» sin el
+  // código: en la vuelta de Google/Apple/LinkedIn/GitHub solo queda el texto.
+  if (/database error (saving new user|updating user|granting user)/i.test(text)) {
+    return blockedEmailError(error);
+  }
+
   switch (errorField(error, 'code')) {
     case 'LI007':
       return new AccountError('no-session', t('No hay ninguna sesión abierta.'), error);
+    case 'LI011':
+      return blockedEmailError(error);
+    case 'LI012':
+      return new AccountError(
+        'not-blocked',
+        t('Ese correo no está bloqueado: ya puedes entrar o registrarte con él.'),
+        error
+      );
+    case 'LI013':
+      return new AccountError(
+        'unblock-pending',
+        t(
+          'Ya hay una solicitud de desbloqueo pendiente para ese correo. Te escribiremos cuando la revisemos.'
+        ),
+        error
+      );
+    case 'LI014':
+      return new AccountError(
+        'invalid-email',
+        t('Revisa el correo y explica el motivo con al menos {UNBLOCK_REASON_MIN} caracteres.', {
+          UNBLOCK_REASON_MIN,
+        }),
+        error
+      );
     case 'email_exists':
     case 'user_already_exists':
       // Decisión de producto del 2026-09-17: aquí no se ofrece ninguna salida.
@@ -497,6 +548,7 @@ export async function getAccountState(): Promise<AccountState> {
  * @returns El estado de la cuenta tras pedir la confirmación.
  */
 export async function linkEmailToCurrentUser(email: string): Promise<AccountState> {
+  if (await isEmailBlocked(email).catch(() => false)) throw blockedEmailError();
   const { data, error } = await getSupabaseClient().auth.updateUser(
     { email, data: { locale: getLocale() } },
     { emailRedirectTo: authRedirectUrl() }
@@ -852,12 +904,42 @@ export async function completeAuthLink(url: string): Promise<AccountState> {
 /** Login con email y contraseña, para recuperar la cuenta en otro dispositivo. */
 export async function signInWithEmail(email: string, password: string): Promise<string> {
   const { data, error } = await getSupabaseClient().auth.signInWithPassword({ email, password });
-  if (error) throw toAccountError(error);
+  if (error) {
+    // La cuenta de un correo bloqueado ya no existe y GoTrue solo diría
+    // «credenciales inválidas»: se explica el bloqueo y cómo pedir que se quite.
+    if (await isEmailBlocked(email).catch(() => false)) throw blockedEmailError(error);
+    throw toAccountError(error);
+  }
   return data.user.id;
+}
+
+/**
+ * Si el correo es de una cuenta eliminada (bloqueado hasta que se apruebe una
+ * solicitud de desbloqueo). Se puede preguntar con o sin sesión.
+ */
+export async function isEmailBlocked(email: string): Promise<boolean> {
+  const address = email.trim();
+  if (!address) return false;
+  const { data, error } = await getSupabaseClient().rpc('is_email_blocked', { p_email: address });
+  if (error) throw toAccountError(error);
+  return data === true;
+}
+
+/**
+ * Pide desbloquear el correo de una cuenta eliminada. La revisa una persona del
+ * equipo; el motivo es obligatorio (al menos `UNBLOCK_REASON_MIN` caracteres).
+ */
+export async function requestAccountUnblock(email: string, reason: string): Promise<void> {
+  const { error } = await getSupabaseClient().rpc('request_account_unblock', {
+    p_email: email.trim(),
+    p_reason: reason.trim(),
+  });
+  if (error) throw toAccountError(error);
 }
 
 /** Alta con email y contraseña. */
 export async function signUpWithEmail(email: string, password: string): Promise<string | null> {
+  if (await isEmailBlocked(email).catch(() => false)) throw blockedEmailError();
   const { data, error } = await getSupabaseClient().auth.signUp({
     email,
     password,

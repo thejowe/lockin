@@ -26,8 +26,14 @@ import { useRepositories } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 
 import { describeAccountError } from './account-copy';
-import { accountsAvailable, enabledAuthProviders, signInWithProvider } from './account-gateway';
+import {
+  AccountError,
+  accountsAvailable,
+  enabledAuthProviders,
+  signInWithProvider,
+} from './account-gateway';
 import { clearPendingPassword } from './pending-password';
+import { RequestUnblockButton } from './unblock-request-form';
 import { t } from '@/i18n';
 
 type Provider = 'google' | 'apple';
@@ -92,6 +98,7 @@ export function ProviderButtons({
   const repositories = useRepositories();
   const [busy, setBusy] = useState<Provider | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [blocked, setBlocked] = useState(false);
 
   const providers = offeredProviders();
   if (providers.length === 0) return null;
@@ -100,6 +107,7 @@ export function ProviderButtons({
     if (busy || disabled) return;
     setBusy(provider);
     setError(null);
+    setBlocked(false);
     try {
       if (!(await signInWithProvider(provider))) return;
       // La sesión es otra (la del proveedor): el modo se guarda en ella, y una
@@ -109,6 +117,7 @@ export function ProviderButtons({
       onSignedIn();
     } catch (cause) {
       setError(describeAccountError(cause));
+      setBlocked(cause instanceof AccountError && cause.reason === 'account-blocked');
     } finally {
       setBusy(null);
     }
@@ -147,6 +156,7 @@ export function ProviderButtons({
           {error}
         </ThemedText>
       ) : null}
+      {blocked ? <RequestUnblockButton email="" /> : null}
     </View>
   );
 }

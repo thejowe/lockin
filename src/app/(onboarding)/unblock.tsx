@@ -1,30 +1,39 @@
-import { Redirect, useRouter } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/ambient-background';
+import { BackArrow } from '@/components/back-arrow';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { PhoneStep } from '@/features/profile';
-import { registrationRequired } from '@/features/profile/account-gateway';
+import { UnblockRequestForm } from '@/features/profile';
+import { accountsAvailable } from '@/features/profile/account-gateway';
 
 /**
- * «Tu teléfono»: puerta del móvil obligatorio para quien ya tiene la cuenta
- * confirmada pero sin número (entró con un proveedor externo, o es anterior al
- * requisito). `useRegistrationGate` devuelve `phone` y manda aquí.
+ * «Solicitar desbloqueo»: el correo de una cuenta eliminada queda bloqueado y
+ * aquí se pide recuperarlo explicando el motivo. Se llega desde el aviso de
+ * «correo bloqueado» al entrar o registrarse (`?email=` lo trae relleno).
  */
-export default function PhoneScreen() {
+export default function UnblockScreen() {
   const router = useRouter();
-  if (!registrationRequired) return <Redirect href="/" />;
+  const { email } = useLocalSearchParams<{ email?: string }>();
+
+  if (!accountsAvailable) return <Redirect href="/" />;
+
+  const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
 
   return (
     <Screen ambient="ember">
       <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+        <BackArrow onPress={close} />
         <KeyboardAwareScrollView
           bottomOffset={Spacing.five}
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled">
-          <PhoneStep onDone={() => router.replace('/')} />
+          <UnblockRequestForm
+            initialEmail={typeof email === 'string' ? email : ''}
+            onClose={close}
+          />
         </KeyboardAwareScrollView>
       </SafeAreaView>
     </Screen>

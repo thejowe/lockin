@@ -63,7 +63,6 @@ export default function ProfileFormScreen() {
 
   if (gate === 'checking') return null;
   if (gate === 'required') return <Redirect href="/register" />;
-  if (gate === 'phone') return <Redirect href="/phone" />;
   if (terms.gate === 'checking') return null;
 
   // Sin Términos y Normas aceptados no se publica perfil.

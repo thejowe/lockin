@@ -11,8 +11,8 @@
  * persona, dejarla pasar sería el fallo que la regla existe para evitar, y la
  * pantalla de registro sabe enseñar el error y reintentar.
  *
- * Con la cuenta ya recuperable pero sin móvil responde `phone`: el teléfono es
- * obligatorio también para quien entra con GitHub, Google, Apple o LinkedIn.
+ * El teléfono ya no es obligatorio (decisión del 2026-11-09): es un dato
+ * opcional de «Información personal» y no cierra ninguna puerta.
  *
  * Sin capa de cuentas (mock) o con la puerta apagada en la compilación
  * (`registrationRequired`), siempre `open`, y sin esperar a nada.
@@ -22,8 +22,7 @@ import { useQuery } from '@/data';
 
 import { readAccountState, registrationRequired } from './account-gateway';
 
-/** `phone`: cuenta confirmada pero sin móvil (entró con GitHub, Google…, o es anterior al requisito). */
-export type RegistrationGate = 'checking' | 'required' | 'phone' | 'open';
+export type RegistrationGate = 'checking' | 'required' | 'open';
 
 export function useRegistrationGate(): RegistrationGate {
   const { data: account, loading } = useQuery('account:state', readAccountState);
@@ -31,6 +30,5 @@ export function useRegistrationGate(): RegistrationGate {
   if (!registrationRequired) return 'open';
   if (loading) return 'checking';
 
-  if (!account?.recoverable) return 'required';
-  return account.phone ? 'open' : 'phone';
+  return account?.recoverable ? 'open' : 'required';
 }

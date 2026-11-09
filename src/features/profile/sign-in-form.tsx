@@ -50,10 +50,16 @@ import { useRepositories } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 
 import { describeAccountError } from './account-copy';
-import { readAccountState, sendPasswordReset, signInWithEmail } from './account-gateway';
+import {
+  AccountError,
+  readAccountState,
+  sendPasswordReset,
+  signInWithEmail,
+} from './account-gateway';
 import { Field, PrimaryButton, SecondaryButton, TextField } from './controls';
 import { clearPendingPassword } from './pending-password';
 import { ProviderButtons } from './provider-buttons';
+import { RequestUnblockButton } from './unblock-request-form';
 import { t } from '@/i18n';
 
 /** Qué se le está pidiendo al servidor ahora mismo, si es que se le pide algo. */
@@ -63,6 +69,8 @@ type Busy = 'entrar' | 'recuperar' | null;
 interface Notice {
   text: string;
   tone: 'textSecondary' | 'danger';
+  /** Correo de una cuenta eliminada: se ofrece pedir el desbloqueo. */
+  blocked?: boolean;
 }
 
 export function SignInForm({
@@ -116,7 +124,11 @@ export function SignInForm({
       await clearPendingPassword();
       onSignedIn();
     } catch (cause) {
-      setNotice({ text: describeAccountError(cause), tone: 'danger' });
+      setNotice({
+        text: describeAccountError(cause),
+        tone: 'danger',
+        blocked: cause instanceof AccountError && cause.reason === 'account-blocked',
+      });
     } finally {
       setBusy(null);
     }
@@ -332,6 +344,7 @@ export function SignInForm({
           {notice.text}
         </ThemedText>
       ) : null}
+      {notice?.blocked ? <RequestUnblockButton key="unblock" email={email} /> : null}
 
       {confirmingLeave ? null : (
         <ProviderButtons key="providers" onSignedIn={onSignedIn} disabled={busy !== null} />

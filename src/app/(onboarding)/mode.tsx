@@ -72,7 +72,6 @@ export default function WelcomeScreen() {
   }
 
   if (gate === 'checking') return null;
-  if (registrationRequired && gate === 'phone') return <Redirect href="/phone" />;
   if (registrationRequired && gate === 'open') return <Redirect href="/profile-form" />;
 
   // Dice a la intro dónde está el logo. Se mide dos veces: al montar la pantalla

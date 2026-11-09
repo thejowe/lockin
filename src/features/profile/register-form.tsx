@@ -48,12 +48,7 @@ import { Spacing } from '@/constants/theme';
 import { useRepositories } from '@/data';
 
 import { describeAccountError } from './account-copy';
-import {
-  AccountError,
-  linkEmailToCurrentUser,
-  saveAccountPhone,
-  setAccountPassword,
-} from './account-gateway';
+import { AccountError, linkEmailToCurrentUser, setAccountPassword } from './account-gateway';
 import { Field, PrimaryButton, SecondaryButton, TextField } from './controls';
 import {
   clearPendingPassword,
@@ -61,11 +56,9 @@ import {
   readPendingPassword,
   stashPendingPassword,
 } from './pending-password';
-import { normalizePhone, phoneProblem } from './phone';
-import { CountryCodePicker } from './country-code-picker';
-import { DEFAULT_COUNTRY, joinPhone } from './countries';
 import { ProviderButtons } from './provider-buttons';
 import { TermsCheckbox, TermsLinks } from './terms';
+import { RequestUnblockButton } from './unblock-request-form';
 import { useAccountActions } from './use-account-actions';
 import { t } from '@/i18n';
 
@@ -75,20 +68,16 @@ export const PASSWORD_MIN_LENGTH = 8;
 /** Qué falta para poder mandar el paso de cuenta, o `null` si nada. */
 export function accountStepProblem({
   email,
-  phone,
   password,
   repeat,
   termsAccepted,
 }: {
   email: string;
-  phone: string;
   password: string;
   repeat: string;
   termsAccepted: boolean;
 }): string | null {
   if (!email.trim()) return t('Escribe tu email para que podamos mandarte el enlace.');
-  const phoneIssue = phoneProblem(phone);
-  if (phoneIssue) return phoneIssue;
   if (password.length < PASSWORD_MIN_LENGTH) {
     return t('La contraseña necesita al menos {PASSWORD_MIN_LENGTH} caracteres.', {
       PASSWORD_MIN_LENGTH,
@@ -163,8 +152,6 @@ export function RegisterForm({
     useAccountActions();
 
   const [email, setEmail] = useState('');
-  const [country, setCountry] = useState(DEFAULT_COUNTRY);
-  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [repeat, setRepeat] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -241,10 +228,8 @@ export function RegisterForm({
   }
 
   function submitAccount() {
-    const fullPhone = joinPhone(country, phone);
     const problem = accountStepProblem({
       email,
-      phone: fullPhone,
       password,
       repeat,
       termsAccepted,
@@ -263,13 +248,11 @@ export function RegisterForm({
           throw new AccountError('no-session', t('No hay ninguna sesión abierta.'));
         }
         await stashPendingPassword(password, owner);
-        await saveAccountPhone(normalizePhone(fullPhone));
         await repositories.session.acceptTerms(TERMS_VERSION);
         await linkEmailToCurrentUser(address);
       },
       () => {
         setEmail('');
-        setPhone('');
         setPassword('');
         setRepeat('');
         setChangingEmail(false);
@@ -280,7 +263,6 @@ export function RegisterForm({
   function submitPassword() {
     const problem = accountStepProblem({
       email: account?.email ?? '-',
-      phone: '600000000',
       password,
       repeat,
       termsAccepted: true,
@@ -368,25 +350,6 @@ export function RegisterForm({
             />
           </Field>
 
-          <Field label={t('Teléfono')} hint={t('Es privado: no sale en tu perfil.')}>
-            <View style={styles.phoneRow}>
-              <CountryCodePicker country={country} onChange={setCountry} disabled={busy !== null} />
-              <View style={styles.phoneInput}>
-                <TextField
-                  value={phone}
-                  onChangeText={setPhone}
-                  accessibilityLabel={t('Teléfono de tu cuenta, sin prefijo')}
-                  placeholder="600 123 456"
-                  keyboardType="phone-pad"
-                  inputMode="tel"
-                  textContentType="telephoneNumber"
-                  autoComplete="tel"
-                  autoCorrect={false}
-                />
-              </View>
-            </View>
-          </Field>
-
           <PasswordFields
             password={password}
             repeat={repeat}
@@ -447,6 +410,7 @@ export function RegisterForm({
           {notice.text}
         </ThemedText>
       ) : null}
+      {notice?.blocked ? <RequestUnblockButton key="unblock" email={email} /> : null}
 
       {step === 'password' ? null : (
         <SecondaryButton label={t('Ya tengo cuenta')} onPress={onSignIn} />
@@ -456,13 +420,6 @@ export function RegisterForm({
 }
 
 const styles = StyleSheet.create({
-  phoneRow: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-  },
-  phoneInput: {
-    flex: 1,
-  },
   root: {
     gap: Spacing.three,
   },

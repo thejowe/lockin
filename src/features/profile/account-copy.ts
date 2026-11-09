@@ -63,6 +63,9 @@ const COPY: Record<AccountErrorReason, string | null> = {
   'wrong-password': null,
   'too-many-emails': null,
   'needs-confirmed-email': null,
+  'account-blocked': null,
+  'unblock-pending': null,
+  'not-blocked': null,
   get 'unrecoverable-account'() {
     return t(
       'Esta cuenta solo vive en este teléfono: si cierras sesión, perderás el acceso a tu perfil, tus matches y tus conversaciones y no podrás recuperarlos. Asegúrala antes con un email.'

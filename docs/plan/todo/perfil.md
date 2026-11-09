@@ -565,3 +565,15 @@ Backend: **Supabase real** (logcat `[lockin] backend de datos: Supabase`). APK r
 - Las cuentas con un número falso ya guardado no se vuelven a comprobar: la puerta solo mira si hay número.
 - Los metadatos caducan: actualizar `libphonenumber-js` con regularidad, o una numeración nueva se rechazaría.
 - [x] Integrado sobre i18n (2026-11-03): mensaje con `t()` y traducido en `en.json`/`ca.json` (sustituye la clave vieja de «9 a 15 dígitos»).
+
+## Teléfono opcional y correo bloqueado al eliminar la cuenta (2026-11-09)
+
+Decisión del usuario del 2026-11-09: (1) el teléfono deja de ser obligatorio; (2) eliminar la cuenta bloquea su correo, y para volver a usarlo hay que mandar una solicitud de desbloqueo con el motivo.
+
+- [x] **Teléfono opcional.** Fuera la puerta `phone` de `useRegistrationGate`, la pantalla `/phone` y `PhoneStep`, y el campo del registro. Sigue como dato opcional en «Información personal» (`personal-info.tsx`).
+- [x] **Migración `20261109120000_blocked_account_emails.sql`.** `delete_my_account()` guarda el SHA-256 del correo normalizado (el de `auth.users` y los de `auth.identities`) en `blocked_account_emails`. Un trigger en `auth.users` (alta, cambio de email y `email_change`) y otro en `auth.identities` lanzan `LI011` con un correo bloqueado. `is_email_blocked()` y `request_account_unblock()` (motivo de 30 a 2000 caracteres, una pendiente por correo) se pueden llamar sin sesión. Probado en PGlite: `supabase/blocked-emails-embedded.test.mjs`.
+- [x] **App.** `linkEmailToCurrentUser` y `signUpWithEmail` preguntan antes con `is_email_blocked`; `signInWithEmail` lo pregunta si falla el login. El aviso `account-blocked` lleva el botón «Solicitar desbloqueo» → `/unblock?email=` (`unblock-request-form.tsx`). Con Google/Apple el trigger corta el alta y GoTrue responde «Database error saving new user»: se traduce al mismo aviso.
+- [x] **Migración aplicada en producción** (`grrzmzktrhksbttpbblg`, 2026-11-09, vía MCP). Verificado: 2 triggers `enforce_blocked_account_email`, `anon` ejecuta `is_email_blocked`, `authenticated` no lee `account_unblock_requests` ni ejecuta `resolve_account_unblock`. Si la función faltara, la comprobación previa de la app falla en silencio y el alta sigue funcionando.
+- [ ] **[Usuario]** Revisar las solicitudes y resolverlas desde el editor SQL: `select * from account_unblock_requests where status = 'pending';` y `select public.resolve_account_unblock('<id>', true|false);`. Hoy no se avisa a nadie cuando llega una (no hay correo ni panel).
+- [ ] **[Usuario/legal]** Política de privacidad §7 (es/en/ca + `build-legal.mjs`): declarar que, al eliminar la cuenta, se conserva una huella (hash) del correo para impedir que se reutilice, y que la solicitud de desbloqueo guarda correo y motivo. Hoy el texto dice que todo se borra de inmediato.
+- **Límite:** `is_email_blocked` deja preguntar a cualquiera si un correo tuvo una cuenta eliminada (no si tiene una activa). Sin límite de peticiones propio.

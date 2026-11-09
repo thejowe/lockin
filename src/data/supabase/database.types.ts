@@ -448,6 +448,11 @@ export type Database = {
         Args: Record<string, never>;
         Returns: undefined;
       };
+      is_email_blocked: { Args: { p_email: string }; Returns: boolean };
+      request_account_unblock: {
+        Args: { p_email: string; p_reason: string };
+        Returns: undefined;
+      };
       sync_github_verification: {
         Args: Record<string, never>;
         Returns: undefined;

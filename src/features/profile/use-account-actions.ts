@@ -23,6 +23,7 @@ import { useQuery } from '@/data';
 import { describeAccountError } from './account-copy';
 import { normalizePhone, phoneProblem } from './phone';
 import {
+  AccountError,
   changeAccountPassword,
   setRecoveredPassword,
   linkEmailToCurrentUser,
@@ -41,6 +42,8 @@ export type AccountBusy =
 export interface AccountNotice {
   text: string;
   tone: 'textSecondary' | 'danger';
+  /** El correo es de una cuenta eliminada: la pantalla ofrece pedir el desbloqueo. */
+  blocked?: boolean;
 }
 
 export function useAccountActions() {
@@ -78,7 +81,11 @@ export function useAccountActions() {
       refresh();
     } catch (cause) {
       if (onError?.(cause)) return;
-      setNotice({ text: describeAccountError(cause), tone: 'danger' });
+      setNotice({
+        text: describeAccountError(cause),
+        tone: 'danger',
+        blocked: cause instanceof AccountError && cause.reason === 'account-blocked',
+      });
     } finally {
       setBusy(null);
     }

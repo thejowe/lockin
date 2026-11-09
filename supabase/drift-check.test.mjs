@@ -37,7 +37,9 @@ test('ve los sellos de GitHub y LinkedIn y la foto cerrados a authenticated, en 
 test('ve las tablas cerradas a authenticated (solo service role)', () => {
   // Para estas, el 42501 al leer es lo esperado; un 200 sería la deriva.
   assert.deepEqual([...real.closed].sort(), [
+    'account_unblock_requests',
     'apple_refresh_tokens',
+    'blocked_account_emails',
     'boosts',
     'like_events',
     'revenuecat_events',

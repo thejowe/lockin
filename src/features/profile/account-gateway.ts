@@ -39,6 +39,9 @@ export {
   currentSignInProvider,
   signInWithEmail,
   signOut,
+  isEmailBlocked,
+  requestAccountUnblock,
+  UNBLOCK_REASON_MIN,
 } from '@/data/supabase';
 export type { AccountErrorReason, AccountKind, AccountState, AuthProvider } from '@/data/supabase';
 

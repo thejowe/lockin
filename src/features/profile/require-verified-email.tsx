@@ -33,7 +33,6 @@ export function RequireVerifiedEmail({ children }: { children: ReactNode }) {
   if (gate === 'required') {
     return <Redirect href={account?.kind === 'none' ? '/mode' : '/register'} />;
   }
-  if (gate === 'phone') return <Redirect href="/phone" />;
 
   return <>{children}</>;
 }

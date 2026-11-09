@@ -30,6 +30,7 @@ export { ProviderButtons } from './provider-buttons';
 export { RegisterForm } from './register-form';
 export { RequireVerifiedEmail } from './require-verified-email';
 export { SignInForm } from './sign-in-form';
+export { UnblockRequestForm } from './unblock-request-form';
 export {
   LegalLinks,
   TermsAcceptance,
@@ -38,7 +39,6 @@ export {
   useTermsGate,
   type TermsGate,
 } from './terms';
-export { PhoneStep } from './phone-step';
 export { LanguageSection } from './language-section';
 export { PersonalInfo } from './personal-info';
 export { useRegistrationGate, type RegistrationGate } from './use-registration-gate';

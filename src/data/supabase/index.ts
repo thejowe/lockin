@@ -99,6 +99,9 @@ export {
   signInWithEmail,
   signOut,
   signUpWithEmail,
+  isEmailBlocked,
+  requestAccountUnblock,
+  UNBLOCK_REASON_MIN,
 } from './auth';
 export type { AccountErrorReason, AccountKind, AccountState, AuthProvider } from './auth';
 

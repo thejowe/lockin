@@ -23,10 +23,10 @@ describe('useRegistrationGate', () => {
     await waitFor(() => expect(result.current).toBe('open'));
   });
 
-  it('cuenta recuperable sin móvil (GitHub, Google…): phone', async () => {
+  it('cuenta recuperable sin móvil (GitHub, Google…): open, el teléfono es opcional', async () => {
     mockRead.mockResolvedValue({ ...base, kind: 'email', recoverable: true, phone: null });
     const { result } = await renderHook(() => useRegistrationGate());
-    await waitFor(() => expect(result.current).toBe('phone'));
+    await waitFor(() => expect(result.current).toBe('open'));
   });
 
   it('cuenta sin asegurar: required', async () => {
