@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { TERMS_VERSION } from '@/constants/legal';
 import { BottomTabInset, Radii, Spacing, Stroke } from '@/constants/theme';
@@ -50,15 +51,17 @@ export function useTermsGate(): { gate: TermsGate; refresh: () => void } {
  */
 function LinkRow({ label, doc }: { label: string; doc: LegalDocKey }) {
   const router = useRouter();
+  const theme = useTheme();
   return (
     <Pressable
       accessibilityRole="link"
       accessibilityLabel={label}
       onPress={() => router.push({ pathname: '/legal/[doc]', params: { doc } })}
       style={({ pressed }) => [styles.link, pressed && styles.pressed]}>
-      <ThemedText type="body" themeColor="brass">
+      <ThemedText type="body" themeColor="brass" style={styles.linkLabel}>
         {label}
       </ThemedText>
+      <Icon name="chevrons" size={18} color={theme.textMuted} />
     </Pressable>
   );
 }
@@ -189,7 +192,12 @@ const styles = StyleSheet.create({
   },
   link: {
     minHeight: 44,
-    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  linkLabel: {
+    flex: 1,
   },
   pressed: {
     opacity: 0.6,

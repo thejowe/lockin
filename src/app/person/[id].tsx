@@ -53,7 +53,7 @@ function Person() {
     <>
       <Stack.Screen
         options={{
-          title: profile?.name ?? t('Perfil'),
+          title: t('Perfil'),
           headerRight: () => (
             <Pressable
               accessibilityRole="button"

@@ -44,6 +44,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.three,
     padding: Spacing.three,
+    marginTop: Spacing.three,
     marginBottom: Spacing.three,
     borderRadius: Radii.large,
     borderWidth: Stroke.hairline,

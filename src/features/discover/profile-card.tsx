@@ -253,7 +253,7 @@ export function ProfileCard({
             StyleSheet.absoluteFill,
             { backgroundColor: `${theme.background}${ScrimAlpha}` },
           ]}>
-          <Svg width="100%" height={Spacing.four} style={styles.topFade}>
+          <Svg width="100%" height={Spacing.six} style={styles.topFade}>
             <Defs>
               <LinearGradient id={`top-fade-${profile.id}`} x1="0" y1="0" x2="0" y2="1">
                 <Stop

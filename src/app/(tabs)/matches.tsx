@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   list: {
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Spacing.four,
     paddingBottom: BottomTabInset + Spacing.four,
   },
   listEmpty: {

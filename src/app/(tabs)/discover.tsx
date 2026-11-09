@@ -292,6 +292,7 @@ const styles = StyleSheet.create({
   },
   toolbar: {
     alignItems: 'flex-end',
+    paddingHorizontal: Spacing.two,
   },
   backdrop: {
     flex: 1,
