@@ -91,9 +91,14 @@ export default function WelcomeScreen() {
   const wordmarkText = (
     <>
       <ThemedText type="display">cofounder</ThemedText>
-      <ThemedText type="body" themeColor="textSecondary" style={styles.tagline}>
-        {t('Encuentra con quién construir.')}
-      </ThemedText>
+      <Animated.View
+        entering={FadeInUp.duration(Duration.slow)
+          .easing(easeOut)
+          .delay((duringIntro ? 0 : WORDMARK_DELAY_MS) + Duration.slow)}>
+        <ThemedText type="body" themeColor="textSecondary" style={styles.tagline}>
+          Winning DNA
+        </ThemedText>
+      </Animated.View>
     </>
   );
 
