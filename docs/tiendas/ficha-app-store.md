@@ -42,6 +42,12 @@ cofounder no es una app de citas ni una bolsa de empleo. No ofrece asesoramiento
 
 Para personas de 16 años o más.
 
+SUSCRIPCIÓN
+cofounder Premium es una suscripción con renovación automática (mensual o anual). Se cobra a tu cuenta de Apple y se renueva salvo que la canceles al menos 24 horas antes del fin del periodo; puedes gestionarla o cancelarla en los ajustes de tu cuenta de Apple.
+
+Términos de uso (EULA): https://getcofounder.app/terminos
+Política de privacidad: https://getcofounder.app/privacidad
+
 ## Palabras clave
 
 socio,emprender,startup,emprendedor,cofundadora,proyecto,equipo,idea,negocio,colaborar,github,pares
@@ -79,7 +85,7 @@ Edad mínima de uso: 16 años (D06), autodeclarada. En el cuestionario de App St
 | Nombre | 9 caracteres | 30 |
 | Subtítulo | 26 caracteres | 30 |
 | Texto promocional | 142 caracteres | 170 |
-| Descripción | 1770 caracteres | 4000 |
+| Descripción | 2199 caracteres | 4000 |
 | Palabras clave | 99 bytes | 100 |
 
 Las palabras clave no repiten el nombre ni la categoría (Apple ya los indexa) y no usan nombres de terceros salvo «github», que describe una función real (GitHub verificado). Bundle ID: `app.cofounder.mobile`; versión 1.0.0.

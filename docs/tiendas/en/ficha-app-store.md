@@ -44,6 +44,12 @@ cofounder is not a dating app or a job board. It offers no legal advice or fundi
 
 For people aged 16 or over.
 
+SUBSCRIPTION
+cofounder Premium is an auto-renewable subscription (monthly or yearly). Payment is charged to your Apple account and renews automatically unless you cancel at least 24 hours before the end of the period; manage or cancel it in your Apple account settings.
+
+Terms of Use (EULA): https://getcofounder.app/terminos
+Privacy Policy: https://getcofounder.app/privacidad
+
 ## Keywords
 
 partner,startup,entrepreneur,founder,cofounder,project,team,idea,business,collaborate,github,peers
@@ -83,7 +89,7 @@ Minimum age: 16, self-declared. In the App Store Connect questionnaire, declare:
 | Name | 9 characters | 30 |
 | Subtitle | 22 characters | 30 |
 | Promotional text | 126 characters | 170 |
-| Description | 1675 characters | 4000 |
+| Description | 2055 characters | 4000 |
 | Keywords | 98 bytes | 100 |
 | App Review Notes | 2545 characters | 4000 |
 

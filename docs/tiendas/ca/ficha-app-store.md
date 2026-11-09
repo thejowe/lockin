@@ -44,6 +44,12 @@ cofounder no és una app de cites ni una borsa de treball. No ofereix assessoram
 
 Per a persones de 16 anys o més.
 
+SUBSCRIPCIÓ
+cofounder Premium és una subscripció amb renovació automàtica (mensual o anual). Es cobra al teu compte d'Apple i es renova tret que la cancel·lis almenys 24 hores abans del final del període; pots gestionar-la o cancel·lar-la als ajustos del teu compte d'Apple.
+
+Termes d'ús (EULA): https://getcofounder.app/terminos
+Política de privacitat: https://getcofounder.app/privacidad
+
 ## Paraules clau
 
 soci,emprendre,startup,emprenedor,cofundadora,projecte,equip,idea,negoci,col·laborar,github,iguals
@@ -83,7 +89,7 @@ Edat mínima d'ús: 16 anys, autodeclarada. Al qüestionari d'App Store Connect 
 | Nom | 9 caràcters | 30 |
 | Subtítol | 20 caràcters | 30 |
 | Text promocional | 134 caràcters | 170 |
-| Descripció | 1717 caràcters | 4000 |
+| Descripció | 2154 caràcters | 4000 |
 | Paraules clau | 99 bytes | 100 |
 | Notes per a la revisió | 2545 caràcters | 4000 |
 
