@@ -3,9 +3,9 @@
 # Política de privacitat de cofounder
 
 
-**Versió:** 1.5.
+**Versió:** 1.6.
 
-**Entrada en vigor:** 7 de novembre de 2026.
+**Entrada en vigor:** 9 de novembre de 2026.
 
 ## 1. Qui és responsable de les teves dades
 
@@ -22,6 +22,10 @@ Publiquem l'app a Espanya i a la resta de l'Espai Econòmic Europeu. S'hi apliqu
 L'app pot crear un compte sense demanar-te un correu. Encara que l'accés sigui «anònim», s'assigna un identificador de compte que vincula el teu perfil i la teva activitat.
 
 Pots afegir i confirmar un correu i una contrasenya per recuperar el compte des d'un altre dispositiu; també hi ha alta i accés per correu. El correu no forma part del perfil que veuen altres persones.
+
+**Telèfon (opcional).** Pots afegir un telèfon de contacte a Ajustos > Informació personal. És privat: no surt al teu perfil ni el veu ningú més de l'app. No el verifiquem per SMS. El pots canviar quan vulguis; si el vols treure, escriu-nos. S'esborra amb el compte.
+
+**Si elimines el compte.** Per impedir que es torni a crear un compte amb el mateix correu, desem una empremta xifrada (hash SHA-256) de cada correu associat al compte eliminat, inclosos els que arriben per Google, Apple o GitHub. No desem el correu en si ni cap altra dada del compte. Si vols tornar a fer servir aquest correu, pots enviar des de l'app una **sol·licitud de desbloqueig**: desem el correu que escriguis i el motiu que expliquis per revisar-la i respondre't.
 
 **Accés amb Google o Apple (opcional).** Si entres amb Google o amb Apple, aquest servei ens confirma el teu correu i el servei d'autenticació desa les dades bàsiques que envia: amb Google, el teu correu, el teu nom i l'adreça de la foto del teu compte; amb Apple, el teu correu (que pot ser una adreça de reenviament d'Apple si tries ocultar-lo). Els fem servir només per identificar el teu compte; no es publiquen al teu perfil. Si entres amb Apple des d'un iPhone, el nostre servidor desa a més un codi tècnic que emet Apple (un token d'actualització) amb una única finalitat: demanar a Apple que retiri l'accés de l'app al teu Apple ID quan elimines el compte. No es fa servir per a res més, no surt del servidor i s'esborra amb el compte.
 
@@ -57,9 +61,9 @@ Els serveis d'autenticació, base de dades, emmagatzematge i actualitzacions reb
 
 Fem servir les dades per mantenir i recuperar el teu compte, mostrar i editar el teu perfil, mostrar-te perfils, resoldre els interessos mutus, permetre el xat amb els teus matches, verificar el teu enllaç de GitHub, permetre l'accés amb Google o Apple, revisar les fotos de perfil i del tauler, atendre bloquejos i denúncies, activar Premium si el contractes i servir actualitzacions de l'app. No fem servir SDK de publicitat ni analítica comercial.
 
-- **Execució del servei que sol·licites** (art. 6.1.b RGPD): compte, perfil, swipes, matches i missatges, i la subscripció Premium si la contractes.
-- **Consentiment** (art. 6.1.a): foto de perfil, fotos del tauler, verificació de GitHub i accés amb Google o Apple, tots opcionals. El pots retirar traient les fotos, desvinculant GitHub o eliminant el compte.
-- **Interès legítim** (art. 6.1.f): seguretat, prevenció d'abusos, revisió de fotos i de denúncies i operació tècnica.
+- **Execució del servei que sol·licites** (art. 6.1.b RGPD): compte, perfil, swipes, matches i missatges, la subscripció Premium si la contractes i la sol·licitud de desbloqueig si l'envies.
+- **Consentiment** (art. 6.1.a): telèfon, foto de perfil, fotos del tauler, verificació de GitHub i accés amb Google o Apple, tots opcionals. El pots retirar traient el telèfon o les fotos, desvinculant GitHub o eliminant el compte.
+- **Interès legítim** (art. 6.1.f): seguretat, prevenció d'abusos (inclòs impedir que es reutilitzi el correu d'un compte eliminat), revisió de fotos i de denúncies i operació tècnica.
 - **Obligació legal** (art. 6.1.c): atendre requeriments de les autoritats.
 
 ## 4. Qui les pot veure
@@ -88,7 +92,7 @@ En obrir un enllaç de portafoli, GitHub, LinkedIn, Instagram o TikTok d'una alt
 
 L'app demana accés a la teva galeria o a la teva càmera només si tries afegir una foto de perfil o del tauler. Ho pots denegar i fer servir l'avatar d'inicials. Pots canviar els permisos als ajustos del dispositiu.
 
-Per completar el perfil, l'app demana nom, edat, zona, disponibilitat i almenys una resposta breu. Correu, enllaços, foto, tauler i verificació de GitHub són opcionals.
+Per completar el perfil, l'app demana nom, edat, zona, disponibilitat i almenys una resposta breu. Correu, telèfon, enllaços, foto, tauler i verificació de GitHub són opcionals.
 
 ## 7. Quant de temps es conserven
 
@@ -101,6 +105,8 @@ Conservem les teves dades mentre existeixi el teu compte. En eliminar el compte 
 - **Fotos rebutjades o pendents de revisió:** després de cada revisió, aprovada o rebutjada, el servidor elimina el fitxer de la pujada pendent. Si aquest esborrat fallés, una tasca programada elimina cada hora les pujades pendents amb més de 24 hores. Una foto rebutjada no es publica ni es conserva.
 - **Foto aprovada:** fins que la treguis o eliminis el compte; la còpia anterior es retira en substituir-la.
 - **Fotos del tauler:** fins que les treguis o eliminis el compte; en treure'n una s'esborren el fitxer i el seu text.
+- **Empremta del correu d'un compte eliminat:** es conserva mentre el correu continuï bloquejat, sense termini fix, i s'esborra quan aprovem una sol·licitud de desbloqueig. T'hi pots oposar escrivint a privacidad@getcofounder.app (§8).
+- **Sol·licituds de desbloqueig:** el correu i el motiu es conserven mentre revisem la sol·licitud i, després, com a registre de la decisió. Ara com ara no s'esborren automàticament; pots demanar que les esborrem a privacidad@getcofounder.app.
 - **Estat de la subscripció:** mentre existeixi el compte; s'esborra amb ell. Els registres de la compra els conserven Apple o Google i RevenueCat segons les seves pròpies polítiques i obligacions legals. Eliminar el compte no cancel·la la subscripció a la botiga.
 
 En eliminar un compte s'esborren també els seus matches i els missatges d'aquestes converses, inclosos els que va escriure l'altra persona.
@@ -114,6 +120,8 @@ Pots editar el teu perfil, treure la teva foto i les fotos del tauler i desvincu
 La revisió de les fotos de perfil i del tauler és automàtica (§2). Tens dret que una persona revisi un rebuig, a expressar el teu punt de vista i a impugnar la decisió: escriu a privacidad@getcofounder.app i responem en el mateix termini de 30 dies.
 
 Pots eliminar el teu compte des de l'app o demanar-ho a soporte@getcofounder.app o a https://getcofounder.app/eliminar-cuenta; responem en un màxim de 30 dies. Tens a més dret d'accés, rectificació, supressió, oposició, limitació i portabilitat, que pots exercir pel mateix correu, i a reclamar davant l'AEPD.
+
+Si vas eliminar el compte i vols tornar a fer servir el seu correu, envia una sol·licitud de desbloqueig des de l'app (apareix quan intentes entrar o registrar-te amb aquest correu) explicant el motiu. La revisa una persona i et responem a aquest correu.
 
 ## 9. Menors
 

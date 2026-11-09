@@ -3,9 +3,9 @@
 # cofounder Privacy Policy
 
 
-**Version:** 1.5.
+**Version:** 1.6.
 
-**Effective date:** 7 November 2026.
+**Effective date:** 9 November 2026.
 
 ## 1. Who is responsible for your data
 
@@ -22,6 +22,10 @@ We publish the app in Spain and the rest of the European Economic Area. Regulati
 The app can create an account without asking you for an email. Even if access is "anonymous", an account identifier is assigned that links your profile and your activity.
 
 You can add and confirm an email and a password to recover the account from another device; sign-up and sign-in by email are also available. Your email is not part of the profile other people see.
+
+**Phone (optional).** You can add a contact phone number in Settings > Personal information. It is private: it does not appear on your profile and nobody else in the app sees it. We do not verify it by SMS. You can change it whenever you want; if you want it removed, write to us. It is deleted with the account.
+
+**If you delete your account.** To prevent a new account from being created with the same email, we keep an encrypted fingerprint (SHA-256 hash) of each email associated with the deleted account, including those received through Google, Apple or GitHub. We do not keep the email itself or any other account data. If you want to use that email again, you can send an **unblock request** from the app: we keep the email you enter and the reason you give in order to review it and reply to you.
 
 **Sign-in with Google or Apple (optional).** If you sign in with Google or Apple, that service confirms your email to us and the authentication service stores the basic data it sends: with Google, your email, your name and the address of your account photo; with Apple, your email (which may be an Apple forwarding address if you choose to hide it). We use them only to identify your account; they are not published on your profile. If you sign in with Apple from an iPhone, our server also stores a technical code issued by Apple (a refresh token) for one sole purpose: asking Apple to remove the app's access to your Apple ID when you delete the account. It is not used for anything else, does not leave the server and is deleted with the account.
 
@@ -57,9 +61,9 @@ The authentication, database, storage and update services receive network data s
 
 We use the data to maintain and recover your account, show and edit your profile, show you profiles, resolve mutual interest, enable chat with your matches, verify your GitHub link, enable sign-in with Google or Apple, review profile and board photos, handle blocks and reports, activate Premium if you subscribe and serve app updates. We do not use advertising SDKs or commercial analytics.
 
-- **Performance of the service you request** (art. 6.1.b GDPR): account, profile, swipes, matches and messages, and the Premium subscription if you subscribe.
-- **Consent** (art. 6.1.a): profile photo, board photos, GitHub verification and sign-in with Google or Apple, all optional. You can withdraw it by removing the photos, unlinking GitHub or deleting the account.
-- **Legitimate interest** (art. 6.1.f): security, abuse prevention, review of photos and reports and technical operation.
+- **Performance of the service you request** (art. 6.1.b GDPR): account, profile, swipes, matches and messages, the Premium subscription if you subscribe and the unblock request if you send one.
+- **Consent** (art. 6.1.a): phone, profile photo, board photos, GitHub verification and sign-in with Google or Apple, all optional. You can withdraw it by removing the phone or the photos, unlinking GitHub or deleting the account.
+- **Legitimate interest** (art. 6.1.f): security, abuse prevention (including preventing the email of a deleted account from being reused), review of photos and reports and technical operation.
 - **Legal obligation** (art. 6.1.c): responding to requests from the authorities.
 
 ## 4. Who can see them
@@ -88,7 +92,7 @@ When you open another person's portfolio, GitHub, LinkedIn, Instagram or TikTok 
 
 The app asks for access to your gallery or camera only if you choose to add a profile or board photo. You can refuse and use the initials avatar. You can change permissions in your device settings.
 
-To complete the profile, the app asks for name, age, area, availability and at least one short answer. Email, links, photo, board and GitHub verification are optional.
+To complete the profile, the app asks for name, age, area, availability and at least one short answer. Email, phone, links, photo, board and GitHub verification are optional.
 
 ## 7. How long they are kept
 
@@ -101,6 +105,8 @@ We keep your data while your account exists. When you delete the account from th
 - **Rejected photos or photos pending review:** after each review, approved or rejected, the server deletes the pending upload file. If that deletion fails, a scheduled task deletes pending uploads older than 24 hours every hour. A rejected photo is neither published nor kept.
 - **Approved photo:** until you remove it or delete the account; the previous copy is removed when it is replaced.
 - **Board photos:** until you remove them or delete the account; removing one deletes the file and its text.
+- **Email fingerprint of a deleted account:** kept while the email remains blocked, with no fixed period, and deleted when we approve an unblock request. You can object by writing to privacidad@getcofounder.app (§8).
+- **Unblock requests:** the email and the reason are kept while we review the request and, afterwards, as a record of the decision. They are not currently deleted automatically; you can ask us to delete them at privacidad@getcofounder.app.
 - **Subscription status:** while the account exists; it is deleted with it. Purchase records are kept by Apple or Google and RevenueCat under their own policies and legal obligations. Deleting the account does not cancel the subscription in the store.
 
 Deleting an account also deletes its matches and the messages in those conversations, including those written by the other person.
@@ -114,6 +120,8 @@ You can edit your profile, remove your photo and board photos and unlink GitHub 
 The review of profile and board photos is automatic (§2). You have the right to have a person review a rejection, to express your point of view and to challenge the decision: write to privacidad@getcofounder.app and we will respond within the same 30-day period.
 
 You can delete your account from the app or request it at soporte@getcofounder.app or at https://getcofounder.app/eliminar-cuenta; we respond within 30 days at most. You also have the right of access, rectification, erasure, objection, restriction and portability, which you can exercise through the same email, and the right to complain to the AEPD.
+
+If you deleted your account and want to use its email again, send an unblock request from the app (it appears when you try to sign in or sign up with that email) explaining the reason. A person reviews it and we reply to that email.
 
 ## 9. Minors
 

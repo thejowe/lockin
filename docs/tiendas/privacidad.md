@@ -1,5 +1,7 @@
 # Política de privacidad de cofounder
 
+> Revisada el 9 de noviembre de 2026 (versión 1.6): al eliminar la cuenta se conserva una huella cifrada del correo para impedir que se reutilice, con una vía para pedir el desbloqueo (§2, §3, §7 y §8); teléfono de contacto opcional (§2).
+>
 > Revisada el 7 de noviembre de 2026 (versión 1.5): dominio propio `getcofounder.app`; contacto `privacidad@getcofounder.app` (derechos y revisión humana) y `soporte@getcofounder.app` (soporte y baja).
 >
 > Revisada el 2 de noviembre de 2026 (versión 1.4): suscripción opcional cofounder Premium cobrada por Apple o Google, con RevenueCat como encargado (§2, §3, §5 y §7), e idiomas y especialidad «Otra» en el perfil (§2).
@@ -12,9 +14,9 @@
 >
 > Revisada el 18 de octubre de 2026: acceso con Google y Apple, tablón personal de fotos moderado con OpenAI, enlaces a Instagram y TikTok, y envío de correo por Supabase mientras Brevo no esté configurado. Publicada ese día en la URL pública. Ese mismo día, tras aplicar `20261018120000_profiles_block_visibility` en producción, §4 vuelve a decir que el bloqueo impide ver el perfil (antes: «la app deja de mostrar»).
 
-**Versión:** 1.5.
+**Versión:** 1.6.
 
-**Entrada en vigor:** 7 de noviembre de 2026.
+**Entrada en vigor:** 9 de noviembre de 2026.
 
 ## 1. Quién es responsable de tus datos
 
@@ -31,6 +33,10 @@ Publicamos la app en España y el resto del Espacio Económico Europeo. Se aplic
 La app puede crear una cuenta sin pedirte un correo. Aunque el acceso sea «anónimo», se asigna un identificador de cuenta que vincula tu perfil y tu actividad.
 
 Puedes añadir y confirmar un email y una contraseña para recuperar la cuenta desde otro dispositivo; también existen alta y acceso por email. El email no forma parte del perfil que ven otras personas.
+
+**Teléfono (opcional).** Puedes añadir un teléfono de contacto en Ajustes > Información personal. Es privado: no sale en tu perfil ni lo ve nadie más de la app. No lo verificamos por SMS. Puedes cambiarlo cuando quieras; si quieres quitarlo, escríbenos. Se borra con la cuenta.
+
+**Si eliminas la cuenta.** Para impedir que se vuelva a crear una cuenta con el mismo correo, guardamos una huella cifrada (hash SHA-256) de cada correo asociado a la cuenta eliminada, incluidos los que llegan por Google, Apple o GitHub. No guardamos el correo en sí ni ningún otro dato de la cuenta. Si quieres volver a usar ese correo, puedes enviar desde la app una **solicitud de desbloqueo**: guardamos el correo que escribas y el motivo que expliques para revisarla y responderte.
 
 **Acceso con Google o Apple (opcional).** Si entras con Google o con Apple, ese servicio nos confirma tu email y el servicio de autenticación guarda los datos básicos que envía: con Google, tu email, tu nombre y la dirección de la foto de tu cuenta; con Apple, tu email (que puede ser una dirección de reenvío de Apple si eliges ocultarlo). Los usamos solo para identificar tu cuenta; no se publican en tu perfil. Si entras con Apple desde un iPhone, nuestro servidor guarda además un código técnico que emite Apple (un token de actualización) con un único fin: pedir a Apple que retire el acceso de la app a tu Apple ID cuando eliminas la cuenta. No se usa para nada más, no sale del servidor y se borra con la cuenta.
 
@@ -66,9 +72,9 @@ Los servicios de autenticación, base de datos, almacenamiento y actualizaciones
 
 Usamos los datos para mantener y recuperar tu cuenta, mostrar y editar tu perfil, mostrarte perfiles, resolver los intereses mutuos, permitir el chat con tus matches, verificar tu enlace de GitHub, permitir el acceso con Google o Apple, revisar las fotos de perfil y del tablón, atender bloqueos y reportes, activar Premium si lo contratas y servir actualizaciones de la app. No usamos SDK de publicidad ni analítica comercial.
 
-- **Ejecución del servicio que solicitas** (art. 6.1.b RGPD): cuenta, perfil, swipes, matches y mensajes, y la suscripción Premium si la contratas.
-- **Consentimiento** (art. 6.1.a): foto de perfil, fotos del tablón, verificación de GitHub y acceso con Google o Apple, todos opcionales. Puedes retirarlo quitando las fotos, desvinculando GitHub o eliminando la cuenta.
-- **Interés legítimo** (art. 6.1.f): seguridad, prevención de abusos, revisión de fotos y de reportes y operación técnica.
+- **Ejecución del servicio que solicitas** (art. 6.1.b RGPD): cuenta, perfil, swipes, matches y mensajes, la suscripción Premium si la contratas y la solicitud de desbloqueo si la envías.
+- **Consentimiento** (art. 6.1.a): teléfono, foto de perfil, fotos del tablón, verificación de GitHub y acceso con Google o Apple, todos opcionales. Puedes retirarlo quitando el teléfono o las fotos, desvinculando GitHub o eliminando la cuenta.
+- **Interés legítimo** (art. 6.1.f): seguridad, prevención de abusos (incluido impedir que se reutilice el correo de una cuenta eliminada), revisión de fotos y de reportes y operación técnica.
 - **Obligación legal** (art. 6.1.c): atender requerimientos de las autoridades.
 
 ## 4. Quién puede verlos
@@ -97,7 +103,7 @@ Al abrir un enlace de portfolio, GitHub, LinkedIn, Instagram o TikTok de otra pe
 
 La app pide acceso a tu galería o a tu cámara solo si eliges añadir una foto de perfil o del tablón. Puedes denegarlo y usar el avatar de iniciales. Puedes cambiar los permisos en los ajustes del dispositivo.
 
-Para completar el perfil, la app pide nombre, edad, zona, disponibilidad y al menos una respuesta breve. Email, enlaces, foto, tablón y verificación de GitHub son opcionales.
+Para completar el perfil, la app pide nombre, edad, zona, disponibilidad y al menos una respuesta breve. Email, teléfono, enlaces, foto, tablón y verificación de GitHub son opcionales.
 
 ## 7. Cuánto tiempo se conservan
 
@@ -110,6 +116,8 @@ Conservamos tus datos mientras tu cuenta exista. Al eliminar la cuenta desde la 
 - **Fotos rechazadas o pendientes de revisión:** tras cada revisión, aprobada o rechazada, el servidor elimina el archivo de la subida pendiente. Si ese borrado fallara, una tarea programada elimina cada hora las subidas pendientes con más de 24 horas. Una foto rechazada no se publica ni se conserva.
 - **Foto aprobada:** hasta que la quites o elimines la cuenta; la copia anterior se retira al sustituirla.
 - **Fotos del tablón:** hasta que las quites o elimines la cuenta; al quitar una se borran el archivo y su texto.
+- **Huella del correo de una cuenta eliminada:** se conserva mientras el correo siga bloqueado, sin plazo fijo, y se borra cuando aprobamos una solicitud de desbloqueo. Puedes oponerte escribiendo a privacidad@getcofounder.app (§8).
+- **Solicitudes de desbloqueo:** el correo y el motivo se conservan mientras revisamos la solicitud y, después, como registro de la decisión. Hoy no se borran automáticamente; puedes pedir que las borremos en privacidad@getcofounder.app.
 - **Estado de la suscripción:** mientras exista la cuenta; se borra con ella. Los registros de la compra los conservan Apple o Google y RevenueCat según sus propias políticas y obligaciones legales. Eliminar la cuenta no cancela la suscripción en la tienda.
 
 Al eliminar una cuenta se borran también sus matches y los mensajes de esas conversaciones, incluidos los que escribió la otra persona.
@@ -123,6 +131,8 @@ Puedes editar tu perfil, quitar tu foto y las fotos del tablón y desvincular Gi
 La revisión de las fotos de perfil y del tablón es automática (§2). Tienes derecho a que una persona revise un rechazo, a expresar tu punto de vista y a impugnar la decisión: escribe a privacidad@getcofounder.app y respondemos en el mismo plazo de 30 días.
 
 Puedes eliminar tu cuenta desde la app o pedirlo en soporte@getcofounder.app o en https://getcofounder.app/eliminar-cuenta; respondemos en un máximo de 30 días. Tienes además derecho de acceso, rectificación, supresión, oposición, limitación y portabilidad, que puedes ejercer por el mismo correo, y a reclamar ante la AEPD.
+
+Si eliminaste tu cuenta y quieres volver a usar su correo, envía una solicitud de desbloqueo desde la app (aparece al intentar entrar o registrarte con ese correo) explicando el motivo. La revisa una persona y te respondemos a ese correo.
 
 ## 9. Menores
 
@@ -148,4 +158,5 @@ Nota editorial, a retirar del texto publicado:
 - **21-oct-2026 (v1.3):** SMTP de Brevo configurado en Supabase Auth y comprobado (alta de prueba entregada en bandeja de entrada). §5 nombra a Brevo y quita la frase de Supabase como emisor. El correo de prueba llevaba píxel de apertura y el enlace de confirmación reescrito por Brevo (`sendibt3.com/tr/cl/…`); en el panel solo existe «seguimiento anónimo» (activado el 21-oct), no apagarlo. §5 lo declara tal cual. Pedido a soporte de Brevo que lo apague; cuando esté apagado y comprobado en un correo real, cambiar §5 a «no se usa su seguimiento». Publicada el 21-oct en `cofounder-web` porque la 1.2 publicada nombraba a Supabase como emisor, ya falso.
 - **2-nov-2026 (v1.4):** cotejado con el código. Suscripción: `public.entitlements` (`premium_until`, `product_id`, `store`, `updated_at`, borrado en cascada con el perfil), `like_events` y `boosts` (cascada), `revenuecat_events` solo guarda el id del evento; `src/lib/purchases.ts` hace `logIn` en RevenueCat con el uid de Supabase. Idiomas (`languages`, `seeking_languages`) y `other_specialty` en `profiles` desde `20261102120000`. Entrada en vigor el mismo día y no a 30 días (§10): el tratamiento nuevo solo afecta a quien abre la pantalla de Premium (al abrirla, `getOfferings()` → `sdkReady()` ya hace `logIn(uid)` en RevenueCat, compre o no; hallazgo de `codex review`) o la contrata a partir de ahora, y los idiomas los aporta cada persona al editar su perfil; confirmarlo en la revisión jurídica. **Falta del titular:** firmar o aceptar el DPA de RevenueCat y comprobar la base de la transferencia (CCT o DPF).
 - **7-nov-2026 (v1.5):** dominio `getcofounder.app` (web en GitHub Pages, correo en Zoho Mail EU con alias `soporte@`, `legal@`, `privacidad@`); los enlaces y el contacto de este texto pasan al dominio nuevo.
+- **9-nov-2026 (v1.6):** cotejado con el código. `20261109120000_blocked_account_emails` (aplicada en producción el 9-nov): `delete_my_account()` guarda en `blocked_account_emails` solo `sha256(lower(trim(email)))` del correo de `auth.users` y de `auth.identities`; `account_unblock_requests` guarda correo, motivo, estado y fechas, sin purga. El teléfono vive en `auth.users.raw_user_meta_data.phone_number` (E.164), opcional desde el 9-nov (antes obligatorio en el alta y nunca declarado aquí); la app no permite vaciarlo. Entrada en vigor el mismo día y no a 30 días (§10), como v1.4: solo afecta a quien elimine la cuenta desde ahora; confirmarlo en la revisión jurídica. **Pendiente:** fijar un plazo para la huella y para las solicitudes, o justificar la conservación indefinida.
 - **Pendiente de decidir o confirmar:** (1) ~~condiciones de la API de OpenAI (DPA)~~ ver la línea anterior; (2) ~~plazo de las fotos rechazadas o pendientes~~ resuelto: borrado tras cada revisión y purga de restos a las 24 h; (3) ~~proveedor de correo~~ decidido el 16-oct: Brevo, remitente soporte@getcofounder.app; no empujar este texto hasta que el SMTP de Brevo esté configurado en Supabase Auth; (4) ~~fecha de publicación~~ v1.2 con entrada en vigor el 20-oct-2026, pendiente de subir a `cofounder-web`; (5) ~~job `purge_old_user_reports()`~~ confirmado activo en producción el 16-oct (03:20 diario); (6) los plazos de revisión de reportes (72 h / 24 h) son un compromiso operativo, no una regla del código.

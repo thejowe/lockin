@@ -41,6 +41,7 @@ Fuente: [App Privacy Details](https://developer.apple.com/app-store/app-privacy-
 | --- | --- | --- | --- |
 | Contact Info → Name | Nombre del perfil | Sí | App Functionality |
 | Contact Info → Email Address | Email opcional de la cuenta | Sí | App Functionality |
+| Contact Info → Phone Number | Teléfono de contacto opcional (Ajustes > Información personal); privado, no se publica | Sí | App Functionality |
 | Location → Coarse Location | Ciudad/zona escrita por el usuario | Sí | App Functionality |
 | **User Content → Photos or Videos** | **Foto de perfil opcional y hasta 12 fotos del tablón; se envían a OpenAI para moderarlas** | Sí | App Functionality |
 | User Content → Emails or Text Messages | Mensajes del chat | Sí | App Functionality |
@@ -77,6 +78,7 @@ Fuente: [guía del formulario](https://support.google.com/googleplay/android-dev
 | --- | --- | --- | --- |
 | Información personal → Nombre | Nombre | Obligatorio | Funcionalidad, gestión de cuentas |
 | Información personal → Dirección de correo | Email (también el de Google o Apple si se entra con ellos); lo procesa Brevo para enviar los correos de cuenta | Opcional | Gestión de cuentas |
+| Información personal → Número de teléfono | Teléfono de contacto; privado, no se publica | Opcional | Gestión de cuentas |
 | Información personal → IDs de usuario | UUID, handle GitHub | UUID obligatorio | Funcionalidad, gestión de cuentas |
 | Información personal → Otra información | Edad, zona horaria, datos estructurados del perfil | Obligatorio | Funcionalidad |
 | Ubicación → Ubicación aproximada | Ciudad/zona escrita | Obligatorio | Funcionalidad |
