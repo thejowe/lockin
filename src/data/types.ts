@@ -574,3 +574,112 @@ export interface RoomInput {
   startsAt: string;
   blocks: SessionBlocks;
 }
+
+/**
+ * Grupo: un equipo en formación (2026-11-09). Una persona lo crea —es su admin
+ * y su primer miembro—, declara qué puestos busca y cuántas plazas tiene cada
+ * uno, y recluta con un deck propio. Como mucho 6 miembros, y una persona
+ * pertenece como mucho a un grupo. Ver `src/data/groups.ts`.
+ */
+export interface Group {
+  id: string;
+  name: string;
+  /** El proyecto: qué se quiere construir. */
+  description: string;
+  /** Quien administra. Si sale o borra su cuenta, pasa al miembro más antiguo. */
+  adminId: string;
+  maxMembers: number;
+  createdAt: string;
+}
+
+/** Un puesto que el grupo busca, con sus plazas. */
+export interface GroupRole {
+  id: string;
+  groupId: string;
+  specialty: Specialty;
+  slots: number;
+  /** Plazas ocupadas. Nunca pasa de `slots`. */
+  filled: number;
+}
+
+/** Una persona dentro de un grupo. */
+export interface GroupMember {
+  groupId: string;
+  userId: string;
+  /** El puesto que ocupa. `null` en quien creó el grupo: no ocupa plaza. */
+  roleId: string | null;
+  joinedAt: string;
+}
+
+/** Un miembro con lo que la pantalla necesita para pintarlo. */
+export interface GroupMemberView {
+  member: GroupMember;
+  /** La especialidad de su puesto, o `null` si no ocupa ninguno. */
+  specialty: Specialty | null;
+  isAdmin: boolean;
+  /** Su perfil público, o `null` si no se puede leer (un bloqueo de por medio). */
+  profile: Profile | null;
+}
+
+/** El grupo propio, visto desde dentro. */
+export interface GroupView {
+  group: Group;
+  roles: GroupRole[];
+  /** Por antigüedad: quien lleva más tiempo, primero. */
+  members: GroupMemberView[];
+  /** El usuario actual es quien administra. */
+  isAdmin: boolean;
+}
+
+/** Una carta del deck de quien busca grupo. */
+export interface GroupDeckCard {
+  group: Group;
+  roles: GroupRole[];
+  members: GroupMemberView[];
+  /** El puesto que cubriría quien mira: el primero abierto que encaja con lo que domina. */
+  myRole: GroupRole;
+}
+
+/** Una carta del deck de reclutamiento: la persona y el puesto que cubriría. */
+export interface RecruitCandidate {
+  profile: Profile;
+  role: GroupRole;
+}
+
+export interface GroupRoleInput {
+  specialty: Specialty;
+  slots: number;
+}
+
+/** Datos para crear un grupo. El repositorio pone id, admin y fechas. */
+export interface GroupInput {
+  name: string;
+  description: string;
+  /** Al menos un puesto, sin repetir especialidad. */
+  roles: GroupRoleInput[];
+  /** Por defecto, y como mucho, 6. */
+  maxMembers?: number;
+}
+
+/** Resultado de un swipe de grupos. */
+export interface GroupSwipeResult {
+  decision: Decision;
+  /** El like fue recíproco y la persona ha entrado en el grupo. */
+  joined: boolean;
+}
+
+/** Mensaje del chat de un grupo. */
+export interface GroupMessage {
+  id: string;
+  groupId: string;
+  senderId: string;
+  body: string;
+  sentAt: string;
+}
+
+/** Reporte de un grupo; motivo y límites son los del reporte de perfil. */
+export interface GroupReportInput {
+  groupId: string;
+  reason: ReportReason;
+  details?: string;
+}

@@ -1,0 +1,414 @@
+/**
+ * Grupos del backend mock.
+ *
+ * Como las salas (`./rooms.ts`), se construye para un actor: los tests necesitan
+ * a quien administra y a quien busca grupo sobre el mismo store. La app usa
+ * siempre `CURRENT_USER_ID`.
+ *
+ * Es el espejo de `supabase/migrations/20261109130000_groups.sql`: mismas
+ * reglas, mismo orden de comprobaciones y mismos códigos (`GroupError.reason`).
+ */
+
+import { firstOpenRoleFor, GroupError, validateGroupInput } from '../groups';
+import { REPORT_MAX_LENGTH, REPORT_REASONS } from '../types';
+import { defaultMockStore, isBlockedPair, removeMockGroupMember } from './store';
+
+import type { MockState, MockStore } from './store';
+import type { GroupRepository } from '../repositories';
+import type {
+  Decision,
+  Group,
+  GroupDeckCard,
+  GroupMember,
+  GroupMemberView,
+  GroupMessage,
+  GroupRole,
+  GroupView,
+  ReportReason,
+  Specialty,
+} from '../types';
+
+/** Tópico de avisos del grupo de una persona. */
+export const groupsTopic = (profileId: string) => `groups:${profileId}`;
+const groupMessagesTopic = (groupId: string) => `group-messages:${groupId}`;
+
+/** Orden de `specialty` en Postgres (el del enum): así el «primer puesto abierto» coincide. */
+const SPECIALTY_ORDER: Specialty[] = [
+  'diseno',
+  'dev',
+  'marketing',
+  'ventas',
+  'datos',
+  'legal',
+  'producto',
+  'finanzas',
+  'operaciones',
+  'contenido',
+  'ia',
+  'hardware',
+  'growth',
+  'comunidad',
+  'personas',
+  'investigacion',
+  'audiovisual',
+  'seguridad',
+  'ecommerce',
+  'inversion',
+];
+
+const byId = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+
+export function createMockGroupRepository(
+  actorId: string,
+  store: MockStore = defaultMockStore
+): GroupRepository {
+  const getState = (): MockState => store.state;
+  const iso = () => new Date(store.nowMs()).toISOString();
+
+  const membersOf = (groupId: string): GroupMember[] =>
+    getState()
+      .groupMembers.filter((member) => member.groupId === groupId)
+      .sort((a, b) => a.joinedAt.localeCompare(b.joinedAt) || byId(a.userId, b.userId));
+
+  const rolesOf = (groupId: string): GroupRole[] =>
+    getState()
+      .groupRoles.filter((role) => role.groupId === groupId)
+      .sort(
+        (a, b) =>
+          SPECIALTY_ORDER.indexOf(a.specialty) - SPECIALTY_ORDER.indexOf(b.specialty) ||
+          byId(a.id, b.id)
+      );
+
+  const membershipOf = (userId: string): GroupMember | undefined =>
+    getState().groupMembers.find((member) => member.userId === userId);
+
+  /** Espejo de `group_has_block_with`. */
+  const hasBlockWith = (groupId: string, userId: string): boolean =>
+    membersOf(groupId).some((member) => isBlockedPair(getState(), member.userId, userId));
+
+  const swipeOf = (groupId: string, userId: string, direction: 'user_to_group' | 'group_to_user') =>
+    getState().groupSwipes.find(
+      (swipe) =>
+        swipe.groupId === groupId && swipe.userId === userId && swipe.direction === direction
+    );
+
+  function writeSwipe(
+    groupId: string,
+    userId: string,
+    direction: 'user_to_group' | 'group_to_user',
+    decision: Decision,
+    roleId: string | null
+  ): void {
+    const existing = swipeOf(groupId, userId, direction);
+    if (existing) Object.assign(existing, { decision, roleId, actorId });
+    else getState().groupSwipes.push({ groupId, userId, direction, decision, roleId, actorId });
+  }
+
+  /** Lo que ve cada quien de un miembro: su perfil no se entrega con un bloqueo de por medio. */
+  const memberViews = (group: Group): GroupMemberView[] =>
+    membersOf(group.id).map((member) => ({
+      member: { ...member },
+      specialty: getState().groupRoles.find((role) => role.id === member.roleId)?.specialty ?? null,
+      isAdmin: member.userId === group.adminId,
+      profile:
+        member.userId !== actorId && isBlockedPair(getState(), actorId, member.userId)
+          ? null
+          : (getState().profiles.get(member.userId) ?? null),
+    }));
+
+  const toView = (group: Group): GroupView => ({
+    group: { ...group },
+    roles: rolesOf(group.id).map((role) => ({ ...role })),
+    members: memberViews(group),
+    isAdmin: group.adminId === actorId,
+  });
+
+  const adminGroup = (): Group => {
+    const group = getState().groups.find((candidate) => candidate.adminId === actorId);
+    if (!group) throw new GroupError('admin-only', 'No administras ningún grupo');
+    return group;
+  };
+
+  /** Avisa a quien está dentro del grupo y a las personas indicadas. */
+  const changed = (groupId: string, extra: string[] = []): void => {
+    const audience = new Set([...membersOf(groupId).map((member) => member.userId), ...extra]);
+    audience.add(actorId);
+    audience.forEach((profileId) => store.notify(groupsTopic(profileId)));
+  };
+
+  /** Espejo de `join_group_if_possible`. */
+  function joinIfPossible(group: Group, userId: string, roleId: string | null): boolean {
+    const state = getState();
+    if (membershipOf(userId)) return false;
+    if (membersOf(group.id).length >= group.maxMembers) return false;
+    if (hasBlockWith(group.id, userId)) return false;
+
+    const roles = rolesOf(group.id);
+    const preferred = roles.find((role) => role.id === roleId && role.filled < role.slots);
+    const role =
+      preferred ?? firstOpenRoleFor(roles, state.profiles.get(userId)?.specialties ?? []);
+    if (!role) return false;
+
+    state.groupMembers.push({ groupId: group.id, userId, roleId: role.id, joinedAt: iso() });
+    role.filled += 1;
+    changed(group.id);
+    return true;
+  }
+
+  function checkReport(reason: ReportReason, details: string | undefined): void {
+    if (!REPORT_REASONS.includes(reason))
+      throw Object.assign(new Error('Elige un motivo válido.'), { code: 'LI009' });
+    if (Array.from(details ?? '').length > REPORT_MAX_LENGTH)
+      throw Object.assign(new Error('El texto no puede superar 500 caracteres.'), {
+        code: '23514',
+      });
+  }
+
+  return {
+    async getMine() {
+      const membership = membershipOf(actorId);
+      const group =
+        membership && getState().groups.find((candidate) => candidate.id === membership.groupId);
+      return group ? toView(group) : null;
+    },
+
+    async create(input) {
+      const state = getState();
+      if (!state.profiles.has(actorId)) {
+        throw Object.assign(new Error('Necesitas un perfil.'), { code: '23503' });
+      }
+      const invalid = validateGroupInput(input);
+      if (invalid) throw invalid;
+      if (membershipOf(actorId)) throw new GroupError('already-in-group', 'Ya estás en un grupo');
+
+      const group: Group = {
+        id: store.createId('group'),
+        name: input.name.trim(),
+        description: input.description.trim(),
+        adminId: actorId,
+        maxMembers: input.maxMembers ?? 6,
+        createdAt: iso(),
+      };
+      state.groups.push(group);
+      state.groupRoles.push(
+        ...input.roles.map((role): GroupRole => ({
+          id: store.createId('group-role'),
+          groupId: group.id,
+          specialty: role.specialty,
+          slots: role.slots,
+          filled: 0,
+        }))
+      );
+      state.groupMembers.push({
+        groupId: group.id,
+        userId: actorId,
+        roleId: null,
+        joinedAt: group.createdAt,
+      });
+      changed(group.id);
+      return toView(group);
+    },
+
+    async getDeck() {
+      const state = getState();
+      const viewer = state.profiles.get(actorId);
+      if (!viewer || membershipOf(actorId)) return [];
+
+      const likedMe = (groupId: string) =>
+        swipeOf(groupId, actorId, 'group_to_user')?.decision === 'like';
+
+      return state.groups
+        .filter((group) => membersOf(group.id).length < group.maxMembers)
+        .filter((group) => !hasBlockWith(group.id, actorId))
+        .filter((group) => !swipeOf(group.id, actorId, 'user_to_group'))
+        .filter((group) => swipeOf(group.id, actorId, 'group_to_user')?.decision !== 'pass')
+        .sort((a, b) => Number(likedMe(b.id)) - Number(likedMe(a.id)) || byId(a.id, b.id))
+        .flatMap((group): GroupDeckCard[] => {
+          const roles = rolesOf(group.id);
+          const myRole = firstOpenRoleFor(roles, viewer.specialties);
+          if (!myRole) return [];
+          return [
+            {
+              group: { ...group },
+              roles: roles.map((role) => ({ ...role })),
+              members: memberViews(group),
+              myRole: { ...myRole },
+            },
+          ];
+        });
+    },
+
+    async getRecruitDeck() {
+      const state = getState();
+      const group = adminGroup();
+      if (membersOf(group.id).length >= group.maxMembers) return [];
+      const roles = rolesOf(group.id);
+      const likedUs = (userId: string) =>
+        swipeOf(group.id, userId, 'user_to_group')?.decision === 'like';
+
+      return [...state.profiles.values()]
+        .filter((profile) => profile.id !== actorId && profile.lookingFor !== 'lockin')
+        .filter((profile) => !membershipOf(profile.id))
+        .filter((profile) => !hasBlockWith(group.id, profile.id))
+        .filter((profile) => !swipeOf(group.id, profile.id, 'group_to_user'))
+        .filter((profile) => swipeOf(group.id, profile.id, 'user_to_group')?.decision !== 'pass')
+        .sort((a, b) => Number(likedUs(b.id)) - Number(likedUs(a.id)) || byId(a.id, b.id))
+        .flatMap((profile) => {
+          const role = firstOpenRoleFor(roles, profile.specialties);
+          return role ? [{ profile, role: { ...role } }] : [];
+        });
+    },
+
+    async swipeGroup(groupId, decision) {
+      const state = getState();
+      if (!state.profiles.has(actorId)) {
+        throw Object.assign(new Error('Necesitas un perfil.'), { code: '23503' });
+      }
+      if (membershipOf(actorId)) throw new GroupError('already-in-group', 'Ya estás en un grupo');
+      const group = state.groups.find((candidate) => candidate.id === groupId);
+      if (!group || hasBlockWith(groupId, actorId)) {
+        throw new GroupError('unavailable', 'El grupo no está disponible');
+      }
+
+      writeSwipe(groupId, actorId, 'user_to_group', decision, null);
+      const theirs = swipeOf(groupId, actorId, 'group_to_user');
+      if (decision !== 'like' || theirs?.decision !== 'like') return { decision, joined: false };
+      return { decision, joined: joinIfPossible(group, actorId, theirs.roleId) };
+    },
+
+    async swipeCandidate(userId, roleId, decision) {
+      const state = getState();
+      const group = adminGroup();
+      if (!state.groupRoles.some((role) => role.id === roleId && role.groupId === group.id)) {
+        throw new GroupError('invalid', 'Ese puesto no es de tu grupo');
+      }
+      if (userId === actorId || !state.profiles.has(userId) || hasBlockWith(group.id, userId)) {
+        throw new GroupError('candidate-unavailable', 'Esa persona no está disponible');
+      }
+
+      writeSwipe(group.id, userId, 'group_to_user', decision, roleId);
+      if (decision !== 'like' || swipeOf(group.id, userId, 'user_to_group')?.decision !== 'like') {
+        return { decision, joined: false };
+      }
+      const joined = joinIfPossible(group, userId, roleId);
+      if (joined) store.notify(groupsTopic(userId));
+      return { decision, joined };
+    },
+
+    async leave() {
+      const membership = membershipOf(actorId);
+      if (!membership) throw new GroupError('unavailable', 'No estás en ningún grupo');
+      const others = membersOf(membership.groupId).map((member) => member.userId);
+      removeMockGroupMember(getState(), actorId);
+      changed(membership.groupId, others);
+    },
+
+    async kick(userId) {
+      const group = adminGroup();
+      if (userId === actorId) throw new GroupError('invalid', 'Para irte tú, sal del grupo');
+      if (membershipOf(userId)?.groupId !== group.id) {
+        throw new GroupError('candidate-unavailable', 'Esa persona no está en tu grupo');
+      }
+      removeMockGroupMember(getState(), userId);
+      changed(group.id, [userId]);
+    },
+
+    async report({ groupId, reason, details }) {
+      checkReport(reason, details);
+      const group = getState().groups.find((candidate) => candidate.id === groupId);
+      if (!group) throw new GroupError('unavailable', 'El grupo no está disponible');
+      if (group.adminId === actorId)
+        throw Object.assign(new Error('No puedes reportar tu propio grupo.'), { code: 'LI008' });
+      getState().userReports.push({
+        reporterId: actorId,
+        reportedId: group.adminId,
+        reporterRef: actorId,
+        reportedRef: group.adminId,
+        createdAtMs: store.nowMs(),
+        reason,
+        details: details?.trim() || null,
+        groupId: group.id,
+        groupRef: group.id,
+        groupName: group.name,
+      });
+    },
+
+    async block(groupId) {
+      const state = getState();
+      const group = state.groups.find((candidate) => candidate.id === groupId);
+      if (!group) throw new GroupError('unavailable', 'El grupo no está disponible');
+      if (membershipOf(actorId)?.groupId === groupId) {
+        throw new GroupError('invalid', 'Sal del grupo antes de bloquearlo');
+      }
+      writeSwipe(groupId, actorId, 'user_to_group', 'pass', null);
+      const blocks = state.userBlocks.get(actorId) ?? new Set<string>();
+      blocks.add(group.adminId);
+      state.userBlocks.set(actorId, blocks);
+      // El bloqueo al admin cambia también deck y matches de cofundador.
+      store.notify('matches');
+      store.notify(groupsTopic(actorId));
+    },
+
+    async listMessages(groupId) {
+      if (membershipOf(actorId)?.groupId !== groupId) return [];
+      return getState()
+        .groupMessages.filter((message) => message.groupId === groupId)
+        .filter(
+          (message) =>
+            message.senderId === actorId || !isBlockedPair(getState(), actorId, message.senderId)
+        )
+        .map((message) => ({ ...message }));
+    },
+
+    async sendMessage(groupId, body) {
+      if (membershipOf(actorId)?.groupId !== groupId || body.trim() === '') {
+        throw Object.assign(new Error('No se puede enviar el mensaje.'), { code: '42501' });
+      }
+      const message: GroupMessage = {
+        id: store.createId('group-message'),
+        groupId,
+        senderId: actorId,
+        body,
+        sentAt: new Date().toISOString(),
+      };
+      getState().groupMessages.push(message);
+      store.notify(groupMessagesTopic(groupId));
+      return { ...message };
+    },
+
+    async reportMessage({ messageId, reason, details }) {
+      checkReport(reason, details);
+      const state = getState();
+      const message = state.groupMessages.find((candidate) => candidate.id === messageId);
+      if (!message || membershipOf(actorId)?.groupId !== message.groupId)
+        throw Object.assign(new Error('El mensaje no está disponible.'), { code: '42501' });
+      if (message.senderId === actorId)
+        throw Object.assign(new Error('No puedes reportar tus propios mensajes.'), {
+          code: 'LI008',
+        });
+      const group = state.groups.find((candidate) => candidate.id === message.groupId);
+      state.userReports.push({
+        reporterId: actorId,
+        reportedId: message.senderId,
+        reporterRef: actorId,
+        reportedRef: message.senderId,
+        createdAtMs: store.nowMs(),
+        reason,
+        details: details?.trim() || null,
+        messageRef: message.id,
+        messageExcerpt: Array.from(message.body).slice(0, 500).join(''),
+        groupId: message.groupId,
+        groupRef: message.groupId,
+        groupName: group?.name,
+      });
+    },
+
+    subscribe(listener) {
+      return store.subscribeTo(groupsTopic(actorId), listener);
+    },
+
+    subscribeMessages(groupId, listener) {
+      return store.subscribeTo(groupMessagesTopic(groupId), listener);
+    },
+  };
+}

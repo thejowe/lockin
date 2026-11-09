@@ -62,8 +62,9 @@ del canvas «cofounder — Rediseño». Sustituye a la paleta latón/Fraunces an
   en acento, sin iconos decorativos, radios contenidos. La brasa sólida es solo
   la acción principal de cada pantalla; el resto de señales van en tinta de
   acento sobre su relleno tenue.
-- **Tipografía: Inter**, la neo-grotesca más cercana a SF Pro (la de la
-  referencia), con tracking negativo en titulares. Sin serif ni mono.
+- **Tipografía (2026-11-09): Instrument Serif + Instrument Sans.** Serif de
+  display para titulares (un solo peso, cursiva para énfasis; nunca `fontWeight`)
+  sobre su sans compañera para la interfaz. Sustituye a Inter, demasiado genérica.
 
 | Token | Valor | Uso |
 |---|---|---|

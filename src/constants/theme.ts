@@ -110,26 +110,30 @@ export const OnDiamond: ThemePalette = {
 };
 
 /**
- * Familias tipográficas. Inter es la neo-grotesca más cercana a SF Pro (la
- * tipografía de la referencia), y se ve igual en iOS, Android y web. Los
- * valores son las claves con las que `src/app/_layout.tsx` registra las fuentes
- * en `expo-font` — deben coincidir con `BrandFonts`. Los alias `display` y
- * `mono` se conservan del sistema anterior: hoy son pesos de Inter.
+ * Familias tipográficas. Pareja de contraste: Instrument Serif para titulares
+ * (serif de display, condensada y de trazo afilado, con aire editorial) sobre
+ * Instrument Sans para la interfaz (su compañera de familia: mismo esqueleto,
+ * más cálida que una neo-grotesca genérica). Los valores son las claves con las
+ * que `src/app/_layout.tsx` registra las fuentes en `expo-font` — deben coincidir
+ * con `BrandFonts`. La serif solo existe en 400: nunca le pongas `fontWeight`
+ * (el sistema la falsearía en negrita). Para énfasis en un titular, usa la
+ * cursiva `displayItalic`.
  */
 export const FontFamily = {
-  /** Titulares. */
-  display: 'Inter_600SemiBold',
-  displayBold: 'Inter_700Bold',
-  /** Cifras grandes (temporizador). */
-  light: 'Inter_300Light',
+  /** Titulares (la serif solo tiene un peso: `displayBold` es un alias). */
+  display: 'InstrumentSerif_400Regular',
+  displayBold: 'InstrumentSerif_400Regular',
+  displayItalic: 'InstrumentSerif_400Regular_Italic',
+  /** Cifras grandes (temporizador): sans, para que las tabulares no bailen. */
+  light: 'InstrumentSans_400Regular',
   /** Texto de interfaz. */
-  sans: 'Inter_400Regular',
-  sansMedium: 'Inter_500Medium',
-  sansSemiBold: 'Inter_600SemiBold',
-  sansBold: 'Inter_700Bold',
+  sans: 'InstrumentSans_400Regular',
+  sansMedium: 'InstrumentSans_500Medium',
+  sansSemiBold: 'InstrumentSans_600SemiBold',
+  sansBold: 'InstrumentSans_700Bold',
   /** Datos y metadatos (con cifras tabulares en `Typography.mono`). */
-  mono: 'Inter_400Regular',
-  monoMedium: 'Inter_500Medium',
+  mono: 'InstrumentSans_400Regular',
+  monoMedium: 'InstrumentSans_500Medium',
 } as const;
 
 export type FontFamilyName = keyof typeof FontFamily;
@@ -145,8 +149,8 @@ export const SystemFonts = Platform.select({
 });
 
 /**
- * Escala tipográfica, al modo de Apple: titulares apretados (tracking negativo
- * que crece con el tamaño), cuerpo a 16 con interlineado corto. Cada entrada es
+ * Escala tipográfica: titulares serif de display (tracking leve) sobre sans de
+ * interfaz, cuerpo a 16 con interlineado corto. Cada entrada es
  * un estilo completo y cerrado — las pantallas eligen un rol, no componen
  * tamaños sueltos.
  */
@@ -154,14 +158,14 @@ export const Typography = {
   /** Pantalla de bienvenida, «¡Match!». */
   display: {
     fontFamily: FontFamily.displayBold,
-    fontSize: 40,
-    lineHeight: 44,
-    letterSpacing: -1.2,
+    fontSize: 48,
+    lineHeight: 50,
+    letterSpacing: -0.8,
   },
   /** Título de pantalla. */
-  title: { fontFamily: FontFamily.displayBold, fontSize: 32, lineHeight: 38, letterSpacing: -0.9 },
+  title: { fontFamily: FontFamily.displayBold, fontSize: 38, lineHeight: 42, letterSpacing: -0.5 },
   /** Nombre en tarjeta de perfil, cabecera de sección. */
-  subtitle: { fontFamily: FontFamily.display, fontSize: 22, lineHeight: 28, letterSpacing: -0.45 },
+  subtitle: { fontFamily: FontFamily.display, fontSize: 27, lineHeight: 31, letterSpacing: -0.2 },
   /** Cabecera dentro de una tarjeta. */
   heading: {
     fontFamily: FontFamily.sansSemiBold,
@@ -204,7 +208,7 @@ export const Typography = {
     fontFamily: FontFamily.light,
     fontSize: 60,
     lineHeight: 66,
-    letterSpacing: -2,
+    letterSpacing: -1.5,
     fontVariant: ['tabular-nums'],
   },
 } satisfies Record<string, TextStyle>;

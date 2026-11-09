@@ -1,0 +1,511 @@
+/**
+ * Grupos en el backend mock. Es el espejo de `supabase/groups-embedded.test.mjs`:
+ * las mismas reglas, comprobadas sobre el store en memoria con varias personas.
+ */
+
+import { GroupError } from '../groups';
+import { buildProfileInput } from '../test-fixtures';
+import { createMockRepositories, createMockStore, CURRENT_USER_ID } from './index';
+
+import type { MockStore } from './store';
+import type { Repositories } from '../repositories';
+import type { GroupInput, Specialty } from '../types';
+
+const INPUT: GroupInput = {
+  name: 'Equipo',
+  description: 'Un proyecto de prueba con descripción.',
+  roles: [
+    { specialty: 'dev', slots: 2 },
+    { specialty: 'diseno', slots: 1 },
+  ],
+};
+
+let store: MockStore;
+const actors = new Map<string, Repositories>();
+
+/** Los repositorios de una persona, con su perfil ya creado. */
+async function person(id: string, specialties: Specialty[]): Promise<Repositories> {
+  const repositories = createMockRepositories(store, { actorId: id });
+  await repositories.profiles.saveCurrent(buildProfileInput({ name: id, specialties }));
+  actors.set(id, repositories);
+  return repositories;
+}
+
+const reason = async (action: Promise<unknown>) => {
+  try {
+    await action;
+    return 'sin error';
+  } catch (cause) {
+    return cause instanceof GroupError ? cause.reason : (cause as { code?: string }).code;
+  }
+};
+
+/** Mete a `user` en el grupo de `admin` por like recíproco. */
+async function admit(
+  admin: Repositories,
+  user: Repositories,
+  userId: string,
+  specialty: Specialty
+) {
+  const view = await admin.groups.getMine();
+  const role = view!.roles.find((candidate) => candidate.specialty === specialty)!;
+  await user.groups.swipeGroup(view!.group.id, 'like');
+  const result = await admin.groups.swipeCandidate(userId, role.id, 'like');
+  expect(result.joined).toBe(true);
+}
+
+let admin: Repositories;
+let dev1: Repositories;
+let dev2: Repositories;
+let dev3: Repositories;
+let designer: Repositories;
+let lawyer: Repositories;
+
+beforeEach(async () => {
+  store = createMockStore();
+  // Sin grupos ni perfiles semilla: cada caso parte de lo que él mismo crea.
+  Object.assign(store.state, { groups: [], groupRoles: [], groupMembers: [], groupSwipes: [] });
+  store.state.profiles.clear();
+  actors.clear();
+  admin = await person('admin', ['producto']);
+  dev1 = await person('dev1', ['dev']);
+  dev2 = await person('dev2', ['dev']);
+  dev3 = await person('dev3', ['dev']);
+  designer = await person('designer', ['diseno']);
+  lawyer = await person('lawyer', ['legal']);
+});
+
+describe('crear', () => {
+  it('quien crea es admin y miembro sin plaza', async () => {
+    const view = await admin.groups.create(INPUT);
+
+    expect(view.isAdmin).toBe(true);
+    expect(view.group.adminId).toBe('admin');
+    expect(view.group.maxMembers).toBe(6);
+    expect(view.members).toHaveLength(1);
+    expect(view.members[0]).toMatchObject({ isAdmin: true, specialty: null });
+    expect(view.members[0].member.roleId).toBeNull();
+    // Los puestos salen en el orden del enum: diseño antes que desarrollo.
+    expect(view.roles.map((role) => [role.specialty, role.slots, role.filled])).toEqual([
+      ['diseno', 1, 0],
+      ['dev', 2, 0],
+    ]);
+    expect((await admin.groups.getMine())?.group.id).toBe(view.group.id);
+    expect(await dev1.groups.getMine()).toBeNull();
+  });
+
+  it('valida los datos, exige perfil y solo deja un grupo por persona', async () => {
+    expect(await reason(admin.groups.create({ ...INPUT, name: 'x' }))).toBe('invalid');
+    const ghost = createMockRepositories(store, { actorId: 'ghost' });
+    expect(await reason(ghost.groups.create(INPUT))).toBe('23503');
+
+    await admin.groups.create(INPUT);
+    expect(await reason(admin.groups.create(INPUT))).toBe('already-in-group');
+  });
+
+  it('avisa a quien está suscrito a su grupo', async () => {
+    const listener = jest.fn();
+    const stop = admin.groups.subscribe(listener);
+    await admin.groups.create(INPUT);
+    expect(listener).toHaveBeenCalled();
+    stop();
+  });
+});
+
+describe('decks', () => {
+  it('quien busca ve los grupos con un puesto abierto que encaja, con su puesto', async () => {
+    const { group } = await admin.groups.create(INPUT);
+
+    const deck = await dev1.groups.getDeck();
+    expect(deck).toHaveLength(1);
+    expect(deck[0].group.id).toBe(group.id);
+    expect(deck[0].myRole.specialty).toBe('dev');
+    expect(deck[0].members.map((entry) => entry.profile?.name)).toEqual(['admin']);
+
+    expect(await lawyer.groups.getDeck()).toEqual([]);
+    expect(await admin.groups.getDeck()).toEqual([]);
+    const ghost = createMockRepositories(store, { actorId: 'ghost' });
+    expect(await ghost.groups.getDeck()).toEqual([]);
+  });
+
+  it('el admin ve a quien encaja y no tiene grupo, con el puesto que cubriría', async () => {
+    await admin.groups.create(INPUT);
+
+    const deck = await admin.groups.getRecruitDeck();
+    expect(deck.map((card) => [card.profile.id, card.role.specialty])).toEqual([
+      ['designer', 'diseno'],
+      ['dev1', 'dev'],
+      ['dev2', 'dev'],
+      ['dev3', 'dev'],
+    ]);
+    expect(await reason(dev1.groups.getRecruitDeck())).toBe('admin-only');
+  });
+
+  it('quien ya dio like sale primero, y lo decidido no vuelve', async () => {
+    const { group } = await admin.groups.create(INPUT);
+    await dev3.groups.swipeGroup(group.id, 'like');
+    await dev2.groups.swipeGroup(group.id, 'pass');
+
+    const deck = await admin.groups.getRecruitDeck();
+    expect(deck.map((card) => card.profile.id)).toEqual(['dev3', 'designer', 'dev1']);
+    expect(await dev3.groups.getDeck()).toEqual([]);
+
+    const role = deck[0].role;
+    await admin.groups.swipeCandidate('dev1', role.id, 'pass');
+    expect((await admin.groups.getRecruitDeck()).map((card) => card.profile.id)).toEqual([
+      'dev3',
+      'designer',
+    ]);
+    expect(await dev1.groups.getDeck()).toEqual([]);
+  });
+
+  it('un grupo que ya te dio like sale antes que otro', async () => {
+    const first = await admin.groups.create(INPUT);
+    const second = await designer.groups.create({
+      ...INPUT,
+      roles: [{ specialty: 'dev', slots: 1 }],
+    });
+    const role = second.roles[0];
+    await designer.groups.swipeCandidate('dev1', role.id, 'like');
+
+    const deck = await dev1.groups.getDeck();
+    expect(deck.map((card) => card.group.id)).toEqual([second.group.id, first.group.id]);
+  });
+
+  it('un bloqueo con alguien de dentro esconde el grupo y a la persona', async () => {
+    const { group } = await admin.groups.create(INPUT);
+    await dev1.profiles.block('admin');
+
+    expect(await dev1.groups.getDeck()).toEqual([]);
+    expect((await admin.groups.getRecruitDeck()).some((card) => card.profile.id === 'dev1')).toBe(
+      false
+    );
+    expect(await reason(dev1.groups.swipeGroup(group.id, 'like'))).toBe('unavailable');
+    const role = (await admin.groups.getMine())!.roles[1];
+    expect(await reason(admin.groups.swipeCandidate('dev1', role.id, 'like'))).toBe(
+      'candidate-unavailable'
+    );
+  });
+});
+
+describe('unión', () => {
+  it('une con like recíproco en los dos órdenes y marca la plaza', async () => {
+    const { group, roles } = await admin.groups.create(INPUT);
+    const [design, dev] = roles;
+
+    expect((await dev1.groups.swipeGroup(group.id, 'like')).joined).toBe(false);
+    expect((await admin.groups.swipeCandidate('dev1', dev.id, 'like')).joined).toBe(true);
+
+    expect((await admin.groups.swipeCandidate('designer', design.id, 'like')).joined).toBe(false);
+    expect((await designer.groups.swipeGroup(group.id, 'like')).joined).toBe(true);
+
+    const view = (await dev1.groups.getMine())!;
+    expect(view.isAdmin).toBe(false);
+    expect(view.members.map((entry) => entry.member.userId).sort()).toEqual([
+      'admin',
+      'designer',
+      'dev1',
+    ]);
+    expect(view.roles.map((role) => role.filled)).toEqual([1, 1]);
+    expect(view.members.find((entry) => entry.member.userId === 'dev1')?.specialty).toBe('dev');
+  });
+
+  it('un pase no une, y quien ya está dentro no desliza', async () => {
+    const { group, roles } = await admin.groups.create(INPUT);
+    await dev1.groups.swipeGroup(group.id, 'pass');
+    expect((await admin.groups.swipeCandidate('dev1', roles[1].id, 'like')).joined).toBe(false);
+    // Cambiar el pase por un like sí une.
+    expect((await dev1.groups.swipeGroup(group.id, 'like')).joined).toBe(true);
+    expect(await reason(dev1.groups.swipeGroup(group.id, 'like'))).toBe('already-in-group');
+  });
+
+  it('con el puesto lleno no entra nadie más ni sale en el deck', async () => {
+    const { group, roles } = await admin.groups.create(INPUT);
+    await admit(admin, dev1, 'dev1', 'dev');
+    await admit(admin, dev2, 'dev2', 'dev');
+
+    expect((await admin.groups.getRecruitDeck()).map((card) => card.profile.id)).toEqual([
+      'designer',
+    ]);
+    expect(await dev3.groups.getDeck()).toEqual([]);
+    await dev3.groups.swipeGroup(group.id, 'like');
+    expect((await admin.groups.swipeCandidate('dev3', roles[1].id, 'like')).joined).toBe(false);
+    expect((await admin.groups.getMine())!.members).toHaveLength(3);
+  });
+
+  it('si el puesto elegido se llenó, entra en otro abierto que encaje', async () => {
+    const both = await person('both', ['dev', 'diseno']);
+    const { group, roles } = await admin.groups.create({
+      ...INPUT,
+      roles: [
+        { specialty: 'dev', slots: 1 },
+        { specialty: 'diseno', slots: 1 },
+      ],
+    });
+    const dev = roles.find((role) => role.specialty === 'dev')!;
+    await admin.groups.swipeCandidate('both', dev.id, 'like');
+    await admit(admin, dev1, 'dev1', 'dev');
+
+    expect((await both.groups.swipeGroup(group.id, 'like')).joined).toBe(true);
+    const view = (await both.groups.getMine())!;
+    expect(view.members.find((entry) => entry.member.userId === 'both')?.specialty).toBe('diseno');
+  });
+
+  it('un grupo lleno no admite a nadie y su deck se vacía', async () => {
+    const { group, roles } = await admin.groups.create({
+      ...INPUT,
+      maxMembers: 2,
+      roles: [{ specialty: 'dev', slots: 1 }],
+    });
+    await admit(admin, dev1, 'dev1', 'dev');
+    expect(await admin.groups.getRecruitDeck()).toEqual([]);
+    expect(await dev2.groups.getDeck()).toEqual([]);
+    await dev2.groups.swipeGroup(group.id, 'like');
+    expect((await admin.groups.swipeCandidate('dev2', roles[0].id, 'like')).joined).toBe(false);
+  });
+
+  it('una persona no entra en dos grupos', async () => {
+    const first = await admin.groups.create(INPUT);
+    const second = await designer.groups.create({
+      ...INPUT,
+      roles: [{ specialty: 'dev', slots: 1 }],
+    });
+    await dev1.groups.swipeGroup(first.group.id, 'like');
+    await dev1.groups.swipeGroup(second.group.id, 'like');
+    expect((await admin.groups.swipeCandidate('dev1', first.roles[1].id, 'like')).joined).toBe(
+      true
+    );
+    expect((await designer.groups.swipeCandidate('dev1', second.roles[0].id, 'like')).joined).toBe(
+      false
+    );
+  });
+
+  it('el admin solo desliza sobre sus puestos y sobre personas que existen', async () => {
+    const { roles } = await admin.groups.create(INPUT);
+    expect(await reason(dev1.groups.swipeCandidate('dev2', roles[0].id, 'like'))).toBe(
+      'admin-only'
+    );
+    expect(await reason(admin.groups.swipeCandidate('dev1', 'otro-puesto', 'like'))).toBe(
+      'invalid'
+    );
+    expect(await reason(admin.groups.swipeCandidate('admin', roles[0].id, 'like'))).toBe(
+      'candidate-unavailable'
+    );
+    expect(await reason(admin.groups.swipeCandidate('nadie', roles[0].id, 'like'))).toBe(
+      'candidate-unavailable'
+    );
+    expect(await reason(dev1.groups.swipeGroup('no-existe', 'like'))).toBe('unavailable');
+    const ghost = createMockRepositories(store, { actorId: 'ghost' });
+    expect(await reason(ghost.groups.swipeGroup('no-existe', 'like'))).toBe('23503');
+  });
+});
+
+describe('salir y expulsar', () => {
+  it('la plaza vuelve a quedar libre y no hay reentrada sola', async () => {
+    const { group } = await admin.groups.create(INPUT);
+    await admit(admin, dev1, 'dev1', 'dev');
+    await admit(admin, dev2, 'dev2', 'dev');
+
+    await dev1.groups.leave();
+    expect(await dev1.groups.getMine()).toBeNull();
+    expect((await admin.groups.getMine())!.roles[1].filled).toBe(1);
+    expect(await reason(dev1.groups.leave())).toBe('unavailable');
+    // Sus likes con el grupo quedaron en pase.
+    expect(await dev1.groups.getDeck()).toEqual([]);
+    expect((await admin.groups.getRecruitDeck()).some((card) => card.profile.id === 'dev1')).toBe(
+      false
+    );
+
+    expect(await reason(dev2.groups.kick('admin'))).toBe('admin-only');
+    expect(await reason(admin.groups.kick('admin'))).toBe('invalid');
+    expect(await reason(admin.groups.kick('dev1'))).toBe('candidate-unavailable');
+    const listener = jest.fn();
+    dev2.groups.subscribe(listener);
+    await admin.groups.kick('dev2');
+    expect(listener).toHaveBeenCalled();
+    const view = (await admin.groups.getMine())!;
+    expect(view.members).toHaveLength(1);
+    expect(view.roles.every((role) => role.filled === 0)).toBe(true);
+    expect(view.group.id).toBe(group.id);
+  });
+
+  it('si sale el admin, pasa al más antiguo; si no queda nadie, el grupo se borra', async () => {
+    await admin.groups.create(INPUT);
+    store.advanceClock(1000);
+    await admit(admin, dev1, 'dev1', 'dev');
+    store.advanceClock(1000);
+    await admit(admin, designer, 'designer', 'diseno');
+
+    await admin.groups.leave();
+    const view = (await dev1.groups.getMine())!;
+    expect(view.group.adminId).toBe('dev1');
+    expect(view.isAdmin).toBe(true);
+    // Conserva su puesto: la plaza sigue ocupada.
+    expect(view.members.find((entry) => entry.isAdmin)?.specialty).toBe('dev');
+
+    await dev1.groups.leave();
+    expect((await designer.groups.getMine())!.group.adminId).toBe('designer');
+    await designer.groups.leave();
+    expect(store.state.groups).toHaveLength(0);
+    expect(store.state.groupRoles).toHaveLength(0);
+    expect(store.state.groupSwipes).toHaveLength(0);
+  });
+
+  it('borrar la cuenta saca del grupo, pasa el liderazgo y se lleva swipes y mensajes', async () => {
+    const { group } = await admin.groups.create(INPUT);
+    await admit(admin, dev1, 'dev1', 'dev');
+    await dev2.groups.swipeGroup(group.id, 'like');
+    await admin.groups.sendMessage(group.id, 'hola');
+    await dev1.groups.sendMessage(group.id, 'buenas');
+    await lawyer.groups.report({ groupId: group.id, reason: 'spam' });
+
+    await dev2.session.deleteMyAccount();
+    expect(store.state.groupSwipes.some((swipe) => swipe.userId === 'dev2')).toBe(false);
+
+    await admin.session.deleteMyAccount();
+    const view = (await dev1.groups.getMine())!;
+    expect(view.group.adminId).toBe('dev1');
+    expect(view.members).toHaveLength(1);
+    expect((await dev1.groups.listMessages(group.id)).map((message) => message.body)).toEqual([
+      'buenas',
+    ]);
+    // El like que el admin dio en nombre del grupo se queda, sin autor.
+    expect(
+      store.state.groupSwipes.find(
+        (swipe) => swipe.userId === 'dev1' && swipe.direction === 'group_to_user'
+      )?.actorId
+    ).toBeNull();
+
+    await dev1.session.deleteMyAccount();
+    expect(store.state.groups).toHaveLength(0);
+    expect(store.state.groupMessages).toHaveLength(0);
+    // El reporte sobrevive al grupo, con su referencia en texto.
+    expect(store.state.userReports[0]).toMatchObject({ groupId: null, groupRef: group.id });
+  });
+});
+
+describe('chat de grupo', () => {
+  it('solo los miembros leen y escriben, y los suscritos se enteran', async () => {
+    const { group } = await admin.groups.create(INPUT);
+    await admit(admin, dev1, 'dev1', 'dev');
+    const listener = jest.fn();
+    const stop = dev1.groups.subscribeMessages(group.id, listener);
+
+    const sent = await admin.groups.sendMessage(group.id, 'hola equipo');
+    expect(sent).toMatchObject({ groupId: group.id, senderId: 'admin', body: 'hola equipo' });
+    expect(listener).toHaveBeenCalledTimes(1);
+    stop();
+
+    expect((await dev1.groups.listMessages(group.id)).map((message) => message.body)).toEqual([
+      'hola equipo',
+    ]);
+    expect(await dev2.groups.listMessages(group.id)).toEqual([]);
+    expect(await reason(dev2.groups.sendMessage(group.id, 'colado'))).toBe('42501');
+    expect(await reason(admin.groups.sendMessage(group.id, '   '))).toBe('42501');
+  });
+
+  it('un bloqueo esconde los mensajes de esa persona', async () => {
+    const { group } = await admin.groups.create(INPUT);
+    await admit(admin, dev1, 'dev1', 'dev');
+    await admit(admin, designer, 'designer', 'diseno');
+    await dev1.groups.sendMessage(group.id, 'de dev1');
+    await designer.groups.sendMessage(group.id, 'de designer');
+    await designer.profiles.block('dev1');
+
+    expect((await designer.groups.listMessages(group.id)).map((message) => message.body)).toEqual([
+      'de designer',
+    ]);
+    expect(await admin.groups.listMessages(group.id)).toHaveLength(2);
+    // Y su perfil deja de entregarse dentro del grupo.
+    const view = (await designer.groups.getMine())!;
+    expect(view.members.find((entry) => entry.member.userId === 'dev1')?.profile).toBeNull();
+  });
+});
+
+describe('denunciar y bloquear', () => {
+  it('el reporte de un grupo apunta a su admin y guarda la referencia', async () => {
+    const { group } = await admin.groups.create(INPUT);
+
+    await dev1.groups.report({ groupId: group.id, reason: 'spam', details: '  raro  ' });
+    expect(store.state.userReports[0]).toMatchObject({
+      reporterId: 'dev1',
+      reportedId: 'admin',
+      reason: 'spam',
+      details: 'raro',
+      groupId: group.id,
+      groupName: 'Equipo',
+    });
+
+    expect(await reason(admin.groups.report({ groupId: group.id, reason: 'spam' }))).toBe('LI008');
+    expect(await reason(dev1.groups.report({ groupId: 'no-existe', reason: 'spam' }))).toBe(
+      'unavailable'
+    );
+    expect(await reason(dev1.groups.report({ groupId: group.id, reason: 'nada' as never }))).toBe(
+      'LI009'
+    );
+    expect(
+      await reason(
+        dev1.groups.report({ groupId: group.id, reason: 'spam', details: 'x'.repeat(501) })
+      )
+    ).toBe('23514');
+  });
+
+  it('reportar un mensaje del chat: solo miembros y nunca el propio', async () => {
+    const { group } = await admin.groups.create(INPUT);
+    await admit(admin, dev1, 'dev1', 'dev');
+    const message = await dev1.groups.sendMessage(group.id, 'mensaje feo');
+
+    await admin.groups.reportMessage({ messageId: message.id, reason: 'acoso' });
+    expect(store.state.userReports[0]).toMatchObject({
+      reportedId: 'dev1',
+      messageRef: message.id,
+      messageExcerpt: 'mensaje feo',
+      groupRef: group.id,
+    });
+    expect(
+      await reason(dev1.groups.reportMessage({ messageId: message.id, reason: 'acoso' }))
+    ).toBe('LI008');
+    expect(
+      await reason(dev2.groups.reportMessage({ messageId: message.id, reason: 'acoso' }))
+    ).toBe('42501');
+    expect(await reason(admin.groups.reportMessage({ messageId: 'nada', reason: 'acoso' }))).toBe(
+      '42501'
+    );
+  });
+
+  it('bloquear un grupo lo saca del deck y bloquea a su admin; desde dentro no se puede', async () => {
+    const { group } = await admin.groups.create(INPUT);
+    await admit(admin, dev1, 'dev1', 'dev');
+    const listener = jest.fn();
+    dev2.groups.subscribe(listener);
+
+    await dev2.groups.block(group.id);
+    expect(listener).toHaveBeenCalled();
+    expect(await dev2.groups.getDeck()).toEqual([]);
+    expect(await dev2.profiles.getById('admin')).toBeNull();
+    expect((await admin.groups.getRecruitDeck()).some((card) => card.profile.id === 'dev2')).toBe(
+      false
+    );
+
+    expect(await reason(dev1.groups.block(group.id))).toBe('invalid');
+    expect(await reason(dev3.groups.block('no-existe'))).toBe('unavailable');
+  });
+});
+
+describe('semillas', () => {
+  it('la app nace con grupos de ejemplo, y el primero ya le ha dado like a la cuenta propia', async () => {
+    const fresh = createMockStore();
+    const me = createMockRepositories(fresh);
+    await me.profiles.saveCurrent(buildProfileInput({ specialties: ['dev'] }));
+
+    const deck = await me.groups.getDeck();
+    expect(deck.map((card) => card.group.id)).toEqual(['seed-group-taller', 'seed-group-ruta']);
+    expect(deck[0].members.map((entry) => entry.profile?.id)).toEqual(['seed-marc', 'seed-alba']);
+
+    const result = await me.groups.swipeGroup('seed-group-taller', 'like');
+    expect(result.joined).toBe(true);
+    expect((await me.groups.getMine())?.members.map((entry) => entry.member.userId)).toContain(
+      CURRENT_USER_ID
+    );
+  });
+});

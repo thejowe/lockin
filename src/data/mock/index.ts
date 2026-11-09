@@ -27,6 +27,7 @@ import {
   superLikedActor,
   usesPremiumFilters,
 } from './premium';
+import { createMockGroupRepository } from './groups';
 import { createMockRoomRepository, roomsTopic } from './rooms';
 import { createMockSessionRepository } from './sessions';
 import { BOARD_MAX_POSTS, BoardRejectedError } from '../repositories';
@@ -70,6 +71,7 @@ export type { MockStore } from './store';
 export { createMockSessionRepository, sessionsTopic } from './sessions';
 export type { MockSessionOptions } from './sessions';
 export { createMockAgreementRepository } from './agreement';
+export { createMockGroupRepository, groupsTopic } from './groups';
 export { createMockRoomRepository, roomsTopic } from './rooms';
 export type { MockRoomOptions } from './rooms';
 export {
@@ -679,5 +681,6 @@ export function createMockRepositories(
       decisions: actorDecisions,
       isBlocked,
     }),
+    groups: createMockGroupRepository(actorId, store),
   };
 }

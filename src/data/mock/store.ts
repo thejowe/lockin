@@ -17,6 +17,10 @@ import type { StoredAgreementAnswer } from '../agreement';
 import type {
   BoardPost,
   Decision,
+  Group,
+  GroupMember,
+  GroupMessage,
+  GroupRole,
   LockInRoom,
   LockInSession,
   Match,
@@ -79,6 +83,13 @@ export interface MockState {
   termsAcceptances: Map<string, Map<string, string>>;
   /** Tablones personales. En el mock no hay moderación: se publica tal cual. */
   boardPosts: BoardPost[];
+  /** Grupos, sus puestos y sus miembros (espejo de `20261109130000_groups.sql`). */
+  groups: Group[];
+  groupRoles: GroupRole[];
+  groupMembers: GroupMember[];
+  /** Likes y pases entre personas y grupos. `userId` es siempre la persona candidata. */
+  groupSwipes: MockGroupSwipe[];
+  groupMessages: GroupMessage[];
   /**
    * Almacén privado; no se expone ningún método de lectura de reportes.
    *
@@ -99,7 +110,151 @@ export interface MockState {
     messageId?: string | null;
     messageRef?: string;
     messageExcerpt?: string;
+    /** Solo en reportes de un grupo o de un mensaje de su chat. */
+    groupId?: string | null;
+    groupRef?: string;
+    groupName?: string;
   }[];
+}
+
+export interface MockGroupSwipe {
+  groupId: string;
+  userId: string;
+  direction: 'user_to_group' | 'group_to_user';
+  decision: Decision;
+  /** En `group_to_user`, el puesto que cubriría. */
+  roleId: string | null;
+  actorId: string | null;
+}
+
+/**
+ * Saca a una persona de su grupo (espejo de `remove_group_member`): libera su
+ * plaza, apaga sus likes con ese grupo y aplica la regla de liderazgo —pasa al
+ * miembro más antiguo; si no queda nadie, el grupo se borra—. Devuelve el id del
+ * grupo, o `null` si no estaba en ninguno.
+ */
+export function removeMockGroupMember(state: MockState, userId: string): string | null {
+  const membership = state.groupMembers.find((member) => member.userId === userId);
+  if (!membership) return null;
+  const { groupId, roleId } = membership;
+
+  state.groupMembers = state.groupMembers.filter((member) => member !== membership);
+  const role = state.groupRoles.find((candidate) => candidate.id === roleId);
+  if (role) role.filled = Math.max(role.filled - 1, 0);
+  for (const swipe of state.groupSwipes) {
+    if (swipe.groupId === groupId && swipe.userId === userId) swipe.decision = 'pass';
+  }
+
+  const group = state.groups.find((candidate) => candidate.id === groupId);
+  if (group && group.adminId === userId) {
+    const [next] = state.groupMembers
+      .filter((member) => member.groupId === groupId)
+      .sort(
+        (a, b) =>
+          a.joinedAt.localeCompare(b.joinedAt) ||
+          (a.userId < b.userId ? -1 : a.userId > b.userId ? 1 : 0)
+      );
+    if (next) {
+      group.adminId = next.userId;
+    } else {
+      state.groups = state.groups.filter((candidate) => candidate.id !== groupId);
+      state.groupRoles = state.groupRoles.filter((candidate) => candidate.groupId !== groupId);
+      state.groupSwipes = state.groupSwipes.filter((swipe) => swipe.groupId !== groupId);
+      state.groupMessages = state.groupMessages.filter((message) => message.groupId !== groupId);
+      for (const report of state.userReports) {
+        if (report.groupId === groupId) report.groupId = null;
+      }
+    }
+  }
+  return groupId;
+}
+
+/**
+ * Dos grupos semilla, para que el deck de grupos no nazca vacío sin backend.
+ * El primero ya le ha dado like a la cuenta propia para su puesto de
+ * desarrollo: si esa persona domina `dev` y le da like, entra en el acto —el
+ * mismo truco que `SEED_RECIPROCAL_IDS` en el deck de cofundador—.
+ */
+function seedGroups(): Pick<MockState, 'groups' | 'groupRoles' | 'groupMembers' | 'groupSwipes'> {
+  const createdAt = new Date(Date.now() - 86_400_000).toISOString();
+  return {
+    groups: [
+      {
+        id: 'seed-group-taller',
+        name: 'Taller Abierto',
+        description:
+          'Un marketplace para que los talleres pequeños vendan sus piezas sin intermediarios.',
+        adminId: 'seed-marc',
+        maxMembers: 6,
+        createdAt,
+      },
+      {
+        id: 'seed-group-ruta',
+        name: 'Ruta Verde',
+        description: 'Logística de última milla en bici de carga para comercios de barrio.',
+        adminId: 'seed-diego',
+        maxMembers: 4,
+        createdAt,
+      },
+    ],
+    groupRoles: [
+      {
+        id: 'seed-role-taller-dev',
+        groupId: 'seed-group-taller',
+        specialty: 'dev',
+        slots: 2,
+        filled: 0,
+      },
+      {
+        id: 'seed-role-taller-mkt',
+        groupId: 'seed-group-taller',
+        specialty: 'marketing',
+        slots: 1,
+        filled: 1,
+      },
+      {
+        id: 'seed-role-ruta-dev',
+        groupId: 'seed-group-ruta',
+        specialty: 'dev',
+        slots: 1,
+        filled: 0,
+      },
+      {
+        id: 'seed-role-ruta-producto',
+        groupId: 'seed-group-ruta',
+        specialty: 'producto',
+        slots: 1,
+        filled: 0,
+      },
+      {
+        id: 'seed-role-ruta-diseno',
+        groupId: 'seed-group-ruta',
+        specialty: 'diseno',
+        slots: 1,
+        filled: 0,
+      },
+    ],
+    groupMembers: [
+      { groupId: 'seed-group-taller', userId: 'seed-marc', roleId: null, joinedAt: createdAt },
+      {
+        groupId: 'seed-group-taller',
+        userId: 'seed-alba',
+        roleId: 'seed-role-taller-mkt',
+        joinedAt: new Date(Date.now() - 43_200_000).toISOString(),
+      },
+      { groupId: 'seed-group-ruta', userId: 'seed-diego', roleId: null, joinedAt: createdAt },
+    ],
+    groupSwipes: [
+      {
+        groupId: 'seed-group-taller',
+        userId: CURRENT_USER_ID,
+        direction: 'group_to_user',
+        decision: 'like',
+        roleId: 'seed-role-taller-dev',
+        actorId: 'seed-marc',
+      },
+    ],
+  };
 }
 
 function initialState(): MockState {
@@ -132,6 +287,8 @@ function initialState(): MockState {
     userBlocks: new Map(),
     termsAcceptances: new Map(),
     boardPosts: [],
+    ...seedGroups(),
+    groupMessages: [],
     userReports: [],
   };
 }
@@ -305,6 +462,14 @@ export function createMockStore(): MockStore {
         room.hostId = null;
       }
       state.roomMembers = state.roomMembers.filter((member) => member.profileId !== userId);
+      // Grupos: sale del suyo con la regla de liderazgo; caen sus swipes como
+      // candidata y sus mensajes. Los swipes que hizo como admin son del grupo.
+      removeMockGroupMember(state, userId);
+      state.groupSwipes = state.groupSwipes.filter((swipe) => swipe.userId !== userId);
+      for (const swipe of state.groupSwipes) {
+        if (swipe.actorId === userId) swipe.actorId = null;
+      }
+      state.groupMessages = state.groupMessages.filter((message) => message.senderId !== userId);
       if (userId === CURRENT_USER_ID) state.session = { profileId: null, activeMode: null };
       listeners.forEach((set) => set.forEach((listener) => listener()));
     },

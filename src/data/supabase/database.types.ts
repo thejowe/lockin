@@ -205,6 +205,54 @@ export type RoomMemberRow = {
   left_at: string | null;
 };
 
+/** Fila de `public.groups`. Solo la leen sus miembros; se escribe por RPC. */
+export type GroupRow = {
+  id: string;
+  name: string;
+  description: string;
+  admin_id: string;
+  max_members: number;
+  created_at: string;
+  /** Lo tocan las funciones en cada cambio de miembros; el dominio no lo expone. */
+  updated_at: string;
+};
+
+/** Fila de `public.group_roles`. */
+export type GroupRoleRow = {
+  id: string;
+  group_id: string;
+  specialty: Specialty;
+  slots: number;
+  filled: number;
+};
+
+/** Fila de `public.group_members`. */
+export type GroupMemberRow = {
+  group_id: string;
+  user_id: string;
+  role_id: string | null;
+  joined_at: string;
+};
+
+/** Fila de `public.group_messages`. */
+export type GroupMessageRow = {
+  id: string;
+  group_id: string;
+  sender_id: string;
+  body: string;
+  sent_at: string;
+};
+
+/** Una carta de `group_deck()`: el grupo, sus puestos, sus miembros y tu puesto. */
+export type GroupDeckRow = Omit<GroupRow, 'updated_at'> & {
+  my_role_id: string;
+  roles: GroupRoleRow[];
+  members: GroupMemberRow[];
+};
+
+/** Una carta de `group_recruit_deck()`: la persona y el puesto que cubriría. */
+export type GroupRecruitRow = { role_id: string; profile: ProfileRow };
+
 /** Fila de `public.session_attendance`. */
 export type SessionAttendanceRow = {
   session_id: string;
@@ -407,6 +455,31 @@ export type Database = {
         Update: Record<string, never>;
         Relationships: [];
       };
+      // Sin escritura directa: todo pasa por las funciones de 20261109130000.
+      groups: {
+        Row: GroupRow;
+        Insert: Record<string, never>;
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      group_roles: {
+        Row: GroupRoleRow;
+        Insert: Record<string, never>;
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      group_members: {
+        Row: GroupMemberRow;
+        Insert: Record<string, never>;
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      group_messages: {
+        Row: GroupMessageRow;
+        Insert: Pick<GroupMessageRow, 'group_id' | 'sender_id' | 'body'>;
+        Update: Record<string, never>;
+        Relationships: [];
+      };
       session_attendance: {
         Row: SessionAttendanceRow;
         Insert: Record<string, never>;
@@ -534,6 +607,35 @@ export type Database = {
       join_room: { Args: { p_room_id: string }; Returns: RoomMemberRow };
       leave_room: { Args: { p_room_id: string }; Returns: RoomMemberRow };
       live_rooms: { Args: Record<string, never>; Returns: RoomRow[] };
+      create_group: {
+        Args: {
+          p_name: string;
+          p_description: string;
+          p_roles: { specialty: Specialty; slots: number }[];
+          p_max_members?: number;
+        };
+        Returns: GroupRow;
+      };
+      /** `true` si con este like la persona ha entrado en el grupo. */
+      swipe_group: { Args: { p_group_id: string; p_decision: Decision }; Returns: boolean };
+      swipe_group_candidate: {
+        Args: { p_user_id: string; p_role_id: string; p_decision: Decision };
+        Returns: boolean;
+      };
+      leave_group: { Args: Record<string, never>; Returns: undefined };
+      kick_group_member: { Args: { p_user_id: string }; Returns: undefined };
+      group_deck: { Args: { p_limit?: number | null }; Returns: GroupDeckRow[] };
+      group_recruit_deck: { Args: { p_limit?: number | null }; Returns: GroupRecruitRow[] };
+      report_group: {
+        Args: { p_group_id: string; p_reason: string; p_details?: string | null };
+        Returns: undefined;
+      };
+      report_group_message: {
+        Args: { p_message_id: string; p_reason: string; p_details?: string | null };
+        Returns: undefined;
+      };
+      block_group: { Args: { p_group_id: string }; Returns: undefined };
+      is_group_member: { Args: { p_group_id: string }; Returns: boolean };
       propose_session: {
         Args: { p_match_id: string; p_starts_at: string; p_blocks: SessionBlocks };
         Returns: SessionRow;

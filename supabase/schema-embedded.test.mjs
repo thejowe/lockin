@@ -3362,7 +3362,17 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
         await db.query(`select tablename from pg_publication_tables
           where pubname = 'supabase_realtime' order by tablename`)
       ).rows.map((row) => row.tablename),
-      ['lockin_rooms', 'lockin_sessions', 'matches', 'messages', 'session_attendance']
+      // `groups` y `group_messages` entran con 20261109130000; `group_members` no
+      // se publica, como `room_members`.
+      [
+        'group_messages',
+        'groups',
+        'lockin_rooms',
+        'lockin_sessions',
+        'matches',
+        'messages',
+        'session_attendance',
+      ]
     );
     console.log('H4: supabase_realtime publica solo INSERT y UPDATE: OK');
 

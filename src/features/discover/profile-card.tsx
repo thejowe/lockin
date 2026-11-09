@@ -692,7 +692,7 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.displayBold,
     fontSize: 148,
     lineHeight: 160,
-    letterSpacing: -6,
+    letterSpacing: -3,
     opacity: 0.9,
   },
   top: {

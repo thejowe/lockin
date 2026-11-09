@@ -1,6 +1,11 @@
 /**
  * Tab Descubrir: el deck de swipe, a pantalla completa como en Tinder.
  *
+ * Desde el 2026-11-09 tiene dos secciones: «Cofundador» (el deck de siempre,
+ * sin cambios) y «Grupos» (`GroupsSection`, que decide sola qué enseñar). El
+ * deck de cofundador sigue montado mientras se mira Grupos: al volver está
+ * donde se dejó.
+ *
  * Solo compone — el estado del deck vive en `useDeck` y el gesto en `SwipeDeck`,
  * para que cuando `datos` cambie el mock por Supabase esta pantalla no cambie.
  *
@@ -18,7 +23,7 @@
  */
 
 import { useRouter } from 'expo-router';
-import { useEffect, useRef, useState, type ComponentRef } from 'react';
+import { useCallback, useEffect, useRef, useState, type ComponentRef } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -46,6 +51,7 @@ import {
   SwipeDeck,
   useDeck,
 } from '@/features/discover';
+import { GroupsSection, SectionSwitch, type DiscoverSection } from '@/features/groups';
 import { openPaywall } from '@/features/premium';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -70,6 +76,10 @@ export default function DiscoverScreen() {
   const viewerSchedule = viewer
     ? { bands: viewer.availability.bands, timezone: viewer.timezone }
     : undefined;
+  const [section, setSection] = useState<DiscoverSection>('cofounder');
+  /** El deck de Grupos tiene cartas: el swipe horizontal es suyo. */
+  const [groupsDeckActive, setGroupsDeckActive] = useState(false);
+  const onGroupsDeckActive = useCallback((active: boolean) => setGroupsDeckActive(active), []);
   const [filter, setFilter] = useState<ProfileFilter>({});
   const [filtersOpen, setFiltersOpen] = useState(false);
   /** Paso del mini tutorial de botones: el último marca «Filtros», que está aquí. */
@@ -136,7 +146,9 @@ export default function DiscoverScreen() {
 
   // Con tarjetas, el swipe horizontal es de la tarjeta; sin ellas (deck vacío,
   // cargando o en error) deslizar lleva a la pestaña de al lado.
-  useLockTabSwipe(!loading && !!cards && cards.length > 0);
+  useLockTabSwipe(
+    section === 'groups' ? groupsDeckActive : !loading && !!cards && cards.length > 0
+  );
 
   function openChat(matchId: string) {
     dismissMatch();
@@ -149,26 +161,35 @@ export default function DiscoverScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
         <View style={styles.content}>
           <View style={styles.toolbar}>
-            <Pressable
-              ref={filtersButton}
-              collapsable={false}
-              accessibilityRole="button"
-              accessibilityLabel={
-                activeFilters > 0
-                  ? t('Filtros, {activeFilters} activos', { activeFilters })
-                  : t('Filtros')
-              }
-              // Mientras se explican los botones, un toque en pantalla es «siguiente».
-              disabled={tourStep !== null}
-              onPress={() => setFiltersOpen(true)}
-              hitSlop={HitSlop.chip}>
-              <ThemedText type="smallBold" themeColor="brass">
-                {activeFilters > 0 ? `Filtros (${activeFilters})` : t('Filtros')}
-              </ThemedText>
-            </Pressable>
+            <SectionSwitch value={section} onChange={setSection} />
+            {section === 'groups' ? null : (
+              <Pressable
+                ref={filtersButton}
+                collapsable={false}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  activeFilters > 0
+                    ? t('Filtros, {activeFilters} activos', { activeFilters })
+                    : t('Filtros')
+                }
+                // Mientras se explican los botones, un toque en pantalla es «siguiente».
+                disabled={tourStep !== null}
+                onPress={() => setFiltersOpen(true)}
+                hitSlop={HitSlop.chip}>
+                <ThemedText type="smallBold" themeColor="brass">
+                  {activeFilters > 0 ? `Filtros (${activeFilters})` : t('Filtros')}
+                </ThemedText>
+              </Pressable>
+            )}
           </View>
 
-          {notice ? (
+          {section === 'groups' ? (
+            <View style={styles.deck}>
+              <GroupsSection onDeckActive={onGroupsDeckActive} />
+            </View>
+          ) : null}
+
+          {notice && section === 'cofounder' ? (
             <ThemedText
               type="small"
               themeColor={noticeTone === 'danger' ? 'danger' : 'textSecondary'}
@@ -177,7 +198,7 @@ export default function DiscoverScreen() {
             </ThemedText>
           ) : null}
 
-          <View style={styles.deck}>
+          <View style={[styles.deck, section === 'groups' && styles.hidden]}>
             {loading ? (
               <LoadingState label={t('Buscando perfiles…')} />
             ) : error && !cards?.length ? (
@@ -211,7 +232,7 @@ export default function DiscoverScreen() {
             )}
           </View>
 
-          {error && cards && cards.length > 0 ? (
+          {section === 'cofounder' && error && cards && cards.length > 0 ? (
             <ThemedText type="small" themeColor="danger">
               {t('No hemos podido guardar tu última decisión. La tarjeta sigue en el deck.')}
             </ThemedText>
@@ -291,8 +312,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   toolbar: {
-    alignItems: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 44,
     paddingHorizontal: Spacing.two,
+  },
+  // El deck de cofundador sigue montado bajo Grupos, sin ocupar sitio ni recibir toques.
+  hidden: {
+    display: 'none',
   },
   backdrop: {
     flex: 1,

@@ -96,7 +96,7 @@ export default function WelcomeScreen() {
           .easing(easeOut)
           .delay((duringIntro ? 0 : WORDMARK_DELAY_MS) + Duration.slow)}>
         <ThemedText type="body" themeColor="textSecondary" style={styles.tagline}>
-          Winning DNA
+          {t('ADN ganador')}
         </ThemedText>
       </Animated.View>
     </>

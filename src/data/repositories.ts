@@ -17,6 +17,12 @@ import type {
   DeckProfile,
   Decision,
   DecisionResult,
+  GroupDeckCard,
+  GroupInput,
+  GroupMessage,
+  GroupReportInput,
+  GroupSwipeResult,
+  GroupView,
   IncomingLike,
   LockInRoom,
   LockInSession,
@@ -31,6 +37,7 @@ import type {
   ProfileFilter,
   ProfileInput,
   ProfileReportInput,
+  RecruitCandidate,
   RoomInput,
   RoomMember,
   RoomView,
@@ -411,6 +418,52 @@ export interface PremiumRepository {
 }
 
 /**
+ * Grupos (2026-11-09): equipos en formación con puestos y plazas. Una persona
+ * pertenece como mucho a un grupo. Las reglas las impone el servidor (ver
+ * `src/data/groups.ts` y `supabase/migrations/20261109130000_groups.sql`).
+ *
+ * Errores: `GroupError` (con su `reason`) y, si crear exige Premium,
+ * `PremiumRequiredError`.
+ */
+export interface GroupRepository {
+  /** El grupo del usuario, o `null` si no está en ninguno. */
+  getMine(): Promise<GroupView | null>;
+  /** Crea el grupo: el usuario pasa a ser su admin y su primer miembro. */
+  create(input: GroupInput): Promise<GroupView>;
+  /**
+   * Deck de quien busca grupo: grupos no llenos con un puesto abierto que
+   * encaja con lo que domina. Vacío si ya está en un grupo.
+   */
+  getDeck(): Promise<GroupDeckCard[]>;
+  /**
+   * Deck del admin: personas sin grupo que encajan en un puesto con plazas
+   * libres. Lanza `GroupError('admin-only')` si no administras ningún grupo.
+   */
+  getRecruitDeck(): Promise<RecruitCandidate[]>;
+  /** Like o pase a un grupo. Con like recíproco, entras (`joined`). */
+  swipeGroup(groupId: string, decision: Decision): Promise<GroupSwipeResult>;
+  /** Like o pase del admin a una persona, para ese puesto. */
+  swipeCandidate(userId: string, roleId: string, decision: Decision): Promise<GroupSwipeResult>;
+  /** Sales de tu grupo; tu plaza queda libre. Si eras admin, se aplica la regla de liderazgo. */
+  leave(): Promise<void>;
+  /** Solo admin: expulsa a un miembro; su plaza queda libre. */
+  kick(userId: string): Promise<void>;
+  /** Solo escritura y privado, como `profiles.report`: el reportado es el admin. */
+  report(input: GroupReportInput): Promise<void>;
+  /** El grupo deja de salirte y su admin queda bloqueado. */
+  block(groupId: string): Promise<void>;
+  /** El chat del grupo, en orden cronológico. Vacío si no eres miembro. */
+  listMessages(groupId: string): Promise<GroupMessage[]>;
+  sendMessage(groupId: string, body: string): Promise<GroupMessage>;
+  /** Reporta un mensaje del chat de tu grupo que no es tuyo. */
+  reportMessage(input: MessageReportInput): Promise<void>;
+  /** Avisa de cualquier cambio en tu grupo (miembros, liderazgo). */
+  subscribe(listener: () => void): Unsubscribe;
+  /** Avisa cuando cambian los mensajes de ese grupo. */
+  subscribeMessages(groupId: string, listener: () => void): Unsubscribe;
+}
+
+/**
  * Punto único de acceso a datos. Cualquier implementación (mock, Supabase)
  * debe devolver un objeto con esta forma exacta.
  */
@@ -424,6 +477,7 @@ export interface Repositories {
   agreement: AgreementRepository;
   rooms: RoomRepository;
   premium: PremiumRepository;
+  groups: GroupRepository;
 }
 
 /** Fábrica de una implementación completa. Lo que exporta cada backend. */

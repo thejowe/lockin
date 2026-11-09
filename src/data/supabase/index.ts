@@ -43,6 +43,7 @@ import {
 import { fetchAllPages } from './pagination';
 import { createSupabasePremiumRepository, toPremiumError } from './premium';
 import { closeLiveChannels } from './live-channels';
+import { createSupabaseGroupRepository } from './groups';
 import { createSupabaseRoomRepository } from './rooms';
 import { PRIVATE_CHANNEL, subscribeResyncingOnRejoin } from './realtime';
 import { createSupabaseSessionRepository } from './sessions';
@@ -941,6 +942,16 @@ export function createSupabaseRepositories({
       signProfiles: signer.signProfiles,
       exposeNotify: (notifyRooms) => {
         notifyRoomListeners = notifyRooms;
+      },
+    }),
+    groups: createSupabaseGroupRepository({
+      getClient,
+      getUserId,
+      signProfiles: signer.signProfiles,
+      // Bloquear un grupo bloquea a su admin: deck y matches de cofundador cambian.
+      onBlocked: () => {
+        notify(MATCHES_TOPIC);
+        hub.notifyMessageListeners();
       },
     }),
   };

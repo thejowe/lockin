@@ -26,6 +26,7 @@ export * from './premium-errors';
 export * from './premium-limits';
 export * from './agreement';
 export * from './rooms';
+export * from './groups';
 export { createMemoryPresenceAdapter } from './presence';
 export type { PresenceAdapter, PresenceHandlers } from './presence';
 export { createMemoryVideoSignalAdapter } from './video-signal';

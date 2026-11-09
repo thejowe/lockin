@@ -124,6 +124,13 @@ export default function RootLayout() {
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="chat/[matchId]" options={stackHeader} />
               <Stack.Screen name="agreement/[matchId]" options={stackHeader} />
+              {/* Grupos: el chat del grupo, «Tu grupo» y el formulario de creación. */}
+              <Stack.Screen name="group/[groupId]" options={stackHeader} />
+              <Stack.Screen name="group/info" options={{ ...stackHeader, title: t('Tu grupo') }} />
+              <Stack.Screen
+                name="group/new"
+                options={{ ...stackHeader, title: t('Crear grupo') }}
+              />
               <Stack.Screen name="settings" options={{ ...stackHeader, title: t('Ajustes') }} />
               <Stack.Screen
                 name="likes"

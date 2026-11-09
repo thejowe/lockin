@@ -191,6 +191,9 @@ export const repositories: Repositories = {
   get rooms() {
     return resolveActive().repositories.rooms;
   },
+  get groups() {
+    return resolveActive().repositories.groups;
+  },
 };
 
 /** Presencia en sesiones, con la misma regla. Sin credenciales, en memoria. */
