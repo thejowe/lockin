@@ -585,6 +585,7 @@ const styles = StyleSheet.create({
     borderWidth: Stroke.hairline,
     fontFamily: Typography.body.fontFamily,
     fontSize: Typography.body.fontSize,
+    letterSpacing: Typography.body.letterSpacing,
   },
   inputWithEye: {
     paddingRight: Control.minTouch + Spacing.one,

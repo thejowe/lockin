@@ -16,11 +16,13 @@
  *   (`location-fields.tsx`); si el país tiene varias, se elige una.
  */
 
+import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { Radii, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 import {
   AMBITION_OPTIONS,
@@ -32,7 +34,8 @@ import {
   STARTING_POINT_OPTIONS,
   TIME_BAND_OPTIONS,
 } from './catalog';
-import { Chip, ChipRow, Field, OptionCard, Slider, TextField } from './controls';
+import { pickAvatarPhoto } from './avatar-photo';
+import { Chip, ChipRow, Field, OptionCard, SecondaryButton, Slider, TextField } from './controls';
 import { BirthDateFields, ageFromBirthDate, birthDateProblem, splitBirthDate } from './birth-date';
 import {
   initialDraft,
@@ -58,7 +61,12 @@ const APP_LANGUAGES: { value: AppLocale; label: string }[] = [
   { value: 'ca', label: 'Català' },
 ];
 
-type Snapshot = { index: number; draft: Draft; birth: ReturnType<typeof splitBirthDate> };
+type Snapshot = {
+  index: number;
+  draft: Draft;
+  birth: ReturnType<typeof splitBirthDate>;
+  photoUri: string | null;
+};
 
 /**
  * Cambiar de idioma vuelve a montar la navegación (`_layout.tsx`) y con ella el
@@ -85,7 +93,8 @@ type StepKey =
   | 'bands'
   | 'ambition'
   | 'prompts'
-  | 'links';
+  | 'links'
+  | 'photo';
 
 /** Campos del borrador que valida cada paso. */
 const STEP_FIELDS: Record<StepKey, (keyof Draft)[]> = {
@@ -103,11 +112,12 @@ const STEP_FIELDS: Record<StepKey, (keyof Draft)[]> = {
   ambition: ['ambition'],
   prompts: ['prompts'],
   links: ['github'],
+  photo: [],
 };
 
 const OPTIONAL: StepKey[] = ['seeking', 'seekingLanguages', 'prompts', 'links'];
 
-function stepsFor(seed: ProfileSeed | null): StepKey[] {
+function stepsFor(seed: ProfileSeed | null, withPhoto: boolean): StepKey[] {
   // La ubicación se pregunta siempre: un `seed` no trae país.
   const basics: StepKey[] = seed ? ['location'] : ['name', 'birth', 'location'];
   return [
@@ -123,6 +133,7 @@ function stepsFor(seed: ProfileSeed | null): StepKey[] {
     'ambition',
     'prompts',
     'links',
+    ...(withPhoto ? (['photo'] as const) : []),
   ];
 }
 
@@ -130,15 +141,23 @@ export function ProfileWizard({
   seed = null,
   initial = null,
   submitLabel,
+  withPhoto = false,
   onSubmit,
 }: {
   seed?: ProfileSeed | null;
   initial?: Profile | null;
   submitLabel: string;
+  /**
+   * Añade al final el paso de la foto de perfil, obligatorio. La foto no puede
+   * subirse hasta que el perfil exista, así que se entrega a `onSubmit` como URI
+   * local ya recortada y comprimida (`avatar-photo.ts`).
+   */
+  withPhoto?: boolean;
   /** Guarda. Si lanza, el asistente se queda en el último paso y enseña el error. */
-  onSubmit: (input: ProfileInput) => Promise<void>;
+  onSubmit: (input: ProfileInput, photoUri: string | null) => Promise<void>;
 }) {
-  const steps = stepsFor(seed);
+  const theme = useTheme();
+  const steps = stepsFor(seed, withPhoto);
   // Se lee sin vaciar: en modo estricto los inicializadores corren dos veces.
   const [restored] = useState(() => resumeAfterLocaleChange);
   useEffect(() => {
@@ -147,6 +166,9 @@ export function ProfileWizard({
   const [index, setIndex] = useState(restored?.index ?? 0);
   const [draft, setDraft] = useState<Draft>(() => restored?.draft ?? initialDraft(initial, seed));
   const [birth, setBirth] = useState(() => restored?.birth ?? splitBirthDate(undefined));
+  const [photoUri, setPhotoUri] = useState<string | null>(() => restored?.photoUri ?? null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [picking, setPicking] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -187,7 +209,7 @@ export function ProfileWizard({
     setSaving(true);
     setSaveError(null);
     try {
-      await onSubmit(toInput(finalDraft));
+      await onSubmit(toInput(finalDraft), photoUri);
     } catch (cause) {
       setSaveError(cause instanceof Error ? cause.message : t('No se ha podido guardar.'));
     } finally {
@@ -195,8 +217,37 @@ export function ProfileWizard({
     }
   }
 
+  async function choosePhoto(source: 'library' | 'camera') {
+    setPhotoError(null);
+    setPicking(true);
+    try {
+      const picked = await pickAvatarPhoto(source);
+      if (picked.status === 'picked') setPhotoUri(picked.uri);
+      else if (picked.status === 'denied') {
+        setPhotoError(
+          source === 'camera'
+            ? t(
+                'Sin permiso de cámara no podemos hacerte la foto. Puedes dárselo en los ajustes del móvil.'
+              )
+            : t(
+                'Sin permiso de galería no podemos leer tu foto. Puedes dárselo en los ajustes del móvil.'
+              )
+        );
+      }
+    } catch {
+      setPhotoError(t('No se ha podido subir la foto. Inténtalo de nuevo.'));
+    } finally {
+      setPicking(false);
+    }
+  }
+
   async function handleNext() {
     let current = draft;
+
+    if (step === 'photo' && !photoUri) {
+      setPhotoError(t('Añade una foto de perfil para continuar.'));
+      return;
+    }
 
     if (step === 'birth') {
       const problem = birthDateProblem(birth);
@@ -243,7 +294,7 @@ export function ProfileWizard({
     onBack: index > 0 ? () => setIndex(index - 1) : undefined,
     onSkip: optional ? () => void handleSkip() : undefined,
     primaryLabel: last ? (saving ? t('Guardando…') : submitLabel) : t('Continuar'),
-    busy: saving,
+    busy: saving || picking,
     error: saveError,
     onPrimary: () => void handleNext(),
   };
@@ -254,7 +305,7 @@ export function ProfileWizard({
       void setLocalePreference(locale);
       return;
     }
-    stashForLocaleChange({ index, draft, birth });
+    stashForLocaleChange({ index, draft, birth, photoUri });
     void setLocalePreference(locale);
   }
 
@@ -571,10 +622,64 @@ export function ProfileWizard({
           </Field>
         </WizardScreen>
       );
+
+    case 'photo':
+      return (
+        <WizardScreen
+          {...common}
+          title={t('Pon tu foto de perfil')}
+          subtitle={t(
+            'Es obligatoria: la gente quiere saber con quién habla. Se revisa antes de publicarse.'
+          )}>
+          <View style={styles.photo}>
+            <View
+              style={[
+                styles.photoFrame,
+                { backgroundColor: theme.backgroundSelected, borderColor: theme.border },
+              ]}>
+              {photoUri ? (
+                <Image
+                  testID="wizard-photo"
+                  source={{ uri: photoUri }}
+                  contentFit="cover"
+                  style={StyleSheet.absoluteFill}
+                  accessibilityLabel={t('Foto de perfil')}
+                />
+              ) : null}
+            </View>
+            {photoError ? (
+              <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
+                {photoError}
+              </ThemedText>
+            ) : null}
+            <SecondaryButton
+              label={t('Hacer una foto')}
+              disabled={picking || saving}
+              onPress={() => void choosePhoto('camera')}
+            />
+            <SecondaryButton
+              label={t('Elegir de la galería')}
+              disabled={picking || saving}
+              onPress={() => void choosePhoto('library')}
+            />
+          </View>
+        </WizardScreen>
+      );
   }
 }
 
 const styles = StyleSheet.create({
+  photo: {
+    gap: Spacing.three,
+  },
+  photoFrame: {
+    alignSelf: 'center',
+    width: 200,
+    aspectRatio: 4 / 5,
+    borderRadius: Radii.large,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
   hours: {
     gap: Spacing.two,
     paddingTop: Spacing.three,

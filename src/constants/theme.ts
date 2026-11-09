@@ -159,7 +159,7 @@ export const Typography = {
     letterSpacing: -1.2,
   },
   /** Título de pantalla. */
-  title: { fontFamily: FontFamily.displayBold, fontSize: 32, lineHeight: 36, letterSpacing: -0.9 },
+  title: { fontFamily: FontFamily.displayBold, fontSize: 32, lineHeight: 38, letterSpacing: -0.9 },
   /** Nombre en tarjeta de perfil, cabecera de sección. */
   subtitle: { fontFamily: FontFamily.display, fontSize: 22, lineHeight: 28, letterSpacing: -0.45 },
   /** Cabecera dentro de una tarjeta. */
@@ -170,34 +170,35 @@ export const Typography = {
     letterSpacing: -0.25,
   },
   /** Cuerpo por defecto. */
-  body: { fontFamily: FontFamily.sans, fontSize: 16, lineHeight: 22, letterSpacing: -0.15 },
+  body: { fontFamily: FontFamily.sans, fontSize: 16, lineHeight: 23, letterSpacing: -0.15 },
   bodyStrong: {
     fontFamily: FontFamily.sansSemiBold,
     fontSize: 16,
-    lineHeight: 22,
+    lineHeight: 23,
     letterSpacing: -0.15,
   },
   /** Texto de apoyo, listas densas. */
-  small: { fontFamily: FontFamily.sans, fontSize: 14, lineHeight: 19, letterSpacing: -0.1 },
+  small: { fontFamily: FontFamily.sans, fontSize: 14, lineHeight: 20, letterSpacing: -0.1 },
   smallBold: {
     fontFamily: FontFamily.sansSemiBold,
     fontSize: 14,
-    lineHeight: 19,
+    lineHeight: 20,
     letterSpacing: -0.1,
   },
-  /** Pie de foto, notas. */
-  caption: { fontFamily: FontFamily.sans, fontSize: 12, lineHeight: 16 },
+  /** Pie de foto, notas. Inter a 12 pide un soplo de aire entre letras. */
+  caption: { fontFamily: FontFamily.sans, fontSize: 12, lineHeight: 17, letterSpacing: 0.1 },
   /** Etiqueta de sección o de dato: pequeña, en caja normal, sin versales. */
-  label: { fontFamily: FontFamily.sansMedium, fontSize: 13, lineHeight: 18 },
+  label: { fontFamily: FontFamily.sansMedium, fontSize: 13, lineHeight: 19, letterSpacing: 0.05 },
   /** Datos crudos (horas/semana, zona horaria, horas): cifras tabulares. */
   mono: {
     fontFamily: FontFamily.monoMedium,
     fontSize: 13,
-    lineHeight: 18,
+    lineHeight: 19,
+    letterSpacing: 0.05,
     fontVariant: ['tabular-nums'],
   },
   /** Enlace en línea. */
-  link: { fontFamily: FontFamily.sansMedium, fontSize: 16, lineHeight: 22, letterSpacing: -0.15 },
+  link: { fontFamily: FontFamily.sansMedium, fontSize: 16, lineHeight: 23, letterSpacing: -0.15 },
   /** Cifra grande y fina: el temporizador del Pomodoro. */
   timer: {
     fontFamily: FontFamily.light,

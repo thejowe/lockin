@@ -1039,5 +1039,8 @@
   "edad mínima": "edat mínima",
   "edad máxima": "edat màxima",
   "Desde {age} años": "Des de {age} anys",
-  "Hasta {age} años": "Fins a {age} anys"
+  "Hasta {age} años": "Fins a {age} anys",
+  "Añade una foto de perfil para continuar.": "Afegeix una foto de perfil per continuar.",
+  "Pon tu foto de perfil": "Posa la teva foto de perfil",
+  "Es obligatoria: la gente quiere saber con quién habla. Se revisa antes de publicarse.": "És obligatòria: la gent vol saber amb qui parla. Es revisa abans de publicar-se."
 }

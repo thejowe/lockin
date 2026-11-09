@@ -41,7 +41,7 @@ export default function ProfileFormScreen() {
   const [entering, setEntering] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  async function handleSubmit(input: ProfileInput) {
+  async function handleSubmit(input: ProfileInput, photoUri: string | null) {
     setEntering(true);
     try {
       // El modo lo guarda la bienvenida, pero no siempre se pasa por ella con esta
@@ -50,6 +50,10 @@ export default function ProfileFormScreen() {
       // seguiría en `false` y cada arranque volvería aquí.
       await repositories.session.setActiveMode('par');
       await repositories.profiles.saveCurrent(input);
+      // La foto es obligatoria y solo se sube con el perfil ya creado. Si el
+      // servidor la rechaza, el error vuelve al paso de la foto (guardar el
+      // perfil es idempotente) y no se entra a la app sin ella.
+      if (photoUri) await repositories.profiles.setAvatarPhoto(photoUri);
       setSaved(true);
     } catch (cause) {
       setEntering(false);
@@ -76,7 +80,7 @@ export default function ProfileFormScreen() {
   return (
     <Screen ambient="plum">
       <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
-        <ProfileWizard submitLabel={t('Crear perfil')} onSubmit={handleSubmit} />
+        <ProfileWizard withPhoto submitLabel={t('Crear perfil')} onSubmit={handleSubmit} />
       </SafeAreaView>
       {/* Encima y no en su lugar: si el guardado falla, el asistente sigue como estaba. */}
       {entering ? (

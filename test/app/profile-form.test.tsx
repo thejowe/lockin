@@ -42,6 +42,9 @@ const mockForm: { props: WizardProps | null } = { props: null };
 /** Lo que envía el doble al pulsar: el perfil ya relleno. */
 const mockInput = buildProfileInput({ name: 'Núria Bosch' });
 
+/** La foto que entrega el doble del asistente (null = no se eligió). */
+const mockPhoto: { uri: string | null } = { uri: 'file:///tmp/foto.jpg' };
+
 /** Lo que responde la puerta del registro en cada test. */
 const mockGate: { value: 'checking' | 'required' | 'open' } = { value: 'open' };
 
@@ -61,7 +64,7 @@ jest.mock('@/features/profile', () => {
         <>
           <Pressable
             accessibilityRole="button"
-            onPress={() => props.onSubmit(mockInput).catch(() => undefined)}>
+            onPress={() => props.onSubmit(mockInput, mockPhoto.uri).catch(() => undefined)}>
             <Text>{props.submitLabel}</Text>
           </Pressable>
         </>
@@ -72,6 +75,7 @@ jest.mock('@/features/profile', () => {
 
 beforeEach(() => {
   mockForm.props = null;
+  mockPhoto.uri = 'file:///tmp/foto.jpg';
   mockGate.value = 'open';
   mockTerms.value = 'accepted';
   resetRepositories();
@@ -126,6 +130,30 @@ describe('ProfileFormScreen', () => {
     await expect(repositories.profiles.getCurrent()).resolves.toMatchObject({
       name: 'Núria Bosch',
     });
+  });
+
+  it('pide la foto de perfil en el asistente y la sube tras crear el perfil', async () => {
+    await renderRoute(<ProfileFormScreen />);
+    const upload = jest.spyOn(repositories.profiles, 'setAvatarPhoto');
+
+    expect(mockForm.props?.withPhoto).toBe(true);
+    await fireEvent.press(screen.getByRole('button', { name: 'Crear perfil' }));
+
+    await waitFor(() => expect(upload).toHaveBeenCalledWith('file:///tmp/foto.jpg'));
+  });
+
+  it('si la foto se rechaza, no entra a la app y deja el asistente donde estaba', async () => {
+    await renderRoute(<ProfileFormScreen />);
+    jest
+      .spyOn(repositories.profiles, 'setAvatarPhoto')
+      .mockRejectedValueOnce(new Error('Esta foto no cumple las normas'));
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Crear perfil' }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Entrar a cofounder' })).toBeNull()
+    );
+    expect(router.replace).not.toHaveBeenCalled();
   });
 
   it('al terminar enseña la animación del logo y, sin tocar, entra sola cuando acaba', async () => {

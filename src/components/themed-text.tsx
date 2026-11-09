@@ -13,7 +13,20 @@ export type ThemedTextProps = TextProps & {
 export function ThemedText({ style, type = 'body', themeColor, ...rest }: ThemedTextProps) {
   const theme = useTheme();
 
-  return <Text style={[{ color: theme[themeColor ?? 'text'] }, styles[type], style]} {...rest} />;
+  return (
+    <Text
+      maxFontSizeMultiplier={LargeRoles.has(type) ? 1.15 : 1.4}
+      style={[{ color: theme[themeColor ?? 'text'] }, styles[type], style]}
+      {...rest}
+    />
+  );
 }
+
+/**
+ * Los roles grandes ya son legibles: ampliarlos con el tamaño de letra del
+ * sistema rompe tarjetas y cabeceras de alto fijo. El resto escala hasta 1,4×
+ * (accesibilidad sin desbordar botones de 56 ni campos de 50).
+ */
+const LargeRoles: ReadonlySet<TypographyRole> = new Set(['display', 'title', 'timer']);
 
 const styles = StyleSheet.create(Typography);
