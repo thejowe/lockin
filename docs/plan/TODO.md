@@ -8,6 +8,8 @@ la referencia del usuario. Ruta `/tour`, `src/features/tour/`. Detalle y cómo r
 capturas en [`todo/tour.md`](todo/tour.md).
 
 - [x] Pantalla, ruta, textos en/ca, tests (`test/app/tour.test.tsx`) y 12 capturas.
+- [x] Entrada animada por página y, tras probarlo en TestFlight, una vez por cuenta también para
+  las cuentas que ya existían.
 - [ ] `[comprobador]` Recorrido en el emulador, del alta a Descubrir pasando por el tutorial.
 - [ ] Fallo previo, sin tocar: `test/app/groups.test.tsx` tiene 10 tests en rojo («Found multiple
   elements with text: Taller Abierto») desde el rediseño de la tarjeta de grupo.

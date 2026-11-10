@@ -22,8 +22,17 @@ name: Entrar en la cuenta existente desde una instalación limpia
 - hideKeyboard
 - tapOn: 'Entrar'
 - extendedWaitUntil:
-    visible: 'Matches'
+    visible: 'Matches|Encuentra a tu cofundador.*'
     timeout: 60000
+# Una instalación limpia no ha visto el mini tutorial (`src/features/tour`): se omite.
+- runFlow:
+    when:
+      visible: 'Encuentra a tu cofundador.*'
+    commands:
+      - tapOn: 'Omitir'
+- extendedWaitUntil:
+    visible: 'Matches'
+    timeout: 30000
 - assertNotVisible: 'Crea tu cuenta'
 - assertNotVisible: 'Registrarse'
 - tapOn: 'Perfil'

@@ -1,5 +1,5 @@
 import { Redirect } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -11,6 +11,7 @@ import { useQuery, useRepositories } from '@/data';
 import { useRegistrationGate } from '@/features/profile';
 import { registrationRequired } from '@/features/profile/account-gateway';
 import { hasPendingPassword } from '@/features/profile/pending-password';
+import { isTourPending } from '@/features/tour/tour-seen';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
 
@@ -32,14 +33,30 @@ export default function IndexRoute() {
     hasPendingPassword
   );
 
+  // Con perfil, si esta cuenta aún no ha visto el mini tutorial, va antes que el
+  // deck (una vez por cuenta: `tour-seen.ts`). Se lee aquí y no con `useQuery`
+  // porque depende de quién sea la cuenta, y la caché va por clave, no por cuenta.
+  const [tourPending, setTourPending] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!onboarded) return;
+    let alive = true;
+    repositories.profiles
+      .getCurrent()
+      .then((profile) => isTourPending(profile?.id))
+      .catch(() => false)
+      .then((pending) => {
+        if (alive) setTourPending(pending);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [onboarded, repositories]);
+  const tourLoading = Boolean(onboarded) && tourPending === null;
+
   // Le dice a la intro a dónde va el arranque: si acaba en la bienvenida, el logo
   // de la intro viaja hasta el de esa pantalla; si no, la intro se funde.
-  const settled = !(loading || pendingLoading || gate === 'checking');
-  const toWelcome =
-    settled &&
-    !error &&
-    !onboarded &&
-    !(registrationRequired && gate === 'open');
+  const settled = !(loading || pendingLoading || tourLoading || gate === 'checking');
+  const toWelcome = settled && !error && !onboarded && !(registrationRequired && gate === 'open');
   useEffect(() => {
     introHandoff.setDestination(!settled ? 'unknown' : toWelcome ? 'welcome' : 'app');
   }, [settled, toWelcome]);
@@ -49,7 +66,7 @@ export default function IndexRoute() {
   // Esperar también a la puerta: con perfil, no se enseña `/discover` a quien
   // luego tendrá que confirmar el correo; sin él, decide entre la bienvenida y
   // el formulario.
-  if (loading || pendingLoading || gate === 'checking') {
+  if (loading || pendingLoading || tourLoading || gate === 'checking') {
     return <LoadingState label={t('Abriendo cofounder…')} />;
   }
 
@@ -85,7 +102,8 @@ export default function IndexRoute() {
   if (!onboarded) {
     return <Redirect href={registrationRequired && gate === 'open' ? '/profile-form' : '/mode'} />;
   }
-  return <Redirect href={gate === 'required' ? '/register' : '/discover'} />;
+  if (gate === 'required') return <Redirect href="/register" />;
+  return <Redirect href={tourPending ? '/tour' : '/discover'} />;
 }
 
 const styles = StyleSheet.create({

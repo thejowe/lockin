@@ -9,9 +9,13 @@
  * Ojo: en RNTL 14 `render` y `fireEvent` son asíncronos.
  */
 
-import { fireEvent, screen } from '@testing-library/react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
-import { renderRoute, resetRouter, router } from '../routes';
+import { buildProfileInput } from '@/data/test-fixtures';
+import { tourSeenKey } from '@/features/tour/tour-seen';
+
+import { renderRoute, repositories, resetRepositories, resetRouter, router } from '../routes';
 
 import { TOUR_PAGES } from '@/features/tour/app-tour';
 
@@ -19,8 +23,10 @@ import TourScreen from '../../src/app/(onboarding)/tour';
 
 jest.mock('expo-router', () => require('../routes').expoRouterMock());
 
-beforeEach(() => {
+beforeEach(async () => {
+  resetRepositories();
   resetRouter();
+  await AsyncStorage.clear();
 });
 
 describe('TourScreen', () => {
@@ -69,5 +75,15 @@ describe('TourScreen', () => {
       'Encuentra a tu cofundador. Perfiles que complementan lo que dominas. Si os dais like los dos, hay match.'
     );
     expect(first.props.accessibilityHint).toBe('Paso 1 de 4');
+  });
+
+  it('al salir lo marca como visto para esta cuenta: no vuelve a salir', async () => {
+    await repositories.session.setActiveMode('par');
+    await repositories.profiles.saveCurrent(buildProfileInput());
+    await renderRoute(<TourScreen />);
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Omitir' }));
+
+    await waitFor(async () => expect(await AsyncStorage.getItem(tourSeenKey('me'))).toBe('1'));
   });
 });

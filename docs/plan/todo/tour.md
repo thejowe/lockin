@@ -8,9 +8,12 @@ imágenes reales de la app.
 ## Qué hay
 
 - **Flujo:** `profile-form` → entrada animada (`WelcomeSplash`) → **`/tour`** → `/discover`, con
-  `replace` en cada paso. Solo lo ve quien acaba de crear el perfil: quien inicia sesión con un
-  perfil ya hecho va directo a Descubrir, como antes. No se guarda nada: el formulario solo se
-  completa una vez por cuenta.
+  `replace` en cada paso. **Desde el 2026-11-10 (tarde) sale una vez por cuenta**, también a quien
+  ya tenía perfil: el usuario lo probó en TestFlight con su cuenta y no lo vio. `index` lo decide
+  al arrancar (`isTourPending`, `src/features/tour/tour-seen.ts`) y `/tour` lo marca como visto
+  al salir, en `AsyncStorage` con la clave `cofounder.tour.seen.<id del perfil>`. Si no se puede
+  leer, no se enseña. Los E2E de Maestro lo omiten (`full-journey`, `sign-in`,
+  `sign-in-abandon`).
 - **Páginas** (`src/features/tour/app-tour.tsx`, `TOUR_PAGES`):
   1. *Encuentra a tu cofundador* — captura de Descubrir; tarjeta con un perfil, «✓ Encajas» y los
      botones pasar / Super Like / like.
