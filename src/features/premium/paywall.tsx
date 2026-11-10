@@ -18,9 +18,10 @@
  * luz. Cerrar es la X de arriba; Restaurar y los textos legales van como enlaces
  * discretos al pie.
  *
- * El héroe y su halo están donde la animación del diamante (`premium-cta.tsx`)
- * deja su gema, así que el relevo no se ve. El resto entra en escalera
- * (`entranceDelay` lo retrasa hasta que se retira el velo de esa animación).
+ * Orden pensado para que los planes y el botón quepan sin desplazar: héroe,
+ * título, planes; los beneficios, debajo. Todo entra en escalera
+ * (`entranceDelay` lo retrasa hasta que el diamante de `src/app/premium.tsx`
+ * ha tapado la pantalla).
  */
 
 import * as Haptics from 'expo-haptics';
@@ -32,6 +33,7 @@ import {
   StyleSheet,
   Switch,
   View,
+  useWindowDimensions,
   type LayoutChangeEvent,
 } from 'react-native';
 import Animated, {
@@ -161,8 +163,8 @@ export function Paywall({
   /** Abre Términos o Privacidad. */
   onOpenLegal: (doc: LegalDocKey) => void;
   /**
-   * Cuánto esperar antes de que entre el contenido: el tiempo que tarda en
-   * retirarse el velo de la animación del diamante. 0 si se abre sin ella.
+   * Cuánto esperar antes de que entre el contenido: lo que tarda el diamante en
+   * tapar la pantalla. 0 si se abre sin esa animación.
    */
   entranceDelay?: number;
 }) {
@@ -278,7 +280,7 @@ export function Paywall({
     setSelectedId(id);
   }
 
-  /** La entrada del bloque `step`: sube unos píxeles y se enciende, tras el velo. */
+  /** La entrada del bloque `step`: sube unos píxeles y se enciende, tras el diamante. */
   const rise = (step: number) =>
     FadeInDown.duration(Duration.slow)
       .easing(easeOut)
@@ -317,7 +319,9 @@ export function Paywall({
             </Pressable>
           </View>
 
-          <HeroGem />
+          <Animated.View entering={FadeIn.duration(Duration.slow).delay(entranceDelay)}>
+            <HeroGem />
+          </Animated.View>
 
           <Animated.View entering={rise(0)} style={styles.header}>
             <View
@@ -337,33 +341,11 @@ export function Paywall({
             </ThemedText>
           </Animated.View>
 
-          <Animated.View
-            entering={rise(1)}
-            style={[
-              styles.benefits,
-              {
-                backgroundColor: theme.backgroundElement,
-                borderColor: theme.border,
-                boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
-              },
-            ]}>
-            {BENEFITS.map((benefit) => (
-              <View key={benefit.label} style={styles.benefit}>
-                <View style={[styles.benefitIcon, { backgroundColor: theme.brassSoft }]}>
-                  <Icon name={benefit.icon} size={18} color={theme.brass} strokeWidth={2} />
-                </View>
-                <ThemedText type="body" style={styles.flex}>
-                  {t(benefit.label)}
-                </ThemedText>
-              </View>
-            ))}
-          </Animated.View>
-
           {state.status === 'loading' ? (
             <LoadingState label={t('Cargando los planes…')} style={styles.plansLoading} />
           ) : state.status === 'ready' ? (
             <Animated.View
-              entering={entranceDelay > 0 ? rise(2) : FadeIn.duration(Duration.base)}
+              entering={entranceDelay > 0 ? rise(1) : FadeIn.duration(Duration.base)}
               style={styles.plans}>
               {offers.map((offer) => (
                 <PlanCard
@@ -400,6 +382,28 @@ export function Paywall({
               ) : null}
             </MessageState>
           )}
+
+          <Animated.View
+            entering={rise(3)}
+            style={[
+              styles.benefits,
+              {
+                backgroundColor: theme.backgroundElement,
+                borderColor: theme.border,
+                boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
+              },
+            ]}>
+            {BENEFITS.map((benefit) => (
+              <View key={benefit.label} style={styles.benefit}>
+                <View style={[styles.benefitIcon, { backgroundColor: theme.brassSoft }]}>
+                  <Icon name={benefit.icon} size={18} color={theme.brass} strokeWidth={2} />
+                </View>
+                <ThemedText type="body" style={styles.flex}>
+                  {t(benefit.label)}
+                </ThemedText>
+              </View>
+            ))}
+          </Animated.View>
 
           {notice ? (
             <ThemedText type="small" themeColor="textSecondary" style={styles.centered}>
@@ -446,7 +450,7 @@ export function Paywall({
 
       {state.status === 'ready' ? (
         <Animated.View
-          entering={rise(3)}
+          entering={rise(2)}
           style={[styles.footer, { paddingBottom: Math.max(insets.bottom, Spacing.three) }]}>
           <FooterFade />
           <View style={styles.footerInner}>
@@ -644,17 +648,22 @@ function BuyButton({
               styles.cta,
               { opacity: disabled ? Opacity.disabled : pressed ? Opacity.pressed : 1 },
             ]}>
-            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-              <Defs>
-                <LinearGradient id={fill} x1="0" y1="0" x2="1" y2="1">
-                  <Stop offset="0" stopColor={PremiumTones.ctaFrom} />
-                  <Stop offset="1" stopColor={PremiumTones.ctaTo} />
-                </LinearGradient>
-              </Defs>
-              <Rect width="100%" height="100%" fill={`url(#${fill})`} />
-            </Svg>
+            {/* Medidas en números, no en «100%»: en iOS el SVG en porcentaje se
+                quedaba con el ancho de un render anterior y el degradado salía
+                cortado (2026-11-10, captura del usuario). */}
+            {width > 0 ? (
+              <Svg style={StyleSheet.absoluteFill} width={width} height={CTA_HEIGHT}>
+                <Defs>
+                  <LinearGradient id={fill} x1="0" y1="0" x2="1" y2="1">
+                    <Stop offset="0" stopColor={PremiumTones.ctaFrom} />
+                    <Stop offset="1" stopColor={PremiumTones.ctaTo} />
+                  </LinearGradient>
+                </Defs>
+                <Rect width={width} height={CTA_HEIGHT} fill={`url(#${fill})`} />
+              </Svg>
+            ) : null}
             <Animated.View pointerEvents="none" style={[styles.sheen, band]}>
-              <Svg width={SHEEN_WIDTH} height="100%">
+              <Svg width={SHEEN_WIDTH} height={CTA_HEIGHT}>
                 <Defs>
                   <LinearGradient id={sheen} x1="0" y1="0" x2="1" y2="0">
                     <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0} />
@@ -662,7 +671,7 @@ function BuyButton({
                     <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
                   </LinearGradient>
                 </Defs>
-                <Rect width={SHEEN_WIDTH} height="100%" fill={`url(#${sheen})`} />
+                <Rect width={SHEEN_WIDTH} height={CTA_HEIGHT} fill={`url(#${sheen})`} />
               </Svg>
             </Animated.View>
             <ThemedText type="bodyStrong" style={[styles.ctaText, { color: PremiumTones.onCta }]}>
@@ -676,21 +685,27 @@ function BuyButton({
 }
 
 const SHEEN_WIDTH = 70;
+const CTA_HEIGHT = Control.button + 4;
+/** Alto del fundido que hay encima del pie (el pie en sí es noche opaca). */
+const FADE_HEIGHT = 40;
 
-/** Degradado de la noche hacia arriba: el contenido se funde bajo el pie fijo. */
+/**
+ * Fundido de la noche hacia arriba, encima del pie opaco: el contenido se
+ * desvanece al pasar por debajo en vez de cortarse en seco.
+ */
 function FooterFade() {
+  const { width } = useWindowDimensions();
   const id = useId().replace(/:/g, '');
   const grad = `foot-${id}`;
   return (
-    <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" pointerEvents="none">
+    <Svg style={styles.footerFade} width={width} height={FADE_HEIGHT} pointerEvents="none">
       <Defs>
         <LinearGradient id={grad} x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor={PremiumTones.night} stopOpacity={0} />
-          <Stop offset="0.22" stopColor={PremiumTones.night} stopOpacity={0.92} />
           <Stop offset="1" stopColor={PremiumTones.night} stopOpacity={1} />
         </LinearGradient>
       </Defs>
-      <Rect width="100%" height="100%" fill={`url(#${grad})`} />
+      <Rect width={width} height={FADE_HEIGHT} fill={`url(#${grad})`} />
     </Svg>
   );
 }
@@ -726,7 +741,7 @@ function FooterLink({
 }
 
 /** Lo que mide el pie fijo con su degradado: el contenido deja ese hueco debajo. */
-const FOOTER_SPACE = 210;
+const FOOTER_SPACE = 190;
 
 const styles = StyleSheet.create({
   root: {
@@ -864,8 +879,14 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     alignItems: 'center',
-    paddingTop: Spacing.five,
+    paddingTop: Spacing.two,
     paddingHorizontal: Spacing.four,
+    backgroundColor: PremiumTones.night,
+  },
+  footerFade: {
+    position: 'absolute',
+    left: 0,
+    top: -FADE_HEIGHT,
   },
   footerInner: {
     width: '100%',
@@ -877,7 +898,8 @@ const styles = StyleSheet.create({
     boxShadow: `0px 12px 32px ${PremiumTones.ctaTo}73`,
   },
   cta: {
-    minHeight: Control.button + 4,
+    height: CTA_HEIGHT,
+    backgroundColor: PremiumTones.ctaTo,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: Radii.pill,

@@ -142,19 +142,18 @@ export const OnPremium: ThemePalette = {
 
 /**
  * Tiempos de la apertura del paywall desde el diamante (dirección Premium:
- * larga, sin rebote). La gema vuela al sitio del héroe mientras un círculo de
- * noche crece desde ella; ya tapada la pantalla, el paywall abre debajo y el
- * velo se retira.
+ * larga, sin rebote). Todo pasa dentro de la propia pantalla de pago, que abre
+ * transparente sobre el perfil: el diamante se encoge un pelo, crece desde donde
+ * estaba hasta tapar la pantalla de azul, y ese azul se disuelve en la noche del
+ * paywall mientras el contenido entra.
  */
 export const PaywallReveal = {
-  /** Anticipación: la gema se encoge un pelo antes de salir. */
+  /** Anticipación: el diamante se encoge un pelo antes de crecer. */
   anticipate: 90,
-  /** Vuelo de la gema y expansión del círculo. */
-  cover: 560,
-  /** Espera con la pantalla tapada a que el paywall esté montado debajo. */
-  hold: 260,
-  /** Retirada del velo: más corta que la entrada. */
-  fade: 260,
+  /** Crecimiento del diamante hasta tapar la pantalla. */
+  cover: 620,
+  /** El azul del diamante se disuelve y deja ver los planes. */
+  dissolve: 520,
 } as const;
 
 /**

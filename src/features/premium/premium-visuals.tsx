@@ -3,9 +3,8 @@
  * abre (`premium-cta.tsx`): la gema facetada, el halo de fondo y la geometría
  * del héroe.
  *
- * La animación del diamante deja su gema exactamente donde el paywall pinta la
- * suya (`heroCenter`) y sobre el mismo fondo (`PremiumTones.night` + halo): al
- * retirar el velo no hay salto, la gema «ya estaba ahí».
+ * La gema del héroe y el halo comparten geometría (`heroCenter`): el halo se
+ * centra en la gema.
  *
  * Capa ambiental: el halo respira y tres destellos parpadean alrededor de la
  * gema. Con «reducir movimiento» todo queda quieto en su punto medio.
@@ -174,8 +173,8 @@ export function HeroGem() {
 /**
  * El halo de luz azul detrás del héroe, a pantalla completa y fijo (no se
  * desplaza con el contenido). Respira despacio salvo con «reducir movimiento».
- * `backdrop` pinta además la noche de fondo; el velo de la animación lo quita,
- * porque allí la noche la pone su propio círculo.
+ * `backdrop` pinta además la noche de fondo; se puede quitar para
+ * usarlo sobre otro fondo.
  */
 export function PremiumHalo({
   breathe = true,
