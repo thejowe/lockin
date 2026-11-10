@@ -44,13 +44,11 @@
  * eso es manipulación directa y quitarla dejaría el deck sin feedback.
  */
 
-import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
-  Easing,
   Extrapolation,
   interpolate,
   runOnJS,
@@ -62,89 +60,32 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { Icon } from '@/components/icon';
-import { Curves, Duration, Elevation, Radii, Spacing, Springs } from '@/constants/theme';
+import { Elevation, Radii, Spacing, Springs } from '@/constants/theme';
 import { useReduceMotion } from '@/hooks/use-reduce-motion';
 import { useTheme, useThemeName } from '@/hooks/use-theme';
 
 import { useButtonsTour } from './buttons-tour';
-import { BlackCross, DECK_ACTIONS_SPACE, DeckActions } from './deck-actions';
+import { DECK_ACTIONS_SPACE, DeckActions } from './deck-actions';
 import { ProfileCard } from './profile-card';
+import {
+  DEPTH_DIM,
+  DEPTH_OFFSET,
+  DEPTH_SCALE,
+  EXIT_TIMING,
+  exitTiming,
+  FLICK_VELOCITY,
+  MAX_ROTATION,
+  projected,
+  SWIPE_THRESHOLD,
+  SwipeOverlay,
+  VISIBLE_CARDS,
+} from './swipe-motion';
 import { useTapHint } from './tap-hint';
 
 import type { SharedValue } from 'react-native-reanimated';
 import type { DeckProfile, Decision, Specialty } from '@/data';
 import type { DaySchedule } from '@/features/profile';
 import { t } from '@/i18n';
-
-/** Desplazamiento a partir del cual soltar cuenta como decisión. */
-const SWIPE_THRESHOLD = 110;
-/**
- * Recorrido en el que el sello pasa de invisible a opaco. Mucho antes que el
- * umbral: el de Like cae sobre el avatar, y a medio aparecer se transparentaba
- * su base y se leían las iniciales debajo.
- */
-const STAMP_FADE = SWIPE_THRESHOLD / 3;
-/** Velocidad a la que un flick corto también decide. */
-const FLICK_VELOCITY = 800;
-/** Inclinación máxima de la tarjeta, en grados. */
-const MAX_ROTATION = 12;
-/** Tamaño del corazón o la cruz que aparece al arrastrar. */
-const MARK_SIZE = 120;
-/** Intensidad del desenfoque del fondo cuando la tarjeta llega al umbral. */
-const VEIL_BLUR = 40;
-/** Cuántas tarjetas se pintan a la vez. Las demás no se ven. */
-const VISIBLE_CARDS = 3;
-/** Cuánto encoge y baja cada tarjeta por cada puesto que tiene delante. */
-const DEPTH_SCALE = 0.04;
-/**
- * Sin desplazamiento vertical: como en Tinder, las de detrás no asoman por
- * debajo de la superior. Solo se ven cuando la de arriba se aparta.
- */
-const DEPTH_OFFSET = 0;
-/** Cuánto se apaga cada tarjeta de detrás por puesto de profundidad. */
-const DEPTH_DIM = 0.35;
-
-/** Salida de pantalla: arranca con la velocidad del gesto y frena al final. */
-const EXIT_TIMING = { duration: Duration.base, easing: Easing.bezier(...Curves.out) };
-
-/**
- * Ritmo al que se frena el impulso del dedo al proyectarlo: el de un scroll ágil
- * de iOS. Con él, un flick de 800 px/s lleva la tarjeta unos 80 px más allá.
- */
-const DECELERATION = 0.99;
-
-/**
- * Dónde acabaría la tarjeta si se la dejara frenar sola (la función de
- * proyección de Apple, la misma que decide dónde para un scroll). Se decide con
- * este punto y no con el de suelta: así un flick corto lanza la tarjeta, y una
- * soltada más allá del umbral pero volviendo hacia el centro vuelve.
- */
-function projected(position: number, velocity: number): number {
-  'worklet';
-  return position + ((velocity / 1000) * DECELERATION) / (1 - DECELERATION);
-}
-
-/**
- * Pendiente inicial de `Curves.out` (y1 / x1): cuántas veces la velocidad media
- * lleva al arrancar.
- */
-const EXIT_LAUNCH = Curves.out[1] / Curves.out[0];
-
-/**
- * Salida que arranca a la velocidad con la que el dedo soltó la tarjeta: sin
- * costura entre arrastre y animación. Un lanzamiento rápido sale rápido; uno
- * lento, en el tope de `Duration.slow`.
- */
-function exitTiming(remaining: number, velocity: number) {
-  'worklet';
-  const speed = Math.abs(velocity) / 1000;
-  const duration = speed > 0 ? (EXIT_LAUNCH * Math.abs(remaining)) / speed : Duration.slow;
-  return {
-    duration: Math.min(Duration.slow, Math.max(Duration.fast, duration)),
-    easing: EXIT_TIMING.easing,
-  };
-}
 
 /** Identificador del gesto de la tarjeta superior. Lo usan los tests. */
 export const PAN_TEST_ID = 'swipe-deck-pan';
@@ -482,7 +423,6 @@ function TopCard({
   tapHint: boolean;
   onPageChange: () => void;
 }) {
-  const theme = useTheme();
   const elevation = Elevation[useThemeName()];
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -506,32 +446,8 @@ function TopCard({
     };
   });
 
-  // La marca crece a la vez que aparece: se lee como algo que se forma bajo el
-  // dedo, no como un icono que se enciende.
-  const likeStyle = useAnimatedStyle(() => {
-    const x = owner.get() === turnKey ? translateX.get() : 0;
-    const progress = interpolate(x, [0, SWIPE_THRESHOLD], [0, 1], Extrapolation.CLAMP);
-    return {
-      opacity: interpolate(x, [0, STAMP_FADE], [0, 1], Extrapolation.CLAMP),
-      transform: [{ scale: 0.6 + 0.4 * progress }],
-    };
-  });
-
-  // El fondo de la tarjeta se difumina y oscurece a medida que se arrastra hacia
-  // cualquiera de los dos lados, para que el corazón o la cruz se lean encima.
-  const veilStyle = useAnimatedStyle(() => {
-    const x = owner.get() === turnKey ? translateX.get() : 0;
-    return { opacity: interpolate(Math.abs(x), [0, SWIPE_THRESHOLD], [0, 1], Extrapolation.CLAMP) };
-  });
-
-  const passStyle = useAnimatedStyle(() => {
-    const x = owner.get() === turnKey ? translateX.get() : 0;
-    const progress = interpolate(x, [-SWIPE_THRESHOLD, 0], [1, 0], Extrapolation.CLAMP);
-    return {
-      opacity: interpolate(x, [-STAMP_FADE, 0], [1, 0], Extrapolation.CLAMP),
-      transform: [{ scale: 0.6 + 0.4 * progress }],
-    };
-  });
+  // Desplazamiento de esta tarjeta para el velo y el sello: 0 si el arrastre no es suyo.
+  const offset = useDerivedValue(() => (owner.get() === turnKey ? translateX.get() : 0));
 
   return (
     <Animated.View
@@ -550,29 +466,8 @@ function TopCard({
         onOpenProfile={() => router.push({ pathname: '/person/[id]', params: { id } })}
       />
 
-      <Animated.View testID="swipe-veil" style={[styles.mark, veilStyle]}>
-        {Platform.OS === 'android' ? (
-          // `BlurView` en Android exige un `BlurTargetView`; aquí basta un velo oscuro.
-          <View style={[StyleSheet.absoluteFill, styles.androidVeil]} />
-        ) : (
-          <BlurView tint="dark" intensity={VEIL_BLUR} style={StyleSheet.absoluteFill} />
-        )}
-      </Animated.View>
-
-      {/* Corazón o cruz que van apareciendo en el centro a medida que se arrastra. */}
-      <Animated.View testID="swipe-mark-like" style={[styles.mark, likeStyle]}>
-        <Icon
-          name="heart"
-          size={MARK_SIZE}
-          color={theme.brass}
-          fill={theme.brass}
-          strokeWidth={2.4}
-        />
-      </Animated.View>
-
-      <Animated.View testID="swipe-mark-pass" style={[styles.mark, passStyle]}>
-        <BlackCross size={MARK_SIZE} edge={theme.text} />
-      </Animated.View>
+      {/* Velo y corazón o cruz que van apareciendo a medida que se arrastra. */}
+      <SwipeOverlay offset={offset} />
     </Animated.View>
   );
 }
@@ -684,22 +579,8 @@ const styles = StyleSheet.create({
   cardTop: {
     borderRadius: Radii.card,
   },
-  // Corazón / cruz del gesto: centrados sobre la tarjeta, sin recibir toques.
-  mark: {
-    position: 'absolute',
-    pointerEvents: 'none',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   tourBackdrop: {
     backgroundColor: 'rgba(0, 0, 0, 0.55)',
-  },
-  androidVeil: {
-    backgroundColor: 'rgba(10, 10, 11, 0.7)',
   },
   actions: {
     position: 'absolute',

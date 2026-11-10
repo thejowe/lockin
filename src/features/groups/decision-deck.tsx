@@ -1,8 +1,11 @@
 /**
- * Deck de swipe de los grupos: el mismo gesto que el de Descubrir
- * (`features/discover/swipe-deck.tsx`) —umbral de 110, flick de 800, la carta
- * sigue al dedo y sale por el lado de la decisión—, pero para cualquier carta:
- * aquí son grupos o personas con un puesto, no perfiles con Super Like y Boost.
+ * Deck de swipe de los grupos. Se siente exactamente igual que el de Descubrir
+ * (`features/discover/swipe-deck.tsx`): mismos números y misma salida
+ * (`features/discover/swipe-motion.tsx`), el mismo velo con el corazón o la
+ * cruz cubriendo la carta al arrastrarla, la misma pila de detrás que sube con
+ * el arrastre y los mismos botones de Pasar y Like, que crecen y se rellenan
+ * hacia el lado al que va la carta. Lo único distinto es qué hay en la carta:
+ * aquí son grupos o personas con un puesto, sin Super Like, Deshacer ni Boost.
  *
  * Como allí, el arrastre pertenece a un turno (`turnKey`): la carta decidida se
  * queda fuera y la siguiente nace en el centro sin heredar su desplazamiento.
@@ -13,44 +16,66 @@ import { useState, type ReactNode } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
-  Easing,
   Extrapolation,
   interpolate,
   runOnJS,
   useAnimatedStyle,
+  useDerivedValue,
   useSharedValue,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
 
-import { Icon } from '@/components/icon';
-import { ScalePressable } from '@/components/scale-pressable';
-import { Curves, Duration, Elevation, Radii, Spacing, Springs, Stroke } from '@/constants/theme';
+import { Elevation, Radii, Spacing, Springs } from '@/constants/theme';
+import { ActionButton } from '@/features/discover/deck-actions';
+import {
+  DEPTH_DIM,
+  DEPTH_OFFSET,
+  DEPTH_SCALE,
+  EXIT_TIMING,
+  exitTiming,
+  FLICK_VELOCITY,
+  MAX_ROTATION,
+  projected,
+  SWIPE_THRESHOLD,
+  SwipeOverlay,
+  VISIBLE_CARDS,
+} from '@/features/discover/swipe-motion';
 import { useReduceMotion } from '@/hooks/use-reduce-motion';
 import { useTheme, useThemeName } from '@/hooks/use-theme';
 
+import type { SharedValue } from 'react-native-reanimated';
 import type { Decision } from '@/data';
 
-/** Desplazamiento a partir del cual soltar cuenta como decisión. */
-export const SWIPE_THRESHOLD = 110;
-/** Velocidad a la que un flick corto también decide. */
-export const FLICK_VELOCITY = 800;
-const MAX_ROTATION = 10;
+export { FLICK_VELOCITY, SWIPE_THRESHOLD };
+
 const BUTTON_SIZE = 64;
+/** Hueco entre Pasar y Like: el mismo que deja Super Like en el deck de Descubrir. */
+const MIDDLE_SPACE = 48;
 /** Hueco que la carta deja abajo para los botones que flotan encima. */
 export const DECISION_ACTIONS_SPACE = BUTTON_SIZE + Spacing.four * 2;
-
-const EXIT_TIMING = { duration: Duration.base, easing: Easing.bezier(...Curves.out) };
 
 /** Identificador del gesto de la carta superior. Lo usan los tests. */
 export const GROUP_PAN_TEST_ID = 'group-deck-pan';
 
-/** Qué decide soltar la carta ahí, o `null` si vuelve al centro. */
+/**
+ * Qué decide soltar la carta ahí, o `null` si vuelve al centro. Como en
+ * Descubrir, decide el punto donde la carta acabaría frenando sola, no el de suelta.
+ */
 export function swipeOutcome(translationX: number, velocityX: number): Decision | null {
   'worklet';
-  if (translationX > SWIPE_THRESHOLD || velocityX > FLICK_VELOCITY) return 'like';
-  if (translationX < -SWIPE_THRESHOLD || velocityX < -FLICK_VELOCITY) return 'pass';
+  const landing = projected(translationX, velocityX);
+  if (landing > SWIPE_THRESHOLD || velocityX > FLICK_VELOCITY) return 'like';
+  if (landing < -SWIPE_THRESHOLD || velocityX < -FLICK_VELOCITY) return 'pass';
   return null;
+}
+
+/** Estado del arrastre, compartido entre el hilo de UI y el de JS. */
+interface Drag {
+  translateX: SharedValue<number>;
+  translateY: SharedValue<number>;
+  owner: SharedValue<string | null>;
+  exited: SharedValue<boolean>;
 }
 
 export function DecisionDeck<T>({
@@ -73,7 +98,6 @@ export function DecisionDeck<T>({
   likeLabel: string;
   passLabel: string;
 }) {
-  const theme = useTheme();
   const elevation = Elevation[useThemeName()];
   const { width } = useWindowDimensions();
   const reduceMotion = useReduceMotion();
@@ -82,6 +106,7 @@ export function DecisionDeck<T>({
   const translateY = useSharedValue(0);
   const owner = useSharedValue<string | null>(null);
   const exited = useSharedValue(false);
+  const drag: Drag = { translateX, translateY, owner, exited };
   const exiting = useSharedValue(false);
 
   const top = items.length > 0 ? items[0] : null;
@@ -93,6 +118,20 @@ export function DecisionDeck<T>({
   const [turn, setTurn] = useState({ topId, count: 0 });
   if (turn.topId !== topId) setTurn({ topId, count: turn.count + 1 });
   const turnKey = topId === null ? null : `${turn.count}:${topId}`;
+
+  // De -1 (pasar) a 1 (like): lo leen los botones para crecer y rellenarse.
+  const swipeProgress = useDerivedValue(() => {
+    if (turnKey === null || owner.get() !== turnKey || exited.get()) return 0;
+    return interpolate(
+      translateX.get(),
+      [-SWIPE_THRESHOLD, 0, SWIPE_THRESHOLD],
+      [-1, 0, 1],
+      Extrapolation.CLAMP
+    );
+  });
+
+  // Desplazamiento de la superior para el velo y el sello: 0 si el arrastre no es suyo.
+  const offset = useDerivedValue(() => (owner.get() === turnKey ? translateX.get() : 0));
 
   function settle(item: T, decision: Decision) {
     exiting.set(false);
@@ -148,8 +187,13 @@ export function DecisionDeck<T>({
       const decision = swipeOutcome(translateX.get(), event.velocityX);
 
       if (decision === null) {
-        translateX.set(reduceMotion ? 0 : withSpring(0, Springs.settle));
-        translateY.set(reduceMotion ? 0 : withSpring(0, Springs.settle));
+        // Vuelve al sitio con la velocidad que traía el dedo.
+        translateX.set(
+          reduceMotion ? 0 : withSpring(0, { ...Springs.settle, velocity: event.velocityX })
+        );
+        translateY.set(
+          reduceMotion ? 0 : withSpring(0, { ...Springs.settle, velocity: event.velocityY })
+        );
         return;
       }
 
@@ -159,8 +203,13 @@ export function DecisionDeck<T>({
         runOnJS(settle)(top, decision);
         return;
       }
+
+      // La carta mantiene el arco del gesto al salir: sube o baja según iba.
+      const exitX = decision === 'like' ? exitDistance : -exitDistance;
+      const timing = exitTiming(exitX - translateX.get(), event.velocityX);
+      translateY.set(withTiming(translateY.get() + event.velocityY * 0.1, timing));
       translateX.set(
-        withTiming(decision === 'like' ? exitDistance : -exitDistance, EXIT_TIMING, (finished) => {
+        withTiming(exitX, timing, (finished) => {
           if (!finished) return;
           exited.set(true);
           runOnJS(settle)(top, decision);
@@ -180,56 +229,113 @@ export function DecisionDeck<T>({
     );
     return {
       opacity: mine && exited.get() ? 0 : 1,
-      transform: [{ translateX: x }, { translateY: y }, { rotate: rotation + 'deg' }],
+      transform: [{ translateX: x }, { translateY: y }, { rotate: rotation + 'deg' }, { scale: 1 }],
     };
   });
 
-  const next = items.length > 1 ? items[1] : null;
+  // Se pintan del fondo hacia delante: la superior es la última y queda encima.
+  const stack = items
+    .slice(0, VISIBLE_CARDS)
+    .map((item, index) => ({ item, index }))
+    .reverse();
 
   return (
     <View style={styles.root}>
       <View style={styles.deck}>
-        {next !== null ? (
-          <View key={keyOf(next)} aria-hidden style={[styles.card, styles.behind]}>
-            {renderCard(next, false)}
-          </View>
-        ) : null}
-        {top !== null ? (
-          <GestureDetector key={keyOf(top)} gesture={pan}>
-            <Animated.View style={[styles.card, { boxShadow: elevation.raised }, topStyle]}>
-              {renderCard(top, true)}
-            </Animated.View>
-          </GestureDetector>
-        ) : null}
+        {stack.map(({ item, index }) =>
+          index > 0 ? (
+            <BehindCard key={keyOf(item)} index={index} frontKey={turnKey} drag={drag}>
+              {renderCard(item, false)}
+            </BehindCard>
+          ) : (
+            <GestureDetector key={keyOf(item)} gesture={pan}>
+              <Animated.View
+                style={[styles.card, styles.cardTop, { boxShadow: elevation.raised }, topStyle]}>
+                {renderCard(item, true)}
+                <SwipeOverlay offset={offset} />
+              </Animated.View>
+            </GestureDetector>
+          )
+        )}
       </View>
 
       {disabled ? null : (
         <View style={styles.actions} pointerEvents="box-none">
-          <ScalePressable
-            accessibilityRole="button"
-            accessibilityLabel={passLabel}
+          <ActionButton
+            label={passLabel}
+            tone="pass"
             disabled={top === null}
+            progress={swipeProgress}
             onPress={() => swipeAway('pass')}
-            style={[
-              styles.button,
-              { backgroundColor: theme.surfaceOpaque, borderColor: theme.border },
-            ]}>
-            <Icon name="close" size={28} color={theme.danger} strokeWidth={2.4} />
-          </ScalePressable>
-          <ScalePressable
-            accessibilityRole="button"
-            accessibilityLabel={likeLabel}
+          />
+          <View style={styles.middle} />
+          <ActionButton
+            label={likeLabel}
+            tone="like"
             disabled={top === null}
+            progress={swipeProgress}
             onPress={() => swipeAway('like')}
-            style={[
-              styles.button,
-              { backgroundColor: theme.surfaceOpaque, borderColor: theme.border },
-            ]}>
-            <Icon name="heart" size={28} color={theme.brass} fill={theme.brass} />
-          </ScalePressable>
+          />
         </View>
       )}
     </View>
+  );
+}
+
+/**
+ * Una de detrás, como en Descubrir: se apaga y encoge con la profundidad, y la
+ * de justo detrás sube hacia delante a la par que el arrastre de la superior.
+ */
+function BehindCard({
+  index,
+  frontKey,
+  drag,
+  children,
+}: {
+  index: number;
+  frontKey: string | null;
+  drag: Drag;
+  children: ReactNode;
+}) {
+  const theme = useTheme();
+  const { translateX, owner, exited } = drag;
+
+  const contentStyle = useAnimatedStyle(() => {
+    const frontIsDragged = owner.get() !== null && owner.get() === frontKey;
+    const frontGone = frontIsDragged && exited.get();
+    const depth = frontGone ? index - 1 : index;
+    const progress =
+      index === 1 && frontIsDragged && !frontGone
+        ? interpolate(Math.abs(translateX.get()), [0, SWIPE_THRESHOLD], [0, 1], Extrapolation.CLAMP)
+        : 0;
+    return { opacity: interpolate(depth - progress, [0, 1], [1, 0], Extrapolation.CLAMP) };
+  });
+
+  const style = useAnimatedStyle(() => {
+    const frontIsDragged = owner.get() !== null && owner.get() === frontKey;
+    const frontGone = frontIsDragged && exited.get();
+    const depth = frontGone ? index - 1 : index;
+    const progress =
+      index === 1 && frontIsDragged && !frontGone
+        ? interpolate(Math.abs(translateX.get()), [0, SWIPE_THRESHOLD], [0, 1], Extrapolation.CLAMP)
+        : 0;
+    return {
+      opacity: 1 - DEPTH_DIM * (depth - progress),
+      transform: [
+        { translateX: 0 },
+        { translateY: DEPTH_OFFSET * (depth - progress) },
+        { rotate: '0deg' },
+        { scale: 1 - DEPTH_SCALE * (depth - progress) },
+      ],
+    };
+  });
+
+  return (
+    <Animated.View
+      aria-hidden
+      style={[styles.card, styles.cardBehind, { backgroundColor: theme.surfaceOpaque }, style]}>
+      <Animated.View style={[styles.behindContent, contentStyle]}>{children}</Animated.View>
+    </Animated.View>
   );
 }
 
@@ -242,25 +348,20 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     left: 0,
-    borderRadius: Radii.card,
   },
-  // La de detrás no se lee ni se toca: solo ocupa el sitio para el relevo.
-  behind: { pointerEvents: 'none', opacity: 0.4, transform: [{ scale: 0.96 }] },
+  cardTop: { borderRadius: Radii.card },
+  // Las de detrás no se leen ni se tocan hasta que suben.
+  cardBehind: { pointerEvents: 'none', borderRadius: Radii.card, overflow: 'hidden' },
+  behindContent: { flex: 1 },
   actions: {
     position: 'absolute',
     right: 0,
     bottom: Spacing.four,
     left: 0,
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: Spacing.five,
-  },
-  button: {
-    width: BUTTON_SIZE,
-    height: BUTTON_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: Radii.pill,
-    borderWidth: Stroke.thin,
+    gap: Spacing.two,
   },
+  middle: { width: MIDDLE_SPACE },
 });

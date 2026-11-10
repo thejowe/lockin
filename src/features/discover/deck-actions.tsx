@@ -218,7 +218,11 @@ function SmallAction({
   );
 }
 
-function ActionButton({
+/**
+ * Pasar o Like: solo icono, que crece y se rellena con el arrastre. Lo usa
+ * también el deck de los grupos, para que ambos decks tengan los mismos botones.
+ */
+export function ActionButton({
   label,
   hint,
   tone,
@@ -227,7 +231,7 @@ function ActionButton({
   onPress,
 }: {
   label: string;
-  hint: string;
+  hint?: string;
   tone: 'pass' | 'like';
   disabled: boolean;
   progress: SharedValue<number>;

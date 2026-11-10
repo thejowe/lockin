@@ -80,16 +80,18 @@ describe('swipeOutcome', () => {
     expect(swipeOutcome(-SWIPE_THRESHOLD - 1, 0)).toBe('pass');
     expect(swipeOutcome(20, FLICK_VELOCITY + 1)).toBe('like');
     expect(swipeOutcome(-20, -FLICK_VELOCITY - 1)).toBe('pass');
-    expect(swipeOutcome(SWIPE_THRESHOLD, FLICK_VELOCITY)).toBeNull();
+    expect(swipeOutcome(SWIPE_THRESHOLD, 0)).toBeNull();
+    // Decide dónde frenaría: soltar pasado el umbral pero volviendo al centro, vuelve.
+    expect(swipeOutcome(SWIPE_THRESHOLD + 20, -300)).toBeNull();
   });
 });
 
 describe('DecisionDeck', () => {
-  it('pinta la de arriba y la siguiente, y nada más', async () => {
+  it('pinta la de arriba y dos detrás, como en Descubrir', async () => {
     await renderDeck();
     expect(screen.getByText('arriba uno')).toBeTruthy();
     expect(screen.getByText('detrás dos', { includeHiddenElements: true })).toBeTruthy();
-    expect(screen.queryByText(/tres/)).toBeNull();
+    expect(screen.getByText('detrás tres', { includeHiddenElements: true })).toBeTruthy();
   });
 
   it('los botones deciden sobre la de arriba', async () => {
