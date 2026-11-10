@@ -8,10 +8,12 @@
  * Ojo: en RNTL 14 `render` es asíncrono.
  */
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { buildProfileInput } from '@/data/test-fixtures';
 import { clearPendingPassword, stashPendingPassword } from '@/features/profile/pending-password';
+import { tourSeenKey } from '@/features/tour/tour-seen';
 
 import { renderRoute, repositories, resetRepositories, resetRouter, router } from '../routes';
 
@@ -49,11 +51,15 @@ const CONFIRMADA = {
   recoverable: true,
 };
 
-beforeEach(() => {
+beforeEach(async () => {
   resetRepositories();
   resetRouter();
   mockRequired = false;
   mockReadAccountState.mockReset().mockResolvedValue(CONFIRMADA);
+  await AsyncStorage.clear();
+  // El tutorial ya visto, salvo en los tests que hablan de él: el mock crea el
+  // perfil con el id de la cuenta, `me`.
+  await AsyncStorage.setItem(tourSeenKey('me'), '1');
   return clearPendingPassword();
 });
 
@@ -65,6 +71,27 @@ describe('IndexRoute', () => {
   });
 
   it('con perfil creado entra directamente al deck', async () => {
+    await repositories.session.setActiveMode('par');
+    await repositories.profiles.saveCurrent(buildProfileInput());
+
+    await renderRoute(<IndexRoute />);
+
+    await waitFor(() => expect(router.redirects).toEqual(['/discover']));
+  });
+
+  it('con perfil y sin haber visto el tutorial, lo enseña antes del deck (cuentas de antes)', async () => {
+    await AsyncStorage.removeItem(tourSeenKey('me'));
+    await repositories.session.setActiveMode('par');
+    await repositories.profiles.saveCurrent(buildProfileInput());
+
+    await renderRoute(<IndexRoute />);
+
+    await waitFor(() => expect(router.redirects).toEqual(['/tour']));
+  });
+
+  it('si no puede leer si lo vio, no lo enseña: entra al deck', async () => {
+    await AsyncStorage.removeItem(tourSeenKey('me'));
+    jest.spyOn(AsyncStorage, 'getItem').mockRejectedValueOnce(new Error('sin almacenamiento'));
     await repositories.session.setActiveMode('par');
     await repositories.profiles.saveCurrent(buildProfileInput());
 

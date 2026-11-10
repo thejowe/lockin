@@ -1,5 +1,19 @@
 # TODO maestro — LockIn MVP
 
+## ▶ Nuevo (2026-11-10): mini tutorial tras el alta
+
+Antes de entrar a Descubrir, quien acaba de crear el perfil ve cuatro páginas (Descubrir, chat,
+Grupos, perfil) con capturas reales de la app en su idioma y una tarjeta de cristal delante, como
+la referencia del usuario. Ruta `/tour`, `src/features/tour/`. Detalle y cómo regenerar las
+capturas en [`todo/tour.md`](todo/tour.md).
+
+- [x] Pantalla, ruta, textos en/ca, tests (`test/app/tour.test.tsx`) y 12 capturas.
+- [x] Entrada animada por página y, tras probarlo en TestFlight, una vez por cuenta también para
+  las cuentas que ya existían.
+- [ ] `[comprobador]` Recorrido en el emulador, del alta a Descubrir pasando por el tutorial.
+- [ ] Fallo previo, sin tocar: `test/app/groups.test.tsx` tiene 10 tests en rojo («Found multiple
+  elements with text: Taller Abierto») desde el rediseño de la tarjeta de grupo.
+
 ## ▶ Nuevo bloque (2026-11-09): Grupos — migraciones verificadas en producción
 
 Descubrir gana la sección «Grupos» (bloque 16 de `PLAN.md`): crear y editar un grupo con perfiles y plazas, decks de reclutamiento y búsqueda, unión por like recíproco, chat, push, salir/expulsar con herencia del admin, reportar y bloquear. Migraciones `20261109130000_groups.sql`, `20261109140000_groups_edit.sql` y `20261109150000_group_message_push.sql` **aplicadas en producción**: historial y contenido cotejados con los archivos locales el 2026-11-09. Detalle y versiones remotas en [`todo/grupos.md`](todo/grupos.md).

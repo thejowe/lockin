@@ -137,6 +137,12 @@ name: Alta, perfil, deck, match, mensaje y persistencia
     visible: 'Entrar a cofounder'
     timeout: 30000
 - tapOn: 'Entrar a cofounder'
+# Tras la entrada, el mini tutorial de lo que hay en la app (`src/features/tour`):
+# sale siempre tras crear el perfil y aquí se omite.
+- extendedWaitUntil:
+    visible: 'Encuentra a tu cofundador.*'
+    timeout: 30000
+- tapOn: 'Omitir'
 - extendedWaitUntil:
     visible: 'Like'
     timeout: 60000

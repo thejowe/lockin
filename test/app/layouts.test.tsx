@@ -133,8 +133,10 @@ describe('OnboardingLayout', () => {
 
     await render(<OnboardingLayout />);
 
-    // Solo declara `profile-form` (con el gesto de volver limitado al borde).
+    // Solo declara `profile-form` (con el gesto de volver limitado al borde) y
+    // `tour` (sin gesto de volver: pasa páginas en horizontal).
     expect(screen.getByText('ruta:profile-form')).toBeTruthy();
+    expect(screen.getByText('ruta:tour')).toBeTruthy();
   });
 });
 

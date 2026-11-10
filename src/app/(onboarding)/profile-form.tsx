@@ -17,7 +17,7 @@ import { t } from '@/i18n';
 /**
  * Último paso del onboarding: crear el perfil, pregunta a pregunta
  * (`ProfileWizard`, con barra de progreso y «Omitir» en lo opcional) y, al
- * terminar, la entrada animada (`WelcomeSplash`). La tab Perfil edita con el
+ * terminar, la entrada animada (`WelcomeSplash`) y el mini tutorial (`/tour`). La tab Perfil edita con el
  * formulario entero (`ProfileForm`). Aquí
  * arranca con nombre, edad y ubicación de «Sobre ti», el primer paso del alta
  * (`signup-draft.ts`), y ese borrador se borra al crear el perfil. No pregunta
@@ -84,8 +84,9 @@ export default function ProfileFormScreen() {
       {/* Encima y no en su lugar: si el guardado falla, el asistente sigue como estaba. */}
       {entering ? (
         <View style={StyleSheet.absoluteFill}>
-          {/* `replace`: una vez creado el perfil, volver al onboarding no tiene sentido. */}
-          <WelcomeSplash ready={saved} onEnter={() => router.replace('/discover')} />
+          {/* `replace`: una vez creado el perfil, volver al formulario no tiene sentido.
+              Antes de Descubrir, el mini tutorial de lo que hay en la app (`/tour`). */}
+          <WelcomeSplash ready={saved} onEnter={() => router.replace('/tour')} />
         </View>
       ) : null}
     </Screen>

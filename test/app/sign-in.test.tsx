@@ -18,10 +18,12 @@
  * Ojo: en RNTL 14 `render` y `fireEvent` son asíncronos.
  */
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { buildProfileInput } from '@/data/test-fixtures';
 import { AccountError } from '@/features/profile/account-gateway';
+import { tourSeenKey } from '@/features/tour/tour-seen';
 
 import { renderRoute, repositories, resetRepositories, resetRouter, router } from '../routes';
 
@@ -165,6 +167,11 @@ describe('SignInScreen', () => {
 });
 
 describe('después de entrar: no queda nada de la cuenta anterior', () => {
+  // El mini tutorial ya visto en esta cuenta (el mock le da el id `me`): aquí
+  // se habla de a dónde va cada cuenta, no de él (ver `index.test.tsx`).
+  beforeEach(() => AsyncStorage.setItem(tourSeenKey('me'), '1'));
+  afterEach(() => AsyncStorage.clear());
+
   it('la puerta de entrada relee la sesión y manda a las tabs si la cuenta nueva tiene perfil', async () => {
     // La sesión es la de un dispositivo recién instalado: sin perfil.
     const first = await renderRoute(<IndexRoute />);
