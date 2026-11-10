@@ -18,8 +18,9 @@
  * luz. Cerrar es la X de arriba; Restaurar y los textos legales van como enlaces
  * discretos al pie.
  *
- * Orden pensado para que los planes y el botón quepan sin desplazar: héroe,
- * título, planes; los beneficios, debajo. Todo entra en escalera
+ * Orden: héroe, título, lo que incluye Premium y después los precios (primero
+ * se cuenta qué se gana, luego cuánto cuesta; decisión del usuario del
+ * 2026-11-11). Todo entra en escalera
  * (`entranceDelay` lo retrasa hasta que el diamante de `src/app/premium.tsx`
  * ha tapado la pantalla).
  */
@@ -341,11 +342,33 @@ export function Paywall({
             </ThemedText>
           </Animated.View>
 
+          <Animated.View
+            entering={rise(1)}
+            style={[
+              styles.benefits,
+              {
+                backgroundColor: theme.backgroundElement,
+                borderColor: theme.border,
+                boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
+              },
+            ]}>
+            {BENEFITS.map((benefit) => (
+              <View key={benefit.label} style={styles.benefit}>
+                <View style={[styles.benefitIcon, { backgroundColor: theme.brassSoft }]}>
+                  <Icon name={benefit.icon} size={18} color={theme.brass} strokeWidth={2} />
+                </View>
+                <ThemedText type="body" style={styles.flex}>
+                  {t(benefit.label)}
+                </ThemedText>
+              </View>
+            ))}
+          </Animated.View>
+
           {state.status === 'loading' ? (
             <LoadingState label={t('Cargando los planes…')} style={styles.plansLoading} />
           ) : state.status === 'ready' ? (
             <Animated.View
-              entering={entranceDelay > 0 ? rise(1) : FadeIn.duration(Duration.base)}
+              entering={entranceDelay > 0 ? rise(2) : FadeIn.duration(Duration.base)}
               style={styles.plans}>
               {offers.map((offer) => (
                 <PlanCard
@@ -382,28 +405,6 @@ export function Paywall({
               ) : null}
             </MessageState>
           )}
-
-          <Animated.View
-            entering={rise(3)}
-            style={[
-              styles.benefits,
-              {
-                backgroundColor: theme.backgroundElement,
-                borderColor: theme.border,
-                boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}`,
-              },
-            ]}>
-            {BENEFITS.map((benefit) => (
-              <View key={benefit.label} style={styles.benefit}>
-                <View style={[styles.benefitIcon, { backgroundColor: theme.brassSoft }]}>
-                  <Icon name={benefit.icon} size={18} color={theme.brass} strokeWidth={2} />
-                </View>
-                <ThemedText type="body" style={styles.flex}>
-                  {t(benefit.label)}
-                </ThemedText>
-              </View>
-            ))}
-          </Animated.View>
 
           {notice ? (
             <ThemedText type="small" themeColor="textSecondary" style={styles.centered}>
@@ -450,7 +451,7 @@ export function Paywall({
 
       {state.status === 'ready' ? (
         <Animated.View
-          entering={rise(2)}
+          entering={rise(3)}
           style={[styles.footer, { paddingBottom: Math.max(insets.bottom, Spacing.three) }]}>
           <FooterFade />
           <View style={styles.footerInner}>
