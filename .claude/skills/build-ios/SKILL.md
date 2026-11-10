@@ -78,6 +78,24 @@ Caso conocido (2026-11-03): `react-native-purchases@11.0.0` pedía `PurchasesHyb
 - Lanza con el comando canónico (`--no-wait`) y devuelve el enlace del build.
 - No esperes en bucle; si el usuario quiere seguimiento, usa `npx eas-cli build:view <id> --json` cuando lo pida.
 
+### Sin cuota de EAS (plan Free agotado) → GitHub Actions
+
+Si `eas build` responde «This account has used its iOS builds from the Free plan this month», **no reintentes** contra EAS ni propongas pagar como primera opción. Usa el workflow `.github/workflows/ios-testflight.yml`: compila con `eas build --local` en un runner macOS de GitHub (gratis, repo público; no gasta cuota EAS) y sube con `eas submit`. Usa el secreto `EXPO_TOKEN` (cuenta `thejowe`), ya configurado. Tarda ~20–25 min.
+
+```bash
+# ¿ya está subido este commit? (compara headSha con git rev-parse HEAD)
+gh run list -w ios-testflight.yml -L 3 --json databaseId,conclusion,headSha,createdAt
+# lanzar sobre la rama actual (el commit debe estar pusheado)
+gh workflow run ios-testflight.yml --ref "$(git branch --show-current)"
+gh run list -w ios-testflight.yml -L 1 --json databaseId,url,headSha
+# si falla: log del paso roto
+gh run view <id> --log-failed | tail -80
+```
+
+Antes de lanzar, mira si el último run con `success` ya tiene el `headSha` de HEAD: si es así, ya está en TestFlight y no hace falta relanzar (salvo que el usuario lo pida). El Xcode lo elige el propio workflow (el más nuevo del runner `macos-26`).
+
+No sirve como alternativa: OTA (`eas update`) cuando hay módulos nativos nuevos desde el último build (crash), ni el perfil `production` sin `channel`.
+
 ## 6. Informe
 
 Tres líneas: causa (con la línea del log citada), cambio + commit, siguiente paso (comando a lanzar o enlace del build).
@@ -85,3 +103,7 @@ Tres líneas: causa (con la línea del log citada), cambio + commit, siguiente p
 ## Adaptar a otro equipo
 
 Si el usuario pide «adapta la skill» en otro equipo: comprueba qué hay (`brotli`, `curl`, `md5sum`, shell Bash/PowerShell, `npx eas-cli whoami`) y ajusta los comandos de §1 y §3 a lo disponible, sin cambiar el flujo. Si EAS no tiene sesión, pide `! npx eas-cli login`.
+
+### Equipos ya adaptados
+
+- **Windows 10 (usuario `Jowe`, 2026-11-06)**: ejecuta §1 y §3 con la herramienta **Bash** (Git Bash), no PowerShell. Hay `brotli`, `curl`, `gunzip` (mingw64), `md5sum` y `sort -V` (GNU coreutils) → los comandos tal cual funcionan. Node 24 / npm 11 local (de ahí el `npx -y npm@10` de §4). EAS con sesión: cuentas `thejowe` y `themfjowe`; el proyecto es de `thejowe` (`app.json` → `owner`). `$TMP` = scratchpad de la sesión. Sin Mac ni Xcode: no se puede reproducir `xcodebuild` local, solo vía log de EAS.
