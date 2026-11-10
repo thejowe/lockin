@@ -210,7 +210,7 @@ export function IncomingLikes({ onOpenChat }: { onOpenChat: (matchId: string) =>
         <ThemedText type="body" themeColor="textSecondary" style={styles.centered}>
           {t('Con Premium ves quién te ha dado like y puedes devolverlo desde aquí.')}
         </ThemedText>
-        <ActionButton label={t('Hazte Premium')} onPress={openPaywall} />
+        <ActionButton label={t('Hazte Premium')} onPress={() => openPaywall()} />
       </ScrollView>
     );
   } else {

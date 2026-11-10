@@ -77,6 +77,31 @@ describe('Paywall', () => {
     expect(screen.getByText('2,61 € al mes')).toBeTruthy();
   });
 
+  it('marca el anual como «Mejor valor» y lo deja elegido', async () => {
+    await setup();
+
+    expect(await screen.findByText('Mejor valor')).toBeTruthy();
+    expect(screen.getByRole('radio', { name: /Anual/ })).toBeSelected();
+    expect(screen.getByRole('radio', { name: /Mensual/ })).not.toBeSelected();
+  });
+
+  it('con un solo plan no hay «Mejor valor»', async () => {
+    (getOfferings as jest.Mock).mockResolvedValue([OFFERS[1]]);
+    await setup();
+
+    await screen.findByText('31,31 € al año');
+    expect(screen.queryByText('Mejor valor')).toBeNull();
+  });
+
+  it('la X de arriba cierra («Ahora no»)', async () => {
+    await setup();
+    await screen.findByText('7,77 € al mes');
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Ahora no' }));
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
   it('sin derecho a prueba no promete ninguna', async () => {
     await setup();
 

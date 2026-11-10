@@ -1146,5 +1146,7 @@
   "Ya hay {count} personas.": "Ja hi ha {count} persones.",
   "No puedes ver el perfil de este integrante.": "No pots veure el perfil d’aquest integrant.",
   "Ver el proyecto del grupo": "Veure el projecte del grup",
-  "{label}: ver a {name}": "{label}: veure {name}"
+  "{label}: ver a {name}": "{label}: veure {name}",
+  "Mejor valor": "Millor valor",
+  "Más matches, menos espera.": "Més matches, menys espera."
 }

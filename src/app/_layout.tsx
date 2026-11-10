@@ -142,11 +142,13 @@ export default function RootLayout() {
                 name="likes"
                 options={{ ...stackHeader, title: t('Te han dado like') }}
               />
-              {/* El paywall: una hoja sobre lo que se estaba haciendo. Entra con un
-                  fundido, no subiendo desde abajo: tras la animación del diamante
-                  los planes tienen que aparecer sobre el azul, no llegar como una
-                  pestaña. */}
-              <Stack.Screen name="premium" options={{ presentation: 'modal', animation: 'fade' }} />
+              {/* El paywall: pantalla completa (no hoja) y con fundido, para que
+                  su gema caiga justo donde la deja la animación del diamante;
+                  una hoja de iOS lo bajaría unos puntos y el relevo saltaría. */}
+              <Stack.Screen
+                name="premium"
+                options={{ presentation: 'fullScreenModal', animation: 'fade' }}
+              />
               {/* Términos, Normas y Privacidad: una hoja dentro de la app, no el navegador. */}
               {/* El perfil completo de otra persona: desde la tarjeta («i») y el chat. */}
               <Stack.Screen

@@ -1146,5 +1146,7 @@
   "Ya hay {count} personas.": "{count} people already.",
   "No puedes ver el perfil de este integrante.": "You can’t see this member’s profile.",
   "Ver el proyecto del grupo": "See the group’s project",
-  "{label}: ver a {name}": "{label}: see {name}"
+  "{label}: ver a {name}": "{label}: see {name}",
+  "Mejor valor": "Best value",
+  "Más matches, menos espera.": "More matches, less waiting."
 }

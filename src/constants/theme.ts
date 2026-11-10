@@ -90,24 +90,72 @@ export type ThemeColor = keyof typeof Dark;
 export type ThemePalette = { [K in keyof typeof Dark]: string };
 
 /**
- * El paywall tras la animación del diamante: la pantalla ya es azul y los planes
- * salen encima, con tinta negra. Mismas claves que la paleta normal.
+ * Los tonos propios de Premium: la noche azul del paywall, el halo que sale del
+ * diamante y el degradado de la gema y del botón de compra. Solo los usan el
+ * paywall y la animación que lo abre (`premium-cta.tsx`).
+ *
+ * Hasta el 2026-11-10 el paywall era el azul del diamante liso con tinta negra:
+ * sin profundidad ni contraste entre planes. Ahora es noche con el azul como
+ * luz, como las pantallas de pago que convierten (oscuro + un acento que brilla).
  */
-export const OnDiamond: ThemePalette = {
+export const PremiumTones = {
+  /** Fondo: azul noche, casi negro. El círculo de la animación tiene este color. */
+  night: '#040815',
+  /** Halo del diamante detrás del héroe. */
+  halo: '#2F7BFF',
+  /** Segundo halo, más frío, para dar volumen. */
+  haloCool: '#6A5BFF',
+  /** Gema: arista iluminada, cuerpo y sombra. */
+  gemLight: '#E4F3FF',
+  gemMid: Dark.diamond,
+  gemDeep: '#4A3DFF',
+  /** Botón de compra: degradado de cian a azul real. */
+  ctaFrom: '#8AD0FF',
+  ctaTo: '#3D7BFF',
+  /** Tinta sobre el botón de compra. */
+  onCta: '#020A1F',
+  /** Insignia «Mejor valor». */
+  badge: '#FFD66B',
+  onBadge: '#2A1C00',
+} as const;
+
+/**
+ * Paleta del paywall: noche azul con tinta clara y el azul del diamante como
+ * acento. Mismas claves que la paleta normal, así `ThemedText` y `Button` se
+ * leen solos dentro de `ThemeOverride`.
+ */
+export const OnPremium: ThemePalette = {
   ...Dark,
-  background: Dark.diamond,
-  backgroundElement: '#FFFFFF40',
-  backgroundSelected: '#FFFFFF66',
-  text: '#000000',
-  textSecondary: '#000000CC',
-  textMuted: '#000000A6',
-  border: '#00000040',
-  brass: '#000000',
-  brassSoft: '#FFFFFF59',
-  onAccent: '#FFFFFF',
-  danger: '#7A1500',
-  dangerSoft: '#7A150020',
+  background: PremiumTones.night,
+  backgroundElement: '#FFFFFF0D',
+  backgroundSelected: '#4DA3FF24',
+  surfaceOpaque: '#0B1226',
+  text: '#F5F8FF',
+  textSecondary: '#C3D0EA',
+  textMuted: '#9AA8C6',
+  border: '#FFFFFF21',
+  brass: '#9CD3FF',
+  brassSoft: '#4DA3FF24',
+  onAccent: PremiumTones.onCta,
+  glassHighlight: '#FFFFFF2E',
 };
+
+/**
+ * Tiempos de la apertura del paywall desde el diamante (dirección Premium:
+ * larga, sin rebote). La gema vuela al sitio del héroe mientras un círculo de
+ * noche crece desde ella; ya tapada la pantalla, el paywall abre debajo y el
+ * velo se retira.
+ */
+export const PaywallReveal = {
+  /** Anticipación: la gema se encoge un pelo antes de salir. */
+  anticipate: 90,
+  /** Vuelo de la gema y expansión del círculo. */
+  cover: 560,
+  /** Espera con la pantalla tapada a que el paywall esté montado debajo. */
+  hold: 260,
+  /** Retirada del velo: más corta que la entrada. */
+  fade: 260,
+} as const;
 
 /**
  * Familias tipográficas. Pareja de contraste: Instrument Serif para titulares
@@ -327,6 +375,8 @@ export const Stagger = 40;
 export const Curves = {
   out: [0.23, 1, 0.32, 1],
   inOut: [0.77, 0, 0.175, 1],
+  /** Recorrido largo y con peso que se lee entero (el vuelo del diamante). */
+  glide: [0.65, 0, 0.35, 1],
 } as const;
 
 /**

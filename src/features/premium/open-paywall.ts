@@ -1,12 +1,13 @@
 /**
  * Abre el paywall (`/premium`).
  *
- * La ruta `src/app/premium.tsx` monta el paywall (Tarea 9 del plan de Premium).
+ * `fromGem` lo usa la animación del diamante (`premium-cta.tsx`): el paywall
+ * abre bajo su velo y retrasa la entrada de su contenido hasta que se retira.
  */
 
 import { router, type Href } from 'expo-router';
 
-export function openPaywall(): void {
+export function openPaywall(options?: { fromGem?: boolean }): void {
   // `Href` a mano: las rutas tipadas se regeneran con `expo start` y /premium es nueva.
-  router.push('/premium' as Href);
+  router.push((options?.fromGem ? '/premium?via=gem' : '/premium') as Href);
 }
