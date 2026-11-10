@@ -21,7 +21,7 @@
  */
 
 import { Image } from 'expo-image';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
@@ -158,7 +158,16 @@ export function ProfileCard({
   tapHint = false,
   /** Se llama al pasar de bloque con un toque. */
   onPageChange,
+  /**
+   * Algo que pintar arriba a la izquierda, junto a «i» y «⋯» (la tarjeta de
+   * grupo pone ahí las pestañas de sus integrantes). Sus toques no pasan página.
+   */
+  topSlot,
+  /** De quién habla «⋯» si no es de esta persona (en un grupo, del grupo). */
+  safetyName,
 }: {
+  topSlot?: ReactNode;
+  safetyName?: string;
   /** Del deck llega con `superLikedMe`; en el resto de sitios es un `Profile` a secas. */
   profile: Profile | DeckProfile;
   viewerSpecialties?: Specialty[];
@@ -267,7 +276,13 @@ export function ProfileCard({
             <Rect width="100%" height="100%" fill={`url(#top-fade-${profile.id})`} />
           </Svg>
         </View>
-        <View style={styles.menu}>
+        <View style={styles.topRow} pointerEvents="box-none">
+          {topSlot ? (
+            <View style={styles.topSlot} pointerEvents="box-none">
+              {topSlot}
+            </View>
+          ) : null}
+          <View style={styles.menu}>
           {/* «i»: el perfil completo, con sus redes (2026-10-17). */}
           {onOpenProfile ? (
             <Pressable
@@ -288,7 +303,11 @@ export function ProfileCard({
               </View>
             </Pressable>
           ) : null}
-          <SafetyMenuButton name={profile.name} onPress={() => setSafetyOpen(true)} />
+          <SafetyMenuButton
+            name={safetyName ?? profile.name}
+            onPress={() => setSafetyOpen(true)}
+          />
+          </View>
         </View>
       </View>
 
@@ -721,8 +740,18 @@ const styles = StyleSheet.create({
     height: 7,
     borderRadius: Radii.pill,
   },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'flex-end',
+    gap: Spacing.two,
+  },
+  topSlot: {
+    flex: 1,
+    paddingTop: Spacing.one,
+    paddingLeft: Spacing.one,
+  },
   menu: {
-    alignSelf: 'flex-end',
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,

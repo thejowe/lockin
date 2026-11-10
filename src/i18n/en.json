@@ -1088,8 +1088,6 @@
   "Creando…": "Creating…",
   "Crear grupo": "Create group",
   "{count} de {max} miembros": "{count} of {max} members",
-  "Quién está ya en el grupo": "Who’s already in the group",
-  "{label}: ver el perfil de {name}": "{label}: view {name}’s profile",
   "Encajas como": "You’d fit as",
   "esta persona": "this person",
   "¿Salir de {name}?": "Leave {name}?",
@@ -1145,5 +1143,8 @@
   "No puedes editar este grupo": "You can’t edit this group",
   "En {role} ya hay gente. Para quitarlo, antes tendría que salir del grupo.": "There are already people in {role}. To remove it, they’d have to leave the group first.",
   "Ya hay 1 persona.": "1 person already.",
-  "Ya hay {count} personas.": "{count} people already."
+  "Ya hay {count} personas.": "{count} people already.",
+  "No puedes ver el perfil de este integrante.": "You can’t see this member’s profile.",
+  "Ver el proyecto del grupo": "See the group’s project",
+  "{label}: ver a {name}": "{label}: see {name}"
 }

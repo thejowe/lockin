@@ -1088,8 +1088,6 @@
   "Creando…": "Creant…",
   "Crear grupo": "Crear grup",
   "{count} de {max} miembros": "{count} de {max} membres",
-  "Quién está ya en el grupo": "Qui ja és al grup",
-  "{label}: ver el perfil de {name}": "{label}: veure el perfil de {name}",
   "Encajas como": "Hi encaixes com a",
   "esta persona": "aquesta persona",
   "¿Salir de {name}?": "Vols sortir de {name}?",
@@ -1145,5 +1143,8 @@
   "No puedes editar este grupo": "No pots editar aquest grup",
   "En {role} ya hay gente. Para quitarlo, antes tendría que salir del grupo.": "A {role} ja hi ha gent. Per treure’l, abans hauria de sortir del grup.",
   "Ya hay 1 persona.": "Ja hi ha 1 persona.",
-  "Ya hay {count} personas.": "Ja hi ha {count} persones."
+  "Ya hay {count} personas.": "Ja hi ha {count} persones.",
+  "No puedes ver el perfil de este integrante.": "No pots veure el perfil d’aquest integrant.",
+  "Ver el proyecto del grupo": "Veure el projecte del grup",
+  "{label}: ver a {name}": "{label}: veure {name}"
 }
