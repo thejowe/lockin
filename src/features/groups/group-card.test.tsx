@@ -1,6 +1,6 @@
 /**
- * La tarjeta de grupo: empieza en la ficha de quien administra, cambia de
- * persona con las pestañas de arriba y «Proyecto» enseña el grupo.
+ * La tarjeta de grupo: empieza en «Proyecto» con las fotos de todos, y las
+ * pestañas de arriba (admin primero) cambian a la ficha de cada persona.
  */
 
 import { fireEvent, render, screen } from '@testing-library/react-native';
@@ -44,8 +44,23 @@ it('pone a quien administra delante', () => {
   expect(membersAdminFirst(CARD.members).map((m) => m.member.userId)).toEqual(['ana', 'leo']);
 });
 
-it('empieza en el admin y cambia de persona con las pestañas', async () => {
+it('empieza en el proyecto, con la foto de cada integrante', async () => {
   await render(<GroupCard card={CARD} />);
+  expect(screen.getByText('Una app para talleres')).toBeTruthy();
+  expect(screen.getAllByTestId('group-member-photo', { includeHiddenElements: true })).toHaveLength(2);
+});
+
+it('ordena las pestañas: Proyecto, admin y el resto', async () => {
+  await render(<GroupCard card={CARD} />);
+  const names = screen.getAllByRole('tab').map((tab) => tab.props.accessibilityLabel);
+  expect(names[0]).toBe('Ver el proyecto del grupo');
+  expect(names[1]).toMatch(/Ana/);
+  expect(names[2]).toMatch(/Leo/);
+});
+
+it('cambia de persona con las pestañas', async () => {
+  await render(<GroupCard card={CARD} />);
+  await fireEvent.press(screen.getByRole('tab', { name: /Ana/ }));
   expect(screen.getByText('Ana')).toBeTruthy();
   expect(screen.queryByText('Leo')).toBeNull();
 

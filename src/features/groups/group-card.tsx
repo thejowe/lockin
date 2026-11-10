@@ -1,22 +1,24 @@
 /**
  * Tarjeta de un grupo en el deck de quien busca grupo.
  *
- * Se ve como una tarjeta de Descubrir: la foto y la ficha de una persona del
- * grupo, empezando por quien lo administra. Arriba, una pestaña por integrante
- * (con su cargo: «Admin», «Marketing»…) y, al final, «Proyecto». Al pulsar una
- * pestaña, la tarjeta pasa a la ficha de esa persona; «Proyecto» enseña el
- * nombre, la idea, el puesto que cubriría quien mira y lo que el grupo busca.
+ * Empieza en «Proyecto»: las fotos de todos los integrantes repartidas por la
+ * tarjeta y, encima, el nombre, la idea, el puesto que cubriría quien mira y lo
+ * que el grupo busca. Arriba, «Proyecto» y luego una pestaña por integrante
+ * (con su cargo: «Admin», «Marketing»…), quien administra el primero. Al pulsar
+ * una, la tarjeta pasa a la ficha de esa persona, como en Descubrir.
  *
  * El menú «⋯» (bloquear o reportar el grupo) sustituye el contenido de la
  * tarjeta mientras está abierto, como en la tarjeta de perfil. Habla siempre
  * del grupo, también sobre la ficha de una persona.
  */
 
+import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radii, ScrimAlpha, Spacing, Stroke } from '@/constants/theme';
+import { FontFamily, Radii, ScrimAlpha, Spacing, Stroke } from '@/constants/theme';
 import { Chip, ProfileCard } from '@/features/discover';
 import { specialtyLabel } from '@/features/profile';
 import { SafetyMenuButton } from '@/features/safety/safety-panel';
@@ -59,8 +61,9 @@ export function GroupCard({
   const theme = useTheme();
   const { group, roles, myRole } = card;
   const members = membersAdminFirst(card.members);
-  const [tab, setTab] = useState<Tab>(members[0]?.member.userId ?? PROJECT_TAB);
+  const [tab, setTab] = useState<Tab>(PROJECT_TAB);
   const selected = members.find((entry) => entry.member.userId === tab) ?? null;
+  const onProject = selected === null;
 
   if (safetyOpen && onSafetyOpenChange) {
     return (
@@ -111,6 +114,7 @@ export function GroupCard({
   return (
     <View
       style={[styles.card, { backgroundColor: theme.surfaceOpaque, borderColor: theme.border }]}>
+      {onProject ? <MemberMosaic groupId={group.id} members={members} /> : null}
       <View
         style={[styles.projectTop, { backgroundColor: `${theme.background}${ScrimAlpha}` }]}>
         <View style={styles.projectTabs}>{tabs}</View>
@@ -119,7 +123,11 @@ export function GroupCard({
         ) : null}
       </View>
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: Spacing.four + bottomInset }]}
+        contentContainerStyle={[
+          styles.content,
+          onProject && styles.contentBottom,
+          { paddingBottom: Spacing.four + bottomInset },
+        ]}
         showsVerticalScrollIndicator={false}>
         {selected !== null ? (
           // Un integrante cuyo perfil no se puede leer (hay un bloqueo de por medio).
@@ -160,7 +168,64 @@ export function GroupCard({
   );
 }
 
-/** Nombre del grupo y una pestaña por integrante, más «Proyecto» al final. */
+/**
+ * Las fotos de todos los integrantes repartidas por la tarjeta: hasta 3 en
+ * columnas; con 4 o más, en dos filas. Sin foto, su color y sus iniciales.
+ * Un fundido abajo deja leer el texto del proyecto. Es decorado.
+ */
+function MemberMosaic({ groupId, members }: { groupId: string; members: GroupMemberView[] }) {
+  const theme = useTheme();
+  const profiles = members.flatMap((entry) => (entry.profile ? [entry.profile] : []));
+  const perRow = profiles.length <= 3 ? profiles.length : Math.ceil(profiles.length / 2);
+  const rows = [profiles.slice(0, perRow), profiles.slice(perRow)].filter((row) => row.length);
+  // Id único por tarjeta: en web los `<defs>` de varias tarjetas comparten documento.
+  const fadeId = `group-fade-${groupId}`;
+
+  return (
+    <View
+      style={[StyleSheet.absoluteFill, styles.mosaic, { backgroundColor: theme.background }]}
+      pointerEvents="none"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants">
+      {rows.map((row, index) => (
+        <View key={index} style={styles.mosaicRow}>
+          {row.map((profile) => {
+            const accent = profile.avatar.accent === 'teal' ? theme.teal : theme.brass;
+            return (
+              <View
+                key={profile.id}
+                testID="group-member-photo"
+                style={[styles.tile, { backgroundColor: `${accent}55` }]}>
+                {profile.avatar.imageUrl ? (
+                  <Image
+                    source={{ uri: profile.avatar.imageUrl }}
+                    contentFit="cover"
+                    transition={150}
+                    style={StyleSheet.absoluteFill}
+                  />
+                ) : (
+                  <ThemedText style={styles.tileInitials}>{profile.avatar.initials}</ThemedText>
+                )}
+              </View>
+            );
+          })}
+        </View>
+      ))}
+      <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
+        <Defs>
+          <LinearGradient id={fadeId} x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0.3" stopColor={theme.background} stopOpacity={0} />
+            <Stop offset="0.55" stopColor={theme.background} stopOpacity={0.7} />
+            <Stop offset="0.75" stopColor={theme.background} stopOpacity={0.94} />
+          </LinearGradient>
+        </Defs>
+        <Rect width="100%" height="100%" fill={`url(#${fadeId})`} />
+      </Svg>
+    </View>
+  );
+}
+
+/** Nombre del grupo, «Proyecto» y una pestaña por integrante (admin primero). */
 function MemberTabs({
   groupName,
   members,
@@ -174,6 +239,7 @@ function MemberTabs({
 }) {
   const theme = useTheme();
   const entries: { key: Tab; label: string; a11y: string }[] = [
+    { key: PROJECT_TAB, label: t('Proyecto'), a11y: t('Ver el proyecto del grupo') },
     ...members.map((entry) => {
       const label = memberRoleLabel(entry);
       const name = entry.profile?.name;
@@ -183,7 +249,6 @@ function MemberTabs({
         a11y: name ? t('{label}: ver a {name}', { label, name }) : label,
       };
     }),
-    { key: PROJECT_TAB, label: t('Proyecto'), a11y: t('Ver el proyecto del grupo') },
   ];
 
   return (
@@ -246,6 +311,16 @@ const styles = StyleSheet.create({
   },
   projectTabs: { flex: 1 },
   content: { gap: Spacing.three, padding: Spacing.four, paddingTop: Spacing.two },
+  contentBottom: { flexGrow: 1, justifyContent: 'flex-end' },
+  mosaic: { gap: Stroke.thin },
+  mosaicRow: { flex: 1, flexDirection: 'row', gap: Stroke.thin },
+  tile: { flex: 1, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  tileInitials: {
+    fontFamily: FontFamily.displayBold,
+    fontSize: 48,
+    lineHeight: 56,
+    opacity: 0.9,
+  },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   block: { gap: Spacing.one },
   tabsBlock: { gap: Spacing.one + Spacing.half },
