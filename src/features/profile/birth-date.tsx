@@ -4,7 +4,8 @@
  * asistente del perfil (`profile-wizard.tsx`).
  */
 
-import { StyleSheet, View } from 'react-native';
+import { type ComponentRef, type RefObject, useRef } from 'react';
+import { StyleSheet, type TextInput, View } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
 
@@ -75,6 +76,20 @@ export function BirthDateFields({
   error?: string;
 }) {
   const digits = (text: string) => text.replace(/[^0-9]/g, '');
+  const monthRef = useRef<ComponentRef<typeof TextInput>>(null);
+  const yearRef = useRef<ComponentRef<typeof TextInput>>(null);
+
+  // Al completar los dos dígitos del día o del mes, el foco salta solo al
+  // siguiente campo: la fecha se teclea de corrido.
+  const fill = (
+    key: 'day' | 'month',
+    text: string,
+    next: RefObject<ComponentRef<typeof TextInput> | null>
+  ) => {
+    const clean = digits(text);
+    onChange({ ...value, [key]: clean });
+    if (clean.length === 2 && value[key].length < 2) next.current?.focus();
+  };
 
   return (
     <Field label={t('Fecha de nacimiento')} hint={t('Solo se enseña tu edad.')} error={error}>
@@ -82,27 +97,35 @@ export function BirthDateFields({
         <View style={styles.dateSmall}>
           <TextField
             value={value.day}
-            onChangeText={(text) => onChange({ ...value, day: digits(text) })}
+            onChangeText={(text) => fill('day', text, monthRef)}
             placeholder={t('Día')}
             inputMode="numeric"
             maxLength={2}
             autoCorrect={false}
+            returnKeyType="next"
+            onSubmitEditing={() => monthRef.current?.focus()}
+            submitBehavior="submit"
             accessibilityLabel={t('Día')}
           />
         </View>
         <View style={styles.dateSmall}>
           <TextField
+            ref={monthRef}
             value={value.month}
-            onChangeText={(text) => onChange({ ...value, month: digits(text) })}
+            onChangeText={(text) => fill('month', text, yearRef)}
             placeholder={t('Mes')}
             inputMode="numeric"
             maxLength={2}
             autoCorrect={false}
+            returnKeyType="next"
+            onSubmitEditing={() => yearRef.current?.focus()}
+            submitBehavior="submit"
             accessibilityLabel={t('Mes')}
           />
         </View>
         <View style={styles.dateYear}>
           <TextField
+            ref={yearRef}
             value={value.year}
             onChangeText={(text) => onChange({ ...value, year: digits(text) })}
             placeholder={t('Año')}

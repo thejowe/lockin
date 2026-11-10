@@ -5,7 +5,7 @@
  * en `profile-form.tsx`. Ningún color literal — todo sale de `@/constants/theme`.
  */
 
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { type ComponentRef, type Ref, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   PanResponder,
   Pressable,
@@ -205,6 +205,8 @@ export function TextField({
 }: TextInputProps & {
   value: string;
   onChangeText: (next: string) => void;
+  /** Llega tal cual al `TextInput` (p. ej. para pasar el foco al siguiente campo). */
+  ref?: Ref<ComponentRef<typeof TextInput>>;
   /** Muestra el contador "23/140" bajo el campo. Solo tiene efecto con `maxLength`. */
   showCount?: boolean;
 }) {
