@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "187078015966",
+    "project_id": "cofounder-512013",
+    "storage_bucket": "cofounder-512013.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:187078015966:android:13a5d48015f63117a0bb4f",
+        "android_client_info": {
+          "package_name": "app.cofounder.android"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "187078015966-mcsr1ik1ut7je7ba6aacdgc77ccsl3pi.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB4dbu64Lf5XiscWDweJMv8X6dbtrR_ofE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "187078015966-mcsr1ik1ut7je7ba6aacdgc77ccsl3pi.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
