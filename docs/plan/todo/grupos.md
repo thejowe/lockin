@@ -54,11 +54,65 @@ de los dos lados y dentro no hay jerarquía más allá de administrar (expulsar,
   producto en esta actualización documental.
 - [ ] Push: guardar los ids de los tickets aceptados y consultar sus recibos para retirar también
   los tokens que APNs/FCM rechazan después. Ver hallazgo P2 de la revisión.
-- [ ] Activación de push: build nativa nueva (`expo-notifications` vuelve a `package.json` y
-  `app.json`), credenciales FCM/APNs, desplegar `notify-group-message` con `verify_jwt: false`,
-  configurar `PUSH_WEBHOOK_SECRET` y guardar en Vault `push_webhook_url` y
-  `push_webhook_secret` (el mismo secreto). `pg_net` y Vault ya están instalados; los dos secretos
-  de Vault no están configurados (verificado sin leer sus valores).
+- [x] Configuración Android de Firebase: `google-services.json` de `cofounder-512013`
+  (número `187078015966`), cliente `app.cofounder.android`, enlazado por
+  `expo.android.googleServicesFile` en `app.json`. Credencial FCM V1 del mismo proyecto
+  asignada en EAS y comprobada el 2026-11-09, sin descargar la clave privada.
+- [x] Activación del servidor push comprobada el 2026-11-09: `notify-group-message` v3
+  activa con `verify_jwt: false`; sus cuatro archivos coinciden con las fuentes locales.
+  Vault contiene `push_webhook_url` y `push_webhook_secret`. Una llamada por `pg_net` con
+  el secreto de Vault y un UUID de mensaje inexistente devuelve **HTTP 200**,
+  `{"sent":0,"forgotten":0}`: acredita autenticación/configuración sin enviar avisos.
+- [x] Build Android nativa: EAS `preview`, versión 1.0.0, `versionCode` 4,
+  [`e0517c91-216e-4ac9-a58c-584d2eca91e9`](https://expo.dev/accounts/thejowe/projects/lockin/builds/e0517c91-216e-4ac9-a58c-584d2eca91e9)
+  **FINISHED**. [APK](https://expo.dev/artifacts/eas/CiLD2vWLBA1gw9J5wDxY8CydUCcfLRJl5flddQAHaq0.apk)
+  descargado; `aapt2` confirma el número/proyecto/app id de Firebase dentro del binario.
+  SHA256 y recursos en `e2e/artifacts/local/2026-11-09-group-push/apk-verification.json`.
+- [x] Prueba push en Android API 36 con Google Play Services y Supabase producción: login y
+  permiso por UI, token Android guardado, mensaje de otro miembro dispara aviso en segundo
+  plano, tocarlo abre el chat correcto con el mensaje. Un segundo mensaje con ese chat abierto
+  llega por FCM, se ve en el chat y no crea aviso visible en la bandeja. Evidencia abajo.
+- [x] Limpieza de la prueba Android: cerrar sesión por UI deja cero tokens del receptor.
+  Cuentas temporales eliminadas por `delete_my_account`; SQL confirma cero usuarios,
+  perfiles, sesiones, tokens, grupo y mensajes de la prueba. Contraseñas retiradas del archivo local.
+- [x] Firma iOS preparada para push (2026-11-09): clave APNs asignada en EAS, capacidad
+  Push Notifications activada en `app.cofounder.mobile` y perfil App Store `LH75W5YXBR`
+  actualizado en Apple y EAS. La primera build de TestFlight
+  [42718513493](https://github.com/thejowe/lockin/actions/runs/42718513493) falló porque
+  el perfil anterior no incluía `aps-environment`; corregido mediante `eas credentials`.
+- [ ] Build iOS y subida a TestFlight sobre `02d5414`, con todos los commits nuevos:
+  [42721314523](https://github.com/thejowe/lockin/actions/runs/42721314523) en curso.
+- [ ] Prueba de recepción y apertura de push en dispositivo iOS.
+
+## Prueba push Android (2026-11-09)
+
+Build EAS `preview` 1.0.0 (4), sobre `02d5414` más `app.json` y `google-services.json`
+locales. Emulador AVD `lockin`, Android 16/API 36 x86_64 con Google Play Services, backend
+**Supabase producción** `grrzmzktrhksbttpbblg`.
+
+Las dos cuentas temporales y la unión al grupo «Prueba Push Android» se prepararon mediante
+las API normales y las RPC de creación/likes recíprocos. El receptor inició sesión y concedió
+el permiso en la UI. El emisor insertó los mensajes autenticado, igual que
+`GroupRepository.sendMessage`; el trigger real invocó la función desplegada y esta envió a Expo.
+
+Evidencia en `e2e/artifacts/local/2026-11-09-group-push/`:
+
+- `report.md` y `verdict.json`: pasos, entorno y veredicto **PASS** del comprobador.
+- `apk-verification.json`: SHA256 y sender/app/project id extraídos del APK con `aapt2`.
+- `08-notification-visible.png`: aviso con grupo, emisor y texto tras el primer envío.
+- `09-notification-opened-chat.png` y XML: tocar el aviso abre el chat correcto con el mensaje.
+- `10-foreground.png`, `10-foreground-dumpsys.txt`, `11-foreground-tray.png` y
+  `app-logcat.txt`: segundo mensaje visible, FCM recibido a las 23:35:26 UTC y cero
+  notificaciones activas de la app mientras el chat tiene el foco.
+- `message-verification.json`: peticiones `pg_net` 2 y 3, ambas HTTP 200 con `sent: 1`,
+  sin timeout. La entrega la acreditan además las capturas y logcat.
+- `15-logged-out.png` y `cleanup-verification.json`: bienvenida tras salir y borrado completo
+  de cuentas, perfiles, sesiones, tokens, grupo y mensajes temporales.
+
+Se inspeccionaron las capturas. `07-chat-before.png` todavía muestra la ficha del grupo y
+`08-notification.png` una transición: no se usan como evidencia del chat ni del aviso.
+La app queda instalada, sin la sesión temporal, y el emulador encendido. El recorrido completo
+de creación/edición/salida/expulsión por UI continúa pendiente; esta prueba cubre push.
 
 ## Datos
 
@@ -154,8 +208,9 @@ de espacios): los tres coinciden. No se ejecutaron de nuevo.
 
 Comprobación SQL remota: RLS activa en las seis tablas de grupos/push, RPC de la app sin permiso
 para `anon`, RPC de destinatarios y limpieza solo para `service_role`, y trigger
-`group_messages_push` habilitado. `pg_net` 0.20.4 y Vault 0.3.1 instalados. La activación de push
-sigue pendiente de los secretos, del despliegue de la función y de la build nativa.
+`group_messages_push` habilitado. `pg_net` 0.20.4 y Vault 0.3.1 instalados. La activación del
+servidor y la configuración FCM de Android se comprobaron después, como consta en Estado;
+la build y la prueba de entrega se documentan por separado.
 
 Asesor de seguridad consultado: informa de RPC `security definer` accesibles para usuarios
 autenticados y de `group_swipes`/`push_tokens` con RLS sin políticas, como exige el diseño de

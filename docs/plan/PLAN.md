@@ -418,8 +418,10 @@ persona y el grupo, y cada grupo tiene su chat. Detalle, decisiones y pendientes
 - Crear grupo es gratis; el flag para cobrarlo está en `src/data/groups.ts` **y** en la función SQL
   `group_creation_requires_premium()`.
 - Depende de: `descubrir`, `chat`, `datos`. Las tres migraciones del bloque están aplicadas en
-  producción (contenido y permisos verificados el 2026-11-09). Push pendiente de configuración,
-  despliegue de la Edge Function y build nativa; detalle en `todo/grupos.md`.
+  producción (contenido y permisos verificados el 2026-11-09). Servidor push, FCM V1 y Firebase
+  Android configurados y build Android nativa terminada; entrega, toque para abrir el chat y
+  supresión del aviso con el chat abierto verificados en emulador Android con Supabase real.
+  Detalle y estado de iOS en `todo/grupos.md`.
 
 ## Orden recomendado de trabajo
 

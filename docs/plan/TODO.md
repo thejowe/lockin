@@ -11,7 +11,20 @@ Descubrir gana la sección «Grupos» (bloque 16 de `PLAN.md`): crear y editar u
   Prettier y ESLint del alcance en verde.
 - [x] Usuario autoriza aplicar migraciones, commit y push. Las tres migraciones ya constan en
   producción con el mismo SQL; comprobados RLS, permisos y trigger, sin repetir su aplicación.
-- [ ] `[comprobador]` Recorrido en emulador; build nativa nueva y configuración/despliegue de push.
+- [ ] `[comprobador]` Recorrido completo de Grupos en emulador (crear, like recíproco,
+  salir/expulsar); la prueba push tiene su evidencia independiente abajo.
+- [x] Firebase Android enlazado en `app.json`; FCM V1 en EAS del mismo proyecto comprobado.
+  Servidor push v3 y Vault ya configurados; webhook autenticado probado con HTTP 200.
+- [x] Build Android `preview` `e0517c91-216e-4ac9-a58c-584d2eca91e9` terminada y APK
+  descargado; Firebase confirmado dentro del binario.
+- [x] Push real en Android API 36 + Supabase producción: aviso en segundo plano, toque abre
+  el chat correcto con el mensaje y segundo aviso suprimido mientras ese chat tiene el foco.
+  Capturas, jerarquías, logcat y respuestas del webhook en
+  `e2e/artifacts/local/2026-11-09-group-push/`; detalle en `todo/grupos.md`.
+  Sesión cerrada y cuentas, grupo, mensajes y tokens temporales eliminados y verificados por SQL.
+- [x] Firma iOS para push: capacidad activada en Apple y perfil App Store actualizado en EAS.
+- [ ] Subida a TestFlight de `02d5414` en curso:
+  [42721314523](https://github.com/thejowe/lockin/actions/runs/42721314523). Falta probar push en iOS.
 - [ ] **P2 de la revisión:** falta consultar los recibos posteriores de Expo para retirar tokens
   que APNs/FCM den de baja después de aceptar el ticket. Detalle en `todo/grupos.md`.
 - [x] Grupos en Privacidad v1.7, Términos v1.5 y Normas v1.2 (es/en/ca), con tokens push;
