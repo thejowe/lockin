@@ -38,6 +38,15 @@ de los dos lados y dentro no hay jerarquía más allá de administrar (expulsar,
   traducciones en inglés y catalán, sin cambiar reglas de negocio.
 - [x] Prettier en los archivos nuevos y modificados del bloque; comprobación de formato en verde.
 - [x] ESLint del alcance de Grupos/push sin errores ni avisos (`--max-warnings 0`).
+- [x] `test/app/groups.test.tsx` en verde otra vez (2026-11-10). Los 10 rojos («Found multiple
+  elements with text: Taller Abierto / Ruta Verde») venían del rediseño de la tarjeta
+  (`43c6a9d`, `064cefd`): el nombre del grupo sale **dos veces a propósito**, encima de las
+  pestañas (se queda también en la ficha de cada integrante) y como título de «Proyecto». Se
+  corrigen los tests, no la tarjeta: `expectGroupCard(name)` exige las dos apariciones. Al
+  arreglarlo salió un rojo escondido detrás: los chips «Admin: ver el perfil de…» ya son
+  pestañas («Admin: ver a Marc Oller») que pasan a la ficha, y el perfil completo se abre con
+  su «i» («Ver el perfil de Marc Oller»); el test sigue ese camino. `npx jest`: 162 suites y
+  2183 tests en verde (1 suite saltada: el contrato de Supabase, sin Docker); `tsc` limpio.
 - [x] Revisión por Codex del trabajo recibido (2026-11-09); hallazgos corregidos y pendiente
   de recibos de Expo anotado abajo.
 - [x] El usuario autoriza aplicar migraciones, commitear y hacer push (2026-11-09).
