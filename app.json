@@ -18,7 +18,6 @@
     },
     "android": {
       "package": "app.cofounder.android",
-      "googleServicesFile": "./google-services.json",
       "allowBackup": false,
       "adaptiveIcon": {
         "backgroundColor": "#0A0A0B",

@@ -69,3 +69,6 @@ expo-tunnel.log
 
 # Copias de seguridad de env del comprobador
 .env.local.bak-*
+
+# Configuración de Firebase (en EAS: variable de archivo GOOGLE_SERVICES_JSON)
+google-services.json
