@@ -119,13 +119,13 @@ describe('ProfileFormScreen', () => {
     await waitFor(() => expect(mockForm.props).not.toBeNull());
   });
 
-  it('guarda el perfil y sustituye la ruta: atrás no vuelve al onboarding', async () => {
+  it('guarda el perfil y sustituye la ruta por el tutorial: atrás no vuelve al onboarding', async () => {
     await renderRoute(<ProfileFormScreen />);
 
     await fireEvent.press(screen.getByRole('button', { name: 'Crear perfil' }));
     await fireEvent.press(await screen.findByRole('button', { name: 'Entrar a cofounder' }));
 
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/discover'));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/tour'));
     expect(router.push).not.toHaveBeenCalled();
     await expect(repositories.profiles.getCurrent()).resolves.toMatchObject({
       name: 'Núria Bosch',
@@ -167,7 +167,7 @@ describe('ProfileFormScreen', () => {
 
       await jest.advanceTimersByTimeAsync(SPLASH_MS + 100);
 
-      await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/discover'));
+      await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/tour'));
     } finally {
       jest.useRealTimers();
     }

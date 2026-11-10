@@ -11,6 +11,9 @@ export default function OnboardingLayout() {
           gesto vale en cualquier punto de la pantalla y se lleva el arrastre del
           `Slider` de horas hacia atrás (y con él todo lo rellenado). */}
       <Stack.Screen name="profile-form" options={{ fullScreenGestureEnabled: false }} />
+      {/* El tutorial pasa páginas en horizontal: el gesto de volver se las comería, y
+          detrás ya no hay nada a lo que volver (llega con `replace`). */}
+      <Stack.Screen name="tour" options={{ gestureEnabled: false }} />
     </Stack>
   );
 }
