@@ -20,7 +20,7 @@
  */
 
 import { Image, type ImageSource } from 'expo-image';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Pressable,
   StyleSheet,
@@ -31,21 +31,36 @@ import {
   type ScrollViewInstance,
 } from 'react-native';
 import Animated, {
+  Easing,
+  Extrapolation,
   interpolate,
+  useAnimatedReaction,
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
+  withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/ambient-background';
 import { Button } from '@/components/button';
-import { Frosted } from '@/components/glass';
+import { Frosted, hasNativeGlass } from '@/components/glass';
 import { Icon, type IconName } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
-import { FontFamily, HitSlop, MaxContentWidth, Radii, Spacing, Stroke } from '@/constants/theme';
+import {
+  Curves,
+  Duration,
+  FontFamily,
+  HitSlop,
+  MaxContentWidth,
+  Radii,
+  Spacing,
+  Stroke,
+} from '@/constants/theme';
 import { specialtyLabel } from '@/features/profile/catalog';
+import { useReduceMotion } from '@/hooks/use-reduce-motion';
 import { useTheme } from '@/hooks/use-theme';
 import { getLocale, t, tk, type AppLocale } from '@/i18n';
 
@@ -80,6 +95,14 @@ const SHOT_RATIO = 954 / 600;
 /** Alto del teléfono entero (marco + barra de estado + captura) por cada punto de ancho. */
 const PHONE_RATIO = 1.65;
 
+const easeOut = Easing.bezier(...Curves.out);
+/** El móvil empieza a salir cuando el cuadrado ya casi está. */
+const PHONE_DELAY_MS = 240;
+/** Y el texto, cuando el móvil ya va por la mitad. */
+const COPY_DELAY_MS = 420;
+/** Se lee una vez: si hay Liquid Glass no cambia con la app abierta. */
+const NATIVE_GLASS = hasNativeGlass();
+
 export const TOUR_PAGES = [
   {
     shot: 'discover',
@@ -113,6 +136,7 @@ export function AppTour({ onDone }: { onDone: () => void }) {
   // Móviles bajos (iPhone SE y parecidos): título y tarjeta más pequeños para
   // que el teléfono no quede tapado entero.
   const compact = height < 720;
+  const reduceMotion = useReduceMotion();
 
   const onScroll = useAnimatedScrollHandler((event) => {
     progress.value = event.contentOffset.x / Math.max(width, 1);
@@ -173,45 +197,20 @@ export function AppTour({ onDone }: { onDone: () => void }) {
           onMomentumScrollEnd={onSettle}
           style={styles.pager}>
           {TOUR_PAGES.map((item, index) => (
-            <View key={item.shot} style={[styles.page, { width }]}>
-              <View
-                style={styles.stage}
-                onLayout={
-                  index === 0
-                    ? (event) => setStageHeight(event.nativeEvent.layout.height)
-                    : undefined
-                }
-                accessibilityElementsHidden
-                importantForAccessibility="no-hide-descendants">
-                {stageHeight > 0 ? (
-                  <View style={{ marginTop: slack }}>
-                    <Phone width={phoneWidth} source={SHOTS[item.shot][locale]} />
-                  </View>
-                ) : null}
-                <View style={[styles.cardSlot, { bottom: Spacing.three + slack }]}>
-                  <Frosted
-                    radius={Radii.sheet}
-                    style={[styles.card, compact && styles.cardCompact]}>
-                    <Highlight shot={item.shot} compact={compact} />
-                  </Frosted>
-                </View>
-              </View>
-              <View
-                style={[styles.copy, compact && styles.copyCompact]}
-                accessible
-                accessibilityLabel={`${t(item.title)}. ${t(item.body)}`}
-                accessibilityHint={t('Paso {step} de {total}', {
-                  step: index + 1,
-                  total: TOUR_PAGES.length,
-                })}>
-                <ThemedText type={compact ? 'subtitle' : 'title'} style={styles.title}>
-                  {t(item.title)}
-                </ThemedText>
-                <ThemedText type="body" themeColor="textSecondary" style={styles.body}>
-                  {t(item.body)}
-                </ThemedText>
-              </View>
-            </View>
+            <TourPage
+              key={item.shot}
+              index={index}
+              item={item}
+              width={width}
+              compact={compact}
+              progress={progress}
+              reduceMotion={reduceMotion}
+              stageHeight={stageHeight}
+              phoneWidth={phoneWidth}
+              slack={slack}
+              source={SHOTS[item.shot][locale]}
+              onStageLayout={index === 0 ? setStageHeight : undefined}
+            />
           ))}
         </Animated.ScrollView>
 
@@ -225,6 +224,147 @@ export function AppTour({ onDone }: { onDone: () => void }) {
         </View>
       </SafeAreaView>
     </Screen>
+  );
+}
+
+/**
+ * Una página, con su entrada: primero el cuadrado de cristal, luego el móvil
+ * se despliega desde detrás de él y, por último, el título y el texto.
+ *
+ * Arranca cuando la página empieza a entrar (a media pasada, no al soltar: así
+ * nunca se desliza a una página vacía) y solo la primera vez: volver atrás no la
+ * repite. Con «reducir movimiento» todo está en su sitio desde el principio.
+ *
+ * El móvil va dentro de un recorte que acaba a media altura del cuadrado: sale
+ * de detrás de él, nunca asoma por debajo.
+ */
+function TourPage({
+  index,
+  item,
+  width,
+  compact,
+  progress,
+  reduceMotion,
+  stageHeight,
+  phoneWidth,
+  slack,
+  source,
+  onStageLayout,
+}: {
+  index: number;
+  item: (typeof TOUR_PAGES)[number];
+  width: number;
+  compact: boolean;
+  progress: SharedValue<number>;
+  reduceMotion: boolean;
+  stageHeight: number;
+  phoneWidth: number;
+  slack: number;
+  source: ImageSource;
+  onStageLayout?: (height: number) => void;
+}) {
+  const [cardHeight, setCardHeight] = useState(0);
+  const cardIn = useSharedValue(reduceMotion ? 1 : 0);
+  const phoneIn = useSharedValue(reduceMotion ? 1 : 0);
+  const copyIn = useSharedValue(reduceMotion ? 1 : 0);
+  const played = useSharedValue(reduceMotion);
+
+  // Si «reducir movimiento» llega tarde (la consulta es asíncrona), se planta todo.
+  useEffect(() => {
+    if (!reduceMotion) return;
+    played.set(true);
+    cardIn.set(1);
+    phoneIn.set(1);
+    copyIn.set(1);
+  }, [reduceMotion, played, cardIn, phoneIn, copyIn]);
+
+  useAnimatedReaction(
+    () => Math.abs(progress.value - index) < 0.6,
+    (near) => {
+      if (!near || played.get()) return;
+      played.set(true);
+      cardIn.set(withTiming(1, { duration: Duration.slow, easing: easeOut }));
+      phoneIn.set(
+        withDelay(PHONE_DELAY_MS, withTiming(1, { duration: Duration.unfold, easing: easeOut }))
+      );
+      copyIn.set(
+        withDelay(COPY_DELAY_MS, withTiming(1, { duration: Duration.slow, easing: easeOut }))
+      );
+    }
+  );
+
+  // Del borde de arriba del hueco a la mitad del cuadrado: hasta ahí se ve el móvil.
+  const cardBottom = Spacing.three + slack;
+  const clipHeight = Math.max(0, stageHeight - cardBottom - cardHeight / 2);
+  // Lo que baja el móvil para quedar entero bajo ese borde, detrás del cuadrado.
+  const hiddenDrop = Math.max(0, clipHeight - slack);
+
+  const cardStyle = useAnimatedStyle(() => ({
+    // En iOS 26 el cristal es Liquid Glass y una opacidad en su padre lo deja sin
+    // pintar (`glass.tsx`): allí entra solo con la escala y el desplazamiento.
+    ...(NATIVE_GLASS ? {} : { opacity: cardIn.value }),
+    transform: [
+      { translateY: interpolate(cardIn.value, [0, 1], [24, 0]) },
+      { scale: interpolate(cardIn.value, [0, 1], [0.9, 1]) },
+    ],
+  }));
+  const cardContentStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(cardIn.value, [0.35, 1], [0, 1], Extrapolation.CLAMP),
+  }));
+  const phoneStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(phoneIn.value, [0, 0.25], [0, 1], Extrapolation.CLAMP),
+    transform: [
+      { translateY: interpolate(phoneIn.value, [0, 1], [hiddenDrop, 0]) },
+      { scale: interpolate(phoneIn.value, [0, 1], [0.9, 1]) },
+    ],
+  }));
+  const copyStyle = useAnimatedStyle(() => ({
+    opacity: copyIn.value,
+    transform: [{ translateY: interpolate(copyIn.value, [0, 1], [12, 0]) }],
+  }));
+
+  return (
+    <View style={[styles.page, { width }]}>
+      <View
+        style={styles.stage}
+        onLayout={
+          onStageLayout ? (event) => onStageLayout(event.nativeEvent.layout.height) : undefined
+        }
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants">
+        {stageHeight > 0 && cardHeight > 0 ? (
+          <View style={[styles.phoneClip, { height: clipHeight }]}>
+            <Animated.View style={[styles.phoneLift, { marginTop: slack }, phoneStyle]}>
+              <Phone width={phoneWidth} source={source} />
+            </Animated.View>
+          </View>
+        ) : null}
+        <Animated.View
+          style={[styles.cardSlot, { bottom: cardBottom }, cardStyle]}
+          onLayout={(event) => setCardHeight(event.nativeEvent.layout.height)}>
+          <Frosted radius={Radii.sheet} style={[styles.card, compact && styles.cardCompact]}>
+            <Animated.View style={cardContentStyle}>
+              <Highlight shot={item.shot} compact={compact} />
+            </Animated.View>
+          </Frosted>
+        </Animated.View>
+      </View>
+      <Animated.View
+        style={[styles.copy, compact && styles.copyCompact, copyStyle]}
+        accessible
+        accessibilityLabel={`${t(item.title)}. ${t(item.body)}`}
+        accessibilityHint={t('Paso {step} de {total}', {
+          step: index + 1,
+          total: TOUR_PAGES.length,
+        })}>
+        <ThemedText type={compact ? 'subtitle' : 'title'} style={styles.title}>
+          {t(item.title)}
+        </ThemedText>
+        <ThemedText type="body" themeColor="textSecondary" style={styles.body}>
+          {t(item.body)}
+        </ThemedText>
+      </Animated.View>
+    </View>
   );
 }
 
@@ -502,6 +642,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
     borderWidth: Stroke.thin,
     borderColor: '#1C1C1E',
+  },
+  phoneClip: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    overflow: 'hidden',
+    alignItems: 'center',
+  },
+  phoneLift: {
+    transformOrigin: 'bottom',
   },
   cardSlot: {
     position: 'absolute',

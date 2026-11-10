@@ -314,6 +314,8 @@ export const Duration = {
   fast: 140,
   base: 220,
   slow: 360,
+  /** Algo grande que se despliega desde otra pieza (el móvil del tutorial). */
+  unfold: 600,
 } as const;
 
 /** Retardo entre elementos de una lista que entra escalonada, en ms. */

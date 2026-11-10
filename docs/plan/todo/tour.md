@@ -22,6 +22,13 @@ imágenes reales de la app.
   2026-10-12) y Premium (el tutorial enseña qué hay, no vende).
 - **Interacción:** deslizar o «Siguiente»; «Omitir» arriba a la derecha (no en la última página).
   Sin gesto de volver (`gestureEnabled: false` en `(onboarding)/_layout.tsx`).
+- **Entrada de cada página (2026-11-10, `/appanimation`):** primero el cuadrado de cristal (sube
+  24 pt y crece de 0,9 a 1, `Duration.slow`); a los 240 ms el móvil se despliega desde detrás de
+  él (sube desde la mitad del cuadrado y crece de 0,9 a 1 anclado abajo, nuevo token
+  `Duration.unfold` = 600 ms); a los 420 ms, título y texto. Curva `Curves.out`, sin rebote.
+  Arranca cuando la página está a media pasada (no al soltar) y solo la primera vez. En iOS 26
+  el cuadrado es Liquid Glass: allí no se anima su opacidad (lo dejaría sin pintar), solo su
+  `transform`, y el fundido va en el contenido. Con «reducir movimiento», todo quieto y en su sitio.
 - **Accesibilidad:** el teléfono y la tarjeta son ilustración y quedan ocultos al lector de
   pantalla; cada página se lee como «título. texto» con la pista «Paso n de 4».
 - **Tamaños:** el teléfono se ajusta al hueco que dejan el texto y el botón, y la tarjeta se pega
@@ -64,4 +71,6 @@ tras poner `imageUrl` a los perfiles del parche de abajo.
 - [ ] `[comprobador]` Recorrido en el emulador: crear perfil → animación → tutorial (deslizar,
   «Siguiente», «Omitir», «Empezar») → Descubrir. Ojo en iOS 26: la tarjeta es `Frosted`, que
   allí es Liquid Glass sobre la captura.
+- [x] Animación de entrada por página: verificada en web fotograma a fotograma y con
+  `prefers-reduced-motion`. Falta verla en dispositivo (ver la casilla del `comprobador`).
 - [ ] (Opcional) Capturas con fotos de perfil, ver arriba.
