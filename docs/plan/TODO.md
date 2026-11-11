@@ -1,6 +1,6 @@
 # TODO maestro — LockIn MVP
 
-## ▶ Notificaciones (2026-11-11): ampliación preparada, pendiente de activar
+## ▶ Notificaciones (2026-11-11): migración aplicada, función pendiente
 
 - [x] Código de resumen diario de likes no vistos (anónimo gratis), matches,
   chat 1:1/grupos, actividad de grupos, reenganche opcional con motivo y fin de Premium.
@@ -13,8 +13,12 @@
 - [ ] Comprobación Android: bloqueada por rutas C++ de Windows >260 caracteres;
   no hay APK nuevo ni veredicto de UI. Resultados y límites en
   [notificaciones.md](todo/notificaciones.md).
-- [ ] **Requiere confirmación explícita:** aplicar migración, desplegar función
-  con los mismos secretos y verificar el cron/push en producción. Vault sin cambios.
+- [x] Migración aplicada por orden del usuario a `grrzmzktrhksbttpbblg`:
+  `20261111174123_push_notifications` (local `20261111160000`). Verificados
+  columnas, permisos/RLS, triggers y los dos jobs activos; Vault sin cambios.
+- [ ] **Requiere confirmación explícita:** desplegar la función actualizada
+  con los mismos secretos y verificar el cron/push de extremo a extremo.
+  `notify-group-message` continúa en v3; los nuevos avisos aún no están operativos.
   No se han publicado web ni declaraciones de tiendas.
 
 

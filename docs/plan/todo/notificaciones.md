@@ -1,7 +1,8 @@
 # Notificaciones — 2026-11-11
 
 Ampliación preparada en `claude/startup-cofounder-matching-app-tfeai1`.
-Producción no modificada. Proyecto: `grrzmzktrhksbttpbblg`.
+Migración aplicada en producción el 2026-11-11 por orden del usuario.
+Proyecto: `grrzmzktrhksbttpbblg`. Edge Function actualizada pendiente de desplegar.
 
 ## Alcance
 
@@ -10,7 +11,8 @@ Producción no modificada. Proyecto: `grrzmzktrhksbttpbblg`.
 - Preferencias en Ajustes (ca: Ajustos), registro sin diálogo al arrancar si ya
   hay permiso, permiso contextual en likes/match/grupos y baja del token.
 - Migración nueva `20261111160000_push_notifications.sql` y ampliación de
-  `notify-group-message` con la misma URL y secretos. No desplegadas/aplicadas.
+  `notify-group-message` con la misma URL y secretos. Migración aplicada;
+  función actualizada todavía no desplegada.
 - SQL embebido y pruebas de función/cliente; documentos legales es/en/ca.
 
 ## Validación local y pendientes
@@ -46,8 +48,9 @@ Producción no modificada. Proyecto: `grrzmzktrhksbttpbblg`.
   Repetir desde una ruta de proyecto más corta o tras corregir el toolchain.
 - [ ] Push real/frío/caliente y baja del token en iOS/Android físicos requieren
   build con servicios configurados. Los handlers y el foco están probados en Jest.
-- [ ] Con confirmación explícita: migración → Vault sin cambios → desplegar la
-  función actualizada → verificar cron y push reales en producción.
+- [x] Migración aplicada en producción; comprobados estructura, permisos y jobs.
+- [ ] Con confirmación explícita: desplegar la función actualizada → verificar
+  cron y push reales de extremo a extremo. Vault sin cambios.
 - [ ] Recibos posteriores de Expo: P2 en `grupos.md`, fuera de esta tanda.
 
 ## Hecho en el código
@@ -99,12 +102,47 @@ Producción no modificada. Proyecto: `grrzmzktrhksbttpbblg`.
   safety documentados. Recordatorios: interés legítimo con oposición desde
   Ajustes; revisión jurídica/declaraciones del responsable pendiente.
 
-## Activación pendiente (no ejecutada)
+## Aplicación en producción — 2026-11-11
 
-1. Revisar las migraciones pendientes de la rama, incluidos los cambios de
-   grupos previos a esta tarea. No aplicar otras migraciones por accidente.
-2. Con confirmación, aplicar `20261111160000_push_notifications.sql` después de
-   las migraciones ya existentes (`supabase db push`, revisando antes su lista).
+- Autorización del usuario: aplicar las migraciones pendientes. Se cotejó el
+  historial remoto: `groups_multi_membership` ya estaba aplicada como
+  `20261111173433`; solo faltaba `push_notifications`.
+- Aplicada mediante Supabase MCP, sin modificar el SQL preparado:
+  local `20261111160000_push_notifications.sql` → remoto
+  `20261111174123_push_notifications`. No se reejecutaron migraciones previas
+  ni se cambiaron sus archivos o el historial remoto.
+- Verificados los 13 campos nuevos de settings (siete booleanos true y seis
+  campos nullable), ausencia de la sobrecarga antigua de register_push_token y
+  compatibilidad con llamadas de dos argumentos mediante el tercero opcional.
+- Tablas push_notice_claims/push_group_events con RLS y sin SELECT para anon o
+  authenticated. RPC internas solo service_role; RPC propias accesibles a
+  authenticated y sin acceso anon. Marcas/preferencias sin UPDATE directo;
+  active_mode conserva su permiso de escritura.
+- Los cinco triggers están habilitados, incluido group_messages_push existente.
+  Jobs activos, ejecutados como postgres: `lockin-push-like-digest` (`*/15 * * * *`)
+  y `lockin-push-hourly` (`25 * * * *`). Solo se comprobó su definición; no se
+  forzó ningún envío ni se invocó manualmente enqueue.
+- Prueba remota sin datos personales: destinos de eventos con un UUID inexistente
+  devuelven cero filas; push_local_time sin perfil usa Europe/Madrid. Prueba SQL
+  local previa a aplicar: 13/13. No se crearon usuarios o mensajes de prueba en
+  producción ni se consultaron tokens, nombres o contenido de mensajes.
+- Antes del commit documental: `npm test -- --runInBand` (2.248 pasan, 227
+  omitidos; 166 suites pasan y 1 omitida) y `npm run typecheck` pasan.
+- Advisors: dos tablas más con [RLS sin políticas](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy)
+  (cerradas deliberadamente) y cinco nuevas [RPC propias SECURITY DEFINER](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable),
+  con auth.uid y permisos de su cuenta. Las dos RPC anon previas no cambian.
+- `notify-group-message` sigue ACTIVE en v3, verify_jwt=false: no se ha desplegado.
+  Los nuevos avisos requieren el despliegue posterior; la presencia de los jobs
+  no demuestra entrega ni que la función v3 procese los tipos nuevos.
+- Sin cambios en Vault, secretos, Firebase, tiendas o web publicada.
+
+## Orden de activación y pasos pendientes
+
+1. Hecho: revisar el historial remoto, incluidos los cambios de grupos previos.
+   Los timestamps históricos locales/remotos difieren; cotejar también el nombre
+   y no usar un db push a ciegas que intente reaplicar migraciones antiguas.
+2. Hecho: aplicar `20261111160000_push_notifications.sql`, registrada remotamente
+   como `20261111174123_push_notifications`. No volver a aplicarla ni editarla.
 3. Vault no cambia: reutilizar push_webhook_url y push_webhook_secret actuales.
 4. Con confirmación, desplegar **la misma** función:
    `supabase functions deploy notify-group-message --project-ref grrzmzktrhksbttpbblg --no-verify-jwt`.
@@ -132,8 +170,9 @@ Producción no modificada. Proyecto: `grrzmzktrhksbttpbblg`.
   no se retrasa al día siguiente un evento inmediato perdido.
 - Una ventana de caducidad que cae íntegramente en horario nocturno puede
   quedar sin aviso de Premium: se prioriza no avisar de 22:00 a 09:00.
-- No se han tocado producción, secretos/Vault, Firebase, tiendas, web publicada,
-  badge, analítica, email, Lock-In/salas ni migraciones ya aplicadas.
+- En producción solo se aplicó la migración autorizada. No se han tocado
+  secretos/Vault, Firebase, tiendas, web publicada, badge, analítica, email,
+  Lock-In/salas ni archivos de migraciones ya aplicadas.
 
 ## Archivos de esta tarea
 
