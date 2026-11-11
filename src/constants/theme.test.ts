@@ -13,7 +13,7 @@
  * válidas.
  */
 
-import { AmbientPeak, Colors } from './theme';
+import { AmbientPeak, Colors, OnPremium, PremiumTones } from './theme';
 
 import type { ThemeColor, ThemeName } from './theme';
 
@@ -228,5 +228,85 @@ describe('contrastRatio', () => {
 
   it('da 1:1 entre un color y sí mismo', () => {
     expect(contrastRatio('#8C5E10', '#8C5E10')).toBe(1);
+  });
+});
+
+/**
+ * El paywall no usa `Colors`: pinta con `OnPremium` (dentro de `ThemeOverride`)
+ * y `PremiumTones`. Mismos umbrales AA; las superficies translúcidas se miden ya
+ * mezcladas sobre la noche del fondo.
+ */
+describe('contraste del paywall', () => {
+  const night = PremiumTones.night;
+  const over = (token: string) => composite(token, night);
+
+  const pairs: { fg: string; bg: string; min: number; usage: string }[] = [
+    { fg: OnPremium.text, bg: night, min: 4.5, usage: 'titular y beneficios' },
+    {
+      fg: OnPremium.textSecondary,
+      bg: night,
+      min: 4.5,
+      usage: 'pie: Restaurar, Gestionar, Términos',
+    },
+    { fg: OnPremium.textMuted, bg: night, min: 4.5, usage: 'renovación y letra pequeña' },
+    {
+      fg: OnPremium.text,
+      bg: over(OnPremium.backgroundElement),
+      min: 4.5,
+      usage: 'tarjeta de plan',
+    },
+    {
+      fg: OnPremium.textSecondary,
+      bg: over(OnPremium.backgroundElement),
+      min: 4.5,
+      usage: 'periodo y precio por mes en la tarjeta',
+    },
+    {
+      fg: OnPremium.textMuted,
+      bg: over(OnPremium.backgroundElement),
+      min: 4.5,
+      usage: 'detalle de prueba en la tarjeta',
+    },
+    { fg: OnPremium.text, bg: over(OnPremium.backgroundSelected), min: 4.5, usage: 'plan elegido' },
+    {
+      fg: OnPremium.textSecondary,
+      bg: over(OnPremium.backgroundSelected),
+      min: 4.5,
+      usage: 'periodo del plan elegido',
+    },
+    { fg: OnPremium.text, bg: OnPremium.surfaceOpaque, min: 4.5, usage: 'superficie opaca' },
+    {
+      fg: OnPremium.textMuted,
+      bg: OnPremium.surfaceOpaque,
+      min: 4.5,
+      usage: 'apoyo en superficie',
+    },
+    { fg: OnPremium.brass, bg: night, min: 4.5, usage: 'acento como texto' },
+    {
+      fg: PremiumTones.gemLight,
+      bg: over(OnPremium.brassSoft),
+      min: 4.5,
+      usage: 'etiqueta del héroe',
+    },
+    {
+      fg: PremiumTones.onCta,
+      bg: PremiumTones.ctaFrom,
+      min: 4.5,
+      usage: 'botón de compra (inicio)',
+    },
+    { fg: PremiumTones.onCta, bg: PremiumTones.ctaTo, min: 4.5, usage: 'botón de compra (final)' },
+    { fg: PremiumTones.onBadge, bg: PremiumTones.badge, min: 4.5, usage: 'insignia «Mejor valor»' },
+    { fg: PremiumTones.gemMid, bg: night, min: 3, usage: 'radio del plan (no texto)' },
+    {
+      fg: PremiumTones.night,
+      bg: PremiumTones.gemMid,
+      min: 3,
+      usage: 'check del radio (no texto)',
+    },
+  ];
+
+  it.each(pairs)('$usage llega a AA', ({ fg, bg, min }) => {
+    const under = bg.length > 7 ? over(bg) : bg;
+    expect(contrastRatio(composite(fg, under), under)).toBeGreaterThanOrEqual(min);
   });
 });

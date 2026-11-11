@@ -835,7 +835,7 @@
   "Santa Elena": "Saint Helena",
   "Santa Lucía": "Saint Lucia",
   "Santo Tomé y Príncipe": "São Tomé and Príncipe",
-  "Se borran tu perfil, tus matches, tus conversaciones, tus sesiones y tus salas, también para quienes hablaban contigo. No se puede deshacer ni recuperar.": "Your profile, matches, conversations, sessions and rooms are deleted, including for the people who talked to you. It can't be undone or recovered.",
+  "Se borran tu perfil, tus fotos, tus matches y tus conversaciones (también para quienes hablaban contigo) y sales de tus grupos. No se puede deshacer ni recuperar.": "Your profile, photos, matches and conversations are deleted (including for the people who talked to you) and you leave your groups. It can't be undone or recovered.",
   "Se han mandado demasiados correos a esa dirección. Espera unos minutos y vuelve a intentarlo.": "Too many emails have been sent to that address. Wait a few minutes and try again.",
   "Se renueva automáticamente. Cancela cuando quieras desde la tienda.": "Renews automatically. Cancel anytime from the store.",
   "Se va sin participación": "They leave with no equity",
@@ -1163,5 +1163,7 @@
   "Siguiente": "Next",
   "Empezar": "Get started",
   "¿Hablamos de tu proyecto?": "Shall we talk about your project?",
-  "Destaca con tu perfil": "Stand out with your profile"
+  "Destaca con tu perfil": "Stand out with your profile",
+  "Quitar teléfono": "Remove phone",
+  "Teléfono quitado.": "Phone removed."
 }

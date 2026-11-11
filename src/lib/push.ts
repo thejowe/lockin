@@ -15,6 +15,12 @@
  *   aviso de ese mismo grupo no se enseña.
  * - `forgetPushToken`: al cerrar sesión, el dispositivo deja de recibir los
  *   avisos de esa cuenta.
+ *
+ * Si la persona retira el permiso en los ajustes del sistema, la siguiente
+ * comprobación lo ve y da de baja el token que hubiera guardado
+ * (`forgetPushTokenIfDenied` al arrancar y al volver a primer plano, desde
+ * `PushBridge`; `registerForPush` con `remove` al entrar en un grupo): la
+ * política de privacidad promete borrarlo al desactivar las notificaciones.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -72,20 +78,25 @@ export function currentPushToken(): string | null {
   return token;
 }
 
+type RemoveToken = (token: string) => Promise<void>;
+
 /**
- * Pide permiso (solo con `prompt`) y registra el token con `save`. Nunca lanza:
+ * Pide permiso (solo con `prompt`) y registra el token con `save`. Si el
+ * permiso no está concedido y se pasa `remove`, da de baja el token que este
+ * dispositivo tuviera guardado (permiso retirado en el sistema). Nunca lanza:
  * un fallo aquí no puede romper la pantalla que lo llama.
  */
 export function registerForPush(
   save: (token: string, platform: PushPlatform) => Promise<void>,
-  { prompt }: { prompt: boolean }
+  { prompt, remove }: { prompt: boolean; remove?: RemoveToken }
 ): Promise<PushRegistration> {
-  return enqueue(() => register(save, prompt));
+  return enqueue(() => register(save, prompt, remove));
 }
 
 async function register(
   save: (token: string, platform: PushPlatform) => Promise<void>,
-  prompt: boolean
+  prompt: boolean,
+  remove: RemoveToken | undefined
 ): Promise<PushRegistration> {
   const Notifications = load();
   if (!Notifications) return 'unavailable';
@@ -101,7 +112,10 @@ async function register(
     if (status !== 'granted' && prompt) {
       ({ status } = await Notifications.requestPermissionsAsync());
     }
-    if (status !== 'granted') return 'denied';
+    if (status !== 'granted') {
+      if (remove) await forget(remove);
+      return 'denied';
+    }
 
     // El de `app.json` (`extra.eas.projectId`); en builds de EAS también va en `easConfig`.
     const projectId = (Constants.expoConfig?.extra?.eas?.projectId ??
@@ -166,18 +180,39 @@ export function installPushHandlers(open: (route: string) => void): () => void {
   };
 }
 
-/** Al cerrar sesión. Mejor esfuerzo: un fallo no impide salir. */
-export function forgetPushToken(remove: (token: string) => Promise<void>): Promise<void> {
+/**
+ * Al volver a primer plano: si el permiso ya no está concedido (la persona lo
+ * retiró en los ajustes del sistema), da de baja el token guardado. Nunca
+ * pregunta ni registra un token nuevo; sin token guardado no llama a nadie.
+ */
+export function forgetPushTokenIfDenied(remove: RemoveToken): Promise<void> {
   return enqueue(async () => {
+    const Notifications = load();
+    if (!Notifications) return;
     try {
-      const current = token ?? (await AsyncStorage.getItem(PUSH_TOKEN_KEY));
-      token = null;
-      if (!current) return;
-      await remove(current);
-      await AsyncStorage.removeItem(PUSH_TOKEN_KEY);
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status !== 'granted') await forget(remove);
     } catch (cause) {
-      // Si falla la baja, se conserva para poder reintentar.
-      console.warn('[lockin] no se ha podido olvidar el token push', cause);
+      console.warn('[lockin] no se ha podido comprobar el permiso de avisos', cause);
     }
   });
+}
+
+/** Al cerrar sesión. Mejor esfuerzo: un fallo no impide salir. */
+export function forgetPushToken(remove: RemoveToken): Promise<void> {
+  return enqueue(() => forget(remove));
+}
+
+// Fuera de la cola: la llaman `forgetPushToken` y `register`, que ya van en ella.
+async function forget(remove: RemoveToken): Promise<void> {
+  try {
+    const current = token ?? (await AsyncStorage.getItem(PUSH_TOKEN_KEY));
+    token = null;
+    if (!current) return;
+    await remove(current);
+    await AsyncStorage.removeItem(PUSH_TOKEN_KEY);
+  } catch (cause) {
+    // Si falla la baja, se conserva en el almacenamiento para reintentar.
+    console.warn('[lockin] no se ha podido olvidar el token push', cause);
+  }
 }

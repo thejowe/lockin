@@ -835,7 +835,7 @@
   "Santa Elena": "Santa Helena",
   "Santa Lucía": "Saint Lucia",
   "Santo Tomé y Príncipe": "São Tomé i Príncipe",
-  "Se borran tu perfil, tus matches, tus conversaciones, tus sesiones y tus salas, también para quienes hablaban contigo. No se puede deshacer ni recuperar.": "S'esborren el teu perfil, els teus matches, les teves converses, les teves sessions i les teves sales, també per a qui parlava amb tu. No es pot desfer ni recuperar.",
+  "Se borran tu perfil, tus fotos, tus matches y tus conversaciones (también para quienes hablaban contigo) y sales de tus grupos. No se puede deshacer ni recuperar.": "S'esborren el teu perfil, les teves fotos, els teus matches i les teves converses (també per a qui parlava amb tu) i surts dels teus grups. No es pot desfer ni recuperar.",
   "Se han mandado demasiados correos a esa dirección. Espera unos minutos y vuelve a intentarlo.": "S'han enviat massa correus a aquesta adreça. Espera uns minuts i torna-ho a provar.",
   "Se renueva automáticamente. Cancela cuando quieras desde la tienda.": "Es renova automàticament. Cancel·la quan vulguis des de la botiga.",
   "Se va sin participación": "Se'n va sense participació",
@@ -1163,5 +1163,7 @@
   "Siguiente": "Següent",
   "Empezar": "Començar",
   "¿Hablamos de tu proyecto?": "Parlem del teu projecte?",
-  "Destaca con tu perfil": "Destaca amb el teu perfil"
+  "Destaca con tu perfil": "Destaca amb el teu perfil",
+  "Quitar teléfono": "Treu el telèfon",
+  "Teléfono quitado.": "Telèfon tret."
 }

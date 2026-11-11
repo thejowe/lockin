@@ -124,6 +124,11 @@ export function useAccountActions() {
     void run('telefono', () => saveAccountPhone(normalizePhone(phone)), done);
   }
 
+  /** Quita el móvil de contacto: es opcional y la persona puede dejarlo en blanco. */
+  function removePhone(done?: () => void) {
+    void run('telefono', () => saveAccountPhone(''), done);
+  }
+
   /** Pone contraseña a la cuenta: solo se acepta con el email ya confirmado. */
   function savePassword(password: string, done?: () => void) {
     if (!password) {
@@ -169,6 +174,7 @@ export function useAccountActions() {
     link,
     resend,
     savePhone,
+    removePhone,
     savePassword,
     changePassword,
     saveRecoveredPassword,

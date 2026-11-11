@@ -9,6 +9,7 @@ import { PersonalInfo } from './personal-info';
 
 const mockSetNotice = jest.fn();
 const mockSavePhone = jest.fn();
+const mockRemovePhone = jest.fn();
 let mockState: {
   account: {
     kind: string;
@@ -25,6 +26,7 @@ jest.mock('./use-account-actions', () => ({
     ...mockState,
     setNotice: mockSetNotice,
     savePhone: mockSavePhone,
+    removePhone: mockRemovePhone,
   }),
 }));
 
@@ -63,6 +65,28 @@ describe('PersonalInfo', () => {
 
     expect(screen.getByText('nuevo@example.com')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Añadir teléfono' })).toBeTruthy();
+  });
+
+  it('se puede quitar el teléfono desde la app (es opcional)', async () => {
+    mockRemovePhone.mockImplementation((onDone: () => void) => onDone());
+    await render(<PersonalInfo />);
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Cambiar teléfono' }));
+    await fireEvent.press(screen.getByText('Quitar teléfono'));
+
+    expect(mockRemovePhone).toHaveBeenCalledWith(expect.any(Function));
+    expect(mockSetNotice).toHaveBeenLastCalledWith({
+      text: 'Teléfono quitado.',
+      tone: 'textSecondary',
+    });
+  });
+
+  it('sin teléfono no ofrece quitarlo', async () => {
+    mockState.account = { kind: 'email', email: 'ana@example.com', pendingEmail: null, phone: null };
+    await render(<PersonalInfo />);
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Añadir teléfono' }));
+    expect(screen.queryByText('Quitar teléfono')).toBeNull();
   });
 
   it('editar parte del teléfono actual, guarda y vuelve a la vista', async () => {

@@ -6,12 +6,14 @@
  */
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { Linking } from 'react-native';
 
 import { DataProvider } from '@/data';
 import { createMockRepositories, resetState, setMockPremium } from '@/data/mock';
 import {
   PurchasesUnavailableError,
   getOfferings,
+  manageSubscriptionsUrl,
   purchase,
   restore,
   type PurchasePackage,
@@ -148,6 +150,15 @@ describe('Paywall', () => {
 
     expect(onOpenLegal).toHaveBeenNthCalledWith(1, 'terms');
     expect(onOpenLegal).toHaveBeenNthCalledWith(2, 'privacy');
+  });
+
+  it('enlaza «Gestionar suscripción» a los ajustes de la tienda', async () => {
+    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+    await setup();
+
+    await fireEvent.press(await screen.findByRole('link', { name: 'Gestionar suscripción' }));
+    expect(open).toHaveBeenCalledWith(manageSubscriptionsUrl());
+    open.mockRestore();
   });
 
   it('muestra «Cargando» y luego los planes', async () => {

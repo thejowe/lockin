@@ -10,6 +10,7 @@ import { Platform } from 'react-native';
 import {
   currentPushToken,
   forgetPushToken,
+  forgetPushTokenIfDenied,
   GROUP_CHANNEL_ID,
   installPushHandlers,
   registerForPush,
@@ -147,6 +148,78 @@ describe('installPushHandlers', () => {
     expect(await handleNotification(notification(GROUP))).toMatchObject({
       shouldShowBanner: true,
     });
+  });
+});
+
+describe('permiso retirado en el sistema', () => {
+  it('la siguiente comprobación da de baja el token guardado y no vuelve a preguntar', async () => {
+    mocked.getPermissionsAsync.mockResolvedValueOnce({ status: 'granted' } as never);
+    await registerForPush(() => Promise.resolve(), { prompt: true });
+    expect(await AsyncStorage.getItem('lockin.push-token')).toBe('ExponentPushToken[test]');
+
+    // La persona desactiva las notificaciones en los ajustes del sistema.
+    mocked.getPermissionsAsync.mockResolvedValueOnce({ status: 'denied' } as never);
+    const save = jest.fn();
+    const remove = jest.fn(() => Promise.resolve());
+    expect(await registerForPush(save, { prompt: false, remove })).toBe('denied');
+
+    expect(remove).toHaveBeenCalledWith('ExponentPushToken[test]');
+    expect(save).not.toHaveBeenCalled();
+    expect(mocked.requestPermissionsAsync).not.toHaveBeenCalled();
+    expect(currentPushToken()).toBeNull();
+    expect(await AsyncStorage.getItem('lockin.push-token')).toBeNull();
+  });
+
+  it('también tras reiniciar la app (token solo en el almacenamiento)', async () => {
+    mocked.getPermissionsAsync.mockResolvedValueOnce({ status: 'granted' } as never);
+    await registerForPush(() => Promise.resolve(), { prompt: false });
+    resetPushForTests();
+
+    const remove = jest.fn(() => Promise.resolve());
+    expect(await registerForPush(jest.fn(), { prompt: false, remove })).toBe('denied');
+    expect(remove).toHaveBeenCalledWith('ExponentPushToken[test]');
+  });
+
+  it('al volver a primer plano sin permiso, da de baja sin preguntar ni registrar', async () => {
+    mocked.getPermissionsAsync.mockResolvedValueOnce({ status: 'granted' } as never);
+    await registerForPush(() => Promise.resolve(), { prompt: false });
+
+    const remove = jest.fn(() => Promise.resolve());
+    await forgetPushTokenIfDenied(remove);
+    expect(remove).toHaveBeenCalledWith('ExponentPushToken[test]');
+    expect(mocked.requestPermissionsAsync).not.toHaveBeenCalled();
+    expect(await AsyncStorage.getItem('lockin.push-token')).toBeNull();
+  });
+
+  it('al volver a primer plano con permiso, no toca el token', async () => {
+    mocked.getPermissionsAsync.mockResolvedValueOnce({ status: 'granted' } as never);
+    await registerForPush(() => Promise.resolve(), { prompt: false });
+
+    mocked.getPermissionsAsync.mockResolvedValueOnce({ status: 'granted' } as never);
+    const remove = jest.fn(() => Promise.resolve());
+    await forgetPushTokenIfDenied(remove);
+    expect(remove).not.toHaveBeenCalled();
+    expect(currentPushToken()).toBe('ExponentPushToken[test]');
+    expect(mocked.getExpoPushTokenAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it('sin token guardado no llama al servidor', async () => {
+    const remove = jest.fn(() => Promise.resolve());
+    expect(await registerForPush(jest.fn(), { prompt: false, remove })).toBe('denied');
+    expect(remove).not.toHaveBeenCalled();
+  });
+
+  it('si la baja falla, conserva el token para reintentar en la próxima comprobación', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    mocked.getPermissionsAsync.mockResolvedValueOnce({ status: 'granted' } as never);
+    await registerForPush(() => Promise.resolve(), { prompt: false });
+
+    const failing = jest.fn(() => Promise.reject(new Error('sin red')));
+    expect(await registerForPush(jest.fn(), { prompt: false, remove: failing })).toBe('denied');
+    const retry = jest.fn(() => Promise.resolve());
+    expect(await registerForPush(jest.fn(), { prompt: false, remove: retry })).toBe('denied');
+    expect(retry).toHaveBeenCalledWith('ExponentPushToken[test]');
+    warn.mockRestore();
   });
 });
 

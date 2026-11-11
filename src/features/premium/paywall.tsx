@@ -15,8 +15,8 @@
  * de pago que convierten: héroe brillante arriba, beneficios con su icono en una
  * placa de cristal, planes en tarjetas con radio y la insignia «Mejor valor» en
  * el anual, y el botón de compra fijo abajo, en degradado y con un barrido de
- * luz. Cerrar es la X de arriba; Restaurar y los textos legales van como enlaces
- * discretos al pie.
+ * luz. Cerrar es la X de arriba; Restaurar, Gestionar suscripción (cancelar en
+ * la tienda) y los textos legales van como enlaces discretos al pie.
  *
  * Orden: héroe, título, lo que incluye Premium y después los precios (primero
  * se cuenta qué se gana, luego cuánto cuesta; decisión del usuario del
@@ -28,6 +28,7 @@
 import * as Haptics from 'expo-haptics';
 import { useEffect, useId, useState } from 'react';
 import {
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -78,6 +79,7 @@ import { useTheme } from '@/hooks/use-theme';
 import {
   PurchasesUnavailableError,
   getOfferings,
+  manageSubscriptionsUrl,
   purchase,
   restore,
   type FreeTrial,
@@ -421,6 +423,11 @@ export function Paywall({
             />
             <FooterLink
               role="link"
+              label={t('Gestionar suscripción')}
+              onPress={() => void Linking.openURL(manageSubscriptionsUrl())}
+            />
+            <FooterLink
+              role="link"
               label={t('Términos de uso')}
               onPress={() => onOpenLegal('terms')}
             />
@@ -711,7 +718,7 @@ function FooterFade() {
   );
 }
 
-/** Enlace pequeño del pie (Restaurar, Términos, Privacidad). */
+/** Enlace pequeño del pie (Restaurar, Gestionar suscripción, Términos, Privacidad). */
 function FooterLink({
   role,
   label,

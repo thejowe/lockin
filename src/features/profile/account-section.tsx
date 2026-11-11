@@ -457,7 +457,7 @@ export function AccountSection({
             </ThemedText>
             <ThemedText type="body" themeColor="textSecondary">
               {t(
-                'Se borran tu perfil, tus matches, tus conversaciones, tus sesiones y tus salas, también para quienes hablaban contigo. No se puede deshacer ni recuperar.'
+                'Se borran tu perfil, tus fotos, tus matches y tus conversaciones (también para quienes hablaban contigo) y sales de tus grupos. No se puede deshacer ni recuperar.'
               )}
             </ThemedText>
             {quotas === null || quotas.isPremium ? (

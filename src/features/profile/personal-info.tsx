@@ -26,7 +26,7 @@ import { t } from '@/i18n';
 
 export function PersonalInfo() {
   const theme = useTheme();
-  const { account, busy, notice, setNotice, savePhone } = useAccountActions();
+  const { account, busy, notice, setNotice, savePhone, removePhone } = useAccountActions();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
 
@@ -85,6 +85,18 @@ export function PersonalInfo() {
             />
             <SecondaryButton label={t('Cancelar')} onPress={() => setEditing(false)} />
           </View>
+          {account.phone ? (
+            <SecondaryButton
+              label={t('Quitar teléfono')}
+              disabled={busy !== null}
+              onPress={() =>
+                removePhone(() => {
+                  setEditing(false);
+                  setNotice({ text: t('Teléfono quitado.'), tone: 'textSecondary' });
+                })
+              }
+            />
+          ) : null}
         </>
       ) : (
         <View style={styles.row}>
