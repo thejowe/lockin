@@ -7,10 +7,16 @@ import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import {
+  ADDRESS_LINE,
   LANGS,
   LEGAL_PAGES,
+  REFUNDS_ANCHOR,
+  applyNif,
+  headingId,
   OWN_PAGES,
   SITE_URL,
+  downloadPage,
+  fillTemplate,
   localizeSiteLinks,
   markdownToHtml,
   page,
@@ -18,6 +24,8 @@ import {
   parseFragment,
   pendingMarkers,
   publishableBody,
+  renderLanding,
+  storeButtons,
 } from './build-web.mjs';
 
 const root = join(import.meta.dirname, '..');
@@ -32,7 +40,7 @@ test('quita el aviso editorial y la nota final', () => {
 
 test('convierte títulos, listas, negrita y enlaces', () => {
   const html = markdownToHtml('## A\n\n- uno **dos**\n- [x](https://e.com)\n\npárrafo `c`');
-  assert.match(html, /<h2>A<\/h2>/);
+  assert.match(html, /<h2 id="a">A<\/h2>/);
   assert.match(html, /<ul>\n<li>uno <strong>dos<\/strong><\/li>/);
   assert.match(html, /<a href="https:\/\/e\.com">x<\/a>/);
   assert.match(html, /<p>párrafo <code>c<\/code><\/p>/);
@@ -63,8 +71,64 @@ test('una continuación indentada y una línea en blanco siguen en la lista', ()
 test('genera términos, normas y seguridad infantil además de la privacidad', () => {
   assert.deepEqual(
     LEGAL_PAGES.map((p) => p.dir),
-    ['privacidad', 'terminos', 'normas', 'seguridad-infantil']
+    ['privacidad', 'terminos', 'normas', 'seguridad-infantil', 'cookies', 'aviso-legal']
   );
+});
+
+test('los títulos h2/h3 llevan un id estable sin el número de sección', () => {
+  assert.equal(headingId('11. cofounder Premium'), 'cofounder-premium');
+  assert.equal(headingId('2. Qué datos tratamos'), 'que-datos-tratamos');
+  assert.equal(
+    headingId('1. Qui és responsable de les teves dades'),
+    'qui-es-responsable-de-les-teves-dades'
+  );
+  assert.match(markdownToHtml('# T\n\n## 3. Edad mínima'), /<h1>T<\/h1>\n<h2 id="edad-minima">/);
+});
+
+test('«Reembolsos» apunta a una sección que existe en los términos de cada idioma', async () => {
+  for (const { code, legalDir } of LANGS) {
+    const md = await readFile(join(root, 'docs', 'tiendas', legalDir, 'terminos.md'), 'utf8');
+    const html = markdownToHtml(publishableBody(md));
+    assert.ok(html.includes(`id="${REFUNDS_ANCHOR}"`), `términos ${code} sin #${REFUNDS_ANCHOR}`);
+    assert.match(html, /reembols|refund|reemborsa/i, `términos ${code} sin reembolsos`);
+    const footer = page({ lang: code, title: 't', body: '<p>x</p>' });
+    assert.ok(footer.includes(`href="${pagePath(code, 'terminos')}#${REFUNDS_ANCHOR}"`), code);
+  }
+});
+
+test('el NIF nunca se publica como marcador: con LEGAL_NIF se rellena, sin él se quita la línea', async () => {
+  for (const { legalDir } of LANGS) {
+    const md = await readFile(join(root, 'docs', 'tiendas', legalDir, 'aviso-legal.md'), 'utf8');
+    const body = publishableBody(md);
+    assert.match(body, /\[NIF[^\]]*\]/, `${legalDir}/aviso-legal sin hueco de NIF`);
+    // Ningún NIF real en el repositorio: solo el hueco.
+    assert.ok(!/\b\d{8}[A-Z]\b|\b[XYZ]\d{7}[A-Z]\b/.test(md), `${legalDir}/aviso-legal con un NIF`);
+
+    const without = applyNif(body, undefined);
+    assert.equal(without.missing, true);
+    assert.ok(!/\[NIF/.test(without.markdown));
+    assert.deepEqual(pendingMarkers(without.markdown), []);
+    assert.match(without.markdown, /soporte@getcofounder\.app/);
+
+    const filled = applyNif(body, ' 00000000T ');
+    assert.equal(filled.missing, false);
+    assert.ok(filled.markdown.includes('00000000T'));
+    assert.ok(!/\[NIF/.test(filled.markdown));
+  }
+  assert.deepEqual(applyNif('sin hueco', undefined), { markdown: 'sin hueco', missing: false });
+});
+
+test('el pie lleva el domicilio completo y enlaza cookies y aviso legal', () => {
+  for (const { code } of LANGS) {
+    assert.match(ADDRESS_LINE[code], /carrer Nou, 37, 25153 Puigverd de Lleida \(Catal/);
+    const html = page({ lang: code, title: 't', body: '<p>x</p>' });
+    assert.ok(html.includes(ADDRESS_LINE[code]), code);
+    for (const dir of ['cookies', 'aviso-legal']) {
+      assert.ok(html.includes(`href="${pagePath(code, dir)}"`), `${code}/${dir}`);
+    }
+    assert.match(html, /<a class="skip" href="#main">/);
+    assert.match(html, /<main id="main"/);
+  }
 });
 
 test('cada documento legal existe, lleva versión y su fuente se publica sin nota', async () => {
@@ -160,12 +224,11 @@ test('los textos legales existen en los tres idiomas y llevan el contacto', asyn
 test('las páginas propias existen en los tres idiomas con el mismo contacto', async () => {
   for (const { code } of LANGS) {
     for (const name of OWN_PAGES) {
+      if (name === 'index') continue; // la portada sale de landing.html + landing.json
       const raw = await readFile(join(root, 'web', '_content', code, `${name}.html`), 'utf8');
       const { title, body } = parseFragment(raw, code);
       assert.ok(title.length > 0, `${code}/${name} sin título`);
-      if (name !== 'index') {
-        assert.match(body, /mailto:soporte@getcofounder\.app/, `${code}/${name}`);
-      }
+      assert.match(body, /mailto:soporte@getcofounder\.app/, `${code}/${name}`);
     }
     const soporte = await readFile(join(root, 'web', '_content', code, 'soporte.html'), 'utf8');
     assert.match(soporte, /mailto:privacidad@getcofounder\.app/, `${code}/soporte`);
@@ -199,7 +262,7 @@ test('el sitio generado tiene las rutas de cada idioma, lang correcto y sin enla
       expected.add(file);
       assert.ok(existsSync(file), `falta ${code}/${dir}`);
       const html = await readFile(file, 'utf8');
-      assert.match(html, new RegExp(`<html lang="${code}">`), `lang en ${code}/${dir}`);
+      assert.match(html, new RegExp(`<html lang="${code}"[ >]`), `lang en ${code}/${dir}`);
       for (const l of LANGS) {
         assert.ok(
           html.includes(`hreflang="${l.code}" href="${SITE_URL}${pagePath(l.code, dir)}"`),
@@ -208,6 +271,8 @@ test('el sitio generado tiene las rutas de cada idioma, lang correcto y sin enla
       }
     }
   }
+  // /descargar/ (destino del QR) es la única página fuera de los idiomas.
+  expected.add(join(site, 'descargar', 'index.html'));
   // No sobra ni falta ninguna página.
   assert.deepEqual((await htmlFiles(site)).sort(), [...expected].sort());
   assert.ok(existsSync(join(site, 'style.css')));
@@ -217,10 +282,13 @@ test('el sitio generado tiene las rutas de cada idioma, lang correcto y sin enla
   // página enlaza solo a páginas de su mismo idioma (salvo el selector).
   for (const file of expected) {
     const html = await readFile(file, 'utf8');
-    const lang = /<html lang="(\w+)">/.exec(html)[1];
+    const lang = /<html lang="(\w+)"[ >]/.exec(html)[1];
     const prefix = LANGS.find((l) => l.code === lang).prefix;
-    const body = html.replace(/<nav class="lang"[\s\S]*?<\/nav>/, '');
-    for (const [, href] of body.matchAll(/(?:href|src)="(\/[^"]*)"/g)) {
+    // La portada lleva dos selectores (cabecera y pie): fuera los dos.
+    const body = html.replace(/<nav class="lang[ "][\s\S]*?<\/nav>/g, '');
+    for (const [, rawHref] of body.matchAll(/(?:href|src)="(\/[^"]*)"/g)) {
+      // Sin ancla ni versión de caché (`/landing.css?v=…`): se comprueba el archivo.
+      const href = rawHref.replace(/[?#].*$/, '');
       const target = join(site, ...href.split('/').filter(Boolean));
       assert.ok(
         existsSync(href.endsWith('/') ? join(target, 'index.html') : target),
@@ -258,4 +326,64 @@ test('en el sitio generado no queda ningún enlace legal sin prefijo en en/ca', 
       assert.doesNotMatch(main, unprefixed, `${code}/${dir}`);
     }
   }
+});
+
+const LABELS = {
+  ios: 'App Store',
+  android: 'Google Play',
+  iosPre: 'Descárgalo en',
+  androidPre: 'Disponible en',
+  soon: 'Próximamente',
+};
+
+test('sin URL de tienda, el botón sale como «Próximamente» y no es un enlace', () => {
+  const html = storeButtons({ ios: null, android: null }, LABELS);
+  assert.equal((html.match(/is-soon/g) ?? []).length, 2);
+  assert.ok(!html.includes('<a '));
+  assert.match(html, /Próximamente/);
+});
+
+test('con URL de tienda, el botón enlaza a ella escapada', () => {
+  const html = storeButtons({ ios: 'https://apps.apple.com/app/id1?x="1"', android: null }, LABELS);
+  assert.match(
+    html,
+    /<a class="store" data-store="ios" href="https:\/\/apps\.apple\.com\/app\/id1\?x=&quot;1&quot;">/
+  );
+  assert.match(html, /data-store="android"[^>]*>.*Próximamente/);
+});
+
+test('un marcador sin texto rompe la build en vez de publicar un hueco', () => {
+  assert.throws(() => fillTemplate('{{hero.title}}', { hero: {} }, 'es'), /hero\.title/);
+  assert.equal(fillTemplate('{{a.b}} {{base}}/x/', { a: { b: 'B' } }, 'en'), 'B /en/x/');
+});
+
+test('la portada de cada idioma resuelve todos sus textos con la plantilla común', async () => {
+  const template = await readFile(join(root, 'web', '_content', 'landing.html'), 'utf8');
+  const stores = JSON.parse(await readFile(join(root, 'web', '_content', 'stores.json'), 'utf8'));
+  const keys = (obj) =>
+    Object.entries(obj)
+      .flatMap(([g, v]) => Object.keys(v).map((k) => `${g}.${k}`))
+      .sort();
+  let reference;
+  for (const { code } of LANGS) {
+    const strings = JSON.parse(
+      await readFile(join(root, 'web', '_content', code, 'landing.json'), 'utf8')
+    );
+    // Los tres idiomas tienen exactamente las mismas claves.
+    reference ??= keys(strings);
+    assert.deepEqual(keys(strings), reference, `claves de ${code}/landing.json`);
+    const html = renderLanding(template, strings, stores, code);
+    assert.ok(!/\{\{/.test(html), `marcador sin resolver en ${code}`);
+    // Los textos del tour de botones son los de la app (buttons-tour.tsx).
+    assert.ok(html.includes(strings.tour.superText));
+  }
+});
+
+test('/descargar/ redirige por sistema y, sin tiendas, vuelve a la portada', () => {
+  const none = downloadPage({ ios: null, android: null });
+  assert.match(none, /location\.replace/);
+  assert.match(none, /Muy pronto/);
+  const both = downloadPage({ ios: 'https://a.example/ios', android: 'https://a.example/and' });
+  assert.match(both, /href="https:\/\/a\.example\/ios"/);
+  assert.match(both, /href="https:\/\/a\.example\/and"/);
 });

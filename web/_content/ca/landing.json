@@ -1,0 +1,182 @@
+{
+  "meta": {
+    "title": "cofounder · Troba amb qui fundar",
+    "description": "Fes lliscar perfils de gent que vol començar alguna cosa, fes match quan l'interès és mutu i parla per veure si encaixeu com a cofundadors. Per a persones de 16 anys o més.",
+    "ogLocale": "ca_ES",
+    "skip": "Salta al contingut",
+    "navHow": "Com funciona",
+    "navPremium": "Premium",
+    "navFaq": "Preguntes",
+    "navDownload": "Descarrega",
+    "navLabel": "Seccions"
+  },
+  "storeLabels": {
+    "ios": "App Store",
+    "android": "Google Play",
+    "iosPre": "Descarrega-la a",
+    "androidPre": "Disponible a",
+    "soon": "Aviat"
+  },
+  "hero": {
+    "eyebrow": "Per a qui vol començar alguna cosa",
+    "title": "Troba amb qui <em>fundar</em>.",
+    "sub": "Fes lliscar perfils de gent que vol començar alguna cosa, fes match quan l'interès és mutu i parla per veure si encaixeu com a cofundadors.",
+    "qr": "Escaneja'l amb el mòbil per descarregar l'app.",
+    "qrAlt": "Codi QR que porta a la descàrrega de cofounder",
+    "note": "Gratuïta · Per a majors de 16 anys · No és una app de cites",
+    "cue": "Mira com funciona"
+  },
+  "tour": {
+    "heading": "Com funciona",
+    "undoTitle": "Desfés",
+    "undoText": "Recupera l'últim perfil que vas descartar. És de Premium.",
+    "superTitle": "Super Like",
+    "superText": "Li dius que t'interessa molt. Destaca més que un like.",
+    "boostTitle": "Boost",
+    "boostText": "El teu perfil apareix abans durant 30 minuts. És de Premium.",
+    "filtersTitle": "Filtres",
+    "filtersText": "Cerca per especialitat i zona horària. La resta de filtres són de Premium."
+  },
+  "tap": {
+    "label": "Toca per veure'n més"
+  },
+  "s1": {
+    "kicker": "El teu perfil",
+    "title": "Explica què construeixes i què et falta",
+    "text": "Especialitats, punt de partida, disponibilitat i ambició. No cal tenir res construït: pots no tenir cap idea encara. Respon una o dues preguntes breus perquè es noti com penses."
+  },
+  "s2": {
+    "kicker": "Toca per veure'n més",
+    "title": "Cada targeta té més d'una pàgina",
+    "text": "Un toc a la targeta passa al bloc següent: què busca, quan treballa i des d'on parteix, i les seves respostes."
+  },
+  "s3": {
+    "kicker": "Fes lliscar",
+    "title": "Like o passa, sense embuts",
+    "text": "A la dreta si t'interessa, a l'esquerra per passar a la persona següent. Ningú sap a qui has passat."
+  },
+  "s4": {
+    "kicker": "Els botons del deck",
+    "title": "Quatre dreceres sota la targeta"
+  },
+  "s5": {
+    "kicker": "Match",
+    "title": "Si l'interès és mutu, hi ha match",
+    "text": "Només pots parlar amb qui també t'ha fet like. En fer match s'obre un xat privat entre tots dos."
+  },
+  "s6": {
+    "kicker": "Xat",
+    "title": "Parleu i mireu si encaixeu",
+    "text": "Per trencar el gel, l'app et suggereix preguntes per començar. Aquí ningú contracta ningú: sou iguals i decidiu junts."
+  },
+  "s7": {
+    "kicker": "Grups",
+    "title": "Uneix-te a un projecte o crea el teu",
+    "text": "A més del match d'un a un, pots formar un grup de fins a 6 persones que es complementen, veure qui en forma part i parlar al xat del grup."
+  },
+  "app": {
+    "filters": "Filtres",
+    "masters": "Domina",
+    "seeks": "Busca",
+    "when": "Quan treballa",
+    "prompt": "El que em faria deixar-ho tot",
+    "like": "LIKE",
+    "profileTitle": "El teu perfil",
+    "profileSub": "El que veuran els altres a la teva targeta.",
+    "fieldBuild": "Què t'agradaria construir",
+    "fieldSkills": "Les teves especialitats",
+    "fieldStart": "Punt de partida",
+    "start1": "Encara no tinc idea",
+    "start2": "Idea sense començar",
+    "start3": "He provat alguna cosa petita",
+    "continue": "Continua",
+    "match": "Match!",
+    "openChat": "Obre el xat",
+    "keepGoing": "Continua descobrint",
+    "newMatch": "Match nou",
+    "iceLabel": "Per començar",
+    "write": "Escriu un missatge",
+    "groups": "Grups",
+    "recruiting": "Busquen gent",
+    "mine": "Els meus",
+    "createGroup": "Crea un grup"
+  },
+  "demo": {
+    "name1": "Laia",
+    "meta1": "Disseny de producte · Lleida",
+    "name2": "Dani",
+    "meta2": "Backend · Girona",
+    "name3": "Aina",
+    "meta3": "Growth · Tarragona",
+    "skill1": "Disseny",
+    "skill2": "Producte",
+    "skill3": "Backend",
+    "skill4": "Dades",
+    "skill5": "Vendes",
+    "skill6": "Mòbil",
+    "seek1": "Backend",
+    "seek2": "Growth",
+    "hours": "Tardes i caps de setmana · CET",
+    "answer": "«Una eina que faci servir gent de veritat cada dia.»",
+    "building": "Alguna cosa perquè els tallers petits venguin en línia",
+    "matchText": "La Laia ja t'havia fet like. Ara us toca parlar.",
+    "ice1": "Quin problema et treu la son?",
+    "ice2": "Quantes hores a la setmana tens?",
+    "msg1": "Hola! He vist que busques backend 👋",
+    "msg2": "Sí! T'explico la idea en una trucada?",
+    "msg3": "Fet. Demà a les 19?",
+    "group1": "Taller Obert",
+    "group1meta": "Idea sense començar · 4/6",
+    "group2": "Ruta Verda",
+    "group2meta": "He provat alguna cosa petita · 3/6"
+  },
+  "premium": {
+    "eyebrow": "cofounder Premium",
+    "title": "Per a qui va <em>de debò</em>",
+    "sub": "El bàsic és gratuït: perfil, fer lliscar, match i xat. Premium et dona més abast i més control.",
+    "b1": "Likes sense límit",
+    "b2": "Desfés el teu últim swipe",
+    "b3": "Mira qui t'ha fet like",
+    "b4": "5 Super Likes a la setmana",
+    "b5": "Boost: 30 minuts a dalt del deck cada mes",
+    "b6": "Filtres avançats: disponibilitat, ambició, punt de partida i zona horària",
+    "monthly": "Mensual",
+    "monthlyPrice": "4,99 € <small>/ mes</small>",
+    "monthlyTrial": "3 dies de prova gratuïts",
+    "yearly": "Anual",
+    "yearlyPrice": "39,99 € <small>/ any</small>",
+    "yearlyTrial": "7 dies de prova gratuïts · 3,33 € al mes",
+    "best": "Millor valor",
+    "note": "Es renova automàticament. Cancel·la quan vulguis des de la botiga. Es contracta i es gestiona dins de l'app, amb el teu compte d'Apple o de Google."
+  },
+  "faq": {
+    "title": "Preguntes freqüents",
+    "q1": "És gratuïta?",
+    "a1": "Sí. Crear el perfil, fer lliscar, fer match, xatejar i unir-te a grups és gratuït. Premium és opcional i afegeix likes sense límit, desfer, veure qui t'ha fet like, Super Likes, Boost i filtres avançats.",
+    "q2": "Quina edat cal tenir?",
+    "a2": "cofounder és per a persones de 16 anys o més. Llegeix els nostres <a href=\"{{base}}/seguridad-infantil/\">estàndards de seguretat infantil</a>.",
+    "q3": "És una app de cites o de feina?",
+    "a3": "Ni l'una ni l'altra. És per trobar algú amb qui construir alguna cosa com a iguals: ningú contracta ningú. Tampoc oferim assessorament legal ni finançament.",
+    "q4": "Cal que ja tingui una idea?",
+    "a4": "No. Pots no tenir cap idea encara, tenir-ne una sense començar o haver provat alguna cosa petita. Ho indiques al perfil i veus gent en un punt semblant.",
+    "q5": "Quan la podré descarregar?",
+    "a5": "Molt aviat a l'App Store i a Google Play. Quan estigui publicada, els botons d'aquesta pàgina et portaran directament a la botiga.",
+    "q6": "Com cancel·lo Premium?",
+    "a6": "Des de la botiga on la vas contractar: a l'iPhone, a la configuració del teu compte d'Apple → Subscripcions; a Android, a Google Play → Pagaments i subscripcions. Esborrar l'app no cancel·la la subscripció.",
+    "q7": "Com esborro el meu compte?",
+    "a7": "Des de l'app, a Configuració → Compte. Si ja no tens l'app, segueix <a href=\"{{base}}/eliminar-cuenta/\">aquests passos</a>.",
+    "q8": "Què feu amb les meves dades?",
+    "a8": "Només les que calen perquè funcioni: el teu perfil, els teus matches i els teus missatges. La foto és opcional i només es publica després d'una revisió automàtica de seguretat. No venem dades. Tot el detall és a la <a href=\"{{base}}/privacidad/\">política de privacitat</a>."
+  },
+  "closing": {
+    "title": "Les millors idees comencen <em>entre dos</em>.",
+    "sub": "La teva altra meitat també busca. Descarrega cofounder i comença a fer lliscar."
+  },
+  "footer": {
+    "tagline": "Troba amb qui fundar.",
+    "legal": "Legal",
+    "help": "Ajuda",
+    "language": "Idioma",
+    "age": "Per a persones de 16 anys o més."
+  }
+}

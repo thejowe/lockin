@@ -22,13 +22,20 @@
 
 <h2>What is deleted</h2>
 <ul>
-  <li>Your profile, your preferences and your swipe decisions.</li>
+  <li>Your profile, your preferences, your phone number if you added one and your swipe decisions.</li>
   <li>
     Your matches and, with them, the messages in those conversations, including those the other
     person wrote.
   </li>
+  <li>
+    Your group memberships, your group swipes and the messages you sent in group chats. If you were
+    a group's admin, the role passes to the longest-standing member; if the group is left empty, it
+    is deleted together with its chat.
+  </li>
   <li>Your blocks.</li>
   <li>The GitHub link, if you had one.</li>
+  <li>The push notification tokens of your devices.</li>
+  <li>The status of your Premium subscription stored on our server.</li>
   <li>
     Your profile photo and your board photos, with their captions: they stop being accessible when
     the account is deleted, and the server tries to remove them from storage. If a removal fails, an
@@ -38,6 +45,11 @@
 
 <h2>What is kept and for how long</h2>
 <ul>
+  <li>
+    An encrypted fingerprint (hash) of each email address of the account, so that no new account can
+    be created with it. We do not keep the email address itself. If you want to use it again, you
+    can request an unblock from the app.
+  </li>
   <li>Provider backups: up to 30 more days.</li>
   <li>Providers' technical logs: 90 days at most.</li>
   <li>
@@ -45,9 +57,17 @@
     from their creation. They are kept even if you delete your account, with no link to your
     profile.
   </li>
+  <li>
+    The Premium purchase records kept by Apple or Google and RevenueCat, under their own policies
+    and legal obligations.
+  </li>
 </ul>
 <p>
-  We may delete accounts that have gone 24 months without access. We do not send any automatic
-  notice beforehand.
+  <strong>Deleting your account does not cancel your Premium subscription.</strong> Cancel it first
+  in the subscription settings of your Apple or Google account.
 </p>
+<p>We do not delete accounts for inactivity.</p>
 <p>Signing out or uninstalling the app does not delete your data.</p>
+<p>
+  More details in the <a href="{{base}}/privacidad/">privacy policy</a>.
+</p>

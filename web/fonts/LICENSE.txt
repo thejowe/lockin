@@ -1,0 +1,4 @@
+Instrument Serif (Copyright 2022 The Instrument Serif Project Authors) e Instrument Sans
+(Copyright 2022 The Instrument Sans Project Authors), de Rodrigo Fuenzalida y Jordan Egstad.
+Licencia: SIL Open Font License 1.1 — https://openfontlicense.org
+Copiadas de @expo-google-fonts (las mismas que usa la app).

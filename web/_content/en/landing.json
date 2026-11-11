@@ -1,0 +1,182 @@
+{
+  "meta": {
+    "title": "cofounder · Find someone to build with",
+    "description": "Swipe through people who want to start something, match when the interest is mutual and chat to see if you fit as cofounders. For people aged 16 and over.",
+    "ogLocale": "en_GB",
+    "skip": "Skip to content",
+    "navHow": "How it works",
+    "navPremium": "Premium",
+    "navFaq": "FAQ",
+    "navDownload": "Download",
+    "navLabel": "Sections"
+  },
+  "storeLabels": {
+    "ios": "App Store",
+    "android": "Google Play",
+    "iosPre": "Download on the",
+    "androidPre": "Get it on",
+    "soon": "Coming soon"
+  },
+  "hero": {
+    "eyebrow": "For people who want to start something",
+    "title": "Find someone to <em>build</em> with.",
+    "sub": "Swipe through people who want to start something, match when the interest is mutual and chat to see if you fit as cofounders.",
+    "qr": "Scan it with your phone to get the app.",
+    "qrAlt": "QR code that leads to the cofounder download",
+    "note": "Free · Ages 16+ · Not a dating app",
+    "cue": "See how it works"
+  },
+  "tour": {
+    "heading": "How it works",
+    "undoTitle": "Undo",
+    "undoText": "Bring back the last profile you passed on. It's a Premium feature.",
+    "superTitle": "Super Like",
+    "superText": "Tell them you're really interested. It stands out more than a like.",
+    "boostTitle": "Boost",
+    "boostText": "Your profile shows up sooner for 30 minutes. It's a Premium feature.",
+    "filtersTitle": "Filters",
+    "filtersText": "Search by specialty and time zone. The other filters are Premium."
+  },
+  "tap": {
+    "label": "Tap to see more"
+  },
+  "s1": {
+    "kicker": "Your profile",
+    "title": "Say what you build and what you're missing",
+    "text": "Specialties, starting point, availability and ambition. You don't need anything built: you may not even have an idea yet. Answer one or two short questions so people can see how you think."
+  },
+  "s2": {
+    "kicker": "Tap to see more",
+    "title": "Every card has more than one page",
+    "text": "One tap on the card moves to the next block: what they're looking for, when they work, where they're starting from and their answers."
+  },
+  "s3": {
+    "kicker": "Swipe",
+    "title": "Like or pass, no fuss",
+    "text": "Right if you're interested, left to move on to the next person. Nobody knows who you passed on."
+  },
+  "s4": {
+    "kicker": "The deck buttons",
+    "title": "Four shortcuts under the card"
+  },
+  "s5": {
+    "kicker": "Match",
+    "title": "When the interest is mutual, it's a match",
+    "text": "You can only talk to people who liked you back. When you match, a private chat opens between the two of you."
+  },
+  "s6": {
+    "kicker": "Chat",
+    "title": "Talk and see if you click",
+    "text": "To break the ice, the app suggests a few questions to start with. Nobody hires anybody here: you're peers and you decide together."
+  },
+  "s7": {
+    "kicker": "Groups",
+    "title": "Join a project or start your own",
+    "text": "Beyond one-to-one matches, you can form a group of up to 6 people whose skills complement each other, see who's in and talk in the group chat."
+  },
+  "app": {
+    "filters": "Filters",
+    "masters": "Strong at",
+    "seeks": "Looking for",
+    "when": "When they work",
+    "prompt": "What would make me drop everything",
+    "like": "LIKE",
+    "profileTitle": "Your profile",
+    "profileSub": "What others will see on your card.",
+    "fieldBuild": "What you'd like to build",
+    "fieldSkills": "Your specialties",
+    "fieldStart": "Starting point",
+    "start1": "No idea yet",
+    "start2": "Idea, not started",
+    "start3": "Tried something small",
+    "continue": "Continue",
+    "match": "It's a match!",
+    "openChat": "Open chat",
+    "keepGoing": "Keep discovering",
+    "newMatch": "New match",
+    "iceLabel": "To get started",
+    "write": "Write a message",
+    "groups": "Groups",
+    "recruiting": "Recruiting",
+    "mine": "Mine",
+    "createGroup": "Create group"
+  },
+  "demo": {
+    "name1": "Lucy",
+    "meta1": "Product design · Manchester",
+    "name2": "Dan",
+    "meta2": "Backend · Dublin",
+    "name3": "Anna",
+    "meta3": "Growth · Bristol",
+    "skill1": "Design",
+    "skill2": "Product",
+    "skill3": "Backend",
+    "skill4": "Data",
+    "skill5": "Sales",
+    "skill6": "Mobile",
+    "seek1": "Backend",
+    "seek2": "Growth",
+    "hours": "Evenings and weekends · GMT",
+    "answer": "“A tool real people use every single day.”",
+    "building": "Something that helps small workshops sell online",
+    "matchText": "Lucy had already liked you. Now it's your turn to talk.",
+    "ice1": "What problem keeps you up at night?",
+    "ice2": "How many hours a week do you have?",
+    "msg1": "Hi! Saw you're looking for backend 👋",
+    "msg2": "Yes! Shall I tell you the idea on a call?",
+    "msg3": "Deal. Tomorrow at 7pm?",
+    "group1": "Open Workshop",
+    "group1meta": "Idea, not started · 4/6",
+    "group2": "Green Route",
+    "group2meta": "Tried something small · 3/6"
+  },
+  "premium": {
+    "eyebrow": "cofounder Premium",
+    "title": "For those who mean <em>business</em>",
+    "sub": "The basics are free: profile, swiping, matches and chat. Premium gives you more reach and more control.",
+    "b1": "Unlimited likes",
+    "b2": "Undo your last swipe",
+    "b3": "See who liked you",
+    "b4": "5 Super Likes a week",
+    "b5": "Boost: 30 minutes at the top of the deck every month",
+    "b6": "Advanced filters: availability, ambition, starting point and time zone",
+    "monthly": "Monthly",
+    "monthlyPrice": "€4.99 <small>/ month</small>",
+    "monthlyTrial": "3-day free trial",
+    "yearly": "Yearly",
+    "yearlyPrice": "€39.99 <small>/ year</small>",
+    "yearlyTrial": "7-day free trial · €3.33 a month",
+    "best": "Best value",
+    "note": "Renews automatically. Cancel anytime from the store. You subscribe and manage it inside the app, with your Apple or Google account."
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "q1": "Is it free?",
+    "a1": "Yes. Creating your profile, swiping, matching, chatting and joining groups are free. Premium is optional and adds unlimited likes, undo, seeing who liked you, Super Likes, Boost and advanced filters.",
+    "q2": "How old do I need to be?",
+    "a2": "cofounder is for people aged 16 and over. Read our <a href=\"{{base}}/seguridad-infantil/\">child safety standards</a>.",
+    "q3": "Is it a dating app or a job board?",
+    "a3": "Neither. It's for finding someone to build something with as equals: nobody hires anybody. We don't offer legal advice or funding either.",
+    "q4": "Do I need an idea already?",
+    "a4": "No. You may have no idea yet, one you haven't started or have tried something small. You say so on your profile and meet people at a similar point.",
+    "q5": "When can I download it?",
+    "a5": "Very soon on the App Store and Google Play. Once it's out, the buttons on this page will take you straight to the store.",
+    "q6": "How do I cancel Premium?",
+    "a6": "From the store you subscribed in: on iPhone, in your Apple account settings → Subscriptions; on Android, in Google Play → Payments & subscriptions. Deleting the app doesn't cancel the subscription.",
+    "q7": "How do I delete my account?",
+    "a7": "In the app, under Settings → Account. If you no longer have the app, follow <a href=\"{{base}}/eliminar-cuenta/\">these steps</a>.",
+    "q8": "What do you do with my data?",
+    "a8": "Only what's needed for it to work: your profile, your matches and your messages. Your photo is optional and only goes public after an automatic safety review. We don't sell data. The details are in the <a href=\"{{base}}/privacidad/\">privacy policy</a>."
+  },
+  "closing": {
+    "title": "The best ideas start <em>with two</em>.",
+    "sub": "Your other half is looking too. Get cofounder and start swiping."
+  },
+  "footer": {
+    "tagline": "Find someone to build with.",
+    "legal": "Legal",
+    "help": "Help",
+    "language": "Language",
+    "age": "For people aged 16 and over."
+  }
+}

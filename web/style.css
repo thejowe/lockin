@@ -101,3 +101,25 @@ footer {
   font-weight: 700;
   text-decoration: none;
 }
+
+/* «Saltar al contenido»: fuera de la vista hasta que recibe el foco del teclado. */
+.skip {
+  position: absolute;
+  left: 1rem;
+  top: 0.75rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 0.5rem;
+  background: var(--fg);
+  color: var(--bg);
+  font-weight: 600;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.skip:focus {
+  transform: none;
+}
+
+main:focus {
+  outline: none;
+}

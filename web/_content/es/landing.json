@@ -1,0 +1,182 @@
+{
+  "meta": {
+    "title": "cofounder · Encuentra con quién fundar",
+    "description": "Desliza perfiles de personas que quieren empezar algo, haz match cuando el interés es mutuo y conversa para ver si encajáis como cofundadores. Para personas de 16 años o más.",
+    "ogLocale": "es_ES",
+    "skip": "Saltar al contenido",
+    "navHow": "Cómo funciona",
+    "navPremium": "Premium",
+    "navFaq": "Preguntas",
+    "navDownload": "Descargar",
+    "navLabel": "Secciones"
+  },
+  "storeLabels": {
+    "ios": "App Store",
+    "android": "Google Play",
+    "iosPre": "Descárgalo en",
+    "androidPre": "Disponible en",
+    "soon": "Próximamente"
+  },
+  "hero": {
+    "eyebrow": "Para quien quiere empezar algo",
+    "title": "Encuentra con quién <em>fundar</em>.",
+    "sub": "Desliza perfiles de personas que quieren empezar algo, haz match cuando el interés es mutuo y conversa para ver si encajáis como cofundadores.",
+    "qr": "Escanéalo con el móvil para descargar la app.",
+    "qrAlt": "Código QR que lleva a la descarga de cofounder",
+    "note": "Gratis · Para mayores de 16 años · No es una app de citas",
+    "cue": "Mira cómo funciona"
+  },
+  "tour": {
+    "heading": "Cómo funciona",
+    "undoTitle": "Deshacer",
+    "undoText": "Recupera el último perfil que descartaste. Es de Premium.",
+    "superTitle": "Super Like",
+    "superText": "Le dices que te interesa mucho. Destaca más que un like.",
+    "boostTitle": "Boost",
+    "boostText": "Tu perfil aparece antes durante 30 minutos. Es de Premium.",
+    "filtersTitle": "Filtros",
+    "filtersText": "Busca por especialidad y zona horaria. El resto de filtros son de Premium."
+  },
+  "tap": {
+    "label": "Toca para ver más"
+  },
+  "s1": {
+    "kicker": "Tu perfil",
+    "title": "Cuenta qué construyes y qué te falta",
+    "text": "Especialidades, punto de partida, disponibilidad y ambición. No hace falta tener nada construido: puedes no tener idea todavía. Responde a una o dos preguntas breves para que se note cómo piensas."
+  },
+  "s2": {
+    "kicker": "Toca para ver más",
+    "title": "Cada tarjeta tiene más de una página",
+    "text": "Un toque en la tarjeta pasa al siguiente bloque: qué busca, cuándo trabaja y desde dónde parte, y sus respuestas."
+  },
+  "s3": {
+    "kicker": "Desliza",
+    "title": "Like o pasar, sin rodeos",
+    "text": "A la derecha si te interesa, a la izquierda para pasar a la siguiente persona. Nadie sabe a quién has pasado."
+  },
+  "s4": {
+    "kicker": "Los botones del deck",
+    "title": "Cuatro atajos debajo de la tarjeta"
+  },
+  "s5": {
+    "kicker": "Match",
+    "title": "Si el interés es mutuo, hay match",
+    "text": "Solo puedes hablar con quien también te ha dado like. Al hacer match se abre un chat privado entre los dos."
+  },
+  "s6": {
+    "kicker": "Chat",
+    "title": "Habla y mira si encajáis",
+    "text": "Para romper el hielo, la app te sugiere preguntas con las que empezar. Aquí nadie contrata a nadie: sois pares y decidís juntos."
+  },
+  "s7": {
+    "kicker": "Grupos",
+    "title": "Únete a un proyecto o crea el tuyo",
+    "text": "Además del match uno a uno, puedes formar un grupo de hasta 6 personas que se complementan, ver quién forma parte y hablar en su chat de grupo."
+  },
+  "app": {
+    "filters": "Filtros",
+    "masters": "Domina",
+    "seeks": "Busca",
+    "when": "Cuándo trabaja",
+    "prompt": "Lo que me haría dejarlo todo",
+    "like": "LIKE",
+    "profileTitle": "Tu perfil",
+    "profileSub": "Lo que verán los demás en tu tarjeta.",
+    "fieldBuild": "Qué te gustaría construir",
+    "fieldSkills": "Tus especialidades",
+    "fieldStart": "Punto de partida",
+    "start1": "Aún no tengo idea",
+    "start2": "Idea sin empezar",
+    "start3": "He probado algo pequeño",
+    "continue": "Continuar",
+    "match": "¡Match!",
+    "openChat": "Abrir chat",
+    "keepGoing": "Seguir descubriendo",
+    "newMatch": "Nuevo match",
+    "iceLabel": "Para empezar",
+    "write": "Escribe un mensaje",
+    "groups": "Grupos",
+    "recruiting": "Buscan gente",
+    "mine": "Los míos",
+    "createGroup": "Crear grupo"
+  },
+  "demo": {
+    "name1": "Lucía",
+    "meta1": "Diseño de producto · Valencia",
+    "name2": "Dani",
+    "meta2": "Backend · Bilbao",
+    "name3": "Aina",
+    "meta3": "Growth · Girona",
+    "skill1": "Diseño",
+    "skill2": "Producto",
+    "skill3": "Backend",
+    "skill4": "Datos",
+    "skill5": "Ventas",
+    "skill6": "Móvil",
+    "seek1": "Backend",
+    "seek2": "Growth",
+    "hours": "Tardes y fines de semana · CET",
+    "answer": "«Una herramienta que use gente de verdad cada día.»",
+    "building": "Algo para que los talleres pequeños vendan online",
+    "matchText": "Lucía ya te había dado like. Ahora os toca hablar.",
+    "ice1": "¿Qué problema te quita el sueño?",
+    "ice2": "¿Cuántas horas a la semana tienes?",
+    "msg1": "¡Hola! Vi que buscas backend 👋",
+    "msg2": "¡Sí! ¿Te cuento la idea en una llamada?",
+    "msg3": "Hecho. ¿Mañana a las 19?",
+    "group1": "Taller Abierto",
+    "group1meta": "Idea sin empezar · 4/6",
+    "group2": "Ruta Verde",
+    "group2meta": "He probado algo pequeño · 3/6"
+  },
+  "premium": {
+    "eyebrow": "cofounder Premium",
+    "title": "Para quien va <em>en serio</em>",
+    "sub": "Lo básico es gratis: perfil, deslizar, match y chat. Premium te da más alcance y más control.",
+    "b1": "Likes sin límite",
+    "b2": "Deshacer tu último swipe",
+    "b3": "Ver quién te ha dado like",
+    "b4": "5 Super Likes a la semana",
+    "b5": "Boost: 30 minutos arriba del deck cada mes",
+    "b6": "Filtros avanzados: disponibilidad, ambición, punto de partida y zona horaria",
+    "monthly": "Mensual",
+    "monthlyPrice": "4,99 € <small>/ mes</small>",
+    "monthlyTrial": "3 días de prueba gratis",
+    "yearly": "Anual",
+    "yearlyPrice": "39,99 € <small>/ año</small>",
+    "yearlyTrial": "7 días de prueba gratis · 3,33 € al mes",
+    "best": "Mejor valor",
+    "note": "Se renueva automáticamente. Cancela cuando quieras desde la tienda. Se contrata y se gestiona dentro de la app, con tu cuenta de Apple o de Google."
+  },
+  "faq": {
+    "title": "Preguntas frecuentes",
+    "q1": "¿Es gratis?",
+    "a1": "Sí. Crear el perfil, deslizar, hacer match, chatear y unirte a grupos es gratis. Premium es opcional y añade likes sin límite, deshacer, ver quién te ha dado like, Super Likes, Boost y filtros avanzados.",
+    "q2": "¿Qué edad hay que tener?",
+    "a2": "cofounder es para personas de 16 años o más. Lee nuestros <a href=\"{{base}}/seguridad-infantil/\">estándares de seguridad infantil</a>.",
+    "q3": "¿Es una app de citas o de empleo?",
+    "a3": "Ninguna de las dos. Es para encontrar a alguien con quien construir algo como iguales: nadie contrata a nadie. Tampoco ofrecemos asesoramiento legal ni financiación.",
+    "q4": "¿Necesito tener ya una idea?",
+    "a4": "No. Puedes no tener idea todavía, tener una sin empezar o haber probado algo pequeño. Lo indicas en tu perfil y ves a gente en un punto parecido.",
+    "q5": "¿Cuándo puedo descargarla?",
+    "a5": "Muy pronto en App Store y Google Play. Cuando esté publicada, los botones de esta página te llevarán directamente a la tienda.",
+    "q6": "¿Cómo cancelo Premium?",
+    "a6": "Desde la tienda donde la contrataste: en iPhone, en los ajustes de tu cuenta de Apple → Suscripciones; en Android, en Google Play → Pagos y suscripciones. Borrar la app no cancela la suscripción.",
+    "q7": "¿Cómo borro mi cuenta?",
+    "a7": "Desde la app, en Ajustes → Cuenta. Si ya no tienes la app, sigue <a href=\"{{base}}/eliminar-cuenta/\">estos pasos</a>.",
+    "q8": "¿Qué hacéis con mis datos?",
+    "a8": "Solo los que hacen falta para que funcione: tu perfil, tus matches y tus mensajes. La foto es opcional y solo se publica tras una revisión automática de seguridad. No vendemos datos. Todo el detalle está en la <a href=\"{{base}}/privacidad/\">política de privacidad</a>."
+  },
+  "closing": {
+    "title": "Las mejores ideas empiezan <em>entre dos</em>.",
+    "sub": "Tu otra mitad también está buscando. Descarga cofounder y empieza a deslizar."
+  },
+  "footer": {
+    "tagline": "Encuentra con quién fundar.",
+    "legal": "Legal",
+    "help": "Ayuda",
+    "language": "Idioma",
+    "age": "Para personas de 16 años o más."
+  }
+}
