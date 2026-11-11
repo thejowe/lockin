@@ -3,11 +3,11 @@
 # cofounder Terms of Use
 
 
-**Version:** 1.5
+**Version:** 1.6
 
-**Version date:** 9 November 2026
+**Version date:** 10 November 2026
 
-**Effective date:** 9 November 2026.
+**Effective date:** 10 November 2026.
 
 ## 1. What cofounder is and who provides it
 
@@ -38,6 +38,8 @@ You must be **16 or older**. Age is self-declared. If you state an age that is n
 ## 5. Content you post
 
 You are responsible for what you post: profile, photo, board photos and text, answers, links, messages (including group chat messages) and, if you create or administer a group, the name, description and profiles the group is looking for. You grant us the non-exclusive permission, limited to what is needed to provide the service, to store that content and show it to other people on the app as described in the privacy policy. You keep the rights to your content, and you may not post content you do not own or do not have permission to use.
+
+To create your profile you need to add a profile photo. Before it is published it is reviewed automatically (§7); if it does not pass the review, it is not published and you cannot finish signing up until you upload another one. Afterwards you can change or remove it whenever you want.
 
 Your profile, including your approved photo, your board and your links, can be seen by anyone with an account on the app. 1:1 conversations can only be seen by the two people in the match. A group chat can only be seen by members of that group. The name, description, profiles a group is looking for and the public profiles of its members can be seen by people using the Groups deck.
 
@@ -93,7 +95,7 @@ You can create a group or join one to complement profiles on a peer-to-peer proj
 
 **Price and renewal.** €4.99 per month or €39.99 per year, taxes included, charged by the Apple App Store or Google Play. The subscription renews automatically at the end of each period unless you cancel at least 24 hours before it ends. The first time you subscribe you get a 7-day free trial on the annual plan and a 3-day one on the monthly plan; if you do not cancel at least 24 hours before it ends, charging for the chosen plan begins. The trial is limited to one per person and store account.
 
-**How to cancel.** From the subscription settings of your Apple or Google account (the app has a direct "Manage subscription" shortcut). Deleting your cofounder account **does not cancel** the subscription in the store: cancel it first.
+**How to cancel.** From the subscription settings of your Apple or Google account (in the app, the "Manage subscription" link is at the bottom of the Premium screen and, if you are already Premium, in Settings). Deleting your cofounder account **does not cancel** the subscription in the store: cancel it first.
 
 **Withdrawal and refunds.** The charge is made by the store, which handles refunds under its own conditions. By subscribing, you request immediate access to the digital content and acknowledge that you lose the 14-day right of withdrawal as soon as performance begins, except for whatever the store grants you.
 

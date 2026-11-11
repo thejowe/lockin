@@ -25,7 +25,7 @@ No hace falta tener nada construido. Puedes no tener idea todavía, tener una id
 TU PERFIL
 Cuenta quién eres y qué aportas: nombre, edad, ubicación y zona horaria, especialidades, punto de partida, disponibilidad y nivel de ambición. Responde a una o dos preguntas breves para que se note cómo piensas, no solo lo que sabes hacer. Si quieres, añade enlaces a GitHub, portfolio o LinkedIn.
 
-También puedes añadir una foto. Es opcional y solo se publica después de pasar una revisión automática de seguridad.
+Para crear tu perfil añades una foto, que solo se publica después de pasar una revisión automática de seguridad.
 
 DESLIZA
 Los perfiles aparecen a pantalla completa, uno a uno. Desliza para indicar que te interesa una persona o para pasar a la siguiente.
@@ -74,7 +74,7 @@ Edad mínima de uso: 16 años (D06), autodeclarada. En el cuestionario de App St
 
 | Capacidad | Esta versión |
 | --- | --- |
-| Contenido generado por usuarios | Sí: perfil, foto opcional (moderada antes de publicarse), respuestas breves, nombres y descripciones de grupos, perfiles buscados y mensajes |
+| Contenido generado por usuarios | Sí: perfil, foto de perfil (obligatoria en el alta, moderada antes de publicarse), respuestas breves, nombres y descripciones de grupos, perfiles buscados y mensajes |
 | Mensajería / chat | Sí, 1:1 tras match mutuo y chat de grupo entre miembros |
 | Bloquear / reportar | Sí: perfiles, bloqueo/denuncia de grupos y mensajes concretos de chat 1:1 y de grupo (confirmar en la build) |
 | Filtro de contenido | Sí: filtro básico de texto en perfil y chat, más moderación de fotos |
@@ -147,7 +147,7 @@ SUBSCRIPTION (Guideline 3.1.2)
   paywall and in Settings.
 
 PERMISSIONS
-- Camera / photo library: only to take or choose the optional profile photo.
+- Camera / photo library: only to take or choose the profile photo (required to create the profile) and the optional board photos.
   No microphone, no location, no contacts, no tracking.
 - Optional push notifications for group chat: permission is requested when
   joining a group or opening its chat. Title: group name; body: sender name

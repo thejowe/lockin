@@ -3,9 +3,9 @@
 # cofounder Community Guidelines
 
 
-**Version:** 1.2
+**Version:** 1.3
 
-**Version date:** 9 November 2026
+**Version date:** 10 November 2026
 
 cofounder connects people so they can work out whether they could found something together. To keep it a safe place, these guidelines apply to profiles, photos, boards, answers, links and messages, group names and descriptions, profiles a group is looking for and group chat messages. They are part of the [terms of use](https://getcofounder.app/terminos).
 
@@ -35,7 +35,7 @@ You must be 16 or older. We delete the accounts of people under that age as soon
 
 ## Photos
 
-The profile photo and board photos are optional. They are automatically reviewed before being published, together with the text of each board photo, and they are not published if they do not pass that review or if it cannot be done. You may only upload photos of yourself or photos you have permission to use, and on the board do not show other people without their permission.
+The profile photo is required to create your profile; board photos are optional. All of them are automatically reviewed before being published, together with the text of each board photo, and they are not published if they do not pass that review or if it cannot be done. You may only upload photos of yourself or photos you have permission to use, and on the board do not show other people without their permission.
 
 ## Child safety
 

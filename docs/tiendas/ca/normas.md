@@ -3,9 +3,9 @@
 # Normes de la comunitat de cofounder
 
 
-**Versió:** 1.2
+**Versió:** 1.3
 
-**Data de la versió:** 9 de novembre de 2026
+**Data de la versió:** 10 de novembre de 2026
 
 cofounder connecta persones per valorar si poden fundar alguna cosa juntes. Perquè sigui un lloc segur, aquestes normes valen en perfils, fotos, taulers, respostes, enllaços i missatges, noms i descripcions de grups, perfils que busca un grup i missatges del xat de grup. Formen part dels [termes d'ús](https://getcofounder.app/terminos).
 
@@ -35,7 +35,7 @@ Cal tenir 16 anys o més. Eliminem els comptes de persones menors d'aquesta edat
 
 ## Fotos
 
-La foto de perfil i les fotos del tauler són opcionals. Es revisen automàticament abans de publicar-se, juntament amb el text de cada foto del tauler, i no es publiquen si no superen aquesta revisió o si no es pot fer. Només pots pujar fotos teves o sobre les quals tinguis permís, i al tauler no mostris altres persones sense el seu permís.
+La foto de perfil és necessària per crear el teu perfil; les fotos del tauler són opcionals. Totes es revisen automàticament abans de publicar-se, juntament amb el text de cada foto del tauler, i no es publiquen si no superen aquesta revisió o si no es pot fer. Només pots pujar fotos teves o sobre les quals tinguis permís, i al tauler no mostris altres persones sense el seu permís.
 
 ## Seguretat infantil
 

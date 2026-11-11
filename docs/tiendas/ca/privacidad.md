@@ -3,9 +3,9 @@
 # Política de privacitat de cofounder
 
 
-**Versió:** 1.7.
+**Versió:** 1.8.
 
-**Entrada en vigor:** 9 de novembre de 2026.
+**Entrada en vigor:** 10 de novembre de 2026.
 
 ## 1. Qui és responsable de les teves dades
 
@@ -23,7 +23,7 @@ L'app pot crear un compte sense demanar-te un correu. Encara que l'accés sigui 
 
 Pots afegir i confirmar un correu i una contrasenya per recuperar el compte des d'un altre dispositiu; també hi ha alta i accés per correu. El correu no forma part del perfil que veuen altres persones.
 
-**Telèfon (opcional).** Pots afegir un telèfon de contacte a Ajustos > Informació personal. És privat: no surt al teu perfil ni el veu ningú més de l'app. No el verifiquem per SMS. El pots canviar quan vulguis; si el vols treure, escriu-nos. S'esborra amb el compte.
+**Telèfon (opcional).** Pots afegir un telèfon de contacte a Ajustos > Informació personal. És privat: no surt al teu perfil ni el veu ningú més de l'app. No el verifiquem per SMS. El pots canviar o treure quan vulguis des d'aquesta mateixa pantalla. S'esborra amb el compte.
 
 **Si elimines el compte.** Per impedir que es torni a crear un compte amb el mateix correu, desem una empremta xifrada (hash SHA-256) de cada correu associat al compte eliminat, inclosos els que arriben per Google, Apple o GitHub. No desem el correu en si ni cap altra dada del compte. Si vols tornar a fer servir aquest correu, pots enviar des de l'app una **sol·licitud de desbloqueig**: desem el correu que escriguis i el motiu que expliquis per revisar-la i respondre't.
 
@@ -37,7 +37,7 @@ Desem el nom i l'edat que indiques, la teva ciutat o zona i zona horària, inici
 
 La ubicació s'escriu com a text; l'app no fa servir GPS.
 
-**Foto de perfil (opcional).** Si puges una foto, es desa primer en un espai privat i el nostre servidor l'envia a **OpenAI** (només la imatge, sense el teu nom ni la resta del perfil) amb l'única finalitat de comprovar que és apropiada. La revisió és automàtica. Només es publica, visible per a altres persones de l'app, si supera aquesta revisió. Si el servei de revisió no està disponible, la foto no es publica. Si creus que s'ha rebutjat per error, escriu-nos a soporte@getcofounder.app i una persona la revisarà (vegeu §8). La pots treure quan vulguis i es retira en esborrar el teu compte (vegeu §7).
+**Foto de perfil (necessària per crear el perfil).** Quan crees el teu perfil, l'app et demana una foto: sense ella no pots acabar l'alta. La foto es desa primer en un espai privat i el nostre servidor l'envia a **OpenAI** (només la imatge, sense el teu nom ni la resta del perfil) amb l'única finalitat de comprovar que és apropiada. La revisió és automàtica. Només es publica, visible per a altres persones de l'app, si supera aquesta revisió. Si el servei de revisió no està disponible, la foto no es publica. Si creus que s'ha rebutjat per error, escriu-nos a soporte@getcofounder.app i una persona la revisarà (vegeu §8). Després la pots canviar o treure quan vulguis des del teu perfil, i es retira en esborrar el teu compte (vegeu §7).
 
 **Tauler (opcional).** Pots publicar al teu perfil fins a 12 fotos, per exemple de la teva feina, cadascuna amb un text opcional de fins a 280 caràcters. Abans de publicar-se, el nostre servidor envia la foto i el seu text a **OpenAI** (sense el teu nom ni la resta del perfil) per comprovar que són apropiats; si no superen la revisió o no es pot fer, no es publiquen. Si creus que s'ha rebutjat una foto per error, escriu-nos a soporte@getcofounder.app i una persona la revisarà (vegeu §8). Pots treure cada foto quan vulguis.
 
@@ -58,7 +58,7 @@ Si crees o t'uneixes a un grup, tractem a més:
 
 La part pública que pot veure qui busca grup (nom, descripció, perfils buscats i perfils públics dels membres actuals) s'exposa només a través de les funcions del deck, no com a lectura lliure de les taules internes. Les dades internes del grup (inclosa la pertinença detallada i el xat) només són accessibles a qui en són membres, segons els controls del servidor.
 
-**Token de notificacions push:** si permets les notificacions, desem un identificador tècnic del teu dispositiu (token d'Expo, que fa servir Apple Push Notification service o Firebase Cloud Messaging de Google) per avisar-te de missatges nous del xat de grup. L'avís mostra el nom del grup com a títol i el nom del remitent (si està disponible) amb un fragment del missatge de fins a 140 caràcters com a cos. Base jurídica: execució del contracte. L'esborrem quan tanques la sessió, desactives les notificacions o elimines el compte. Encarregats: Expo (650 Industries, EUA), Apple i Google, amb clàusules contractuals tipus / Marc de Privadesa de Dades UE-EUA.
+**Token de notificacions push:** si permets les notificacions, desem un identificador tècnic del teu dispositiu (token d'Expo, que fa servir Apple Push Notification service o Firebase Cloud Messaging de Google) per avisar-te de missatges nous del xat de grup. L'avís mostra el nom del grup com a títol i el nom del remitent (si està disponible) amb un fragment del missatge de fins a 140 caràcters com a cos. Base jurídica: execució del contracte. L'esborrem quan tanques la sessió i quan elimines el compte. Si desactives les notificacions als ajustos del dispositiu, l'app ho comprova cada vegada que la tornes a obrir i llavors esborra el token del servidor. Encarregats: Expo (650 Industries, EUA), Apple i Google, amb clàusules contractuals tipus / Marc de Privadesa de Dades UE-EUA.
 
 ### La teva subscripció (opcional)
 
@@ -72,12 +72,18 @@ Per baixar actualitzacions, Expo/EAS rep un identificador aleatori d'instal·lac
 
 Els serveis d'autenticació, base de dades, emmagatzematge i actualitzacions reben dades de xarxa com l'adreça IP i poden generar registres tècnics. No els fem servir per a publicitat ni per elaborar perfils.
 
+### Galetes i emmagatzematge local
+
+El web públic https://getcofounder.app no fa servir galetes (cookies), ni analítica, ni publicitat, ni píxels de seguiment. L'app tampoc no porta cap SDK de publicitat ni d'analítica.
+
+Si obres la versió web de l'app, la sessió es desa a l'emmagatzematge local del navegador perquè no hagis de tornar a entrar. No és una galeta de seguiment: només serveix per mantenir la sessió i la pots esborrar des dels ajustos del navegador. El detall és a la [política de galetes](https://getcofounder.app/cookies).
+
 ## 3. Per a què fem servir les dades i amb quina base jurídica
 
 Fem servir les dades per mantenir i recuperar el teu compte, mostrar i editar el teu perfil, mostrar-te perfils, resoldre els interessos mutus, permetre el xat amb els teus matches, crear i unir-te a grups, conversar al xat de grup, verificar el teu enllaç de GitHub, permetre l'accés amb Google o Apple, revisar les fotos de perfil i del tauler, atendre bloquejos i denúncies, activar Premium si el contractes i servir actualitzacions de l'app. No fem servir SDK de publicitat ni analítica comercial.
 
-- **Execució del servei que sol·licites** (art. 6.1.b RGPD): compte, perfil, swipes, matches i missatges (inclosos els del xat de grup), pertinença a grups i swipes de grup, la subscripció Premium si la contractes i la sol·licitud de desbloqueig si l'envies.
-- **Consentiment** (art. 6.1.a): telèfon, foto de perfil, fotos del tauler, verificació de GitHub i accés amb Google o Apple, tots opcionals. El pots retirar traient el telèfon o les fotos, desvinculant GitHub o eliminant el compte.
+- **Execució del servei que sol·licites** (art. 6.1.b RGPD): compte, perfil (inclosa la foto de perfil, necessària per crear-lo), swipes, matches i missatges (inclosos els del xat de grup), pertinença a grups i swipes de grup, la subscripció Premium si la contractes i la sol·licitud de desbloqueig si l'envies.
+- **Consentiment** (art. 6.1.a): telèfon, fotos del tauler, verificació de GitHub i accés amb Google o Apple, tots opcionals. El pots retirar traient el telèfon o les fotos del tauler, desvinculant GitHub o eliminant el compte. L'accés a la càmera, a la galeria i a les notificacions és un permís del dispositiu que dones i retires als seus ajustos (§6).
 - **Interès legítim** (art. 6.1.f): seguretat, prevenció d'abusos (inclòs impedir que es reutilitzi el correu d'un compte eliminat), revisió de fotos i de denúncies i operació tècnica.
 - **Obligació legal** (art. 6.1.c): atendre requeriments de les autoritats.
 
@@ -108,9 +114,9 @@ En obrir un enllaç de portafoli, GitHub, LinkedIn, Instagram o TikTok d'una alt
 
 ## 6. Permisos
 
-L'app demana accés a la teva galeria o a la teva càmera només si tries afegir una foto de perfil o del tauler. Ho pots denegar i fer servir l'avatar d'inicials. Pots canviar els permisos als ajustos del dispositiu.
+L'app demana accés a la teva galeria o a la teva càmera quan afegeixes una foto de perfil o del tauler. Com que la foto de perfil és necessària per crear el perfil, a l'alta hauràs de permetre'n un dels dos (si el sistema ho ofereix, pots donar accés només a les fotos que triïs). Les notificacions es demanen la primera vegada que entres en un grup; les pots denegar i el grup funciona igual. Pots canviar aquests permisos quan vulguis als ajustos del dispositiu.
 
-Per completar el perfil, l'app demana nom, edat, zona, disponibilitat i almenys una resposta breu. Correu, telèfon, enllaços, foto, tauler i verificació de GitHub són opcionals.
+Per completar el perfil, l'app demana nom, data de naixement, zona, disponibilitat, almenys una resposta breu i una foto de perfil. Correu, telèfon, enllaços, tauler i verificació de GitHub són opcionals.
 
 ## 7. Quant de temps es conserven
 
@@ -127,7 +133,7 @@ Conservem les teves dades mentre existeixi el teu compte. En eliminar el compte 
 - **Sol·licituds de desbloqueig:** el correu i el motiu es conserven mentre revisem la sol·licitud i, després, com a registre de la decisió. Ara com ara no s'esborren automàticament; pots demanar que les esborrem a privacidad@getcofounder.app.
 - **Estat de la subscripció:** mentre existeixi el compte; s'esborra amb ell. Els registres de la compra els conserven Apple o Google i RevenueCat segons les seves pròpies polítiques i obligacions legals. Eliminar el compte no cancel·la la subscripció a la botiga.
 - **Pertinença a grups i swipes de grup:** mentre existeixin el compte i el grup. Si surts, t'expulsen o elimines el compte, s'esborren la teva pertinença i els teus swipes amb aquest grup (els likes previs entre tu i el grup es converteixen en «passar» perquè no hi tornis a entrar sol). Si la persona administradora elimina el seu compte o surt, el lideratge passa a la persona membre més antiga; si el grup queda buit, s'esborren el grup i el seu xat.
-- **Missatges del xat de grup:** mentre el grup existeixi; s'esborren amb el grup o en eliminar els comptes associats segons les regles d'esborrat del servei.
+- **Missatges del xat de grup:** mentre el grup existeixi. Els que vas enviar s'esborren en eliminar el teu compte (sortir del grup no els esborra); la resta s'esborren amb el grup.
 
 En eliminar un compte s'esborren també els seus matches i els missatges d'aquestes converses (inclosos els que va escriure l'altra persona), la seva pertinença a grups, els seus swipes de grup i s'aplica la regla de lideratge o esborrat del grup si quedava buit.
 

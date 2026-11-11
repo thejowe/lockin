@@ -3,9 +3,9 @@
 # cofounder Privacy Policy
 
 
-**Version:** 1.7.
+**Version:** 1.8.
 
-**Effective date:** 9 November 2026.
+**Effective date:** 10 November 2026.
 
 ## 1. Who is responsible for your data
 
@@ -23,7 +23,7 @@ The app can create an account without asking you for an email. Even if access is
 
 You can add and confirm an email and a password to recover the account from another device; sign-up and sign-in by email are also available. Your email is not part of the profile other people see.
 
-**Phone (optional).** You can add a contact phone number in Settings > Personal information. It is private: it does not appear on your profile and nobody else in the app sees it. We do not verify it by SMS. You can change it whenever you want; if you want it removed, write to us. It is deleted with the account.
+**Phone (optional).** You can add a contact phone number in Settings > Personal information. It is private: it does not appear on your profile and nobody else in the app sees it. We do not verify it by SMS. You can change or remove it whenever you want from that same screen. It is deleted with the account.
 
 **If you delete your account.** To prevent a new account from being created with the same email, we keep an encrypted fingerprint (SHA-256 hash) of each email associated with the deleted account, including those received through Google, Apple or GitHub. We do not keep the email itself or any other account data. If you want to use that email again, you can send an **unblock request** from the app: we keep the email you enter and the reason you give in order to review it and reply to you.
 
@@ -37,7 +37,7 @@ We store the name and age you give, your city or area and time zone, avatar init
 
 Location is written as text; the app does not use GPS.
 
-**Profile photo (optional).** If you upload a photo, it is first stored in a private space and our server sends it to **OpenAI** (only the image, without your name or the rest of your profile) for the sole purpose of checking that it is appropriate. The review is automatic. It is only published, visible to other people on the app, if it passes that review. If the review service is not available, the photo is not published. If you think it was rejected by mistake, write to us at soporte@getcofounder.app and a person will review it (see §8). You can remove it whenever you want and it is removed when you delete your account (see §7).
+**Profile photo (required to create your profile).** When you create your profile, the app asks you for a photo: without it you cannot finish signing up. The photo is first stored in a private space and our server sends it to **OpenAI** (only the image, without your name or the rest of your profile) for the sole purpose of checking that it is appropriate. The review is automatic. It is only published, visible to other people on the app, if it passes that review. If the review service is not available, the photo is not published. If you think it was rejected by mistake, write to us at soporte@getcofounder.app and a person will review it (see §8). Afterwards you can change or remove it from your profile whenever you want, and it is removed when you delete your account (see §7).
 
 **Board (optional).** You can post up to 12 photos on your profile, for example of your work, each with optional text of up to 280 characters. Before publication, our server sends the photo and its text to **OpenAI** (without your name or the rest of your profile) to check that they are appropriate; if they do not pass the review or it cannot be done, they are not published. If you think a photo was rejected by mistake, write to us at soporte@getcofounder.app and a person will review it (see §8). You can remove each photo whenever you want.
 
@@ -58,7 +58,7 @@ If you create or join a group, we also process:
 
 The public part shown to people looking for a group (name, description, sought profiles and current members' public profiles) is exposed only through the deck functions, not as free reads of the internal tables. Internal group data (including detailed membership and chat) is accessible only to members, under the server's access controls.
 
-**Push notification token:** if you allow notifications, we store a technical identifier for your device (an Expo token, which uses Apple Push Notification service or Google Firebase Cloud Messaging) to notify you of new group chat messages. The notification shows the group name as the title and the sender's name (if available) with a message snippet of up to 140 characters as the body. Legal basis: performance of the contract. We delete it when you sign out, turn off notifications or delete your account. Processors: Expo (650 Industries, USA), Apple and Google, under Standard Contractual Clauses / the EU-US Data Privacy Framework.
+**Push notification token:** if you allow notifications, we store a technical identifier for your device (an Expo token, which uses Apple Push Notification service or Google Firebase Cloud Messaging) to notify you of new group chat messages. The notification shows the group name as the title and the sender's name (if available) with a message snippet of up to 140 characters as the body. Legal basis: performance of the contract. We delete it when you sign out and when you delete your account. If you turn off notifications in your device settings, the app checks this every time you open it again and then deletes the token from the server. Processors: Expo (650 Industries, USA), Apple and Google, under Standard Contractual Clauses / the EU-US Data Privacy Framework.
 
 ### Your subscription (optional)
 
@@ -72,12 +72,18 @@ To download updates, Expo/EAS receives a random installation identifier, the pla
 
 The authentication, database, storage and update services receive network data such as the IP address and may generate technical logs. We do not use them for advertising or profiling.
 
+### Cookies and local storage
+
+The public website https://getcofounder.app does not use cookies, analytics, advertising or tracking pixels. The app does not include any advertising or analytics SDK either.
+
+If you open the web version of the app, the session is stored in the browser's local storage so you do not have to sign in again. It is not a tracking cookie: it only keeps you signed in and you can clear it from your browser settings. Details are in the [cookie policy](https://getcofounder.app/cookies).
+
 ## 3. What we use the data for and on what legal basis
 
 We use the data to maintain and recover your account, show and edit your profile, show you profiles, resolve mutual interest, enable chat with your matches, create and join groups, talk in the group chat, verify your GitHub link, enable sign-in with Google or Apple, review profile and board photos, handle blocks and reports, activate Premium if you subscribe and serve app updates. We do not use advertising SDKs or commercial analytics.
 
-- **Performance of the service you request** (art. 6.1.b GDPR): account, profile, swipes, matches and messages (including group chat messages), group membership and group swipes, the Premium subscription if you subscribe and the unblock request if you send one.
-- **Consent** (art. 6.1.a): phone, profile photo, board photos, GitHub verification and sign-in with Google or Apple, all optional. You can withdraw it by removing the phone or the photos, unlinking GitHub or deleting the account.
+- **Performance of the service you request** (art. 6.1.b GDPR): account, profile (including the profile photo, which is required to create it), swipes, matches and messages (including group chat messages), group membership and group swipes, the Premium subscription if you subscribe and the unblock request if you send one.
+- **Consent** (art. 6.1.a): phone, board photos, GitHub verification and sign-in with Google or Apple, all optional. You can withdraw it by removing the phone or the board photos, unlinking GitHub or deleting the account. Access to the camera, the gallery and notifications is a device permission that you grant and withdraw in its settings (§6).
 - **Legitimate interest** (art. 6.1.f): security, abuse prevention (including preventing the email of a deleted account from being reused), review of photos and reports and technical operation.
 - **Legal obligation** (art. 6.1.c): responding to requests from the authorities.
 
@@ -108,9 +114,9 @@ When you open another person's portfolio, GitHub, LinkedIn, Instagram or TikTok 
 
 ## 6. Permissions
 
-The app asks for access to your gallery or camera only if you choose to add a profile or board photo. You can refuse and use the initials avatar. You can change permissions in your device settings.
+The app asks for access to your gallery or camera when you add a profile or board photo. Because the profile photo is required to create your profile, during sign-up you will need to allow one of the two (if your system offers it, you can grant access only to the photos you choose). Notifications are requested the first time you enter a group; you can refuse them and the group works the same. You can change these permissions at any time in your device settings.
 
-To complete the profile, the app asks for name, age, area, availability and at least one short answer. Email, phone, links, photo, board and GitHub verification are optional.
+To complete the profile, the app asks for name, date of birth, area, availability, at least one short answer and a profile photo. Email, phone, links, board and GitHub verification are optional.
 
 ## 7. How long they are kept
 
@@ -127,7 +133,7 @@ We keep your data while your account exists. When you delete the account from th
 - **Unblock requests:** the email and the reason are kept while we review the request and, afterwards, as a record of the decision. They are not currently deleted automatically; you can ask us to delete them at privacidad@getcofounder.app.
 - **Subscription status:** while the account exists; it is deleted with it. Purchase records are kept by Apple or Google and RevenueCat under their own policies and legal obligations. Deleting the account does not cancel the subscription in the store.
 - **Group membership and group swipes:** while the account and the group exist. If you leave, are removed or delete your account, your membership and swipes with that group are deleted (prior likes between you and the group become a permanent pass so you do not rejoin on your own). If the admin deletes their account or leaves, leadership passes to the longest-standing member; if the group is empty, the group and its chat are deleted.
-- **Group chat messages:** while the group exists; they are deleted with the group or when the associated accounts are deleted under the service's deletion rules.
+- **Group chat messages:** while the group exists. The ones you sent are deleted when you delete your account (leaving the group does not delete them); the rest are deleted with the group.
 
 Deleting an account also deletes its matches and the messages in those conversations (including those written by the other person), its group membership and group swipes, and applies the leadership or group deletion rule if the group was left empty.
 

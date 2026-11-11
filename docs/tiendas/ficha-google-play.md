@@ -21,7 +21,7 @@ No hace falta tener nada construido. Puedes no tener idea todavía, tener una id
 TU PERFIL
 Cuenta quién eres y qué aportas: nombre, edad, ubicación y zona horaria, especialidades, punto de partida, disponibilidad y nivel de ambición. Responde a una o dos preguntas breves para que se note cómo piensas, no solo lo que sabes hacer. Si quieres, añade enlaces a GitHub, portfolio o LinkedIn.
 
-También puedes añadir una foto. Es opcional y solo se publica después de pasar una revisión automática de seguridad.
+Para crear tu perfil añades una foto, que solo se publica después de pasar una revisión automática de seguridad.
 
 DESLIZA
 Los perfiles aparecen a pantalla completa, uno a uno. Desliza para indicar que te interesa una persona o para pasar a la siguiente.

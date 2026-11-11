@@ -3,11 +3,11 @@
 # Termes d'ús de cofounder
 
 
-**Versió:** 1.5
+**Versió:** 1.6
 
-**Data de la versió:** 9 de novembre de 2026
+**Data de la versió:** 10 de novembre de 2026
 
-**Entrada en vigor:** 9 de novembre de 2026.
+**Entrada en vigor:** 10 de novembre de 2026.
 
 ## 1. Què és cofounder i qui l'ofereix
 
@@ -38,6 +38,8 @@ Has de tenir **16 anys o més**. L'edat és autodeclarada. Si indiques una edat 
 ## 5. Contingut que publiques
 
 Ets responsable del que publiques: perfil, foto, fotos i textos del tauler, respostes, enllaços, missatges (inclosos els del xat de grup) i, si crees o administres un grup, el nom, la descripció i els perfils que busca el grup. Ens concedeixes el permís, no exclusiu i limitat al que és necessari per prestar el servei, d'emmagatzemar i mostrar aquest contingut a altres persones de l'app segons es descriu a la política de privacitat. Conserves els drets sobre el teu contingut, i no pots publicar contingut del qual no siguis titular o sobre el qual no tinguis permís.
+
+Per crear el teu perfil cal que afegeixis una foto de perfil. Abans de publicar-se es revisa automàticament (§7); si no supera la revisió, no es publica i no pots acabar l'alta fins que en pugis una altra. Després la pots canviar o treure quan vulguis.
 
 El teu perfil, incloent-hi la foto aprovada, el tauler i els teus enllaços, el pot veure qualsevol persona amb compte a l'app. Les converses 1:1 només les veuen les dues persones del match. El xat d'un grup només el veuen les persones membres d'aquest grup. El nom, la descripció, els perfils que busca un grup i els perfils públics dels seus membres els poden veure qui fa servir el deck de Grups.
 
@@ -93,7 +95,7 @@ Pots crear un grup o unir-t'hi per complementar perfils en un projecte entre igu
 
 **Preu i renovació.** 4,99 € al mes o 39,99 € l'any, impostos inclosos, cobrats per Apple App Store o Google Play. La subscripció es renova sola al final de cada període llevat que la cancel·lis almenys 24 hores abans que acabi. La primera vegada que et subscrius tens 7 dies de prova gratuïta al pla anual i 3 al mensual; si no la cancel·les almenys 24 hores abans que acabi, comença el cobrament del pla triat. La prova és una per persona i compte de botiga.
 
-**Com cancel·lar.** Des dels ajustos de subscripcions del teu compte d'Apple o de Google (l'app té l'accés directe «Gestiona la subscripció»). Esborrar el compte de cofounder **no cancel·la** la subscripció a la botiga: cancel·la-la abans.
+**Com cancel·lar.** Des dels ajustos de subscripcions del teu compte d'Apple o de Google (a l'app, l'enllaç «Gestiona la subscripció» és al peu de la pantalla de Premium i, si ja ets Premium, a Ajustos). Esborrar el compte de cofounder **no cancel·la** la subscripció a la botiga: cancel·la-la abans.
 
 **Desistiment i reemborsaments.** El cobrament el fa la botiga, que gestiona els reemborsaments segons les seves condicions. En contractar, demanes accés immediat al contingut digital i reconeixes que perds el dret de desistiment de 14 dies tan bon punt comença a prestar-se, llevat del que la botiga et reconegui.
 

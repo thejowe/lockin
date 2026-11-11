@@ -27,7 +27,7 @@ You don't need to have built anything. You can have no idea yet, an idea you hav
 YOUR PROFILE
 Tell people who you are and what you bring: name, age, location and time zone, specialties, starting point, availability and level of ambition. Answer one or two short questions so your way of thinking shows, not just what you can do. If you like, add links to GitHub, your portfolio or LinkedIn.
 
-You can also add a photo. It is optional and is only published after passing an automatic safety review.
+To create your profile you add a photo, which is only published after passing an automatic safety review.
 
 SWIPE
 Profiles appear full screen, one by one. Swipe to show you're interested in someone or to move on to the next.
@@ -78,7 +78,7 @@ Minimum age: 16, self-declared. In the App Store Connect questionnaire, declare:
 
 | Capability | This version |
 | --- | --- |
-| User-generated content | Yes: profile, optional photo (moderated before publication), short answers, group names and descriptions, sought profiles and messages |
+| User-generated content | Yes: profile, profile photo (required at sign-up, moderated before publication), short answers, group names and descriptions, sought profiles and messages |
 | Messaging / chat | Yes, 1:1 after a mutual match and group chat among members |
 | Block / report | Yes: profiles, group blocking/reporting and individual 1:1 and group chat messages (confirm in the build) |
 | Content filter | Yes: basic text filter on profile and chat, plus photo moderation |
@@ -152,7 +152,7 @@ SUBSCRIPTION (Guideline 3.1.2)
   paywall and in Settings.
 
 PERMISSIONS
-- Camera / photo library: only to take or choose the optional profile photo.
+- Camera / photo library: only to take or choose the profile photo (required to create the profile) and the optional board photos.
   No microphone, no location, no contacts, no tracking.
 - Optional push notifications for group chat: permission is requested when
   joining a group or opening its chat. Title: group name; body: sender name

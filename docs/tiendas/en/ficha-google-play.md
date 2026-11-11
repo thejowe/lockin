@@ -23,7 +23,7 @@ You don't need to have built anything. You can have no idea yet, an idea you hav
 YOUR PROFILE
 Tell people who you are and what you bring: name, age, location and time zone, specialties, starting point, availability and level of ambition. Answer one or two short questions so your way of thinking shows, not just what you can do. If you like, add links to GitHub, your portfolio or LinkedIn.
 
-You can also add a photo. It is optional and is only published after passing an automatic safety review.
+To create your profile you add a photo, which is only published after passing an automatic safety review.
 
 SWIPE
 Profiles appear full screen, one by one. Swipe to show you're interested in someone or to move on to the next.

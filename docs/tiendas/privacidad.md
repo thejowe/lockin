@@ -1,5 +1,7 @@
 # Política de privacidad de cofounder
 
+> Revisada el 10 de noviembre de 2026 (versión 1.8): la foto de perfil es necesaria para crear el perfil (§2, §3 y §6); el teléfono se puede quitar desde la app (§2); el token push se da de baja también al retirar el permiso en el dispositivo (§2); nuevo apartado de cookies y almacenamiento local (§2), con enlace a la política de cookies.
+>
 > Revisada el 9 de noviembre de 2026 (versión 1.7): función Grupos (pertenencia, perfiles buscados, swipes de grupo, chat de grupo, Realtime, denuncias y borrado) (§2, §3, §4, §7 y §10).
 >
 > Revisada el 9 de noviembre de 2026 (versión 1.6): al eliminar la cuenta se conserva una huella cifrada del correo para impedir que se reutilice, con una vía para pedir el desbloqueo (§2, §3, §7 y §8); teléfono de contacto opcional (§2).
@@ -16,9 +18,9 @@
 >
 > Revisada el 18 de octubre de 2026: acceso con Google y Apple, tablón personal de fotos moderado con OpenAI, enlaces a Instagram y TikTok, y envío de correo por Supabase mientras Brevo no esté configurado. Publicada ese día en la URL pública. Ese mismo día, tras aplicar `20261018120000_profiles_block_visibility` en producción, §4 vuelve a decir que el bloqueo impide ver el perfil (antes: «la app deja de mostrar»).
 
-**Versión:** 1.7.
+**Versión:** 1.8.
 
-**Entrada en vigor:** 9 de noviembre de 2026.
+**Entrada en vigor:** 10 de noviembre de 2026.
 
 ## 1. Quién es responsable de tus datos
 
@@ -36,7 +38,7 @@ La app puede crear una cuenta sin pedirte un correo. Aunque el acceso sea «anó
 
 Puedes añadir y confirmar un email y una contraseña para recuperar la cuenta desde otro dispositivo; también existen alta y acceso por email. El email no forma parte del perfil que ven otras personas.
 
-**Teléfono (opcional).** Puedes añadir un teléfono de contacto en Ajustes > Información personal. Es privado: no sale en tu perfil ni lo ve nadie más de la app. No lo verificamos por SMS. Puedes cambiarlo cuando quieras; si quieres quitarlo, escríbenos. Se borra con la cuenta.
+**Teléfono (opcional).** Puedes añadir un teléfono de contacto en Ajustes > Información personal. Es privado: no sale en tu perfil ni lo ve nadie más de la app. No lo verificamos por SMS. Puedes cambiarlo o quitarlo cuando quieras desde esa misma pantalla. Se borra con la cuenta.
 
 **Si eliminas la cuenta.** Para impedir que se vuelva a crear una cuenta con el mismo correo, guardamos una huella cifrada (hash SHA-256) de cada correo asociado a la cuenta eliminada, incluidos los que llegan por Google, Apple o GitHub. No guardamos el correo en sí ni ningún otro dato de la cuenta. Si quieres volver a usar ese correo, puedes enviar desde la app una **solicitud de desbloqueo**: guardamos el correo que escribas y el motivo que expliques para revisarla y responderte.
 
@@ -50,7 +52,7 @@ Guardamos el nombre y la edad que indicas, tu ciudad o zona y zona horaria, inic
 
 La ubicación se escribe como texto; la app no usa GPS.
 
-**Foto de perfil (opcional).** Si subes una foto, se guarda primero en un espacio privado y nuestro servidor la envía a **OpenAI** (solo la imagen, sin tu nombre ni el resto del perfil) con el único fin de comprobar que es apropiada. La revisión es automática. Solo se publica, visible para otras personas de la app, si supera esa revisión. Si el servicio de revisión no está disponible, la foto no se publica. Si crees que se ha rechazado por error, escríbenos a soporte@getcofounder.app y una persona la revisará (ver §8). Puedes quitarla cuando quieras y se retira al borrar tu cuenta (ver §7).
+**Foto de perfil (necesaria para crear el perfil).** Al crear tu perfil, la app te pide una foto: sin ella no puedes terminar el alta. La foto se guarda primero en un espacio privado y nuestro servidor la envía a **OpenAI** (solo la imagen, sin tu nombre ni el resto del perfil) con el único fin de comprobar que es apropiada. La revisión es automática. Solo se publica, visible para otras personas de la app, si supera esa revisión. Si el servicio de revisión no está disponible, la foto no se publica. Si crees que se ha rechazado por error, escríbenos a soporte@getcofounder.app y una persona la revisará (ver §8). Después puedes cambiarla o quitarla cuando quieras desde tu perfil, y se retira al borrar tu cuenta (ver §7).
 
 **Tablón (opcional).** Puedes publicar en tu perfil hasta 12 fotos, por ejemplo de tu trabajo, cada una con un texto opcional de hasta 280 caracteres. Antes de publicarse, nuestro servidor envía la foto y su texto a **OpenAI** (sin tu nombre ni el resto del perfil) para comprobar que son apropiados; si no superan la revisión o no se puede hacer, no se publican. Si crees que se ha rechazado una foto por error, escríbenos a soporte@getcofounder.app y una persona la revisará (ver §8). Puedes quitar cada foto cuando quieras.
 
@@ -71,7 +73,7 @@ Si creas o te unes a un grupo, tratamos además:
 
 La parte pública que puede ver quien busca grupo (nombre, descripción, perfiles buscados y perfiles públicos de los miembros actuales) se expone solo a través de las funciones del deck, no como lectura libre de las tablas internas. Los datos internos del grupo (incluida la pertenencia detallada y el chat) solo son accesibles a quienes son miembros, según los controles del servidor.
 
-**Token de notificaciones push:** si permites las notificaciones, guardamos un identificador técnico de tu dispositivo (token de Expo, que a su vez usa Apple Push Notification service o Firebase Cloud Messaging de Google) para avisarte de mensajes nuevos del chat de grupo. El aviso muestra el nombre del grupo como título y el nombre del remitente (si está disponible) con un fragmento del mensaje de hasta 140 caracteres como cuerpo. Base jurídica: ejecución del contrato. Lo borramos al cerrar sesión, al desactivar las notificaciones o al eliminar tu cuenta. Encargados: Expo (650 Industries, EE. UU.), Apple y Google, con cláusulas contractuales tipo/Marco de Privacidad de Datos UE-EE. UU.
+**Token de notificaciones push:** si permites las notificaciones, guardamos un identificador técnico de tu dispositivo (token de Expo, que a su vez usa Apple Push Notification service o Firebase Cloud Messaging de Google) para avisarte de mensajes nuevos del chat de grupo. El aviso muestra el nombre del grupo como título y el nombre del remitente (si está disponible) con un fragmento del mensaje de hasta 140 caracteres como cuerpo. Base jurídica: ejecución del contrato. Lo borramos al cerrar sesión y al eliminar tu cuenta. Si desactivas las notificaciones en los ajustes del dispositivo, la app lo comprueba cada vez que vuelves a abrirla y entonces borra el token del servidor. Encargados: Expo (650 Industries, EE. UU.), Apple y Google, con cláusulas contractuales tipo/Marco de Privacidad de Datos UE-EE. UU.
 
 ### Tu suscripción (opcional)
 
@@ -85,12 +87,18 @@ Para descargar actualizaciones, Expo/EAS recibe un identificador aleatorio de in
 
 Los servicios de autenticación, base de datos, almacenamiento y actualizaciones reciben datos de red como la dirección IP y pueden generar registros técnicos. No los usamos para publicidad ni para elaborar perfiles.
 
+### Cookies y almacenamiento local
+
+La web pública https://getcofounder.app no usa cookies, ni analítica, ni publicidad, ni píxeles de seguimiento. La app tampoco lleva SDK de publicidad ni de analítica.
+
+Si abres la versión web de la app, la sesión se guarda en el almacenamiento local del navegador para que no tengas que volver a entrar. No es una cookie de seguimiento: solo sirve para mantener tu sesión y puedes borrarla desde los ajustes del navegador. El detalle está en la [política de cookies](https://getcofounder.app/cookies).
+
 ## 3. Para qué usamos los datos y con qué base jurídica
 
 Usamos los datos para mantener y recuperar tu cuenta, mostrar y editar tu perfil, mostrarte perfiles, resolver los intereses mutuos, permitir el chat con tus matches, crear y unirte a grupos, conversar en el chat de grupo, verificar tu enlace de GitHub, permitir el acceso con Google o Apple, revisar las fotos de perfil y del tablón, atender bloqueos y reportes, activar Premium si lo contratas y servir actualizaciones de la app. No usamos SDK de publicidad ni analítica comercial.
 
-- **Ejecución del servicio que solicitas** (art. 6.1.b RGPD): cuenta, perfil, swipes, matches y mensajes (incluidos los del chat de grupo), pertenencia a grupos y swipes de grupo, la suscripción Premium si la contratas y la solicitud de desbloqueo si la envías.
-- **Consentimiento** (art. 6.1.a): teléfono, foto de perfil, fotos del tablón, verificación de GitHub y acceso con Google o Apple, todos opcionales. Puedes retirarlo quitando el teléfono o las fotos, desvinculando GitHub o eliminando la cuenta.
+- **Ejecución del servicio que solicitas** (art. 6.1.b RGPD): cuenta, perfil (incluida la foto de perfil, necesaria para crearlo), swipes, matches y mensajes (incluidos los del chat de grupo), pertenencia a grupos y swipes de grupo, la suscripción Premium si la contratas y la solicitud de desbloqueo si la envías.
+- **Consentimiento** (art. 6.1.a): teléfono, fotos del tablón, verificación de GitHub y acceso con Google o Apple, todos opcionales. Puedes retirarlo quitando el teléfono o las fotos del tablón, desvinculando GitHub o eliminando la cuenta. El acceso a la cámara, a la galería y a las notificaciones es un permiso del dispositivo que das y retiras en sus ajustes (§6).
 - **Interés legítimo** (art. 6.1.f): seguridad, prevención de abusos (incluido impedir que se reutilice el correo de una cuenta eliminada), revisión de fotos y de reportes y operación técnica.
 - **Obligación legal** (art. 6.1.c): atender requerimientos de las autoridades.
 
@@ -121,9 +129,9 @@ Al abrir un enlace de portfolio, GitHub, LinkedIn, Instagram o TikTok de otra pe
 
 ## 6. Permisos
 
-La app pide acceso a tu galería o a tu cámara solo si eliges añadir una foto de perfil o del tablón. Puedes denegarlo y usar el avatar de iniciales. Puedes cambiar los permisos en los ajustes del dispositivo.
+La app pide acceso a tu galería o a tu cámara cuando añades una foto de perfil o del tablón. Como la foto de perfil es necesaria para crear el perfil, en el alta tendrás que permitir uno de los dos (si el sistema lo ofrece, puedes dar acceso solo a las fotos que elijas). Las notificaciones se piden la primera vez que entras en un grupo; puedes denegarlas y el grupo funciona igual. Puedes cambiar estos permisos cuando quieras en los ajustes del dispositivo.
 
-Para completar el perfil, la app pide nombre, edad, zona, disponibilidad y al menos una respuesta breve. Email, teléfono, enlaces, foto, tablón y verificación de GitHub son opcionales.
+Para completar el perfil, la app pide nombre, fecha de nacimiento, zona, disponibilidad, al menos una respuesta breve y una foto de perfil. Email, teléfono, enlaces, tablón y verificación de GitHub son opcionales.
 
 ## 7. Cuánto tiempo se conservan
 
@@ -140,7 +148,7 @@ Conservamos tus datos mientras tu cuenta exista. Al eliminar la cuenta desde la 
 - **Solicitudes de desbloqueo:** el correo y el motivo se conservan mientras revisamos la solicitud y, después, como registro de la decisión. Hoy no se borran automáticamente; puedes pedir que las borremos en privacidad@getcofounder.app.
 - **Estado de la suscripción:** mientras exista la cuenta; se borra con ella. Los registros de la compra los conservan Apple o Google y RevenueCat según sus propias políticas y obligaciones legales. Eliminar la cuenta no cancela la suscripción en la tienda.
 - **Pertenencia a grupos y swipes de grupo:** mientras existan la cuenta y el grupo. Si sales, te expulsan o eliminas la cuenta, se borra tu pertenencia y tus swipes con ese grupo (los likes previos entre tú y el grupo se convierten en «pasar» para que no vuelvas a entrar solo). Si la persona administradora elimina su cuenta o sale, el liderazgo pasa a la persona miembro más antigua; si el grupo queda vacío, se borra el grupo y su chat.
-- **Mensajes del chat de grupo:** mientras el grupo exista; se borran con el grupo o al eliminar las cuentas asociadas según las reglas de borrado del servicio.
+- **Mensajes del chat de grupo:** mientras el grupo exista. Los que enviaste se borran al eliminar tu cuenta (salir del grupo no los borra); los demás se borran con el grupo.
 
 Al eliminar una cuenta se borran también sus matches y los mensajes de esas conversaciones (incluidos los que escribió la otra persona), su pertenencia a grupos, sus swipes de grupo y se aplica la regla de liderazgo o borrado del grupo si quedaba vacío.
 
@@ -174,6 +182,7 @@ Si cambiamos esta política de forma relevante, lo avisaremos en la app y, si ti
 
 Nota editorial, a retirar del texto publicado:
 
+- **10-nov-2026 (v1.8):** cotejado con el código. Foto obligatoria en el alta: `ProfileWizard withPhoto` en `src/app/(onboarding)/profile-form.tsx` (paso `photo` sin `photoUri` → «Añade una foto de perfil para continuar»); después se cambia o se quita en `photo-section.tsx`. Teléfono: `removePhone()` (`use-account-actions.ts`) guarda vacío y `readPhone` lo lee como sin teléfono. Push: `forgetPushTokenIfDenied()` corre en `PushBridge` al arrancar y al volver a primer plano, y `registerForPush(…, { remove })` al entrar en un grupo; sin permiso, `unregister_push_token`. Resuelve la «diferencia pendiente» de la v1.7. Cookies: la web pública es HTML estático sin `Set-Cookie` ni scripts de terceros (`web/landing.js` no guarda nada). Entrada en vigor el mismo día y no a 30 días (§10): la foto obligatoria ya era el comportamiento de la app y el resto amplía derechos; confirmarlo en la revisión jurídica.
 - **9-nov-2026 (v1.7):** Grupos en §2, §3, §4, §7 y §10 y tokens push en §2/§5. `notify-group-message/logic.mjs` usa el nombre del grupo como título y el nombre del remitente (si existe) más un fragmento de hasta 140 caracteres como cuerpo; hoy solo hay push de grupo. **Diferencia pendiente con el texto solicitado:** `registerForPush()` devuelve `denied` al revocar el permiso y no elimina el token del servidor; al cerrar sesión la baja es de mejor esfuerzo y al borrar la cuenta se aplica cascada. Resolver el borrado al desactivar antes de publicar esta promesa; no se ha cambiado código de producto ni activado push en esta tarea. Las notas anteriores sobre ausencia de `expo-notifications` describen T5, no la build con Grupos.
 - Se han retirado sesiones Lock-In, salas, videollamada, STUN de Google, rachas, valoraciones, acuerdo, recordatorios y alarmas exactas porque ya no están en la UI. El código y las tablas siguen en el repositorio y en la base de datos de producción, vacías: los datos de prueba de `lockin_sessions`, `session_attendance` y `lockin_rooms` se borraron el 16-oct-2026.
 - **Cotejado con el código el 14-oct-2026:** los sugeridores de apertura del chat son reglas fijas, sin IA ni proveedor; la sesión se guarda con `expo-secure-store` en móvil; `expo-notifications`, WebRTC, `RECORD_AUDIO` y `SCHEDULE_EXACT_ALARM` ya no están en el binario desde T5 (no hay push ni recordatorios); `looking_for` y `active_mode` siguen escribiéndose en base de datos; `moderate-avatar` borra la subida pendiente tras cada revisión y la tarea `purge_stale_avatar_uploads()` (cada hora, aplicada en producción el 16-oct) retira las de más de 24 h; `delete_my_account` borra en servidor los objetos de la persona en `avatars` y `avatar-uploads` (límite: Supabase documenta que los bytes del backend S3 no se retiran con SQL; la dirección deja de resolver).

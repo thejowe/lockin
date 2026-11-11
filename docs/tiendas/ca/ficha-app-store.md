@@ -27,7 +27,7 @@ No cal tenir res construït. Pots no tenir cap idea encara, tenir una idea sense
 EL TEU PERFIL
 Explica qui ets i què hi aportes: nom, edat, ubicació i zona horària, especialitats, punt de partida, disponibilitat i nivell d'ambició. Respon una o dues preguntes breus perquè es noti com penses, no només què saps fer. Si vols, afegeix enllaços a GitHub, portafoli o LinkedIn.
 
-També pots afegir una foto. És opcional i només es publica després de passar una revisió automàtica de seguretat.
+Per crear el teu perfil hi afegeixes una foto, que només es publica després de passar una revisió automàtica de seguretat.
 
 LLISCA
 Els perfils apareixen a pantalla completa, un a un. Llisca per indicar que t'interessa una persona o per passar a la següent.
@@ -78,7 +78,7 @@ Edat mínima d'ús: 16 anys, autodeclarada. Al qüestionari d'App Store Connect 
 
 | Capacitat | Aquesta versió |
 | --- | --- |
-| Contingut generat per usuaris | Sí: perfil, foto opcional (moderada abans de publicar-se), respostes breus, noms i descripcions de grups, perfils buscats i missatges |
+| Contingut generat per usuaris | Sí: perfil, foto de perfil (obligatòria a l'alta, moderada abans de publicar-se), respostes breus, noms i descripcions de grups, perfils buscats i missatges |
 | Missatgeria / xat | Sí, 1:1 després d'un match mutu i xat de grup entre membres |
 | Bloquejar / reportar | Sí: perfils, bloqueig/denúncia de grups i missatges concrets de xat 1:1 i de grup (confirmar a la build) |
 | Filtre de contingut | Sí: filtre bàsic de text al perfil i al xat, més moderació de fotos |
@@ -152,7 +152,7 @@ SUBSCRIPTION (Guideline 3.1.2)
   paywall and in Settings.
 
 PERMISSIONS
-- Camera / photo library: only to take or choose the optional profile photo.
+- Camera / photo library: only to take or choose the profile photo (required to create the profile) and the optional board photos.
   No microphone, no location, no contacts, no tracking.
 - Optional push notifications for group chat: permission is requested when
   joining a group or opening its chat. Title: group name; body: sender name

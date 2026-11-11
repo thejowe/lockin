@@ -23,7 +23,7 @@ No cal tenir res construït. Pots no tenir cap idea encara, tenir una idea sense
 EL TEU PERFIL
 Explica qui ets i què hi aportes: nom, edat, ubicació i zona horària, especialitats, punt de partida, disponibilitat i nivell d'ambició. Respon una o dues preguntes breus perquè es noti com penses, no només què saps fer. Si vols, afegeix enllaços a GitHub, portafoli o LinkedIn.
 
-També pots afegir una foto. És opcional i només es publica després de passar una revisió automàtica de seguretat.
+Per crear el teu perfil hi afegeixes una foto, que només es publica després de passar una revisió automàtica de seguretat.
 
 LLISCA
 Els perfils apareixen a pantalla completa, un a un. Llisca per indicar que t'interessa una persona o per passar a la següent.

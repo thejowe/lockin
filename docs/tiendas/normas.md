@@ -1,12 +1,14 @@
 # Normas de la comunidad de cofounder
 
+> Revisada el 10 de noviembre de 2026 (versión 1.3): la foto de perfil es necesaria para crear el perfil (antes decía «opcional»); TERMS_VERSION = 2026-11-10.
+>
 > Revisada el 9 de noviembre de 2026 (versión 1.2): amplía las normas a Grupos y su chat; TERMS_VERSION = 2026-11-09.
 >
 > Documento redactado el 14 de octubre de 2026 a partir de las normas que ya publicaba la web. La versión y la fecha son las que registrará la aceptación dentro de la app.
 
-**Versión:** 1.2
+**Versión:** 1.3
 
-**Fecha de la versión:** 9 de noviembre de 2026
+**Fecha de la versión:** 10 de noviembre de 2026
 
 cofounder conecta a personas para valorar si pueden fundar algo juntas. Para que sea un sitio seguro, estas normas valen en perfiles, fotos, tablones, respuestas, enlaces y mensajes, nombres y descripciones de grupos, perfiles que busca un grupo y mensajes del chat de grupo. Forman parte de los [términos de uso](https://getcofounder.app/terminos).
 
@@ -36,7 +38,7 @@ Hay que tener 16 años o más. Eliminamos las cuentas de personas menores de esa
 
 ## Fotos
 
-La foto de perfil y las fotos del tablón son opcionales. Se revisan automáticamente antes de publicarse, junto con el texto de cada foto del tablón, y no se publican si no superan esa revisión o si no se puede hacer. Solo puedes subir fotos tuyas o sobre las que tengas permiso, y en el tablón no muestres a otras personas sin su permiso.
+La foto de perfil es necesaria para crear tu perfil; las fotos del tablón son opcionales. Todas se revisan automáticamente antes de publicarse, junto con el texto de cada foto del tablón, y no se publican si no superan esa revisión o si no se puede hacer. Solo puedes subir fotos tuyas o sobre las que tengas permiso, y en el tablón no muestres a otras personas sin su permiso.
 
 ## Seguridad infantil
 
@@ -59,6 +61,7 @@ Si estás en peligro inmediato, llama al 112. Si eres menor y necesitas ayuda, e
 
 Nota editorial, a retirar del texto publicado:
 
+- 10-nov-2026: versión 1.3, la foto de perfil pasa de «opcional» a necesaria para crear el perfil (`ProfileWizard withPhoto`); acompaña a Privacidad v1.8 y Términos v1.6, TERMS_VERSION = 2026-11-10.
 - 9-nov-2026: versión 1.2, añade nombres, descripciones y perfiles buscados de Grupos, bloqueo/denuncia de grupo y reporte de mensajes del chat de grupo; acompaña a Privacidad v1.7 y Términos v1.5, TERMS_VERSION = 2026-11-09.
 - Los plazos de 72 h y 24 h son un compromiso operativo del responsable (D11), no una regla del código. La conservación de 12 meses sí la impone `purge_old_user_reports()`.
 - Reportar existe para perfiles (`report_profile`) y, desde el 14-oct, para un mensaje concreto (`report_message`, `message-report-panel.tsx`).

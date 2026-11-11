@@ -1,14 +1,16 @@
 # Términos de uso de cofounder
 
+> Revisada el 10 de noviembre de 2026 (versión 1.6): §5 dice que la foto de perfil es necesaria para crear el perfil y se revisa antes de publicarse; §11 dice dónde está «Gestionar suscripción» en la app.
+>
 > Revisada el 9 de noviembre de 2026 (versión 1.5): añade §10 Grupos; Premium pasa a §11 y las secciones siguientes se renumeran hasta §16.
 >
 > Documento redactado el 14 de octubre de 2026 para su revisión por el responsable antes de publicarlo. No es asesoramiento legal: conviene que lo revise una persona con formación jurídica. La versión y la fecha de este texto son las que registrará la aceptación dentro de la app.
 
-**Versión:** 1.5
+**Versión:** 1.6
 
-**Fecha de la versión:** 9 de noviembre de 2026
+**Fecha de la versión:** 10 de noviembre de 2026
 
-**Entrada en vigor:** 9 de noviembre de 2026.
+**Entrada en vigor:** 10 de noviembre de 2026.
 
 ## 1. Qué es cofounder y quién lo ofrece
 
@@ -39,6 +41,8 @@ Debes tener **16 años o más**. La edad es autodeclarada. Si indicas una edad q
 ## 5. Contenido que publicas
 
 Eres responsable de lo que publicas: perfil, foto, fotos y textos del tablón, respuestas, enlaces, mensajes (incluidos los del chat de grupo) y, si creas o administras un grupo, el nombre, la descripción y los perfiles que busca el grupo. Nos concedes el permiso, no exclusivo y limitado a lo necesario para prestar el servicio, de almacenar y mostrar ese contenido a otras personas de la app según se describe en la política de privacidad. Conservas los derechos sobre tu contenido, y no puedes publicar contenido del que no seas titular o sobre el que no tengas permiso.
+
+Para crear tu perfil necesitas añadir una foto de perfil. Antes de publicarse se revisa automáticamente (§7); si no supera la revisión, no se publica y no puedes terminar el alta hasta subir otra. Después puedes cambiarla o quitarla cuando quieras.
 
 Tu perfil, incluidos la foto aprobada, el tablón y tus enlaces, puede verlo cualquier persona con cuenta en la app. Las conversaciones 1:1 solo las ven las dos personas del match. El chat de un grupo solo lo ven las personas miembros de ese grupo. El nombre, la descripción, los perfiles que busca un grupo y los perfiles públicos de sus miembros pueden verlos quienes usan el deck de Grupos.
 
@@ -94,7 +98,7 @@ Puedes crear un grupo o unirte a uno para complementar perfiles en un proyecto e
 
 **Precio y renovación.** 4,99 € al mes o 39,99 € al año, impuestos incluidos, cobrados por Apple App Store o Google Play. La suscripción se renueva sola al final de cada periodo salvo que la canceles al menos 24 horas antes de que termine. La primera vez que te suscribes tienes 7 días de prueba gratuita en el plan anual y 3 en el mensual; si no la cancelas al menos 24 horas antes de que termine, empieza el cobro del plan elegido. La prueba es una por persona y cuenta de tienda.
 
-**Cómo cancelar.** Desde los ajustes de suscripciones de tu cuenta de Apple o de Google (la app tiene el acceso directo «Gestionar suscripción»). Borrar la cuenta de cofounder **no cancela** la suscripción en la tienda: cancélala antes.
+**Cómo cancelar.** Desde los ajustes de suscripciones de tu cuenta de Apple o de Google (en la app, el enlace «Gestionar suscripción» está al pie de la pantalla de Premium y, si ya eres Premium, en Ajustes). Borrar la cuenta de cofounder **no cancela** la suscripción en la tienda: cancélala antes.
 
 **Desistimiento y reembolsos.** El cobro lo hace la tienda, que gestiona los reembolsos según sus condiciones. Al contratar, pides acceso inmediato al contenido digital y reconoces que pierdes el derecho de desistimiento de 14 días en cuanto empieza a prestarse, salvo lo que la tienda te reconozca.
 
@@ -129,5 +133,6 @@ Nota editorial, a retirar del texto publicado:
 - 2-nov-2026: versión 1.2, añade §10 «cofounder Premium» desde `borrador-premium-legal.md` (precios y prueba de 3 días decididos por el usuario el 1-nov-2026; productos `app.cofounder.mobile.premium.{monthly,annual}`). `TERMS_VERSION` pasa a 2026-11-02: todo el mundo vuelve a aceptar al abrir una build que la lleve.
 - 7-nov-2026: versión 1.3, la prueba gratuita de §10 pasa a 7 días en el plan anual y 3 en el mensual; `TERMS_VERSION` = `2026-11-07`, todo el mundo vuelve a aceptar. El contacto pasa a `soporte@getcofounder.app` y los enlaces a `getcofounder.app` (1.3 aún no había llegado a ningún usuario: no se sube de versión otra vez).
 - 8-nov-2026: versión 1.4, la baja de cuenta está en Ajustes > Cuenta (antes decía Perfil > Cuenta); `TERMS_VERSION` = `2026-11-08`, todo el mundo vuelve a aceptar.
+- 10-nov-2026: versión 1.6. §5: foto de perfil obligatoria en el alta (`ProfileWizard withPhoto`) con revisión previa (`moderate-avatar`); §11: «Gestionar suscripción» en el pie del paywall (`paywall.tsx`, añadido ese día) y en Ajustes (`premium-row.tsx`). `TERMS_VERSION` = `2026-11-10`, todo el mundo vuelve a aceptar.
 - 9-nov-2026: versión 1.5, añade §10 Grupos; TERMS_VERSION = 2026-11-09. Premium pasa a §11 y el contacto a §16; las referencias históricas anteriores conservan su numeración de entonces.
 - Pendiente de revisión jurídica, en especial la renuncia al desistimiento (§11) y el estatus de comerciante (DSA y NIF), que se decidió como «no trader» cuando la app no cobraba.
