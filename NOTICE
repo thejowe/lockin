@@ -1,0 +1,34 @@
+cofounder
+Copyright (c) 2026 Joel de Torres Sainz de la Maza
+
+The source code of cofounder is licensed under the MIT License (see LICENSE).
+This project includes or is derived from third-party work under its own terms:
+
+1. Expo app template
+   The project was scaffolded from the Expo template (create-expo-app).
+   Parts of the initial code and configuration come from it.
+   Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)
+   License: MIT — full text in licenses/expo-template-MIT.txt
+
+2. Instrument Sans
+   Copyright 2022 The Instrument Sans Project Authors
+   (https://github.com/Instrument/instrument-sans)
+   License: SIL Open Font License, Version 1.1 — full text in
+   licenses/fonts/InstrumentSans-OFL.txt
+   Used in the app through @expo-google-fonts/instrument-sans (MIT, Expo) and
+   served by the public website from web/fonts/.
+
+3. Instrument Serif
+   Copyright 2022 The Instrument Serif Project Authors
+   (https://github.com/Instrument/instrument-serif)
+   License: SIL Open Font License, Version 1.1 — full text in
+   licenses/fonts/InstrumentSerif-OFL.txt
+   Used in the app through @expo-google-fonts/instrument-serif (MIT, Expo) and
+   served by the public website from web/fonts/.
+
+The fonts are used unmodified and are not sold on their own. The Google and
+Apple logos in the "Continue with" sign-in buttons are trademarks of their
+owners and are used as their brand guidelines allow.
+
+npm dependencies are distributed under their own licenses, listed in each
+package under node_modules/.

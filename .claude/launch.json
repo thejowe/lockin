@@ -4,8 +4,23 @@
     {
       "name": "expo",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["expo", "start"],
+      "runtimeArgs": [
+        "expo",
+        "start"
+      ],
       "port": 8081
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "4380",
+        "--directory",
+        "_site"
+      ],
+      "port": 4380
     }
   ]
 }

@@ -1,5 +1,31 @@
 # TODO maestro — LockIn MVP
 
+## ▶ Nuevo (2026-11-10): auditoría legal y de cumplimiento (web, app y tiendas)
+
+Encargo de la auditoría del 11-nov (solo lo que estaba en Parcial o Falta). No es asesoramiento
+jurídico: alinea textos y código con el producto real (LSSI, RGPD, consumo UE, Apple y Google).
+
+- [x] Privacidad v1.8, Términos v1.6 y Normas v1.3 (es/en/ca): foto de perfil obligatoria en el
+  alta, teléfono que se quita desde la app, baja del token push al retirar el permiso, apartado de
+  cookies y almacenamiento local; `TERMS_VERSION = 2026-11-10` (todo el mundo vuelve a aceptar).
+- [x] Web: `/cookies/` y `/aviso-legal/` en los tres idiomas; el NIF no entra en el repo (hueco que
+  `build-web.mjs` quita, o rellena con `LEGAL_NIF` solo en `_site/`). Pie con Cookies, Aviso legal,
+  Reembolsos (`/terminos/#cofounder-premium`), domicilio completo y «Saltar al contenido».
+  «Eliminar cuenta» sin la regla de 24 meses y alineada con la privacidad.
+- [x] App: «Gestionar suscripción» en el pie del paywall; «Quitar teléfono» en Ajustes; la
+  confirmación de baja ya no habla de sesiones ni salas; baja del token push si el permiso ya no
+  está concedido (`forgetPushTokenIfDenied` en `PushBridge` al arrancar y al volver a primer plano,
+  y `registerForPush(…, { remove })` al entrar en un grupo). Tests de push, paywall, teléfono y
+  contraste AA del paywall (17 pares, sin cambiar tokens).
+- [x] `LICENSE` propio (MIT), `NOTICE` con la atribución del template de Expo y OFL de Instrument
+  Sans/Serif en `licenses/fonts/`.
+- [x] Cuestionario de privacidad y fichas (es/en/ca) con la foto obligatoria y las URL nuevas.
+- [ ] Usuario: subir `_site/` a `cofounder-web`; decidir NIF (aviso legal) y estatus de trader
+  (DSA); revisar a mano App Privacy y Seguridad de los datos (foto obligatoria, token push,
+  mensajes de grupo); confirmar el domicilio público.
+- [ ] `[comprobador]` Retirar el permiso de notificaciones en el emulador y comprobar que el token
+  desaparece de `push_tokens` al volver a la app.
+
 ## ▶ Nuevo (2026-11-10): mini tutorial tras el alta
 
 Antes de entrar a Descubrir, quien acaba de crear el perfil ve cuatro páginas (Descubrir, chat,
@@ -13,6 +39,20 @@ capturas en [`todo/tour.md`](todo/tour.md).
 - [ ] `[comprobador]` Recorrido en el emulador, del alta a Descubrir pasando por el tutorial.
 - [ ] Fallo previo, sin tocar: `test/app/groups.test.tsx` tiene 10 tests en rojo («Found multiple
   elements with text: Taller Abierto») desde el rediseño de la tarjeta de grupo.
+
+## ▶ Nuevo bloque (2026-11-10): Web — landing de getcofounder.app
+
+La portada pasa de lista de enlaces legales a landing: insignias de tienda y QR en escritorio, con
+un móvil que entra dando una vuelta y, al bajar, gira, cambia de pantalla y cruza de lado junto a
+explicaciones en el estilo del tour que la app enseña tras el registro (eso sustituye «cómo funciona»
+y las capturas); luego Premium, FAQ y pie legal con soporte@ y redes. Bloque 17 de `PLAN.md`; tareas en [`todo/web.md`](todo/web.md). Sin tocar `src/`. Las tiendas
+aún no tienen URL pública: los botones salen como «Próximamente» hasta entonces.
+
+- [ ] Fase 0: textos es/en/ca [Claude] + aprobación y redes sociales (usuario).
+- [ ] Fase 1: capturas reales [comprobador].
+- [ ] Fase 2: maqueta [Claude] + `codex review`. 2026-11-10: landing construida (plantilla + es/en/ca, móvil 3D con recorrido, Premium, FAQ, `/descargar/`, QR, OG); faltan insignias oficiales y decidir capturas reales vs. pantallas HTML.
+- [ ] Fase 3: verificación visual y Lighthouse [Claude].
+- [ ] Fase 4: publicar en `cofounder-web` (con permiso del usuario).
 
 ## ▶ Nuevo bloque (2026-11-09): Grupos — migraciones verificadas en producción
 
@@ -44,9 +84,9 @@ Descubrir gana la sección «Grupos» (bloque 16 de `PLAN.md`): crear y editar u
 - [x] Grupos en Privacidad v1.7, Términos v1.5 y Normas v1.2 (es/en/ca), con tokens push;
   `TERMS_VERSION = 2026-11-09`. Fichas de ambas tiendas, cuestionario e inventario actualizados;
   textos de app regenerados, sin generar ni publicar la web.
-- [ ] Antes de publicar Privacidad v1.7: resolver la promesa de borrar el token al desactivar
-  notificaciones; el código actual solo devuelve `denied`, sin baja en servidor. Detalle en
-  `todo/grupos.md` y en la nota editorial de privacidad.
+- [x] ~~Antes de publicar Privacidad v1.7: resolver la promesa de borrar el token al desactivar
+  notificaciones~~ — resuelto el 2026-11-10 (ver «auditoría legal» arriba): la app da de baja el
+  token si el permiso ya no está concedido.
 - [ ] **Ojo, comprobaciones globales:** cobertura bajo el suelo; `npm run lint` falla en
   `premium-badge.tsx` y `tsc` en un artefacto Deno local y la ruta `/unblock` (archivos fuera del bloque).
   Jest completo: 2179 pasan; cobertura 94,82 / 89,17 / 93,98 / 96,09 %. Resultados y suelos en

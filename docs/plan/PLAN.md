@@ -423,6 +423,20 @@ persona y el grupo, y cada grupo tiene su chat. Detalle, decisiones y pendientes
   supresión del aviso con el chat abierto verificados en emulador Android con Supabase real.
   Detalle y estado de iOS en `todo/grupos.md`.
 
+### 17. `web` — Landing de getcofounder.app
+
+Entrega: la portada de `https://getcofounder.app` pasa a ser una landing en es/en/ca: insignias de
+tienda + QR en escritorio y un móvil en CSS 3D que entra dando una vuelta y, al hacer scroll, gira,
+cambia de pantalla y cruza de lado junto a explicaciones al estilo del tour post-registro; después
+Premium, FAQ y pie legal. Detalle, decisiones y tareas en `docs/plan/todo/web.md`.
+
+- Archivos propios: `web/`, `scripts/build-web.mjs`, `scripts/build-web.test.mjs`.
+- No toca `src/`: puede ir en paralelo con cualquier bloque de la app. Lee (no cambia) los beneficios
+  de `src/features/premium/paywall.tsx` y las fichas de `docs/tiendas/`.
+- Las URL legales existentes no cambian. Publicar es copiar `_site/` a `thejowe/cofounder-web`.
+- Depende de: capturas de `comprobador`; del **usuario**, aprobar textos y pasar las redes; de las
+  tiendas, las URL públicas (hasta entonces, «Próximamente»).
+
 ## Orden recomendado de trabajo
 
 1. `arquitecto` primero y solo — es la base de todo lo demás.
