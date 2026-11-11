@@ -58,8 +58,8 @@ de los dos lados y dentro no hay jerarquía más allá de administrar (expulsar,
   rojo en CI desde el rediseño de la tarjeta del 2026-11-10).
 - [x] Aplicar `20261111120000_groups_multi_membership.sql` en producción: aplicada por MCP el
   2026-11-11, archivo entero byte a byte (`groups_multi_membership`).
-- [ ] `[comprobador]` Recorrido multi-grupo en emulador: admin ve su pestaña y recluta; en
-  «Grupos» entra en otro; Matches enseña las dos filas.
+- [x] ~~`[comprobador]` Recorrido multi-grupo en emulador~~: no se lanza; lo comprueba el
+  usuario a mano (2026-11-11).
 - [x] Textos legales de Grupos (2026-11-09): Privacidad v1.7, Términos v1.5 (§10 Grupos,
   Premium pasa a §11) y Normas v1.2 en es/en/ca; `TERMS_VERSION = 2026-11-09`.
   Fichas de ambas tiendas en los tres idiomas, cuestionario e inventario actualizados también
