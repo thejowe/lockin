@@ -10,17 +10,21 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { Screen } from '@/components/ambient-background';
 import { Button } from '@/components/button';
 import { LoadingState, MessageState } from '@/components/state-view';
-import { EditGroupForm, useMyGroup } from '@/features/groups';
+import { EditGroupForm, useMyGroups } from '@/features/groups';
 import { RequireVerifiedEmail } from '@/features/profile';
 import { t } from '@/i18n';
 
 function EditGroup() {
   const router = useRouter();
-  const mine = useMyGroup();
-  const close = () => (router.canGoBack() ? router.back() : router.replace('/group/info' as Href));
+  const mine = useMyGroups();
+  const view = mine.adminGroup;
+  const close = () =>
+    router.canGoBack()
+      ? router.back()
+      : router.replace((view ? `/group/info?id=${view.group.id}` : '/group/info') as Href);
 
   if (mine.loading) return <LoadingState label={t('Cargando grupos…')} />;
-  if (!mine.group || !mine.group.isAdmin) {
+  if (!view) {
     return (
       <MessageState
         title={t('No puedes editar este grupo')}
@@ -33,7 +37,7 @@ function EditGroup() {
   return (
     <Screen ambient="ember">
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
-        <EditGroupForm view={mine.group} onSaved={close} />
+        <EditGroupForm view={view} onSaved={close} />
       </KeyboardAvoidingView>
     </Screen>
   );

@@ -1,6 +1,6 @@
 /** Textos de los grupos que comparten varias piezas. */
 
-import { GroupError, PremiumRequiredError } from '@/data';
+import { GROUP_MAX_MEMBERSHIPS, GroupError, PremiumRequiredError } from '@/data';
 import { specialtyLabel } from '@/features/profile';
 import { t } from '@/i18n';
 
@@ -33,8 +33,12 @@ export function groupErrorMessage(error: unknown): string {
   if (error instanceof PremiumRequiredError) return t('Crear un grupo requiere Premium.');
   if (error instanceof GroupError) {
     switch (error.reason) {
-      case 'already-in-group':
-        return t('Ya estás en un grupo. Sal de él para unirte a otro o crear uno.');
+      case 'group-limit':
+        return t('Ya estás en {max} grupos. Sal de alguno para unirte a otro o crear uno.', {
+          max: GROUP_MAX_MEMBERSHIPS,
+        });
+      case 'already-admin':
+        return t('Ya administras un grupo. Solo puedes crear uno.');
       case 'admin-only':
         return t('Solo puede hacerlo quien administra el grupo.');
       case 'unavailable':

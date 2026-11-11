@@ -652,7 +652,7 @@ export type Database = {
         Args: { p_user_id: string; p_role_id: string; p_decision: Decision };
         Returns: boolean;
       };
-      leave_group: { Args: Record<string, never>; Returns: undefined };
+      leave_group: { Args: { p_group_id: string }; Returns: undefined };
       kick_group_member: { Args: { p_user_id: string }; Returns: undefined };
       group_deck: { Args: { p_limit?: number | null }; Returns: GroupDeckRow[] };
       group_recruit_deck: { Args: { p_limit?: number | null }; Returns: GroupRecruitRow[] };

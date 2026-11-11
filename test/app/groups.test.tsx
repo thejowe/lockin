@@ -1,8 +1,9 @@
 /**
- * La sección «Grupos» de Descubrir, de punta a punta sobre el backend mock:
- * qué ve quien busca grupo, quien administra uno y quien es miembro; la unión
- * por like recíproco; bloquear y reportar un grupo; y cómo se enganchan en
- * Descubrir (el selector) y en Matches (la fila del chat).
+ * Las secciones de grupos de Descubrir, de punta a punta sobre el backend mock:
+ * qué ve quien busca grupo, quien administra uno (también busca otros, y recluta
+ * en la pestaña con el nombre de su grupo) y quien ya es miembro; la unión por
+ * like recíproco; el tope de 3 grupos; bloquear y reportar un grupo; y cómo se
+ * enganchan en Descubrir (el selector) y en Matches (una fila por grupo).
  *
  * El mock nace con dos grupos semilla; «Taller Abierto» ya le ha dado like a la
  * cuenta propia para su puesto de desarrollo.
@@ -39,14 +40,29 @@ async function withProfile(specialties: Specialty[] = ['dev']) {
   await repositories.profiles.saveCurrent(buildProfileInput({ name: 'Yo Misma', specialties }));
 }
 
-async function renderSection(onDeckActive?: (active: boolean) => void) {
+async function renderSection(
+  onDeckActive?: (active: boolean) => void,
+  section: 'groups' | 'my-group' = 'groups'
+) {
   const view = await renderRoute(
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <GroupsSection onDeckActive={onDeckActive} />
+      <GroupsSection section={section} onDeckActive={onDeckActive} />
     </GestureHandlerRootView>
   );
   await waitFor(() => expect(screen.queryByRole('progressbar')).toBeNull());
   return view;
+}
+
+/** El nombre de un grupo sale más de una vez en su tarjeta: basta con el primero. */
+const groupName = (name: string) => screen.getAllByText(name)[0];
+
+/** `seed-alba` y `seed-ines` crean un grupo con un puesto de desarrollo y meten a la cuenta propia. */
+async function joinSeedGroups(admins: string[]) {
+  for (const admin of admins) {
+    const view = await as(admin).groups.create({ ...INPUT, name: `De ${admin}` });
+    await as(admin).groups.swipeCandidate('me', view.roles[0].id, 'like');
+    expect((await as('me').groups.swipeGroup(view.group.id, 'like')).joined).toBe(true);
+  }
 }
 
 beforeEach(() => {
@@ -60,7 +76,7 @@ describe('quien busca grupo', () => {
     const onDeckActive = jest.fn();
     await renderSection(onDeckActive);
 
-    expect(screen.getByText('Taller Abierto')).toBeTruthy();
+    expect(groupName('Taller Abierto')).toBeTruthy();
     expect(screen.getByText('2 de 6 miembros')).toBeTruthy();
     expect(screen.getByText('Encajas como')).toBeTruthy();
     expect(screen.getByText('✓ Desarrollo')).toBeTruthy();
@@ -68,20 +84,17 @@ describe('quien busca grupo', () => {
     expect(screen.getByText('Marketing · completo')).toBeTruthy();
     expect(onDeckActive).toHaveBeenLastCalledWith(true);
 
-    // Cada chip de arriba es una persona: abre su perfil.
-    await fireEvent.press(
-      screen.getByRole('button', { name: 'Admin: ver el perfil de Marc Oller' })
-    );
+    // Cada pestaña de arriba es una persona: enseña su ficha, y desde ella su perfil.
+    expect(screen.getByRole('tab', { name: 'Marketing: ver a Alba Ferrer' })).toBeTruthy();
+    await fireEvent.press(screen.getByRole('tab', { name: 'Admin: ver a Marc Oller' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Ver el perfil de Marc Oller' }));
     expect(router.push).toHaveBeenCalledWith({
       pathname: '/person/[id]',
       params: { id: 'seed-marc' },
     });
-    expect(
-      screen.getByRole('button', { name: 'Marketing: ver el perfil de Alba Ferrer' })
-    ).toBeTruthy();
   });
 
-  it('con like recíproco entra en el grupo y pasa a ver «Tu grupo»', async () => {
+  it('con like recíproco entra en el grupo y sigue viendo otros grupos', async () => {
     await withProfile();
     await renderSection();
 
@@ -89,14 +102,14 @@ describe('quien busca grupo', () => {
 
     await waitFor(() =>
       expect(
-        screen.getByText('¡Estás dentro! Ya puedes escribir en el chat del grupo.')
+        screen.getByText('¡Estás dentro de Taller Abierto! Tienes su chat en Matches.')
       ).toBeTruthy()
     );
-    expect(screen.getByText('3 de 6 miembros')).toBeTruthy();
-    expect(screen.getByText('Yo Misma')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Abrir el chat del grupo' })).toBeTruthy();
-    // No administra: no puede expulsar a nadie.
-    expect(screen.queryByText('Expulsar')).toBeNull();
+    // Puede estar en varios grupos: el deck sigue con el siguiente.
+    expect(groupName('Ruta Verde')).toBeTruthy();
+    expect((await repositories.groups.listMine()).map((view) => view.group.id)).toEqual([
+      'seed-group-taller',
+    ]);
   });
 
   it('un pase lleva al siguiente grupo', async () => {
@@ -106,7 +119,7 @@ describe('quien busca grupo', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Pasar' }));
 
     await waitFor(() => expect(screen.queryByText('Taller Abierto')).toBeNull());
-    expect(screen.getByText('Ruta Verde')).toBeTruthy();
+    expect(groupName('Ruta Verde')).toBeTruthy();
   });
 
   it('sin grupos que encajen ofrece crear uno y volver a comprobar', async () => {
@@ -140,7 +153,7 @@ describe('quien busca grupo', () => {
 
     expect(screen.getByText('No hemos podido cargar los grupos')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Reintentar' }));
-    await waitFor(() => expect(screen.getByText('Taller Abierto')).toBeTruthy());
+    await waitFor(() => expect(groupName('Taller Abierto')).toBeTruthy());
     expect(getDeck).toHaveBeenCalledTimes(2);
   });
 
@@ -152,7 +165,7 @@ describe('quien busca grupo', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Pasar' }));
 
     await waitFor(() => expect(screen.getByText(/No hemos podido guardar/)).toBeTruthy());
-    expect(screen.getByText('Taller Abierto')).toBeTruthy();
+    expect(groupName('Taller Abierto')).toBeTruthy();
   });
 
   it('un grupo que ya no existe se retira sin aviso', async () => {
@@ -164,19 +177,43 @@ describe('quien busca grupo', () => {
 
     await fireEvent.press(screen.getByRole('button', { name: 'Quiero entrar' }));
 
-    await waitFor(() => expect(screen.getByText('Ruta Verde')).toBeTruthy());
+    await waitFor(() => expect(groupName('Ruta Verde')).toBeTruthy());
     expect(screen.queryByText(/No hemos podido guardar/)).toBeNull();
   });
 
-  it('si resulta que ya tiene grupo, se relee y la sección cambia', async () => {
+  it('si llega al tope de grupos por otro lado, se relee y lo explica', async () => {
     await withProfile();
     await renderSection();
-    // Entra por otro lado (otro dispositivo) mientras mira el deck.
+    // Entra en 3 grupos desde otro dispositivo mientras mira el deck.
     await as('me').groups.swipeGroup('seed-group-taller', 'like');
+    await joinSeedGroups(['seed-alba', 'seed-ines']);
 
     await fireEvent.press(screen.getByRole('button', { name: 'Pasar' }));
 
-    await waitFor(() => expect(screen.getByText('Salir del grupo')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Ya estás en 3 grupos')).toBeTruthy());
+  });
+
+  it('en el tope de grupos no hay deck y se explica por qué', async () => {
+    await withProfile();
+    await as('me').groups.swipeGroup('seed-group-taller', 'like');
+    await joinSeedGroups(['seed-alba', 'seed-ines']);
+    const onDeckActive = jest.fn();
+    await renderSection(onDeckActive);
+
+    expect(screen.getByText('Ya estás en 3 grupos')).toBeTruthy();
+    expect(screen.queryByText('Taller Abierto')).toBeNull();
+    expect(onDeckActive).not.toHaveBeenCalledWith(true);
+  });
+
+  it('quien ya es miembro sigue buscando grupo, sin ver el suyo', async () => {
+    await withProfile();
+    await repositories.groups.swipeGroup('seed-group-taller', 'like');
+    await renderSection();
+
+    expect(groupName('Ruta Verde')).toBeTruthy();
+    expect(screen.queryByText('Taller Abierto')).toBeNull();
+    // No administra ninguno: puede crear el suyo.
+    expect(screen.getByRole('button', { name: 'Crear grupo' })).toBeTruthy();
   });
 });
 
@@ -207,7 +244,7 @@ describe('bloquear y reportar un grupo', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Confirmar bloqueo' }));
 
     await waitFor(() => expect(screen.queryByText('Taller Abierto')).toBeNull());
-    expect(screen.getByText('Ruta Verde')).toBeTruthy();
+    expect(groupName('Ruta Verde')).toBeTruthy();
     expect(await repositories.profiles.getById('seed-marc')).toBeNull();
   });
 
@@ -238,7 +275,7 @@ describe('bloquear y reportar un grupo', () => {
       details: '',
     });
     await fireEvent.press(screen.getByRole('button', { name: 'Cerrar opciones' }));
-    expect(screen.getByText('Taller Abierto')).toBeTruthy();
+    expect(groupName('Taller Abierto')).toBeTruthy();
   });
 
   it('del formulario de reporte se vuelve al menú', async () => {
@@ -256,9 +293,9 @@ describe('quien administra un grupo', () => {
   }
 
   it('ve el deck de reclutamiento, con el puesto que cubriría cada persona', async () => {
-    await asAdmin();
+    const { group } = await asAdmin();
     const onDeckActive = jest.fn();
-    await renderSection(onDeckActive);
+    await renderSection(onDeckActive, 'my-group');
 
     expect(screen.getByText('Buscando gente para Mi Equipo')).toBeTruthy();
     expect(
@@ -267,13 +304,13 @@ describe('quien administra un grupo', () => {
     expect(onDeckActive).toHaveBeenLastCalledWith(true);
 
     await fireEvent.press(screen.getByRole('button', { name: 'Tu grupo' }));
-    expect(router.push).toHaveBeenCalledWith('/group/info');
+    expect(router.push).toHaveBeenCalledWith(`/group/info?id=${group.id}`);
   });
 
   it('al darle like a quien ya quería entrar, entra y el deck se relee', async () => {
     const { group } = await asAdmin();
     await as('seed-ines').groups.swipeGroup(group.id, 'like');
-    await renderSection();
+    await renderSection(undefined, 'my-group');
 
     await fireEvent.press(
       screen.getByRole('button', { name: 'Quiero a esta persona en el grupo' })
@@ -284,14 +321,14 @@ describe('quien administra un grupo', () => {
     );
     // Con la única plaza cubierta no queda nadie por reclutar.
     await waitFor(() => expect(screen.getByText('Tu grupo está completo')).toBeTruthy());
-    expect((await repositories.groups.getMine())?.members).toHaveLength(2);
+    expect((await repositories.groups.listMine())[0]?.members).toHaveLength(2);
     expect(screen.getByRole('button', { name: 'Abrir el chat del grupo' })).toBeTruthy();
   });
 
   it('un pase pasa a la siguiente persona, sin unir a nadie', async () => {
     await asAdmin();
     const swipe = jest.spyOn(repositories.groups, 'swipeCandidate');
-    await renderSection();
+    await renderSection(undefined, 'my-group');
 
     await fireEvent.press(screen.getByRole('button', { name: 'Pasar' }));
 
@@ -304,7 +341,7 @@ describe('quien administra un grupo', () => {
   it('sin candidatos pero con plazas, dice que no queda nadie', async () => {
     await asAdmin({ ...INPUT, roles: [{ specialty: 'hardware', slots: 1 }] });
     const getRecruitDeck = jest.spyOn(repositories.groups, 'getRecruitDeck');
-    await renderSection();
+    await renderSection(undefined, 'my-group');
 
     expect(screen.getByText('No queda nadie por ver')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Volver a comprobar' }));
@@ -315,7 +352,7 @@ describe('quien administra un grupo', () => {
     await asAdmin();
     jest.spyOn(repositories.groups, 'getRecruitDeck').mockRejectedValueOnce(new Error('sin red'));
     jest.spyOn(repositories.groups, 'swipeCandidate').mockRejectedValueOnce(new Error('sin red'));
-    await renderSection();
+    await renderSection(undefined, 'my-group');
 
     expect(screen.getByText('No hemos podido cargar el deck')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Reintentar' }));
@@ -329,36 +366,34 @@ describe('quien administra un grupo', () => {
 
   it('el perfil completo de la persona se abre desde su tarjeta', async () => {
     await asAdmin();
-    await renderSection();
+    await renderSection(undefined, 'my-group');
     await fireEvent.press(screen.getByRole('button', { name: 'Ver el perfil de Inés Aranda' }));
     expect(router.push).toHaveBeenCalledWith({
       pathname: '/person/[id]',
       params: { id: 'seed-ines' },
     });
   });
+
+  it('en «Grupos» busca otros grupos, sin el suyo y sin poder crear otro', async () => {
+    await asAdmin();
+    await renderSection();
+
+    // Domina producto: Ruta Verde lo busca.
+    expect(groupName('Ruta Verde')).toBeTruthy();
+    expect(screen.queryByText('Mi Equipo')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Crear grupo' })).toBeNull();
+  });
 });
 
 describe('la sección entera', () => {
   it('si «mi grupo» no carga, lo dice y deja reintentar', async () => {
     await withProfile();
-    jest.spyOn(repositories.groups, 'getMine').mockRejectedValueOnce(new Error('sin red'));
+    jest.spyOn(repositories.groups, 'listMine').mockRejectedValueOnce(new Error('sin red'));
     await renderSection();
 
     expect(screen.getByText('No hemos podido cargar los grupos')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Reintentar' }));
-    await waitFor(() => expect(screen.getByText('Taller Abierto')).toBeTruthy());
-  });
-
-  it('un miembro que sale vuelve a ver el deck de grupos', async () => {
-    await withProfile();
-    await repositories.groups.swipeGroup('seed-group-taller', 'like');
-    await renderSection();
-
-    await fireEvent.press(screen.getByRole('button', { name: 'Salir del grupo' }));
-    await fireEvent.press(screen.getByRole('button', { name: 'Confirmar salida' }));
-
-    await waitFor(() => expect(screen.getByText('Ruta Verde')).toBeTruthy());
-    expect(await repositories.groups.getMine()).toBeNull();
+    await waitFor(() => expect(groupName('Taller Abierto')).toBeTruthy());
   });
 });
 
@@ -377,13 +412,36 @@ describe('Descubrir', () => {
 
     await fireEvent.press(screen.getByRole('tab', { name: 'Grupos' }));
 
-    await waitFor(() => expect(screen.getByText('Taller Abierto')).toBeTruthy());
+    await waitFor(() => expect(groupName('Taller Abierto')).toBeTruthy());
     // Los filtros son del deck de cofundador.
     expect(screen.queryByRole('button', { name: 'Filtros' })).toBeNull();
 
     await fireEvent.press(screen.getByRole('tab', { name: 'Cofundador' }));
     expect(screen.getByRole('button', { name: 'Filtros' })).toBeTruthy();
     expect(screen.queryByText('Taller Abierto')).toBeNull();
+    // Sin grupo que administrar no hay tercera pestaña.
+    expect(screen.getAllByRole('tab')).toHaveLength(2);
+  });
+
+  it('con un grupo propio, una pestaña con su nombre para reclutar', async () => {
+    await withProfile(['producto']);
+    await repositories.groups.create(INPUT);
+    await renderRoute(
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <DiscoverScreen />
+      </GestureHandlerRootView>
+    );
+    const tab = await screen.findByRole('tab', { name: 'Reclutar para Mi Equipo' });
+    expect(screen.getByText('Mi Equipo')).toBeTruthy();
+
+    await fireEvent.press(tab);
+    await waitFor(() => expect(screen.getByText('Buscando gente para Mi Equipo')).toBeTruthy());
+    expect(screen.queryByRole('button', { name: 'Filtros' })).toBeNull();
+
+    // «Grupos» sigue siendo buscar grupo.
+    await fireEvent.press(screen.getByRole('tab', { name: 'Grupos' }));
+    await waitFor(() => expect(groupName('Ruta Verde')).toBeTruthy());
+    expect(screen.queryByText('Buscando gente para Mi Equipo')).toBeNull();
   });
 });
 
@@ -404,5 +462,17 @@ describe('Matches', () => {
       expect(screen.getByRole('button', { name: 'Chat del grupo Taller Abierto' })).toBeTruthy()
     );
     expect(screen.getByText('Chat de grupo · 3 miembros')).toBeTruthy();
+  });
+
+  it('con varios grupos, una fila por grupo', async () => {
+    await withProfile();
+    await repositories.groups.swipeGroup('seed-group-taller', 'like');
+    await joinSeedGroups(['seed-alba']);
+    await renderRoute(<MatchesScreen />);
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Chat del grupo Taller Abierto' })).toBeTruthy()
+    );
+    expect(screen.getByRole('button', { name: 'Chat del grupo De seed-alba' })).toBeTruthy();
   });
 });

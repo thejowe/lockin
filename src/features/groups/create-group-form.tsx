@@ -38,7 +38,7 @@ import { Chip, ChipRow, Field, Stepper, TextField } from '@/features/profile/con
 import { t } from '@/i18n';
 
 import { groupErrorMessage } from './labels';
-import { MY_GROUP_QUERY } from './use-my-group';
+import { MY_GROUPS_QUERY } from './use-my-group';
 
 export function CreateGroupForm({ onCreated }: { onCreated: (view: GroupView) => void }) {
   return <GroupForm onSaved={onCreated} />;
@@ -63,7 +63,7 @@ function GroupForm({
   onSaved: (view: GroupView) => void;
 }) {
   const repositories = useRepositories();
-  const refreshMine = useRefreshQuery(MY_GROUP_QUERY);
+  const refreshMine = useRefreshQuery(MY_GROUPS_QUERY);
   const editing = !!initial;
   const [name, setName] = useState(initial?.group.name ?? '');
   const [description, setDescription] = useState(initial?.group.description ?? '');

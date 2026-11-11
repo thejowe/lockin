@@ -1,6 +1,6 @@
 /**
- * La fila del chat del grupo en Matches: mientras estás en un grupo, su
- * conversación vive junto a las de tus matches. Sin grupo no pinta nada.
+ * Las filas de los chats de grupo en Matches: una por cada grupo en el que
+ * estás, junto a las conversaciones de tus matches. Sin grupos no pinta nada.
  */
 
 import { Link, type Href } from 'expo-router';
@@ -11,12 +11,23 @@ import { Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
 
-import { useMyGroup } from './use-my-group';
+import { useMyGroups } from './use-my-group';
 
-export function GroupChatRow() {
+import type { GroupView } from '@/data';
+
+export function GroupChatRows() {
+  const { groups } = useMyGroups();
+  return (
+    <>
+      {groups.map((view) => (
+        <GroupChatRow key={view.group.id} view={view} />
+      ))}
+    </>
+  );
+}
+
+function GroupChatRow({ view }: { view: GroupView }) {
   const theme = useTheme();
-  const { group: view } = useMyGroup();
-  if (!view) return null;
 
   return (
     <Link href={`/group/${view.group.id}` as Href} asChild>

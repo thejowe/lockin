@@ -20,7 +20,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
 
 import { groupErrorMessage, memberRoleLabel, roleSlotsLabel } from './labels';
-import { MY_GROUP_QUERY } from './use-my-group';
+import { MY_GROUPS_QUERY } from './use-my-group';
 
 type Confirm = { kind: 'leave' } | { kind: 'kick'; member: GroupMemberView };
 
@@ -38,7 +38,7 @@ export function GroupHome({
   const theme = useTheme();
   const router = useRouter();
   const repositories = useRepositories();
-  const refreshMine = useRefreshQuery(MY_GROUP_QUERY);
+  const refreshMine = useRefreshQuery(MY_GROUPS_QUERY);
   const [confirm, setConfirm] = useState<Confirm | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,7 +78,7 @@ export function GroupHome({
             ? isAdmin
               ? members.length > 1
                 ? t(
-                    'Tu sitio queda libre y el grupo pasa a quien lleva más tiempo dentro. Dejarás de ver su chat.'
+                    'Tu sitio queda libre y el grupo pasa a quien lleva más tiempo dentro, si no administra ya otro grupo. Si nadie puede heredarlo, el grupo y su chat se borran.'
                   )
                 : t('Eres la única persona del grupo: al salir, el grupo se borra.')
               : t('Tu sitio queda libre y dejarás de ver el chat del grupo.')
@@ -98,7 +98,7 @@ export function GroupHome({
           disabled={busy}
           onPress={() =>
             void (confirm.kind === 'leave'
-              ? run(() => repositories.groups.leave(), onLeft)
+              ? run(() => repositories.groups.leave(group.id), onLeft)
               : run(() => repositories.groups.kick(confirm.member.member.userId)))
           }
         />

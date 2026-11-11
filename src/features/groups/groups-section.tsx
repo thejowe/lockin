@@ -1,93 +1,125 @@
 /**
- * La sección «Grupos» de Descubrir. Decide qué se ve según dónde está la
- * persona:
+ * Las secciones de grupos de Descubrir (desde el 2026-11-11, con hasta 3
+ * grupos por persona y uno administrado):
  *
- * - sin grupo: el deck de grupos que buscan lo que domina (`SeekerDeck`);
- * - administra un grupo: el deck de reclutamiento (`RecruitDeck`);
- * - es miembro sin administrar: su grupo (`GroupHome`) — con un grupo por
- *   persona no hay más grupos que enseñarle.
+ * - «Grupos»: el deck de grupos que buscan lo que domina (`SeekerDeck`), para
+ *   todo el mundo —también para quien ya está en grupos o administra uno—,
+ *   hasta llegar al tope de grupos;
+ * - «<nombre de tu grupo>»: solo si administras uno, el deck de reclutamiento
+ *   (`RecruitDeck`) para buscarle gente.
  *
- * `SectionSwitch` es el selector «Cofundador | Grupos» que la pantalla pone
- * encima; vive aquí para que Descubrir solo componga.
+ * Los grupos en los que estás se abren desde Matches (una fila por grupo).
+ *
+ * `SectionSwitch` es el selector «Cofundador | Grupos | <tu grupo>» que la
+ * pantalla pone encima; vive aquí para que Descubrir solo componga.
  */
 
 import { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { LoadingState, MessageState } from '@/components/state-view';
 import { ThemedText } from '@/components/themed-text';
 import { Radii, Spacing, Stroke } from '@/constants/theme';
+import { GROUP_MAX_MEMBERSHIPS } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
 
-import { GroupHome } from './group-home';
 import { RecruitDeck } from './recruit-deck';
 import { SeekerDeck } from './seeker-deck';
 import { useGroupPush } from './use-group-push';
-import { useMyGroup } from './use-my-group';
 
-export type DiscoverSection = 'cofounder' | 'groups';
+import { useMyGroups } from './use-my-group';
+
+export type DiscoverSection = 'cofounder' | 'groups' | 'my-group';
 
 export function SectionSwitch({
   value,
   onChange,
+  myGroupName,
 }: {
   value: DiscoverSection;
   onChange: (next: DiscoverSection) => void;
+  /** El nombre del grupo que administras: con él aparece su pestaña. */
+  myGroupName?: string | null;
 }) {
   const theme = useTheme();
-  const options: { value: DiscoverSection; label: string }[] = [
-    { value: 'cofounder', label: t('Cofundador') },
-    { value: 'groups', label: t('Grupos') },
+  const options: { value: DiscoverSection; label: string; a11y: string }[] = [
+    { value: 'cofounder', label: t('Cofundador'), a11y: t('Cofundador') },
+    { value: 'groups', label: t('Grupos'), a11y: t('Grupos') },
   ];
+  if (myGroupName) {
+    options.push({
+      value: 'my-group',
+      label: myGroupName,
+      a11y: t('Reclutar para {name}', { name: myGroupName }),
+    });
+  }
 
   return (
-    <View
-      accessibilityRole="tablist"
-      style={[
-        styles.switch,
-        { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-      ]}>
-      {options.map((option) => {
-        const selected = option.value === value;
-        return (
-          <Pressable
-            key={option.value}
-            accessibilityRole="tab"
-            accessibilityState={{ selected }}
-            accessibilityLabel={option.label}
-            onPress={() => onChange(option.value)}
-            style={[styles.option, selected && { backgroundColor: theme.backgroundSelected }]}>
-            <ThemedText type="smallBold" themeColor={selected ? 'text' : 'textSecondary'}>
-              {option.label}
-            </ThemedText>
-          </Pressable>
-        );
-      })}
-    </View>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={styles.switchScroll}
+      contentContainerStyle={styles.switchScrollContent}>
+      <View
+        accessibilityRole="tablist"
+        style={[
+          styles.switch,
+          { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+        ]}>
+        {options.map((option) => {
+          const selected = option.value === value;
+          return (
+            <Pressable
+              key={option.value}
+              accessibilityRole="tab"
+              accessibilityState={{ selected }}
+              accessibilityLabel={option.a11y}
+              onPress={() => onChange(option.value)}
+              style={[styles.option, selected && { backgroundColor: theme.backgroundSelected }]}>
+              <ThemedText
+                type="smallBold"
+                numberOfLines={1}
+                style={option.value === 'my-group' ? styles.groupLabel : undefined}
+                themeColor={selected ? 'text' : 'textSecondary'}>
+                {option.label}
+              </ThemedText>
+            </Pressable>
+          );
+        })}
+      </View>
+    </ScrollView>
   );
 }
 
 export function GroupsSection({
+  section = 'groups',
   onDeckActive,
 }: {
+  section?: 'groups' | 'my-group';
   /** Hay un deck con cartas: el swipe horizontal es suyo, no de las pestañas. */
   onDeckActive?: (active: boolean) => void;
 }) {
-  const mine = useMyGroup();
-  const [justJoined, setJustJoined] = useState(false);
+  // Descubrir lee lo mismo para la pestaña: la petición se comparte por clave.
+  const mine = useMyGroups();
+  const [joinedName, setJoinedName] = useState<string | null>(null);
   const refreshMine = mine.refresh;
-  // Estar en un grupo es cuando los avisos de su chat tienen sentido.
-  useGroupPush(!!mine.group);
+  // Estar en algún grupo es cuando los avisos de su chat tienen sentido.
+  useGroupPush(mine.groups.length > 0);
 
-  const onJoined = useCallback(() => {
-    setJustJoined(true);
-    refreshMine();
-  }, [refreshMine]);
+  const onJoined = useCallback(
+    (name: string | null) => {
+      setJoinedName(name);
+      refreshMine();
+    },
+    [refreshMine]
+  );
 
-  if (mine.loading) return <LoadingState label={t('Cargando grupos…')} />;
-  if (mine.error) {
+  if (mine.loading && mine.groups.length === 0) {
+    return <LoadingState label={t('Cargando grupos…')} />;
+  }
+  if (mine.error && mine.groups.length === 0) {
     return (
       <MessageState
         title={t('No hemos podido cargar los grupos')}
@@ -97,24 +129,51 @@ export function GroupsSection({
     );
   }
 
-  if (!mine.group) return <SeekerDeck onJoined={onJoined} onDeckActive={onDeckActive} />;
-
-  if (mine.group.isAdmin) {
+  if (section === 'my-group' && mine.adminGroup) {
     return (
-      <RecruitDeck view={mine.group} onMemberJoined={mine.refresh} onDeckActive={onDeckActive} />
+      <RecruitDeck
+        view={mine.adminGroup}
+        onMemberJoined={mine.refresh}
+        onDeckActive={onDeckActive}
+      />
+    );
+  }
+
+  if (mine.groups.length >= GROUP_MAX_MEMBERSHIPS) {
+    return (
+      <MessageState
+        title={t('Ya estás en {max} grupos', { max: GROUP_MAX_MEMBERSHIPS })}
+        body={t(
+          'Es el máximo. Para buscar otro, sal antes de alguno. Tus grupos están en Matches.'
+        )}>
+        {joinedName ? (
+          <ThemedText type="small" themeColor="teal" accessibilityLiveRegion="polite">
+            {t('¡Estás dentro de {name}! Tienes su chat en Matches.', { name: joinedName })}
+          </ThemedText>
+        ) : null}
+      </MessageState>
     );
   }
 
   return (
-    <GroupHome
-      view={mine.group}
-      notice={justJoined ? t('¡Estás dentro! Ya puedes escribir en el chat del grupo.') : undefined}
-      onLeft={() => setJustJoined(false)}
+    <SeekerDeck
+      canCreate={!mine.adminGroup}
+      notice={
+        joinedName
+          ? t('¡Estás dentro de {name}! Tienes su chat en Matches.', { name: joinedName })
+          : null
+      }
+      onJoined={onJoined}
+      onDeckActive={onDeckActive}
     />
   );
 }
 
 const styles = StyleSheet.create({
+  // El selector cabe entero casi siempre; con un nombre largo, se desliza.
+  switchScroll: { flexGrow: 0, flexShrink: 1 },
+  switchScrollContent: { alignItems: 'center' },
+  groupLabel: { maxWidth: 140 },
   switch: {
     flexDirection: 'row',
     padding: Spacing.half,

@@ -115,10 +115,11 @@ describe('reglas de los grupos', () => {
   it('cada código del servidor tiene su motivo', () => {
     expect(GROUP_ERROR_CODES).toEqual({
       LG001: 'invalid',
-      LG002: 'already-in-group',
+      LG002: 'group-limit',
       LG003: 'unavailable',
       LG004: 'admin-only',
       LG005: 'candidate-unavailable',
+      LG006: 'already-admin',
     });
     expect(new GroupError('unavailable', 'x').name).toBe('GroupError');
   });

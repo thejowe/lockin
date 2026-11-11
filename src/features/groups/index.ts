@@ -7,9 +7,9 @@
 
 export { CreateGroupForm, EditGroupForm } from './create-group-form';
 export { useGroupPush } from './use-group-push';
-export { GroupChatRow } from './group-row';
+export { GroupChatRows } from './group-row';
 export { GroupHome } from './group-home';
 export { GroupsSection, SectionSwitch, type DiscoverSection } from './groups-section';
 export { groupErrorMessage, memberRoleLabel } from './labels';
 export { useGroupConversation, type GroupConversation } from './use-group-conversation';
-export { MY_GROUP_QUERY, useMyGroup } from './use-my-group';
+export { MY_GROUPS_QUERY, useMyGroups } from './use-my-group';

@@ -2616,6 +2616,10 @@ function describeSafetyContract(backend: ContractBackend): void {
         );
       });
 
+      /** El primer grupo de esa persona (el que administra, si lo hay), o `null`. */
+      const mineOf = async (repositories: Repositories) =>
+        (await repositories.groups.listMine())[0] ?? null;
+
       async function createGroup(slots = 1) {
         const view = await a.groups.create({
           name: 'Contrato',
@@ -2645,7 +2649,7 @@ function describeSafetyContract(backend: ContractBackend): void {
         expect((await a.groups.swipeCandidate(cId, roleId, 'like')).joined).toBe(false);
         expect((await c.groups.swipeGroup(groupId, 'like')).joined).toBe(true);
 
-        const mine = await b.groups.getMine();
+        const mine = await mineOf(b);
         expect(mine?.group.id).toBe(groupId);
         expect(mine?.isAdmin).toBe(false);
         expect(mine?.roles[0]).toMatchObject({ slots: 2, filled: 2 });
@@ -2660,7 +2664,7 @@ function describeSafetyContract(backend: ContractBackend): void {
         ]);
       });
 
-      it('la última plaza no se da dos veces, y nadie entra en dos grupos', async () => {
+      it('la última plaza no se da dos veces, y solo se administra un grupo', async () => {
         const { groupId, roleId } = await createGroup(1);
         await b.groups.swipeGroup(groupId, 'like');
         await c.groups.swipeGroup(groupId, 'like');
@@ -2672,15 +2676,43 @@ function describeSafetyContract(backend: ContractBackend): void {
         expect(decisions.map((decision) => decision.joined).sort()).toEqual([false, true]);
         const winner = decisions[0].joined ? b : c;
         const loser = decisions[0].joined ? c : b;
-        expect((await a.groups.getMine())?.roles[0]).toMatchObject({ slots: 1, filled: 1 });
-        expect(await loser.groups.getMine()).toBeNull();
+        expect((await mineOf(a))?.roles[0]).toMatchObject({ slots: 1, filled: 1 });
+        expect(await mineOf(loser)).toBeNull();
         expect((await loser.groups.getDeck()).map((card) => card.group.id)).not.toContain(groupId);
 
-        // Quien entró ya tiene grupo: ni crea otro ni desliza.
+        // Quien entró no vuelve a ver ni a deslizar ese grupo; el admin no crea otro.
+        expect((await winner.groups.getDeck()).map((card) => card.group.id)).not.toContain(groupId);
+        await expect(winner.groups.swipeGroup(groupId, 'like')).rejects.toMatchObject({
+          reason: 'unavailable',
+        });
         await expect(
-          winner.groups.create({ name: 'Otro', description: DESCRIPTION, roles: ROLES })
-        ).rejects.toMatchObject({ reason: 'already-in-group' });
-        expect(await winner.groups.getDeck()).toEqual([]);
+          a.groups.create({ name: 'Otro', description: DESCRIPTION, roles: ROLES })
+        ).rejects.toMatchObject({ reason: 'already-admin' });
+      });
+
+      it('quien administra un grupo entra también en otros, y sale de uno sin tocar el resto', async () => {
+        const { groupId, roleId } = await createGroup(1);
+        const own = await b.groups.create({
+          name: 'De B',
+          description: DESCRIPTION,
+          roles: [{ specialty: 'dev', slots: 1 }],
+        });
+        // B ve el grupo de A, pero no el suyo.
+        const deck = (await b.groups.getDeck()).map((card) => card.group.id);
+        expect(deck).toContain(groupId);
+        expect(deck).not.toContain(own.group.id);
+
+        await b.groups.swipeGroup(groupId, 'like');
+        expect((await a.groups.swipeCandidate(bId, roleId, 'like')).joined).toBe(true);
+        expect((await b.groups.listMine()).map((view) => [view.group.id, view.isAdmin])).toEqual([
+          [own.group.id, true],
+          [groupId, false],
+        ]);
+
+        await b.groups.leave(groupId);
+        expect((await b.groups.listMine()).map((view) => view.group.id)).toEqual([own.group.id]);
+        await b.groups.leave(own.group.id);
+        expect(await b.groups.listMine()).toEqual([]);
       });
 
       it('editar: solo el admin, sin quitar un perfil ocupado', async () => {
@@ -2722,19 +2754,19 @@ function describeSafetyContract(backend: ContractBackend): void {
 
         await a.session.deleteMyAccount();
 
-        const forB = await b.groups.getMine();
+        const forB = await mineOf(b);
         expect(forB?.group.adminId).toBe(bId);
         expect(forB?.isAdmin).toBe(true);
         expect(forB?.members.map((entry) => entry.member.userId)).toEqual([bId, cId]);
-        expect((await c.groups.getMine())?.group.adminId).toBe(bId);
+        expect((await mineOf(c))?.group.adminId).toBe(bId);
         // La plaza de A no existía (el admin no ocupa perfil): siguen 2 de 2.
         expect(forB?.roles[0]).toMatchObject({ slots: 2, filled: 2 });
 
         // Y si se borra el nuevo admin, pasa a C; sin nadie, el grupo desaparece.
         await b.session.deleteMyAccount();
-        expect((await c.groups.getMine())?.group.adminId).toBe(cId);
-        await c.groups.leave();
-        expect(await c.groups.getMine()).toBeNull();
+        expect((await mineOf(c))?.group.adminId).toBe(cId);
+        await c.groups.leave(groupId);
+        expect(await mineOf(c)).toBeNull();
         expect((await c.groups.getDeck()).map((card) => card.group.id)).not.toContain(groupId);
       });
 
@@ -2746,8 +2778,8 @@ function describeSafetyContract(backend: ContractBackend): void {
         await expect(c.groups.kick(bId)).rejects.toMatchObject({ reason: 'admin-only' });
         await a.groups.kick(bId);
 
-        expect(await b.groups.getMine()).toBeNull();
-        expect((await a.groups.getMine())?.roles[0]).toMatchObject({ filled: 0 });
+        expect(await mineOf(b)).toBeNull();
+        expect((await mineOf(a))?.roles[0]).toMatchObject({ filled: 0 });
         expect((await a.groups.getRecruitDeck()).map((entry) => entry.profile.id)).not.toContain(
           bId
         );

@@ -1,10 +1,11 @@
 /**
  * Tab Descubrir: el deck de swipe, a pantalla completa como en Tinder.
  *
- * Desde el 2026-11-09 tiene dos secciones: «Cofundador» (el deck de siempre,
- * sin cambios) y «Grupos» (`GroupsSection`, que decide sola qué enseñar). El
- * deck de cofundador sigue montado mientras se mira Grupos: al volver está
- * donde se dejó.
+ * Desde el 2026-11-09 tiene secciones: «Cofundador» (el deck de siempre,
+ * sin cambios), «Grupos» (el deck de grupos para unirse) y, si administras un
+ * grupo, una tercera con su nombre (el deck para reclutar gente; 2026-11-11).
+ * Las dos de grupos las pinta `GroupsSection`. El deck de cofundador sigue
+ * montado mientras se mira otra sección: al volver está donde se dejó.
  *
  * Solo compone — el estado del deck vive en `useDeck` y el gesto en `SwipeDeck`,
  * para que cuando `datos` cambie el mock por Supabase esta pantalla no cambie.
@@ -51,7 +52,7 @@ import {
   SwipeDeck,
   useDeck,
 } from '@/features/discover';
-import { GroupsSection, SectionSwitch, type DiscoverSection } from '@/features/groups';
+import { GroupsSection, SectionSwitch, useMyGroups, type DiscoverSection } from '@/features/groups';
 import { openPaywall } from '@/features/premium';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -76,7 +77,13 @@ export default function DiscoverScreen() {
   const viewerSchedule = viewer
     ? { bands: viewer.availability.bands, timezone: viewer.timezone }
     : undefined;
-  const [section, setSection] = useState<DiscoverSection>('cofounder');
+  const [chosenSection, setSection] = useState<DiscoverSection>('cofounder');
+  const myGroups = useMyGroups();
+  const adminGroupName = myGroups.adminGroup?.group.name ?? null;
+  // Sin grupo que administrar (lo dejó, o pasó a otra persona), su pestaña no existe.
+  const section: DiscoverSection =
+    chosenSection === 'my-group' && !adminGroupName && !myGroups.loading ? 'groups' : chosenSection;
+  const inGroups = section !== 'cofounder';
   /** El deck de Grupos tiene cartas: el swipe horizontal es suyo. */
   const [groupsDeckActive, setGroupsDeckActive] = useState(false);
   const onGroupsDeckActive = useCallback((active: boolean) => setGroupsDeckActive(active), []);
@@ -146,9 +153,7 @@ export default function DiscoverScreen() {
 
   // Con tarjetas, el swipe horizontal es de la tarjeta; sin ellas (deck vacío,
   // cargando o en error) deslizar lleva a la pestaña de al lado.
-  useLockTabSwipe(
-    section === 'groups' ? groupsDeckActive : !loading && !!cards && cards.length > 0
-  );
+  useLockTabSwipe(inGroups ? groupsDeckActive : !loading && !!cards && cards.length > 0);
 
   function openChat(matchId: string) {
     dismissMatch();
@@ -161,8 +166,8 @@ export default function DiscoverScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
         <View style={styles.content}>
           <View style={styles.toolbar}>
-            <SectionSwitch value={section} onChange={setSection} />
-            {section === 'groups' ? null : (
+            <SectionSwitch value={section} onChange={setSection} myGroupName={adminGroupName} />
+            {inGroups ? null : (
               <Pressable
                 ref={filtersButton}
                 collapsable={false}
@@ -183,9 +188,14 @@ export default function DiscoverScreen() {
             )}
           </View>
 
-          {section === 'groups' ? (
+          {section !== 'cofounder' ? (
             <View style={styles.deck}>
-              <GroupsSection onDeckActive={onGroupsDeckActive} />
+              <GroupsSection
+                // Cambiar de pestaña monta el otro deck desde cero.
+                key={section}
+                section={section}
+                onDeckActive={onGroupsDeckActive}
+              />
             </View>
           ) : null}
 
@@ -198,7 +208,7 @@ export default function DiscoverScreen() {
             </ThemedText>
           ) : null}
 
-          <View style={[styles.deck, section === 'groups' && styles.hidden]}>
+          <View style={[styles.deck, inGroups && styles.hidden]}>
             {loading ? (
               <LoadingState label={t('Buscando perfiles…')} />
             ) : error && !cards?.length ? (

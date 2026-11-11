@@ -47,12 +47,20 @@ async function admit(
   userId: string,
   specialty: Specialty
 ) {
-  const view = await admin.groups.getMine();
+  const view = await mineOf(admin);
   const role = view!.roles.find((candidate) => candidate.specialty === specialty)!;
   await user.groups.swipeGroup(view!.group.id, 'like');
   const result = await admin.groups.swipeCandidate(userId, role.id, 'like');
   expect(result.joined).toBe(true);
 }
+
+/** El único grupo de una persona (o el que administra), o `null`. */
+const mineOf = async (repositories: Repositories) =>
+  (await repositories.groups.listMine())[0] ?? null;
+
+/** Sale del único grupo de esa persona. */
+const leaveOnly = async (repositories: Repositories) =>
+  repositories.groups.leave((await mineOf(repositories))!.group.id);
 
 let admin: Repositories;
 let dev1: Repositories;
@@ -90,17 +98,17 @@ describe('crear', () => {
       ['diseno', 1, 0],
       ['dev', 2, 0],
     ]);
-    expect((await admin.groups.getMine())?.group.id).toBe(view.group.id);
-    expect(await dev1.groups.getMine()).toBeNull();
+    expect((await mineOf(admin))?.group.id).toBe(view.group.id);
+    expect(await mineOf(dev1)).toBeNull();
   });
 
-  it('valida los datos, exige perfil y solo deja un grupo por persona', async () => {
+  it('valida los datos, exige perfil y solo deja administrar un grupo', async () => {
     expect(await reason(admin.groups.create({ ...INPUT, name: 'x' }))).toBe('invalid');
     const ghost = createMockRepositories(store, { actorId: 'ghost' });
     expect(await reason(ghost.groups.create(INPUT))).toBe('23503');
 
     await admin.groups.create(INPUT);
-    expect(await reason(admin.groups.create(INPUT))).toBe('already-in-group');
+    expect(await reason(admin.groups.create(INPUT))).toBe('already-admin');
   });
 
   it('avisa a quien está suscrito a su grupo', async () => {
@@ -181,7 +189,7 @@ describe('decks', () => {
       false
     );
     expect(await reason(dev1.groups.swipeGroup(group.id, 'like'))).toBe('unavailable');
-    const role = (await admin.groups.getMine())!.roles[1];
+    const role = (await mineOf(admin))!.roles[1];
     expect(await reason(admin.groups.swipeCandidate('dev1', role.id, 'like'))).toBe(
       'candidate-unavailable'
     );
@@ -199,7 +207,7 @@ describe('unión', () => {
     expect((await admin.groups.swipeCandidate('designer', design.id, 'like')).joined).toBe(false);
     expect((await designer.groups.swipeGroup(group.id, 'like')).joined).toBe(true);
 
-    const view = (await dev1.groups.getMine())!;
+    const view = (await mineOf(dev1))!;
     expect(view.isAdmin).toBe(false);
     expect(view.members.map((entry) => entry.member.userId).sort()).toEqual([
       'admin',
@@ -210,13 +218,13 @@ describe('unión', () => {
     expect(view.members.find((entry) => entry.member.userId === 'dev1')?.specialty).toBe('dev');
   });
 
-  it('un pase no une, y quien ya está dentro no desliza', async () => {
+  it('un pase no une, y quien ya está dentro no vuelve a deslizar ese grupo', async () => {
     const { group, roles } = await admin.groups.create(INPUT);
     await dev1.groups.swipeGroup(group.id, 'pass');
     expect((await admin.groups.swipeCandidate('dev1', roles[1].id, 'like')).joined).toBe(false);
     // Cambiar el pase por un like sí une.
     expect((await dev1.groups.swipeGroup(group.id, 'like')).joined).toBe(true);
-    expect(await reason(dev1.groups.swipeGroup(group.id, 'like'))).toBe('already-in-group');
+    expect(await reason(dev1.groups.swipeGroup(group.id, 'like'))).toBe('unavailable');
   });
 
   it('con el puesto lleno no entra nadie más ni sale en el deck', async () => {
@@ -230,7 +238,7 @@ describe('unión', () => {
     expect(await dev3.groups.getDeck()).toEqual([]);
     await dev3.groups.swipeGroup(group.id, 'like');
     expect((await admin.groups.swipeCandidate('dev3', roles[1].id, 'like')).joined).toBe(false);
-    expect((await admin.groups.getMine())!.members).toHaveLength(3);
+    expect((await mineOf(admin))!.members).toHaveLength(3);
   });
 
   it('si el puesto elegido se llenó, entra en otro abierto que encaje', async () => {
@@ -247,7 +255,7 @@ describe('unión', () => {
     await admit(admin, dev1, 'dev1', 'dev');
 
     expect((await both.groups.swipeGroup(group.id, 'like')).joined).toBe(true);
-    const view = (await both.groups.getMine())!;
+    const view = (await mineOf(both))!;
     expect(view.members.find((entry) => entry.member.userId === 'both')?.specialty).toBe('diseno');
   });
 
@@ -264,20 +272,70 @@ describe('unión', () => {
     expect((await admin.groups.swipeCandidate('dev2', roles[0].id, 'like')).joined).toBe(false);
   });
 
-  it('una persona no entra en dos grupos', async () => {
+  it('una persona entra en varios grupos, hasta el tope de 3', async () => {
     const first = await admin.groups.create(INPUT);
     const second = await designer.groups.create({
       ...INPUT,
       roles: [{ specialty: 'dev', slots: 1 }],
     });
-    await dev1.groups.swipeGroup(first.group.id, 'like');
-    await dev1.groups.swipeGroup(second.group.id, 'like');
-    expect((await admin.groups.swipeCandidate('dev1', first.roles[1].id, 'like')).joined).toBe(
-      true
-    );
-    expect((await designer.groups.swipeCandidate('dev1', second.roles[0].id, 'like')).joined).toBe(
+    const third = await lawyer.groups.create({ ...INPUT, roles: [{ specialty: 'dev', slots: 1 }] });
+    const sales = await person('sales', ['ventas']);
+    const fourth = await sales.groups.create({ ...INPUT, roles: [{ specialty: 'dev', slots: 1 }] });
+
+    for (const [owner, view] of [
+      [admin, first],
+      [designer, second],
+      [lawyer, third],
+    ] as const) {
+      const role = view.roles.find((candidate) => candidate.specialty === 'dev')!;
+      await dev1.groups.swipeGroup(view.group.id, 'like');
+      expect((await owner.groups.swipeCandidate('dev1', role.id, 'like')).joined).toBe(true);
+    }
+    expect((await dev1.groups.listMine()).map((view) => view.group.id)).toEqual([
+      first.group.id,
+      second.group.id,
+      third.group.id,
+    ]);
+
+    // En el tope: ni deck, ni swipe, ni sale en el deck de reclutamiento, ni entra.
+    expect(await dev1.groups.getDeck()).toEqual([]);
+    expect(await reason(dev1.groups.swipeGroup(fourth.group.id, 'like'))).toBe('group-limit');
+    expect((await sales.groups.getRecruitDeck()).some((card) => card.profile.id === 'dev1')).toBe(
       false
     );
+    expect(await reason(dev1.groups.create(INPUT))).toBe('group-limit');
+
+    // Al salir de uno, vuelve a poder.
+    await dev1.groups.leave(second.group.id);
+    expect((await dev1.groups.listMine()).map((view) => view.group.id)).toEqual([
+      first.group.id,
+      third.group.id,
+    ]);
+    expect((await dev1.groups.getDeck()).map((card) => card.group.id)).toEqual([fourth.group.id]);
+  });
+
+  it('quien administra un grupo también busca otros, sin ver el suyo', async () => {
+    const mine = await admin.groups.create(INPUT);
+    const other = await designer.groups.create({
+      ...INPUT,
+      roles: [{ specialty: 'producto', slots: 1 }],
+    });
+
+    const deck = await admin.groups.getDeck();
+    expect(deck.map((card) => card.group.id)).toEqual([other.group.id]);
+
+    await admin.groups.swipeGroup(other.group.id, 'like');
+    expect((await designer.groups.swipeCandidate('admin', other.roles[0].id, 'like')).joined).toBe(
+      true
+    );
+    const views = await admin.groups.listMine();
+    // El que administra va primero.
+    expect(views.map((view) => [view.group.id, view.isAdmin])).toEqual([
+      [mine.group.id, true],
+      [other.group.id, false],
+    ]);
+    // Y sigue reclutando para el suyo.
+    expect((await admin.groups.getRecruitDeck()).map((card) => card.profile.id)).toContain('dev1');
   });
 
   it('el admin solo desliza sobre sus puestos y sobre personas que existen', async () => {
@@ -306,10 +364,10 @@ describe('salir y expulsar', () => {
     await admit(admin, dev1, 'dev1', 'dev');
     await admit(admin, dev2, 'dev2', 'dev');
 
-    await dev1.groups.leave();
-    expect(await dev1.groups.getMine()).toBeNull();
-    expect((await admin.groups.getMine())!.roles[1].filled).toBe(1);
-    expect(await reason(dev1.groups.leave())).toBe('unavailable');
+    await leaveOnly(dev1);
+    expect(await mineOf(dev1)).toBeNull();
+    expect((await mineOf(admin))!.roles[1].filled).toBe(1);
+    expect(await reason(dev1.groups.leave(group.id))).toBe('unavailable');
     // Sus likes con el grupo quedaron en pase.
     expect(await dev1.groups.getDeck()).toEqual([]);
     expect((await admin.groups.getRecruitDeck()).some((card) => card.profile.id === 'dev1')).toBe(
@@ -323,7 +381,7 @@ describe('salir y expulsar', () => {
     dev2.groups.subscribe(listener);
     await admin.groups.kick('dev2');
     expect(listener).toHaveBeenCalled();
-    const view = (await admin.groups.getMine())!;
+    const view = (await mineOf(admin))!;
     expect(view.members).toHaveLength(1);
     expect(view.roles.every((role) => role.filled === 0)).toBe(true);
     expect(view.group.id).toBe(group.id);
@@ -336,19 +394,80 @@ describe('salir y expulsar', () => {
     store.advanceClock(1000);
     await admit(admin, designer, 'designer', 'diseno');
 
-    await admin.groups.leave();
-    const view = (await dev1.groups.getMine())!;
+    await leaveOnly(admin);
+    const view = (await mineOf(dev1))!;
     expect(view.group.adminId).toBe('dev1');
     expect(view.isAdmin).toBe(true);
     // Conserva su puesto: la plaza sigue ocupada.
     expect(view.members.find((entry) => entry.isAdmin)?.specialty).toBe('dev');
 
-    await dev1.groups.leave();
-    expect((await designer.groups.getMine())!.group.adminId).toBe('designer');
-    await designer.groups.leave();
+    await leaveOnly(dev1);
+    expect((await mineOf(designer))!.group.adminId).toBe('designer');
+    await leaveOnly(designer);
     expect(store.state.groups).toHaveLength(0);
     expect(store.state.groupRoles).toHaveLength(0);
     expect(store.state.groupSwipes).toHaveLength(0);
+  });
+
+  it('el liderazgo salta a quien ya administra otro grupo; sin nadie así, el grupo se disuelve', async () => {
+    const { group } = await admin.groups.create(INPUT);
+    store.advanceClock(1000);
+    const designerGroup = await designer.groups.create({
+      ...INPUT,
+      roles: [{ specialty: 'legal', slots: 1 }],
+    });
+    store.advanceClock(1000);
+    await admit(admin, designer, 'designer', 'diseno');
+    store.advanceClock(1000);
+    await admit(admin, dev1, 'dev1', 'dev');
+
+    // `designer` es más antiguo, pero ya administra el suyo: pasa a `dev1`.
+    await admin.groups.leave(group.id);
+    const views = await dev1.groups.listMine();
+    expect(views[0]).toMatchObject({ isAdmin: true, group: { id: group.id, adminId: 'dev1' } });
+
+    // Si quedan solo admins de otros grupos, el grupo se disuelve.
+    await dev1.groups.kick('designer');
+    await admit(dev1, lawyer, 'lawyer', 'dev');
+    const lawyerGroup = await lawyer.groups.create({
+      ...INPUT,
+      roles: [{ specialty: 'ventas', slots: 1 }],
+    });
+    await dev1.groups.leave(group.id);
+    expect(store.state.groups.map((candidate) => candidate.id).sort()).toEqual(
+      [designerGroup.group.id, lawyerGroup.group.id].sort()
+    );
+    expect(await lawyer.groups.listMine()).toHaveLength(1);
+  });
+
+  it('salir de un grupo no toca los demás', async () => {
+    const first = await admin.groups.create(INPUT);
+    const second = await designer.groups.create({
+      ...INPUT,
+      roles: [{ specialty: 'dev', slots: 1 }],
+    });
+    await admit(admin, dev1, 'dev1', 'dev');
+    await admit(designer, dev1, 'dev1', 'dev');
+
+    await dev1.groups.leave(first.group.id);
+    expect((await dev1.groups.listMine()).map((view) => view.group.id)).toEqual([second.group.id]);
+    expect(await reason(dev1.groups.leave(first.group.id))).toBe('unavailable');
+  });
+
+  it('borrar la cuenta saca de todos sus grupos', async () => {
+    const first = await admin.groups.create(INPUT);
+    const second = await designer.groups.create({
+      ...INPUT,
+      roles: [{ specialty: 'dev', slots: 1 }],
+    });
+    await admit(admin, dev1, 'dev1', 'dev');
+    await admit(designer, dev1, 'dev1', 'dev');
+
+    await dev1.session.deleteMyAccount();
+    expect(store.state.groupMembers.some((member) => member.userId === 'dev1')).toBe(false);
+    expect((await mineOf(admin))!.group.id).toBe(first.group.id);
+    expect((await mineOf(designer))!.roles[0].filled).toBe(0);
+    expect(second.group.id).toBeDefined();
   });
 
   it('borrar la cuenta saca del grupo, pasa el liderazgo y se lleva swipes y mensajes', async () => {
@@ -363,7 +482,7 @@ describe('salir y expulsar', () => {
     expect(store.state.groupSwipes.some((swipe) => swipe.userId === 'dev2')).toBe(false);
 
     await admin.session.deleteMyAccount();
-    const view = (await dev1.groups.getMine())!;
+    const view = (await mineOf(dev1))!;
     expect(view.group.adminId).toBe('dev1');
     expect(view.members).toHaveLength(1);
     expect((await dev1.groups.listMessages(group.id)).map((message) => message.body)).toEqual([
@@ -417,7 +536,7 @@ describe('chat de grupo', () => {
     ]);
     expect(await admin.groups.listMessages(group.id)).toHaveLength(2);
     // Y su perfil deja de entregarse dentro del grupo.
-    const view = (await designer.groups.getMine())!;
+    const view = (await mineOf(designer))!;
     expect(view.members.find((entry) => entry.member.userId === 'dev1')?.profile).toBeNull();
   });
 });
@@ -504,7 +623,7 @@ describe('semillas', () => {
 
     const result = await me.groups.swipeGroup('seed-group-taller', 'like');
     expect(result.joined).toBe(true);
-    expect((await me.groups.getMine())?.members.map((entry) => entry.member.userId)).toContain(
+    expect((await mineOf(me))?.members.map((entry) => entry.member.userId)).toContain(
       CURRENT_USER_ID
     );
   });

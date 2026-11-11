@@ -15,6 +15,12 @@ import type { GroupInput, GroupRole, GroupUpdateInput, Specialty } from './types
  */
 export const GROUP_CREATION_REQUIRES_PREMIUM = false;
 
+/**
+ * Grupos como mucho por persona (2026-11-11). Administrar, solo uno. Repetido
+ * en `public.group_max_memberships()`: si cambia uno, cambian los dos.
+ */
+export const GROUP_MAX_MEMBERSHIPS = 3;
+
 /** Miembros como mucho, contando a quien lo crea. */
 export const GROUP_MAX_MEMBERS = 6;
 /** Plazas como mucho entre todos los puestos: el admin ocupa un sitio aparte. */
@@ -28,13 +34,19 @@ export const GROUP_DESCRIPTION_MAX = 500;
 /**
  * Por qué no se pudo:
  * - `invalid`: nombre, descripción o puestos no válidos (LG001).
- * - `already-in-group`: ya estás en un grupo (LG002).
+ * - `group-limit`: ya estás en `GROUP_MAX_MEMBERSHIPS` grupos (LG002).
  * - `unavailable`: el grupo no existe, ya no está o no estás en él (LG003).
  * - `admin-only`: solo lo puede hacer quien administra el grupo (LG004).
  * - `candidate-unavailable`: esa persona ya no está disponible (LG005).
+ * - `already-admin`: ya administras un grupo; solo se crea uno (LG006).
  */
 export type GroupErrorReason =
-  'invalid' | 'already-in-group' | 'unavailable' | 'admin-only' | 'candidate-unavailable';
+  | 'invalid'
+  | 'group-limit'
+  | 'unavailable'
+  | 'admin-only'
+  | 'candidate-unavailable'
+  | 'already-admin';
 
 export class GroupError extends Error {
   override name = 'GroupError';
@@ -49,10 +61,11 @@ export class GroupError extends Error {
 /** Código de Postgres de cada motivo. Lo usan los dos backends y sus tests. */
 export const GROUP_ERROR_CODES: Record<string, GroupErrorReason> = {
   LG001: 'invalid',
-  LG002: 'already-in-group',
+  LG002: 'group-limit',
   LG003: 'unavailable',
   LG004: 'admin-only',
   LG005: 'candidate-unavailable',
+  LG006: 'already-admin',
 };
 
 /** Plazas libres de un puesto. */

@@ -108,7 +108,7 @@ function GroupChatContent() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={t('Ver el grupo')}
-                onPress={() => router.push('/group/info' as Href)}
+                onPress={() => router.push(`/group/info?id=${view.group.id}` as Href)}
                 style={({ pressed }) => [styles.headerButton, pressed && { opacity: 0.6 }]}>
                 <ThemedText type="bodyStrong">{t('Grupo')}</ThemedText>
               </Pressable>

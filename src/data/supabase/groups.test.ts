@@ -95,8 +95,8 @@ interface FakeChannel {
 
 function fakeClient(overrides: Record<string, Result> = {}) {
   const results: Record<string, Result> = {
-    'group_members:membership': ok({ group_id: 'g1' }),
-    groups: ok(group),
+    'group_members:membership': ok([{ group_id: 'g1', joined_at: timestamp }]),
+    groups: ok([group]),
     group_roles: ok(roles),
     group_members: ok(members),
     group_messages: ok([message]),
@@ -114,7 +114,11 @@ function fakeClient(overrides: Record<string, Result> = {}) {
     const builder: Record<string, unknown> = {};
     for (const method of ['select', 'eq', 'in', 'order']) {
       builder[method] = (...args: unknown[]) => {
-        if (table === 'group_members' && method === 'select' && args[0] === 'group_id') {
+        if (
+          table === 'group_members' &&
+          method === 'select' &&
+          String(args[0]).startsWith('group_id')
+        ) {
           key = 'group_members:membership';
         }
         return builder;
@@ -214,7 +218,10 @@ describe('mapeadores', () => {
   it('traducen los códigos del servidor', () => {
     const error = toGroupError({ code: 'LG002', message: 'ya' });
     expect(error).toBeInstanceOf(GroupError);
-    expect((error as GroupError).reason).toBe('already-in-group');
+    expect((error as GroupError).reason).toBe('group-limit');
+    expect(toGroupError({ code: 'LG006', message: 'admin' })).toMatchObject({
+      reason: 'already-admin',
+    });
     expect(toGroupError({ code: 'LQ005', message: 'premium' })).toBeInstanceOf(
       PremiumRequiredError
     );
@@ -223,11 +230,11 @@ describe('mapeadores', () => {
   });
 });
 
-describe('getMine', () => {
+describe('listMine', () => {
   it('compone grupo, puestos y miembros por antigüedad, con sus perfiles firmados', async () => {
     const { repository, signProfiles } = setup();
 
-    const view = (await repository.getMine())!;
+    const [view] = await repository.listMine();
     expect(view.isAdmin).toBe(true);
     expect(view.roles.map((role) => role.id)).toEqual(['r-dev', 'r-design']);
     expect(
@@ -240,13 +247,38 @@ describe('getMine', () => {
     expect(signProfiles).toHaveBeenCalled();
   });
 
-  it('sin pertenencia o sin grupo legible devuelve null', async () => {
-    expect(await setup({ 'group_members:membership': ok(null) }).repository.getMine()).toBeNull();
-    expect(await setup({ groups: ok(null) }).repository.getMine()).toBeNull();
+  it('sin pertenencias o sin grupo legible devuelve una lista vacía', async () => {
+    expect(await setup({ 'group_members:membership': ok([]) }).repository.listMine()).toEqual([]);
+    expect(await setup({ groups: ok([]) }).repository.listMine()).toEqual([]);
+  });
+
+  it('con varios grupos, el que administra va primero y cada uno lleva lo suyo', async () => {
+    const other = { ...group, id: 'g0', name: 'Otro', admin_id: 'other' };
+    const { repository } = setup({
+      'group_members:membership': ok([
+        { group_id: 'g0', joined_at: timestamp },
+        { group_id: 'g1', joined_at: timestamp },
+      ]),
+      groups: ok([group, other]),
+      group_roles: ok([...roles, { ...roles[0], id: 'r-other', group_id: 'g0' }]),
+      group_members: ok([
+        ...members,
+        { ...members[0], group_id: 'g0', user_id: 'other', role_id: null },
+        { ...members[1], group_id: 'g0', user_id: 'me', role_id: 'r-other' },
+      ]),
+    });
+
+    const views = await repository.listMine();
+    expect(views.map((view) => [view.group.id, view.isAdmin])).toEqual([
+      ['g1', true],
+      ['g0', false],
+    ]);
+    expect(views[1].roles.map((role) => role.id)).toEqual(['r-other']);
+    expect(views[1].members.map((entry) => entry.member.userId).sort()).toEqual(['me', 'other']);
   });
 
   it('un miembro cuyo perfil no se puede leer queda sin perfil', async () => {
-    const view = (await setup({ profiles: ok([profile('me')]) }, 'other').repository.getMine())!;
+    const [view] = await setup({ profiles: ok([profile('me')]) }, 'other').repository.listMine();
     expect(view.isAdmin).toBe(false);
     expect(view.members[1].profile).toBeNull();
   });
@@ -254,7 +286,7 @@ describe('getMine', () => {
   it.each(['group_members:membership', 'groups', 'group_roles', 'group_members', 'profiles'])(
     'propaga el fallo de %s',
     async (source) => {
-      await expect(setup({ [source]: fail('500') }).repository.getMine()).rejects.toMatchObject({
+      await expect(setup({ [source]: fail('500') }).repository.listMine()).rejects.toMatchObject({
         code: '500',
       });
     }
@@ -313,7 +345,7 @@ describe('escrituras', () => {
       setup({ update_group: fail('LG004') }).repository.update(input)
     ).rejects.toMatchObject({ reason: 'admin-only' });
     await expect(
-      setup({ 'group_members:membership': ok(null) }).repository.update(input)
+      setup({ 'group_members:membership': ok([]) }).repository.update(input)
     ).rejects.toMatchObject({ reason: 'unavailable' });
   });
 
@@ -324,9 +356,9 @@ describe('escrituras', () => {
         description: 'y',
         roles: [],
       })
-    ).rejects.toMatchObject({ reason: 'already-in-group' });
+    ).rejects.toMatchObject({ reason: 'group-limit' });
     await expect(
-      setup({ 'group_members:membership': ok(null) }).repository.create({
+      setup({ 'group_members:membership': ok([]) }).repository.create({
         name: 'x',
         description: 'y',
         roles: [],
@@ -372,7 +404,7 @@ describe('escrituras', () => {
 
   it('salir, expulsar, reportar y bloquear llaman a su RPC', async () => {
     const { repository, rpcCalls, onBlocked } = setup();
-    await repository.leave();
+    await repository.leave('g1');
     await repository.kick('u1');
     await repository.report({ groupId: 'g1', reason: 'spam' });
     await repository.report({ groupId: 'g1', reason: 'spam', details: 'x' });
@@ -380,7 +412,7 @@ describe('escrituras', () => {
     await repository.block('g1');
 
     expect(rpcCalls).toEqual([
-      ['leave_group', undefined],
+      ['leave_group', { p_group_id: 'g1' }],
       ['kick_group_member', { p_user_id: 'u1' }],
       ['report_group', { p_group_id: 'g1', p_reason: 'spam', p_details: null }],
       ['report_group', { p_group_id: 'g1', p_reason: 'spam', p_details: 'x' }],
@@ -391,7 +423,7 @@ describe('escrituras', () => {
   });
 
   it.each<[string, (r: ReturnType<typeof setup>['repository']) => Promise<unknown>]>([
-    ['leave_group', (r) => r.leave()],
+    ['leave_group', (r) => r.leave('g')],
     ['kick_group_member', (r) => r.kick('u')],
     ['report_group', (r) => r.report({ groupId: 'g', reason: 'spam' })],
     ['report_group_message', (r) => r.reportMessage({ messageId: 'm', reason: 'spam' })],
@@ -409,7 +441,7 @@ describe('escrituras', () => {
       getUserId: async () => 'me',
     });
     await repository.block('g1');
-    expect((await repository.getMine())?.members).toHaveLength(2);
+    expect((await repository.listMine())[0]?.members).toHaveLength(2);
     expect(await repository.getRecruitDeck()).toEqual([]);
   });
 });
@@ -525,9 +557,17 @@ describe('suscripción al grupo', () => {
       schema: 'public',
       table: 'groups',
     });
+    // Un grupo disuelto con gente dentro también avisa.
+    expect(channels[0].on.mock.calls[1][1]).toEqual({
+      event: 'DELETE',
+      schema: 'public',
+      table: 'groups',
+    });
     channels[0].handlers[0]({ new: {} });
     expect(first).toHaveBeenCalledTimes(1);
     expect(second).toHaveBeenCalledTimes(1);
+    channels[0].handlers[1]({ new: {} });
+    expect(first).toHaveBeenCalledTimes(2);
 
     stopFirst();
     stopFirst();

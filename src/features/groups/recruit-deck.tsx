@@ -1,5 +1,6 @@
 /**
- * Deck de reclutamiento: lo ve quien administra un grupo. Personas sin grupo
+ * Deck de reclutamiento: lo ve quien administra un grupo, en la pestaña con el
+ * nombre del grupo. Personas fuera del grupo (y por debajo del tope de grupos)
  * que encajan en un puesto con plazas libres, cada una con el puesto que
  * cubriría. La tarjeta es la de perfil de siempre, con ese puesto encima.
  */
@@ -29,7 +30,7 @@ export function RecruitDeck({
   onDeckActive,
 }: {
   view: GroupView;
-  /** Alguien ha entrado: quien compone relee «mi grupo». */
+  /** Alguien ha entrado: quien compone relee «mis grupos». */
   onMemberJoined: () => void;
   onDeckActive?: (active: boolean) => void;
 }) {
@@ -84,7 +85,7 @@ export function RecruitDeck({
           label={t('Tu grupo')}
           variant="secondary"
           compact
-          onPress={() => router.push('/group/info' as Href)}
+          onPress={() => router.push(`/group/info?id=${view.group.id}` as Href)}
         />
       </View>
 

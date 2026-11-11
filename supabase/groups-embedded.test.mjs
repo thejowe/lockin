@@ -1,8 +1,9 @@
-// Grupos (migración 20261109130000) contra PostgreSQL embebido (PGlite), sin
-// Docker. Se corre con `npm run test:schema`.
+// Grupos (migraciones 20261109130000 y 20261111120000) contra PostgreSQL
+// embebido (PGlite), sin Docker. Se corre con `npm run test:schema`.
 //
 // Cubre: crear grupo y sus validaciones, los dos decks, la unión por like
-// recíproco en cualquier orden, el tope de plazas y de un grupo por persona,
+// recíproco en cualquier orden, el tope de plazas, el de 3 grupos por persona y
+// el de un grupo administrado,
 // salir y expulsar (la plaza vuelve), la regla de liderazgo al salir y al borrar
 // la cuenta, el chat con su RLS, y denunciar/bloquear sobre `user_reports` y
 // `user_blocks`.
@@ -145,7 +146,7 @@ test('Grupos: crear, decks, unión, salida, liderazgo, chat y denuncias', async 
       })
     );
 
-    await t.test('crear: validaciones y un grupo por persona', () =>
+    await t.test('crear: validaciones y un grupo administrado por persona', () =>
       tx(async () => {
         await actingAs(ADMIN);
         const create = (name, description, roles, max = 6) =>
@@ -178,7 +179,7 @@ test('Grupos: crear, decks, unión, salida, liderazgo, chat y denuncias', async 
         );
         assert.equal(await create('Equipo', DESCRIPTION, ROLES, 7), 'LG001', 'máximo 6');
         assert.equal(await create('Equipo', DESCRIPTION, ROLES), 'sin error');
-        assert.equal(await create('Otro', DESCRIPTION, ROLES), 'LG002', 'ya tiene grupo');
+        assert.equal(await create('Otro', DESCRIPTION, ROLES), 'LG006', 'ya administra uno');
       })
     );
 
@@ -206,7 +207,7 @@ test('Grupos: crear, decks, unión, salida, liderazgo, chat y denuncias', async 
         );
 
         await actingAs(ADMIN);
-        assert.deepEqual((await one('select public.group_deck() as d')).d, [], 'ya tiene grupo');
+        assert.deepEqual((await one('select public.group_deck() as d')).d, [], 'ni el suyo');
         const recruit = (await one('select public.group_recruit_deck() as d')).d;
         assert.deepEqual(
           recruit.map((c) => c.profile.id).sort(),
@@ -236,11 +237,11 @@ test('Grupos: crear, decks, unión, salida, liderazgo, chat y denuncias', async 
         assert.equal(await filled(dev), 1);
         assert.equal(await filled(design), 1);
 
-        // Un pase no une, y quien ya está dentro no desliza.
+        // Un pase no une, y quien ya está dentro no vuelve a deslizar ese grupo.
         assert.equal(await swipeCandidate(ADMIN, DEV2, dev, 'pass'), false);
         assert.equal(await swipeGroup(DEV2, group), false);
         await actingAs(DEV1);
-        assert.equal(await code(`select public.swipe_group('${group}', 'like')`), 'LG002');
+        assert.equal(await code(`select public.swipe_group('${group}', 'like')`), 'LG003');
       })
     );
 
@@ -268,14 +269,103 @@ test('Grupos: crear, decks, unión, salida, liderazgo, chat y denuncias', async 
       })
     );
 
-    await t.test('un grupo por persona: el segundo like recíproco no une', () =>
+    await t.test('hasta 3 grupos por persona; quien administra busca otros', () =>
+      tx(async () => {
+        const devOnly = `'[{"specialty":"dev","slots":1}]'::jsonb`;
+        const first = await createGroup(ADMIN);
+        const second = await createGroup(DESIGNER, devOnly);
+        const third = await createGroup(LAWYER, devOnly);
+        const fourth = await createGroup(DEV2, devOnly);
+        for (const [group, admin] of [
+          [first, ADMIN],
+          [second, DESIGNER],
+          [third, LAWYER],
+        ]) {
+          await admit(group, admin, DEV1, 'dev');
+        }
+
+        // En el tope: deck vacío, sin swipe ni creación, fuera del reclutamiento y sin unión.
+        await actingAs(DEV1);
+        assert.deepEqual((await one('select public.group_deck() as d')).d, []);
+        assert.equal(await code(`select public.swipe_group('${fourth}', 'like')`), 'LG002');
+        assert.equal(
+          await code(`select public.create_group('Mío', '${DESCRIPTION}', ${devOnly}, 6)`),
+          'LG002'
+        );
+        await actingAs(DEV2);
+        assert.equal(
+          (await one('select public.group_recruit_deck() as d')).d.some(
+            (c) => c.profile.id === DEV1
+          ),
+          false
+        );
+        assert.equal(await swipeCandidate(DEV2, DEV1, await roleId(fourth, 'dev')), false);
+        assert.deepEqual(await members(fourth), [DEV2]);
+
+        // Salir de uno no toca los demás y reabre el deck.
+        await actingAs(DEV1);
+        await db.query(`select public.leave_group('${second}')`);
+        assert.equal(await code(`select public.leave_group('${second}')`), 'LG003');
+        assert.deepEqual((await members(first)).sort(), [ADMIN, DEV1].sort());
+        await actingAs(DEV1);
+        assert.deepEqual(
+          (await one('select public.group_deck() as d')).d.map((c) => c.id),
+          [fourth]
+        );
+
+        // Quien administra ve grupos ajenos, nunca el suyo.
+        await actingAs(DEV2);
+        const deck = (await one('select public.group_deck() as d')).d.map((c) => c.id);
+        assert.equal(deck.includes(fourth), false);
+        assert.equal(
+          deck.includes(second),
+          true,
+          'el puesto dev de DESIGNER volvió a quedar libre'
+        );
+      })
+    );
+
+    await t.test('liderazgo: salta a quien ya administra otro; sin nadie así, se disuelve', () =>
+      tx(async () => {
+        const group = await createGroup();
+        const own = await createGroup(DESIGNER, `'[{"specialty":"legal","slots":1}]'::jsonb`);
+        await admit(group, ADMIN, DESIGNER, 'diseno');
+        await admit(group, ADMIN, DEV1, 'dev');
+        await owner(
+          `update public.group_members set joined_at = now() + interval '1 hour' where user_id = '${DEV1}' and group_id = '${group}'`
+        );
+
+        // DESIGNER es más antiguo, pero ya administra el suyo: pasa a DEV1.
+        await actingAs(ADMIN);
+        await db.query(`select public.leave_group('${group}')`);
+        await db.exec('reset role;');
+        assert.equal(
+          (await one(`select admin_id from public.groups where id = '${group}'`)).admin_id,
+          DEV1
+        );
+
+        // Si solo queda quien administra otro, el grupo se disuelve.
+        await actingAs(DEV1);
+        await db.query(`select public.leave_group('${group}')`);
+        await db.exec('reset role;');
+        assert.equal(
+          (await one(`select count(*)::int as n from public.groups where id = '${group}'`)).n,
+          0
+        );
+        assert.deepEqual(await members(own), [DESIGNER]);
+      })
+    );
+
+    await t.test('borrar la cuenta saca de todos sus grupos', () =>
       tx(async () => {
         const first = await createGroup(ADMIN);
         const second = await createGroup(DESIGNER, `'[{"specialty":"dev","slots":1}]'::jsonb`);
-        await swipeGroup(DEV1, first);
-        await swipeGroup(DEV1, second);
-        assert.equal(await swipeCandidate(ADMIN, DEV1, await roleId(first, 'dev')), true);
-        assert.equal(await swipeCandidate(DESIGNER, DEV1, await roleId(second, 'dev')), false);
+        await admit(first, ADMIN, DEV1, 'dev');
+        await admit(second, DESIGNER, DEV1, 'dev');
+
+        await actingAs(DEV1);
+        await db.query('select public.delete_my_account()');
+        assert.deepEqual(await members(first), [ADMIN]);
         assert.deepEqual(await members(second), [DESIGNER]);
         assert.equal(await filled(await roleId(second, 'dev')), 0);
       })
@@ -289,9 +379,9 @@ test('Grupos: crear, decks, unión, salida, liderazgo, chat y denuncias', async 
         await admit(group, ADMIN, DEV2, 'dev');
 
         await actingAs(DEV1);
-        await db.query('select public.leave_group()');
+        await db.query(`select public.leave_group('${group}')`);
         assert.equal(await filled(dev), 1);
-        assert.equal(await code('select public.leave_group()'), 'LG003');
+        assert.equal(await code(`select public.leave_group('${group}')`), 'LG003');
         // Sus likes con el grupo quedan en pase: no vuelve a salirle.
         assert.deepEqual((await one('select public.group_deck() as d')).d, []);
 
@@ -319,7 +409,7 @@ test('Grupos: crear, decks, unión, salida, liderazgo, chat y denuncias', async 
         );
 
         await actingAs(ADMIN);
-        await db.query('select public.leave_group()');
+        await db.query(`select public.leave_group('${group}')`);
         await db.exec('reset role;');
         assert.equal(
           (await one(`select admin_id from public.groups where id = '${group}'`)).admin_id,
@@ -346,7 +436,7 @@ test('Grupos: crear, decks, unión, salida, liderazgo, chat y denuncias', async 
         );
 
         await actingAs(DESIGNER);
-        await db.query('select public.leave_group()');
+        await db.query(`select public.leave_group('${group}')`);
         await db.exec('reset role;');
         assert.equal((await one(`select count(*)::int as n from public.groups`)).n, 0);
       })
@@ -654,7 +744,7 @@ test('Grupos: crear, decks, unión, salida, liderazgo, chat y denuncias', async 
         // Al salir, su token sigue (es del dispositivo), pero ya no es destinatario.
         await actingAs(DEV1);
         await one(`select public.register_push_token('${token(2)}', 'ios')`);
-        await one(`select public.leave_group()`);
+        await one(`select public.leave_group('${group}')`);
         assert.deepEqual(await targets(), []);
       })
     );

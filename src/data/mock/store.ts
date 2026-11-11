@@ -128,15 +128,17 @@ export interface MockGroupSwipe {
 }
 
 /**
- * Saca a una persona de su grupo (espejo de `remove_group_member`): libera su
+ * Saca a una persona de un grupo (espejo de `remove_group_member`): libera su
  * plaza, apaga sus likes con ese grupo y aplica la regla de liderazgo —pasa al
- * miembro más antiguo; si no queda nadie, el grupo se borra—. Devuelve el id del
- * grupo, o `null` si no estaba en ninguno.
+ * miembro más antiguo que no administre ya otro grupo; si no queda nadie así,
+ * el grupo se borra—. Devuelve si estaba dentro.
  */
-export function removeMockGroupMember(state: MockState, userId: string): string | null {
-  const membership = state.groupMembers.find((member) => member.userId === userId);
-  if (!membership) return null;
-  const { groupId, roleId } = membership;
+export function removeMockGroupMember(state: MockState, userId: string, groupId: string): boolean {
+  const membership = state.groupMembers.find(
+    (member) => member.userId === userId && member.groupId === groupId
+  );
+  if (!membership) return false;
+  const { roleId } = membership;
 
   state.groupMembers = state.groupMembers.filter((member) => member !== membership);
   const role = state.groupRoles.find((candidate) => candidate.id === roleId);
@@ -147,8 +149,11 @@ export function removeMockGroupMember(state: MockState, userId: string): string 
 
   const group = state.groups.find((candidate) => candidate.id === groupId);
   if (group && group.adminId === userId) {
+    const adminsElsewhere = new Set(
+      state.groups.filter((other) => other.id !== groupId).map((other) => other.adminId)
+    );
     const [next] = state.groupMembers
-      .filter((member) => member.groupId === groupId)
+      .filter((member) => member.groupId === groupId && !adminsElsewhere.has(member.userId))
       .sort(
         (a, b) =>
           a.joinedAt.localeCompare(b.joinedAt) ||
@@ -159,6 +164,7 @@ export function removeMockGroupMember(state: MockState, userId: string): string 
     } else {
       state.groups = state.groups.filter((candidate) => candidate.id !== groupId);
       state.groupRoles = state.groupRoles.filter((candidate) => candidate.groupId !== groupId);
+      state.groupMembers = state.groupMembers.filter((member) => member.groupId !== groupId);
       state.groupSwipes = state.groupSwipes.filter((swipe) => swipe.groupId !== groupId);
       state.groupMessages = state.groupMessages.filter((message) => message.groupId !== groupId);
       for (const report of state.userReports) {
@@ -166,7 +172,7 @@ export function removeMockGroupMember(state: MockState, userId: string): string 
       }
     }
   }
-  return groupId;
+  return true;
 }
 
 /**
@@ -464,7 +470,14 @@ export function createMockStore(): MockStore {
       state.roomMembers = state.roomMembers.filter((member) => member.profileId !== userId);
       // Grupos: sale del suyo con la regla de liderazgo; caen sus swipes como
       // candidata y sus mensajes. Los swipes que hizo como admin son del grupo.
-      removeMockGroupMember(state, userId);
+      const groupIds = [
+        ...new Set(
+          state.groupMembers
+            .filter((member) => member.userId === userId)
+            .map((member) => member.groupId)
+        ),
+      ].sort();
+      for (const groupId of groupIds) removeMockGroupMember(state, userId, groupId);
       state.groupSwipes = state.groupSwipes.filter((swipe) => swipe.userId !== userId);
       for (const swipe of state.groupSwipes) {
         if (swipe.actorId === userId) swipe.actorId = null;

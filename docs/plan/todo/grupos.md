@@ -43,6 +43,24 @@ de los dos lados y dentro no hay jerarquía más allá de administrar (expulsar,
 - [x] El usuario autoriza aplicar migraciones, commitear y hacer push (2026-11-09).
 - [ ] `[comprobador]` Recorrido en el emulador: crear grupo, like recíproco, chat de grupo,
   salir/expulsar. No se ha hecho.
+- [x] **Varios grupos por persona (2026-11-11, pedido por el usuario).** Hasta 3 grupos por
+  persona (`GROUP_MAX_MEMBERSHIPS` / `group_max_memberships()`) y como mucho uno administrado
+  (`groups_admin_key` único; crear otro da LG006 `already-admin`; LG002 pasa a `group-limit`).
+  Migración `20261111120000_groups_multi_membership.sql`: quita `group_members_one_group_per_user`,
+  `leave_group(p_group_id)`, decks sin el tope «ya tienes grupo» y sin tus propios grupos,
+  liderazgo al miembro más antiguo que no administre otro (si no hay, el grupo se disuelve),
+  borrar la cuenta sale de todos. API: `getMine()` → `listMine()` (admin primero), `leave(groupId)`.
+  UI: Descubrir = `Cofundador | Grupos | <nombre de tu grupo>`; «Grupos» es el deck para unirse
+  (para todos, también admins y miembros, hasta el tope) y la pestaña con el nombre, solo si
+  administras, es el deck de reclutamiento. Los grupos propios se abren desde Matches (una fila
+  por grupo); `/group/info?id=`. Tests: mock, Supabase, contrato (+1 caso), PGlite (+3 casos) y
+  pantallas; suite completa en verde. De paso, `test/app/groups.test.tsx` vuelve a verde (estaba
+  rojo en CI desde el rediseño de la tarjeta del 2026-11-10).
+- [ ] Aplicar `20261111120000_groups_multi_membership.sql` en producción (pide permiso al
+  usuario; pegar byte a byte). Hasta entonces Schema drift sale rojo y la app nueva contra prod
+  falla en `leave_group(p_group_id)`.
+- [ ] `[comprobador]` Recorrido multi-grupo en emulador: admin ve su pestaña y recluta; en
+  «Grupos» entra en otro; Matches enseña las dos filas.
 - [x] Textos legales de Grupos (2026-11-09): Privacidad v1.7, Términos v1.5 (§10 Grupos,
   Premium pasa a §11) y Normas v1.2 en es/en/ca; `TERMS_VERSION = 2026-11-09`.
   Fichas de ambas tiendas en los tres idiomas, cuestionario e inventario actualizados también
@@ -120,7 +138,7 @@ de creación/edición/salida/expulsión por UI continúa pendiente; esta prueba 
 | --- | --- |
 | `groups` | `name`, `description`, `admin_id`, `max_members` (2–6, por defecto 6), `created_at` |
 | `group_roles` | puesto: `specialty`, `slots`, `filled`; único por (`group_id`, `specialty`) |
-| `group_members` | `group_id`, `user_id` **único** (un grupo por persona), `role_id` (null = admin), `joined_at` |
+| `group_members` | `group_id`, `user_id` (hasta 3 grupos por persona desde 20261111120000), `role_id` (null = admin), `joined_at` |
 | `group_swipes` | `direction` (`user_to_group` / `group_to_user`), `decision`, `role_id`, `actor_id` |
 | `group_messages` | chat del grupo |
 | `push_tokens` | token Expo por dispositivo, cuenta y plataforma; sin lectura desde el cliente |

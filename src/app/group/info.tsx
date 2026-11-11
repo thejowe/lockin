@@ -1,28 +1,33 @@
 /**
- * `/group/info`: «Tu grupo» a pantalla completa. Se abre desde el deck de
- * reclutamiento y desde la cabecera del chat del grupo. Al salir del grupo (o
- * si ya no estás en ninguno) vuelve a donde se estaba.
+ * `/group/info?id=<grupo>`: uno de tus grupos a pantalla completa. Se abre
+ * desde el deck de reclutamiento y desde la cabecera del chat del grupo. Sin
+ * `id`, el que administras (o el primero). Al salir del grupo (o si ya no
+ * estás en él) vuelve a donde se estaba.
  */
 
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { Screen } from '@/components/ambient-background';
 import { Button } from '@/components/button';
 import { LoadingState, MessageState } from '@/components/state-view';
-import { GroupHome, useMyGroup } from '@/features/groups';
+import { GroupHome, useMyGroups } from '@/features/groups';
 import { RequireVerifiedEmail } from '@/features/profile';
 import { t } from '@/i18n';
 
 function GroupInfo() {
   const router = useRouter();
-  const mine = useMyGroup();
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const mine = useMyGroups();
+  const view = id
+    ? (mine.groups.find((candidate) => candidate.group.id === id) ?? null)
+    : (mine.groups[0] ?? null);
   const close = () => (router.canGoBack() ? router.back() : router.replace('/discover'));
 
   if (mine.loading) return <LoadingState label={t('Cargando grupos…')} />;
-  if (!mine.group) {
+  if (!view) {
     return (
       <MessageState
-        title={t('Ya no estás en ningún grupo')}
+        title={id ? t('Ya no estás en este grupo.') : t('Ya no estás en ningún grupo')}
         body={
           mine.error
             ? t('Ha fallado la carga. Inténtalo otra vez en un momento.')
@@ -35,7 +40,7 @@ function GroupInfo() {
 
   return (
     <Screen ambient="teal">
-      <GroupHome view={mine.group} onLeft={close} />
+      <GroupHome view={view} onLeft={close} />
     </Screen>
   );
 }

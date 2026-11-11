@@ -5,11 +5,18 @@
  * a quien administra y a quien busca grupo sobre el mismo store. La app usa
  * siempre `CURRENT_USER_ID`.
  *
- * Es el espejo de `supabase/migrations/20261109130000_groups.sql`: mismas
- * reglas, mismo orden de comprobaciones y mismos códigos (`GroupError.reason`).
+ * Es el espejo de `supabase/migrations/20261109130000_groups.sql` (con los
+ * cambios de `20261111120000_groups_multi_membership.sql`): mismas reglas, mismo
+ * orden de comprobaciones y mismos códigos (`GroupError.reason`).
  */
 
-import { firstOpenRoleFor, GroupError, validateGroupInput, validateGroupUpdate } from '../groups';
+import {
+  firstOpenRoleFor,
+  GROUP_MAX_MEMBERSHIPS,
+  GroupError,
+  validateGroupInput,
+  validateGroupUpdate,
+} from '../groups';
 import { REPORT_MAX_LENGTH, REPORT_REASONS } from '../types';
 import { defaultMockStore, isBlockedPair, removeMockGroupMember } from './store';
 
@@ -79,8 +86,19 @@ export function createMockGroupRepository(
           byId(a.id, b.id)
       );
 
-  const membershipOf = (userId: string): GroupMember | undefined =>
-    getState().groupMembers.find((member) => member.userId === userId);
+  /** Los grupos de una persona, en el orden en que entró. */
+  const membershipsOf = (userId: string): GroupMember[] =>
+    getState()
+      .groupMembers.filter((member) => member.userId === userId)
+      .sort((a, b) => a.joinedAt.localeCompare(b.joinedAt) || byId(a.groupId, b.groupId));
+
+  const isMember = (groupId: string, userId: string): boolean =>
+    getState().groupMembers.some(
+      (member) => member.groupId === groupId && member.userId === userId
+    );
+
+  const atLimit = (userId: string): boolean =>
+    membershipsOf(userId).length >= GROUP_MAX_MEMBERSHIPS;
 
   /** Espejo de `group_has_block_with`. */
   const hasBlockWith = (groupId: string, userId: string): boolean =>
@@ -139,7 +157,7 @@ export function createMockGroupRepository(
   /** Espejo de `join_group_if_possible`. */
   function joinIfPossible(group: Group, userId: string, roleId: string | null): boolean {
     const state = getState();
-    if (membershipOf(userId)) return false;
+    if (isMember(group.id, userId) || atLimit(userId)) return false;
     if (membersOf(group.id).length >= group.maxMembers) return false;
     if (hasBlockWith(group.id, userId)) return false;
 
@@ -165,11 +183,13 @@ export function createMockGroupRepository(
   }
 
   return {
-    async getMine() {
-      const membership = membershipOf(actorId);
-      const group =
-        membership && getState().groups.find((candidate) => candidate.id === membership.groupId);
-      return group ? toView(group) : null;
+    async listMine() {
+      const views = membershipsOf(actorId).flatMap((membership) => {
+        const group = getState().groups.find((candidate) => candidate.id === membership.groupId);
+        return group ? [toView(group)] : [];
+      });
+      // El que administra, primero; el resto, en el orden en que entró.
+      return [...views.filter((view) => view.isAdmin), ...views.filter((view) => !view.isAdmin)];
     },
 
     async create(input) {
@@ -179,7 +199,10 @@ export function createMockGroupRepository(
       }
       const invalid = validateGroupInput(input);
       if (invalid) throw invalid;
-      if (membershipOf(actorId)) throw new GroupError('already-in-group', 'Ya estás en un grupo');
+      if (state.groups.some((candidate) => candidate.adminId === actorId)) {
+        throw new GroupError('already-admin', 'Ya administras un grupo');
+      }
+      if (atLimit(actorId)) throw new GroupError('group-limit', 'Ya estás en el máximo de grupos');
 
       const group: Group = {
         id: store.createId('group'),
@@ -248,13 +271,14 @@ export function createMockGroupRepository(
     async getDeck() {
       const state = getState();
       const viewer = state.profiles.get(actorId);
-      if (!viewer || membershipOf(actorId)) return [];
+      if (!viewer || atLimit(actorId)) return [];
 
       const likedMe = (groupId: string) =>
         swipeOf(groupId, actorId, 'group_to_user')?.decision === 'like';
 
       return state.groups
         .filter((group) => membersOf(group.id).length < group.maxMembers)
+        .filter((group) => !isMember(group.id, actorId))
         .filter((group) => !hasBlockWith(group.id, actorId))
         .filter((group) => !swipeOf(group.id, actorId, 'user_to_group'))
         .filter((group) => swipeOf(group.id, actorId, 'group_to_user')?.decision !== 'pass')
@@ -284,7 +308,7 @@ export function createMockGroupRepository(
 
       return [...state.profiles.values()]
         .filter((profile) => profile.id !== actorId && profile.lookingFor !== 'lockin')
-        .filter((profile) => !membershipOf(profile.id))
+        .filter((profile) => !isMember(group.id, profile.id) && !atLimit(profile.id))
         .filter((profile) => !hasBlockWith(group.id, profile.id))
         .filter((profile) => !swipeOf(group.id, profile.id, 'group_to_user'))
         .filter((profile) => swipeOf(group.id, profile.id, 'user_to_group')?.decision !== 'pass')
@@ -300,9 +324,9 @@ export function createMockGroupRepository(
       if (!state.profiles.has(actorId)) {
         throw Object.assign(new Error('Necesitas un perfil.'), { code: '23503' });
       }
-      if (membershipOf(actorId)) throw new GroupError('already-in-group', 'Ya estás en un grupo');
+      if (atLimit(actorId)) throw new GroupError('group-limit', 'Ya estás en el máximo de grupos');
       const group = state.groups.find((candidate) => candidate.id === groupId);
-      if (!group || hasBlockWith(groupId, actorId)) {
+      if (!group || hasBlockWith(groupId, actorId) || isMember(groupId, actorId)) {
         throw new GroupError('unavailable', 'El grupo no está disponible');
       }
 
@@ -331,21 +355,20 @@ export function createMockGroupRepository(
       return { decision, joined };
     },
 
-    async leave() {
-      const membership = membershipOf(actorId);
-      if (!membership) throw new GroupError('unavailable', 'No estás en ningún grupo');
-      const others = membersOf(membership.groupId).map((member) => member.userId);
-      removeMockGroupMember(getState(), actorId);
-      changed(membership.groupId, others);
+    async leave(groupId) {
+      if (!isMember(groupId, actorId)) throw new GroupError('unavailable', 'No estás en ese grupo');
+      const others = membersOf(groupId).map((member) => member.userId);
+      removeMockGroupMember(getState(), actorId, groupId);
+      changed(groupId, others);
     },
 
     async kick(userId) {
       const group = adminGroup();
       if (userId === actorId) throw new GroupError('invalid', 'Para irte tú, sal del grupo');
-      if (membershipOf(userId)?.groupId !== group.id) {
+      if (!isMember(group.id, userId)) {
         throw new GroupError('candidate-unavailable', 'Esa persona no está en tu grupo');
       }
-      removeMockGroupMember(getState(), userId);
+      removeMockGroupMember(getState(), userId, group.id);
       changed(group.id, [userId]);
     },
 
@@ -373,7 +396,7 @@ export function createMockGroupRepository(
       const state = getState();
       const group = state.groups.find((candidate) => candidate.id === groupId);
       if (!group) throw new GroupError('unavailable', 'El grupo no está disponible');
-      if (membershipOf(actorId)?.groupId === groupId) {
+      if (isMember(groupId, actorId)) {
         throw new GroupError('invalid', 'Sal del grupo antes de bloquearlo');
       }
       writeSwipe(groupId, actorId, 'user_to_group', 'pass', null);
@@ -386,7 +409,7 @@ export function createMockGroupRepository(
     },
 
     async listMessages(groupId) {
-      if (membershipOf(actorId)?.groupId !== groupId) return [];
+      if (!isMember(groupId, actorId)) return [];
       return getState()
         .groupMessages.filter((message) => message.groupId === groupId)
         .filter(
@@ -397,7 +420,7 @@ export function createMockGroupRepository(
     },
 
     async sendMessage(groupId, body) {
-      if (membershipOf(actorId)?.groupId !== groupId || body.trim() === '') {
+      if (!isMember(groupId, actorId) || body.trim() === '') {
         throw Object.assign(new Error('No se puede enviar el mensaje.'), { code: '42501' });
       }
       const message: GroupMessage = {
@@ -416,7 +439,7 @@ export function createMockGroupRepository(
       checkReport(reason, details);
       const state = getState();
       const message = state.groupMessages.find((candidate) => candidate.id === messageId);
-      if (!message || membershipOf(actorId)?.groupId !== message.groupId)
+      if (!message || !isMember(message.groupId, actorId))
         throw Object.assign(new Error('El mensaje no está disponible.'), { code: '42501' });
       if (message.senderId === actorId)
         throw Object.assign(new Error('No puedes reportar tus propios mensajes.'), {

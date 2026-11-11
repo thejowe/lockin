@@ -138,41 +138,59 @@ export function createSupabaseGroupRepository(
       }));
   }
 
+  /** El grupo que administra el usuario, recién leído (tras crear o editar). */
+  async function adminView(): Promise<GroupView> {
+    const view = (await repository.listMine()).find((candidate) => candidate.isAdmin);
+    if (!view) throw new GroupError('unavailable', 'El grupo no está disponible');
+    return view;
+  }
+
   const repository: GroupRepository = {
-    async getMine(): Promise<GroupView | null> {
+    async listMine(): Promise<GroupView[]> {
       const client = deps.getClient();
       const userId = await deps.getUserId();
 
-      const membership = await client
+      const memberships = await client
         .from('group_members')
-        .select('group_id')
+        .select('group_id, joined_at')
         .eq('user_id', userId)
-        .maybeSingle();
-      if (membership.error) throw membership.error;
-      if (!membership.data) return null;
-      const groupId = membership.data.group_id;
+        .order('joined_at');
+      if (memberships.error) throw memberships.error;
+      const ids = memberships.data.map((row) => row.group_id);
+      if (ids.length === 0) return [];
 
-      const [group, roles, members] = await Promise.all([
-        client.from('groups').select('*').eq('id', groupId).maybeSingle(),
-        client.from('group_roles').select('*').eq('group_id', groupId).order('specialty'),
-        client.from('group_members').select('*').eq('group_id', groupId).order('joined_at'),
+      const [groups, roles, members] = await Promise.all([
+        client.from('groups').select('*').in('id', ids),
+        client.from('group_roles').select('*').in('group_id', ids).order('specialty'),
+        client.from('group_members').select('*').in('group_id', ids).order('joined_at'),
       ]);
-      if (group.error) throw group.error;
+      if (groups.error) throw groups.error;
       if (roles.error) throw roles.error;
       if (members.error) throw members.error;
-      if (!group.data) return null;
 
-      const mappedGroup = toGroup(group.data);
       const mappedRoles = roles.data.map(toGroupRole);
       const mappedMembers = members.data.map(toGroupMember);
-      const profiles = await profilesById(mappedMembers.map((member) => member.userId));
+      const profiles = await profilesById([
+        ...new Set(mappedMembers.map((member) => member.userId)),
+      ]);
+      const groupsById = new Map(groups.data.map((row) => [row.id, toGroup(row)]));
 
-      return {
-        group: mappedGroup,
-        roles: mappedRoles,
-        members: memberViews(mappedGroup, mappedRoles, mappedMembers, profiles),
-        isAdmin: mappedGroup.adminId === userId,
-      };
+      const views = ids.flatMap((groupId): GroupView[] => {
+        const group = groupsById.get(groupId);
+        if (!group) return [];
+        const groupRoles = mappedRoles.filter((role) => role.groupId === groupId);
+        const groupMembers = mappedMembers.filter((member) => member.groupId === groupId);
+        return [
+          {
+            group,
+            roles: groupRoles,
+            members: memberViews(group, groupRoles, groupMembers, profiles),
+            isAdmin: group.adminId === userId,
+          },
+        ];
+      });
+      // El que administra, primero; el resto, en el orden en que entró.
+      return [...views.filter((view) => view.isAdmin), ...views.filter((view) => !view.isAdmin)];
     },
 
     async create(input) {
@@ -185,9 +203,7 @@ export function createSupabaseGroupRepository(
       });
       if (error) throw toGroupError(error);
       notify();
-      const view = await repository.getMine();
-      if (!view) throw new GroupError('unavailable', 'El grupo no está disponible');
-      return view;
+      return adminView();
     },
 
     async update(input) {
@@ -199,9 +215,7 @@ export function createSupabaseGroupRepository(
       });
       if (error) throw toGroupError(error);
       notify();
-      const view = await repository.getMine();
-      if (!view) throw new GroupError('unavailable', 'El grupo no está disponible');
-      return view;
+      return adminView();
     },
 
     async getDeck() {
@@ -234,11 +248,12 @@ export function createSupabaseGroupRepository(
       const client = deps.getClient();
       const [deck, mine] = await Promise.all([
         client.rpc('group_recruit_deck', {}),
-        repository.getMine(),
+        repository.listMine(),
       ]);
       if (deck.error) throw toGroupError(deck.error);
       const rows = (deck.data ?? []) as GroupRecruitRow[];
-      const roles = new Map((mine?.roles ?? []).map((role) => [role.id, role]));
+      const admin = mine.find((view) => view.isAdmin);
+      const roles = new Map((admin?.roles ?? []).map((role) => [role.id, role]));
 
       const mapped = rows.map((row) => toProfile(row.profile));
       const signed = deps.signProfiles ? await deps.signProfiles(mapped) : mapped;
@@ -272,9 +287,9 @@ export function createSupabaseGroupRepository(
       return { decision, joined };
     },
 
-    async leave() {
+    async leave(groupId) {
       await deps.getUserId();
-      const { error } = await deps.getClient().rpc('leave_group');
+      const { error } = await deps.getClient().rpc('leave_group', { p_group_id: groupId });
       if (error) throw toGroupError(error);
       notify();
     },
@@ -345,13 +360,15 @@ export function createSupabaseGroupRepository(
       if (!channel) {
         // `group_members` no se publica (sus cambios revelarían quién está en
         // qué grupo): las funciones tocan `groups.updated_at` y ese UPDATE,
-        // filtrado por RLS, es el aviso. Un grupo borrado no avisa: quien lo
-        // tenía abierto lo deja de ver en su siguiente lectura.
+        // filtrado por RLS, es el aviso. Desde 2026-11-11 un grupo puede
+        // disolverse con gente dentro (nadie puede heredarlo): su DELETE, que
+        // solo trae el id, también avisa, y quien lo tenía relee sus grupos.
         channel = subscribeResyncingOnRejoin(
           deps
             .getClient()
             .channel('lockin:groups', PRIVATE_CHANNEL)
-            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'groups' }, notify),
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'groups' }, notify)
+            .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'groups' }, notify),
           notify
         );
       }

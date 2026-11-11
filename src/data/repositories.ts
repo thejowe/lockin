@@ -422,16 +422,20 @@ export interface PremiumRepository {
 }
 
 /**
- * Grupos (2026-11-09): equipos en formación con puestos y plazas. Una persona
- * pertenece como mucho a un grupo. Las reglas las impone el servidor (ver
- * `src/data/groups.ts` y `supabase/migrations/20261109130000_groups.sql`).
+ * Grupos (2026-11-09): equipos en formación con puestos y plazas. Desde el
+ * 2026-11-11 una persona está como mucho en `GROUP_MAX_MEMBERSHIPS` grupos y
+ * administra como mucho uno. Las reglas las impone el servidor (ver
+ * `src/data/groups.ts` y `supabase/migrations/20261111120000_groups_multi_membership.sql`).
  *
  * Errores: `GroupError` (con su `reason`) y, si crear exige Premium,
  * `PremiumRequiredError`.
  */
 export interface GroupRepository {
-  /** El grupo del usuario, o `null` si no está en ninguno. */
-  getMine(): Promise<GroupView | null>;
+  /**
+   * Los grupos del usuario: primero el que administra (si lo hay) y después
+   * por antigüedad de entrada. Vacío si no está en ninguno.
+   */
+  listMine(): Promise<GroupView[]>;
   /** Crea el grupo: el usuario pasa a ser su admin y su primer miembro. */
   create(input: GroupInput): Promise<GroupView>;
   /**
@@ -440,21 +444,21 @@ export interface GroupRepository {
    */
   update(input: GroupUpdateInput): Promise<GroupView>;
   /**
-   * Deck de quien busca grupo: grupos no llenos con un puesto abierto que
-   * encaja con lo que domina. Vacío si ya está en un grupo.
+   * Deck de quien busca grupo: grupos no llenos, en los que no está, con un
+   * puesto abierto que encaja con lo que domina. Vacío si ya está en el tope.
    */
   getDeck(): Promise<GroupDeckCard[]>;
   /**
-   * Deck del admin: personas sin grupo que encajan en un puesto con plazas
-   * libres. Lanza `GroupError('admin-only')` si no administras ningún grupo.
+   * Deck del admin: personas fuera de su grupo y por debajo del tope que
+   * encajan en un puesto con plazas libres. Lanza `GroupError('admin-only')` si no administras ningún grupo.
    */
   getRecruitDeck(): Promise<RecruitCandidate[]>;
   /** Like o pase a un grupo. Con like recíproco, entras (`joined`). */
   swipeGroup(groupId: string, decision: Decision): Promise<GroupSwipeResult>;
   /** Like o pase del admin a una persona, para ese puesto. */
   swipeCandidate(userId: string, roleId: string, decision: Decision): Promise<GroupSwipeResult>;
-  /** Sales de tu grupo; tu plaza queda libre. Si eras admin, se aplica la regla de liderazgo. */
-  leave(): Promise<void>;
+  /** Sales de ese grupo; tu plaza queda libre. Si eras admin, se aplica la regla de liderazgo. */
+  leave(groupId: string): Promise<void>;
   /** Solo admin: expulsa a un miembro; su plaza queda libre. */
   kick(userId: string): Promise<void>;
   /** Solo escritura y privado, como `profiles.report`: el reportado es el admin. */

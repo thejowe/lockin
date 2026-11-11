@@ -12,10 +12,10 @@ import {
   findObjectionableContent,
 } from '@/features/safety/content-filter';
 
-import { useMyGroup } from './use-my-group';
+import { useMyGroups } from './use-my-group';
 
 export interface GroupConversation {
-  /** El grupo, o `null` si ya no estás en él (o el id no es el de tu grupo). */
+  /** El grupo, o `null` si ya no estás en él (o el id no es de ninguno de tus grupos). */
   view: GroupView | null;
   messages: GroupMessage[];
   loading: boolean;
@@ -28,7 +28,7 @@ export interface GroupConversation {
 
 export function useGroupConversation(groupId: string): GroupConversation {
   const repositories = useRepositories();
-  const mine = useMyGroup();
+  const mine = useMyGroups();
   const messagesQuery = useQuery(`group-messages:${groupId}`, () =>
     repositories.groups.listMessages(groupId)
   );
@@ -69,7 +69,7 @@ export function useGroupConversation(groupId: string): GroupConversation {
   );
 
   return {
-    view: mine.group?.group.id === groupId ? mine.group : null,
+    view: mine.groups.find((candidate) => candidate.group.id === groupId) ?? null,
     messages: messagesQuery.data ?? [],
     loading: mine.loading || messagesQuery.loading,
     error: mine.error ?? messagesQuery.error,

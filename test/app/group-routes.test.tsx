@@ -87,7 +87,8 @@ describe('textos', () => {
   it('cada fallo tiene su mensaje', () => {
     const messages = [
       groupErrorMessage(new PremiumRequiredError()),
-      groupErrorMessage(new GroupError('already-in-group', '')),
+      groupErrorMessage(new GroupError('group-limit', '')),
+      groupErrorMessage(new GroupError('already-admin', '')),
       groupErrorMessage(new GroupError('admin-only', '')),
       groupErrorMessage(new GroupError('unavailable', '')),
       groupErrorMessage(new GroupError('candidate-unavailable', '')),
@@ -161,7 +162,7 @@ describe('/group/new', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
 
     await waitFor(() => expect(router.back).toHaveBeenCalled());
-    const view = (await repositories.groups.getMine())!;
+    const view = ((await repositories.groups.listMine())[0] ?? null)!;
     expect(view.isAdmin).toBe(true);
     expect(view.group.name).toBe('Mi Equipo');
     expect(view.roles.map((role) => [role.specialty, role.slots])).toEqual([['dev', 2]]);
@@ -172,13 +173,13 @@ describe('/group/new', () => {
     router.canGoBack.mockReturnValue(false);
     jest
       .spyOn(repositories.groups, 'create')
-      .mockRejectedValueOnce(new GroupError('already-in-group', 'ya'));
+      .mockRejectedValueOnce(new GroupError('already-admin', 'ya'));
     await renderRoute(<NewGroupRoute />);
     await fill();
     await fireEvent.press(screen.getByRole('checkbox', { name: 'Perfil: Desarrollo' }));
 
     await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
-    await waitFor(() => expect(screen.getByText(/Ya estás en un grupo/)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/Ya administras un grupo/)).toBeTruthy());
     expect(router.replace).not.toHaveBeenCalled();
 
     await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
@@ -230,7 +231,7 @@ describe('/group/edit', () => {
         { specialty: 'legal', slots: 1 },
       ],
     });
-    const mine = await repositories.groups.getMine();
+    const mine = (await repositories.groups.listMine())[0] ?? null;
     expect(mine?.group.name).toBe('Equipo Nuevo');
     expect(mine?.roles.map((role) => role.specialty).sort()).toEqual(['dev', 'legal']);
   });
@@ -282,7 +283,7 @@ describe('/group/info', () => {
   it('si falla la carga, lo cuenta como fallo', async () => {
     await withProfile();
     router.canGoBack.mockReturnValue(false);
-    jest.spyOn(repositories.groups, 'getMine').mockRejectedValue(new Error('sin red'));
+    jest.spyOn(repositories.groups, 'listMine').mockRejectedValue(new Error('sin red'));
     await renderRoute(<GroupInfoRoute />);
 
     await waitFor(() => expect(screen.getByText(/Ha fallado la carga/)).toBeTruthy());
@@ -318,7 +319,7 @@ describe('/group/info', () => {
     await waitFor(() => expect(screen.getByText('1 de 6 miembros')).toBeTruthy());
     expect(screen.queryByText('Inés Aranda')).toBeNull();
     expect(screen.getByText('Desarrollo · 2 de 2 libres')).toBeTruthy();
-    expect(await as('seed-ines').groups.getMine()).toBeNull();
+    expect((await as('seed-ines').groups.listMine())[0] ?? null).toBeNull();
   });
 
   it('si expulsar falla, lo dice y no cierra la confirmación', async () => {
@@ -348,7 +349,7 @@ describe('/group/info', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Confirmar salida' }));
 
     await waitFor(() => expect(router.back).toHaveBeenCalled());
-    const inherited = await as('seed-ines').groups.getMine();
+    const inherited = (await as('seed-ines').groups.listMine())[0] ?? null;
     expect(inherited?.group.id).toBe(groupId);
     expect(inherited?.isAdmin).toBe(true);
   });
@@ -413,7 +414,7 @@ describe('/group/[groupId]', () => {
   it('si falla la carga, lo cuenta como fallo', async () => {
     await repositories.session.acceptTerms(TERMS_VERSION);
     await withProfile();
-    jest.spyOn(repositories.groups, 'getMine').mockRejectedValue(new Error('sin red'));
+    jest.spyOn(repositories.groups, 'listMine').mockRejectedValue(new Error('sin red'));
     await renderRoute(<GroupChatScreen />);
 
     await waitFor(() => expect(screen.getByText(/Ha fallado la carga/)).toBeTruthy());
@@ -594,7 +595,7 @@ describe('/group/[groupId]', () => {
   it('el mensaje de quien ya salió del grupo se queda, sin su nombre', async () => {
     await inTaller();
     await as('seed-alba').groups.sendMessage(TALLER, 'me voy');
-    await as('seed-alba').groups.leave();
+    await as('seed-alba').groups.leave(TALLER);
     await renderRoute(<GroupChatScreen />);
 
     await waitFor(() => expect(screen.getByText('me voy')).toBeTruthy());

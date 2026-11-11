@@ -18,7 +18,7 @@ import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useQuery, useRepositories } from '@/data';
 import { MatchRow, MatchesEmpty, useMatches } from '@/features/chat';
-import { GroupChatRow } from '@/features/groups';
+import { GroupChatRows } from '@/features/groups';
 import { LikesRow } from '@/features/premium';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
@@ -77,7 +77,7 @@ export default function MatchesScreen() {
                 </Animated.View>
               )}
               <LikesRow count={likes.data ?? 0} onPress={() => router.push('/likes' as Href)} />
-              <GroupChatRow />
+              <GroupChatRows />
             </View>
           }
           // Sin datos todavía no enseñamos el estado vacío: diría "no tienes
