@@ -307,6 +307,9 @@ describe('/group/info', () => {
 
     await fireEvent.press(screen.getByRole('button', { name: 'Expulsar a Inés Aranda' }));
     expect(screen.getByText('¿Expulsar a Inés Aranda?')).toBeTruthy();
+    expect(
+      screen.getByText(/Le avisaremos si tiene activadas las notificaciones de actividad de grupos/)
+    ).toBeTruthy();
     // Cancelar no expulsa.
     await fireEvent.press(screen.getByRole('button', { name: 'Cancelar' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Expulsar a Inés Aranda' }));
@@ -505,6 +508,9 @@ describe('/group/[groupId]', () => {
   });
 
   it('al entrar en el chat pide los avisos y registra este dispositivo', async () => {
+    jest
+      .mocked(Notifications.getPermissionsAsync)
+      .mockResolvedValueOnce({ status: 'undetermined', canAskAgain: true } as never);
     jest.mocked(Notifications.requestPermissionsAsync).mockClear();
     jest.mocked(Notifications.requestPermissionsAsync).mockResolvedValueOnce({
       status: 'granted',
@@ -524,13 +530,14 @@ describe('/group/[groupId]', () => {
   });
 
   it('tocar un aviso de grupo abre su chat', async () => {
+    const groupUuid = '6eab25bc-8198-41cc-8699-11a8e14e1f22';
     await renderRoute(<PushBridge />);
     const listener = jest.mocked(Notifications.addNotificationResponseReceivedListener).mock
       .calls[0][0];
     listener({
-      notification: { request: { content: { data: { url: `/group/${TALLER}` } } } },
+      notification: { request: { content: { data: { url: `/group/${groupUuid}` } } } },
     } as never);
-    expect(router.push).toHaveBeenCalledWith(`/group/${TALLER}`);
+    expect(router.push).toHaveBeenCalledWith(`/group/${groupUuid}`);
   });
 
   it('el chat solo silencia sus avisos mientras tiene el foco', async () => {
@@ -576,7 +583,9 @@ describe('/group/[groupId]', () => {
       </DataProvider>
     );
 
-    await waitFor(() => expect(register).toHaveBeenCalledWith('ExponentPushToken[test]', 'ios'));
+    await waitFor(() =>
+      expect(register).toHaveBeenCalledWith('ExponentPushToken[test]', 'ios', 'es')
+    );
     expect(mockPushTokens(defaultMockStore).get('ExponentPushToken[test]')?.userId).toBe(
       'seed-marc'
     );

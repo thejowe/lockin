@@ -1,23 +1,25 @@
 /**
- * Aviso push de un mensaje del chat de grupo. Sin Deno ni red: todo lo de fuera
+ * Avisos push del servicio. Sin Deno ni red: todo lo de fuera
  * entra por `deps`.
  *
  * - Autenticación: la cabecera `x-push-secret` debe ser el secreto compartido
  *   con el trigger de Postgres (Vault `push_webhook_secret` = secreto de la
  *   función `PUSH_WEBHOOK_SECRET`), comparado en tiempo constante.
- * - El cuerpo solo dice QUÉ mensaje: destinatarios, nombres y texto salen de
- *   `group_message_push_targets`, que ya excluye a quien lo envía y los bloqueos.
+ * - El cuerpo identifica el evento o la tarea: destinatarios, nombres y texto
+ *   salen de RPC service_role, con preferencias, bloqueos y límites en SQL.
  * - Se manda a la API de Expo en lotes de 100. Los tokens que Expo da por
  *   muertos (`DeviceNotRegistered`) se borran.
  *
  * `deps`:
- * - `targets(messageId)` → filas `{ token, group_id, group_name, sender_name, body }`.
+ * - `targets(eventId, type)` → filas de destinatarios del RPC correspondiente.
  * - `sendToExpo(messages)` → `{ status, body }` de `POST /--/api/v2/push/send`.
  * - `forgetTokens(tokens)`.
+ * - `completeNotices(ids)` → marcas de tareas programadas con ticket aceptado.
  * - `log(...args)`.
  */
 
 import { secretMatches } from '../revenuecat-webhook/logic.mjs';
+import { notificationCopy } from './copy.mjs';
 
 export const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 export const BATCH_SIZE = 100;
@@ -40,7 +42,51 @@ export function preview(body) {
 }
 
 /** Un mensaje de Expo por token. Abrirlo lleva al chat del grupo. */
-export function buildMessages(rows) {
+export function buildMessages(rows, type = 'group-message') {
+  if (type !== 'group-message')
+    return rows.map((row) => {
+      const direct = type === 'direct-message';
+      const chat = direct || type === 'match';
+      const likes = type === 'like-digest' || (type === 'reengagement' && row.like_count > 0);
+      const reminder = type === 'reengagement' || type === 'premium-expiry';
+      const thread = chat
+        ? `match:${row.match_id}`
+        : likes
+          ? `likes:${row.user_id}`
+          : type === 'group-activity'
+            ? row.event_kind === 'group-like'
+              ? `group-likes:${row.group_id}`
+              : `group:${row.group_id}`
+            : `${type}:${row.user_id}`;
+      return {
+        to: row.token,
+        ...(direct
+          ? { title: row.sender_name, body: preview(row.body) }
+          : notificationCopy(row, type)),
+        ...(!reminder ? { sound: 'default' } : {}),
+        channelId: reminder
+          ? 'reminders'
+          : chat
+            ? direct
+              ? 'messages'
+              : 'matches'
+            : likes
+              ? 'likes'
+              : 'groups',
+        threadId: thread,
+        collapseId: thread,
+        data: {
+          url: chat
+            ? `/chat/${row.match_id}`
+            : likes
+              ? '/likes'
+              : type === 'premium-expiry'
+                ? '/premium'
+                : row.url,
+          ...(chat ? { matchId: row.match_id } : {}),
+        },
+      };
+    });
   return rows.map((row) => ({
     to: row.token,
     title: row.group_name,
@@ -49,6 +95,7 @@ export function buildMessages(rows) {
     channelId: 'group-messages',
     // Mismo hilo en iOS y misma «conversación» en Android: no se apilan sueltas.
     threadId: `group:${row.group_id}`,
+    collapseId: `group:${row.group_id}`,
     data: { url: `/group/${row.group_id}`, groupId: row.group_id },
   }));
 }
@@ -70,25 +117,62 @@ export async function handlePushRequest({ secretHeader, body, config, deps }) {
   if (!(await secretMatches(secretHeader, config.secret))) {
     return { status: 401, body: { error: 'secret' } };
   }
-  const messageId = body?.message_id;
-  if (typeof messageId !== 'string' || !UUID.test(messageId)) {
-    return { status: 400, body: { error: 'message_id' } };
+  const allowedTypes = [
+    'group-message',
+    'direct-message',
+    'match',
+    'group-activity',
+    'like-digest',
+    'reengagement',
+    'premium-expiry',
+  ];
+  if (body && Object.hasOwn(body, 'type') && !allowedTypes.includes(body.type))
+    return { status: 400, body: { error: 'type' } };
+  const type = body?.type ?? 'group-message';
+  const idKey = {
+    'group-message': 'message_id',
+    'direct-message': 'message_id',
+    match: 'match_id',
+    'group-activity': 'event_id',
+  }[type];
+  const scheduled = ['like-digest', 'reengagement', 'premium-expiry'].includes(type);
+  if ((!idKey && !scheduled) || !body || Array.isArray(body) || typeof body !== 'object') {
+    return { status: 400, body: { error: 'type' } };
   }
+  if (idKey && (typeof body[idKey] !== 'string' || !UUID.test(body[idKey])))
+    return { status: 400, body: { error: idKey } };
+  if (Object.keys(body).some((key) => key !== 'type' && key !== idKey))
+    return { status: 400, body: { error: 'body' } };
 
-  const rows = await deps.targets(messageId);
-  const messages = buildMessages(rows);
+  const rows = await deps.targets(idKey ? body[idKey] : null, type);
+  const messages = buildMessages(rows, type);
   let sent = 0;
   const dead = [];
+  const completed = new Set();
   for (let start = 0; start < messages.length; start += BATCH_SIZE) {
     const batch = messages.slice(start, start + BATCH_SIZE);
-    const response = await deps.sendToExpo(batch);
-    if (response.status >= 400) {
-      deps.log('expo push', response.status, response.body);
+    let response;
+    try {
+      response = await deps.sendToExpo(batch);
+    } catch {
+      deps.log('expo push network failure');
       continue;
     }
-    sent += batch.length;
+    if (response.status >= 400) {
+      deps.log('expo push', response.status); // Nunca registrar tokens, nombres ni mensajes.
+      continue;
+    }
+    const tickets = Array.isArray(response.body?.data) ? response.body.data : [];
+    tickets.forEach((ticket, index) => {
+      if (ticket?.status === 'ok' && batch[index]) {
+        sent++;
+        const notice = rows[start + index]?.notice_id;
+        if (notice) completed.add(notice);
+      }
+    });
     dead.push(...deadTokens(batch, response.body));
   }
+  if (completed.size > 0) await deps.completeNotices([...completed]);
   if (dead.length > 0) await deps.forgetTokens(dead);
   return { status: 200, body: { sent, forgotten: dead.length } };
 }

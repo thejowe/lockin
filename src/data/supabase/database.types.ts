@@ -113,7 +113,13 @@ export type UserSettingsRow = {
   active_mode: ModePreference | null;
   created_at: string;
   updated_at: string;
-};
+  locale: 'es' | 'en' | 'ca' | null;
+  last_active_at: string | null;
+  incoming_likes_seen_at: string | null;
+  last_like_digest_at: string | null;
+  last_reengagement_at: string | null;
+  last_premium_expiry_notice_on: string | null;
+} & import('../notification-settings').NotificationPrefs;
 
 /** Fila de `public.decisions`. Solo se leen las propias (`actor_id`). */
 export type DecisionRow = {
@@ -617,10 +623,21 @@ export type Database = {
         Returns: GroupRow;
       };
       register_push_token: {
-        Args: { p_token: string; p_platform: 'ios' | 'android' };
+        Args: { p_token: string; p_platform: 'ios' | 'android'; p_locale?: 'es' | 'en' | 'ca' };
         Returns: undefined;
       };
       unregister_push_token: { Args: { p_token: string }; Returns: undefined };
+      notification_prefs: {
+        Args: Record<string, never>;
+        Returns: import('../notification-settings').NotificationPrefs;
+      };
+      set_notification_prefs: {
+        Args: { p_prefs: Partial<import('../notification-settings').NotificationPrefs> };
+        Returns: undefined;
+      };
+      set_notification_locale: { Args: { p_locale: 'es' | 'en' | 'ca' }; Returns: undefined };
+      mark_incoming_likes_seen: { Args: Record<string, never>; Returns: undefined };
+      touch_last_active: { Args: Record<string, never>; Returns: undefined };
       update_group: {
         Args: {
           p_name: string;

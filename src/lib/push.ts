@@ -1,5 +1,5 @@
 /**
- * Notificaciones push (hoy, solo las del chat de grupo) sobre `expo-notifications`.
+ * Notificaciones push sobre `expo-notifications`.
  *
  * El módulo se carga de forma perezosa y a prueba de fallos: en web no hay push
  * de Expo, en Expo Go de Android importar el paquete lanza (ver
@@ -9,10 +9,10 @@
  * Tres piezas:
  *
  * - `registerForPush`: pide permiso (si se le deja) y guarda el token de Expo
- *   de este dispositivo en el servidor. Se llama al entrar en un grupo o en su
- *   chat, no al abrir la app: el permiso se pide cuando se entiende para qué.
- * - `installPushHandlers`: tocar un aviso abre su chat; con el chat abierto, el
- *   aviso de ese mismo grupo no se enseña.
+ *   de este dispositivo en el servidor. Sin diálogo al arrancar; el permiso se
+ *   pide al ver likes, hacer match o entrar en grupo/chat.
+ * - `installPushHandlers`: tocar un aviso abre su destino permitido; con ese
+ *   destino en foco, el aviso se silencia (sin badge).
  * - `forgetPushToken`: al cerrar sesión, el dispositivo deja de recibir los
  *   avisos de esa cuenta.
  *
@@ -27,20 +27,30 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { Platform } from 'react-native';
 
-import { t } from '@/i18n';
+import { t, tk } from '@/i18n';
 
 type NotificationsModule = typeof import('expo-notifications');
 
 export type PushPlatform = 'ios' | 'android';
 export type PushRegistration = 'registered' | 'denied' | 'unavailable';
 
-/** Canal de Android de los avisos de grupo; el servidor manda `channelId` con este nombre. */
+/** ID histórico del chat de grupo; se conserva para las instalaciones existentes. */
 export const GROUP_CHANNEL_ID = 'group-messages';
 const PUSH_TOKEN_KEY = 'lockin.push-token';
 
 let cached: NotificationsModule | null | undefined;
 let token: string | null = null;
-let activeGroupChat: string | null = null;
+let activeRoute: string | null = null;
+let activeRevision = 0;
+let prompted = false;
+const CHANNELS = [
+  [GROUP_CHANNEL_ID, tk('Grupos')],
+  ['messages', tk('Mensajes')],
+  ['matches', tk('Matches')],
+  ['likes', tk('Likes')],
+  ['groups', tk('Actividad de grupos')],
+  ['reminders', tk('Recordatorios')],
+] as const;
 let pending: Promise<unknown> = Promise.resolve();
 
 // Salir espera a cualquier registro en curso antes de dar de baja el token.
@@ -69,7 +79,9 @@ function load(): NotificationsModule | null {
 export function resetPushForTests(): void {
   cached = undefined;
   token = null;
-  activeGroupChat = null;
+  activeRoute = null;
+  activeRevision = 0;
+  prompted = false;
   pending = Promise.resolve();
 }
 
@@ -103,13 +115,20 @@ async function register(
   try {
     if (Platform.OS === 'android') {
       // En Android 13+ el diálogo de permiso solo sale si ya existe un canal.
-      await Notifications.setNotificationChannelAsync(GROUP_CHANNEL_ID, {
-        name: t('Grupos'),
-        importance: Notifications.AndroidImportance.HIGH,
-      });
+      for (const [id, label] of CHANNELS) {
+        await Notifications.setNotificationChannelAsync(id, {
+          name: t(label),
+          importance:
+            id === 'reminders'
+              ? Notifications.AndroidImportance.DEFAULT
+              : Notifications.AndroidImportance.HIGH,
+        });
+      }
     }
-    let { status } = await Notifications.getPermissionsAsync();
-    if (status !== 'granted' && prompt) {
+    const permission = await Notifications.getPermissionsAsync();
+    let { status } = permission;
+    if (status === 'undetermined' && permission.canAskAgain !== false && prompt && !prompted) {
+      prompted = true;
       ({ status } = await Notifications.requestPermissionsAsync());
     }
     if (status !== 'granted') {
@@ -134,12 +153,36 @@ async function register(
 
 /** El chat de grupo que se está viendo: sus avisos no se enseñan encima. */
 export function setActiveGroupChat(groupId: string | null): void {
-  activeGroupChat = groupId;
+  setActivePushRoute(groupId ? `/group/${groupId}` : null);
 }
 
-function routeOf(data: unknown): string | null {
+/** Siempre desde el foco de navegación, nunca desde el mero montaje del chat. */
+export function setActivePushRoute(route: string | null): () => void {
+  const revision = ++activeRevision;
+  activeRoute = route;
+  // El blur de una pantalla anterior no puede borrar el foco de la siguiente.
+  return () => {
+    if (activeRevision === revision) activeRoute = null;
+  };
+}
+
+export async function pushPermission(): Promise<
+  'granted' | 'denied' | 'undetermined' | 'unavailable'
+> {
+  try {
+    return (await load()?.getPermissionsAsync())?.status ?? 'unavailable';
+  } catch {
+    return 'unavailable';
+  }
+}
+
+export function routeOf(data: unknown): string | null {
   const url = (data as { url?: unknown } | null | undefined)?.url;
-  return typeof url === 'string' && /^\/group\/[0-9a-zA-Z-]+$/.test(url) ? url : null;
+  if (typeof url !== 'string') return null;
+  if (['/likes', '/premium', '/(tabs)/matches'].includes(url)) return url;
+  return /^\/(group|chat)\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(url)
+    ? url
+    : null;
 }
 
 /**
@@ -152,8 +195,20 @@ export function installPushHandlers(open: (route: string) => void): () => void {
 
   Notifications.setNotificationHandler({
     handleNotification: async (notification) => {
-      const groupId = (notification.request.content.data as { groupId?: unknown } | null)?.groupId;
-      const hidden = typeof groupId === 'string' && groupId === activeGroupChat;
+      const data = notification.request.content.data as {
+        groupId?: unknown;
+        matchId?: unknown;
+      } | null;
+      const groupId = data?.groupId;
+      const matchId = data?.matchId;
+      const route =
+        routeOf(notification.request.content.data) ??
+        (typeof groupId === 'string'
+          ? `/group/${groupId}`
+          : typeof matchId === 'string'
+            ? `/chat/${matchId}`
+            : null);
+      const hidden = activeRoute !== null && route === activeRoute;
       return {
         shouldShowBanner: !hidden,
         shouldShowList: !hidden,

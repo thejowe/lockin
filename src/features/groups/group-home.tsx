@@ -83,7 +83,7 @@ export function GroupHome({
                 : t('Eres la única persona del grupo: al salir, el grupo se borra.')
               : t('Tu sitio queda libre y dejarás de ver el chat del grupo.')
             : t(
-                'Su sitio queda libre y dejará de ver el chat del grupo. No recibirá ningún aviso.'
+                'Su sitio queda libre y dejará de ver el chat del grupo. Le avisaremos si tiene activadas las notificaciones de actividad de grupos.'
               )}
         </ThemedText>
         {error ? (

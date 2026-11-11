@@ -167,3 +167,143 @@ test('la vista previa junta espacios y corta los mensajes largos', () => {
   assert.ok(long.endsWith('…'));
   assert.equal(buildMessages([]).length, 0);
 });
+
+test('tipos y payloads desconocidos son 400 sin consultar destinatarios', async () => {
+  const d = deps([row(1)]);
+  for (const body of [
+    null,
+    [],
+    { type: 'unknown' },
+    { type: null },
+    { type: 'match', match_id: 'x' },
+    { type: 'like-digest', users: [MESSAGE] },
+    { type: 'group-activity', event_id: MESSAGE, group_name: 'injected' },
+  ]) {
+    assert.equal(
+      (await handlePushRequest({ secretHeader: CONFIG.secret, body, config: CONFIG, deps: d }))
+        .status,
+      400
+    );
+  }
+  assert.deepEqual(d.state.sent, []);
+});
+
+test('likes gratis anónimos y Premium con nombre, plurales y Super Like en los tres idiomas', () => {
+  for (const [locale, one, many, named] of [
+    ['es', 'Tienes un like nuevo', 'Tienes 3 likes nuevos', 'Ana te ha dado like'],
+    ['en', 'You have 1 new like', 'You have 3 new likes', 'Ana liked you'],
+    ['ca', 'Tens un like nou', 'Tens 3 likes nous', "Ana t'ha donat like"],
+  ]) {
+    const base = { token: 'token', user_id: MESSAGE, locale, like_count: 1, first_name: null };
+    const free = buildMessages([base], 'like-digest')[0];
+    assert.equal(free.title, one);
+    assert.equal(free.data.url, '/likes');
+    assert.equal(free.collapseId, `likes:${MESSAGE}`);
+    assert.ok(!JSON.stringify(free).includes('Ana'));
+    assert.equal(buildMessages([{ ...base, like_count: 3 }], 'like-digest')[0].title, many);
+    assert.equal(buildMessages([{ ...base, first_name: 'Ana' }], 'like-digest')[0].title, named);
+    assert.match(
+      buildMessages([{ ...base, first_name: 'Ana', first_super: true }], 'like-digest')[0].title,
+      /Ana.*Super Like/
+    );
+    assert.match(
+      buildMessages([{ ...base, first_name: 'Ana', like_count: 3 }], 'like-digest')[0].body,
+      /Ana.*2/
+    );
+  }
+  assert.equal(
+    buildMessages(
+      [{ token: 'x', like_count: 2, first_name: 'Ana', locale: 'en' }],
+      'like-digest'
+    )[0].body,
+    'Ana and 1 other liked you.'
+  );
+  assert.equal(
+    buildMessages([{ token: 'x', like_count: 1, locale: null }], 'like-digest')[0].title,
+    'You have 1 new like'
+  );
+});
+
+test('cada tipo usa su canal, hilo, sonido y destino, sin fiarse del payload', () => {
+  const base = {
+    token: 'token',
+    user_id: MESSAGE,
+    locale: 'ca',
+    match_id: MESSAGE,
+    other_name: 'Ana',
+    sender_name: 'Ana',
+    body: 'hola\n  món',
+    url: `/group/${GROUP}`,
+    group_id: GROUP,
+    group_name: 'Equip',
+    person_name: 'Ana',
+    event_kind: 'joined',
+  };
+  const match = buildMessages([base], 'match')[0];
+  assert.equal(match.title, 'És un match!');
+  assert.equal(match.data.url, `/chat/${MESSAGE}`);
+  assert.equal(match.channelId, 'matches');
+  assert.equal(match.sound, 'default');
+  const direct = buildMessages([base], 'direct-message')[0];
+  assert.equal(direct.title, 'Ana');
+  assert.equal(direct.body, 'hola món');
+  assert.equal(direct.collapseId, `match:${MESSAGE}`);
+  assert.equal(direct.channelId, 'messages');
+  for (const event_kind of ['joined', 'joined-self', 'kicked', 'group-like']) {
+    const event = buildMessages([{ ...base, event_kind }], 'group-activity')[0];
+    assert.equal(event.channelId, 'groups');
+    assert.match(event.title, /Equip/);
+  }
+  const reminder = buildMessages([{ ...base, like_count: 0 }], 'reengagement')[0];
+  assert.equal(reminder.title, 'Tens missatges nous');
+  assert.equal(reminder.data.url, base.url);
+  assert.equal(reminder.sound, undefined);
+  assert.equal(reminder.channelId, 'reminders');
+  assert.equal(buildMessages([{ ...base, like_count: 1 }], 'reengagement')[0].data.url, '/likes');
+  const expiry = buildMessages([base], 'premium-expiry')[0];
+  assert.equal(expiry.data.url, '/premium');
+  assert.equal(expiry.title, 'El teu Premium acaba demà');
+});
+
+test('solo marca destinatarios con ticket ok; lotes fallidos y tickets ausentes no avanzan marcas', async () => {
+  const marked = [];
+  const forgotten = [];
+  const rows = Array.from({ length: 103 }, (_, i) => ({
+    token: `ExponentPushToken[t${i}]`,
+    notice_id: `notice-${i}`,
+    user_id: MESSAGE,
+    like_count: 1,
+  }));
+  let batch = 0;
+  const d = {
+    targets: async (id, type) => {
+      assert.equal(id, null);
+      assert.equal(type, 'like-digest');
+      return rows;
+    },
+    sendToExpo: async () =>
+      ++batch === 1
+        ? { status: 503, body: null }
+        : {
+            status: 200,
+            body: {
+              data: [
+                { status: 'ok' },
+                { status: 'error', details: { error: 'DeviceNotRegistered' } },
+              ],
+            },
+          },
+    completeNotices: async (ids) => marked.push(...ids),
+    forgetTokens: async (tokens) => forgotten.push(...tokens),
+    log: () => {},
+  };
+  const result = await handlePushRequest({
+    secretHeader: CONFIG.secret,
+    body: { type: 'like-digest' },
+    config: CONFIG,
+    deps: d,
+  });
+  assert.equal(result.body.sent, 1);
+  assert.deepEqual(marked, ['notice-100']);
+  assert.deepEqual(forgotten, ['ExponentPushToken[t101]']);
+});

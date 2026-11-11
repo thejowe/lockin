@@ -1,11 +1,13 @@
+> Revisió v1.9, 11 de novembre de 2026: notificacions, idioma al servidor, activitat recent, preferències i oposició als recordatoris (§2, §3, §5, §6, §7). Preparada al repo; no aplicada, desplegada ni publicada. Revisió jurídica i declaracions de botigues pendents.
+
 > Traducción de `docs/tiendas/privacidad.md`, pendiente de revisión legal. Si cambia el original, cambia esta copia.
 
 # Política de privacitat de cofounder
 
 
-**Versió:** 1.8.
+**Versió:** 1.9.
 
-**Entrada en vigor:** 10 de novembre de 2026.
+**Entrada en vigor:** 11 de novembre de 2026.
 
 ## 1. Qui és responsable de les teves dades
 
@@ -58,7 +60,13 @@ Si crees o t'uneixes a un grup, tractem a més:
 
 La part pública que pot veure qui busca grup (nom, descripció, perfils buscats i perfils públics dels membres actuals) s'exposa només a través de les funcions del deck, no com a lectura lliure de les taules internes. Les dades internes del grup (inclosa la pertinença detallada i el xat) només són accessibles a qui en són membres, segons els controls del servidor.
 
-**Token de notificacions push:** si permets les notificacions, desem un identificador tècnic del teu dispositiu (token d'Expo, que fa servir Apple Push Notification service o Firebase Cloud Messaging de Google) per avisar-te de missatges nous del xat de grup. L'avís mostra el nom del grup com a títol i el nom del remitent (si està disponible) amb un fragment del missatge de fins a 140 caràcters com a cos. Base jurídica: execució del contracte. L'esborrem quan tanques la sessió i quan elimines el compte. Si desactives les notificacions als ajustos del dispositiu, l'app ho comprova cada vegada que la tornes a obrir i llavors esborra el token del servidor. Encarregats: Expo (650 Industries, EUA), Apple i Google, amb clàusules contractuals tipus / Marc de Privadesa de Dades UE-EUA.
+### Notificacions i preferències
+
+Si permets les notificacions, desem un identificador tècnic del dispositiu (token d'Expo, que fa servir Apple Push Notification service o Firebase Cloud Messaging de Google). El fem servir per a likes, matches, missatges 1:1 i de grup, activitat dels grups (entrades, expulsions i candidatures), recordatoris opcionals amb likes o missatges pendents i caducitat de Premium. Pots apagar cada tipus a **Ajustos > Notificacions**; inicialment tots estan activats. El resum de likes s'intenta com a màxim un cop al dia, cap a les 11:00 de la teva zona horària i amb almenys 20 hores entre avisos. Els recordatoris es limiten a un cada set dies després d'almenys tres dies sense entrar i només si hi ha likes o missatges pendents, de 10:00 a 20:00. L'avís de fi de Premium s'intenta unes 24 hores abans, de 09:00 a 22:00. Els missatges, matches i activitat dels grups poden avisar quan passen.
+
+Desem al servidor l'idioma de l'app (espanyol, anglès o català), les preferències, una data d'activitat recent (actualitzada com a màxim cada 15 minuts), quan has obert la pantalla de likes i les marques dels últims avisos. Serveixen per traduir avisos, evitar duplicats i recordatoris després d'una entrada recent i identificar likes no vistos. La zona horària IANA declarada al perfil determina l'hora local; si no és vàlida fem servir Europe/Madrid. Obrir la pantalla de likes marca els pendents com a vistos també sense Premium.
+
+Els avisos poden mostrar el nom de l'altra persona o del grup i un fragment de missatge de fins a 140 caràcters. **Els avisos de likes sense Premium mostren només la quantitat, mai noms ni fotos de qui t'ha donat like**; amb Premium poden incloure un nom. El contingut pot aparèixer a la pantalla bloquejada segons els ajustos del dispositiu. No s'utilitza per a publicitat de tercers ni tracking. El token es dona de baixa en tancar la sessió (es reintenta si falla) i s'esborra amb el compte. Si retires el permís del dispositiu, ho comprovem en tornar a primer pla i intentem esborrar el token del servidor. Encarregats: Expo (650 Industries, EUA), Apple i Google (§5).
 
 ### La teva subscripció (opcional)
 
@@ -87,6 +95,8 @@ Fem servir les dades per mantenir i recuperar el teu compte, mostrar i editar el
 - **Interès legítim** (art. 6.1.f): seguretat, prevenció d'abusos (inclòs impedir que es reutilitzi el correu d'un compte eliminat), revisió de fotos i de denúncies i operació tècnica.
 - **Obligació legal** (art. 6.1.c): atendre requeriments de les autoritats.
 
+Likes, matches, missatges, activitat dels grups i caducitat de Premium formen part del servei (art. 6.1.b RGPD). Els recordatoris opcionals es basen en l'interès legítim de facilitar que reprenguis converses o interessos pendents (art. 6.1.f). T'hi pots oposar en qualsevol moment apagant **Recordatoris** a Ajustos, sense afectar el servei. El permís del sistema no substitueix aquesta oposició.
+
 ## 4. Qui les pot veure
 
 - **El teu perfil (incloent-hi la foto aprovada, les fotos del tauler i els teus enllaços) el pot veure qualsevol persona amb compte a l'app**, també els comptes creats sense correu, no només els teus matches. No incloguis informació que no vulguis compartir. Si hi ha un bloqueig entre dues persones, en qualsevol sentit, cap de les dues no pot veure el perfil, la foto ni el tauler de l'altra: no només deixa de mostrar-los l'app, el servidor tampoc no els lliura.
@@ -104,7 +114,7 @@ Fem servir les dades per mantenir i recuperar el teu compte, mostrar i editar el
 - **OpenAI** (encarregat, EUA): revisió automàtica de les fotos de perfil i de les fotos del tauler amb el seu text, només si les puges. Rep la imatge (i, al tauler, el text) des del nostre servidor. És una transferència fora de l'EEE (vegeu més avall). Fem servir el seu servei de moderació (`omni-moderation-latest`). Segons la documentació pública d'OpenAI (consultada el 16-oct-2026), les dades enviades a la seva API no es fan servir per entrenar els seus models llevat que el client ho autoritzi, i el servei de moderació no conserva el contingut per a monitoratge d'abús; una imatge que es detecti com a material d'abús sexual infantil es pot conservar per a revisió manual. Aquestes condicions són les d'OpenAI i poden canviar. L'acord de tractament de dades (DPA) d'OpenAI forma part de les condicions que regeixen l'ús de la seva API.
 - **Brevo** (encarregat, Sendinblue SAS, França): enviament dels correus de confirmació i recuperació de compte. Rep la teva adreça de correu i el contingut d'aquest missatge. Brevo registra, sense associar-ho a un contacte, si el correu s'obre i si es prem el seu enllaç, i l'enllaç de confirmació passa per un servidor de Brevo abans d'arribar a nosaltres. Demanarem a Brevo que desactivi aquest seguiment i actualitzarem aquest punt quan ho faci.
 - **RevenueCat** (encarregat, RevenueCat, Inc., EUA): mostra els plans de Premium, valida les compres amb Apple o Google i manté l'estat de la subscripció. Rep el teu identificador de compte i dades tècniques del dispositiu i de la botiga quan obres la pantalla de Premium, encara que no compris, i, si compres, les dades de la compra (producte, dates, botiga i país). És una transferència fora de l'EEE (vegeu més avall).
-- **Expo / EAS** (encarregat, 650 Industries, EUA): distribució d'actualitzacions de l'app i enviament de notificacions push del xat de grup. Per lliurar els avisos intervenen també **Apple Push Notification service** i **Firebase Cloud Messaging de Google** com a encarregats; reben el token i el contingut de l'avís (§2), amb clàusules contractuals tipus / Marc de Privadesa de Dades UE-EUA.
+- **Expo / EAS** (encarregat, 650 Industries, EUA): actualitzacions i tots els tipus de notificacions descrits a §2. També hi intervenen **Apple Push Notification service** i **Firebase Cloud Messaging de Google** com a encarregats; reben el token i el contingut (nom, fragment de missatge o quantitat de likes; mai la identitat d'un like sense Premium), amb clàusules contractuals tipus / Marc de Privadesa de Dades UE-EUA.
 - **GitHub** (responsable independent): només si verifiques el teu enllaç.
 - **Google** i **Apple** (responsables independents): si entres amb el seu compte, i si contractes Premium, perquè cobren la subscripció amb el teu compte de la seva botiga. Cadascun tracta aquest inici de sessió i aquest pagament segons la seva pròpia política de privacitat.
 
@@ -114,11 +124,15 @@ En obrir un enllaç de portafoli, GitHub, LinkedIn, Instagram o TikTok d'una alt
 
 ## 6. Permisos
 
-L'app demana accés a la teva galeria o a la teva càmera quan afegeixes una foto de perfil o del tauler. Com que la foto de perfil és necessària per crear el perfil, a l'alta hauràs de permetre'n un dels dos (si el sistema ho ofereix, pots donar accés només a les fotos que triïs). Les notificacions es demanen la primera vegada que entres en un grup; les pots denegar i el grup funciona igual. Pots canviar aquests permisos quan vulguis als ajustos del dispositiu.
+El permís de notificacions es demana en un moment contextual: quan veus likes rebuts, fas un match o entres en un grup o el seu xat, mai a la benvinguda. El pots denegar i continuar utilitzant l'app. Si ja el tens concedit, es refresca el token en arrencar. Pots apagar cada tipus a Ajustos > Notificacions. Si el sistema l'ha denegat, oferim un enllaç als seus ajustos sense insistir amb el diàleg.
+
+L'app demana accés a la teva galeria o a la teva càmera quan afegeixes una foto de perfil o del tauler. Com que la foto de perfil és necessària per crear el perfil, a l'alta hauràs de permetre'n un dels dos (si el sistema ho ofereix, pots donar accés només a les fotos que triïs).
 
 Per completar el perfil, l'app demana nom, data de naixement, zona, disponibilitat, almenys una resposta breu i una foto de perfil. Correu, telèfon, enllaços, tauler i verificació de GitHub són opcionals.
 
 ## 7. Quant de temps es conserven
+
+L'idioma, les preferències, les dates d'activitat i de likes vistos i les marques i reserves d'avisos s'esborren amb el compte. Les reserves tècniques no contenen fotos ni missatges i se substitueixen al següent intent, amb un bloqueig de reintents simultanis de 15 minuts. Els esdeveniments d'activitat dels grups només desen identificadors i dates, es purguen després de set dies i s'esborren amb el grup o el compte associat.
 
 Conservem les teves dades mentre existeixi el teu compte. En eliminar el compte des de l'app (Ajustos > Compte > Elimina el meu compte) s'esborren de seguida el teu perfil i les dades associades. En esborrar el compte, el servidor intenta eliminar també les teves fotos de l'emmagatzematge (la de perfil, les del tauler i qualsevol pujada pendent) i, en tot cas, deixen de ser accessibles. Si alguna d'aquestes retirades falla, pot quedar un fitxer sense enllaç ni metadades a l'emmagatzematge fins que el retirem, i els sistemes de còpia del proveïdor poden conservar un residu tècnic; si necessites una confirmació de retirada, escriu-nos a soporte@getcofounder.app. Si vas entrar amb Apple des d'un iPhone, abans d'esborrar el compte demanem a Apple que retiri l'accés de l'app al teu Apple ID; si Apple no respon, el compte s'esborra igualment i pots retirar aquest accés tu mateix a Configuració > el teu nom > Inicia sessió amb Apple.
 
@@ -162,3 +176,6 @@ El servidor aplica controls d'accés per compte, per pertinença a un match i pe
 Pots **bloquejar i denunciar** una altra persona des de l'app. També pots bloquejar o denunciar un grup (la denúncia es registra contra la persona administradora) i denunciar missatges del xat de grup. Revisem les denúncies i actuem sobre el contingut o els comptes que incompleixin les [normes de la comunitat](https://getcofounder.app/normas) i els [termes d'ús](https://getcofounder.app/terminos). Els nostres estàndards de seguretat infantil són a https://getcofounder.app/seguridad-infantil.
 
 Si canviem aquesta política de manera rellevant, ho avisarem a l'app i, si tens correu, per correu, almenys 30 dies abans que entri en vigor.
+
+
+> Revisió v1.9, 11 de novembre de 2026: notificacions, idioma al servidor, activitat recent, preferències i oposició als recordatoris (§2, §3, §5, §6, §7). Preparada al repo; no aplicada, desplegada ni publicada. Revisió jurídica i declaracions de botigues pendents.

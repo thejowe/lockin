@@ -15,6 +15,8 @@
  */
 
 import { ScrollView } from 'react-native';
+import * as Notifications from 'expo-notifications';
+import { installPushHandlers, resetPushForTests } from '@/lib/push';
 
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
@@ -33,7 +35,16 @@ import {
 
 import ChatScreen from '../../src/app/chat/[matchId]';
 
-jest.mock('expo-router', () => require('../routes').expoRouterMock());
+let mockChatFocused = true;
+jest.mock('expo-router', () => ({
+  ...jest.requireActual('../routes').expoRouterMock(),
+  useFocusEffect: (effect: () => void | (() => void)) => {
+    const focused = mockChatFocused;
+    jest
+      .requireActual('react')
+      .useEffect(() => (focused ? effect() : undefined), [effect, focused]);
+  },
+}));
 
 const COUNTERPART_ID = SEED_RECIPROCAL_IDS[0];
 
@@ -50,12 +61,28 @@ async function seedMatch(options: { acceptTerms?: boolean } = {}) {
 }
 
 beforeEach(() => {
+  mockChatFocused = true;
+  resetPushForTests();
   resetRepositories();
   resetRouter();
   setSearchParams({});
 });
 
 describe('ChatScreen', () => {
+  it('el chat montado bajo otra pantalla deja de silenciar sus avisos', async () => {
+    const { matchId } = await seedMatch();
+    const uninstall = installPushHandlers(jest.fn());
+    const handler = jest.mocked(Notifications.setNotificationHandler).mock.calls.at(-1)![0]!;
+    const notification = {
+      request: { content: { data: { matchId } } },
+    } as unknown as Notifications.Notification;
+    await renderRoute(<ChatScreen />);
+    expect((await handler.handleNotification(notification)).shouldShowBanner).toBe(false);
+    mockChatFocused = false;
+    await fireEvent.changeText(screen.getByLabelText('Mensaje'), 'borrador');
+    expect((await handler.handleNotification(notification)).shouldShowBanner).toBe(true);
+    uninstall();
+  });
   describe('cuando el id no resuelve', () => {
     it('lo explica en vez de dejar un hilo vacío', async () => {
       await repositories.session.acceptTerms(TERMS_VERSION);

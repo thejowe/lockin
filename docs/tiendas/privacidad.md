@@ -1,3 +1,5 @@
+> Revisión v1.9, 11-nov-2026: ampliación de notificaciones, idioma, actividad reciente, preferencias y oposición a recordatorios (§2, §3, §5, §6, §7). Preparada en el repo: no aplicada ni desplegada ni publicada. Revisar bases jurídicas y App Privacy / Data safety antes del lanzamiento.
+
 # Política de privacidad de cofounder
 
 > Revisada el 10 de noviembre de 2026 (versión 1.8): la foto de perfil es necesaria para crear el perfil (§2, §3 y §6); el teléfono se puede quitar desde la app (§2); el token push se da de baja también al retirar el permiso en el dispositivo (§2); nuevo apartado de cookies y almacenamiento local (§2), con enlace a la política de cookies.
@@ -18,9 +20,9 @@
 >
 > Revisada el 18 de octubre de 2026: acceso con Google y Apple, tablón personal de fotos moderado con OpenAI, enlaces a Instagram y TikTok, y envío de correo por Supabase mientras Brevo no esté configurado. Publicada ese día en la URL pública. Ese mismo día, tras aplicar `20261018120000_profiles_block_visibility` en producción, §4 vuelve a decir que el bloqueo impide ver el perfil (antes: «la app deja de mostrar»).
 
-**Versión:** 1.8.
+**Versión:** 1.9.
 
-**Entrada en vigor:** 10 de noviembre de 2026.
+**Entrada en vigor:** 11 de noviembre de 2026.
 
 ## 1. Quién es responsable de tus datos
 
@@ -73,7 +75,13 @@ Si creas o te unes a un grupo, tratamos además:
 
 La parte pública que puede ver quien busca grupo (nombre, descripción, perfiles buscados y perfiles públicos de los miembros actuales) se expone solo a través de las funciones del deck, no como lectura libre de las tablas internas. Los datos internos del grupo (incluida la pertenencia detallada y el chat) solo son accesibles a quienes son miembros, según los controles del servidor.
 
-**Token de notificaciones push:** si permites las notificaciones, guardamos un identificador técnico de tu dispositivo (token de Expo, que a su vez usa Apple Push Notification service o Firebase Cloud Messaging de Google) para avisarte de mensajes nuevos del chat de grupo. El aviso muestra el nombre del grupo como título y el nombre del remitente (si está disponible) con un fragmento del mensaje de hasta 140 caracteres como cuerpo. Base jurídica: ejecución del contrato. Lo borramos al cerrar sesión y al eliminar tu cuenta. Si desactivas las notificaciones en los ajustes del dispositivo, la app lo comprueba cada vez que vuelves a abrirla y entonces borra el token del servidor. Encargados: Expo (650 Industries, EE. UU.), Apple y Google, con cláusulas contractuales tipo/Marco de Privacidad de Datos UE-EE. UU.
+### Notificaciones y preferencias
+
+Si permites las notificaciones, guardamos un identificador técnico del dispositivo (token de Expo, que usa Apple Push Notification service o Firebase Cloud Messaging de Google). Lo usamos para avisos de likes, matches, mensajes 1:1 y de grupo, actividad de grupos (entradas, expulsiones y candidaturas), recordatorios opcionales con likes o mensajes pendientes y caducidad de Premium. Puedes apagar cada tipo en **Ajustes > Notificaciones**; todos están activados inicialmente. El resumen de likes se intenta como máximo una vez al día, hacia las 11:00 de tu zona horaria y con al menos 20 horas entre avisos. Los recordatorios se limitan a uno cada siete días tras al menos tres días sin entrar y solo con likes o mensajes esperando, de 10:00 a 20:00. El aviso de fin de Premium se intenta unas 24 horas antes, de 09:00 a 22:00. Los mensajes, matches y actividad de grupos pueden avisarse al ocurrir.
+
+Guardamos en servidor el idioma de la app (español, inglés o catalán), las preferencias, una fecha de actividad reciente (actualizada como máximo cada 15 minutos), cuándo abriste la pantalla de likes y las marcas de los últimos avisos. Sirven para traducir los avisos, evitar duplicados y recordatorios tras una entrada reciente y reconocer likes no vistos. Tu zona horaria IANA declarada en el perfil determina el horario local; si no es válida usamos Europe/Madrid. Abrir la pantalla de likes marca como vistos los likes pendientes también sin Premium.
+
+Los avisos pueden mostrar el nombre de la otra persona o del grupo y un fragmento del mensaje de hasta 140 caracteres. **Los avisos de likes sin Premium muestran solo la cantidad, nunca nombres ni fotos de quienes te han dado like**; con Premium pueden incluir un nombre. El contenido puede aparecer en la pantalla bloqueada según los ajustes de tu dispositivo. No se usa para publicidad de terceros ni tracking. El token se da de baja al cerrar sesión (se reintenta si falla) y se borra con la cuenta. Si retiras el permiso en el dispositivo, la app lo comprueba al volver a primer plano e intenta borrar el token del servidor. Encargados: Expo (650 Industries, EE. UU.), Apple y Google (§5).
 
 ### Tu suscripción (opcional)
 
@@ -102,6 +110,8 @@ Usamos los datos para mantener y recuperar tu cuenta, mostrar y editar tu perfil
 - **Interés legítimo** (art. 6.1.f): seguridad, prevención de abusos (incluido impedir que se reutilice el correo de una cuenta eliminada), revisión de fotos y de reportes y operación técnica.
 - **Obligación legal** (art. 6.1.c): atender requerimientos de las autoridades.
 
+Los avisos de likes, matches, mensajes, actividad de grupos y caducidad de Premium forman parte del servicio (art. 6.1.b RGPD). Los recordatorios opcionales se basan en nuestro interés legítimo en facilitar que retomes conversaciones o intereses pendientes (art. 6.1.f); puedes oponerte en cualquier momento apagando **Recordatorios** en Ajustes, sin afectar al servicio. El permiso del sistema no sustituye esa posibilidad de oposición.
+
 ## 4. Quién puede verlos
 
 - **Tu perfil (incluidas la foto aprobada, las fotos del tablón y tus enlaces) puede verlo cualquier persona con cuenta en la app**, también las cuentas creadas sin email, no solo tus matches. No incluyas información que no quieras compartir. Si hay un bloqueo entre dos personas, en cualquier sentido, ninguna de las dos puede ver el perfil, la foto ni el tablón de la otra: no solo deja de mostrarlos la app, el servidor tampoco los entrega.
@@ -119,7 +129,7 @@ Usamos los datos para mantener y recuperar tu cuenta, mostrar y editar tu perfil
 - **OpenAI** (encargado, EE. UU.): revisión automática de las fotos de perfil y de las fotos del tablón con su texto, solo si las subes. Recibe la imagen (y, en el tablón, el texto) desde nuestro servidor. Es una transferencia fuera del EEE (ver más abajo). Usamos su servicio de moderación (`omni-moderation-latest`). Según la documentación pública de OpenAI (consultada el 16-oct-2026), los datos enviados a su API no se usan para entrenar sus modelos salvo que el cliente lo autorice, y el servicio de moderación no conserva el contenido para monitorización de abuso; una imagen que se detecte como material de abuso sexual infantil puede conservarse para revisión manual. Estas condiciones son las de OpenAI y pueden cambiar. El acuerdo de tratamiento de datos (DPA) de OpenAI forma parte de las condiciones que rigen el uso de su API.
 - **Brevo** (encargado, Sendinblue SAS, Francia): envío de los emails de confirmación y recuperación de cuenta. Recibe tu dirección de email y el contenido de ese mensaje. Brevo registra, sin asociarlo a un contacto, si el email se abre y si se pulsa su enlace, y el enlace de confirmación pasa por un servidor de Brevo antes de llegar a nosotros. Pediremos a Brevo que desactive ese seguimiento y actualizaremos este punto cuando lo haga.
 - **RevenueCat** (encargado, RevenueCat, Inc., EE. UU.): muestra los planes de Premium, valida las compras con Apple o Google y mantiene el estado de la suscripción. Recibe tu identificador de cuenta y datos técnicos del dispositivo y de la tienda cuando abres la pantalla de Premium, aunque no compres, y, si compras, los datos de la compra (producto, fechas, tienda y país). Es una transferencia fuera del EEE (ver más abajo).
-- **Expo / EAS** (encargado, 650 Industries, EE. UU.): distribución de actualizaciones de la app y envío de notificaciones push del chat de grupo. Para entregar los avisos intervienen también **Apple Push Notification service** y **Firebase Cloud Messaging de Google** como encargados; reciben el token y el contenido del aviso (§2), con cláusulas contractuales tipo/Marco de Privacidad de Datos UE-EE. UU.
+- **Expo / EAS** (encargado, 650 Industries, EE. UU.): distribución de actualizaciones y envío de todos los tipos de notificaciones descritos en §2. También intervienen **Apple Push Notification service** y **Firebase Cloud Messaging de Google** como encargados; reciben el token y el contenido (nombre, fragmento de mensaje o cantidad de likes; nunca la identidad de un like sin Premium), con cláusulas contractuales tipo/Marco de Privacidad de Datos UE-EE. UU.
 - **GitHub** (responsable independiente): solo si verificas tu enlace.
 - **Google** y **Apple** (responsables independientes): si entras con su cuenta, y si contratas Premium, porque cobran la suscripción con tu cuenta de su tienda. Cada uno trata ese inicio de sesión y ese pago según su propia política de privacidad.
 
@@ -129,11 +139,15 @@ Al abrir un enlace de portfolio, GitHub, LinkedIn, Instagram o TikTok de otra pe
 
 ## 6. Permisos
 
-La app pide acceso a tu galería o a tu cámara cuando añades una foto de perfil o del tablón. Como la foto de perfil es necesaria para crear el perfil, en el alta tendrás que permitir uno de los dos (si el sistema lo ofrece, puedes dar acceso solo a las fotos que elijas). Las notificaciones se piden la primera vez que entras en un grupo; puedes denegarlas y el grupo funciona igual. Puedes cambiar estos permisos cuando quieras en los ajustes del dispositivo.
+El permiso de notificaciones se solicita en un momento contextual: cuando ves que has recibido likes, haces un match o entras en un grupo o su chat. No se pide en la bienvenida. Puedes denegarlo y seguir usando la app; si ya lo concediste, se refresca el token al arrancar. Puedes apagar cada tipo en Ajustes > Notificaciones. Si el sistema los ha denegado, ofrecemos un enlace a sus ajustes sin insistir con el diálogo.
+
+La app pide acceso a tu galería o a tu cámara cuando añades una foto de perfil o del tablón. Como la foto de perfil es necesaria para crear el perfil, en el alta tendrás que permitir uno de los dos (si el sistema lo ofrece, puedes dar acceso solo a las fotos que elijas).
 
 Para completar el perfil, la app pide nombre, fecha de nacimiento, zona, disponibilidad, al menos una respuesta breve y una foto de perfil. Email, teléfono, enlaces, tablón y verificación de GitHub son opcionales.
 
 ## 7. Cuánto tiempo se conservan
+
+El idioma, las preferencias, las fechas de actividad y de likes vistos y las marcas y reservas de avisos se borran con la cuenta. Las reservas técnicas no contienen fotos ni mensajes y se sustituyen en el siguiente intento, con un bloqueo de reintentos simultáneos de 15 minutos. Los eventos de actividad de grupos guardan solo identificadores y fechas, se purgan tras siete días y se borran con el grupo o la cuenta asociada.
 
 Conservamos tus datos mientras tu cuenta exista. Al eliminar la cuenta desde la app (Ajustes > Cuenta > Eliminar mi cuenta) se borran de inmediato tu perfil y los datos asociados. Al borrar la cuenta, el servidor intenta eliminar también tus fotos del almacenamiento (la de perfil, las del tablón y cualquier subida pendiente) y, en todo caso, dejan de ser accesibles. Si alguna de esas retiradas falla, puede quedar un archivo sin enlace ni metadatos en el almacenamiento hasta que lo retiremos, y los sistemas de copia del proveedor pueden conservar un residuo técnico; si necesitas una confirmación de retirada, escríbenos a soporte@getcofounder.app. Si entraste con Apple desde un iPhone, antes de borrar la cuenta pedimos a Apple que retire el acceso de la app a tu Apple ID; si Apple no responde, la cuenta se borra igualmente y puedes retirar ese acceso tú en Ajustes > tu nombre > Iniciar sesión con Apple.
 
@@ -192,3 +206,6 @@ Nota editorial, a retirar del texto publicado:
 - **7-nov-2026 (v1.5):** dominio `getcofounder.app` (web en GitHub Pages, correo en Zoho Mail EU con alias `soporte@`, `legal@`, `privacidad@`); los enlaces y el contacto de este texto pasan al dominio nuevo.
 - **9-nov-2026 (v1.6):** cotejado con el código. `20261109120000_blocked_account_emails` (aplicada en producción el 9-nov): `delete_my_account()` guarda en `blocked_account_emails` solo `sha256(lower(trim(email)))` del correo de `auth.users` y de `auth.identities`; `account_unblock_requests` guarda correo, motivo, estado y fechas, sin purga. El teléfono vive en `auth.users.raw_user_meta_data.phone_number` (E.164), opcional desde el 9-nov (antes obligatorio en el alta y nunca declarado aquí); la app no permite vaciarlo. Entrada en vigor el mismo día y no a 30 días (§10), como v1.4: solo afecta a quien elimine la cuenta desde ahora; confirmarlo en la revisión jurídica. **Pendiente:** fijar un plazo para la huella y para las solicitudes, o justificar la conservación indefinida.
 - **Pendiente de decidir o confirmar:** (1) ~~condiciones de la API de OpenAI (DPA)~~ ver la línea anterior; (2) ~~plazo de las fotos rechazadas o pendientes~~ resuelto: borrado tras cada revisión y purga de restos a las 24 h; (3) ~~proveedor de correo~~ decidido el 16-oct: Brevo, remitente soporte@getcofounder.app; no empujar este texto hasta que el SMTP de Brevo esté configurado en Supabase Auth; (4) ~~fecha de publicación~~ v1.2 con entrada en vigor el 20-oct-2026, pendiente de subir a `cofounder-web`; (5) ~~job `purge_old_user_reports()`~~ confirmado activo en producción el 16-oct (03:20 diario); (6) los plazos de revisión de reportes (72 h / 24 h) son un compromiso operativo, no una regla del código.
+
+
+> Revisión v1.9, 11-nov-2026: ampliación de notificaciones, idioma, actividad reciente, preferencias y oposición a recordatorios (§2, §3, §5, §6, §7). Preparada en el repo: no aplicada ni desplegada ni publicada. Revisar bases jurídicas y App Privacy / Data safety antes del lanzamiento.

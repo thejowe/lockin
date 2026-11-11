@@ -4,9 +4,12 @@
  * grupo, y manda el aviso push a los demás miembros por la API de Expo. Sin
  * lógica propia: vive en `logic.mjs` (con tests). Reutiliza
  * `../revenuecat-webhook/logic.mjs` (al desplegar por MCP hay que subirlo como
- * archivo con ese nombre, igual que en `revenuecat-webhook`).
+ * archivo con ese nombre, igual que en `revenuecat-webhook`). Incluir también
+ * `copy.mjs` y `../sync-entitlement/logic.mjs` (dependencia de RevenueCat).
+ * Despacha todos los avisos a los RPC service_role, sin destinatarios
+ * ni textos proporcionados por quien llama. La URL y los secretos no cambian.
  *
- * Secreto (lo pone una persona; nunca está en el repo): `PUSH_WEBHOOK_SECRET`,
+ * Secreto ya existente (se reutiliza; nunca está en el repo): `PUSH_WEBHOOK_SECRET`,
  * el mismo valor que el secreto `push_webhook_secret` de Vault. Sin él responde
  * 503. `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` los inyecta Supabase. Se
  * despliega con `verify_jwt: false`: Postgres no manda JWT.
@@ -39,10 +42,18 @@ Deno.serve(async (request) => {
       body,
       config: readConfig(Deno.env.toObject()),
       deps: {
-        async targets(messageId: string) {
-          const { data, error } = await admin.rpc('group_message_push_targets', {
-            p_message_id: messageId,
-          });
+        async targets(id: string | null, type: string) {
+          const dispatch: Record<string, [string, Record<string, string>]> = {
+            'group-message': ['group_message_push_targets', { p_message_id: id! }],
+            'direct-message': ['direct_message_push_targets', { p_message_id: id! }],
+            match: ['match_push_targets', { p_match_id: id! }],
+            'group-activity': ['group_activity_push_targets', { p_event_id: id! }],
+            'like-digest': ['like_digest_push_targets', {}],
+            reengagement: ['reengagement_push_targets', {}],
+            'premium-expiry': ['premium_expiry_push_targets', {}],
+          };
+          const [name, args] = dispatch[type];
+          const { data, error } = await admin.rpc(name, args);
           if (error) throw error;
           return data ?? [];
         },
@@ -57,6 +68,10 @@ Deno.serve(async (request) => {
         },
         async forgetTokens(tokens: string[]) {
           const { error } = await admin.rpc('forget_push_tokens', { p_tokens: tokens });
+          if (error) throw error;
+        },
+        async completeNotices(ids: string[]) {
+          const { error } = await admin.rpc('complete_push_notices', { p_notice_ids: ids });
           if (error) throw error;
         },
         log: (...args: unknown[]) => console.warn('[notify-group-message]', ...args),

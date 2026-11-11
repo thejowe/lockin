@@ -13,9 +13,11 @@ import { ThemedText } from '@/components/themed-text';
 import { Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
+import { useContextualPush } from '@/features/notifications/use-contextual-push';
 
 export function LikesRow({ count, onPress }: { count: number; onPress: () => void }) {
   const theme = useTheme();
+  useContextualPush(count > 0);
   if (count <= 0) return null;
 
   const label = t('Te han dado like ({count})', { count });

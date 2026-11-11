@@ -9,6 +9,6 @@
     "types": ["jest", "node", "expo/types"]
   },
   "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
-  // Las Edge Functions corren en Deno (`Deno`, imports `jsr:`): no son de la app.
-  "exclude": ["node_modules", "supabase/functions"]
+  // Las funciones y sus artefactos locales corren en Deno, fuera de la app.
+  "exclude": ["node_modules", "supabase/functions", "e2e/artifacts"]
 }

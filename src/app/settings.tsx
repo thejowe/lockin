@@ -7,6 +7,7 @@ import { Screen } from '@/components/ambient-background';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { AccountSection, LanguageSection, LegalLinks, PersonalInfo } from '@/features/profile';
 import { useReduceMotion } from '@/hooks/use-reduce-motion';
+import { NotificationSection } from '@/features/profile/notification-section';
 
 /**
  * Ajustes de la cuenta: lo que no se enseña a la gente (desde las tres rayas del
@@ -31,6 +32,7 @@ export default function SettingsScreen() {
       <SafeAreaView style={styles.root} edges={['bottom']}>
         <ScrollView ref={scrollRef} contentContainerStyle={styles.content}>
           <LanguageSection />
+          <NotificationSection />
           <AccountSection
             personalInfo={<PersonalInfo />}
             onDeleted={backToStart}

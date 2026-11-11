@@ -25,6 +25,9 @@ import { openPaywall } from './open-paywall';
 import type { Repositories } from '@/data';
 
 jest.mock('./open-paywall', () => ({ openPaywall: jest.fn() }));
+jest.mock('expo-router', () => ({
+  useFocusEffect: (fn: () => void) => jest.requireActual('react').useEffect(fn, [fn]),
+}));
 
 const METRICS = {
   frame: { x: 0, y: 0, width: 390, height: 844 },
@@ -59,6 +62,11 @@ beforeEach(async () => {
 });
 
 describe('IncomingLikes sin Premium', () => {
+  it('marca los likes vistos también sin Premium', async () => {
+    const seen = jest.spyOn(repositories.push, 'markIncomingLikesSeen');
+    await setup();
+    expect(seen).toHaveBeenCalledTimes(1);
+  });
   it('pinta una tarjeta de relleno por like, sin nombres ni fotos, y el botón de Premium', async () => {
     await setup();
 

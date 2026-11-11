@@ -11,7 +11,7 @@
  * suscribe a los cambios.
  */
 
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Fragment, useCallback, useMemo, useRef, useState } from 'react';
 import {
   Pressable,
@@ -28,7 +28,7 @@ import {
 } from 'react-native-keyboard-controller';
 import Animated from 'react-native-reanimated';
 
-import { AmbientBackground } from '@/components/ambient-background';
+import { AmbientBackground, Screen } from '@/components/ambient-background';
 import { Button } from '@/components/button';
 import { appear, disappear, layoutShift } from '@/components/motion';
 import { LoadingState, MessageState } from '@/components/state-view';
@@ -56,15 +56,20 @@ import {
   TermsAcceptance,
   useTermsGate,
 } from '@/features/profile';
-import { Screen } from '@/components/ambient-background';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { t } from '@/i18n';
+import { setActivePushRoute } from '@/lib/push';
 
 function ChatScreenContent() {
   const theme = useTheme();
   const router = useRouter();
   const params = useLocalSearchParams<{ matchId: string }>();
   const matchId = Array.isArray(params.matchId) ? params.matchId[0] : (params.matchId ?? '');
+  useFocusEffect(
+    useCallback(() => {
+      return setActivePushRoute(`/chat/${matchId}`);
+    }, [matchId])
+  );
 
   const { match, messages, me, loading, error, sending, sendError, send } =
     useConversation(matchId);

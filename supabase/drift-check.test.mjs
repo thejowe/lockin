@@ -13,6 +13,13 @@ import { migrationSql, stripComments, parseMigrations } from './drift-check.mjs'
 
 const real = parseMigrations(stripComments(migrationSql()));
 
+test('reconoce tablas idempotentes sin ocultarlas al cotejo', () => {
+  const parsed = parseMigrations(
+    'create table if not exists public.notices (id uuid primary key);'
+  );
+  assert.deepEqual(parsed.tables.get('notices'), [{ name: 'id', type: 'uuid' }]);
+});
+
 test('ve los sellos de GitHub y LinkedIn y la foto cerrados a authenticated, en INSERT y en UPDATE', () => {
   const sealed = real.sealed
     .filter((s) => s.table === 'profiles' && s.role === 'authenticated')
@@ -43,6 +50,8 @@ test('ve las tablas cerradas a authenticated (solo service role)', () => {
     'boosts',
     'group_swipes',
     'like_events',
+    'push_group_events',
+    'push_notice_claims',
     'push_tokens',
     'revenuecat_events',
     'user_reports',

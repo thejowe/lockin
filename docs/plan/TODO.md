@@ -1,5 +1,23 @@
 # TODO maestro — LockIn MVP
 
+## ▶ Notificaciones (2026-11-11): ampliación preparada, pendiente de activar
+
+- [x] Código de resumen diario de likes no vistos (anónimo gratis), matches,
+  chat 1:1/grupos, actividad de grupos, reenganche opcional con motivo y fin de Premium.
+- [x] Siete preferencias en Ajustes (ca: Ajustos), idioma en servidor, actividad
+  con throttle, permiso contextual, rutas permitidas y silencio por destino en foco.
+- [x] Migración nueva `20261111160000_push_notifications.sql` y ampliación de
+  `notify-group-message`, reutilizando URL y secretos. Privacidad v1.9 es/en/ca,
+  inventario/cuestionario y textos legales generados en el repo.
+- [x] Validación local: Jest 2.248, funciones 114, SQL 263, typecheck y legales.
+- [ ] Comprobación Android: bloqueada por rutas C++ de Windows >260 caracteres;
+  no hay APK nuevo ni veredicto de UI. Resultados y límites en
+  [notificaciones.md](todo/notificaciones.md).
+- [ ] **Requiere confirmación explícita:** aplicar migración, desplegar función
+  con los mismos secretos y verificar el cron/push en producción. Vault sin cambios.
+  No se han publicado web ni declaraciones de tiendas.
+
+
 ## ▶ Nuevo (2026-11-10): auditoría legal y de cumplimiento (web, app y tiendas)
 
 Encargo de la auditoría del 11-nov (solo lo que estaba en Parcial o Falta). No es asesoramiento

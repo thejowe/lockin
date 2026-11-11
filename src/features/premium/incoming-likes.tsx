@@ -11,7 +11,8 @@
  * `MatchModal`, igual que al swipear.
  */
 
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { FlatList, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
@@ -41,6 +42,7 @@ import { usePremium } from './use-premium';
 import type { Blocked, MatchEvent } from '@/features/discover';
 import type { Decision, IncomingLike } from '@/data';
 import { t } from '@/i18n';
+import { setActivePushRoute } from '@/lib/push';
 
 /** Tarjetas por página, y tope de tarjetas de relleno sin Premium. */
 const PAGE_SIZE = 20;
@@ -116,6 +118,13 @@ interface MorePages {
 export function IncomingLikes({ onOpenChat }: { onOpenChat: (matchId: string) => void }) {
   const theme = useTheme();
   const repositories = useRepositories();
+  useFocusEffect(
+    useCallback(() => {
+      const release = setActivePushRoute('/likes');
+      void repositories.push.markIncomingLikesSeen().catch(() => undefined);
+      return release;
+    }, [repositories])
+  );
   const { quotas, loading: quotasLoading } = usePremium();
   const isPremium = quotas?.isPremium ?? false;
   const count = useQuery('incoming-likes-count', () => repositories.premium.countIncomingLikes());

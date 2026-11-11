@@ -65,6 +65,11 @@ Almacén: Supabase Postgres, tabla `public.user_settings`. Fuente: [202609050002
 | --- | --- | --- | --- | --- |
 | `user_id` | `profileId (derivado)` | UUID de cuenta. profileId es null si todavía no hay perfil. | U | R2 |
 | `active_mode` | `activeMode` | Modo activo; null antes de elegirlo. Sigue escribiéndose (`src/data/supabase/index.ts`). | U | R2 |
+| `locale` | — | Idioma de las notificaciones es/en/ca; null usa inglés. Sincronizado con el idioma de la app. | U/servidor | R2 |
+| `last_active_at` | — | Última actividad aproximada, actualizada como máximo cada 15 min para evitar recordatorios tras entrar. Fallback inicial: `auth.users.last_sign_in_at`. | Servidor | R2 |
+| `incoming_likes_seen_at` | — | Cuándo se abrió /likes, con o sin Premium. Define likes no vistos junto al último resumen. | Servidor | R2 |
+| `last_like_digest_at`, `last_reengagement_at`, `last_premium_expiry_notice_on` | — | Marcas al aceptar Expo al menos un token, para impedir repeticiones. El reenganche con likes consume también la marca del resumen. | Servidor | R2 |
+| `notify_likes`, `notify_matches`, `notify_messages`, `notify_group_messages`, `notify_group_activity`, `notify_reminders`, `notify_premium` | `NotificationPrefs` | Siete interruptores, inicialmente true; escritura solo mediante RPC de la propia cuenta. Recordatorios opcionales con oposición en Ajustes. | U/servidor | R2 |
 | `created_at` | — | Fecha de creación de las preferencias. | U | R2 |
 | `updated_at` | — | Fecha de última actualización de las preferencias. | U | R2 |
 
@@ -119,9 +124,11 @@ Fuentes: [Grupos](../../supabase/migrations/20261109130000_groups.sql), [edició
 
 Bloquear un grupo fija un pass definitivo y bloquea al admin. Denunciarlo crea un reporte contra el admin con el grupo anotado; los reportes y los de mensajes de grupo siguen la retención de abuso de 12 meses. El deck excluye grupos/candidaturas con bloqueos entre la persona y cualquier miembro.
 
-**Push:** hoy solo para mensajes del chat de grupo, con permiso de notificaciones. Expo (650 Industries, EE. UU.) entrega por APNs de Apple / FCM de Google; recibe el token y el aviso. `title` = nombre del grupo; `body` = nombre del remitente (si existe) y fragmento de hasta 140 caracteres; `data` = ruta e identificador del grupo y `threadId` = hilo del grupo. No se avisa al remitente ni a personas bloqueadas en cualquier sentido. La app guarda el token en AsyncStorage (`lockin.push-token`) para intentar retirarlo incluso tras reiniciar.
+**Push (ampliación preparada el 11-nov-2026, pendiente de migración y deploy):** likes no vistos, matches, mensajes 1:1 y de grupo, actividad de grupos, recordatorios opcionales con motivo y caducidad de Premium. Expo (650 Industries, EE. UU.) entrega por APNs de Apple / FCM de Google; recibe token, título, cuerpo y ruta interna/hilo. El aviso puede incluir nombre y fragmento de mensaje (hasta 140 caracteres). Los avisos de likes gratis contienen solo la cantidad: ni nombre ni foto; con Premium pueden incluir un nombre. Se excluyen remitente, bloqueos y preferencias apagadas; la app silencia la pantalla destino en foco. El permiso se pide al ver likes, crear match o entrar en grupo/chat; con permiso concedido, se registra al arrancar sin diálogo. El token se guarda en AsyncStorage (`lockin.push-token`) para retirarlo tras reiniciar y al retirar permiso/cerrar sesión.
 
-**Diferencia pendiente:** revocar el permiso de notificaciones no elimina automáticamente el token del servidor (`registerForPush()` devuelve `denied`); el texto solicitado de Privacidad v1.7 promete borrarlo al desactivar. Resolver antes de publicar. Los recibos posteriores de Expo y la configuración/despliegue/build nativa de push también siguen pendientes en `docs/plan/todo/grupos.md`.
+**Baja del token:** `forgetPushTokenIfDenied` comprueba al arrancar y al volver a primer plano y da de baja el token si se retiró el permiso (resuelto en v1.8). Las operaciones de red son de mejor esfuerzo, con reintento al volver. Los recibos posteriores de Expo siguen pendientes (P2 en `docs/plan/todo/grupos.md`).
+
+**Tablas técnicas nuevas:** `push_notice_claims` guarda cuenta, tipo, UUID de reserva, hora de selección, fecha de caducidad y si el recordatorio incluye likes; una fila por cuenta/tipo, reserva de 15 min, sustituida en el siguiente intento. `push_group_events` guarda UUID de evento/grupo/actor/persona afectada, tipo (entrada/expulsión/candidatura) y fecha, sin textos, y se purga tras 7 días mediante el job horario. Ambas sin lectura/escritura de cliente (RLS y RPC solo service_role), con cascada al borrar la cuenta; los eventos también caen con el grupo. No son analytics. Migración: `20261111160000_push_notifications.sql`; pendiente de aplicar. Zona horaria: IANA declarada en `profiles.timezone`, nunca GPS; fallback Europe/Madrid.
 
 ### Bloqueos y reportes
 
@@ -166,7 +173,7 @@ Decisión D05: SMTP propio gratuito antes del lanzamiento — Brevo (plan gratui
 - `expo-secure-store` (Keystore / Keychain): sesión Auth y `lockin.supabase.device-account` (`src/data/supabase/secure-storage.ts`). Si el almacén seguro no admite la escritura, cae a AsyncStorage. En web, solo AsyncStorage (localStorage).
 - AsyncStorage: claves temporales de vinculación GitHub y, en el caso descrito, la copia de reserva de la sesión.
 - Expo/EAS: EAS-Client-ID, plataforma, runtime, IDs de actualización actual/incluida/fallida; IP en peticiones.
-- Expo push: token en `push_tokens` y en AsyncStorage (`lockin.push-token`), nombre del grupo y remitente y fragmento del mensaje para el aviso; identificador de dispositivo para funcionalidad de la app, no tracking.
+- Expo push: token en `push_tokens` y AsyncStorage (`lockin.push-token`); nombres de persona/grupo, fragmento de mensaje o cantidad de likes según tipo y Premium; identificador de dispositivo para funcionalidad, no tracking. Idioma, preferencias y actividad reciente permanecen en servidor; se declaran como datos de producto vinculados a cuenta.
 - Supabase y OpenAI: IP y metadatos de peticiones en sus registros.
 
 ## Permisos (app.json, tras T5)
@@ -177,7 +184,7 @@ Decisión D05: SMTP propio gratuito antes del lanzamiento — Brevo (plan gratui
 | Cámara (`android.permission.CAMERA`, iOS `cameraPermission`) | Hacer la foto de perfil | Presente |
 | Micrófono (`RECORD_AUDIO`, `NSMicrophoneUsageDescription`) | Ninguno | **Retirado** (`microphonePermission: false` en `expo-image-picker`) |
 | `SCHEDULE_EXACT_ALARM` | Ninguno | **Retirado** |
-| Notificaciones (`expo-notifications`) | Avisos opcionales de mensajes del chat de grupo | **Reincorporado el 9-nov-2026**; requiere build nativa nueva y credenciales APNs/FCM. Sin recordatorios Lock-In |
+| Notificaciones (`expo-notifications`) | Avisos de servicio por tipo y recordatorios opcionales con motivo | Ampliación del 11-nov preparada, no desplegada. Permiso contextual likes/match/grupo, canales traducidos y baja en Ajustes/sistema. Sin recordatorios Lock-In |
 
 Plugins: `expo-router`, `expo-splash-screen`, `expo-image-picker`, `expo-secure-store`, `expo-notifications` y el plugin local `with-new-intent-initial-url`. `ITSAppUsesNonExemptEncryption=false` en iOS. Falta contrastar los permisos de notificaciones con el manifiesto del AAB y el Info.plist de la build con Grupos.
 

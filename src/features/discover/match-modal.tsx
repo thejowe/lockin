@@ -46,6 +46,7 @@ import type { MatchEvent } from './use-deck';
 
 import type { Specialty } from '@/data';
 import { t } from '@/i18n';
+import { useContextualPush } from '@/features/notifications/use-contextual-push';
 
 /** Entrada de la tarjeta: sube 16 y crece desde 0.92, con el muelle `pop`. */
 function popIn() {
@@ -76,6 +77,7 @@ export function MatchModal({
   viewerSpecialties?: Specialty[];
 }) {
   const theme = useTheme();
+  useContextualPush(event !== null);
   const elevation = Elevation[useThemeName()];
   const reduceMotion = useReduceMotion();
   const complement = event ? complementWith(event.profile, viewerSpecialties) : [];

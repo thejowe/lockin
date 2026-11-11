@@ -50,6 +50,9 @@ import type {
   TermsAcceptance,
 } from './types';
 import { t } from '@/i18n';
+import type { AppLocale } from '@/i18n';
+import type { NotificationPrefs } from './notification-settings';
+export type { NotificationPrefs } from './notification-settings';
 
 /**
  * Cursor de `listIncomingLikes` para pedir la página que sigue a `like`. La lista
@@ -475,10 +478,17 @@ export interface GroupRepository {
  * nadie lee tokens desde la app.
  */
 export interface PushRepository {
+  /** Consulta la sesión existente sin crear una cuenta al abrir la bienvenida. */
+  currentAccountId(): Promise<string | null>;
   /** Guarda el token de este dispositivo para la cuenta actual (si era de otra, pasa a esta). */
-  register(token: string, platform: 'ios' | 'android'): Promise<void>;
+  register(token: string, platform: 'ios' | 'android', locale?: AppLocale): Promise<void>;
   /** Este dispositivo deja de recibir los avisos de la cuenta actual. */
   unregister(token: string): Promise<void>;
+  getPreferences(): Promise<NotificationPrefs>;
+  setPreferences(prefs: Partial<NotificationPrefs>): Promise<void>;
+  setLocale(locale: AppLocale): Promise<void>;
+  markIncomingLikesSeen(): Promise<void>;
+  touchLastActive(): Promise<void>;
 }
 
 /**

@@ -47,7 +47,7 @@ import { ObjectionableContentError } from '@/features/safety/content-filter';
 import { ReportForm } from '@/features/safety/report-form';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
-import { setActiveGroupChat } from '@/lib/push';
+import { setActivePushRoute } from '@/lib/push';
 
 function GroupChatContent() {
   const theme = useTheme();
@@ -62,8 +62,7 @@ function GroupChatContent() {
   // Con este chat delante, sus avisos push no se enseñan encima.
   useFocusEffect(
     useCallback(() => {
-      setActiveGroupChat(groupId);
-      return () => setActiveGroupChat(null);
+      return setActivePushRoute(`/group/${groupId}`);
     }, [groupId])
   );
   const { data: me } = useQuery('profile:current', () => repositories.profiles.getCurrent());

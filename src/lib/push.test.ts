@@ -16,6 +16,8 @@ import {
   registerForPush,
   resetPushForTests,
   setActiveGroupChat,
+  setActivePushRoute,
+  routeOf,
 } from './push';
 
 jest.mock('expo-constants', () => ({
@@ -58,6 +60,10 @@ describe('registerForPush', () => {
   });
 
   it('pregunta si se le deja; con el sí, guarda el token de Expo de este proyecto', async () => {
+    mocked.getPermissionsAsync.mockResolvedValueOnce({
+      status: 'undetermined',
+      canAskAgain: true,
+    } as never);
     mocked.requestPermissionsAsync.mockResolvedValueOnce({ status: 'granted' } as never);
     const save = jest.fn(() => Promise.resolve());
 
@@ -80,6 +86,31 @@ describe('registerForPush', () => {
       expect.objectContaining({ name: 'Grupos' })
     );
     expect(save).toHaveBeenCalledWith('ExponentPushToken[test]', 'android');
+    expect(mocked.setNotificationChannelAsync.mock.calls.map(([id]) => id)).toEqual([
+      'group-messages',
+      'messages',
+      'matches',
+      'likes',
+      'groups',
+      'reminders',
+    ]);
+    expect(mocked.setNotificationChannelAsync).toHaveBeenCalledWith(
+      'reminders',
+      expect.objectContaining({ importance: mocked.AndroidImportance.DEFAULT })
+    );
+  });
+
+  it('no insiste tras denegación ni pregunta dos veces por arranque', async () => {
+    await registerForPush(jest.fn(), { prompt: true });
+    expect(mocked.requestPermissionsAsync).not.toHaveBeenCalled();
+    mocked.getPermissionsAsync.mockResolvedValue({
+      status: 'undetermined',
+      canAskAgain: true,
+    } as never);
+    await registerForPush(jest.fn(), { prompt: true });
+    await registerForPush(jest.fn(), { prompt: true });
+    expect(mocked.requestPermissionsAsync).toHaveBeenCalledTimes(1);
+    mocked.getPermissionsAsync.mockResolvedValue({ status: 'denied' } as never);
   });
 
   it('un fallo (sin red, simulador) no lanza ni deja token', async () => {
@@ -103,6 +134,55 @@ describe('registerForPush', () => {
 });
 
 describe('installPushHandlers', () => {
+  it('un blur tardío del chat anterior no borra el destino nuevo', async () => {
+    installPushHandlers(jest.fn());
+    const release = setActivePushRoute(`/group/${GROUP}`);
+    setActivePushRoute('/premium');
+    release();
+    const handler = mocked.setNotificationHandler.mock.calls[0][0]!;
+    expect(
+      (
+        await handler.handleNotification({
+          request: { content: { data: { url: '/premium' } } },
+        } as never)
+      ).shouldShowBanner
+    ).toBe(false);
+  });
+  it('solo acepta los destinos internos previstos, con UUID completo', () => {
+    for (const url of [
+      '/likes',
+      '/premium',
+      '/(tabs)/matches',
+      `/chat/${GROUP}`,
+      `/group/${GROUP}`,
+    ])
+      expect(routeOf({ url })).toBe(url);
+    for (const url of [
+      '/chat/abc',
+      '/group/--',
+      `/chat/${GROUP}?redirect=evil`,
+      '//evil',
+      '/settings',
+      '/matches',
+      'https://evil',
+      '/premium/',
+      '/likes#x',
+    ])
+      expect(routeOf({ url })).toBeNull();
+  });
+  it('silencia solo el destino en foco, incluidos chat, likes y Premium', async () => {
+    installPushHandlers(jest.fn());
+    const handler = mocked.setNotificationHandler.mock.calls[0][0]!;
+    for (const route of [`/chat/${GROUP}`, '/likes', '/premium', '/(tabs)/matches']) {
+      setActivePushRoute(route);
+      const handle = (url: string) =>
+        handler.handleNotification({ request: { content: { data: { url } } } } as never);
+      expect((await handle(route)).shouldShowBanner).toBe(false);
+      expect((await handle(`/group/${GROUP}`)).shouldShowBanner).toBe(true);
+      setActivePushRoute(null);
+      expect((await handle(route)).shouldShowBanner).toBe(true);
+    }
+  });
   it('tocar un aviso abre su chat; datos raros no navegan', () => {
     const open = jest.fn();
     const remove = jest.fn();
@@ -121,13 +201,19 @@ describe('installPushHandlers', () => {
     expect(mocked.setNotificationHandler).toHaveBeenLastCalledWith(null);
   });
 
-  it('si la app arrancó desde un aviso, lo abre una vez y lo olvida', () => {
-    mocked.getLastNotificationResponse.mockReturnValueOnce(response({ url: `/group/${GROUP}` }));
-    const open = jest.fn();
-    installPushHandlers(open);
-    expect(open).toHaveBeenCalledWith(`/group/${GROUP}`);
-    expect(mocked.clearLastNotificationResponse).toHaveBeenCalled();
-  });
+  it.each([`/group/${GROUP}`, `/chat/${GROUP}`, '/likes', '/premium', '/(tabs)/matches'])(
+    'abre %s en frío y en caliente',
+    (url) => {
+      mocked.getLastNotificationResponse.mockReturnValueOnce(response({ url }));
+      const open = jest.fn();
+      installPushHandlers(open);
+      expect(open).toHaveBeenCalledWith(url);
+      expect(mocked.clearLastNotificationResponse).toHaveBeenCalled();
+      const listener = mocked.addNotificationResponseReceivedListener.mock.calls[0][0];
+      listener(response({ url }));
+      expect(open).toHaveBeenCalledTimes(2);
+    }
+  );
 
   it('con el chat de ese grupo abierto, su aviso no se enseña', async () => {
     installPushHandlers(jest.fn());

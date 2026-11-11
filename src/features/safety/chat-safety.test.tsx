@@ -9,6 +9,8 @@ import { buildProfileInput } from '@/data/test-fixtures';
 let mockMatchId = '';
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
+  useFocusEffect: (effect: () => void | (() => void)) =>
+    jest.requireActual('react').useEffect(effect, [effect]),
   useLocalSearchParams: () => ({ matchId: mockMatchId }),
   useRouter: () => ({ push: mockPush, back: jest.fn(), replace: jest.fn() }),
   Stack: {

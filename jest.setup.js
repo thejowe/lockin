@@ -79,7 +79,7 @@ jest.mock('expo-secure-store', () => {
 // que ninguna pantalla registra tokens sin que su test lo pida;
 // `src/lib/push.test.ts` cambia estas respuestas caso a caso.
 jest.mock('expo-notifications', () => ({
-  AndroidImportance: { HIGH: 4 },
+  AndroidImportance: { HIGH: 4, DEFAULT: 3 },
   setNotificationChannelAsync: jest.fn(() => Promise.resolve(null)),
   getPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'denied' })),
   requestPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'denied' })),

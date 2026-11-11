@@ -59,6 +59,7 @@ export function expoRouterMock() {
 
   return {
     useRouter: () => router,
+    usePathname: () => '/',
     router,
     Stack,
     Link: ({ children }: { children: React.ReactNode }) => children,

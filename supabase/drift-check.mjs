@@ -195,7 +195,7 @@ export function parseMigrations(sql) {
   }
 
   const tables = new Map();
-  for (const m of sql.matchAll(/create table public\.(\w+)\s*\(/gi)) {
+  for (const m of sql.matchAll(/create table (?:if not exists\s+)?public\.(\w+)\s*\(/gi)) {
     const body = balanced(sql, m.index + m[0].length - 1);
     const columns = [];
     for (const entry of splitTopLevel(body)) {
