@@ -1,6 +1,6 @@
 # TODO maestro — LockIn MVP
 
-## ▶ Notificaciones (2026-11-11): migración aplicada, función pendiente
+## ▶ Notificaciones (2026-11-11): migración aplicada y función v4 desplegada
 
 - [x] Código de resumen diario de likes no vistos (anónimo gratis), matches,
   chat 1:1/grupos, actividad de grupos, reenganche opcional con motivo y fin de Premium.
@@ -16,9 +16,13 @@
 - [x] Migración aplicada por orden del usuario a `grrzmzktrhksbttpbblg`:
   `20261111174123_push_notifications` (local `20261111160000`). Verificados
   columnas, permisos/RLS, triggers y los dos jobs activos; Vault sin cambios.
-- [ ] **Requiere confirmación explícita:** desplegar la función actualizada
-  con los mismos secretos y verificar el cron/push de extremo a extremo.
-  `notify-group-message` continúa en v3; los nuevos avisos aún no están operativos.
+- [x] Por autorización del usuario, `notify-group-message` v4 ACTIVE,
+  verify_jwt=false, cinco módulos cotejados con el repo y los mismos secretos.
+- [x] Transporte programado comprobado: timeouts de 5 s corregidos con
+  `20261111180240_push_delivery_reliability.sql`, aplicada remotamente como
+  `20261111180445`. Digest/reenganche/Premium devuelven 200 sin timeout;
+  cron de likes real comprobado. SQL 264/264; permisos conservados.
+- [ ] Recepción real y recorrido en móvil con una build actualizada.
   No se han publicado web ni declaraciones de tiendas.
 
 

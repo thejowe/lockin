@@ -2,7 +2,8 @@
 
 Ampliación preparada en `claude/startup-cofounder-matching-app-tfeai1`.
 Migración aplicada en producción el 2026-11-11 por orden del usuario.
-Proyecto: `grrzmzktrhksbttpbblg`. Edge Function actualizada pendiente de desplegar.
+Proyecto: `grrzmzktrhksbttpbblg`. Edge Function v4 desplegada el 2026-11-11
+con autorización explícita; transporte backend comprobado. Recepción física pendiente.
 
 ## Alcance
 
@@ -12,7 +13,7 @@ Proyecto: `grrzmzktrhksbttpbblg`. Edge Function actualizada pendiente de despleg
   hay permiso, permiso contextual en likes/match/grupos y baja del token.
 - Migración nueva `20261111160000_push_notifications.sql` y ampliación de
   `notify-group-message` con la misma URL y secretos. Migración aplicada;
-  función actualizada todavía no desplegada.
+  función actualizada desplegada como v4.
 - SQL embebido y pruebas de función/cliente; documentos legales es/en/ca.
 
 ## Validación local y pendientes
@@ -49,8 +50,10 @@ Proyecto: `grrzmzktrhksbttpbblg`. Edge Function actualizada pendiente de despleg
 - [ ] Push real/frío/caliente y baja del token en iOS/Android físicos requieren
   build con servicios configurados. Los handlers y el foco están probados en Jest.
 - [x] Migración aplicada en producción; comprobados estructura, permisos y jobs.
-- [ ] Con confirmación explícita: desplegar la función actualizada → verificar
-  cron y push reales de extremo a extremo. Vault sin cambios.
+- [x] Con confirmación explícita: función actualizada desplegada como v4.
+- [x] Transporte backend comprobado, incluida corrección de timeout y zona horaria.
+- [ ] Recepción física de push pendiente.
+  Vault sin cambios.
 - [ ] Recibos posteriores de Expo: P2 en `grupos.md`, fuera de esta tanda.
 
 ## Hecho en el código
@@ -131,10 +134,49 @@ Proyecto: `grrzmzktrhksbttpbblg`. Edge Function actualizada pendiente de despleg
 - Advisors: dos tablas más con [RLS sin políticas](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy)
   (cerradas deliberadamente) y cinco nuevas [RPC propias SECURITY DEFINER](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable),
   con auth.uid y permisos de su cuenta. Las dos RPC anon previas no cambian.
-- `notify-group-message` sigue ACTIVE en v3, verify_jwt=false: no se ha desplegado.
-  Los nuevos avisos requieren el despliegue posterior; la presencia de los jobs
-  no demuestra entrega ni que la función v3 procese los tipos nuevos.
+- Al cerrar el paso de migración, `notify-group-message` seguía ACTIVE en v3,
+  verify_jwt=false. El despliegue autorizado posterior consta a continuación.
 - Sin cambios en Vault, secretos, Firebase, tiendas o web publicada.
+
+## Despliegue autorizado y verificación — 2026-11-11
+
+- Fuente base `42a81a1`; función `notify-group-message` v4 ACTIVE, mismo ID/URL,
+  verify_jwt=false. Se subieron index.ts, logic.mjs, copy.mjs,
+  revenuecat-webhook/logic.mjs y sync-entitlement/logic.mjs. Los cinco contenidos
+  recuperados del despliegue coinciden exactamente con el repo.
+- Hash del bundle reportado por Supabase:
+  `3cfd68574eee70865d9891416bef4f13e36b401116aa1695e60dcafcbc5a6eab`.
+- Sin leer o modificar secretos: POST externo sin x-push-secret devuelve
+  401 `{error:secret}`; pg_net usa la cabecera ya existente mediante enqueue.
+- Primera comprobación: legacy group-message, direct-message, match y
+  group-activity con UUID inexistente devuelven 200 `{sent:0,forgotten:0}`.
+  No se crearon eventos de producto ni se reutilizaron mensajes reales.
+- Se invocaron los enqueues del resumen y horario. Las siete solicitudes
+  terminaron con HTTP 200 en los logs de la función, pero los tres avisos
+  programados superaron el timeout de 5 s de pg_net; se reprodujo en el horario
+  al repetirlo. El resumen en caliente devolvió 200 (request 12).
+- El cron real de likes ejecutó a las 18:00 UTC: succeeded y respuesta 200 de
+  pg_net (request 15). El job horario usa el mismo helper comprobado manualmente;
+  no se ha esperado hasta el siguiente minuto 25.
+- Diagnóstico: push_local_time recorre pg_timezone_names por llamada (~75 ms);
+  el RPC del digest sin destinos tarda ~3 s con solo 16 filas de settings.
+  Corrección nueva `20261111180240_push_delivery_reliability.sql`: validar rutas
+  IANA/UTC/GMT directamente con timezone(), conservar catálogo para alias sin
+  barra, fallback Madrid ante zona inválida y 30 s de margen para el webhook.
+  No se modifica la migración ya aplicada ni el copy, horarios o destinatarios.
+- Corrección probada y aplicada en producción como
+  `20261111180445_push_delivery_reliability`. Prueba SQL 264/264, incluidas
+  recompilación idempotente, zonas inválidas/offsets, fallback, cabecera del
+  webhook, timeout de 30 s y tolerancia al fallo de red. Lint/formato del test
+  y typecheck pasan. La nueva migración no modifica Vault ni sus valores.
+- Medida posterior del mismo RPC sin destinos: 12,6 ms frente a ~3 s antes,
+  sobre estas 16 filas; no es una prueba de carga. Requests pg_net 16/17/18
+  (digest/reenganche/Premium): HTTP 200 `{sent:0,forgotten:0}`, sin timeout.
+  Reconfirmados los permisos service_role y advisors sin cambios de exposición.
+- Antes del despliegue: funciones 114/114 y Deno check pasan. Antes del commit:
+  Jest 2.248 pasan, 227 omitidos; typecheck pasa.
+- La recepción efectiva en el móvil no se ha comprobado. Un HTTP 200 con cero
+  destinos verifica el transporte y la selección vacía, no Expo/APNs/FCM.
 
 ## Orden de activación y pasos pendientes
 
@@ -144,16 +186,15 @@ Proyecto: `grrzmzktrhksbttpbblg`. Edge Function actualizada pendiente de despleg
 2. Hecho: aplicar `20261111160000_push_notifications.sql`, registrada remotamente
    como `20261111174123_push_notifications`. No volver a aplicarla ni editarla.
 3. Vault no cambia: reutilizar push_webhook_url y push_webhook_secret actuales.
-4. Con confirmación, desplegar **la misma** función:
+4. Hecho con confirmación: desplegar **la misma** función (v4):
    `supabase functions deploy notify-group-message --project-ref grrzmzktrhksbttpbblg --no-verify-jwt`.
    Incluir index.ts, logic.mjs, copy.mjs, revenuecat-webhook/logic.mjs y su
    dependencia sync-entitlement/logic.mjs (también al desplegar por MCP).
    Reutilizar PUSH_WEBHOOK_SECRET existente; no pedirlo,
    copiarlo al repo ni generar otro. `verify_jwt` sigue false.
-5. Verificar en staging/local con Vault/net/cron si se dispone de ellos; PGlite
-   comprueba la ausencia de extensiones, no el transporte pg_net real. Después,
-   con confirmación, verificar jobs `lockin-push-like-digest` (*/15) y
-   `lockin-push-hourly` (minuto 25 de cada hora) y un envío real en producción.
+5. Backend: enqueues y cron real de likes comprobados; corrección del timeout
+   aplicada y verificada. Queda un envío real con receptor en móvil para
+   validar Expo/APNs/FCM; no confundir el estado succeeded del cron con entrega.
 6. Preparar/distribuir una build con el cliente actualizado. Comprobar iOS y
    Android físicos: permiso, frío/caliente, pantalla en foco y baja por sistema.
 7. Publicar web/textos legales y actualizar declaraciones de tiendas solo con
@@ -170,7 +211,8 @@ Proyecto: `grrzmzktrhksbttpbblg`. Edge Function actualizada pendiente de despleg
   no se retrasa al día siguiente un evento inmediato perdido.
 - Una ventana de caducidad que cae íntegramente en horario nocturno puede
   quedar sin aviso de Premium: se prioriza no avisar de 22:00 a 09:00.
-- En producción solo se aplicó la migración autorizada. No se han tocado
+- En producción se aplicaron las migraciones de notificaciones y su corrección
+  de fiabilidad, y se desplegó v4 de la misma función. No se han tocado
   secretos/Vault, Firebase, tiendas, web publicada, badge, analítica, email,
   Lock-In/salas ni archivos de migraciones ya aplicadas.
 
@@ -223,6 +265,7 @@ supabase/functions/notify-group-message/index.ts
 supabase/functions/notify-group-message/logic.mjs
 supabase/functions/notify-group-message/logic.test.mjs
 supabase/migrations/20261111160000_push_notifications.sql
+supabase/migrations/20261111180240_push_delivery_reliability.sql
 supabase/push-embedded.test.mjs
 test/app/group-routes.test.tsx
 test/app/layouts.test.tsx

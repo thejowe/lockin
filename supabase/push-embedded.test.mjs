@@ -26,6 +26,13 @@ test('Push: destinatarios, horarios, privacidad, preferencias, marcas y permisos
     await db.exec(
       readFileSync(join(here, 'migrations', '20261111160000_push_notifications.sql'), 'utf8')
     );
+    // Reaplicar las correcciones posteriores conserva el esquema final.
+    const reliability = readFileSync(
+      join(here, 'migrations', '20261111180240_push_delivery_reliability.sql'),
+      'utf8'
+    );
+    await db.exec(reliability);
+    await db.exec(reliability);
     const localTimeDefinition = (
       await db.query(
         "select pg_get_functiondef('public.push_local_time(uuid,timestamptz)'::regprocedure) as sql"
@@ -69,6 +76,21 @@ test('Push: destinatarios, horarios, privacidad, preferencias, marcas y permisos
           `select public.push_local_time('00000000-0000-4000-8000-999999999999')=timezone('Europe/Madrid',now()) as same`
         );
         assert.equal(noProfile[0].same, true);
+        await db.exec(`update public.profiles set timezone='UTC+02' where id='${B}'`);
+        assert.equal(
+          (
+            await rows(
+              `select public.push_local_time('${B}')=timezone('Europe/Madrid',now()) as same`
+            )
+          )[0].same,
+          true
+        );
+        await db.exec(`update public.profiles set timezone='UTC' where id='${B}'`);
+        assert.equal(
+          (await rows(`select public.push_local_time('${B}')=timezone('UTC',now()) as same`))[0]
+            .same,
+          true
+        );
         await db.exec(`update public.profiles set timezone='America/New_York' where id='${B}'`);
         assert.equal(
           (
@@ -366,6 +388,35 @@ test('Push: destinatarios, horarios, privacidad, preferencias, marcas y permisos
           );
           assert.deepEqual(await targets('like_digest_push_targets'), []);
         })
+    );
+    await t.test('webhook horario pasa timeout de 30 s y su fallo no rompe la operación', () =>
+      tx(async () => {
+        // Dobles locales: nunca leen Vault ni hacen peticiones de red reales.
+        await db.exec(`create schema vault;
+          create table vault.decrypted_secrets(name text,decrypted_secret text);
+          insert into vault.decrypted_secrets values
+            ('push_webhook_url','https://example.invalid/push'),('push_webhook_secret','fixture');
+          create schema net;
+          create table net.requests(timeout integer,body jsonb,authenticated boolean);
+          create function net.http_post(url text,body jsonb,headers jsonb,timeout_milliseconds integer)
+          returns bigint language plpgsql as $$ begin
+            insert into net.requests values(timeout_milliseconds,body,headers ? 'x-push-secret');
+            return 1;
+          end $$;
+          select public.enqueue_hourly_push();`);
+        assert.deepEqual(
+          await rows(
+            `select timeout,body->>'type' as kind,authenticated from net.requests order by kind`
+          ),
+          [
+            { timeout: 30000, kind: 'premium-expiry', authenticated: true },
+            { timeout: 30000, kind: 'reengagement', authenticated: true },
+          ]
+        );
+        await db.exec(`create or replace function net.http_post(url text,body jsonb,headers jsonb,timeout_milliseconds integer)
+          returns bigint language plpgsql as $$ begin raise exception 'network fixture failure'; end $$;`);
+        await assert.doesNotReject(() => db.exec('select public.enqueue_like_digest_push()'));
+      })
     );
   } finally {
     await db.close();
