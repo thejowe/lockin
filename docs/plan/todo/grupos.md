@@ -56,9 +56,8 @@ de los dos lados y dentro no hay jerarquía más allá de administrar (expulsar,
   por grupo); `/group/info?id=`. Tests: mock, Supabase, contrato (+1 caso), PGlite (+3 casos) y
   pantallas; suite completa en verde. De paso, `test/app/groups.test.tsx` vuelve a verde (estaba
   rojo en CI desde el rediseño de la tarjeta del 2026-11-10).
-- [ ] Aplicar `20261111120000_groups_multi_membership.sql` en producción (pide permiso al
-  usuario; pegar byte a byte). Hasta entonces Schema drift sale rojo y la app nueva contra prod
-  falla en `leave_group(p_group_id)`.
+- [x] Aplicar `20261111120000_groups_multi_membership.sql` en producción: aplicada por MCP el
+  2026-11-11, archivo entero byte a byte (`groups_multi_membership`).
 - [ ] `[comprobador]` Recorrido multi-grupo en emulador: admin ve su pestaña y recluta; en
   «Grupos» entra en otro; Matches enseña las dos filas.
 - [x] Textos legales de Grupos (2026-11-09): Privacidad v1.7, Términos v1.5 (§10 Grupos,
