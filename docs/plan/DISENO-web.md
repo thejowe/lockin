@@ -6,16 +6,17 @@ de la app (`src/constants/theme.ts`).
 ## Concepto: «Dos mitades»
 
 El símbolo de cofounder son dos medias lunas que casi se tocan y un punto en el hueco común. La
-landing cuenta lo mismo con luz: dos halos (blanco cálido y verde-azulado) separados en la portada
+landing cuenta lo mismo con luz: dos halos de luz blanca separados en la portada
 se acercan a medida que se baja. Un único gesto protagonista —el móvil que entra girando, se
 desliza al centro y va cambiando de pantalla—; todo lo demás, sobrio.
 
 ## Sistema
 
-- **Paleta:** la de la app, solo oscura. Fondo `#000`, cristal `#FFFFFF14`/`#FFFFFF29`, canto
-  `#FFFFFF2E`, tinta `#F5F5F7` / `#BEBEC4` / `#A8A8AE`, acción blanca con tinta `#1A0A02`, verde-azulado
-  `#7FC3B0` para match y confirmación. Premium usa su noche azul (`#040815`) con el azul del diamante
-  `#4DA3FF` y la insignia `#FFD66B`. Contrastes medidos en `theme.test.ts` (la web usa los mismos pares).
+- **Paleta:** solo los grises de la app (decisión del usuario del 2026-11-11: nada de verde-azulado,
+  azul ni dorado), salvo Premium. Fondo `#000`, cristal `#FFFFFF14`/`#FFFFFF29`, canto `#FFFFFF2E`,
+  tinta `#F5F5F7` / `#BEBEC4` / `#A8A8AE`, superficie `#18181B`, acento blanco (`brass` de la app) con
+  tinta `#1A0A02`. Premium conserva la noche azul del paywall (`#040815`, halos `#2F7BFF`/`#6A5BFF`, gema azul, insignia
+  `#FFD66B`).
 - **Tipografía:** Instrument Serif (titulares; énfasis en cursiva, nunca negrita) sobre Instrument
   Sans 400/600, servidas desde `web/fonts/` con `font-display: swap`. Escala fluida con `clamp()`.
 - **Radios:** 8/12/16/22/26 y `pill`, como la app. Espaciado en múltiplos de 4.

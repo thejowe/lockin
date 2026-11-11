@@ -43,10 +43,11 @@
   --ink-3: #a8a8ae;
   --edge: #ffffff2e;
   --on-white: #1a0a02;
-  --teal: #7fc3b0;
-  --teal-soft: #7fc3b029;
-  --diamond: #4da3ff;
-  /* Premium */
+  /* Acento: el blanco de la app (`brass`), y su versión suave de cristal. */
+  --accent: #f5f5f7;
+  --accent-soft: #ffffff1f;
+  --accent-edge: #ffffff80;
+  /* Premium: la noche azul del paywall de la app (PremiumTones), única excepción a los grises. */
   --night: #040815;
   --halo: #2f7bff;
   --halo-cool: #6a5bff;
@@ -292,7 +293,7 @@ svg.i {
   transform: translateX(calc((-34 + var(--conv) * 30) * 1vw));
 }
 .halo-b {
-  background: radial-gradient(closest-side, #7fc3b01f, #7fc3b00a 45%, transparent 70%);
+  background: radial-gradient(closest-side, #ffffff0d, #ffffff05 45%, transparent 70%);
   transform: translateX(calc((34 - var(--conv) * 30) * 1vw));
 }
 
@@ -418,7 +419,7 @@ main,
   width: 2.2em;
   height: 2.2em;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #3b4a66, #050608 60%);
+  background: radial-gradient(circle at 35% 35%, #4a4a52, #050506 60%);
   box-shadow: 0 0 0 0.35em #1d1d22;
   left: 0.9em;
   top: 0.9em;
@@ -583,7 +584,7 @@ main,
   overflow: hidden;
   border: 1px solid #ffffff1f;
   background:
-    radial-gradient(120% 65% at 50% 22%, hsl(var(--hue) 38% 30%), hsl(var(--hue) 30% 11%) 62%, #050505);
+    radial-gradient(120% 65% at 50% 22%, hsl(var(--hue) 5% 30%), hsl(var(--hue) 4% 11%) 62%, #050505);
 }
 .card-under {
   transform: scale(0.94) translateY(1.4em);
@@ -599,7 +600,7 @@ main,
   font-size: 12em;
   line-height: 1;
   letter-spacing: -0.03em;
-  color: hsl(var(--hue) 55% 82% / 0.9);
+  color: hsl(var(--hue) 4% 86% / 0.9);
 }
 .card-info {
   position: absolute;
@@ -683,8 +684,8 @@ main,
   border: 1px solid #ffffff1f;
 }
 .days i.on {
-  background: var(--teal-soft);
-  border-color: #7fc3b080;
+  background: var(--accent-soft);
+  border-color: var(--accent-edge);
 }
 
 .actions {
@@ -753,6 +754,70 @@ main,
 .btn-glass {
   background: var(--glass);
   border: 1px solid var(--edge);
+}
+
+/*
+ * 0 · Portada: la tarjeta de Lucía se inclina hacia el corazón y luego hacia la
+ * cruz, sin llegar a soltarse, y el botón al que se acerca crece y se rellena.
+ * Ciclo largo y suave (6 s, ease-in-out) para que sea un vaivén, no un tic.
+ */
+.scr-home .card-sway {
+  transform-origin: 50% 110%;
+}
+.scr-home.is-active .card-sway {
+  animation: sway 6s var(--ease-in-out) 2.2s infinite;
+}
+.scr-home.is-active .a-yes {
+  animation: lean-yes 6s var(--ease-in-out) 2.2s infinite;
+}
+.scr-home.is-active .a-nope {
+  animation: lean-nope 6s var(--ease-in-out) 2.2s infinite;
+}
+.scr-home .a-yes .i,
+.scr-home .a-nope .i {
+  fill: transparent;
+  transition: fill 0.3s;
+}
+@keyframes sway {
+  0%,
+  8%,
+  50%,
+  58%,
+  100% {
+    transform: none;
+  }
+  24%,
+  32% {
+    transform: translate3d(14%, 0, 0) rotate(7deg);
+  }
+  74%,
+  82% {
+    transform: translate3d(-14%, 0, 0) rotate(-7deg);
+  }
+}
+@keyframes lean-yes {
+  0%,
+  8%,
+  50%,
+  100% {
+    transform: none;
+  }
+  24%,
+  32% {
+    transform: scale(1.28);
+  }
+}
+@keyframes lean-nope {
+  0%,
+  50%,
+  58%,
+  100% {
+    transform: none;
+  }
+  74%,
+  82% {
+    transform: scale(1.28);
+  }
 }
 
 /* 1 · Perfil */
@@ -1038,9 +1103,9 @@ main,
   top: 1.4em;
   left: 1.2em;
   padding: 0.2em 0.6em;
-  border: 0.18em solid var(--teal);
+  border: 0.18em solid var(--accent);
   border-radius: 0.5em;
-  color: var(--teal);
+  color: var(--accent);
   font-weight: 600;
   font-size: 1.6em;
   letter-spacing: 0.08em;
@@ -1255,7 +1320,7 @@ main,
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: radial-gradient(70% 45% at 50% 34%, #7fc3b052, transparent 70%);
+  background: radial-gradient(70% 45% at 50% 34%, #ffffff24, transparent 70%);
 }
 .m-pair {
   position: absolute;
@@ -1269,8 +1334,8 @@ main,
   place-items: center;
   border-radius: 50%;
   font-family: var(--serif);
-  color: hsl(var(--hue) 55% 85%);
-  background: radial-gradient(circle at 40% 30%, hsl(var(--hue) 40% 34%), hsl(var(--hue) 30% 12%));
+  color: hsl(var(--hue) 4% 88%);
+  background: radial-gradient(circle at 40% 30%, hsl(var(--hue) 5% 34%), hsl(var(--hue) 4% 12%));
   border: 0.15em solid #000;
 }
 .m-pair .m-av {
@@ -1293,8 +1358,8 @@ main,
   width: 1.3em;
   height: 1.3em;
   border-radius: 50%;
-  background: var(--teal);
-  box-shadow: 0 0 1.4em var(--teal);
+  background: var(--accent);
+  box-shadow: 0 0 1.4em var(--accent);
 }
 .m-title {
   font-family: var(--serif);
@@ -1391,7 +1456,7 @@ main,
 }
 .chat-head small {
   font-size: 0.85em;
-  color: var(--teal);
+  color: var(--accent);
 }
 .m-av.sm {
   width: 2.8em;
@@ -1621,7 +1686,7 @@ main,
 .eyebrow-mark {
   width: 22px;
   height: 15px;
-  fill: var(--teal);
+  fill: var(--accent);
 }
 .hero-title {
   margin: 22px 0 18px;
@@ -1636,7 +1701,7 @@ main,
 .premium h2 em,
 .closing h2 em {
   font-style: italic;
-  background: linear-gradient(100deg, var(--ink) 20%, var(--teal) 100%);
+  background: linear-gradient(100deg, var(--ink) 30%, var(--ink-3) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -1667,11 +1732,11 @@ main,
 }
 .store {
   display: inline-flex;
-  flex-direction: column;
-  justify-content: center;
-  min-width: 150px;
+  align-items: center;
+  gap: 12px;
+  min-width: 168px;
   min-height: 56px;
-  padding: 8px 20px;
+  padding: 8px 20px 8px 16px;
   border-radius: var(--r-lg);
   font-weight: 600;
   font-size: 1.1rem;
@@ -1680,6 +1745,16 @@ main,
   background: var(--ink);
   color: var(--on-white);
   transition: transform 0.2s var(--ease-out);
+}
+.store-logo {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+.store-text {
+  display: flex;
+  flex-direction: column;
 }
 .store small {
   font-weight: 400;
@@ -1699,7 +1774,7 @@ a.store:active {
   border: 1px solid var(--edge);
 }
 .store.is-soon small {
-  color: var(--teal);
+  color: var(--accent);
   opacity: 1;
   font-weight: 600;
   text-transform: uppercase;
@@ -2246,7 +2321,7 @@ a.store:active {
 }
 .faq .a a {
   color: var(--ink);
-  text-decoration-color: var(--teal);
+  text-decoration-color: var(--accent);
   text-underline-offset: 3px;
 }
 @supports (interpolate-size: allow-keywords) {
@@ -2285,7 +2360,7 @@ a.store:active {
   overflow: visible;
 }
 .closing-mark .cm-dot {
-  fill: var(--teal);
+  fill: var(--accent);
   transform-origin: 32px 32px;
 }
 .ready .closing-mark .cm-l {
@@ -2459,6 +2534,17 @@ a.store:active {
     min-width: 0;
     flex: 1 1 140px;
     max-width: 180px;
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: 1rem;
+  }
+  .store-logo {
+    width: 20px;
+    height: 20px;
+  }
+  /* En pantallas muy estrechas los dos botones no caben en fila: bajan de línea. */
+  .download .stores {
+    flex-wrap: wrap;
   }
   .scroll-cue {
     display: none;
