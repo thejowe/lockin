@@ -2774,7 +2774,7 @@ a.store:active {
    punto, cae al hueco y se aplasta; las mitades cogen impulso, el punto se
    apaga con un pop y las hojas se abren destapando la portada. 2,46 s; luego
    el bloque queda oculto y nunca captura toques. Solo existe con `html.intro`
-   (una vez por sesión, con JS y sin «reducir movimiento»). */
+   (en cada carga, con JS y sin «reducir movimiento»). */
 .intro-curtain {
   display: none;
 }

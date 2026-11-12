@@ -449,9 +449,9 @@ function appJsonLd(strings, stores, lang) {
 
 // Intro de la portada: el símbolo se arma sobre un telón negro de dos hojas y
 // el telón se abre llevándose cada media luna (la animación vive en
-// `landing.css`, sección «Intro»). Una vez por sesión, solo con JS y nunca con
-// «reducir movimiento»: sin la clase `intro` el bloque ni se pinta.
-const INTRO_SCRIPT = `(function(d){d.classList.replace('no-js','js');try{if(sessionStorage.getItem('cf-intro')||matchMedia('(prefers-reduced-motion: reduce)').matches)return;sessionStorage.setItem('cf-intro','1');d.classList.add('intro')}catch(e){}})(document.documentElement);`;
+// `landing.css`, sección «Intro»). En cada carga de la página, solo con JS y
+// nunca con «reducir movimiento»: sin la clase `intro` el bloque ni se pinta.
+const INTRO_SCRIPT = `(function(d){d.classList.replace('no-js','js');if(!matchMedia('(prefers-reduced-motion: reduce)').matches)d.classList.add('intro')})(document.documentElement);`;
 const MARK_BOX = '5 14 54 36';
 const INTRO_MARKUP = `    <div class="intro-curtain" aria-hidden="true">
       <div class="intro-leaf intro-leaf-l"></div>
