@@ -1,18 +1,17 @@
 /**
  * El relevo entre la intro (`AppIntro`) y la bienvenida (`/mode`).
  *
- * La intro arma el logo en el centro y, si el arranque acaba en la bienvenida
- * (sin cuenta), lo encoge hasta el sitio exacto donde esa pantalla pinta el suyo.
- * Para eso necesita saber tres cosas que viven en pantallas distintas, y este
- * módulo es el cable entre ellas:
+ * La intro arma el logo en el centro de un telón y lo abre para destapar la
+ * página. Para no destapar una pantalla a medio montar necesita saber tres cosas
+ * que viven en pantallas distintas, y este módulo es el cable entre ellas:
  *
- *   - `active`: la intro sigue en pantalla. La bienvenida esconde su logo y su
- *     texto mientras tanto y los muestra cuando la intro aterriza;
+ *   - `active`: el telón sigue cerrado. La bienvenida esconde su logo y su texto
+ *     mientras tanto y los muestra en cuanto el telón empieza a abrirse;
  *   - `destination`: a dónde acaba yendo el arranque (`index.tsx`). Sin esto la
- *     intro no sabría si esperar al logo de la bienvenida o fundirse y listo;
+ *     intro no sabría si esperar a la bienvenida o abrir ya;
  *   - `target`: dónde está el logo de la bienvenida, en coordenadas de ventana.
  *     `settled` es `false` mientras la pantalla puede seguir deslizándose al
- *     entrar: volar a una posición a medias dejaría el logo desencajado.
+ *     entrar: la intro espera a que asiente antes de abrir.
  *
  * `active` nace en `false` y lo enciende `beginIntro()` al importar `app-intro`
  * (el `_layout` lo importa antes del primer render): así las pantallas que se
