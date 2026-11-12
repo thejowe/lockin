@@ -63,6 +63,12 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  GoogleSignin,
+  isCancelledResponse,
+  isErrorWithCode,
+  statusCodes,
+} from '@react-native-google-signin/google-signin';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
@@ -1472,13 +1478,14 @@ export async function unlinkLinkedinIdentity(): Promise<void> {
  * Abre una sesión NUEVA (no asciende la anónima del arranque): solo se ofrece en
  * la bienvenida, donde todavía no hay perfil que perder.
  *
- * Apple en iOS va por la hoja nativa del sistema (`signInWithAppleNative`), no
- * por el navegador.
+ * Apple en iOS y Google en iOS/Android van por la hoja nativa del sistema
+ * (`signInWithAppleNative`, `signInWithGoogleNative`), no por el navegador.
  *
  * @returns `true` si se entró; `false` si se canceló.
  */
 export async function signInWithProvider(provider: 'google' | 'apple'): Promise<boolean> {
   if (provider === 'apple' && Platform.OS === 'ios') return signInWithAppleNative();
+  if (provider === 'google' && Platform.OS !== 'web') return signInWithGoogleNative();
 
   const client = getSupabaseClient();
   const redirectTo = authRedirectUrl();
@@ -1497,6 +1504,68 @@ export async function signInWithProvider(provider: 'google' | 'apple'): Promise<
     throw toAccountError(cause);
   });
   return outcome === 'done';
+}
+
+/**
+ * Clientes OAuth de Google Cloud (proyecto `cofounder-512013`). No son secretos:
+ * van dentro de la app igual que el bundle ID.
+ *
+ * - El web es la audiencia del token: el mismo que Supabase tiene como primer
+ *   «Client ID» del proveedor Google, así que el token de Android lo acepta tal
+ *   cual. El de iOS va también en esa lista.
+ * - Android no lleva ID en el código: Google reconoce la app por el paquete y la
+ *   huella SHA-1 de la firma (clientes «cofounder Android» de Play, EAS y debug).
+ */
+const GOOGLE_WEB_CLIENT_ID =
+  '187078015966-mcsr1ik1ut7je7ba6aacdgc77ccsl3pi.apps.googleusercontent.com';
+const GOOGLE_IOS_CLIENT_ID =
+  '187078015966-4sc32ltkokbk9h7bm58egk616im4eje8.apps.googleusercontent.com';
+
+let googleConfigured = false;
+
+/**
+ * Google con el selector de cuentas nativo. Por el navegador, Google enseña
+ * «Ir a grrzmzktrhksbttpbblg.supabase.co» (el dominio de la vuelta de Supabase);
+ * así no hay dominio que enseñar. El token de identidad se canjea en GoTrue con
+ * `signInWithIdToken`, como el de Apple.
+ *
+ * En iOS el SDK de Google mete un nonce propio en el token que no se puede leer,
+ * así que el proveedor Google de Supabase necesita «Skip nonce checks».
+ *
+ * @returns `true` si se entró; `false` si la persona cerró el selector.
+ */
+async function signInWithGoogleNative(): Promise<boolean> {
+  if (!googleConfigured) {
+    GoogleSignin.configure({
+      webClientId: GOOGLE_WEB_CLIENT_ID,
+      iosClientId: GOOGLE_IOS_CLIENT_ID,
+    });
+    googleConfigured = true;
+  }
+
+  let idToken: string | null;
+  try {
+    if (Platform.OS === 'android') {
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+    }
+    // Sin cuenta recordada: que el selector salga siempre, para poder elegir
+    // otra cuenta tras cerrar sesión.
+    await GoogleSignin.signOut().catch(() => undefined);
+    const response = await GoogleSignin.signIn();
+    if (isCancelledResponse(response)) return false;
+    idToken = response.data.idToken;
+  } catch (cause) {
+    if (isErrorWithCode(cause) && cause.code === statusCodes.SIGN_IN_CANCELLED) return false;
+    throw toAccountError(cause);
+  }
+  if (!idToken) {
+    throw new Error(t('Google no ha devuelto tu identificación. Vuelve a intentarlo.'));
+  }
+
+  const client = getSupabaseClient();
+  const { error } = await client.auth.signInWithIdToken({ provider: 'google', token: idToken });
+  if (error) throw toAccountError(error);
+  return true;
 }
 
 /**

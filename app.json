@@ -42,6 +42,12 @@
       "./plugins/with-new-intent-initial-url",
       "expo-apple-authentication",
       [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.187078015966-4sc32ltkokbk9h7bm58egk616im4eje8"
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#000000",

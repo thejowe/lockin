@@ -10,6 +10,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
@@ -672,6 +673,8 @@ describe('LinkedIn', () => {
 
 describe('signInWithProvider por el navegador', () => {
   beforeEach(() => {
+    // Google solo va por el navegador en web; en iOS y Android, por el selector nativo.
+    Platform.OS = 'web';
     auth.signInWithOAuth.mockResolvedValue({
       data: { url: 'https://accounts.google.com/o/oauth2' },
       error: null,
@@ -778,6 +781,7 @@ describe('signInWithProvider por el navegador', () => {
   });
 
   it('una vuelta sin code es un error, no una sesión', async () => {
+    Platform.OS = 'web';
     jest.mocked(WebBrowser.openAuthSessionAsync).mockResolvedValue({
       type: 'success',
       url: 'cofounder://auth/callback',
@@ -792,5 +796,69 @@ describe('signInWithProvider por el navegador', () => {
     jest.mocked(AppleAuthentication.signInAsync).mockRejectedValue(failure);
 
     await expect(signInWithProvider('apple')).rejects.toBe(failure);
+  });
+});
+
+describe('signInWithProvider con Google nativo', () => {
+  const signIn = jest.mocked(GoogleSignin.signIn);
+
+  beforeEach(() => {
+    auth.signInWithIdToken.mockResolvedValue({ data: {}, error: null });
+  });
+
+  it.each(['android', 'ios'] as const)(
+    'en %s canjea el token del selector sin abrir el navegador',
+    async (os) => {
+      Platform.OS = os;
+      signIn.mockResolvedValue({
+        type: 'success',
+        data: { idToken: 'google-id-token' },
+      } as Awaited<ReturnType<typeof GoogleSignin.signIn>>);
+
+      await expect(signInWithProvider('google')).resolves.toBe(true);
+
+      expect(auth.signInWithIdToken).toHaveBeenCalledWith({
+        provider: 'google',
+        token: 'google-id-token',
+      });
+      expect(auth.signInWithOAuth).not.toHaveBeenCalled();
+      expect(WebBrowser.openAuthSessionAsync).not.toHaveBeenCalled();
+    }
+  );
+
+  it('cerrar el selector es cancelar', async () => {
+    signIn.mockResolvedValue({ type: 'cancelled', data: null });
+
+    await expect(signInWithProvider('google')).resolves.toBe(false);
+    expect(auth.signInWithIdToken).not.toHaveBeenCalled();
+  });
+
+  it('la cancelación como error también es cancelar', async () => {
+    signIn.mockRejectedValue(Object.assign(new Error('cancel'), { code: 'SIGN_IN_CANCELLED' }));
+
+    await expect(signInWithProvider('google')).resolves.toBe(false);
+  });
+
+  it('sin token de identidad no se entra', async () => {
+    signIn.mockResolvedValue({
+      type: 'success',
+      data: { idToken: null },
+    } as Awaited<ReturnType<typeof GoogleSignin.signIn>>);
+
+    await expect(signInWithProvider('google')).rejects.toThrow(/identificación/);
+    expect(auth.signInWithIdToken).not.toHaveBeenCalled();
+  });
+
+  it('un fallo de GoTrue al canjear se traduce', async () => {
+    signIn.mockResolvedValue({
+      type: 'success',
+      data: { idToken: 'google-id-token' },
+    } as Awaited<ReturnType<typeof GoogleSignin.signIn>>);
+    auth.signInWithIdToken.mockResolvedValue({
+      data: {},
+      error: Object.assign(new Error('sin red'), { name: 'AuthRetryableFetchError' }),
+    });
+
+    await expect(signInWithProvider('google')).rejects.toMatchObject({ reason: 'offline' });
   });
 });
