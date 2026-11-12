@@ -1,0 +1,15 @@
+-- Arregla el alta de usuarios nuevos (selección de modo).
+--
+-- `20261111160000_push_notifications.sql` dejó a `authenticated` con
+-- `update (active_mode)` solamente. El cliente guarda el modo con un upsert de
+-- PostgREST (`on_conflict=user_id`), que genera
+--   ON CONFLICT (user_id) DO UPDATE SET user_id = EXCLUDED.user_id, active_mode = …
+-- y eso exige UPDATE también sobre `user_id`. Como `set_notification_locale`
+-- crea la fila nada más arrancar, el upsert siempre entra por la rama de
+-- conflicto y fallaba con 42501 → 403: ningún usuario nuevo podía pasar de la
+-- elección de modo.
+--
+-- Dar UPDATE sobre `user_id` no abre nada: la política RLS
+-- "user_settings: solo los tuyos" exige `user_id = auth.uid()` en USING y en
+-- WITH CHECK, así que lo único que se puede escribir ahí es el propio uid.
+grant update (user_id) on public.user_settings to authenticated;
