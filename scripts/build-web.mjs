@@ -393,7 +393,8 @@ export function storeButtons(stores, labels) {
       const url = stores[key];
       const name = escapeHtml(labels[key]);
       const logo = `<svg class="store-logo" viewBox="0 0 24 24" aria-hidden="true"><path d="${STORE_LOGOS[key]}" /></svg>`;
-      const text = (pre) => `<span class="store-text"><small>${escapeHtml(pre)}</small>${name}</span>`;
+      const text = (pre) =>
+        `<span class="store-text"><small>${escapeHtml(pre)}</small>${name}</span>`;
       if (url) {
         return `<a class="store" data-store="${key}" href="${escapeHtml(url)}">${logo}${text(labels[`${key}Pre`])}</a>`;
       }
@@ -445,6 +446,20 @@ function appJsonLd(strings, stores, lang) {
   // `<` escapado: el JSON va dentro de un <script> y no debe poder cerrarlo.
   return JSON.stringify(data).replace(/</g, '\\u003c');
 }
+
+// Intro de la portada: el símbolo se arma sobre un telón negro de dos hojas y
+// el telón se abre llevándose cada media luna (la animación vive en
+// `landing.css`, sección «Intro»). Una vez por sesión, solo con JS y nunca con
+// «reducir movimiento»: sin la clase `intro` el bloque ni se pinta.
+const INTRO_SCRIPT = `(function(d){d.classList.replace('no-js','js');try{if(sessionStorage.getItem('cf-intro')||matchMedia('(prefers-reduced-motion: reduce)').matches)return;sessionStorage.setItem('cf-intro','1');d.classList.add('intro')}catch(e){}})(document.documentElement);`;
+const MARK_BOX = '5 14 54 36';
+const INTRO_MARKUP = `    <div class="intro-curtain" aria-hidden="true">
+      <div class="intro-leaf intro-leaf-l"></div>
+      <div class="intro-leaf intro-leaf-r"></div>
+      <div class="intro-ride intro-ride-l"><svg class="intro-half intro-half-l" viewBox="${MARK_BOX}"><path d="M32 15.88 A18 18 0 1 0 32 48.12 A18 18 0 0 1 32 15.88 Z" transform="translate(-1 0)" /></svg></div>
+      <div class="intro-ride intro-ride-r"><svg class="intro-half intro-half-r" viewBox="${MARK_BOX}"><path d="M32 15.88 A18 18 0 1 1 32 48.12 A18 18 0 0 0 32 15.88 Z" transform="translate(1 0)" /></svg></div>
+      <div class="intro-dot-y"><svg class="intro-dot" viewBox="${MARK_BOX}"><circle cx="32" cy="32" r="5" /></svg></div>
+    </div>`;
 
 /** Documento completo de la portada: cabecera, recorrido, pie y metadatos. */
 export function landingPage({ lang, strings, body, stores, assetVersion = '' }) {
@@ -504,11 +519,12 @@ ${ogAlternates}
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preload" href="/fonts/InstrumentSerif_400Regular.ttf" as="font" type="font/ttf" crossorigin />
     <link rel="stylesheet" href="/landing.css${v}" />
-    <script>document.documentElement.classList.replace('no-js', 'js');</script>
+    <script>${INTRO_SCRIPT}</script>
     <script src="/landing.js${v}" defer></script>
     <script type="application/ld+json">${appJsonLd(strings, stores, lang)}</script>
   </head>
   <body class="landing">
+${INTRO_MARKUP}
     <a class="skip" href="#como-funciona">${escapeHtml(meta.skip)}</a>
     <header class="top">
       <a class="brand" href="${pagePath(lang, '')}" aria-label="cofounder"><svg aria-hidden="true"><use href="#i-mark" /></svg><span>cofounder</span></a>
