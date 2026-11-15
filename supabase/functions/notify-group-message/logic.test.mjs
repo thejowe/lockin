@@ -190,9 +190,14 @@ test('tipos y payloads desconocidos son 400 sin consultar destinatarios', async 
 
 test('likes gratis anónimos y Premium con nombre, plurales y Super Like en los tres idiomas', () => {
   for (const [locale, one, many, named] of [
-    ['es', 'Tienes un like nuevo', 'Tienes 3 likes nuevos', 'Ana te ha dado like'],
-    ['en', 'You have 1 new like', 'You have 3 new likes', 'Ana liked you'],
-    ['ca', 'Tens un like nou', 'Tens 3 likes nous', "Ana t'ha donat like"],
+    [
+      'es',
+      '¡Tienes un like nuevo! 🔥',
+      '¡3 personas te han dado like! 🔥',
+      '¡Ana te ha dado like! 🔥',
+    ],
+    ['en', 'You have a new like! 🔥', '3 people liked you! 🔥', 'Ana liked you! 🔥'],
+    ['ca', 'Tens un like nou! 🔥', "3 persones t'han donat like! 🔥", "Ana t'ha donat like! 🔥"],
   ]) {
     const base = { token: 'token', user_id: MESSAGE, locale, like_count: 1, first_name: null };
     const free = buildMessages([base], 'like-digest')[0];
@@ -216,11 +221,11 @@ test('likes gratis anónimos y Premium con nombre, plurales y Super Like en los 
       [{ token: 'x', like_count: 2, first_name: 'Ana', locale: 'en' }],
       'like-digest'
     )[0].body,
-    'Ana and 1 other liked you.'
+    'Ana and 1 other want to meet you! 🚀'
   );
   assert.equal(
     buildMessages([{ token: 'x', like_count: 1, locale: null }], 'like-digest')[0].title,
-    'You have 1 new like'
+    'You have a new like! 🔥'
   );
 });
 
@@ -240,7 +245,7 @@ test('cada tipo usa su canal, hilo, sonido y destino, sin fiarse del payload', (
     event_kind: 'joined',
   };
   const match = buildMessages([base], 'match')[0];
-  assert.equal(match.title, 'És un match!');
+  assert.equal(match.title, 'És un match! 🎉');
   assert.equal(match.data.url, `/chat/${MESSAGE}`);
   assert.equal(match.channelId, 'matches');
   assert.equal(match.sound, 'default');
@@ -255,14 +260,14 @@ test('cada tipo usa su canal, hilo, sonido y destino, sin fiarse del payload', (
     assert.match(event.title, /Equip/);
   }
   const reminder = buildMessages([{ ...base, like_count: 0 }], 'reengagement')[0];
-  assert.equal(reminder.title, 'Tens missatges nous');
+  assert.equal(reminder.title, 'Tens missatges nous! 💬');
   assert.equal(reminder.data.url, base.url);
   assert.equal(reminder.sound, undefined);
   assert.equal(reminder.channelId, 'reminders');
   assert.equal(buildMessages([{ ...base, like_count: 1 }], 'reengagement')[0].data.url, '/likes');
   const expiry = buildMessages([base], 'premium-expiry')[0];
   assert.equal(expiry.data.url, '/premium');
-  assert.equal(expiry.title, 'El teu Premium acaba demà');
+  assert.equal(expiry.title, 'El teu Premium acaba demà! ⏳');
 });
 
 test('solo marca destinatarios con ticket ok; lotes fallidos y tickets ausentes no avanzan marcas', async () => {
