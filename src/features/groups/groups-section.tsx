@@ -11,17 +11,21 @@
  * Los grupos en los que estás se abren desde Matches (una fila por grupo).
  *
  * `SectionSwitch` es el selector «Cofundador | Grupos | <tu grupo>» que la
- * pantalla pone encima; vive aquí para que Descubrir solo componga.
+ * pantalla pone encima; vive aquí para que Descubrir solo componga. Desde el
+ * 2026-11-15 la pestaña de tu grupo no se ve en Cofundador: se despliega al
+ * entrar en Grupos.
  */
 
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 
 import { Button } from '@/components/button';
 import { LoadingState, MessageState } from '@/components/state-view';
 import { ThemedText } from '@/components/themed-text';
-import { Radii, Spacing, Stroke } from '@/constants/theme';
+import { Duration, Radii, Spacing, Springs, Stroke } from '@/constants/theme';
 import { GROUP_MAX_MEMBERSHIPS } from '@/data';
+import { useReduceMotion } from '@/hooks/use-reduce-motion';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
 
@@ -44,11 +48,13 @@ export function SectionSwitch({
   myGroupName?: string | null;
 }) {
   const theme = useTheme();
+  const reduceMotion = useReduceMotion();
   const options: { value: DiscoverSection; label: string; a11y: string }[] = [
     { value: 'cofounder', label: t('Cofundador'), a11y: t('Cofundador') },
     { value: 'groups', label: t('Grupos'), a11y: t('Grupos') },
   ];
-  if (myGroupName) {
+  // La pestaña de tu grupo cuelga de «Grupos»: solo se despliega estando ahí.
+  if (myGroupName && value !== 'cofounder') {
     options.push({
       value: 'my-group',
       label: myGroupName,
@@ -71,21 +77,33 @@ export function SectionSwitch({
         {options.map((option) => {
           const selected = option.value === value;
           return (
-            <Pressable
+            <Animated.View
               key={option.value}
-              accessibilityRole="tab"
-              accessibilityState={{ selected }}
-              accessibilityLabel={option.a11y}
-              onPress={() => onChange(option.value)}
-              style={[styles.option, selected && { backgroundColor: theme.backgroundSelected }]}>
-              <ThemedText
-                type="smallBold"
-                numberOfLines={1}
-                style={option.value === 'my-group' ? styles.groupLabel : undefined}
-                themeColor={selected ? 'text' : 'textSecondary'}>
-                {option.label}
-              </ThemedText>
-            </Pressable>
+              // Con «reducir movimiento», la pestaña aparece y se va sin recorrido.
+              layout={
+                reduceMotion
+                  ? undefined
+                  : LinearTransition.springify()
+                      .damping(Springs.glide.damping)
+                      .stiffness(Springs.glide.stiffness)
+              }
+              entering={reduceMotion ? undefined : FadeIn.duration(Duration.base)}
+              exiting={reduceMotion ? undefined : FadeOut.duration(Duration.fast)}>
+              <Pressable
+                accessibilityRole="tab"
+                accessibilityState={{ selected }}
+                accessibilityLabel={option.a11y}
+                onPress={() => onChange(option.value)}
+                style={[styles.option, selected && { backgroundColor: theme.backgroundSelected }]}>
+                <ThemedText
+                  type="smallBold"
+                  numberOfLines={1}
+                  style={option.value === 'my-group' ? styles.groupLabel : undefined}
+                  themeColor={selected ? 'text' : 'textSecondary'}>
+                  {option.label}
+                </ThemedText>
+              </Pressable>
+            </Animated.View>
           );
         })}
       </View>
