@@ -35,7 +35,8 @@ export type IconName =
   | 'menu'
   | 'diamond'
   | 'eye'
-  | 'eye-off';
+  | 'eye-off'
+  | 'sliders';
 
 export function Icon({
   name,
@@ -204,6 +205,15 @@ export function Icon({
               <>
                 <Path d="M7 3.5h7l4 4V20.5H6.5V3.5z" {...stroke} />
                 <Path d="M9 12h6M9 15.5h4" {...stroke} />
+              </>
+            );
+          case 'sliders':
+            // Dos guías con su tirador, cruzados: el icono de «Filtros».
+            return (
+              <>
+                <Path d="M4 8h3M13 8h7M4 16h7M17 16h3" {...stroke} />
+                <Circle cx={10} cy={8} r={2.6} {...stroke} />
+                <Circle cx={14} cy={16} r={2.6} {...stroke} />
               </>
             );
         }

@@ -139,6 +139,10 @@ export default function RootLayout() {
               />
               <Stack.Screen name="settings" options={{ ...stackHeader, title: t('Ajustes') }} />
               <Stack.Screen
+                name="notifications"
+                options={{ ...stackHeader, title: t('Notificaciones') }}
+              />
+              <Stack.Screen
                 name="likes"
                 options={{ ...stackHeader, title: t('Te han dado like') }}
               />

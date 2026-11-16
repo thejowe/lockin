@@ -49,6 +49,22 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
 
+// `@react-native-google-signin/google-signin` exige su TurboModule al importarse
+// (lo importa `src/data/supabase/auth.ts`). El mock oficial no es importable
+// (los `exports` del paquete no lo publican), así que va uno mínimo con lo que
+// usa la app; los tests que lo ejercitan lo sobrescriben.
+jest.mock('@react-native-google-signin/google-signin', () => ({
+  GoogleSignin: {
+    configure: jest.fn(),
+    hasPlayServices: jest.fn(async () => true),
+    signOut: jest.fn(async () => null),
+    signIn: jest.fn(async () => ({ type: 'cancelled', data: null })),
+  },
+  isCancelledResponse: (response) => response.type === 'cancelled',
+  isErrorWithCode: (error) => typeof error?.code === 'string',
+  statusCodes: { SIGN_IN_CANCELLED: 'SIGN_IN_CANCELLED' },
+}));
+
 // `react-native-safe-area-context` lee insets del nativo: bajo Jest no hay
 // ninguno y `useSafeAreaInsets` lanza "No safe area value available". Este es el
 // mock oficial del paquete; devuelve insets a cero, que es justo lo que Jest no

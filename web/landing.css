@@ -583,8 +583,12 @@ main,
   border-radius: 2.2em;
   overflow: hidden;
   border: 1px solid #ffffff1f;
-  background:
-    radial-gradient(120% 65% at 50% 22%, hsl(var(--hue) 5% 30%), hsl(var(--hue) 4% 11%) 62%, #050505);
+  background: radial-gradient(
+    120% 65% at 50% 22%,
+    hsl(var(--hue) 5% 30%),
+    hsl(var(--hue) 4% 11%) 62%,
+    #050505
+  );
 }
 .card-under {
   transform: scale(0.94) translateY(1.4em);
@@ -2265,8 +2269,7 @@ a.store:active {
   overflow: hidden;
   background:
     radial-gradient(60% 50% at 50% 0%, #2f7bff40, transparent 70%),
-    radial-gradient(40% 40% at 90% 20%, #6a5bff30, transparent 70%),
-    var(--night);
+    radial-gradient(40% 40% at 90% 20%, #6a5bff30, transparent 70%), var(--night);
   border: 1px solid #ffffff1f;
   text-align: center;
 }
@@ -2377,7 +2380,8 @@ a.store:active {
   border: 1px solid #ffffff21;
 }
 .plan-best {
-  background: linear-gradient(#0b1226, #0b1226) padding-box,
+  background:
+    linear-gradient(#0b1226, #0b1226) padding-box,
     linear-gradient(135deg, #8ad0ff, #3d7bff 60%, #6a5bff) border-box;
   border: 1.5px solid transparent;
   box-shadow: 0 20px 50px -20px #2f7bff80;
@@ -2762,6 +2766,286 @@ a.store:active {
 }
 
 /* ─── Movimiento reducido ──────────────────────────────────────────────── */
+
+/* ── Intro ──────────────────────────────────────────────────────────────────
+   El símbolo se arma sobre un telón negro de dos hojas y el telón se abre
+   llevándose cada media luna (ver INTRO_MARKUP en scripts/build-web.mjs):
+   las mitades entran desde los lados, chocan y rebotan; del choque sale el
+   punto, cae al hueco y se aplasta; las mitades cogen impulso, el punto se
+   apaga con un pop y las hojas se abren destapando la portada. 2,46 s; luego
+   el bloque queda oculto y nunca captura toques. Solo existe con `html.intro`
+   (en cada carga, con JS y sin «reducir movimiento»). */
+.intro-curtain {
+  display: none;
+}
+.intro .intro-curtain {
+  --intro-w: min(50vw, 260px);
+  --intro-t: 2.46s;
+  --curtain-ease: cubic-bezier(0.65, 0, 0.2, 1);
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+  animation: intro-gone 0s linear var(--intro-t) forwards;
+}
+@keyframes intro-gone {
+  to {
+    visibility: hidden;
+  }
+}
+/* Mientras se arma el logo, el móvil espera: entra cuando el telón se abre. */
+.intro .phone-enter {
+  animation-delay: 1.85s;
+}
+
+.intro-leaf,
+.intro-ride {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: calc(50% + 1px);
+  animation: var(--intro-t) linear both;
+}
+.intro-leaf {
+  background: #000;
+}
+.intro-leaf-l,
+.intro-ride-l {
+  left: 0;
+  animation-name: intro-open-l;
+}
+.intro-leaf-r,
+.intro-ride-r {
+  right: 0;
+  animation-name: intro-open-r;
+}
+@keyframes intro-open-l {
+  0%,
+  69.1% {
+    transform: translateX(0);
+    animation-timing-function: var(--curtain-ease);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+@keyframes intro-open-r {
+  0%,
+  69.1% {
+    transform: translateX(0);
+    animation-timing-function: var(--curtain-ease);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* El filo de cada hoja: brillo de tela y línea de luz. Se enciende al
+   separarse; con el telón cerrado no hay costura. */
+.intro-leaf::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 36px;
+  opacity: 0;
+  animation: intro-edge var(--intro-t) linear both;
+}
+.intro-leaf-l::after {
+  right: 0;
+  background: linear-gradient(to left, rgb(255 255 255 / 0.09), transparent);
+  border-right: 1px solid rgb(255 255 255 / 0.32);
+}
+.intro-leaf-r::after {
+  left: 0;
+  background: linear-gradient(to right, rgb(255 255 255 / 0.09), transparent);
+  border-left: 1px solid rgb(255 255 255 / 0.32);
+}
+@keyframes intro-edge {
+  0%,
+  69.1% {
+    opacity: 0;
+  }
+  72%,
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Cada media luna va en un «carro» que se mueve igual que su hoja; dentro,
+   la media luna hace su rebote. Su caja es la del logo entero, centrada en la
+   costura. */
+.intro-half,
+.intro-dot {
+  position: absolute;
+  width: var(--intro-w);
+  height: calc(var(--intro-w) / 1.5);
+  fill: #f5f5f7;
+}
+.intro-half {
+  top: calc(50% - var(--intro-w) / 3);
+  animation: var(--intro-t) linear both;
+}
+.intro-half-l {
+  right: calc(1px - var(--intro-w) / 2);
+  animation-name: intro-half-l;
+}
+.intro-half-r {
+  left: calc(1px - var(--intro-w) / 2);
+  animation-name: intro-half-r;
+}
+/* Desplazamiento hacia fuera en fracciones del ancho del logo: llega, se
+   cruza un poco (choque), rebota, asienta, se estremece al caer el punto y
+   coge impulso hacia dentro antes de abrir. */
+@keyframes intro-half-l {
+  0% {
+    opacity: 0;
+    transform: translateX(calc(var(--intro-w) * -0.75));
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+  }
+  5.7% {
+    opacity: 1;
+  }
+  18.7% {
+    opacity: 1;
+    transform: translateX(calc(var(--intro-w) * 0.05));
+    animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  26.4% {
+    transform: translateX(calc(var(--intro-w) * -0.1));
+    animation-timing-function: ease-in-out;
+  }
+  32.5% {
+    transform: translateX(calc(var(--intro-w) * 0.02));
+    animation-timing-function: ease-in-out;
+  }
+  38.6%,
+  48.8% {
+    transform: translateX(0);
+    animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  51.6% {
+    transform: translateX(calc(var(--intro-w) * -0.035));
+    animation-timing-function: ease-in-out;
+  }
+  57.7%,
+  63.4% {
+    transform: translateX(0);
+    animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  69.1% {
+    transform: translateX(calc(var(--intro-w) * 0.025));
+    animation-timing-function: var(--curtain-ease);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes intro-half-r {
+  0% {
+    opacity: 0;
+    transform: translateX(calc(var(--intro-w) * 0.75));
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+  }
+  5.7% {
+    opacity: 1;
+  }
+  18.7% {
+    opacity: 1;
+    transform: translateX(calc(var(--intro-w) * -0.05));
+    animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  26.4% {
+    transform: translateX(calc(var(--intro-w) * 0.1));
+    animation-timing-function: ease-in-out;
+  }
+  32.5% {
+    transform: translateX(calc(var(--intro-w) * -0.02));
+    animation-timing-function: ease-in-out;
+  }
+  38.6%,
+  48.8% {
+    transform: translateX(0);
+    animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  51.6% {
+    transform: translateX(calc(var(--intro-w) * 0.035));
+    animation-timing-function: ease-in-out;
+  }
+  57.7%,
+  63.4% {
+    transform: translateX(0);
+    animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  69.1% {
+    transform: translateX(calc(var(--intro-w) * -0.025));
+    animation-timing-function: var(--curtain-ease);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* El punto: sale en el choque, sube frenando, cae acelerando al hueco… */
+.intro-dot-y {
+  position: absolute;
+  inset: 0;
+  animation: intro-dot-y var(--intro-t) linear both;
+}
+.intro-dot {
+  left: calc(50% - var(--intro-w) / 2);
+  top: calc(50% - var(--intro-w) / 3);
+  animation: intro-dot var(--intro-t) linear both;
+}
+@keyframes intro-dot-y {
+  0%,
+  18.6% {
+    opacity: 0;
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  19.3% {
+    opacity: 1;
+  }
+  35% {
+    opacity: 1;
+    transform: translateY(calc(var(--intro-w) * -1));
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+  }
+  48.8%,
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+/* …se aplasta al aterrizar y recupera la forma; al abrir, pop y se apaga. */
+@keyframes intro-dot {
+  0%,
+  48.8% {
+    transform: scale(1, 1);
+    animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  51.6% {
+    transform: scale(1.35, 0.65);
+    animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  58.9%,
+  67.5% {
+    transform: scale(1, 1);
+    animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  70.7% {
+    transform: scale(1.25, 1.25);
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+  }
+  78%,
+  100% {
+    transform: scale(0, 0);
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .js .phone-enter {

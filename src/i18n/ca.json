@@ -96,6 +96,7 @@
   "apostarlo todo": "jugar-s'ho tot",
   "Apostarlo todo": "Jugar-s'ho tot",
   "Apple no ha devuelto tu identificación. Vuelve a intentarlo.": "Apple no ha retornat la teva identificació. Torna-ho a provar.",
+  "Google no ha devuelto tu identificación. Vuelve a intentarlo.": "Google no ha retornat la teva identificació. Torna-ho a provar.",
   "Aquí ya no hay ninguna sesión abierta. Cierra cofounder, vuelve a abrirla y repite.": "Aquí ja no hi ha cap sessió oberta. Tanca cofounder, torna'l a obrir i repeteix.",
   "Árabe": "Àrab",
   "Arabia Saudí": "Aràbia Saudita",
@@ -1184,5 +1185,7 @@
   "No se han podido cargar las preferencias de notificaciones.": "No s’han pogut carregar les preferències de notificacions.",
   "No se han podido guardar las preferencias. Inténtalo de nuevo.": "No s’han pogut desar les preferències. Torna-ho a provar.",
   "Los recordatorios son opcionales: te avisamos si llevas unos días sin entrar y hay likes o mensajes esperando. Puedes apagarlos aquí.": "Els recordatoris són opcionals: t’avisem si fa uns dies que no entres i hi ha likes o missatges pendents. Pots desactivar-los aquí.",
-  "Los resúmenes de likes llegan hacia las 11:00 de tu zona horaria. Los recordatorios llegan de 10:00 a 20:00; los avisos de Premium, de 09:00 a 22:00.": "Els resums de likes arriben cap a les 11:00 de la teva zona horària. Els recordatoris arriben de 10:00 a 20:00; els avisos de Premium, de 09:00 a 22:00."
+  "Los resúmenes de likes llegan hacia las 11:00 de tu zona horaria. Los recordatorios llegan de 10:00 a 20:00; los avisos de Premium, de 09:00 a 22:00.": "Els resums de likes arriben cap a les 11:00 de la teva zona horària. Els recordatoris arriben de 10:00 a 20:00; els avisos de Premium, de 09:00 a 22:00.",
+  "Gestionar notificaciones": "Gestiona les notificacions",
+  "Elige qué avisos quieres recibir": "Tria quins avisos vols rebre"
 }

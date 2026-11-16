@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { AppState, Linking, StyleSheet, Switch, View } from 'react-native';
 
 import { Button } from '@/components/button';
@@ -22,7 +22,26 @@ const LABELS = [
   ['notify_premium', tk('Avisos de Premium')],
 ] as const;
 
+/**
+ * Entrada de Ajustes (las tres rayas del perfil): un botón que lleva a la
+ * pantalla con los interruptores, para no llenar Ajustes de filas.
+ */
 export function NotificationSection() {
+  const router = useRouter();
+  return (
+    <Field label={t('Notificaciones')}>
+      <Button
+        compact
+        variant="secondary"
+        label={t('Gestionar notificaciones')}
+        onPress={() => router.push('/notifications')}
+      />
+    </Field>
+  );
+}
+
+/** Los interruptores por tipo de aviso (likes, matches, mensajes…). */
+export function NotificationPreferences() {
   const repositories = useRepositories();
   const theme = useTheme();
   const prefs = useQuery('notification-prefs', () => repositories.push.getPreferences());
@@ -62,7 +81,7 @@ export function NotificationSection() {
   }
 
   return (
-    <Field label={t('Notificaciones')}>
+    <Field label={t('Elige qué avisos quieres recibir')}>
       {denied ? (
         <View style={styles.help}>
           <ThemedText type="small" themeColor="textSecondary">
@@ -88,7 +107,11 @@ export function NotificationSection() {
               accessibilityLabel={t(label)}
               value={prefs.data![key]}
               disabled={saving || prefs.refreshing}
-              trackColor={{ true: theme.brass }}
+              trackColor={{ true: theme.brass, false: theme.backgroundSelected }}
+              // Activado: bola negra (tinta sobre acento) en la pista blanca; antes
+              // bola y pista eran blancas y no se distinguía. Apagado: bola clara.
+              thumbColor={prefs.data![key] ? theme.onAccent : theme.textSecondary}
+              ios_backgroundColor={theme.backgroundSelected}
               onValueChange={(value) => {
                 void save(key, value);
               }}

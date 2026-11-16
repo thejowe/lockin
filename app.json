@@ -20,7 +20,7 @@
       "package": "app.cofounder.android",
       "allowBackup": false,
       "adaptiveIcon": {
-        "backgroundColor": "#0A0A0B",
+        "backgroundColor": "#000000",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -41,6 +41,12 @@
       "expo-router",
       "./plugins/with-new-intent-initial-url",
       "expo-apple-authentication",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.187078015966-4sc32ltkokbk9h7bm58egk616im4eje8"
+        }
+      ],
       [
         "expo-splash-screen",
         {

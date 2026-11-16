@@ -5,10 +5,12 @@ import { DataProvider } from '@/data';
 import { createMockRepositories } from '@/data/mock';
 import { pushPermission } from '@/lib/push';
 
-import { NotificationSection } from './notification-section';
+import { NotificationPreferences, NotificationSection } from './notification-section';
 
+const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
   useFocusEffect: (fn: () => void) => jest.requireActual('react').useEffect(fn, [fn]),
+  useRouter: () => ({ push: mockPush }),
 }));
 jest.mock('@/lib/push', () => ({ pushPermission: jest.fn(() => Promise.resolve('denied')) }));
 
@@ -18,7 +20,7 @@ it('ofrece siete interruptores, guarda el cambio y abre ajustes sin diálogo de 
   const open = jest.spyOn(Linking, 'openSettings').mockResolvedValue();
   await render(
     <DataProvider value={repositories}>
-      <NotificationSection />
+      <NotificationPreferences />
     </DataProvider>
   );
   await waitFor(() => expect(screen.getAllByRole('switch')).toHaveLength(7));
@@ -38,7 +40,7 @@ it('un error al guardar conserva la preferencia y permite reintentar', async () 
   jest.spyOn(repositories.push, 'setPreferences').mockRejectedValueOnce(new Error('offline'));
   await render(
     <DataProvider value={repositories}>
-      <NotificationSection />
+      <NotificationPreferences />
     </DataProvider>
   );
   await waitFor(() => expect(screen.getAllByRole('switch')).toHaveLength(7));
@@ -47,4 +49,28 @@ it('un error al guardar conserva la preferencia y permite reintentar', async () 
     await screen.findByText('No se han podido guardar las preferencias. Inténtalo de nuevo.')
   ).toBeTruthy();
   expect(screen.getByRole('switch', { name: 'Recordatorios' }).props.value).toBe(true);
+});
+
+it('Ajustes solo enseña «Gestionar notificaciones», que abre la pantalla de interruptores', async () => {
+  await render(
+    <DataProvider value={createMockRepositories()}>
+      <NotificationSection />
+    </DataProvider>
+  );
+  expect(screen.queryAllByRole('switch')).toHaveLength(0);
+  await fireEvent.press(screen.getByRole('button', { name: 'Gestionar notificaciones' }));
+  expect(mockPush).toHaveBeenCalledWith('/notifications');
+});
+
+it('un interruptor activado lleva la bola oscura para no fundirse con la pista blanca', async () => {
+  await render(
+    <DataProvider value={createMockRepositories()}>
+      <NotificationPreferences />
+    </DataProvider>
+  );
+  const likes = await screen.findByRole('switch', { name: 'Matches' });
+  expect(likes.props.value).toBe(true);
+  expect(likes.props.thumbTintColor ?? likes.props.thumbColor).not.toBe(
+    likes.props.onTintColor ?? likes.props.trackColor?.true
+  );
 });
