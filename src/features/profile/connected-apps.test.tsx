@@ -87,14 +87,16 @@ describe('ConnectedApps', () => {
     expect(screen.getByText(/Añade tu Instagram/)).toBeTruthy();
   });
 
-  it('perfil propio: los cinco logos, y tocar uno despliega su campo y guarda', async () => {
+  it('perfil propio: los logos sin GitHub (va en «Vincular cuentas»), y tocar uno despliega su campo y guarda', async () => {
     const onSaveLink = jest.fn().mockResolvedValue(undefined);
     const profile = buildProfile({ links: { github: 'https://github.com/ana' } });
     await render(<ConnectedApps profile={profile} onSaveLink={onSaveLink} />);
 
-    for (const name of ['GitHub', 'LinkedIn', 'Instagram', 'TikTok', 'Web']) {
+    for (const name of ['LinkedIn', 'Instagram', 'TikTok', 'Web']) {
       expect(screen.getByText(name)).toBeTruthy();
     }
+    expect(screen.queryByText('GitHub')).toBeNull();
+    expect(screen.queryByRole('button', { name: /GitHub/ })).toBeNull();
     expect(screen.getByRole('button', { name: 'Añadir Instagram' })).toBeTruthy();
 
     await fireEvent.press(screen.getByRole('button', { name: 'Añadir Instagram' }));

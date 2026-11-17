@@ -44,6 +44,13 @@ const LABELS: Record<ConnectedApp, string> = {
 
 const ORDER: ConnectedApp[] = ['github', 'linkedin', 'instagram', 'tiktok', 'portfolio'];
 
+/**
+ * Perfil propio, sin GitHub (2026-11-17, decisión del usuario): ya está en
+ * «Vincular cuentas», que es donde se vincula, se desvincula y lleva su sello.
+ * En la ficha ajena el logo de GitHub sigue saliendo: allí no hay otro sitio.
+ */
+const EDITABLE_ORDER: ConnectedApp[] = ORDER.filter((app) => app !== 'github');
+
 const SAFE_URL = /^https?:\/\/\S+$/i;
 
 /** Rutas de Instagram que no son un usuario: `instagram.com/p/…` es una publicación. */
@@ -239,8 +246,9 @@ const PLACEHOLDERS: Record<ConnectedApp, string> = {
 
 /**
  * Perfil propio (2026-11-01, decisión del usuario): como «Vincular cuentas»,
- * salen los cinco logos; en gris los que no tienen enlace y en su color los que
- * sí. Tocar uno despliega debajo el campo del enlace.
+ * salen los logos (todos menos GitHub, ver `EDITABLE_ORDER`); en gris los que
+ * no tienen enlace y en su color los que sí. Tocar uno despliega debajo el
+ * campo del enlace.
  */
 function EditableApps({
   profile,
@@ -288,15 +296,13 @@ function EditableApps({
     }
   }
 
-  const githubLocked = Boolean(profile.githubVerification);
-
   return (
     <View style={styles.root}>
       <ThemedText type="label" themeColor="textSecondary">
         {t('Redes y enlaces')}
       </ThemedText>
       <View style={styles.row}>
-        {ORDER.map((app) => {
+        {EDITABLE_ORDER.map((app) => {
           const url = profile.links[app]?.trim();
           const linked = Boolean(url && SAFE_URL.test(url));
           return (
@@ -343,46 +349,36 @@ function EditableApps({
             styles.panel,
             { backgroundColor: theme.backgroundElement, borderColor: theme.border },
           ]}>
-          {open === 'github' && githubLocked ? (
-            <ThemedText type="small" themeColor="textSecondary">
-              {t(
-                'Tu GitHub está verificado: lo lleva el sello. Para cambiarlo, desvincúlalo abajo en «Vincular cuentas».'
-              )}
+          <TextField
+            value={value}
+            onChangeText={(next) => {
+              setValue(next);
+              setError(null);
+            }}
+            placeholder={PLACEHOLDERS[open]}
+            autoCapitalize="none"
+            autoCorrect={false}
+            inputMode="url"
+            accessibilityLabel={t('Enlace de {v}', { v: LABELS[open] })}
+          />
+          {error ? (
+            <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
+              {error}
             </ThemedText>
-          ) : (
-            <>
-              <TextField
-                value={value}
-                onChangeText={(next) => {
-                  setValue(next);
-                  setError(null);
-                }}
-                placeholder={PLACEHOLDERS[open]}
-                autoCapitalize="none"
-                autoCorrect={false}
-                inputMode="url"
-                accessibilityLabel={t('Enlace de {v}', { v: LABELS[open] })}
-              />
-              {error ? (
-                <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
-                  {error}
-                </ThemedText>
-              ) : null}
-              <CompactPrimaryButton
-                label={saving ? t('Guardando…') : t('Guardar')}
-                disabled={saving}
-                onPress={() => void save(open, value.trim().length > 0 ? value : null)}
-              />
-              {profile.links[open] ? (
-                <CompactSecondaryButton
-                  label={t('Quitar enlace')}
-                  tone="danger"
-                  disabled={saving}
-                  onPress={() => void save(open, null)}
-                />
-              ) : null}
-            </>
-          )}
+          ) : null}
+          <CompactPrimaryButton
+            label={saving ? t('Guardando…') : t('Guardar')}
+            disabled={saving}
+            onPress={() => void save(open, value.trim().length > 0 ? value : null)}
+          />
+          {profile.links[open] ? (
+            <CompactSecondaryButton
+              label={t('Quitar enlace')}
+              tone="danger"
+              disabled={saving}
+              onPress={() => void save(open, null)}
+            />
+          ) : null}
         </View>
       ) : null}
     </View>
