@@ -27,22 +27,22 @@
         "privacyPolicyUrl": "https://getcofounder.app/privacidad",
         "screenshots": {
           "APP_IPHONE_67": [
-            "./store/app-store/es/01-deck.png",
-            "./store/app-store/es/02-prompt.png",
-            "./store/app-store/es/03-match.png",
-            "./store/app-store/es/04-icebreakers.png",
-            "./store/app-store/es/05-groups.png",
-            "./store/app-store/es/06-profile.png",
-            "./store/app-store/es/07-closer.png"
+            "./store/app-store/en/01-deck.png",
+            "./store/app-store/en/02-prompt.png",
+            "./store/app-store/en/03-match.png",
+            "./store/app-store/en/04-icebreakers.png",
+            "./store/app-store/en/05-groups.png",
+            "./store/app-store/en/06-profile.png",
+            "./store/app-store/en/07-closer.png"
           ],
           "APP_IPHONE_61": [
-            "./store/app-store/es/6.1/01-deck.png",
-            "./store/app-store/es/6.1/02-prompt.png",
-            "./store/app-store/es/6.1/03-match.png",
-            "./store/app-store/es/6.1/04-icebreakers.png",
-            "./store/app-store/es/6.1/05-groups.png",
-            "./store/app-store/es/6.1/06-profile.png",
-            "./store/app-store/es/6.1/07-closer.png"
+            "./store/app-store/en/6.1/01-deck.png",
+            "./store/app-store/en/6.1/02-prompt.png",
+            "./store/app-store/en/6.1/03-match.png",
+            "./store/app-store/en/6.1/04-icebreakers.png",
+            "./store/app-store/en/6.1/05-groups.png",
+            "./store/app-store/en/6.1/06-profile.png",
+            "./store/app-store/en/6.1/07-closer.png"
           ]
         }
       }
