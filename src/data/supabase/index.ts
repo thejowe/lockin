@@ -52,6 +52,7 @@ import { PRIVATE_CHANNEL, subscribeResyncingOnRejoin } from './realtime';
 import { createSupabaseSessionRepository } from './sessions';
 import { GITHUB_VERIFICATION_CANCELLED, LINKEDIN_VERIFICATION_CANCELLED } from '../repositories';
 
+import { supabaseProjects } from './projects';
 import { addBoardPost, listBoardPosts, removeBoardPost } from './board';
 
 import { deleteAvatar, uploadAvatar } from './avatar';
@@ -939,6 +940,7 @@ export function createSupabaseRepositories({
     premium,
     sessions: createSupabaseSessionRepository({ getClient, getUserId }),
     agreement: createSupabaseAgreementRepository({ getClient, getUserId }),
+    projects: supabaseProjects(getClient, getUserId),
     chatPlan: createSupabaseChatPlan(getClient, getUserId),
     rooms: createSupabaseRoomRepository({
       getClient,

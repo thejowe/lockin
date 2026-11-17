@@ -341,6 +341,12 @@ export type Database = {
         Update: Pick<ChatPlanRow, 'closed'>;
         Relationships: [];
       };
+      profile_projects: {
+        Row: { id: string; owner_id: string; name: string; tagline: string; description: string; link: string; revision: string; cover_path: string | null; photo_paths: string[]; created_at: string; promoted_at: string | null };
+        Insert: Record<string, never>;
+        Update: Record<string, never>;
+        Relationships: [];
+      };
       board_posts: {
         Row: BoardPostRow;
         Insert: Record<string, never>;

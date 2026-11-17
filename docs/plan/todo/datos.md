@@ -1,5 +1,10 @@
 # TODO — datos
 
+## Proyectos · 18 de noviembre de 2026
+
+- [x] Contrato, semillas, límite concurrente, RLS, URLs firmadas y publicación atómica del proyecto tras moderar sus imágenes.
+- [ ] Aplicar la migración y desplegar `moderate-project` en el entorno de destino tras la revisión.
+
 ## Plan compartido de los chats · 17 de noviembre de 2026
 
 La migración `20261117203212_chat_plan.sql` está aplicada en `grrzmzktrhksbttpbblg` con esa misma versión. La tabla `chat_plan_items` referencia un único match o grupo y usa sus permisos de participación y bloqueo. Las pruebas de colaboración y pérdida de acceso están en `supabase/groups-embedded.test.mjs`.

@@ -2593,6 +2593,26 @@ function describeSafetyContract(backend: ContractBackend): void {
       await pair.close();
     });
 
+    it('proyectos: orden, límite, propiedad, revisión, bloqueo y borrado de cuenta', async () => {
+      const draft = { name: 'Atlas', tagline: 'Mapas locales', description: '', link: '', cover: null, photos: [] };
+      for (const name of ['Uno', 'Dos', 'Tres']) await a.projects.save({...draft, name});
+      const [one, two, three] = await b.projects.list(aId);
+      expect([one.name, two.name, three.name]).toEqual(['Uno', 'Dos', 'Tres']);
+      await expect(a.projects.save(draft)).rejects.toThrow();
+      await expect(b.projects.save(draft, one)).rejects.toThrow();
+      await expect(b.projects.remove(one)).rejects.toThrow();
+      await a.projects.promote(three);
+      expect((await a.projects.list(aId))[0].id).toBe(three.id);
+      await a.projects.save(draft, one);
+      await expect(a.projects.save(draft, one)).rejects.toThrow();
+      await a.projects.remove(two);
+      await b.profiles.block(aId);
+      expect(await b.projects.list(aId)).toEqual([]);
+      expect((await c.projects.list(aId)).map(p => p.name)).toEqual(['Tres', 'Atlas']);
+      await a.session.deleteMyAccount();
+      expect(await c.projects.list(aId)).toEqual([]);
+    });
+
     async function matchPair(): Promise<string> {
       await b.discovery.recordDecision(aId, 'like');
       const { match } = await a.discovery.recordDecision(bId, 'like');

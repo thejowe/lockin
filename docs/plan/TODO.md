@@ -1,5 +1,9 @@
 # TODO maestro — LockIn MVP
 
+## Proyectos · 18 de noviembre de 2026
+
+Seguimiento por bloque en [datos](todo/datos.md), [perfil](todo/perfil.md), [descubrir](todo/descubrir.md), [visual](todo/visual.md) y [calidad](todo/calidad.md).
+
 ## Plan compartido en los chats · 17 de noviembre de 2026
 
 Los matches y los grupos tienen una lista de tareas compartida y reuniones con fecha, hora y lugar o enlace. La migración ya está aplicada en Supabase. El recorrido y las comprobaciones están en [el bloque de chat](todo/chat.md).

@@ -85,6 +85,7 @@ export interface MockState {
   termsAcceptances: Map<string, Map<string, string>>;
   /** Tablones personales. En el mock no hay moderación: se publica tal cual. */
   boardPosts: BoardPost[];
+  projects: import('../projects').Project[];
   /** Grupos, sus puestos y sus miembros (espejo de `20261109130000_groups.sql`). */
   groups: Group[];
   groupRoles: GroupRole[];
@@ -304,6 +305,14 @@ function initialState(): MockState {
     userBlocks: new Map(),
     termsAcceptances: new Map(),
     boardPosts: [],
+    projects: [
+      ['seed-lucia', 'Atlas del barrio', 'Un mapa colaborativo de talleres locales.'],
+      ['seed-lucia', 'Tinta', 'Un cuaderno para intercambiar bocetos.'],
+      ['seed-nuria', 'Semillero', 'Un calendario para compartir huerto.'],
+    ].map(([ownerId, name, tagline], index) => ({
+      id: 'seed-project-' + index, ownerId, revision: 'seed', name, tagline,
+      description: '', link: '', cover: null, photos: [],
+    })),
     ...seedGroups(),
     groupMessages: [],
     userReports: [],
@@ -422,6 +431,7 @@ export function createMockStore(): MockStore {
       );
 
       state.profiles.delete(userId);
+      state.projects = state.projects.filter(p => p.ownerId !== userId);
       state.boardPosts = state.boardPosts.filter((post) => post.ownerId !== userId);
       for (const key of [...state.chatReads.keys()]) {
         if (key.startsWith(`${userId}:`)) state.chatReads.delete(key);

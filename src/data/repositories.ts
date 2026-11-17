@@ -523,6 +523,7 @@ export interface UnreadRepository {
  * debe devolver un objeto con esta forma exacta.
  */
 export interface Repositories {
+  projects: import('./projects').ProjectRepository;
   chatPlan: ChatPlanRepository;
   session: SessionRepository;
   profiles: ProfileRepository;

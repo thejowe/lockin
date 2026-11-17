@@ -1019,6 +1019,9 @@ export async function deleteMyAccount(client?: LockInSupabaseClient): Promise<vo
   await Promise.resolve()
     .then(() => target.functions.invoke('moderate-board', { body: { action: 'remove-all' } }))
     .catch(() => undefined);
+  await Promise.resolve()
+    .then(() => target.functions.invoke('moderate-project', { body: { action: 'remove-all' } }))
+    .catch(() => undefined);
   // Si la cuenta entró con Apple, su token se revoca en Apple ANTES de borrar
   // (norma 5.1.1(v)): después ya no queda sesión con la que pedirlo. Sin token
   // guardado la función no hace nada. Si Apple falla, se registra y el borrado

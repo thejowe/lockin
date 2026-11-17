@@ -164,6 +164,9 @@ export function activeBackend(): Backend {
  * notan la diferencia, y `npx expo export` puede cargar el módulo sin entorno.
  */
 export const repositories: Repositories = {
+  get projects() {
+    return resolveActive().repositories.projects;
+  },
   get chatPlan() {
     return resolveActive().repositories.chatPlan;
   },

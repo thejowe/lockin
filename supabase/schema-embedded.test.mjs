@@ -1021,6 +1021,21 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
     assert.equal(apagado.rows[0].github_verified_at, null);
     assert.equal(apagado.rows[0].link_github, null);
     await db.exec('reset role');
+    await db.exec(`insert into public.profile_projects (owner_id,name,tagline)
+      select '${ana}', 'Proyecto ' || n, 'Una frase' from generate_series(1,3) n`);
+    await rechaza(`insert into public.profile_projects(owner_id,name,tagline) values ('${ana}','Otro','Texto')`, /project limit/);
+    await rechaza(`update public.profile_projects set photo_paths = array_fill(owner_id::text || '/project-ok.jpg',array[6])`, /invalid project image|check constraint/);
+    await rechaza(`update public.profile_projects set cover_path = 'other/project-test.jpg'`, /invalid project image/);
+    await db.exec('set local role authenticated');
+    assert.equal((await db.query('select id from public.profile_projects')).rows.length, 3);
+    await rechaza("update public.profile_projects set name='Otro'", /permission denied/);
+    await db.exec('reset role');
+    await db.exec(`insert into public.user_blocks(blocker_id,blocked_id) values ('${ana}','${bea}');
+      create or replace function auth.uid() returns uuid language sql as $$ select '${bea}'::uuid $$;
+      set local role authenticated`);
+    assert.equal((await db.query('select id from public.profile_projects')).rows.length, 0);
+    await db.exec(`reset role; delete from public.user_blocks where blocker_id='${ana}';
+      create or replace function auth.uid() returns uuid language sql as $$ select '${ana}'::uuid $$`);
     // Tablón (`20261017130000`): solo la función (service role) escribe; el
     // cliente lee. La ruta es la del dueño y el pie tiene tope.
     await db.exec(`insert into public.board_posts (owner_id, image_path, caption)

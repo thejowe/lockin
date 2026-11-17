@@ -10,6 +10,7 @@
 
 export { presence, repositories, roomPresence, videoSignal } from './active';
 export * from './types';
+export * from './projects';
 export * from './repositories';
 export {
   DataProvider,

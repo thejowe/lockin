@@ -1209,5 +1209,12 @@
   "Restablecer reunión": "Restableix la reunió",
   "Elige una fecha y una hora futuras válidas.": "Tria una data i una hora futures vàlides.",
   "No se ha podido guardar. Vuelve a intentarlo.": "No s'ha pogut desar. Torna-ho a provar.",
-  "No se ha podido abrir el enlace.": "No s'ha pogut obrir l'enllaç."
+  "No se ha podido abrir el enlace.": "No s'ha pogut obrir l'enllaç.",
+  "Revisa el nombre, la frase y los límites del proyecto.": "Revisa el nom, la frase i els límits del projecte.",
+  "Introduce un enlace http o https válido.": "Introdueix un enllaç http o https vàlid.",
+  "Esta foto se ha rechazado. Elige otra.": "S’ha rebutjat aquesta foto. Tria’n una altra.",
+  "No se ha podido revisar esta foto. Vuelve a intentarlo.": "No s’ha pogut revisar aquesta foto. Torna-ho a provar.",
+  "El proyecto ha cambiado. Vuelve a abrirlo.": "El projecte ha canviat. Torna’l a obrir.",
+  "Puedes tener hasta tres proyectos.": "Pots tenir fins a tres projectes.",
+  "No se ha podido cargar la foto.": "No s’ha pogut carregar la foto."
 }

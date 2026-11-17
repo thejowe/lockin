@@ -1209,5 +1209,12 @@
   "Restablecer reunión": "Restore meeting",
   "Elige una fecha y una hora futuras válidas.": "Enter a valid date and time in the future.",
   "No se ha podido guardar. Vuelve a intentarlo.": "Couldn't save. Please try again.",
-  "No se ha podido abrir el enlace.": "Couldn't open the link."
+  "No se ha podido abrir el enlace.": "Couldn't open the link.",
+  "Revisa el nombre, la frase y los límites del proyecto.": "Check the project name, tagline and limits.",
+  "Introduce un enlace http o https válido.": "Enter a valid http or https link.",
+  "Esta foto se ha rechazado. Elige otra.": "This photo was rejected. Choose another.",
+  "No se ha podido revisar esta foto. Vuelve a intentarlo.": "This photo could not be reviewed. Try again.",
+  "El proyecto ha cambiado. Vuelve a abrirlo.": "The project has changed. Open it again.",
+  "Puedes tener hasta tres proyectos.": "You can have up to three projects.",
+  "No se ha podido cargar la foto.": "The photo could not be loaded."
 }
