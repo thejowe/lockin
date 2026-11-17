@@ -71,5 +71,12 @@ jobs:
           cache: npm
       - run: npm ci
       # 27.10 es la primera que se ha comprobado que sube capturas (`info.<locale>.screenshots`).
+      # metadata:push sale con 0 aunque falle una parte («encountered N errors»): se comprueba el log.
       - name: Subir la ficha de App Store
-        run: npx -y eas-cli@27.10.0 metadata:push --profile production --non-interactive
+        run: |
+          set -o pipefail
+          npx -y eas-cli@27.10.0 metadata:push --profile production --non-interactive 2>&1 | tee "$RUNNER_TEMP/metadata.log"
+          if grep -q 'encountered [0-9]* error' "$RUNNER_TEMP/metadata.log"; then
+            echo '::error::La ficha se subió solo en parte; mira los errores de arriba.'
+            exit 1
+          fi
