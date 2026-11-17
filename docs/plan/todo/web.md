@@ -146,6 +146,8 @@ Banner de iOS (`apple-itunes-app`, cuando haya id de App Store) y datos estructu
   `docs/plan/DISENO-web.md` («Dos mitades»).
 - [x] [Claude] `stores.json` + estado «Próximamente»: sin URL sale un botón propio «Próximamente»
   (no enlace); con URL, un enlace. Tests en `build-web.test.mjs`.
+- [x] App Store publicada (2026-11-17): `stores.ios` = `https://apps.apple.com/app/cofounder/id6828604279`
+  e `iosAppId` (Smart App Banner); FAQ q5 actualizada. Falta la URL de Google Play.
 - [ ] [Claude] Insignias oficiales de App Store y Google Play (descargar los SVG de Apple y Google, con
   permiso del usuario) cuando haya URL de tienda: hoy `storeButtons` pinta un botón de texto.
 - [x] [Claude] Página `/descargar/` (redirección por `navigator.userAgent`; sin tienda o en
