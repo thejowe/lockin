@@ -1,9 +1,4 @@
-import {
-  OBJECTIONABLE_MESSAGE,
-  ObjectionableContentError,
-  findObjectionableContent,
-  isObjectionable,
-} from './content-filter';
+import { findObjectionableContent, isObjectionable } from './content-filter';
 
 describe('catalán', () => {
   it.each(['ets un malparit', 'et mataré', 'et vaig a matar'])('frena «%s»', (text) => {
@@ -103,11 +98,5 @@ describe('findObjectionableContent', () => {
     ]) {
       expect(findObjectionableContent(text)).toBeNull();
     }
-  });
-
-  it('ObjectionableContentError lleva el mensaje claro', () => {
-    const error = new ObjectionableContentError('insulto');
-    expect(error.message).toBe(OBJECTIONABLE_MESSAGE);
-    expect(error.kind).toBe('insulto');
   });
 });

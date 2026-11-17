@@ -1,5 +1,7 @@
 # Grupos — detalle
 
+Desde el 17 de noviembre de 2026 cada chat de grupo tiene su propio [plan de tareas y reuniones](chat.md). Cualquier miembro puede actualizarlo, con los mismos permisos para el admin y el resto del equipo.
+
 Pedido por el usuario el 2026-11-09: además del deck de cofundador, Descubrir gana una sección
 «Grupos». Un grupo es un proyecto con admin, puestos (especialidad + plazas) y hasta 6 personas.
 Quien administra recluta; quien no tiene grupo ve los grupos que buscan lo que domina.
@@ -178,7 +180,7 @@ salida que `leave_group`, hereda el admin y borra el grupo si se queda vacío.
    candidatos con bloqueo con cualquiera del grupo, y en el chat no ves mensajes de quien has
    bloqueado.
 9. **Chat de grupo en tabla propia** (`group_messages`), con los componentes del chat 1:1
-   (burbuja, compositor, filtro de contenido, reporte, puerta de Términos). No es un `match`.
+   (burbuja, compositor, reporte, puerta de Términos). No es un `match`.
 10. **Reportar un grupo** va a `user_reports` contra el admin, con el grupo anotado.
 11. **Flag en dos sitios**: `GROUP_CREATION_REQUIRES_PREMIUM` (`src/data/groups.ts`) y
     `group_creation_requires_premium()` (SQL). Hay que cambiar los dos a la vez.

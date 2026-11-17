@@ -133,6 +133,67 @@ test('Grupos: crear, decks, unión, salida, liderazgo, chat y denuncias', async 
       assert.equal(await swipeCandidate(admin, user, await roleId(group, specialty)), true);
     };
 
+    await t.test('plan compartido entre participantes de match y grupo', () =>
+      tx(async () => {
+        const group = await createGroup();
+        await admit(group, ADMIN, DEV1, 'dev');
+        const match = id('e1');
+        const task = id('e2');
+        const meeting = id('e3');
+        await owner(`insert into public.matches(id,profile_a,profile_b,mode)
+          values ('${match}','${ADMIN}','${DEV1}','par')`);
+        await actingAs(ADMIN);
+        await db.query(`insert into public.chat_plan_items(id,match_id,title)
+          values ('${task}','${match}','Entrevistar a tres personas')`);
+        await db.query(`insert into public.chat_plan_items(id,group_id,title,starts_at,place)
+          values ('${meeting}','${group}','Revisar entrevistas',now() + interval '1 day','En línea')`);
+
+        await actingAs(DEV1);
+        const visible = () =>
+          one('select count(*)::int as n from public.chat_plan_items').then((row) => row.n);
+        assert.equal(await visible(), 2);
+        await db.query('update public.chat_plan_items set closed = true');
+        assert.equal(
+          (await one('select bool_and(closed) as done from public.chat_plan_items')).done,
+          true
+        );
+        await actingAs(ADMIN);
+        assert.equal(
+          (await one(`select closed from public.chat_plan_items where id='${task}'`)).closed,
+          true
+        );
+        assert.equal(
+          await code(`insert into public.chat_plan_items(id,group_id,title,starts_at)
+          values (gen_random_uuid(),'${group}','Pasada',now() - interval '1 day')`),
+          '42501'
+        );
+
+        await actingAs(DESIGNER);
+        assert.equal(await visible(), 0);
+        assert.equal(
+          await code(`insert into public.chat_plan_items(id,group_id,title)
+          values (gen_random_uuid(),'${group}','Tarea ajena')`),
+          '42501'
+        );
+        assert.equal(
+          await code(`insert into public.chat_plan_items(id,match_id,title)
+          values (gen_random_uuid(),'${match}','Tarea ajena')`),
+          '42501'
+        );
+        assert.equal(
+          (await db.query('update public.chat_plan_items set closed = false returning id')).rows
+            .length,
+          0
+        );
+
+        await actingAs(DEV1);
+        await db.query(`select public.leave_group('${group}')`);
+        assert.equal(await visible(), 1);
+        await db.query(`select public.block_profile('${ADMIN}')`);
+        assert.equal(await visible(), 0);
+      })
+    );
+
     await t.test('crear: el creador es admin y miembro sin plaza', () =>
       tx(async () => {
         const group = await createGroup();

@@ -44,11 +44,11 @@ import {
 } from '@/features/chat';
 import { useGroupConversation, useGroupPush } from '@/features/groups';
 import { RequireVerifiedEmail, TermsAcceptance, useTermsGate } from '@/features/profile';
-import { ObjectionableContentError } from '@/features/safety/content-filter';
 import { ReportForm } from '@/features/safety/report-form';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
 import { setActivePushRoute } from '@/lib/push';
+import { ChatTabs } from '@/features/chat/shared-plan';
 
 function GroupChatContent() {
   const theme = useTheme();
@@ -173,58 +173,59 @@ function GroupChatContent() {
           </ScrollView>
         ) : (
           <View style={styles.content}>
-            <ScrollView
-              ref={scrollRef}
-              contentContainerStyle={styles.thread}
-              keyboardDismissMode="interactive"
-              onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}>
-              <ThemedText type="small" themeColor="textSecondary" style={styles.intro}>
-                {t('Chat de grupo · {count} miembros', { count: view.members.length })}
-              </ThemedText>
+            <ChatTabs key={groupId} scope={{ kind: 'group', id: groupId }}>
+              <ScrollView
+                ref={scrollRef}
+                contentContainerStyle={styles.thread}
+                keyboardDismissMode="interactive"
+                onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}>
+                <ThemedText type="small" themeColor="textSecondary" style={styles.intro}>
+                  {t('Chat de grupo · {count} miembros', { count: view.members.length })}
+                </ThemedText>
 
-              {messages.map((message, index) => {
-                const previous = messages[index - 1];
-                const startsDay = !isSameDayIso(
-                  previous?.sentAt ?? view.group.createdAt,
-                  message.sentAt
-                );
-                const isMine = message.senderId === me?.id;
-                // El nombre solo al cambiar de persona: un bloque seguido es de la misma.
-                const showsName = !isMine && (startsDay || previous?.senderId !== message.senderId);
+                {messages.map((message, index) => {
+                  const previous = messages[index - 1];
+                  const startsDay = !isSameDayIso(
+                    previous?.sentAt ?? view.group.createdAt,
+                    message.sentAt
+                  );
+                  const isMine = message.senderId === me?.id;
+                  // El nombre solo al cambiar de persona: un bloque seguido es de la misma.
+                  const showsName =
+                    !isMine && (startsDay || previous?.senderId !== message.senderId);
 
-                return (
-                  <Fragment key={message.id}>
-                    {startsDay && <DayDivider label={formatDayHeading(message.sentAt)} />}
-                    {showsName ? (
-                      <ThemedText type="caption" themeColor="textMuted" style={styles.sender}>
-                        {names.get(message.senderId) ?? t('Ya no está en el grupo')}
-                      </ThemedText>
-                    ) : null}
-                    <MessageBubble
-                      message={{ ...message, matchId: message.groupId }}
-                      isMine={isMine}
-                      onReport={() => setReportingId(message.id)}
-                    />
-                  </Fragment>
-                );
-              })}
-            </ScrollView>
+                  return (
+                    <Fragment key={message.id}>
+                      {startsDay && <DayDivider label={formatDayHeading(message.sentAt)} />}
+                      {showsName ? (
+                        <ThemedText type="caption" themeColor="textMuted" style={styles.sender}>
+                          {names.get(message.senderId) ?? t('Ya no está en el grupo')}
+                        </ThemedText>
+                      ) : null}
+                      <MessageBubble
+                        message={{ ...message, matchId: message.groupId }}
+                        isMine={isMine}
+                        onReport={() => setReportingId(message.id)}
+                      />
+                    </Fragment>
+                  );
+                })}
+              </ScrollView>
 
-            {sendError ? (
-              <ThemedText type="small" themeColor="danger" style={styles.sendError}>
-                {sendError instanceof ObjectionableContentError
-                  ? sendError.message
-                  : t('No se ha podido enviar. Inténtalo otra vez.')}
-              </ThemedText>
-            ) : null}
+              {sendError ? (
+                <ThemedText type="small" themeColor="danger" style={styles.sendError}>
+                  {t('No se ha podido enviar. Inténtalo otra vez.')}
+                </ThemedText>
+              ) : null}
 
-            <MessageComposer
-              value={draft}
-              onChangeText={setDraft}
-              onSend={handleSend}
-              sending={sending}
-              placeholder={t('Escribe al grupo')}
-            />
+              <MessageComposer
+                value={draft}
+                onChangeText={setDraft}
+                onSend={handleSend}
+                sending={sending}
+                placeholder={t('Escribe al grupo')}
+              />
+            </ChatTabs>
           </View>
         )}
       </KeyboardAvoidingView>

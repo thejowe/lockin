@@ -81,7 +81,7 @@ Pots crear un grup o unir-t'hi per complementar perfils en un projecte entre igu
 
 **Unió.** Si fas like a un grup i la persona administradora et fa like (en qualsevol ordre), entres al grup en el perfil acordat i s'obre (o se t'afegeix a) el xat de grup.
 
-**Xat de grup.** Els missatges del xat de grup els veuen totes les persones membres. S'hi apliquen les mateixes normes de conducta que al xat 1:1 (§6). Pots denunciar un missatge concret. Hi ha un filtre bàsic de contingut; no garanteix moderació completa.
+**Xat de grup.** Els missatges del xat de grup els veuen totes les persones membres. S'hi apliquen les mateixes normes de conducta que al xat 1:1 (§6). Pots denunciar un missatge concret.
 
 **Administració.** La persona administradora pot expulsar un membre. Qualsevol membre pot sortir. Si surts o t'expulsen, la plaça torna a quedar oberta i no hi tornes a entrar sol per likes previs. Si la persona administradora surt o elimina el seu compte, el lideratge passa a la persona membre més antiga; si el grup queda buit, s'esborra.
 

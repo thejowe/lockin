@@ -1,16 +1,11 @@
 /**
  * Lo que necesita la pantalla del chat de un grupo, en una llamada: el grupo,
- * sus mensajes y el envío. Es el gemelo de `useConversation` (chat 1:1), con el
- * mismo filtro de contenido antes de enviar.
+ * sus mensajes y el envío.
  */
 
 import { useCallback, useEffect, useState } from 'react';
 
 import { useQuery, useRepositories, type GroupMessage, type GroupView } from '@/data';
-import {
-  ObjectionableContentError,
-  findObjectionableContent,
-} from '@/features/safety/content-filter';
 
 import { useMyGroups } from './use-my-group';
 
@@ -46,12 +41,6 @@ export function useGroupConversation(groupId: string): GroupConversation {
     async (body: string): Promise<boolean> => {
       const trimmed = body.trim();
       if (trimmed.length === 0 || sending) return false;
-
-      const kind = findObjectionableContent(trimmed);
-      if (kind) {
-        setSendError(new ObjectionableContentError(kind));
-        return false;
-      }
 
       setSending(true);
       setSendError(null);

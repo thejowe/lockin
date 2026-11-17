@@ -55,7 +55,7 @@ Si crees o t'uneixes a un grup, tractem a més:
 - **Perfils que busca el grup:** les especialitats i el nombre de places obertes o cobertes que defineix la persona administradora (no és una oferta de feina).
 - **Pertinença:** qui forma part del grup, quin perfil cobreix dins del grup i la data d'entrada.
 - **Swipes de grup:** si fas like o passes a un grup, i si la persona administradora fa like o passa a una persona candidata (lligat al perfil que cobriria).
-- **Missatges del xat de grup:** el text, qui l'envia, el grup i les dates. Els veuen totes les persones membres del grup. Hi ha un filtre bàsic de contingut al client i pots denunciar un missatge concret.
+- **Missatges del xat de grup:** el text, qui l'envia, el grup i les dates. Els veuen totes les persones membres del grup. Pots denunciar un missatge concret.
 - **Bloquejos i denúncies de grup:** si bloqueges un grup (queda com a «passar» definitiu i es bloqueja la persona administradora) o el denuncies (la denúncia es registra contra la persona administradora, amb el grup anotat).
 
 La part pública que pot veure qui busca grup (nom, descripció, perfils buscats i perfils públics dels membres actuals) s'exposa només a través de les funcions del deck, no com a lectura lliure de les taules internes. Les dades internes del grup (inclosa la pertinença detallada i el xat) només són accessibles a qui en són membres, segons els controls del servidor.

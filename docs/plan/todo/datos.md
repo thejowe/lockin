@@ -1,5 +1,9 @@
 # TODO — datos
 
+## Plan compartido de los chats · 17 de noviembre de 2026
+
+La migración `20261117203212_chat_plan.sql` está aplicada en `grrzmzktrhksbttpbblg` con esa misma versión. La tabla `chat_plan_items` referencia un único match o grupo y usa sus permisos de participación y bloqueo. Las pruebas de colaboración y pérdida de acceso están en `supabase/groups-embedded.test.mjs`.
+
 ## Antes de nada
 - [x] Comprobar si existen credenciales de Supabase (`EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`). Si no existen: avisar al usuario y limitarse al diseño de esquema — no inventar ni hardcodear credenciales.
   - **Ya existen** (2026-09-06), en `.env.local` (que está en `.gitignore`) y contra el proyecto `grrzmzktrhksbttpbblg`. Ningún valor real vive en el repo: `.env.example` solo lleva marcadores.

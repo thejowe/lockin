@@ -81,7 +81,7 @@ Edat mínima d'ús: 16 anys, autodeclarada. Al qüestionari d'App Store Connect 
 | Contingut generat per usuaris | Sí: perfil, foto de perfil (obligatòria a l'alta, moderada abans de publicar-se), respostes breus, noms i descripcions de grups, perfils buscats i missatges |
 | Missatgeria / xat | Sí, 1:1 després d'un match mutu i xat de grup entre membres |
 | Bloquejar / reportar | Sí: perfils, bloqueig/denúncia de grups i missatges concrets de xat 1:1 i de grup (confirmar a la build) |
-| Filtre de contingut | Sí: filtre bàsic de text al perfil i al xat, més moderació de fotos |
+| Filtre de contingut | Sí: filtre bàsic de text al perfil, més moderació de fotos |
 | Acceptació de Termes i Normes | Sí, obligatòria abans de publicar |
 | Publicitat / apostes | No |
 | Compres dins l'app | Sí: subscripció cofounder Premium, mensual (`app.cofounder.mobile.premium.monthly`, 4,99 €) o anual (`.annual`, 39,99 €), amb prova gratuïta (7 dies a l'anual, 3 al mensual). Premium només amplia funcions de la pròpia app |
@@ -130,10 +130,9 @@ USER-GENERATED CONTENT (Guideline 1.2)
   by the operator; target response time is 24 h for severe content and 72 h otherwise.
 - Block: any user, from Discover or chat; blocking is mutual and immediate.
   Blocking a group permanently passes on it and blocks its admin.
-- Filter: a basic objectionable-text filter (insults, threats, explicit sexual
-  content; Spanish and English) blocks submission of profile text and messages
-  (including group chat);
-  profile photos are moderated server-side with OpenAI's moderation API and are
+- A basic filter checks profile text in Spanish, English and Catalan. People can
+  report individual messages in private and group chats. Profile photos are
+  moderated server-side with OpenAI's moderation API and are
   only published after approval (fail-closed).
 - Account deletion: Settings > Account > Delete my account removes profile,
   matches, messages, photo, group membership, group swipes and push tokens.

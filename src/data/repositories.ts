@@ -10,6 +10,7 @@
  * síncrona, cambiar a Supabase obligaría a reescribir cada pantalla.
  */
 
+import type { ChatPlanRepository } from './chat-plan';
 import type {
   AgreementAnswerInput,
   AgreementTopicView,
@@ -522,6 +523,7 @@ export interface UnreadRepository {
  * debe devolver un objeto con esta forma exacta.
  */
 export interface Repositories {
+  chatPlan: ChatPlanRepository;
   session: SessionRepository;
   profiles: ProfileRepository;
   discovery: DiscoveryRepository;

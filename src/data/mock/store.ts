@@ -14,6 +14,7 @@
 import { SEED_PROFILES, SEED_RECIPROCAL_IDS } from './seed';
 
 import type { StoredAgreementAnswer } from '../agreement';
+import type { ChatScope, PlanItem } from '../chat-plan';
 import type {
   BoardPost,
   Decision,
@@ -62,6 +63,7 @@ export interface MockState {
   /** Contador monotónico de decisiones: ordena las que caen en el mismo milisegundo. */
   decisionSeq: number;
   matches: Match[];
+  chatPlan: (PlanItem & { scope: ChatScope; authorId: string })[];
   messages: Message[];
   lockInSessions: LockInSession[];
   attendance: SessionAttendance[];
@@ -172,6 +174,9 @@ export function removeMockGroupMember(state: MockState, userId: string, groupId:
       state.groupMembers = state.groupMembers.filter((member) => member.groupId !== groupId);
       state.groupSwipes = state.groupSwipes.filter((swipe) => swipe.groupId !== groupId);
       state.groupMessages = state.groupMessages.filter((message) => message.groupId !== groupId);
+      state.chatPlan = state.chatPlan.filter(
+        (item) => !(item.scope.kind === 'group' && item.scope.id === groupId)
+      );
       for (const report of state.userReports) {
         if (report.groupId === groupId) report.groupId = null;
       }
@@ -285,6 +290,7 @@ function initialState(): MockState {
     decisionMeta: new Map(),
     decisionSeq: 0,
     matches: [],
+    chatPlan: [],
     messages: [],
     lockInSessions: [],
     attendance: [],
@@ -450,6 +456,10 @@ export function createMockStore(): MockStore {
         state.incomingLikes.delete(userId);
       }
       state.matches = state.matches.filter((match) => !matchIds.has(match.id));
+      state.chatPlan = state.chatPlan.filter(
+        (item) =>
+          item.authorId !== userId && !(item.scope.kind === 'match' && matchIds.has(item.scope.id))
+      );
       state.messages = state.messages.filter(
         (message) => !matchIds.has(message.matchId) && message.senderId !== userId
       );

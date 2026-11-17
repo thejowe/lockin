@@ -19,6 +19,7 @@
  */
 
 import { createSupabaseAgreementRepository } from './agreement';
+import { createSupabaseChatPlan } from './chat-plan';
 import { createAvatarSigner } from './avatar-urls';
 import {
   deleteMyAccount,
@@ -938,6 +939,7 @@ export function createSupabaseRepositories({
     premium,
     sessions: createSupabaseSessionRepository({ getClient, getUserId }),
     agreement: createSupabaseAgreementRepository({ getClient, getUserId }),
+    chatPlan: createSupabaseChatPlan(getClient, getUserId),
     rooms: createSupabaseRoomRepository({
       getClient,
       getUserId,
