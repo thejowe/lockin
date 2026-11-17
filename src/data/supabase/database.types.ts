@@ -310,6 +310,18 @@ export type MatchAgreementRow = {
   theirs_updated_at: string | null;
 };
 
+export type ChatPlanRow = {
+  id: string;
+  title: string;
+  match_id: string | null;
+  group_id: string | null;
+  author_id: string;
+  starts_at: string | null;
+  place: string | null;
+  closed: boolean;
+  created_at: string;
+};
+
 /**
  * Forma del esquema que consume `createClient<Database>`.
  *
@@ -323,6 +335,12 @@ export type MatchAgreementRow = {
 export type Database = {
   public: {
     Tables: {
+      chat_plan_items: {
+        Row: ChatPlanRow;
+        Insert: Pick<ChatPlanRow, 'id' | 'title' | 'match_id' | 'group_id' | 'starts_at' | 'place'>;
+        Update: Pick<ChatPlanRow, 'closed'>;
+        Relationships: [];
+      };
       board_posts: {
         Row: BoardPostRow;
         Insert: Record<string, never>;

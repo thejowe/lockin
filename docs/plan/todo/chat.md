@@ -1,5 +1,15 @@
 # TODO — chat
 
+## Plan compartido · 17 de noviembre de 2026
+
+- [x] Pestañas Mensajes y Plan compartido en cada match y grupo. El borrador del mensaje se conserva al cambiar de pestaña.
+- [x] Cualquier participante puede añadir tareas, marcarlas como hechas y reabrirlas. Las pendientes aparecen primero.
+- [x] Reuniones con tema, fecha, hora y lugar o enlace HTTPS opcional. El plan muestra la hora local de quien lo consulta. Una reunión futura se puede cancelar y restablecer.
+- [x] Relectura al abrir el plan, al volver al primer plano y cada 15 segundos con el plan visible. El guardado conserva el borrador y permite reintentar con el mismo identificador.
+- [x] Migración `20261117203212_chat_plan.sql` aplicada en Supabase. Verificados RLS, permisos de columna y acceso de participantes tras un bloqueo o una salida del grupo (PostgreSQL embebido).
+- [x] Pasan TypeScript, las 65 pruebas seleccionadas de rutas de chat, repositorio, seguridad e idiomas y las 269 del esquema. ESLint pasa sobre los archivos nuevos. En la suite global de Jest pasan 2264 casos y falla uno de Descubrir que busca la pestaña de reclutamiento antes de abrir Grupos. El lint global señala un error anterior en `premium-badge.tsx`.
+- [x] Android 16, emulador `lockin`, backend mock. Se creó y marcó una tarea, se programó y canceló una reunión y se volvió a Mensajes en el match con Marc Oller y en el grupo Taller Abierto. Capturas, jerarquías y resultados en `e2e/artifacts/local/2026-11-17-plan-chats/`. La APK recoge la interfaz anterior al ajuste de la hora de referencia que ordena las reuniones.
+
 ## Lista de matches
 - [x] Tab Matches: lista con nombre, último mensaje (o "Decidid cuándo hacer vuestro primer Lock-In"), estado
 - [x] Estado vacío (sin matches todavía) con mensaje útil

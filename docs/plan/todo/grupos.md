@@ -1,5 +1,7 @@
 # Grupos — detalle
 
+Desde el 17 de noviembre de 2026 cada chat de grupo tiene su propio [plan de tareas y reuniones](chat.md). Cualquier miembro puede actualizarlo, con los mismos permisos para el admin y el resto del equipo.
+
 Pedido por el usuario el 2026-11-09: además del deck de cofundador, Descubrir gana una sección
 «Grupos». Un grupo es un proyecto con admin, puestos (especialidad + plazas) y hasta 6 personas.
 Quien administra recluta; quien no tiene grupo ve los grupos que buscan lo que domina.

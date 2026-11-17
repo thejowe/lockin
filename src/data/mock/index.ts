@@ -7,6 +7,7 @@
  */
 
 import { createMockAgreementRepository } from './agreement';
+import { createMockChatPlan } from './chat-plan';
 import {
   CURRENT_USER_ID,
   defaultMockStore,
@@ -684,6 +685,7 @@ export function createMockRepositories(
       isBlocked,
     }),
     groups: createMockGroupRepository(actorId, store),
+    chatPlan: createMockChatPlan(store, actorId),
     push: createMockPushRepository(actorId, store),
   };
 }

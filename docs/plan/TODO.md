@@ -1,5 +1,9 @@
 # TODO maestro — LockIn MVP
 
+## Plan compartido en los chats · 17 de noviembre de 2026
+
+Los matches y los grupos tienen una lista de tareas compartida y reuniones con fecha, hora y lugar o enlace. La migración ya está aplicada en Supabase. El recorrido y las comprobaciones están en [el bloque de chat](todo/chat.md).
+
 ## ▶ Notificaciones (2026-11-11): migración aplicada y función v4 desplegada
 
 - [x] Código de resumen diario de likes no vistos (anónimo gratis), matches,
