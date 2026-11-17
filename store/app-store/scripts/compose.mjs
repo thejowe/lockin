@@ -15,6 +15,7 @@
  * una hoja de contacto en `build/preview-<idioma>.jpg`.
  */
 
+import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
@@ -407,3 +408,30 @@ for (const locale of locales) {
   console.log(`${locale}: ${FRAMES.length} imágenes en ${out}`);
 }
 await browser.close();
+
+// iPhone mediano con Dynamic Island (6,1″/6,3″, `APP_IPHONE_61`): App Store Connect guarda un juego
+// propio para ese tamaño y, si lo tiene, lo enseña en vez de escalar el de 6,9″. Mismas imágenes a
+// 1179 × 2556: se escala al ancho y se recortan los pocos px que sobran por abajo (solo fondo negro).
+execFileSync('python3', [
+  '-I',
+  '-c',
+  `
+import os, sys
+from PIL import Image
+here, locales = sys.argv[1], sys.argv[2:]
+for locale in locales:
+    src = os.path.join(here, locale)
+    out = os.path.join(src, '6.1')
+    os.makedirs(out, exist_ok=True)
+    for name in sorted(os.listdir(src)):
+        if not name.endswith('.png'):
+            continue
+        im = Image.open(os.path.join(src, name)).convert('RGB')
+        h = round(im.height * 1179 / im.width)
+        im = im.resize((1179, h), Image.LANCZOS).crop((0, 0, 1179, 2556))
+        im.save(os.path.join(out, name), optimize=True)
+`,
+  HERE,
+  ...locales,
+]);
+console.log('Tamaño mediano (1179 × 2556) en <idioma>/6.1/');

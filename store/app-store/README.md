@@ -14,6 +14,11 @@ decisión: `docs/tiendas/DISENO-app-store.md`.
 | 6 | `06-profile.png` | Perfil + sello de GitHub verificado | Tu GitHub, *verificado* |
 | 7 | `07-closer.png` | Cierre de marca: el hilo forma el símbolo | Aquí nadie contrata a *nadie* |
 
+Cada idioma lleva además `6.1/`: las mismas siete a 1179 × 2556 para el iPhone mediano con
+Dynamic Island (`APP_IPHONE_61`). App Store Connect guarda un juego propio para ese tamaño y, si
+existe, lo enseña en lugar de escalar el de 6,9″; sin él, esos iPhone seguían viendo las capturas
+antiguas. Las genera `compose.mjs`.
+
 Se suben en este orden: App Store enseña las tres primeras en los resultados de búsqueda, y el
 hilo solo se lee seguido si el orden se respeta. Carpetas `es/`, `en/` y `ca/` para cada
 localización de la ficha.
@@ -52,3 +57,7 @@ y respeta el orden) y **no** envía a revisión.
 
 Si cambias un texto en `docs/tiendas/*/ficha-app-store.md`, cámbialo también en
 `store.config.json`: es lo que se sube.
+
+**Inglés y catalán, fuera de momento.** Apple no deja crear esas localizaciones con el nombre
+«cofounder» (lo usa otra app). Sus textos y capturas están en `pendiente-en-ca.json`: cuando haya
+nombre, se pone en su `title` y se mueven a `apple.info` de `store.config.json`.

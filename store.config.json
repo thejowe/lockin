@@ -34,73 +34,15 @@
             "./store/app-store/es/05-groups.png",
             "./store/app-store/es/06-profile.png",
             "./store/app-store/es/07-closer.png"
-          ]
-        }
-      },
-      "en-US": {
-        "title": "cofounder",
-        "subtitle": "Find a co-founder & your team",
-        "promoText": "Swipe through people who want to start something, match when it’s mutual and team up in groups of up to 6. Nothing built yet? That’s where it starts.",
-        "description": "Want to build something but need someone to build it with? cofounder introduces you to people at the same point as you: ambitious, eager and, often, with nothing built yet.\n\nHere nobody hires anybody. It’s peer to peer: you both contribute and you both decide.\n\nHOW IT WORKS\n• Create your profile: what you’re great at, what you’re looking for, your starting point, your hours and your level of ambition.\n• Swipe through full-screen profiles, one by one, and say yes to people who fit.\n• When the interest is mutual, it’s a match and a private chat opens between the two of you.\n• Better as a team? Start or join a group of up to 6 people, with its own chat.\n\nPROFILES THAT SHOW HOW YOU THINK\nNot a CV. Specialties, languages, time zone, availability, ambition and one or two short answers that show how you think, not just what you can do. If you like, add links to GitHub, LinkedIn or your portfolio. Your profile has a photo, which is only published after passing an automatic safety review.\n\nMATCH AND CHAT\nYou only connect when you both want to, and the app shows you where you fit. To break the ice, it suggests questions based on what you have in common.\n\nGROUPS\nBesides 1:1 matching, you can create or join a group to complement profiles on a project (max 6 people), see who is in it and talk in a group chat. To join, the interest has to be mutual.\n\nVERIFIED GITHUB\nLink your GitHub account and your profile will show the \"GitHub verified\" badge. It indicates that the GitHub link belongs to whoever publishes it; it does not verify the person’s identity or knowledge.\n\nSAFETY AND CONTROL\nBlock or report any person, group or message right from the app. Delete your account and your data whenever you want from Settings > Account. No ads.\n\nWHAT IT IS NOT\ncofounder is not a dating app or a job board. It offers no legal advice or funding, and does not guarantee results: it helps you meet people to build with; what you do together is up to you.\n\nFor people aged 16 or over.\n\nCOFOUNDER PREMIUM (OPTIONAL)\nThe essentials are free. Premium removes the daily like limit and adds Super Likes, undo, Boost and seeing who liked you. It is an auto-renewable subscription (monthly or yearly), with a free trial for new subscribers. Payment is charged to your Apple account and renews automatically unless you cancel at least 24 hours before the end of the period; manage or cancel it in your Apple account settings.\n\nTerms of Use (EULA): https://getcofounder.app/terminos\nPrivacy Policy: https://getcofounder.app/privacidad",
-        "keywords": [
-          "partner",
-          "startup",
-          "entrepreneur",
-          "founder",
-          "project",
-          "idea",
-          "business",
-          "collaborate",
-          "github",
-          "peers",
-          "networking"
-        ],
-        "releaseNotes": "Design improvements and fixes. The \"GitHub verified\" badge now shows correctly in English and Catalan.",
-        "supportUrl": "https://getcofounder.app/soporte",
-        "privacyPolicyUrl": "https://getcofounder.app/privacidad",
-        "screenshots": {
-          "APP_IPHONE_67": [
-            "./store/app-store/en/01-deck.png",
-            "./store/app-store/en/02-prompt.png",
-            "./store/app-store/en/03-match.png",
-            "./store/app-store/en/04-icebreakers.png",
-            "./store/app-store/en/05-groups.png",
-            "./store/app-store/en/06-profile.png",
-            "./store/app-store/en/07-closer.png"
-          ]
-        }
-      },
-      "ca": {
-        "title": "cofounder",
-        "subtitle": "Troba cofundador i equip",
-        "promoText": "Llisca perfils de gent que vol començar alguna cosa, fes match quan és mutu i forma equip de fins a 6. No cal tenir res construït: aquí es comença.",
-        "description": "Tens ganes de construir alguna cosa i et falta amb qui? cofounder et presenta persones en el teu mateix punt: amb ambició, amb ganes i, sovint, sense res construït encara.\n\nAquí ningú no contracta ningú. És entre iguals: tots dos hi aporteu i tots dos decidiu.\n\nCOM FUNCIONA\n• Crea el teu perfil: el que domines, el que busques, el teu punt de partida, les teves hores i el teu nivell d'ambició.\n• Llisca perfils a pantalla completa, un a un, i digues que sí a qui t'encaixi.\n• Si l'interès és mutu, hi ha match i s'obre un xat privat entre els dos.\n• Millor en equip? Crea un grup o uneix-te a un, de fins a 6 persones, amb el seu propi xat.\n\nPERFILS QUE DIUEN COM PENSES\nRes de CV. Especialitats, idiomes, zona horària, disponibilitat, ambició i una o dues respostes breus que deixen veure com penses, no només què saps fer. Si vols, afegeix enllaços a GitHub, LinkedIn o el teu portafoli. El teu perfil porta una foto, que només es publica després de passar una revisió automàtica de seguretat.\n\nMATCH I XAT\nNomés connecteu quan tots dos ho voleu, i l'app et diu en què encaixeu. Per trencar el gel, et suggereix preguntes a partir del que teniu en comú.\n\nGRUPS\nA més del match 1:1, pots crear o unir-te a un grup per complementar perfils en un projecte (màxim 6 persones), veure qui en forma part i parlar en un xat de grup. Per entrar-hi, l'interès ha de ser mutu.\n\nGITHUB VERIFICAT\nVincula el teu compte de GitHub i el teu perfil mostrarà el segell «GitHub verificat». Indica que aquest enllaç de GitHub pertany a qui el publica; no verifica la identitat de la persona ni els seus coneixements.\n\nSEGURETAT I CONTROL\nBloqueja o reporta qualsevol persona, grup o missatge des de la mateixa app. Elimina el teu compte i les teves dades quan vulguis des d'Ajustos > Compte. Sense anuncis.\n\nQUÈ NO ÉS\ncofounder no és una app de cites ni una borsa de treball. No ofereix assessorament legal ni finançament, ni garanteix resultats: t'ajuda a conèixer persones amb qui construir; el que feu depèn de vosaltres.\n\nPer a persones de 16 anys o més.\n\nCOFOUNDER PREMIUM (OPCIONAL)\nL'essencial és gratis. Premium treu el límit diari de likes i afegeix Super Likes, desfer, Boost i veure a qui li has agradat. És una subscripció amb renovació automàtica (mensual o anual), amb prova gratuïta per a nous subscriptors. Es cobra al teu compte d'Apple i es renova tret que la cancel·lis almenys 24 hores abans del final del període; pots gestionar-la o cancel·lar-la als ajustos del teu compte d'Apple.\n\nTermes d'ús (EULA): https://getcofounder.app/terminos\nPolítica de privacitat: https://getcofounder.app/privacidad",
-        "keywords": [
-          "soci",
-          "sòcia",
-          "emprendre",
-          "startup",
-          "emprenedor",
-          "cofundadora",
-          "projecte",
-          "idea",
-          "negoci",
-          "col·laborar",
-          "github",
-          "fundar"
-        ],
-        "releaseNotes": "Millores de disseny i correccions. El segell «GitHub verificat» ja apareix traduït en anglès i català.",
-        "supportUrl": "https://getcofounder.app/soporte",
-        "privacyPolicyUrl": "https://getcofounder.app/privacidad",
-        "screenshots": {
-          "APP_IPHONE_67": [
-            "./store/app-store/ca/01-deck.png",
-            "./store/app-store/ca/02-prompt.png",
-            "./store/app-store/ca/03-match.png",
-            "./store/app-store/ca/04-icebreakers.png",
-            "./store/app-store/ca/05-groups.png",
-            "./store/app-store/ca/06-profile.png",
-            "./store/app-store/ca/07-closer.png"
+          ],
+          "APP_IPHONE_61": [
+            "./store/app-store/es/6.1/01-deck.png",
+            "./store/app-store/es/6.1/02-prompt.png",
+            "./store/app-store/es/6.1/03-match.png",
+            "./store/app-store/es/6.1/04-icebreakers.png",
+            "./store/app-store/es/6.1/05-groups.png",
+            "./store/app-store/es/6.1/06-profile.png",
+            "./store/app-store/es/6.1/07-closer.png"
           ]
         }
       }
