@@ -7,10 +7,6 @@ import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import type { PlanDraft } from '@/data/chat-plan';
 import { Field, TextField } from '@/features/profile/controls';
-import {
-  findObjectionableContent,
-  ObjectionableContentError,
-} from '@/features/safety/content-filter';
 import { t } from '@/i18n';
 
 export type PlanKind = 'task' | 'meeting';
@@ -67,11 +63,6 @@ export function PlanForm({
     const startsAt = meeting ? meetingInstant(date, time) : null;
     if (meeting && !startsAt) {
       setError(t('Elige una fecha y una hora futuras válidas.'));
-      return;
-    }
-    const blocked = findObjectionableContent(title) || findObjectionableContent(place);
-    if (blocked) {
-      setError(new ObjectionableContentError(blocked).message);
       return;
     }
     sending.current = true;

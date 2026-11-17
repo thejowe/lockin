@@ -77,7 +77,7 @@ Edad mínima de uso: 16 años (D06), autodeclarada. En el cuestionario de App St
 | Contenido generado por usuarios | Sí: perfil, foto de perfil (obligatoria en el alta, moderada antes de publicarse), respuestas breves, nombres y descripciones de grupos, perfiles buscados y mensajes |
 | Mensajería / chat | Sí, 1:1 tras match mutuo y chat de grupo entre miembros |
 | Bloquear / reportar | Sí: perfiles, bloqueo/denuncia de grupos y mensajes concretos de chat 1:1 y de grupo (confirmar en la build) |
-| Filtro de contenido | Sí: filtro básico de texto en perfil y chat, más moderación de fotos |
+| Filtro de contenido | Sí: filtro básico de texto en el perfil, más moderación de fotos |
 | Aceptación de Términos y Normas | Sí, obligatoria antes de publicar |
 | Publicidad / apuestas | No |
 | Compras dentro de la app | Sí: suscripción cofounder Premium, mensual (`app.cofounder.mobile.premium.monthly`, 4,99 €) o anual (`.annual`, 39,99 €), con prueba gratis (7 días en el anual, 3 en el mensual). Premium solo amplía funciones de la propia app |
@@ -125,10 +125,9 @@ USER-GENERATED CONTENT (Guideline 1.2)
   by the operator; target response time is 24 h for severe content and 72 h otherwise.
 - Block: any user, from Discover or chat; blocking is mutual and immediate.
   Blocking a group permanently passes on it and blocks its admin.
-- Filter: a basic objectionable-text filter (insults, threats, explicit sexual
-  content; Spanish and English) blocks submission of profile text and messages
-  (including group chat);
-  profile photos are moderated server-side with OpenAI's moderation API and are
+- A basic filter checks profile text in Spanish, English and Catalan. People can
+  report individual messages in private and group chats. Profile photos are
+  moderated server-side with OpenAI's moderation API and are
   only published after approval (fail-closed).
 - Account deletion: Settings > Account > Delete my account removes profile,
   matches, messages, photo, group membership, group swipes and push tokens.

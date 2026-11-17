@@ -70,7 +70,7 @@ Si creas o te unes a un grupo, tratamos además:
 - **Perfiles que busca el grupo:** las especialidades y el número de plazas abiertas o cubiertas que define la persona administradora (no es una oferta de empleo).
 - **Pertenencia:** quién forma parte del grupo, qué perfil cubre dentro del grupo y la fecha de entrada.
 - **Swipes de grupo:** si das like o pasas a un grupo, y si la persona administradora da like o pasa a una persona candidata (ligado al perfil que cubriría).
-- **Mensajes del chat de grupo:** el texto, quién lo envía, el grupo y las fechas. Los ven todas las personas miembros del grupo. Hay un filtro básico de contenido en el cliente y puedes reportar un mensaje concreto.
+- **Mensajes del chat de grupo:** el texto, quién lo envía, el grupo y las fechas. Los ven todas las personas miembros del grupo. Puedes reportar un mensaje concreto.
 - **Bloqueos y denuncias de grupo:** si bloqueas un grupo (queda como «pasar» definitivo y se bloquea a la persona administradora) o lo denuncias (el reporte se registra contra la persona administradora, con el grupo anotado).
 
 La parte pública que puede ver quien busca grupo (nombre, descripción, perfiles buscados y perfiles públicos de los miembros actuales) se expone solo a través de las funciones del deck, no como lectura libre de las tablas internas. Los datos internos del grupo (incluida la pertenencia detallada y el chat) solo son accesibles a quienes son miembros, según los controles del servidor.

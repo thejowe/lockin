@@ -81,7 +81,7 @@ Minimum age: 16, self-declared. In the App Store Connect questionnaire, declare:
 | User-generated content | Yes: profile, profile photo (required at sign-up, moderated before publication), short answers, group names and descriptions, sought profiles and messages |
 | Messaging / chat | Yes, 1:1 after a mutual match and group chat among members |
 | Block / report | Yes: profiles, group blocking/reporting and individual 1:1 and group chat messages (confirm in the build) |
-| Content filter | Yes: basic text filter on profile and chat, plus photo moderation |
+| Content filter | Yes: basic filter for profile text, plus photo moderation |
 | Acceptance of Terms and Guidelines | Yes, mandatory before publishing |
 | Advertising / gambling | No |
 | In-app purchases | Yes: cofounder Premium subscription, monthly (`app.cofounder.mobile.premium.monthly`, €4.99) or annual (`.annual`, €39.99), with a free trial (7 days on the annual plan, 3 on the monthly). Premium only extends features of the app itself |
@@ -130,10 +130,9 @@ USER-GENERATED CONTENT (Guideline 1.2)
   by the operator; target response time is 24 h for severe content and 72 h otherwise.
 - Block: any user, from Discover or chat; blocking is mutual and immediate.
   Blocking a group permanently passes on it and blocks its admin.
-- Filter: a basic objectionable-text filter (insults, threats, explicit sexual
-  content; Spanish and English) blocks submission of profile text and messages
-  (including group chat);
-  profile photos are moderated server-side with OpenAI's moderation API and are
+- A basic filter checks profile text in Spanish, English and Catalan. People can
+  report individual messages in private and group chats. Profile photos are
+  moderated server-side with OpenAI's moderation API and are
   only published after approval (fail-closed).
 - Account deletion: Settings > Account > Delete my account removes profile,
   matches, messages, photo, group membership, group swipes and push tokens.

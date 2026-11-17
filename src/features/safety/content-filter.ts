@@ -1,8 +1,6 @@
 /**
- * Filtro básico de contenido objetable (es/en/ca) para todo texto libre que otra
- * persona puede leer: nombre, ubicación, respuestas, enlaces, pies de foto, notas
- * del acuerdo y mensajes. Módulo puro: sin red, sin estado. No se aplica al
- * reporte, que tiene que poder citar el insulto que denuncia.
+ * Filtro básico de contenido objetable (es/en/ca) para campos de perfil,
+ * enlaces, pies de foto y notas del acuerdo.
  *
  * ES UN COMPLEMENTO DEL REPORTE, NO SUSTITUYE A LA MODERACIÓN. Es una lista
  * corta y deliberadamente conservadora (insultos graves, amenazas, contenido
@@ -23,7 +21,7 @@
  * «tortillera». «Coño» va aparte: normalizado sería «cono», una palabra limpia.
  */
 
-import { t, tk } from '@/i18n';
+import { tk } from '@/i18n';
 
 export type ObjectionableKind = 'insulto' | 'amenaza' | 'sexual';
 
@@ -294,14 +292,4 @@ export function findObjectionableContent(text: string): ObjectionableKind | null
 
 export function isObjectionable(text: string): boolean {
   return findObjectionableContent(text) !== null;
-}
-
-/** Error que el cliente lanza antes de enviar; la UI enseña `message` tal cual. */
-export class ObjectionableContentError extends Error {
-  readonly kind: ObjectionableKind;
-  constructor(kind: ObjectionableKind) {
-    super(t(OBJECTIONABLE_MESSAGE));
-    this.name = 'ObjectionableContentError';
-    this.kind = kind;
-  }
 }

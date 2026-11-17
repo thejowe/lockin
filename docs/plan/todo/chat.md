@@ -1,5 +1,11 @@
 # TODO — chat
 
+## Texto libre en los chats · 17 de noviembre de 2026
+
+- [x] Los chats individuales y de grupo envían y muestran el texto original, incluidas las palabras que antes impedían el envío. Esto también se aplica a los títulos de tareas y a los temas, lugares y enlaces de reuniones.
+- [x] Los participantes pueden reportar mensajes y bloquear perfiles desde las opciones del chat.
+- [x] Pasan TypeScript y 153 pruebas de chat, plan compartido, seguridad y textos legales. La evidencia de dispositivo de esta entrega se guarda en `e2e/artifacts/local/2026-11-17-filtro-chat/`.
+
 ## Plan compartido · 17 de noviembre de 2026
 
 - [x] Pestañas Mensajes y Plan compartido en cada match y grupo. El borrador del mensaje se conserva al cambiar de pestaña.

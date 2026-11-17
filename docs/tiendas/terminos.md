@@ -84,7 +84,7 @@ Puedes crear un grupo o unirte a uno para complementar perfiles en un proyecto e
 
 **Unión.** Si das like a un grupo y la persona administradora te da like (en cualquier orden), entras en el grupo en el perfil acordado y se abre (o se te añade a) el chat de grupo.
 
-**Chat de grupo.** Los mensajes del chat de grupo los ven todas las personas miembros. Se aplican las mismas normas de conducta que al chat 1:1 (§6). Puedes reportar un mensaje concreto. Hay un filtro básico de contenido; no garantiza moderación completa.
+**Chat de grupo.** Los mensajes del chat de grupo los ven todas las personas miembros. Se aplican las mismas normas de conducta que al chat 1:1 (§6). Puedes reportar un mensaje concreto.
 
 **Administración.** La persona administradora puede expulsar a un miembro. Cualquier miembro puede salir. Si sales o te expulsan, la plaza vuelve a quedar abierta y no vuelves a entrar solo por likes previos. Si la persona administradora sale o elimina su cuenta, el liderazgo pasa a la persona miembro más antigua; si el grupo queda vacío, se borra.
 

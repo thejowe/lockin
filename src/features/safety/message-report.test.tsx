@@ -51,12 +51,11 @@ describe('reportar un mensaje desde el chat', () => {
     expect(screen.getByRole('button', { name: 'Enviar mensaje' })).toBeTruthy();
   });
 
-  it('un mensaje con contenido objetable no se envía y explica por qué', async () => {
-    const { repositories } = await setup();
-    const send = jest.spyOn(repositories.messages, 'send');
-    await fireEvent.changeText(screen.getByLabelText('Mensaje'), 'eres un hijo de puta');
+  it('muestra el mensaje completo cuando se cita un insulto', async () => {
+    await setup();
+    const body = 'En el correo pone «hijo de puta».';
+    await fireEvent.changeText(screen.getByLabelText('Mensaje'), body);
     await fireEvent.press(screen.getByRole('button', { name: 'Enviar mensaje' }));
-    expect(await screen.findByText(/lenguaje que no permitimos/)).toBeTruthy();
-    expect(send).not.toHaveBeenCalled();
+    expect(await screen.findByText(body)).toBeTruthy();
   });
 });

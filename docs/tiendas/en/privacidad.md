@@ -55,7 +55,7 @@ If you create or join a group, we also process:
 - **Profiles the group is looking for:** the specialties and number of open or filled slots set by the admin (this is not a job offer).
 - **Membership:** who belongs to the group, which profile they cover in the group and the join date.
 - **Group swipes:** whether you like or pass on a group, and whether the admin likes or passes on a candidate (tied to the profile they would cover).
-- **Group chat messages:** the text, who sent it, the group and the dates. All group members can see them. There is a basic on-device content filter and you can report a specific message.
+- **Group chat messages:** the text, who sent it, the group and the dates. All group members can see them. You can report a specific message.
 - **Group blocks and reports:** if you block a group (it becomes a permanent pass and the admin is blocked) or report it (the report is filed against the admin, with the group noted).
 
 The public part shown to people looking for a group (name, description, sought profiles and current members' public profiles) is exposed only through the deck functions, not as free reads of the internal tables. Internal group data (including detailed membership and chat) is accessible only to members, under the server's access controls.

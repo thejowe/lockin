@@ -29,16 +29,13 @@ it('conserva el borrador del chat y reintenta la misma tarea si se pierde la res
   await fireEvent.changeText(message, 'Lo comentamos mañana');
   await fireEvent.press(screen.getByRole('tab', { name: 'Plan compartido' }));
   await fireEvent.press(await screen.findByRole('button', { name: 'Añadir tarea' }));
-  await fireEvent.changeText(
-    screen.getByLabelText('Nombre de la tarea'),
-    'Hablar con tres clientes'
-  );
+  await fireEvent.changeText(screen.getByLabelText('Nombre de la tarea'), 'Arreglar el puto bug');
   const submit = () => fireEvent.press(screen.getByRole('button', { name: 'Guardar' }));
   await submit();
   expect(await screen.findByRole('alert')).toBeTruthy();
   await submit();
   expect(save.mock.calls[0][1].id).toBe(save.mock.calls[1][1].id);
-  const task = await screen.findByRole('checkbox', { name: 'Hablar con tres clientes' });
+  const task = await screen.findByRole('checkbox', { name: 'Arreglar el puto bug' });
   await fireEvent.press(task);
   const peer = createMockRepositories(defaultMockStore, { actorId: 'seed-nuria' });
   expect(await peer.chatPlan.list(scope)).toEqual([expect.objectContaining({ closed: true })]);
@@ -73,9 +70,10 @@ it('permite programar, cancelar y restablecer una reunión en el grupo', async (
   expect(await screen.findByRole('alert')).toBeTruthy();
   await fireEvent.changeText(screen.getByLabelText('Fecha (DD/MM/AAAA)'), '29022096');
   await fireEvent.changeText(screen.getByLabelText('Hora local (24 h)'), '1615');
-  await fireEvent.changeText(screen.getByLabelText('Lugar o enlace (opcional)'), 'Sala B');
+  const place = 'https://example.com/reunion/puto-bug';
+  await fireEvent.changeText(screen.getByLabelText('Lugar o enlace (opcional)'), place);
   await fireEvent.press(screen.getByRole('button', { name: 'Guardar' }));
-  expect(await screen.findByText('Sala B')).toBeTruthy();
+  expect(await screen.findByText(place)).toBeTruthy();
   const scope = { kind: 'group' as const, id: group.id };
   expect(await repositories.chatPlan.list(scope)).toEqual([
     expect.objectContaining({ startsAt: new Date(2096, 1, 29, 16, 15).toISOString() }),

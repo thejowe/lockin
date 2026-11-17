@@ -450,16 +450,17 @@ describe('/group/[groupId]', () => {
     expect(screen.getByText('Alba Ferrer')).toBeTruthy();
   });
 
-  it('el filtro de contenido frena el envío, y un fallo de red se avisa', async () => {
+  it('muestra el texto enviado tal como se escribió y avisa si falla la red', async () => {
     await inTaller();
     const send = jest.spyOn(repositories.groups, 'sendMessage');
     await renderRoute(<GroupChatScreen />);
     await waitFor(() => expect(screen.getByLabelText('Mensaje')).toBeTruthy());
 
-    await fireEvent.changeText(screen.getByLabelText('Mensaje'), 'te voy a matar');
+    const body = 'Por fin hemos arreglado el puto bug';
+    await fireEvent.changeText(screen.getByLabelText('Mensaje'), body);
     await fireEvent.press(screen.getByRole('button', { name: 'Enviar mensaje' }));
-    expect(send).not.toHaveBeenCalled();
-    expect(screen.getByLabelText('Mensaje').props.value).toBe('te voy a matar');
+    expect(send).toHaveBeenCalledWith(TALLER, body);
+    expect(await screen.findByText(body)).toBeTruthy();
 
     send.mockRejectedValueOnce('sin red');
     await fireEvent.changeText(screen.getByLabelText('Mensaje'), 'hola');

@@ -43,7 +43,6 @@ import {
 } from '@/features/chat';
 import { useGroupConversation, useGroupPush } from '@/features/groups';
 import { RequireVerifiedEmail, TermsAcceptance, useTermsGate } from '@/features/profile';
-import { ObjectionableContentError } from '@/features/safety/content-filter';
 import { ReportForm } from '@/features/safety/report-form';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
@@ -208,9 +207,7 @@ function GroupChatContent() {
 
               {sendError ? (
                 <ThemedText type="small" themeColor="danger" style={styles.sendError}>
-                  {sendError instanceof ObjectionableContentError
-                    ? sendError.message
-                    : t('No se ha podido enviar. Inténtalo otra vez.')}
+                  {t('No se ha podido enviar. Inténtalo otra vez.')}
                 </ThemedText>
               ) : null}
 

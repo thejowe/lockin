@@ -81,7 +81,7 @@ You can create a group or join one to complement profiles on a peer-to-peer proj
 
 **Joining.** If you like a group and the admin likes you (in either order), you join the group in the agreed profile and the group chat opens (or you are added to it).
 
-**Group chat.** Group chat messages are visible to all members. The same conduct rules as for 1:1 chat apply (§6). You can report a specific message. There is a basic content filter; it does not guarantee full moderation.
+**Group chat.** Group chat messages are visible to all members. The same conduct rules as for 1:1 chat apply (§6). You can report a specific message.
 
 **Administration.** The admin may remove a member. Any member may leave. If you leave or are removed, the slot opens again and you do not rejoin on your own from prior likes. If the admin leaves or deletes their account, leadership passes to the longest-standing member; if the group is empty, it is deleted.
 

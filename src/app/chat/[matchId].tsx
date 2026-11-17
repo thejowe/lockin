@@ -46,7 +46,6 @@ import {
   suggestIcebreakers,
   useConversation,
 } from '@/features/chat';
-import { ObjectionableContentError } from '@/features/safety/content-filter';
 import { MessageReportPanel } from '@/features/safety/message-report-panel';
 import { SafetyMenuButton, SafetyPanel } from '@/features/safety/safety-panel';
 import { useTheme } from '@/hooks/use-theme';
@@ -255,9 +254,7 @@ function ChatScreenContent() {
               {sendError && (
                 <Animated.View entering={appear()} exiting={disappear()} layout={layoutShift()}>
                   <ThemedText type="small" themeColor="danger" style={styles.sendError}>
-                    {sendError instanceof ObjectionableContentError
-                      ? sendError.message
-                      : t('No se ha podido enviar. Inténtalo otra vez.')}
+                    {t('No se ha podido enviar. Inténtalo otra vez.')}
                   </ThemedText>
                 </Animated.View>
               )}
