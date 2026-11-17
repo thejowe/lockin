@@ -41,3 +41,14 @@ git checkout src/data/mock/store.ts
 Los perfiles del mock no tienen foto (las de ejemplo vienen de Unsplash y el contenedor donde se
 hicieron no llegaba a ese dominio): salen con iniciales, que es como los ve quien aún no ha
 subido foto. Con fotos reales y con permiso, quitar `imageUrl: undefined` del parche y regenerar.
+
+## Subirlas a App Store Connect
+
+La ficha completa (textos de los tres idiomas, notas de versión y estas capturas) está en
+`store.config.json`, en la raíz. Se sube con el workflow **iOS a TestFlight** marcando
+`metadata` (y `build` si también va un binario nuevo): ejecuta `eas metadata:push`, que crea la
+versión de `apple.version` si no existe, sincroniza textos y capturas (borra las que ya no están
+y respeta el orden) y **no** envía a revisión.
+
+Si cambias un texto en `docs/tiendas/*/ficha-app-store.md`, cámbialo también en
+`store.config.json`: es lo que se sube.

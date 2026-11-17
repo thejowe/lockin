@@ -4,8 +4,23 @@ name: iOS a TestFlight (build local)
 # `eas build --local` compila en este runner macOS (no gasta cuota de builds) y
 # `eas submit` sube el .ipa a App Store Connect. Se lanza a mano desde Actions.
 # Necesita el secreto EXPO_TOKEN (token de acceso de la cuenta thejowe en expo.dev).
+#
+# Con `metadata` sube además la ficha de App Store (`store.config.json`: textos,
+# notas de versión y capturas de `store/app-store/`) con `eas metadata:push`, que
+# usa la misma clave de App Store Connect guardada en EAS que `eas submit`. Crea
+# la versión de `store.config.json` si aún no existe. No envía a revisión: eso
+# se hace a mano en App Store Connect eligiendo el build.
 on:
   workflow_dispatch:
+    inputs:
+      build:
+        description: 'Compilar y subir el build a TestFlight'
+        type: boolean
+        default: true
+      metadata:
+        description: 'Subir textos y capturas de la ficha (store.config.json)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -16,6 +31,7 @@ concurrency:
 
 jobs:
   testflight:
+    if: inputs.build
     runs-on: macos-26
     timeout-minutes: 90
     env:
@@ -39,3 +55,21 @@ jobs:
         run: npx eas-cli build -p ios --profile production --local --non-interactive --output "$RUNNER_TEMP/lockin.ipa"
       - name: Subir a TestFlight
         run: npx eas-cli submit -p ios --profile production --path "$RUNNER_TEMP/lockin.ipa" --non-interactive
+
+  metadata:
+    if: inputs.metadata
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EXPO_NO_TELEMETRY: 1
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # 27.10 es la primera que se ha comprobado que sube capturas (`info.<locale>.screenshots`).
+      - name: Subir la ficha de App Store
+        run: npx -y eas-cli@27.10.0 metadata:push --profile production --non-interactive

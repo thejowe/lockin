@@ -4,6 +4,8 @@ Revisada el 15 de octubre de 2026 contra el binario final tras T5 (solo búsqued
 
 Actualizada el 9 de noviembre de 2026 con Grupos, chat de grupo y notificaciones push opcionales; contenido preparado para la build con Grupos.
 
+Renovada el 17 de noviembre de 2026 para la versión 1.0.1 (subtítulo, texto promocional, descripción, palabras clave y capturas nuevas). Lo que se sube a App Store Connect es `store.config.json` (raíz del repo), con estos mismos textos: si cambias uno aquí, cámbialo allí. Cómo se sube, en `store/app-store/README.md`.
+
 ## Nombre
 
 cofounder
