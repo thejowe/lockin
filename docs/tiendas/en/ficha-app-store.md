@@ -12,52 +12,53 @@ cofounder
 
 ## Subtitle
 
-Find who to build with
+Find a co-founder & your team
 
 ## Promotional text
 
-Swipe through people who want to start something, match when the interest is mutual, and chat to see if you fit as cofounders.
+Swipe through people who want to start something, match when it’s mutual and team up in groups of up to 6. Nothing built yet? That’s where it starts.
 
 ## Description
 
-Want to build something but need someone to build it with? cofounder helps you find a cofounder among people at a similar point to yours.
+Want to build something but need someone to build it with? cofounder introduces you to people at the same point as you: ambitious, eager and, often, with nothing built yet.
 
-You don't need to have built anything. You can have no idea yet, an idea you haven't started, or have tried something small. Here nobody hires anybody: the relationship is between peers, and you both contribute and decide together.
+Here nobody hires anybody. It’s peer to peer: you both contribute and you both decide.
 
-YOUR PROFILE
-Tell people who you are and what you bring: name, age, location and time zone, specialties, starting point, availability and level of ambition. Answer one or two short questions so your way of thinking shows, not just what you can do. If you like, add links to GitHub, your portfolio or LinkedIn.
+HOW IT WORKS
+• Create your profile: what you’re great at, what you’re looking for, your starting point, your hours and your level of ambition.
+• Swipe through full-screen profiles, one by one, and say yes to people who fit.
+• When the interest is mutual, it’s a match and a private chat opens between the two of you.
+• Better as a team? Start or join a group of up to 6 people, with its own chat.
 
-To create your profile you add a photo, which is only published after passing an automatic safety review.
-
-SWIPE
-Profiles appear full screen, one by one. Swipe to show you're interested in someone or to move on to the next.
+PROFILES THAT SHOW HOW YOU THINK
+Not a CV. Specialties, languages, time zone, availability, ambition and one or two short answers that show how you think, not just what you can do. If you like, add links to GitHub, LinkedIn or your portfolio. Your profile has a photo, which is only published after passing an automatic safety review.
 
 MATCH AND CHAT
-When the interest is mutual, you match and a private chat opens between the two of you. To break the ice, the app suggests a few questions to start with.
+You only connect when you both want to, and the app shows you where you fit. To break the ice, it suggests questions based on what you have in common.
 
 GROUPS
-Besides 1:1 matching, you can create or join a group to complement profiles on a project (max 6 people), see who is in it and talk in a group chat. Nobody hires anybody: it remains peer-to-peer.
+Besides 1:1 matching, you can create or join a group to complement profiles on a project (max 6 people), see who is in it and talk in a group chat. To join, the interest has to be mutual.
 
 VERIFIED GITHUB
-You can link your GitHub account to show "GitHub verified" on your profile. It indicates that the GitHub link belongs to whoever publishes it; it does not verify the person's identity or knowledge.
+Link your GitHub account and your profile will show the "GitHub verified" badge. It indicates that the GitHub link belongs to whoever publishes it; it does not verify the person’s identity or knowledge.
 
 SAFETY AND CONTROL
-You can block or report anyone from the app. You can also block or report a group and report a group chat message. You can delete your account and your data whenever you want from Settings > Account.
+Block or report any person, group or message right from the app. Delete your account and your data whenever you want from Settings > Account. No ads.
 
 WHAT IT IS NOT
 cofounder is not a dating app or a job board. It offers no legal advice or funding, and does not guarantee results: it helps you meet people to build with; what you do together is up to you.
 
 For people aged 16 or over.
 
-SUBSCRIPTION
-cofounder Premium is an auto-renewable subscription (monthly or yearly). Payment is charged to your Apple account and renews automatically unless you cancel at least 24 hours before the end of the period; manage or cancel it in your Apple account settings.
+COFOUNDER PREMIUM (OPTIONAL)
+The essentials are free. Premium removes the daily like limit and adds Super Likes, undo, Boost and seeing who liked you. It is an auto-renewable subscription (monthly or yearly), with a free trial for new subscribers. Payment is charged to your Apple account and renews automatically unless you cancel at least 24 hours before the end of the period; manage or cancel it in your Apple account settings.
 
 Terms of Use (EULA): https://getcofounder.app/terminos
 Privacy Policy: https://getcofounder.app/privacidad
 
 ## Keywords
 
-partner,startup,entrepreneur,founder,cofounder,project,team,idea,business,collaborate,github,peers
+partner,startup,entrepreneur,founder,project,idea,business,collaborate,github,peers,networking
 
 ## URLs
 
@@ -92,10 +93,10 @@ Minimum age: 16, self-declared. In the App Store Connect questionnaire, declare:
 | Field | Text | Limit |
 | --- | --- | --- |
 | Name | 9 characters | 30 |
-| Subtitle | 22 characters | 30 |
-| Promotional text | 126 characters | 170 |
-| Description | 2328 characters | 4000 |
-| Keywords | 98 bytes | 100 |
+| Subtitle | 29 characters | 30 |
+| Promotional text | 149 characters | 170 |
+| Description | 2524 characters | 4000 |
+| Keywords | 94 bytes | 100 |
 | App Review Notes | 3379 characters | 4000 |
 
 The keywords do not repeat the name or the category (Apple already indexes them) and use no third-party names except "github", which describes a real feature (GitHub verified). Bundle ID: `app.cofounder.mobile`; version 1.0.0.

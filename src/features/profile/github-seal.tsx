@@ -46,7 +46,7 @@ export function GithubSeal({
         { backgroundColor: theme.brassSoft },
       ]}>
       <ThemedText type={compact ? 'smallBold' : 'bodyStrong'} themeColor="brass">
-        {compact ? `✓ GitHub @${handle}` : `✓ @${handle} · verificado`}
+        {compact ? `✓ GitHub @${handle}` : t('✓ @{handle} · verificado', { handle })}
       </ThemedText>
     </View>
   );

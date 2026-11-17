@@ -72,3 +72,4 @@ expo-tunnel.log
 
 # Configuración de Firebase (en EAS: variable de archivo GOOGLE_SERVICES_JSON)
 google-services.json
+/store/app-store/build/

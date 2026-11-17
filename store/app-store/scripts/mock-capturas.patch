@@ -1,0 +1,148 @@
+--- a/src/data/mock/store.ts
++++ b/src/data/mock/store.ts
+@@ -263,8 +263,130 @@
+   };
+ }
+ 
++// ---- PARCHE TEMPORAL PARA CAPTURAS DE APP STORE (no commitear) ----
++type ShotLocale = 'es' | 'en' | 'ca';
++const SHOT_TEXT: Record<ShotLocale, Record<string, string>> = {
++  es: {},
++  en: {
++    'Lo que quiero construir es…': 'What I want to build is…',
++    'Mi mejor sesión de trabajo empieza…': 'My best work session starts…',
++    'Necesito compañía para…': 'I need company for…',
++    'Lo que aporto desde el día uno es…': 'What I bring from day one is…',
++    'Busco a alguien que…': "I'm looking for someone who…",
++    'Lo que ya intenté y no salió…': 'What I tried that didn’t work…',
++    'Herramientas para equipos pequeños que odian las hojas de cálculo.': 'Tools for small teams who hate spreadsheets.',
++    'Con la pizarra en blanco y una idea que todavía da un poco de miedo.': 'With a blank whiteboard and an idea that still feels a little scary.',
++    'A las siete de la mañana, con el café todavía hirviendo.': 'At seven in the morning, coffee still too hot to drink.',
++    'Sentarme a escribir sin abrir otra pestaña. Dos horas, sin excusas.': 'Sitting down to write without opening another tab. Two hours, no excuses.',
++    'Conseguir los diez primeros clientes antes de que exista el producto.': 'Landing the first ten customers before the product exists.',
++    'Sepa construir lo que yo ya sé vender.': 'Can build what I already know how to sell.',
++    'Algo aburrido y necesario para gremios que aún trabajan por WhatsApp.': 'Something boring and necessary for trades that still run on WhatsApp.',
++    'Cuando el resto del mundo ya se ha ido a dormir.': 'When the rest of the world has gone to sleep.',
++    'Las dos horas de antes del trabajo. Solo no las cumplo nunca.': 'The two hours before work. Alone, I never stick to them.',
++    'Una marca de cerámica preciosa que no vendió nada. Aprendí a validar antes.': 'A beautiful ceramics brand that sold nothing. I learned to validate first.',
++    'Se enfade conmigo cuando me pase tres días puliendo un icono.': 'Gets annoyed when I spend three days polishing an icon.',
++    'Que el pacto entre nosotros esté escrito antes de que haga falta.': 'Our agreement written down before we ever need it.',
++    'Un marketplace para que los talleres pequeños vendan sus piezas sin intermediarios.': 'A marketplace where small workshops sell their pieces with no middlemen.',
++    'Logística de última milla en bici de carga para comercios de barrio.': 'Last-mile cargo-bike delivery for neighbourhood shops.',
++    'Ciudad de México': 'Mexico City',
++    'Sevilla': 'Seville',
++    'Lisboa': 'Lisbon',
++    'm1': 'Loved your take on validating first. Coffee this week?',
++    'm2': 'Yes! I have a prototype I’d love to show you.',
++    'm3': 'Done. Thursday afternoon?',
++    'm4': 'Shall we talk about your project?',
++    'm5': 'I have an idea we could build together.',
++  },
++  ca: {
++    'Lo que quiero construir es…': 'El que vull construir és…',
++    'Mi mejor sesión de trabajo empieza…': 'La meva millor sessió de feina comença…',
++    'Necesito compañía para…': 'Necessito companyia per…',
++    'Lo que aporto desde el día uno es…': 'El que aporto des del primer dia és…',
++    'Busco a alguien que…': 'Busco algú que…',
++    'Lo que ya intenté y no salió…': 'El que ja vaig provar i no va sortir…',
++    'Herramientas para equipos pequeños que odian las hojas de cálculo.': 'Eines per a equips petits que odien els fulls de càlcul.',
++    'Con la pizarra en blanco y una idea que todavía da un poco de miedo.': 'Amb la pissarra en blanc i una idea que encara fa una mica de por.',
++    'A las siete de la mañana, con el café todavía hirviendo.': 'A les set del matí, amb el cafè encara bullint.',
++    'Sentarme a escribir sin abrir otra pestaña. Dos horas, sin excusas.': 'Seure a escriure sense obrir cap altra pestanya. Dues hores, sense excuses.',
++    'Conseguir los diez primeros clientes antes de que exista el producto.': 'Aconseguir els deu primers clients abans que existeixi el producte.',
++    'Sepa construir lo que yo ya sé vender.': 'Sàpiga construir el que jo ja sé vendre.',
++    'Algo aburrido y necesario para gremios que aún trabajan por WhatsApp.': 'Alguna cosa avorrida i necessària per a oficis que encara treballen per WhatsApp.',
++    'Cuando el resto del mundo ya se ha ido a dormir.': 'Quan la resta del món ja se n’ha anat a dormir.',
++    'Las dos horas de antes del trabajo. Solo no las cumplo nunca.': 'Les dues hores d’abans de la feina. Sol no les compleixo mai.',
++    'Una marca de cerámica preciosa que no vendió nada. Aprendí a validar antes.': 'Una marca de ceràmica preciosa que no va vendre res. Vaig aprendre a validar abans.',
++    'Se enfade conmigo cuando me pase tres días puliendo un icono.': 'S’enfadi amb mi quan em passi tres dies polint una icona.',
++    'Que el pacto entre nosotros esté escrito antes de que haga falta.': 'Que el pacte entre nosaltres estigui escrit abans que calgui.',
++    'Un marketplace para que los talleres pequeños vendan sus piezas sin intermediarios.': 'Un marketplace perquè els tallers petits venguin les seves peces sense intermediaris.',
++    'Logística de última milla en bici de carga para comercios de barrio.': 'Logística d’última milla en bici de càrrega per a comerços de barri.',
++    'Ciudad de México': 'Ciutat de Mèxic',
++    'Sevilla': 'Sevilla',
++    'Lisboa': 'Lisboa',
++    'm1': 'M’ha agradat el que dius de validar abans. Un cafè aquesta setmana?',
++    'm2': 'Sí! Tinc un prototip que t’agradaria veure.',
++    'm3': 'Fet. Dijous a la tarda?',
++    'm4': 'Parlem del teu projecte?',
++    'm5': 'Tinc una idea per col·laborar.',
++  },
++};
++const SHOT_ES: Record<string, string> = {
++  m1: 'Me encantó lo de validar antes. ¿Un café esta semana?',
++  m2: '¡Sí! Tengo un prototipo que te quiero enseñar.',
++  m3: 'Hecho. ¿El jueves por la tarde?',
++  m4: '¿Hablamos de tu proyecto?',
++  m5: 'Tengo una idea para colaborar.',
++};
++function __shots(base: MockState): MockState {
++  let locale: ShotLocale = 'es';
++  try {
++    const v = globalThis.localStorage?.getItem('cofounder.locale');
++    if (v === 'en' || v === 'ca') locale = v;
++  } catch {}
++  const tr = (s: string) => (locale === 'es' ? (SHOT_ES[s] ?? s) : (SHOT_TEXT[locale][s] ?? SHOT_ES[s] ?? s));
++  for (const [id, p] of base.profiles) {
++    base.profiles.set(id, {
++      ...p,
++      location: tr(p.location),
++      avatar: { ...p.avatar, imageUrl: undefined },
++      prompts: p.prompts.map((q) => ({ question: tr(q.question), answer: tr(q.answer) })),
++    } as typeof p);
++  }
++  for (const g of base.groups) g.description = tr(g.description);
++  const ines = base.profiles.get('seed-ines')!;
++  base.profiles.set('me', {
++    ...ines,
++    id: 'me',
++    name: 'Pablo Marín',
++    age: 27,
++    location: locale === 'en' ? 'Barcelona' : 'Barcelona',
++    avatar: { initials: 'PM', accent: 'brass' },
++    githubVerification: { handle: 'pablomarin', verifiedAt: '2026-10-01T10:00:00.000Z' },
++    links: { github: 'https://github.com/pablomarin', linkedin: 'https://linkedin.com/in/pablomarin' },
++  } as typeof ines);
++  base.session = { profileId: 'me', activeMode: 'par' };
++  base.termsAcceptances.set('me', new Map([[TERMS_VERSION_SHOTS, new Date().toISOString()]]));
++  const ago = (min: number) => new Date(Date.now() - min * 60_000).toISOString();
++  const mk = (id: string, other: string, last: string | null) => ({
++    id, profileIds: ['me', other] as [string, string], mode: 'par' as const, createdAt: ago(3000), lastMessageAt: last,
++  });
++  base.matches = [
++    mk('match-nuria', 'seed-nuria', ago(6)),
++    mk('match-marc', 'seed-marc', ago(45)),
++    mk('match-lucia', 'seed-lucia', ago(300)),
++    mk('match-omar', 'seed-omar', null),
++  ];
++  base.messages = [
++    { id: 'msg-1', matchId: 'match-nuria', senderId: 'me', body: tr('m1'), sentAt: ago(30) },
++    { id: 'msg-2', matchId: 'match-nuria', senderId: 'seed-nuria', body: tr('m2'), sentAt: ago(20) },
++    { id: 'msg-3', matchId: 'match-nuria', senderId: 'seed-nuria', body: tr('m3'), sentAt: ago(6) },
++    { id: 'msg-4', matchId: 'match-marc', senderId: 'seed-marc', body: tr('m4'), sentAt: ago(45) },
++    { id: 'msg-5', matchId: 'match-lucia', senderId: 'seed-lucia', body: tr('m5'), sentAt: ago(300) },
++  ];
++  return base;
++}
++const TERMS_VERSION_SHOTS = '2026-11-10';
++
+ function initialState(): MockState {
+-  return {
++  return __shots({
+     session: { profileId: null, activeMode: null },
+     profiles: new Map(SEED_PROFILES.map((profile) => [profile.id, profile])),
+     decisions: new Map(),
+@@ -296,7 +418,7 @@
+     ...seedGroups(),
+     groupMessages: [],
+     userReports: [],
+-  };
++  });
+ }
+ 
+ /**
+@@ -569,3 +691,4 @@
+   if (b !== 'ambos') return b;
+   return 'par';
+ }
++

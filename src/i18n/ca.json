@@ -1187,5 +1187,6 @@
   "Los recordatorios son opcionales: te avisamos si llevas unos días sin entrar y hay likes o mensajes esperando. Puedes apagarlos aquí.": "Els recordatoris són opcionals: t’avisem si fa uns dies que no entres i hi ha likes o missatges pendents. Pots desactivar-los aquí.",
   "Los resúmenes de likes llegan hacia las 11:00 de tu zona horaria. Los recordatorios llegan de 10:00 a 20:00; los avisos de Premium, de 09:00 a 22:00.": "Els resums de likes arriben cap a les 11:00 de la teva zona horària. Els recordatoris arriben de 10:00 a 20:00; els avisos de Premium, de 09:00 a 22:00.",
   "Gestionar notificaciones": "Gestiona les notificacions",
-  "Elige qué avisos quieres recibir": "Tria quins avisos vols rebre"
+  "Elige qué avisos quieres recibir": "Tria quins avisos vols rebre",
+  "✓ @{handle} · verificado": "✓ @{handle} · verificat"
 }

@@ -12,52 +12,53 @@ cofounder
 
 ## Subtítol
 
-Troba amb qui fundar
+Troba cofundador i equip
 
 ## Text promocional
 
-Llisca perfils de gent que vol començar alguna cosa, fes match quan l'interès és mutu i xerra per veure si encaixeu com a cofundadors.
+Llisca perfils de gent que vol començar alguna cosa, fes match quan és mutu i forma equip de fins a 6. No cal tenir res construït: aquí es comença.
 
 ## Descripció
 
-Tens ganes de construir alguna cosa i et falta amb qui? cofounder t'ajuda a trobar cofundador o cofundadora entre persones que són en un punt semblant al teu.
+Tens ganes de construir alguna cosa i et falta amb qui? cofounder et presenta persones en el teu mateix punt: amb ambició, amb ganes i, sovint, sense res construït encara.
 
-No cal tenir res construït. Pots no tenir cap idea encara, tenir una idea sense començar o haver provat alguna cosa petita. Aquí ningú no contracta ningú: la relació és entre iguals, i tots dos hi aporteu i decidiu junts.
+Aquí ningú no contracta ningú. És entre iguals: tots dos hi aporteu i tots dos decidiu.
 
-EL TEU PERFIL
-Explica qui ets i què hi aportes: nom, edat, ubicació i zona horària, especialitats, punt de partida, disponibilitat i nivell d'ambició. Respon una o dues preguntes breus perquè es noti com penses, no només què saps fer. Si vols, afegeix enllaços a GitHub, portafoli o LinkedIn.
+COM FUNCIONA
+• Crea el teu perfil: el que domines, el que busques, el teu punt de partida, les teves hores i el teu nivell d'ambició.
+• Llisca perfils a pantalla completa, un a un, i digues que sí a qui t'encaixi.
+• Si l'interès és mutu, hi ha match i s'obre un xat privat entre els dos.
+• Millor en equip? Crea un grup o uneix-te a un, de fins a 6 persones, amb el seu propi xat.
 
-Per crear el teu perfil hi afegeixes una foto, que només es publica després de passar una revisió automàtica de seguretat.
-
-LLISCA
-Els perfils apareixen a pantalla completa, un a un. Llisca per indicar que t'interessa una persona o per passar a la següent.
+PERFILS QUE DIUEN COM PENSES
+Res de CV. Especialitats, idiomes, zona horària, disponibilitat, ambició i una o dues respostes breus que deixen veure com penses, no només què saps fer. Si vols, afegeix enllaços a GitHub, LinkedIn o el teu portafoli. El teu perfil porta una foto, que només es publica després de passar una revisió automàtica de seguretat.
 
 MATCH I XAT
-Quan l'interès és mutu, feu match i s'obre un xat privat entre els dos. Per trencar el gel, l'app et suggereix algunes preguntes per començar.
+Només connecteu quan tots dos ho voleu, i l'app et diu en què encaixeu. Per trencar el gel, et suggereix preguntes a partir del que teniu en comú.
 
 GRUPS
-A més del match 1:1, pots crear o unir-te a un grup per complementar perfils en un projecte (màxim 6 persones), veure qui en forma part i parlar en un xat de grup. Aquí ningú no contracta ningú: la relació continua sent entre iguals.
+A més del match 1:1, pots crear o unir-te a un grup per complementar perfils en un projecte (màxim 6 persones), veure qui en forma part i parlar en un xat de grup. Per entrar-hi, l'interès ha de ser mutu.
 
 GITHUB VERIFICAT
-Pots vincular el teu compte de GitHub per mostrar «GitHub verificat» al teu perfil. Indica que l'enllaç de GitHub pertany a qui el publica; no verifica la identitat de la persona ni els seus coneixements.
+Vincula el teu compte de GitHub i el teu perfil mostrarà el segell «GitHub verificat». Indica que aquest enllaç de GitHub pertany a qui el publica; no verifica la identitat de la persona ni els seus coneixements.
 
 SEGURETAT I CONTROL
-Pots bloquejar o reportar qualsevol persona des de l'app. També pots bloquejar o denunciar un grup i denunciar un missatge del xat de grup. Pots eliminar el teu compte i les teves dades quan vulguis des d'Ajustos > Compte.
+Bloqueja o reporta qualsevol persona, grup o missatge des de la mateixa app. Elimina el teu compte i les teves dades quan vulguis des d'Ajustos > Compte. Sense anuncis.
 
 QUÈ NO ÉS
 cofounder no és una app de cites ni una borsa de treball. No ofereix assessorament legal ni finançament, ni garanteix resultats: t'ajuda a conèixer persones amb qui construir; el que feu depèn de vosaltres.
 
 Per a persones de 16 anys o més.
 
-SUBSCRIPCIÓ
-cofounder Premium és una subscripció amb renovació automàtica (mensual o anual). Es cobra al teu compte d'Apple i es renova tret que la cancel·lis almenys 24 hores abans del final del període; pots gestionar-la o cancel·lar-la als ajustos del teu compte d'Apple.
+COFOUNDER PREMIUM (OPCIONAL)
+L'essencial és gratis. Premium treu el límit diari de likes i afegeix Super Likes, desfer, Boost i veure a qui li has agradat. És una subscripció amb renovació automàtica (mensual o anual), amb prova gratuïta per a nous subscriptors. Es cobra al teu compte d'Apple i es renova tret que la cancel·lis almenys 24 hores abans del final del període; pots gestionar-la o cancel·lar-la als ajustos del teu compte d'Apple.
 
 Termes d'ús (EULA): https://getcofounder.app/terminos
 Política de privacitat: https://getcofounder.app/privacidad
 
 ## Paraules clau
 
-soci,emprendre,startup,emprenedor,cofundadora,projecte,equip,idea,negoci,col·laborar,github,iguals
+soci,sòcia,emprendre,startup,emprenedor,cofundadora,projecte,idea,negoci,col·laborar,github,fundar
 
 ## URL
 
@@ -92,10 +93,10 @@ Edat mínima d'ús: 16 anys, autodeclarada. Al qüestionari d'App Store Connect 
 | Camp | Text | Límit |
 | --- | --- | --- |
 | Nom | 9 caràcters | 30 |
-| Subtítol | 20 caràcters | 30 |
-| Text promocional | 134 caràcters | 170 |
-| Descripció | 2431 caràcters | 4000 |
-| Paraules clau | 99 bytes | 100 |
+| Subtítol | 24 caràcters | 30 |
+| Text promocional | 147 caràcters | 170 |
+| Descripció | 2603 caràcters | 4000 |
+| Paraules clau | 100 bytes | 100 |
 | Notes per a la revisió | 3379 caràcters | 4000 |
 
 Les paraules clau no repeteixen el nom ni la categoria (Apple ja els indexa) i no usen noms de tercers tret de «github», que descriu una funció real (GitHub verificat). Bundle ID: `app.cofounder.mobile`; versió 1.0.0.

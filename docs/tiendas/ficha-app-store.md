@@ -10,52 +10,53 @@ cofounder
 
 ## Subtítulo
 
-Encuentra con quién fundar
+Encuentra cofundador y equipo
 
 ## Texto promocional
 
-Desliza perfiles de personas que quieren empezar algo, haz match cuando el interés es mutuo y conversa para ver si encajáis como cofundadores.
+Desliza perfiles de gente que quiere empezar algo, haz match cuando es mutuo y forma equipo de hasta 6. No hace falta tener nada construido: aquí se empieza.
 
 ## Descripción
 
-¿Tienes ganas de construir algo y te falta con quién? cofounder te ayuda a encontrar cofundador o cofundadora entre personas que están en un punto parecido al tuyo.
+Tienes ganas de construir algo y te falta con quién. cofounder te presenta a personas en tu mismo punto: con ambición, con ganas y, muchas veces, sin nada construido todavía.
 
-No hace falta tener nada construido. Puedes no tener idea todavía, tener una idea sin empezar o haber probado algo pequeño. Aquí nadie contrata a nadie: la relación es entre pares, y ambos aportáis y decidís juntos.
+Aquí nadie contrata a nadie. Es entre pares: los dos aportáis y los dos decidís.
 
-TU PERFIL
-Cuenta quién eres y qué aportas: nombre, edad, ubicación y zona horaria, especialidades, punto de partida, disponibilidad y nivel de ambición. Responde a una o dos preguntas breves para que se note cómo piensas, no solo lo que sabes hacer. Si quieres, añade enlaces a GitHub, portfolio o LinkedIn.
+CÓMO FUNCIONA
+• Crea tu perfil: lo que dominas, lo que buscas, tu punto de partida, tus horas y tu nivel de ambición.
+• Desliza perfiles a pantalla completa, uno a uno, y di que sí a quien te encaje.
+• Si el interés es mutuo, hay match y se abre un chat privado entre los dos.
+• ¿Mejor en equipo? Crea un grupo o únete a uno, de hasta 6 personas, con su propio chat.
 
-Para crear tu perfil añades una foto, que solo se publica después de pasar una revisión automática de seguridad.
-
-DESLIZA
-Los perfiles aparecen a pantalla completa, uno a uno. Desliza para indicar que te interesa una persona o para pasar a la siguiente.
+PERFILES QUE DICEN CÓMO PIENSAS
+Nada de CV. Especialidades, idiomas, zona horaria, disponibilidad, ambición y una o dos respuestas breves que dejan ver cómo piensas, no solo lo que sabes hacer. Si quieres, añade enlaces a GitHub, LinkedIn o tu portfolio. Tu perfil lleva una foto, que solo se publica después de pasar una revisión automática de seguridad.
 
 MATCH Y CHAT
-Cuando el interés es mutuo, hacéis match y se abre un chat privado entre los dos. Para romper el hielo, la app te sugiere algunas preguntas con las que empezar.
+Solo conectáis cuando los dos queréis, y la app te dice en qué encajáis. Para romper el hielo, te sugiere preguntas a partir de lo que tenéis en común.
 
 GRUPOS
-Además del match 1:1, puedes crear o unirte a un grupo para complementar perfiles en un proyecto (máximo 6 personas), ver quién forma parte y hablar en un chat de grupo. Aquí nadie contrata a nadie: la relación sigue siendo entre pares.
+Además del match 1:1, puedes crear o unirte a un grupo para complementar perfiles en un proyecto (máximo 6 personas), ver quién forma parte y hablar en un chat de grupo. Para entrar, el interés tiene que ser mutuo.
 
 GITHUB VERIFICADO
-Puedes vincular tu cuenta de GitHub para mostrar «GitHub verificado» en tu perfil. Indica que el enlace de GitHub pertenece a quien lo publica; no verifica la identidad de la persona ni sus conocimientos.
+Vincula tu cuenta de GitHub y tu perfil mostrará el sello «GitHub verificado». Indica que ese enlace de GitHub pertenece a quien lo publica; no verifica la identidad de la persona ni sus conocimientos.
 
 SEGURIDAD Y CONTROL
-Puedes bloquear o reportar a cualquier persona desde la app. También puedes bloquear o denunciar un grupo y reportar un mensaje del chat de grupo. Puedes eliminar tu cuenta y tus datos cuando quieras desde Ajustes > Cuenta.
+Bloquea o reporta a cualquier persona, grupo o mensaje desde la propia app. Elimina tu cuenta y tus datos cuando quieras desde Ajustes > Cuenta. Sin anuncios.
 
 LO QUE NO ES
 cofounder no es una app de citas ni una bolsa de empleo. No ofrece asesoramiento legal ni financiación, ni garantiza resultados: te ayuda a conocer a personas con las que construir; lo que hagáis depende de vosotros.
 
 Para personas de 16 años o más.
 
-SUSCRIPCIÓN
-cofounder Premium es una suscripción con renovación automática (mensual o anual). Se cobra a tu cuenta de Apple y se renueva salvo que la canceles al menos 24 horas antes del fin del periodo; puedes gestionarla o cancelarla en los ajustes de tu cuenta de Apple.
+COFOUNDER PREMIUM (OPCIONAL)
+Lo esencial es gratis. Premium quita el límite diario de likes y añade Super Likes, deshacer, Boost y ver a quién le has gustado. Es una suscripción con renovación automática (mensual o anual), con prueba gratis para nuevos suscriptores. Se cobra a tu cuenta de Apple y se renueva salvo que la canceles al menos 24 horas antes del fin del periodo; puedes gestionarla o cancelarla en los ajustes de tu cuenta de Apple.
 
 Términos de uso (EULA): https://getcofounder.app/terminos
 Política de privacidad: https://getcofounder.app/privacidad
 
 ## Palabras clave
 
-socio,emprender,startup,emprendedor,cofundadora,proyecto,equipo,idea,negocio,colaborar,github,pares
+socio,socia,emprender,startup,emprendedor,cofundadora,proyecto,idea,negocio,colaborar,github,fundar
 
 ## URLs
 
@@ -88,9 +89,9 @@ Edad mínima de uso: 16 años (D06), autodeclarada. En el cuestionario de App St
 | Campo | Texto | Límite |
 | --- | --- | --- |
 | Nombre | 9 caracteres | 30 |
-| Subtítulo | 26 caracteres | 30 |
-| Texto promocional | 142 caracteres | 170 |
-| Descripción | 2496 caracteres | 4000 |
+| Subtítulo | 29 caracteres | 30 |
+| Texto promocional | 157 caracteres | 170 |
+| Descripción | 2602 caracteres | 4000 |
 | Palabras clave | 99 bytes | 100 |
 
 Las palabras clave no repiten el nombre ni la categoría (Apple ya los indexa) y no usan nombres de terceros salvo «github», que describe una función real (GitHub verificado). Bundle ID: `app.cofounder.mobile`; versión 1.0.0.
@@ -168,7 +169,7 @@ Minimum age 16, self-declared.
 - **Build con Grupos (9-nov-2026):** sin Lock-In, WebRTC, `RECORD_AUDIO` ni `SCHEDULE_EXACT_ALARM`; cámara y galería para fotos, `expo-secure-store` y `ITSAppUsesNonExemptEncryption=false`. `expo-notifications` vuelve para el chat de grupo: falta build nativa nueva, credenciales APNs/FCM y activación del envío; comprobar el manifiesto del AAB y el Info.plist generado. Ver `docs/plan/todo/grupos.md`.
 - **Grupos:** comprobar chat entre miembros, bloqueo/denuncia del grupo y reporte de un mensaje de grupo; grupos y perfiles buscados son contenido generado por usuarios.
 - **Bloquear, reportar perfiles y mensajes, aceptación de Términos y Normas, filtro, baja de cuenta:** implementados en el código (T3a, T3b). Las migraciones `20261014120000` (aceptación), `20261014130000` (reportar mensaje) y `20261014140000` (limpieza de fotos) están aplicadas en producción desde el 16-oct-2026. Falta probarlo todo contra Supabase real en la build final (T7).
-- **Capturas:** solo pantallas actuales (perfil, deck a pantalla completa, match, chat con sugerencias, GitHub verificado, bloqueo/reporte). Ninguna con temporizador, salas, vídeo o rachas (ya no existen en la app).
+- **Capturas:** solo pantallas actuales (perfil, deck a pantalla completa, match, chat con sugerencias, GitHub verificado, bloqueo/reporte). Ninguna con temporizador, salas, vídeo o rachas (ya no existen en la app). **Hechas el 17-nov-2026:** siete por idioma en `store/app-store/{es,en,ca}/` (1320 × 2868, iPhone 6,9″), subirlas en orden; concepto y cómo regenerarlas en `docs/tiendas/DISENO-app-store.md` y `store/app-store/README.md`.
 - **Cuenta de revisión:** [cuenta de prueba: pendiente] con perfil completo y al menos un match con chat para que la revisión vea las funciones.
 - **URLs públicas (D08):** privacidad, términos, normas, seguridad infantil, soporte y eliminar cuenta en https://getcofounder.app/… (`/privacidad`, `/terminos`, `/normas`, `/seguridad-infantil`, `/soporte`, `/eliminar-cuenta`) deben estar publicadas y funcionando antes de enviar [pendiente: fecha de publicación; no empujar `web/**` hasta cerrar marcadores].
 - Responsable (D01): Joel de Torres Sainz de la Maza, carrer Nou, 37, 25153 Puigverd de Lleida (España). DSA (Business → Compliance): **no trader** (decidido el 16-oct-2026: app gratuita, sin anuncios, compras ni ingresos). **Reabierto el 2-nov-2026:** con Premium la app cobra; el titular debe decidir si pasa a trader (Apple publica entonces dirección, teléfono y email en la ficha de la UE) antes de enviar la versión con suscripción. Contacto (D02): soporte@getcofounder.app.
