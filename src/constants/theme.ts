@@ -61,6 +61,10 @@ const Dark = {
   danger: '#FF9A80',
   /** Alerta como relleno suave. */
   dangerSoft: '#FF9A8029',
+  /** Globo de mensajes sin leer: el rojo del sistema, que se lee sin pensar. */
+  unread: '#FF3B30',
+  /** Tinta sobre el globo de sin leer. */
+  onUnread: '#FFFFFF',
   /** Tinta sobre un relleno de acento sólido. */
   onAccent: '#1A0A02',
   /** Brillo del canto superior del cristal (luz que entra por arriba). */

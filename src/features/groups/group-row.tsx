@@ -7,6 +7,7 @@ import { Link, type Href } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { UnreadBadge } from '@/components/unread-badge';
 import { Radii, Spacing, Stroke } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
@@ -15,25 +16,32 @@ import { useMyGroups } from './use-my-group';
 
 import type { GroupView } from '@/data';
 
-export function GroupChatRows() {
+export function GroupChatRows({
+  unread = {},
+}: {
+  /** Id del grupo -> mensajes sin leer. */
+  unread?: Record<string, number>;
+}) {
   const { groups } = useMyGroups();
   return (
     <>
       {groups.map((view) => (
-        <GroupChatRow key={view.group.id} view={view} />
+        <GroupChatRow key={view.group.id} view={view} unread={unread[view.group.id] ?? 0} />
       ))}
     </>
   );
 }
 
-function GroupChatRow({ view }: { view: GroupView }) {
+function GroupChatRow({ view, unread }: { view: GroupView; unread: number }) {
   const theme = useTheme();
 
   return (
     <Link href={`/group/${view.group.id}` as Href} asChild>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={t('Chat del grupo {name}', { name: view.group.name })}>
+        accessibilityLabel={`${t('Chat del grupo {name}', { name: view.group.name })}${
+          unread > 0 ? `. ${t('{count} mensajes sin leer', { count: unread })}` : ''
+        }`}>
         {({ pressed }) => (
           <View
             collapsable={false}
@@ -55,6 +63,7 @@ function GroupChatRow({ view }: { view: GroupView }) {
             <ThemedText type="label" themeColor="teal">
               {t('Grupo')}
             </ThemedText>
+            <UnreadBadge count={unread} />
           </View>
         )}
       </Pressable>

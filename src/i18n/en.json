@@ -1187,5 +1187,7 @@
   "Los recordatorios son opcionales: te avisamos si llevas unos días sin entrar y hay likes o mensajes esperando. Puedes apagarlos aquí.": "Reminders are optional: we notify you if you have been away for a few days and have likes or messages waiting. You can turn them off here.",
   "Los resúmenes de likes llegan hacia las 11:00 de tu zona horaria. Los recordatorios llegan de 10:00 a 20:00; los avisos de Premium, de 09:00 a 22:00.": "Like summaries arrive around 11:00 in your time zone. Reminders arrive from 10:00 to 20:00; Premium alerts, from 09:00 to 22:00.",
   "Gestionar notificaciones": "Manage notifications",
-  "Elige qué avisos quieres recibir": "Choose which alerts you get"
+  "Elige qué avisos quieres recibir": "Choose which alerts you get",
+  "{count} sin leer": "{count} unread",
+  "{count} mensajes sin leer": "{count} unread messages"
 }

@@ -197,6 +197,9 @@ export const repositories: Repositories = {
   get push() {
     return resolveActive().repositories.push;
   },
+  get unread() {
+    return resolveActive().repositories.unread;
+  },
 };
 
 /** Presencia en sesiones, con la misma regla. Sin credenciales, en memoria. */

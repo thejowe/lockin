@@ -694,3 +694,17 @@ export interface GroupReportInput {
   reason: ReportReason;
   details?: string;
 }
+
+/**
+ * Mensajes sin leer del usuario, por chat. Solo aparecen los chats con algo sin
+ * leer; tus propios mensajes nunca cuentan. Lo pinta el globo rojo de la
+ * pestaña Matches y el de cada fila.
+ */
+export interface UnreadCounts {
+  /** Suma de todos los chats. */
+  total: number;
+  /** Id del match -> mensajes sin leer. */
+  byMatch: Record<string, number>;
+  /** Id del grupo -> mensajes sin leer. */
+  byGroup: Record<string, number>;
+}

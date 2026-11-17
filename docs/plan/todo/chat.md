@@ -785,3 +785,19 @@ archivo de test nuevo) y no toca `run.mjs`, `verify.mjs` ni el workflow.
 dice un run de `E2E Android` y nada más — la guardia fija la ausencia del
 comando, no el color del trabajo. La próxima pasada de CI sobre esta rama es
 quien lo confirma.
+
+## Mensajes sin leer — globo rojo (2026-11-17)
+
+- [x] Tabla `chat_reads` + RPC `mark_chat_read` / `unread_message_counts`
+      (`supabase/migrations/20261117120000_chat_reads.sql`). Cuenta 1:1 y grupos;
+      sin tus mensajes ni chats con bloqueo; grupos desde `joined_at`. La
+      migración siembra como leído todo lo existente al desplegar.
+- [x] `Repositories.unread` en mock y Supabase; tests `src/data/mock/unread.test.ts`
+      y `supabase/unread-embedded.test.mjs`.
+- [x] Globo en la pestaña Matches (`AppTabs badges`), en cada fila de match y de
+      grupo; el chat abierto marca como leído al entrar, con cada mensaje y al salir.
+- [ ] **Aplicar la migración en el proyecto remoto.** Hasta entonces el job remoto
+      de Schema drift sale rojo con solo esta migración en `remote.diff`, y en
+      Supabase el contador falla en silencio (sin globo).
+- [ ] Comprobar en dispositivo (otro equipo: aquí no hay emulador).
+- [ ] Opcional: número en el icono de la app (badge del sistema) con el mismo total.

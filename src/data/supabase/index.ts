@@ -44,6 +44,7 @@ import { fetchAllPages } from './pagination';
 import { createSupabasePremiumRepository, toPremiumError } from './premium';
 import { closeLiveChannels } from './live-channels';
 import { createSupabaseGroupRepository } from './groups';
+import { createSupabaseUnreadRepository } from './unread';
 import { createSupabasePushRepository } from './push';
 import { createSupabaseRoomRepository } from './rooms';
 import { PRIVATE_CHANNEL, subscribeResyncingOnRejoin } from './realtime';
@@ -956,5 +957,6 @@ export function createSupabaseRepositories({
       },
     }),
     push: createSupabasePushRepository({ getClient, getUserId }),
+    unread: createSupabaseUnreadRepository({ getClient, getUserId }),
   };
 }

@@ -50,6 +50,7 @@ import { Frosted } from '@/components/glass';
 import { Icon, type IconName } from '@/components/icon';
 import { PagerPage, routeIndex, SwipeBetweenTabs } from '@/components/swipe-between-tabs';
 import { ThemedText } from '@/components/themed-text';
+import { UnreadBadge } from '@/components/unread-badge';
 import { Duration, Radii, Spacing, Springs } from '@/constants/theme';
 import { useReduceMotion } from '@/hooks/use-reduce-motion';
 import { useTheme } from '@/hooks/use-theme';
@@ -88,7 +89,10 @@ const TABS: {
 /** Canal por el que el botón activo le dice al resalte dónde está. */
 const IndicatorContext = createContext<(layout: LayoutRectangle) => void>(() => {});
 
-export default function AppTabs() {
+/** Globos rojos por pestaña, por su `name` (p. ej. mensajes sin leer en `matches`). */
+export type TabBadges = Partial<Record<string, number>>;
+
+export default function AppTabs({ badges = {} }: { badges?: TabBadges }) {
   // Solo Android lo usa: es el contenido que el esmerilado de la barra desenfoca.
   const blurTarget = useRef<ViewInstance>(null);
 
@@ -103,7 +107,9 @@ export default function AppTabs() {
         <TabBar blurTarget={blurTarget}>
           {TABS.map((tab) => (
             <TabTrigger key={tab.name} name={tab.name} href={tab.href} asChild>
-              <TabButton icon={tab.icon}>{tab.label}</TabButton>
+              <TabButton icon={tab.icon} badge={badges[tab.name] ?? 0}>
+                {tab.label}
+              </TabButton>
             </TabTrigger>
           ))}
         </TabBar>
@@ -180,8 +186,8 @@ function TabBar({
   );
 }
 
-const TabButton = forwardRef<ViewInstance, TabTriggerSlotProps & { icon: IconName }>(
-  function TabButton({ children, isFocused, icon, ...props }, ref) {
+const TabButton = forwardRef<ViewInstance, TabTriggerSlotProps & { icon: IconName; badge: number }>(
+  function TabButton({ children, isFocused, icon, badge, ...props }, ref) {
     const theme = useTheme();
     const report = useContext(IndicatorContext);
     const reduceMotion = useReduceMotion();
@@ -215,13 +221,20 @@ const TabButton = forwardRef<ViewInstance, TabTriggerSlotProps & { icon: IconNam
           {...props}
           accessibilityRole="tab"
           accessibilityLabel={label}
+          // El número va aparte de la etiqueta: Maestro pulsa la pestaña por «Matches».
+          accessibilityValue={
+            badge > 0 ? { text: t('{count} sin leer', { count: badge }) } : undefined
+          }
           accessibilityState={{ selected: isFocused }}
           style={({ pressed }) => [
             styles.item,
             isFocused ? styles.itemFocused : styles.itemIdle,
             pressed && styles.pressed,
           ]}>
-          <Icon name={icon} size={21} color={isFocused ? theme.text : theme.textSecondary} />
+          <View>
+            <Icon name={icon} size={21} color={isFocused ? theme.text : theme.textSecondary} />
+            <UnreadBadge count={badge} size="small" style={styles.badge} />
+          </View>
           {isFocused ? (
             <Animated.View
               entering={reduceMotion ? undefined : FadeIn.duration(Duration.base)}
@@ -238,6 +251,12 @@ const TabButton = forwardRef<ViewInstance, TabTriggerSlotProps & { icon: IconNam
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+  },
+  /** Arriba a la derecha del icono, montado sobre su esquina como en iOS. */
+  badge: {
+    position: 'absolute',
+    top: -7,
+    left: 12,
   },
   barWrap: {
     position: 'absolute',

@@ -48,6 +48,7 @@ import type {
   SessionRating,
   SessionRatingEntry,
   TermsAcceptance,
+  UnreadCounts,
 } from './types';
 import { t } from '@/i18n';
 import type { AppLocale } from '@/i18n';
@@ -496,6 +497,27 @@ export interface PushRepository {
 }
 
 /**
+ * Mensajes sin leer (ver `supabase/migrations/20261117120000_chat_reads.sql`).
+ *
+ * Lo leído vive en el servidor: sobrevive a reinstalar y es igual en todos los
+ * dispositivos. Un match sin marca cuenta todo lo recibido; un grupo, desde que
+ * entraste. Tus propios mensajes y los chats con un bloqueo de por medio no
+ * cuentan nunca.
+ */
+export interface UnreadRepository {
+  counts(): Promise<UnreadCounts>;
+  /** Marca como leído todo lo recibido hasta ahora en ese match. */
+  markMatchRead(matchId: string): Promise<void>;
+  /** Marca como leído todo lo recibido hasta ahora en ese grupo. */
+  markGroupRead(groupId: string): Promise<void>;
+  /**
+   * Avisa cuando este dispositivo marca algo como leído. Los mensajes nuevos se
+   * oyen por `matches.subscribe` y `groups.subscribeMessages`.
+   */
+  subscribe(listener: () => void): Unsubscribe;
+}
+
+/**
  * Punto único de acceso a datos. Cualquier implementación (mock, Supabase)
  * debe devolver un objeto con esta forma exacta.
  */
@@ -511,6 +533,7 @@ export interface Repositories {
   premium: PremiumRepository;
   groups: GroupRepository;
   push: PushRepository;
+  unread: UnreadRepository;
 }
 
 /** Fábrica de una implementación completa. Lo que exporta cada backend. */

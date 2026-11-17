@@ -91,6 +91,11 @@ export interface MockState {
   groupSwipes: MockGroupSwipe[];
   groupMessages: GroupMessage[];
   /**
+   * Hasta cuándo ha leído cada persona cada chat (espejo de `chat_reads`).
+   * Clave `<persona>:<match|group>:<id del chat>`, valor ISO.
+   */
+  chatReads: Map<string, string>;
+  /**
    * Almacén privado; no se expone ningún método de lectura de reportes.
    *
    * Sobreviven al borrado de la cuenta de quien reporta o del reportado (espejo
@@ -296,6 +301,7 @@ function initialState(): MockState {
     ...seedGroups(),
     groupMessages: [],
     userReports: [],
+    chatReads: new Map(),
   };
 }
 
@@ -411,6 +417,9 @@ export function createMockStore(): MockStore {
 
       state.profiles.delete(userId);
       state.boardPosts = state.boardPosts.filter((post) => post.ownerId !== userId);
+      for (const key of [...state.chatReads.keys()]) {
+        if (key.startsWith(`${userId}:`)) state.chatReads.delete(key);
+      }
       state.actorSessions.delete(userId);
       state.actorDecisions.delete(userId);
       for (const decisions of state.actorDecisions.values()) decisions.delete(userId);

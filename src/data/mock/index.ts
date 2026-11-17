@@ -31,6 +31,7 @@ import { createMockGroupRepository } from './groups';
 import { createMockPushRepository } from './push';
 import { createMockRoomRepository, roomsTopic } from './rooms';
 import { createMockSessionRepository } from './sessions';
+import { createMockUnreadRepository } from './unread';
 import { BOARD_MAX_POSTS, BoardRejectedError } from '../repositories';
 import { REPORT_MAX_LENGTH, REPORT_REASONS } from '../types';
 
@@ -74,6 +75,7 @@ export type { MockSessionOptions } from './sessions';
 export { createMockAgreementRepository } from './agreement';
 export { createMockGroupRepository, groupsTopic } from './groups';
 export { createMockPushRepository, mockPushTokens } from './push';
+export { createMockUnreadRepository } from './unread';
 export { createMockRoomRepository, roomsTopic } from './rooms';
 export type { MockRoomOptions } from './rooms';
 export {
@@ -685,5 +687,6 @@ export function createMockRepositories(
     }),
     groups: createMockGroupRepository(actorId, store),
     push: createMockPushRepository(actorId, store),
+    unread: createMockUnreadRepository(actorId, store),
   };
 }

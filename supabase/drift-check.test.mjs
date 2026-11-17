@@ -48,6 +48,7 @@ test('ve las tablas cerradas a authenticated (solo service role)', () => {
     'apple_refresh_tokens',
     'blocked_account_emails',
     'boosts',
+    'chat_reads',
     'group_swipes',
     'like_events',
     'push_group_events',

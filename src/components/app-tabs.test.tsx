@@ -108,6 +108,21 @@ describe('AppTabs', () => {
     expect(screen.queryByText('Perfil')).toBeNull();
   });
 
+  it('Matches lleva el globo de sin leer y lo anuncia sin cambiar su nombre', async () => {
+    await render(<AppTabs badges={{ matches: 4 }} />);
+
+    const tab = screen.getByRole('tab', { name: 'Matches' });
+    expect(tab).toHaveAccessibilityValue({ text: '4 sin leer' });
+    expect(screen.getByText('4', { includeHiddenElements: true })).toBeTruthy();
+    expect(screen.getAllByTestId('unread-badge', { includeHiddenElements: true })).toHaveLength(1);
+  });
+
+  it('sin mensajes pendientes no hay globo', async () => {
+    await render(<AppTabs badges={{ matches: 0 }} />);
+
+    expect(screen.queryByTestId('unread-badge', { includeHiddenElements: true })).toBeNull();
+  });
+
   it('las pestañas sin nombre visible siguen midiendo 44 táctiles', async () => {
     await render(<AppTabs />);
 

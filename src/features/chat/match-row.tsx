@@ -12,6 +12,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { Icon } from '@/components/icon';
+import { UnreadBadge } from '@/components/unread-badge';
 import { ThemedText } from '@/components/themed-text';
 import { Radii, Spacing, Stroke } from '@/constants/theme';
 import { usePressScale } from '@/hooks/use-press-scale';
@@ -39,12 +40,15 @@ const streakLine = (count: number) => t('Racha de {count} sesiones seguidas', { 
 export function MatchRow({
   match,
   streak = null,
+  unread = 0,
   first = true,
   last = true,
 }: {
   match: MatchWithProfile;
   /** Racha visible de la pareja, ya filtrada por quien compone la lista. */
   streak?: number | null;
+  /** Mensajes sin leer de esta conversación: el globo rojo de la fila. */
+  unread?: number;
   /**
    * Posición dentro del grupo. La lista se pinta como un solo bloque de cristal
    * (la lista agrupada de iOS): solo la primera redondea arriba, solo la última
@@ -64,16 +68,17 @@ export function MatchRow({
     : t(NO_MESSAGES_HINT);
   const timestamp = formatRelative(lastMessage?.sentAt ?? match.createdAt);
   const streakPart = streak === null ? '' : `${streakLine(streak)}. `;
+  const unreadPart = unread > 0 ? `${t('{count} mensajes sin leer', { count: unread })}. ` : '';
 
   return (
     <Link href={`/chat/${match.id}`} asChild>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={t('Conversación con {name}. {streakPart}{preview}', {
+        accessibilityLabel={`${t('Conversación con {name}. {streakPart}{preview}', {
           name: counterpart.name,
           streakPart,
           preview,
-        })}
+        })}${unreadPart ? ` ${unreadPart}` : ''}`}
         onPressIn={press.onPressIn}
         onPressOut={press.onPressOut}>
         {({ pressed }) => (
@@ -129,12 +134,16 @@ export function MatchRow({
                 )}
               </View>
 
-              <ThemedText
-                type="small"
-                themeColor={lastMessage ? 'textSecondary' : 'teal'}
-                numberOfLines={2}>
-                {preview}
-              </ThemedText>
+              <View style={styles.previewLine}>
+                <ThemedText
+                  type={unread > 0 ? 'smallBold' : 'small'}
+                  themeColor={unread > 0 ? 'text' : lastMessage ? 'textSecondary' : 'teal'}
+                  numberOfLines={2}
+                  style={styles.preview}>
+                  {preview}
+                </ThemedText>
+                <UnreadBadge count={unread} />
+              </View>
             </View>
           </Animated.View>
         )}
@@ -194,6 +203,14 @@ const styles = StyleSheet.create({
   },
   name: {
     flexShrink: 1,
+  },
+  previewLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  preview: {
+    flex: 1,
   },
   tags: {
     flexDirection: 'row',

@@ -40,6 +40,7 @@ import {
   formatDayHeading,
   isSameDayIso,
   keyboardVerticalOffset,
+  useMarkChatRead,
 } from '@/features/chat';
 import { useGroupConversation, useGroupPush } from '@/features/groups';
 import { RequireVerifiedEmail, TermsAcceptance, useTermsGate } from '@/features/profile';
@@ -58,6 +59,12 @@ function GroupChatContent() {
 
   const { view, messages, loading, error, sending, sendError, send } =
     useGroupConversation(groupId);
+  // Con el chat delante, lo que llega ya está leído: quita su globo rojo.
+  const markRead = useCallback(
+    () => repositories.unread.markGroupRead(groupId),
+    [repositories, groupId]
+  );
+  useMarkChatRead(markRead, messages.length);
   useGroupPush(!!view);
   // Con este chat delante, sus avisos push no se enseñan encima.
   useFocusEffect(

@@ -17,3 +17,4 @@ export { formatClock, formatDayHeading, formatRelative, isSameDayIso } from './f
 export { keyboardVerticalOffset } from './keyboard-offset';
 export { useConversation, type Conversation } from './use-conversation';
 export { useMatches } from './use-matches';
+export { UNREAD_QUERY, useMarkChatRead, useUnreadCounts } from './use-unread';

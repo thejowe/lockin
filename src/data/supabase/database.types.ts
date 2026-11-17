@@ -573,6 +573,16 @@ export type Database = {
         Args: { p_match_ids: string[] };
         Returns: MessageRow[];
       };
+      /** `unread_message_counts()` → una fila por chat con algo sin leer (20261117120000). */
+      unread_message_counts: {
+        Args: Record<string, never>;
+        Returns: { chat_kind: 'match' | 'group'; chat_id: string; unread: number }[];
+      };
+      /** `mark_chat_read(p_kind, p_chat_id)` → marca ese chat como leído hasta ahora. */
+      mark_chat_read: {
+        Args: { p_kind: 'match' | 'group'; p_chat_id: string };
+        Returns: undefined;
+      };
       /**
        * `record_decision(p_target_id, p_decision, p_mode?, p_super?)` → la fila de
        * `matches` creada, o `null` si el like no fue recíproco o la decisión

@@ -17,7 +17,7 @@ import { layoutShift, useTabEntering } from '@/components/motion';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useQuery, useRepositories } from '@/data';
-import { MatchRow, MatchesEmpty, useMatches } from '@/features/chat';
+import { MatchRow, MatchesEmpty, useMatches, useUnreadCounts } from '@/features/chat';
 import { GroupChatRows } from '@/features/groups';
 import { LikesRow } from '@/features/premium';
 import { useTheme } from '@/hooks/use-theme';
@@ -27,6 +27,7 @@ export default function MatchesScreen() {
   const theme = useTheme();
   const entering = useTabEntering();
   const { data, loading, error, refresh } = useMatches();
+  const unread = useUnreadCounts();
   const matches = data ?? [];
   const router = useRouter();
   const repositories = useRepositories();
@@ -55,11 +56,18 @@ export default function MatchesScreen() {
           testID="matches-list"
           data={matches}
           keyExtractor={(match) => match.id}
+          // Sin esto FlatList no repinta las filas cuando solo cambia el globo.
+          extraData={unread}
           renderItem={({ item, index }) => (
             // Las filas forman un solo bloque: entran con un fundido escalonado y
             // sin desplazarse, para que el bloque no se vea partido mientras llega.
             <Animated.View entering={entering.fade(Math.min(index, 6))}>
-              <MatchRow match={item} first={index === 0} last={index === matches.length - 1} />
+              <MatchRow
+                match={item}
+                unread={unread.byMatch[item.id] ?? 0}
+                first={index === 0}
+                last={index === matches.length - 1}
+              />
             </Animated.View>
           )}
           contentContainerStyle={[styles.list, matches.length === 0 && styles.listEmpty]}
@@ -77,7 +85,7 @@ export default function MatchesScreen() {
                 </Animated.View>
               )}
               <LikesRow count={likes.data ?? 0} onPress={() => router.push('/likes' as Href)} />
-              <GroupChatRows />
+              <GroupChatRows unread={unread.byGroup} />
             </View>
           }
           // Sin datos todavía no enseñamos el estado vacío: diría "no tienes

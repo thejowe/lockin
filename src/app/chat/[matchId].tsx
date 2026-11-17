@@ -34,6 +34,7 @@ import { appear, disappear, layoutShift } from '@/components/motion';
 import { LoadingState, MessageState } from '@/components/state-view';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useRepositories } from '@/data';
 import {
   ConversationIntro,
   DayDivider,
@@ -45,6 +46,7 @@ import {
   keyboardVerticalOffset,
   suggestIcebreakers,
   useConversation,
+  useMarkChatRead,
 } from '@/features/chat';
 import { ObjectionableContentError } from '@/features/safety/content-filter';
 import { MessageReportPanel } from '@/features/safety/message-report-panel';
@@ -73,6 +75,13 @@ function ChatScreenContent() {
 
   const { match, messages, me, loading, error, sending, sendError, send } =
     useConversation(matchId);
+  const repositories = useRepositories();
+  // Con el chat delante, lo que llega ya está leído: quita su globo rojo.
+  const markRead = useCallback(
+    () => repositories.unread.markMatchRead(matchId),
+    [repositories, matchId]
+  );
+  useMarkChatRead(markRead, messages.length);
 
   const [draft, setDraft] = useState('');
   const [safetyOpen, setSafetyOpen] = useState(false);
