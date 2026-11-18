@@ -8,7 +8,7 @@ import { Spacing } from '@/constants/theme';
 import { useQuery, useRepositories } from '@/data';
 import { t } from '@/i18n';
 
-import { PhotoCardPicker } from './photo-card-picker';
+import { PhotoCardPicker, PhotoStatus } from './photo-card-picker';
 import { chooseProfilePhoto, PhotoSourceSheet } from './photo-source-sheet';
 import { SecondaryButton } from './controls';
 import { CURRENT_PROFILE_KEY, hasApprovedPhoto } from './require-photo';
@@ -106,15 +106,9 @@ export function PhotoGateScreen() {
           disabled={busy}
           onPress={() => setSheetOpen(true)}
         />
-        {pendingUri || approvedUri ? (
-          <ThemedText
-            type="small"
-            themeColor="textSecondary"
-            accessibilityLiveRegion="polite"
-            style={styles.message}>
-            {pendingUri ? t('En revisión…') : t('Foto aprobada')}
-          </ThemedText>
-        ) : null}
+        <PhotoStatus
+          message={pendingUri ? t('En revisión…') : approvedUri ? t('Foto aprobada') : null}
+        />
         {error ? (
           <ThemedText
             type="small"

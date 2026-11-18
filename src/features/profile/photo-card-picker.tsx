@@ -122,3 +122,24 @@ const styles = StyleSheet.create({
   age: { fontFamily: FontFamily.sans },
   tip: { textAlign: 'center' },
 });
+
+/**
+ * Estado de la foto bajo la tarjeta («En revisión…», «Foto aprobada»). Ocupa
+ * siempre su línea, también vacío: si apareciera de la nada empujaría la pantalla.
+ */
+export function PhotoStatus({ message }: { message: string | null }) {
+  return (
+    <ThemedText
+      testID="photo-status"
+      type="small"
+      themeColor="textSecondary"
+      accessibilityLiveRegion="polite"
+      accessibilityElementsHidden={!message}
+      importantForAccessibility={message ? 'auto' : 'no-hide-descendants'}
+      style={statusStyles.status}>
+      {message ?? '\u00a0'}
+    </ThemedText>
+  );
+}
+
+const statusStyles = StyleSheet.create({ status: { textAlign: 'center' } });

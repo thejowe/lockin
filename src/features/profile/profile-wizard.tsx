@@ -33,7 +33,7 @@ import {
   STARTING_POINT_OPTIONS,
   TIME_BAND_OPTIONS,
 } from './catalog';
-import { PhotoCardPicker } from './photo-card-picker';
+import { PhotoCardPicker, PhotoStatus } from './photo-card-picker';
 import { chooseProfilePhoto, PhotoSourceSheet } from './photo-source-sheet';
 import { Chip, ChipRow, Field, OptionCard, Slider, TextField } from './controls';
 import { BirthDateFields, ageFromBirthDate, birthDateProblem, splitBirthDate } from './birth-date';
@@ -652,15 +652,15 @@ export function ProfileWizard({
               disabled={picking || saving}
               onPress={() => setPhotoSheetOpen(true)}
             />
-            {pendingPhotoUri || approvedPhotoUri ? (
-              <ThemedText
-                type="small"
-                themeColor="textSecondary"
-                accessibilityLiveRegion="polite"
-                style={styles.photoMessage}>
-                {pendingPhotoUri ? t('En revisión…') : t('Foto aprobada')}
-              </ThemedText>
-            ) : null}
+            <PhotoStatus
+              message={
+                pendingPhotoUri
+                  ? t('En revisión…')
+                  : approvedPhotoUri
+                    ? t('Foto aprobada')
+                    : null
+              }
+            />
             {photoError ? (
               <ThemedText
                 type="small"

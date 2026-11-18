@@ -1,3 +1,4 @@
+import { Control } from '@/constants/theme';
 /**
  * El asistente del alta del perfil: una pregunta por pantalla, barra de
  * progreso, «Omitir» en lo opcional y la barra de las horas.
@@ -281,6 +282,34 @@ describe('ProfileWizard', () => {
       expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ name: 'Ana' }), null);
       expect(upload).toHaveBeenCalledTimes(1);
       expect((await repositories.profiles.getCurrent())?.avatar.imageUrl).toBe('file:///f.jpg');
+    });
+
+    it('reserva el sitio del estado y de la flecha para que la pantalla no salte en la revisión', async () => {
+      pick.mockResolvedValue({ status: 'picked', uri: 'file:///f.jpg' });
+      let approve!: () => void;
+      const review = new Promise<void>((resolve) => {
+        approve = resolve;
+      });
+      const publish = repositories.profiles.setAvatarPhoto;
+      jest.spyOn(repositories.profiles, 'setAvatarPhoto').mockImplementationOnce(async (uri) => {
+        await review;
+        return publish(uri);
+      });
+      await toPhoto();
+      // Antes de elegir: la línea del estado ya ocupa su sitio, vacía y oculta al lector.
+      const status = () => screen.getByTestId('photo-status', { includeHiddenElements: true });
+      expect(status()).toHaveTextContent(' ');
+      expect(screen.queryByTestId('wizard-back-slot')).toBeNull();
+
+      await openSheet();
+      await gallery();
+      expect(status()).toHaveTextContent('En revisión…');
+      // Sin flecha mientras se revisa, pero su hueco mide lo mismo que ella.
+      expect(screen.getByTestId('wizard-back-slot')).toHaveStyle({ height: Control.minTouch });
+
+      await act(async () => approve());
+      expect(status()).toHaveTextContent('Foto aprobada');
+      expect(screen.queryByTestId('wizard-back-slot')).toBeNull();
     });
 
     it('el rechazo de un reemplazo bloquea continuar, explica el motivo y permite reintentar', async () => {

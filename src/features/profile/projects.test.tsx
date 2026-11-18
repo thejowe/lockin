@@ -4,6 +4,7 @@ import { createMockRepositories, createMockStore } from '@/data/mock';
 import { buildProfileInput } from '@/data/test-fixtures';
 import { MyProjects, ProjectStep, PublicProjects } from './projects';
 import { pickAvatarPhoto } from './avatar-photo';
+import { SLOW_SAVE_MS } from './project-editor';
 
 jest.mock('./avatar-photo', () => ({ pickAvatarPhoto: jest.fn() }));
 
@@ -171,4 +172,41 @@ it('el editor del alta publica la ficha completa y la tarjeta abre su edición e
   expect(await repo.projects.list(me.id)).toHaveLength(1);
   await fireEvent.press(screen.getByRole('button', { name: 'Confirmar eliminación' }));
   await waitFor(() => expect(screen.queryByRole('button', { name: 'Editar Mapa' })).toBeNull());
+});
+
+it('un guardado lento dice que sigue revisando y la hoja no se cierra hasta terminar', async () => {
+  jest.useFakeTimers();
+  try {
+    const { repo } = await openProjectStep();
+    let finish!: () => void;
+    const real = repo.projects.save.bind(repo.projects);
+    jest.spyOn(repo.projects, 'save').mockImplementationOnce(
+      (...args) =>
+        new Promise((resolve, reject) => {
+          finish = () => void real(...args).then(resolve, reject);
+        })
+    );
+    await fireEvent.press(await screen.findByRole('button', { name: 'Crear proyecto' }));
+    await fireEvent.changeText(screen.getByLabelText('Nombre del proyecto'), 'Lento');
+    await fireEvent.changeText(screen.getByLabelText('Frase corta'), 'Con portada');
+    await fireEvent.press(screen.getByRole('button', { name: 'Guardar proyecto' }));
+
+    const hint = 'Revisando el proyecto antes de publicarlo. Puede tardar unos segundos.';
+    expect(screen.getByRole('button', { name: 'Guardando…' })).toBeDisabled();
+    expect(screen.queryByText(hint)).toBeNull();
+    await act(async () => {
+      jest.advanceTimersByTime(SLOW_SAVE_MS);
+    });
+    expect(screen.getByText(hint)).toBeTruthy();
+    // Sigue abierta: la hoja no vuela mientras el servidor no responde.
+    expect(screen.getByRole('button', { name: 'Guardando…' })).toBeTruthy();
+
+    await act(async () => finish());
+    await act(async () => {
+      jest.runOnlyPendingTimers();
+    });
+    expect(await screen.findByRole('button', { name: 'Editar Lento' })).toBeTruthy();
+  } finally {
+    jest.useRealTimers();
+  }
 });

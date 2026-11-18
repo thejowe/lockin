@@ -1,5 +1,13 @@
 import { Image } from 'expo-image';
-import { useContext, useRef, useState, type ComponentProps, type ReactNode } from 'react';
+import {
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentProps,
+  type ReactNode,
+} from 'react';
 import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { DetailsChevron } from '@/components/animations/ProfileMotion';
@@ -80,6 +88,9 @@ function EditorAction({
   );
 }
 
+/** A partir de aquí el guardado avisa de que sigue en marcha. */
+export const SLOW_SAVE_MS = 2000;
+
 function SaveFooter({
   busy,
   valid,
@@ -95,6 +106,17 @@ function SaveFooter({
 }) {
   const frame = useContext(BottomSheetFrame);
   useProjectSheet(frame, useContext(BottomSheetMotion));
+  // Con portada el servidor modera la imagen (1,5–3 s en caliente, ~8 s en frío):
+  // pasado SLOW_SAVE_MS se dice qué está pasando para que la hoja no parezca colgada.
+  // La hoja vuela a su tarjeta solo cuando el guardado ha terminado.
+  const attempt = useMemo(() => ({ saving }), [saving]);
+  const [slowAttempt, setSlowAttempt] = useState<object | null>(null);
+  useEffect(() => {
+    if (!attempt.saving) return;
+    const timer = setTimeout(() => setSlowAttempt(attempt), SLOW_SAVE_MS);
+    return () => clearTimeout(timer);
+  }, [attempt]);
+  const slow = saving && slowAttempt === attempt;
   return (
     <View style={styles.footer}>
       {error ? (
@@ -107,6 +129,15 @@ function SaveFooter({
         disabled={busy || !valid}
         onPress={onSave}
       />
+      {slow ? (
+        <ThemedText
+          type="small"
+          themeColor="textSecondary"
+          accessibilityLiveRegion="polite"
+          style={styles.slow}>
+          {t('Revisando el proyecto antes de publicarlo. Puede tardar unos segundos.')}
+        </ThemedText>
+      ) : null}
     </View>
   );
 }
@@ -452,4 +483,5 @@ const styles = StyleSheet.create({
   photoRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   thumb: { width: 64, height: 64, borderRadius: Radii.small },
   footer: { gap: Spacing.two },
+  slow: { textAlign: 'center' },
 });
