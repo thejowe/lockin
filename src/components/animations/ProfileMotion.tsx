@@ -66,8 +66,9 @@ export function SlotPressable({
 /** id is the id of the insertion that just displaced the create card. */
 export function CreateProjectShift({ id, children }: { id?: string; children: ReactNode }) {
   const reduced = useReduceMotion();
-  const progress = useSharedValue(id ? 0 : 1);
-  const last = useRef<string>(undefined);
+  // A newly mounted create button has no prior position to shift from (e.g. after deleting a card).
+  const progress = useSharedValue(1);
+  const last = useRef(id);
   useLayoutEffect(() => {
     if (!id || last.current === id) return;
     last.current = id;

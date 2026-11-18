@@ -341,5 +341,7 @@ it.each([false, true])(
     }
     await view.rerender(<Row id="p" />);
     expect(mockTiming.mock.lastCall?.[0]).toBe(reduced ? 1 : -90);
+    await view.rerender(<Row key="remounted" id="p" />);
+    expect(mockTiming).toHaveBeenCalledTimes(3);
   }
 );
