@@ -44,6 +44,7 @@ import {
 } from '@/features/chat';
 import { useGroupConversation, useGroupPush } from '@/features/groups';
 import { RequireVerifiedEmail, TermsAcceptance, useTermsGate } from '@/features/profile';
+import { RequirePhoto } from '@/features/profile/require-photo';
 import { ReportForm } from '@/features/safety/report-form';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
@@ -264,9 +265,11 @@ function RequireTerms({ children }: { children: React.ReactNode }) {
 export default function GroupChatScreen() {
   return (
     <RequireVerifiedEmail>
-      <RequireTerms>
-        <GroupChatContent />
-      </RequireTerms>
+      <RequirePhoto>
+        <RequireTerms>
+          <GroupChatContent />
+        </RequireTerms>
+      </RequirePhoto>
     </RequireVerifiedEmail>
   );
 }

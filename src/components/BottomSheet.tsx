@@ -223,7 +223,9 @@ function SheetContents({
       onLayout={(e) => setLayoutHeight(e.nativeEvent.layout.height)}>
       <Animated.View
         style={StyleSheet.absoluteFill}
-        entering={reduced ? undefined : FadeIn.duration(Duration.base)}>
+        entering={
+          reduced ? undefined : FadeIn.duration(Duration.base).reduceMotion(ReduceMotion.Never)
+        }>
         <BlurView
           tint="dark"
           intensity={BlurIntensity.sheet}
@@ -247,9 +249,11 @@ function SheetContents({
         entering={
           reduced
             ? undefined
-            : SlideInDown.duration(Duration.base)
+            : // `Never` y no `System`: Reanimated resuelve `System` con el valor del
+              // arranque, y aquí ya manda el ajuste en vivo.
+              SlideInDown.duration(Duration.base)
                 .easing(timing.easing)
-                .reduceMotion(ReduceMotion.System)
+                .reduceMotion(ReduceMotion.Never)
         }
         style={[
           glassStyle(theme, { radius: Radii.sheet }),

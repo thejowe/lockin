@@ -7,6 +7,12 @@ import { TERMS_VERSION } from '@/constants/legal';
 import { buildProfileInput } from '@/data/test-fixtures';
 
 let mockMatchId = '';
+// La puerta de foto tiene su propio test (`test/app/photo-gate.test.tsx`); aquí deja pasar.
+jest.mock('@/features/profile/require-photo', () => ({
+  ...jest.requireActual('@/features/profile/require-photo'),
+  RequirePhoto: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 jest.mock('expo-router', () => ({
   useFocusEffect: (effect: () => void | (() => void)) =>
     jest.requireActual('react').useEffect(effect, [effect]),

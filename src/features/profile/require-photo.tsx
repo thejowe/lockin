@@ -17,7 +17,7 @@ import { t } from '@/i18n';
  */
 export const CURRENT_PROFILE_KEY = 'profile:current';
 
-export type PhotoGate = 'checking' | 'open' | 'required';
+export type PhotoGate = 'checking' | 'open' | 'required' | 'no-profile';
 
 export function hasApprovedPhoto(profile: Profile): boolean {
   return Boolean(profile.avatar.imageUrl || profile.avatar.hasPhoto);
@@ -29,8 +29,9 @@ export function usePhotoGate(): { gate: PhotoGate; refresh: () => void } {
     profiles.getCurrent()
   );
   if (loading) return { gate: 'checking', refresh };
-  // Sin perfil decide la puerta de onboarding, no esta.
-  if (error || !data) return { gate: 'open', refresh };
+  if (error) return { gate: 'open', refresh };
+  // Sin perfil (lectura correcta): que decida el índice, que lleva al alta.
+  if (!data) return { gate: 'no-profile', refresh };
   return { gate: hasApprovedPhoto(data) ? 'open' : 'required', refresh };
 }
 
@@ -38,5 +39,6 @@ export function RequirePhoto({ children }: { children: ReactNode }) {
   const { gate } = usePhotoGate();
   if (gate === 'checking') return <LoadingState label={t('Comprobando tu cuenta…')} />;
   if (gate === 'required') return <Redirect href="/photo" />;
+  if (gate === 'no-profile') return <Redirect href="/" />;
   return <>{children}</>;
 }

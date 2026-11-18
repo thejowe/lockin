@@ -9,6 +9,7 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Text } from 'react-native';
 
+import { TERMS_VERSION } from '@/constants/legal';
 import { buildProfileInput } from '@/data/test-fixtures';
 import { pickAvatarPhoto } from '@/features/profile/avatar-photo';
 import { PhotoGateScreen } from '@/features/profile/photo-gate-screen';
@@ -20,10 +21,11 @@ jest.mock('expo-router', () => require('../routes').expoRouterMock());
 jest.mock('@/features/profile/avatar-photo', () => ({ pickAvatarPhoto: jest.fn() }));
 const pick = pickAvatarPhoto as jest.Mock;
 
-beforeEach(() => {
+beforeEach(async () => {
   resetRouter();
   resetRepositories();
   pick.mockReset();
+  await repositories.session.acceptTerms(TERMS_VERSION);
 });
 
 const Tabs = () => <Text>pestañas</Text>;
@@ -50,6 +52,16 @@ describe('RequirePhoto', () => {
     );
     expect(await screen.findByText('pestañas')).toBeTruthy();
     expect(router.redirects).toEqual([]);
+  });
+
+  it('sin perfil (lectura correcta) devuelve al índice, que lleva al alta', async () => {
+    await renderRoute(
+      <RequirePhoto>
+        <Tabs />
+      </RequirePhoto>
+    );
+    await waitFor(() => expect(router.redirects).toEqual(['/']));
+    expect(screen.queryByText('pestañas')).toBeNull();
   });
 
   it('si no se puede leer el perfil no cierra la puerta', async () => {
@@ -110,6 +122,42 @@ describe('PhotoGateScreen', () => {
     expect(await screen.findByText('La foto no cumple las normas.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
     expect(router.redirects).toEqual([]);
+  });
+
+  it('sin los Términos vigentes no deja publicar foto', async () => {
+    resetRepositories();
+    await repositories.profiles.saveCurrent(buildProfileInput());
+    await renderRoute(<PhotoGateScreen />);
+    expect(await screen.findByText('Términos y Normas')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Añadir foto' })).toBeNull();
+    expect(pick).not.toHaveBeenCalled();
+  });
+
+  it('deja llegar a los ajustes de la cuenta sin foto', async () => {
+    await repositories.profiles.saveCurrent(buildProfileInput());
+    await renderRoute(<PhotoGateScreen />);
+    await fireEvent.press(await screen.findByRole('button', { name: 'Ajustes de la cuenta' }));
+    expect(router.push).toHaveBeenCalledWith('/settings');
+  });
+
+  it('si al releer ya no hay foto, vuelve a dejar intentarlo', async () => {
+    await repositories.profiles.saveCurrent(buildProfileInput());
+    pick.mockResolvedValue({ status: 'picked', uri: 'file:///nueva.jpg' });
+    // El servidor la aprueba, pero otro dispositivo la quita antes de releer.
+    jest.spyOn(repositories.profiles, 'setAvatarPhoto').mockImplementation(async () => {
+      const current = await repositories.profiles.getCurrent();
+      return current!;
+    });
+    await renderRoute(<PhotoGateScreen />);
+    await fireEvent.press(await screen.findByRole('button', { name: 'Añadir foto' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Elegir de la galería' }));
+    expect(await screen.findByText('Foto aprobada')).toBeTruthy();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
+    // La relectura no trae foto: ni se entra ni se queda «Continuar» colgado.
+    await waitFor(() => expect(screen.queryByText('Foto aprobada')).toBeNull());
+    expect(router.redirects).toEqual([]);
+    expect(screen.getByRole('button', { name: 'Añadir foto' })).toBeEnabled();
   });
 
   it('quien ya tiene foto no se queda en la puerta', async () => {
