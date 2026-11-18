@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { useContext, useRef, useState, type ReactNode } from 'react';
+import { useContext, useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { BottomSheet, BottomSheetFrame } from '@/components/BottomSheet';
@@ -14,7 +14,7 @@ import {
   type Project,
   type ProjectInput,
 } from '@/data';
-import { useTheme } from '@/hooks/use-theme';
+import { ThemeOverride, useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
 import { pickAvatarPhoto } from './avatar-photo';
 import { Field, TextField } from './controls';
@@ -32,6 +32,18 @@ const empty: ProjectInput = {
 const compact = [0.68];
 const expanded = [0.94];
 const detailsFade = FadeIn.duration(Duration.fast).reduceMotion(ReduceMotion.Never);
+
+function EditorField({ label, ...props }: ComponentProps<typeof TextField> & { label: string }) {
+  const theme = useTheme();
+  // A neutral edge remains visible against both the graphite sheet and its lighter input fill.
+  return (
+    <Field label={label}>
+      <ThemeOverride.Provider value={{ ...theme, border: theme.textMuted + 'B3' }}>
+        <TextField {...props} accessibilityLabel={label} />
+      </ThemeOverride.Provider>
+    </Field>
+  );
+}
 
 function EditorAction({
   label,
@@ -309,27 +321,23 @@ export function ProjectEditor({
               </View>
             ) : null}
           </View>
-          <Field label={t('Nombre del proyecto')}>
-            <TextField
-              testID="project-name"
-              accessibilityLabel={t('Nombre del proyecto')}
-              editable={!busy}
-              value={draft.name}
-              maxLength={100}
-              onChangeText={(name) => change({ name })}
-            />
-          </Field>
-          <Field label={t('Frase corta')}>
-            <TextField
-              testID="project-tagline"
-              accessibilityLabel={t('Frase corta')}
-              editable={!busy}
-              value={draft.tagline}
-              maxLength={100}
-              showCount
-              onChangeText={(tagline) => change({ tagline })}
-            />
-          </Field>
+          <EditorField
+            testID="project-name"
+            label={t('Nombre del proyecto')}
+            editable={!busy}
+            value={draft.name}
+            maxLength={100}
+            onChangeText={(name) => change({ name })}
+          />
+          <EditorField
+            testID="project-tagline"
+            label={t('Frase corta')}
+            editable={!busy}
+            value={draft.tagline}
+            maxLength={100}
+            showCount
+            onChangeText={(tagline) => change({ tagline })}
+          />
           <View style={[styles.detailHeader, { borderColor: theme.border }]}>
             <EditorAction
               label={details ? t('Ocultar detalles') : t('Más detalles')}
@@ -343,27 +351,23 @@ export function ProjectEditor({
           </View>
           {details ? (
             <Animated.View entering={detailsFade} style={styles.details}>
-              <Field label={t('Descripción')}>
-                <TextField
-                  accessibilityLabel={t('Descripción')}
-                  multiline
-                  maxLength={5000}
-                  editable={!busy}
-                  value={draft.description}
-                  onChangeText={(description) => change({ description })}
-                />
-              </Field>
-              <Field label={t('Enlace del proyecto')}>
-                <TextField
-                  accessibilityLabel={t('Enlace del proyecto')}
-                  inputMode="url"
-                  autoCorrect={false}
-                  autoCapitalize="none"
-                  editable={!busy}
-                  value={draft.link}
-                  onChangeText={(link) => change({ link })}
-                />
-              </Field>
+              <EditorField
+                label={t('Descripción')}
+                multiline
+                maxLength={5000}
+                editable={!busy}
+                value={draft.description}
+                onChangeText={(description) => change({ description })}
+              />
+              <EditorField
+                label={t('Enlace del proyecto')}
+                inputMode="url"
+                autoCorrect={false}
+                autoCapitalize="none"
+                editable={!busy}
+                value={draft.link}
+                onChangeText={(link) => change({ link })}
+              />
               <View style={styles.gallery}>
                 {draft.photos.map((photo, i) => (
                   <View key={i} style={styles.photoRow}>
