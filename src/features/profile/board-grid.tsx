@@ -1,5 +1,10 @@
 import { Image } from 'expo-image';
 import { Pressable, StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
+
+import { PinDrop } from '@/components/animations/PinDrop';
+import { SlotPressable } from '@/components/animations/ProfileMotion';
+import type { Arrivals } from '@/components/animations/useArrivals';
 
 import { ThemedText } from '@/components/themed-text';
 import { FontFamily, Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
@@ -12,12 +17,14 @@ const TILTS = [-4, 3, -2, 5, -3, 2];
 const PIN_SIZE = 12;
 
 export function BoardGrid({
+  arrivals,
   posts,
   ownerName,
   onOpen,
   onAdd,
   disabled,
 }: {
+  arrivals: Arrivals;
   posts: BoardPost[];
   ownerName: string;
   onOpen: (post: BoardPost) => void;
@@ -40,36 +47,41 @@ export function BoardGrid({
     return (
       <View key={index} testID={`board-slot-${index}`} style={styles.slot}>
         {post ? (
-          <Pressable
-            key={post.id}
-            testID={`board-photo-${post.id}`}
-            accessibilityRole="imagebutton"
-            accessibilityLabel={post.caption || t('Foto personal de {ownerName}', { ownerName })}
-            onPress={() => onOpen(post)}
-            style={({ pressed }) => [
-              styles.print,
-              {
-                backgroundColor: theme.surfaceOpaque,
-                borderColor: theme.border,
-                transform: [{ rotate: `${TILTS[index % TILTS.length]}deg` }],
-                opacity: pressed ? Opacity.pressed : 1,
-              },
-            ]}>
-            {post.imageUrl ? (
-              <Image source={{ uri: post.imageUrl }} style={styles.image} contentFit="cover" />
-            ) : (
-              <ThemedText type="caption" themeColor="textMuted" style={styles.centerText}>
-                {t('No se ha podido cargar la foto.')}
-              </ThemedText>
+          <PinDrop key={post.id} id={post.id} arrivals={arrivals}>
+            {(pinStyle) => (
+              <Pressable
+                testID={`board-photo-${post.id}`}
+                accessibilityRole="imagebutton"
+                accessibilityLabel={
+                  post.caption || t('Foto personal de {ownerName}', { ownerName })
+                }
+                onPress={() => onOpen(post)}
+                style={({ pressed }) => [
+                  styles.print,
+                  {
+                    backgroundColor: theme.surfaceOpaque,
+                    borderColor: theme.border,
+                    transform: [{ rotate: `${TILTS[index % TILTS.length]}deg` }],
+                    opacity: pressed ? Opacity.pressed : 1,
+                  },
+                ]}>
+                {post.imageUrl ? (
+                  <Image source={{ uri: post.imageUrl }} style={styles.image} contentFit="cover" />
+                ) : (
+                  <ThemedText type="caption" themeColor="textMuted" style={styles.centerText}>
+                    {t('No se ha podido cargar la foto.')}
+                  </ThemedText>
+                )}
+                <Animated.View
+                  testID={`board-pin-${post.id}`}
+                  pointerEvents="none"
+                  style={[styles.pin, { backgroundColor: theme.textSecondary }, pinStyle]}
+                />
+              </Pressable>
             )}
-            <View
-              testID={`board-pin-${post.id}`}
-              pointerEvents="none"
-              style={[styles.pin, { backgroundColor: theme.textSecondary }]}
-            />
-          </Pressable>
+          </PinDrop>
         ) : canAdd ? (
-          <Pressable
+          <SlotPressable
             accessibilityRole="button"
             accessibilityLabel={t('Añadir una foto a Sobre mí')}
             disabled={disabled}
@@ -88,9 +100,9 @@ export function BoardGrid({
             <ThemedText type="smallBold" style={styles.centerText}>
               {t('Añadir foto')}
             </ThemedText>
-          </Pressable>
+          </SlotPressable>
         ) : (
-          <View style={[styles.empty, { borderColor: theme.textMuted, opacity: 0.6 }]} />
+          <View style={[styles.empty, { borderColor: theme.border }]} />
         )}
       </View>
     );

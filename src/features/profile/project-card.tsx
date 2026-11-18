@@ -1,5 +1,6 @@
 import { Image } from 'expo-image';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { SlotPressable } from '@/components/animations/ProfileMotion';
 import { glassStyle } from '@/components/glass';
 import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
@@ -52,7 +53,7 @@ export function CreateProjectCard({
   const { height } = useWindowDimensions();
   const hint = t('Enséñale a la gente lo que has construido');
   return (
-    <Pressable
+    <SlotPressable
       accessibilityRole="button"
       accessibilityLabel={t('Crear proyecto')}
       accessibilityHint={hint}
@@ -79,7 +80,7 @@ export function CreateProjectCard({
           {hint}
         </ThemedText>
       </View>
-    </Pressable>
+    </SlotPressable>
   );
 }
 

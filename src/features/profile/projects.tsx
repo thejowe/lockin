@@ -11,19 +11,21 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BackArrow } from '@/components/back-arrow';
+import { arrivalImpact } from '@/components/animations/haptics';
+import { CreateProjectShift } from '@/components/animations/ProfileMotion';
+import { ProjectSheetSource, useProjectSaveMotion } from '@/components/animations/ShrinkToSlot';
 import { BottomSheetBackground } from '@/components/BottomSheet';
 import { ThemedText } from '@/components/themed-text';
-import { MaxContentWidth, Opacity, Radii, Spacing } from '@/constants/theme';
+import { Opacity, Radii, Spacing } from '@/constants/theme';
 import type { Project, ProjectInput, ProjectPhoto } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
 import { SecondaryButton } from './controls';
-import { CreateProjectCard, ProjectCover, ProjectPrimaryButton } from './project-card';
+import { CreateProjectCard, ProjectCover } from './project-card';
 import { ProjectEditor } from './project-editor';
-import { ProjectHandoff, type WindowRect } from './project-handoff';
+import type { WindowRect } from './window-rect';
 import { useProjects } from './use-projects';
-import { WizardProgress } from './wizard';
+import { WizardScreen } from './wizard';
 
 export function ProjectStep({
   ownerId,
@@ -40,26 +42,19 @@ export function ProjectStep({
 }) {
   const collection = useProjectCards(ownerId);
   return (
+    // El mismo armazón que la foto y «Sobre mí»: barra, título, espaciados y un solo botón.
+    // BottomSheetBackground es lo que difumina la hoja del editor cuando se abre encima.
     <BottomSheetBackground style={styles.step}>
-      <View style={styles.stepBar}>
-        <BackArrow onPress={onBack} />
-        <View style={styles.progress}>
-          <WizardProgress step={step} total={total} />
-        </View>
-      </View>
-      <ScrollView contentContainerStyle={styles.stepContent}>
-        <ThemedText type="title" accessibilityRole="header">
-          {t('Tus proyectos')}
-        </ThemedText>
+      <WizardScreen
+        step={step}
+        total={total}
+        title={t('Tus proyectos')}
+        primaryLabel={collection.cards.length ? t('Continuar') : t('Ahora no')}
+        busy={collection.loading}
+        onBack={onBack}
+        onPrimary={onContinue}>
         <ProjectList collection={collection} onboarding />
-      </ScrollView>
-      <View style={styles.stepFooter}>
-        <ProjectPrimaryButton
-          label={collection.cards.length ? t('Continuar') : t('Ahora no')}
-          onPress={onContinue}
-          disabled={collection.loading}
-        />
-      </View>
+      </WizardScreen>
     </BottomSheetBackground>
   );
 }
@@ -122,15 +117,17 @@ function ProjectList({
 }) {
   const { cards, refresh, loading, error, arrival, onLand, onSaved } = collection;
   const [edit, setEdit] = useState<Project | 'new' | null>(null);
+  const motion = useProjectSaveMotion();
   return (
     <View style={styles.section}>
       {error ? <SecondaryButton label={t('Reintentar')} onPress={refresh} /> : null}
       {cards.map(({ id, preview, project }) => {
         const landing = arrival?.id === id && !arrival.landed;
-        const cover = <ProjectCover {...preview} editable />;
         return (
           <Pressable
             key={id}
+            collapsable={false}
+            ref={motion.projectId === id ? motion.slot : undefined}
             accessibilityRole="button"
             accessibilityLabel={t('Editar {name}', { name: preview.name })}
             accessibilityHint={preview.tagline}
@@ -139,36 +136,40 @@ function ProjectList({
             style={({ pressed }) => [
               { opacity: pressed ? Opacity.pressed : 1, zIndex: landing ? 1 : 0 },
             ]}>
-            {landing ? (
-              <ProjectHandoff source={arrival.source} onLand={() => onLand(id)}>
-                {cover}
-              </ProjectHandoff>
-            ) : (
-              cover
-            )}
+            <ProjectCover {...preview} editable />
           </Pressable>
         );
       })}
       {!loading && !error && cards.length < 3 ? (
-        <CreateProjectCard
-          prominent={onboarding && cards.length === 0}
-          onPress={() => setEdit('new')}
-        />
+        <CreateProjectShift id={motion.landedId}>
+          <CreateProjectCard
+            prominent={onboarding && cards.length === 0}
+            onPress={() => setEdit('new')}
+          />
+        </CreateProjectShift>
       ) : null}
       {edit ? (
-        <ProjectEditor
-          project={edit === 'new' ? undefined : edit}
-          canPromote={edit !== 'new' && cards[0]?.id !== edit.id}
-          onClose={() => {
-            refresh();
-            setEdit(null);
-          }}
-          onSaved={(id, draft, source) => {
-            onSaved(id, draft, source);
-            setEdit(null);
-          }}
-        />
+        <ProjectSheetSource value={motion.source}>
+          <ProjectEditor
+            project={edit === 'new' ? undefined : edit}
+            canPromote={edit !== 'new' && cards[0]?.id !== edit.id}
+            onClose={() => {
+              refresh();
+              setEdit(null);
+            }}
+            onSaved={async (id, draft, source) => {
+              onSaved(id, draft, source);
+              // Al crear, la hoja vuela hasta su tarjeta y la vibración llega al aterrizar.
+              // Al editar, la tarjeta ya está en su sitio: basta la vibración suave.
+              if (edit === 'new') await motion.onProjectSaved(id);
+              else arrivalImpact('project');
+              onLand(id);
+              setEdit(null);
+            }}
+          />
+        </ProjectSheetSource>
       ) : null}
+      {motion.transition}
     </View>
   );
 }
@@ -256,16 +257,7 @@ export function PublicProjects({ ownerId }: { ownerId: string }) {
   );
 }
 const styles = StyleSheet.create({
-  step: { flex: 1, width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center' },
-  stepBar: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingRight: 64 },
-  progress: { flex: 1 },
-  stepContent: {
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.four,
-    paddingBottom: Spacing.four,
-    gap: Spacing.four,
-  },
-  stepFooter: { paddingHorizontal: Spacing.four, paddingVertical: Spacing.three },
+  step: { flex: 1 },
   section: { gap: Spacing.three },
   row: { flexDirection: 'row', gap: Spacing.two },
   thumb: { width: 100, height: 100, borderRadius: Radii.small },

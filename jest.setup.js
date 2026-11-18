@@ -15,7 +15,23 @@ jest.mock('react-native-worklets', () => require('react-native-worklets/src/mock
 
 require('react-native-gesture-handler/jestSetup');
 
-jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
+// El `useAnimatedRef` real devuelve una ref que también se llama como función
+// (`ref(node)`); el mock oficial da solo `{ current }`. Se iguala, estable entre renders.
+jest.mock('react-native-reanimated', () => {
+  const mock = require('react-native-reanimated/mock');
+  const { useState } = require('react');
+  return {
+    ...mock,
+    useAnimatedRef: () =>
+      useState(() => {
+        const ref = (node) => {
+          ref.current = node;
+        };
+        ref.current = null;
+        return ref;
+      })[0],
+  };
+});
 
 // `react-native-keyboard-controller` es un módulo nativo: sin el mock oficial,
 // importar `src/app/_layout.tsx` revienta con "doesn't seem to be linked".

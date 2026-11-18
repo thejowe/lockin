@@ -112,6 +112,8 @@ name: Crear un proyecto en el alta y descubrirlo desde otra cuenta
 - assertVisible: 'Pon tu foto de perfil'
 - addMedia:
     - ../assets/images/icon.png
+# La tarjeta de la foto abre la hoja inferior compartida con las dos fuentes.
+- tapOn: 'Añadir foto'
 - tapOn: 'Elegir de la galería'
 - tapOn:
     id: '.*:id/icon_thumbnail'
@@ -120,11 +122,22 @@ name: Crear un proyecto en el alta y descubrirlo desde otra cuenta
     id: '.*:id/crop_image_menu_crop'
 - assertVisible:
     id: 'wizard-photo'
+# «Continuar» se habilita cuando el servidor aprueba la foto.
+- extendedWaitUntil:
+    visible: 'Foto aprobada'
+    timeout: 60000
 - tapOn: 'Continuar'
 - extendedWaitUntil:
     visible: 'Sobre mí'
     timeout: 60000
-- tapOn: 'Omitir'
+# Un solo botón abajo: «Ahora no» sin fotos, «Continuar» con alguna.
+- extendedWaitUntil:
+    visible: 'Ahora no'
+    timeout: 30000
+- tapOn: 'Ahora no'
+- extendedWaitUntil:
+    visible: 'Tus proyectos'
+    timeout: 10000
 - tapOn: 'Crear proyecto'
 - tapOn:
     id: 'project-name'
@@ -138,7 +151,8 @@ name: Crear un proyecto en el alta y descubrirlo desde otra cuenta
 - extendedWaitUntil:
     visible: 'Editar ${PROJECT_NAME}'
     timeout: 30000
-- tapOn: 'Crear perfil'
+# Con un proyecto el botón único del paso pasa de «Ahora no» a «Continuar».
+- tapOn: 'Continuar'
 - tapOn: 'Entrar a cofounder'
 - tapOn: 'Omitir'
 - assertVisible: 'Matches'

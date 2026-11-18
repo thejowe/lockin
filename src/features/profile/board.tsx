@@ -4,11 +4,12 @@
  */
 
 import { Image } from 'expo-image';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useArrivals } from '@/components/animations/useArrivals';
 import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { Control, Radii, ScrimAlpha, Spacing, Stroke } from '@/constants/theme';
@@ -74,12 +75,16 @@ export function Board({
   const addedId = addition?.post.id;
   const mountedPhotoId = list.some((post) => post.id === addedId) ? addedId : undefined;
   const notifiedId = useRef<string | undefined>(undefined);
-  useEffect(() => {
+  const arrivals = useArrivals();
+  const { start } = arrivals;
+  // useLayoutEffect: la foto toma su pose inicial antes del primer fotograma visible.
+  useLayoutEffect(() => {
     if (mountedPhotoId && notifiedId.current !== mountedPhotoId) {
       notifiedId.current = mountedPhotoId;
+      start(mountedPhotoId);
       onPhotoAdded?.(mountedPhotoId);
     }
-  }, [mountedPhotoId, onPhotoAdded]);
+  }, [mountedPhotoId, onPhotoAdded, start]);
 
   const count = loading ? null : list.length;
   useEffect(() => {
@@ -186,6 +191,7 @@ export function Board({
             </ThemedText>
           )}
           <BoardGrid
+            arrivals={arrivals}
             posts={list}
             ownerName={ownerName}
             onOpen={(post) => {

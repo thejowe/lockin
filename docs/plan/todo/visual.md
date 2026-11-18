@@ -821,3 +821,28 @@ Casilla `[comprobador]` de esta sección: la evidencia la **confirma ✅**; no l
 ## Fondo negro, sin luz ambiental (2026-10-17)
 
 - [x] **[Claude]** Decisión del usuario: fuera el difuminado de color, fondo negro. `theme.background` pasa a `#000000`; `AmbientBackground` ya no pinta nada (la API se conserva para no tocar las 13 pantallas que lo montan) y se borran `assets/images/ambient-*.jpg`. `AmbientPeak` = fondo, así que el test de contraste sigue midiendo sobre lo único que hay detrás. Splash a `#000000`; el fondo del icono adaptativo de Android se queda en grafito (es marca). Sin comprobar en dispositivo: lo mira el usuario.
+
+## Rediseño de foto, «Sobre mí» y proyectos (2026-11-18)
+
+Cuatro sesiones de Codex en paralelo, integradas en `redisenio/integracion` (orden A → B → C → D):
+`redisenio/proyectos` (A: paso y sección de proyectos, editor como hoja, `src/components/BottomSheet.tsx`),
+`redisenio/foto` (B: paso y cambio de foto de perfil), `redisenio/sobre-mi` (C: corcho de «Sobre mí»)
+y `redisenio/animaciones` (D: `src/components/animations/`, vuelo de la hoja, chincheta y hápticos).
+
+- [x] **[Claude]** Revisión por rama. Ninguna toca `supabase/`, `src/data/`, migraciones ni moderación.
+  B ya usaba el `BottomSheet` real de A (no había sustituto que borrar).
+- [x] **[Claude]** Fusión: conflicto en `src/app/(onboarding)/profile-form.tsx` y su test (A cambiaba
+  el paso de proyectos y C el botón de Sobre mí); quedan los dos. en/ca sin pérdidas.
+- [x] **[Claude]** Enganche de D según `src/components/animations/INTEGRACION.md`: la hoja vuela hasta la
+  tarjeta al crear un proyecto (vibración suave al aterrizar), vibración suave también al guardar
+  una edición, chincheta con golpecito al clavar la foto, `SlotPressable` en «Crear proyecto» y
+  «Añadir foto», chevron de «Más detalles». `ProjectHandoff` de A queda sustituido y se borra.
+- [x] **[Claude]** Unificado: el paso de proyectos usa `WizardScreen` como foto y Sobre mí (misma barra,
+  título, espaciados y un solo botón abajo «Ahora no» / «Continuar»).
+- [x] **[Claude]** `jest.setup.js`: el mock de `useAnimatedRef` se puede llamar como función, igual que el real.
+- [x] **[Claude]** `e2e/projects.yaml` al flujo nuevo (tarjeta de foto → hoja, «Foto aprobada», «Ahora no»
+  en Sobre mí, «Continuar» con un proyecto). Las capturas del tutorial no muestran estas pantallas.
+- [ ] `[comprobador]` Alta completa en el emulador (foto, Sobre mí, proyectos), editar un proyecto
+  desde Perfil, las dos animaciones y el título del editor sin cortar.
+- [ ] (usuario) Decidir: el botón «Guardar proyecto» del editor conserva el naranja brasa `#FF8645`
+  que pidió el encargo de A, mientras que el resto de botones principales son blancos (`theme.brass`).

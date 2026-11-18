@@ -2,6 +2,8 @@ import { Image } from 'expo-image';
 import { useContext, useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
+import { DetailsChevron } from '@/components/animations/ProfileMotion';
+import { useProjectSheet } from '@/components/animations/ShrinkToSlot';
 import { BottomSheet, BottomSheetFrame } from '@/components/BottomSheet';
 import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
@@ -19,7 +21,7 @@ import { t } from '@/i18n';
 import { pickAvatarPhoto } from './avatar-photo';
 import { Field, TextField } from './controls';
 import { ProjectCover, ProjectPrimaryButton } from './project-card';
-import type { WindowRect } from './project-handoff';
+import type { WindowRect } from './window-rect';
 
 const empty: ProjectInput = {
   name: '',
@@ -93,6 +95,7 @@ function SaveFooter({
   onSave: (measureSource: () => WindowRect | null) => void;
 }) {
   const frame = useContext(BottomSheetFrame);
+  useProjectSheet(frame);
   function measureSource(): WindowRect | null {
     // The keyboard or photo review can change the frame while the request is pending.
     try {
@@ -128,7 +131,7 @@ export function ProjectEditor({
   project?: Project;
   canPromote: boolean;
   onClose: () => void;
-  onSaved: (id: string, draft: ProjectInput, source: WindowRect | null) => void;
+  onSaved: (id: string, draft: ProjectInput, source: WindowRect | null) => void | Promise<void>;
 }) {
   const { projects } = useRepositories();
   const theme = useTheme();
@@ -195,7 +198,7 @@ export function ProjectEditor({
       setSaving(true);
       if (draft.photos.some((photo) => !photo.path)) setDetails(true);
       await projects.save(draft, project, project ? undefined : draftId);
-      onSaved(project?.id ?? draftId, draft, measureSource());
+      await onSaved(project?.id ?? draftId, draft, measureSource());
     });
   }
   function promote() {
@@ -344,9 +347,9 @@ export function ProjectEditor({
               disabled={busy}
               expanded={details}
               onPress={() => setDetails(!details)}>
-              <View style={{ transform: [{ rotate: details ? '90deg' : '-90deg' }] }}>
+              <DetailsChevron expanded={details}>
                 <Icon name="back" color={theme.textSecondary} size={18} />
-              </View>
+              </DetailsChevron>
             </EditorAction>
           </View>
           {details ? (
