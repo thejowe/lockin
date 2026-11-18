@@ -98,7 +98,12 @@ export function ProjectCover({
   return (
     <View style={[glassStyle(theme), styles.cover, { backgroundColor: theme.surfaceOpaque }]}>
       {cover ? (
-        <Image source={{ uri: cover.uri }} contentFit="cover" style={StyleSheet.absoluteFill} />
+        <Image
+          source={{ uri: cover.uri }}
+          accessibilityLabel={t('Portada')}
+          contentFit="cover"
+          style={StyleSheet.absoluteFill}
+        />
       ) : null}
       {editable ? (
         <View style={[styles.editMark, { backgroundColor: theme.surfaceOpaque }]}>
