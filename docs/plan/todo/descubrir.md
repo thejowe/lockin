@@ -1,5 +1,9 @@
 # TODO — descubrir
 
+## Proyectos · 18 de noviembre de 2026
+
+- [x] Toque por mitades con límite háptico, portada o retrato oscurecido, punto principal y subpuntos por proyecto.
+
 ## Contraste de los controles sobre fotos (2026-10-14)
 
 - [x] Codex: proteger localmente toda `styles.top` con el velo de

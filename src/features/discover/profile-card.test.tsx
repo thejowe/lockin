@@ -15,6 +15,8 @@ import { Linking, StyleSheet } from 'react-native';
 import { Colors } from '@/constants/theme';
 import { buildProfile } from '@/data/test-fixtures';
 
+import * as projectQuery from '@/features/profile/use-projects';
+import * as Haptics from 'expo-haptics';
 import { ProfileCard } from './profile-card';
 
 /** Contraste WCAG del color que llega al ojo, incluyendo el alfa del velo. */
@@ -242,7 +244,7 @@ describe('ProfileCard', () => {
       expect(screen.queryByText('Hacer algo que dure')).toBeNull();
     });
 
-    it('un toque en la tarjeta avanza de bloque y tras el último vuelve al primero', async () => {
+    it('las mitades avanzan y retroceden sin envolver los extremos', async () => {
       await render(<ProfileCard profile={profile} />);
 
       await fireEvent.press(screen.getByRole('button', { name: 'Ver cuándo trabaja' }));
@@ -254,8 +256,75 @@ describe('ProfileCard', () => {
       await fireEvent.press(screen.getByRole('button', { name: 'Ver su respuesta' }));
       expect(screen.getByText('Hacer algo que dure')).toBeTruthy();
 
-      await fireEvent.press(screen.getByRole('button', { name: 'Ver quién es' }));
+      await fireEvent.press(screen.getByTestId('deck-tap-right'));
+      expect(screen.getByText('Hacer algo que dure')).toBeTruthy();
+      await fireEvent.press(screen.getByTestId('deck-tap-left'));
+      expect(screen.getByText('Punto de partida')).toBeTruthy();
+      await fireEvent.press(screen.getByTestId('deck-tap-left'));
+      await fireEvent.press(screen.getByTestId('deck-tap-left'));
       expect(screen.getByText('Domina')).toBeTruthy();
+    });
+
+    it.each([0, 1, 3])('muestra %i proyectos bajo un único punto antes de redes', async (count) => {
+      const rows = Array.from({ length: count }, (_, i) => ({
+        id: 'p' + i,
+        name: 'Demo ' + i,
+        tagline: 'Frase ' + i,
+        description: 'Solo en perfil',
+        link: '',
+        ownerId: profile.id,
+        revision: 'v',
+        cover: i === 1 ? { uri: 'https://example.com/cover.jpg' } : null,
+        photos: [],
+      }));
+      const query = jest
+        .spyOn(projectQuery, 'useProjects')
+        .mockReturnValue({
+          data: rows,
+          loading: false,
+          refreshing: false,
+          error: null,
+          refresh: jest.fn(),
+        });
+      const haptic = jest.spyOn(Haptics, 'selectionAsync').mockResolvedValue();
+      try {
+        await render(
+          <ProfileCard
+            profile={{ ...profile, prompts: [], links: { github: 'https://github.com/ana' } }}
+          />
+        );
+        const press = async (side: string) =>
+          fireEvent.press(screen.getByTestId('deck-tap-' + side));
+        await press('left');
+        expect(haptic).toHaveBeenCalledTimes(1);
+        await press('right');
+        expect(!!screen.queryByTestId('profile-card-dot-projects', HIDDEN)).toBe(count > 0);
+        for (let i = 0; i < count; i++) {
+          await press('right');
+          expect(screen.getByText(rows[i].name)).toBeTruthy();
+          expect(screen.queryByText('Solo en perfil')).toBeNull();
+          if (rows[i].cover)
+            expect(screen.getByTestId('portrait-photo', HIDDEN).props.source).toMatchObject({
+              uri: rows[i].cover?.uri,
+            });
+          expect(!!screen.queryByTestId('project-subdots', HIDDEN)).toBe(count > 1);
+          if (count > 1) expect(screen.getAllByTestId(/^subdot-/, HIDDEN)).toHaveLength(count);
+        }
+        await press('right');
+        expect(screen.getByText('Redes')).toBeTruthy();
+        expect(screen.queryByTestId('project-subdots', HIDDEN)).toBeNull();
+        await press('right');
+        expect(haptic).toHaveBeenCalledTimes(2);
+        for (let i = count - 1; i >= 0; i--) {
+          await press('left');
+          expect(screen.getByText(rows[i].tagline)).toBeTruthy();
+        }
+        await press('left');
+        expect(screen.getByText('Punto de partida')).toBeTruthy();
+      } finally {
+        query.mockRestore();
+        haptic.mockRestore();
+      }
     });
 
     it('los puntos de abajo marcan en qué bloque estás', async () => {

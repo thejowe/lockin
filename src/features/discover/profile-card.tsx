@@ -7,7 +7,7 @@
  * negro, empezando por el nombre y la edad.
  *
  * La ficha se reparte en páginas que se pasan tocando en cualquier parte de la
- * tarjeta (tras la última vuelve a la primera). Hay una sola imagen, así que no hay
+ * tarjeta, a izquierda o derecha, hasta llegar al extremo. No hay
  * barras de progreso arriba: unos puntos bajo la información dicen en qué bloque
  * estás y que hay más. El orden de lectura sigue siendo el
  * que decide el swipe (ver `CONCEPTO.md`): primero quién es, qué aporta y qué le
@@ -20,9 +20,12 @@
  * la lectura del perfil entero.
  */
 
+import * as Haptics from 'expo-haptics';
+import { Glass } from '@/components/glass';
+import { useProjects } from '@/features/profile/use-projects';
 import { Image } from 'expo-image';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, FadeInDown, FadeOutDown } from 'react-native-reanimated';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
@@ -64,14 +67,14 @@ import type { ChipTone } from './chip';
 
 import { PremiumBadge } from '@/features/premium/premium-badge';
 
-import type { DeckProfile, Profile, Specialty } from '@/data';
+import type { DeckProfile, Profile, Project, Specialty } from '@/data';
 import { t } from '@/i18n';
 
 /**
  * Páginas de la ficha, en orden de lectura. El prompt solo si lo hay, y las
  * redes (2026-10-30, decisión del usuario) solo si tiene alguna conectada.
  */
-type Page = 'about' | 'schedule' | 'prompt' | 'board' | 'socials';
+type Page = 'about' | 'schedule' | 'prompt' | 'board' | 'projects' | 'socials';
 
 /** Nombre de cada página para el lector de pantalla: dice adónde lleva el toque. */
 /** Altura de la mano sobre el borde inferior: encima del nombre y su bloque. */
@@ -122,6 +125,7 @@ const PAGE_NAMES: Record<Page, string> = {
   get board() {
     return t('su tablón');
   },
+  get projects() { return t('Proyectos'); },
   get socials() {
     return t('sus redes');
   },
@@ -188,7 +192,9 @@ export function ProfileCard({
     onSafetyOpenChange?.(open);
   };
   const [blocked, setBlocked] = useState(false);
-  const [pageIndex, setPageIndex] = useState(0);
+  const reduced = useReduceMotion();
+  const [selected, setSelected] = useState('about');
+  const {data: projects} = useProjects(profile.id);
   const prompt = profile.prompts[0];
   const complement = complementWith(profile, viewerSpecialties);
   const superLiked = 'superLikedMe' in profile && profile.superLikedMe;
@@ -201,10 +207,25 @@ export function ProfileCard({
     'schedule',
     ...(prompt ? (['prompt'] as const) : []),
     ...(boardPosts.length > 0 ? (['board'] as const) : []),
+    ...(projects?.length ? (['projects'] as const) : []),
     ...(socials.length > 0 ? (['socials'] as const) : []),
   ];
-  const page = pages[Math.min(pageIndex, pages.length - 1)];
-  const nextIndex = (pageIndex + 1) % pages.length;
+  const stops = pages.flatMap<{key:string;page:Page;project?:Project}>(page => page === 'projects'
+    ? (projects ?? []).map(project => ({key:project.id,page,project}))
+    : [{key:page,page}]);
+  const position = Math.max(0,stops.findIndex(stop => stop.key === selected));
+  const {page,project} = stops[position];
+  const pageIndex = pages.indexOf(page);
+
+  function step(direction:number) {
+    const target = stops[position+direction];
+    if (!target) {
+      void Haptics.selectionAsync().catch(()=>undefined);
+      return;
+    }
+    setSelected(target.key);
+    onPageChange?.(position+direction);
+  }
 
   if (blocked)
     return (
@@ -232,22 +253,19 @@ export function ProfileCard({
 
   return (
     <View style={[styles.card, { backgroundColor: theme.surfaceOpaque }]}>
-      <Portrait profile={profile} />
+      <Portrait profile={profile} cover={project?.cover?.uri}/>
+      {project && !project.cover ? <View pointerEvents="none" style={[StyleSheet.absoluteFill,{backgroundColor:'rgba(0,0,0,0.48)'}]}/> : null}
 
-      {/*
-        Toda la tarjeta pasa al siguiente bloque, y desde el último vuelve al
-        primero. Debajo de todo lo demás: el botón de opciones queda encima.
-        Si el dedo arrastra, el gesto del deck cancela el toque.
-      */}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t('Ver {page}', { page: PAGE_NAMES[pages[nextIndex]] })}
-        onPress={() => {
-          setPageIndex(nextIndex);
-          onPageChange?.(nextIndex);
-        }}
-        style={StyleSheet.absoluteFill}
-      />
+      {/* Las dos mitades quedan bajo los botones. El gesto de arrastre cancela el toque. */}
+      <View style={[StyleSheet.absoluteFill,styles.halves]} pointerEvents="box-none">
+        {([-1,1] as const).map(direction=>{
+          const target=stops[position+direction];
+          return <Pressable key={direction} testID={direction===1?'deck-tap-right':'deck-tap-left'} accessibilityRole="button"
+            accessibilityLabel={target ? t('Ver {page}',{page:target.project?.name ?? PAGE_NAMES[target.page]}) :
+              direction===1?t('Última página'):t('Primera página')}
+            style={styles.half} onPress={()=>step(direction)}/>;
+        })}
+      </View>
 
       <View style={styles.top} pointerEvents="box-none">
         {/* El velo cubre toda la zona de controles; solo se desvanece debajo.
@@ -319,7 +337,7 @@ export function ProfileCard({
       <View
         pointerEvents="box-none"
         style={[styles.info, { paddingBottom: bottomInset + Spacing.four }]}>
-        <View pointerEvents="box-none" style={styles.heading}>
+        {!project ? <View pointerEvents="box-none" style={styles.heading}>
           <View style={styles.identity} pointerEvents="box-none">
             <View style={styles.nameGroup} pointerEvents="none">
               <ThemedText type="title" numberOfLines={1} style={styles.name}>
@@ -367,8 +385,13 @@ export function ProfileCard({
           <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
             {profile.location}
           </ThemedText>
-        </View>
+        </View> : null}
 
+        {project ? <Glass pointerEvents="none" style={styles.projectPanel}>
+          <ThemedText type="label">{t('Proyectos')}</ThemedText>
+          <ThemedText type="subtitle">{project.name}</ThemedText>
+          <ThemedText type="body">{project.tagline}</ThemedText>
+        </Glass> : null}
         {page === 'about' ? (
           <View style={styles.section} pointerEvents="none">
             {superLiked ||
@@ -507,11 +530,14 @@ export function ProfileCard({
         {/* Un punto por bloque de información; el encendido es en el que estás. */}
         <View style={styles.dots} accessibilityElementsHidden pointerEvents="none">
           {pages.map((entry, index) => (
-            <PageDot
-              key={entry}
-              testID={`profile-card-dot-${entry}`}
-              active={index === pageIndex}
-            />
+            <View key={entry} style={styles.dotAnchor}>
+              {entry==='projects' && project && projects && projects.length>1 ? <Animated.View
+                testID="project-subdots" entering={reduced?undefined:FadeInDown.duration(160)}
+                exiting={reduced?undefined:FadeOutDown.duration(140)} style={[styles.subdots,{backgroundColor:theme.surfaceOpaque}]}>
+                {projects.map(p=><View key={p.id} testID={'subdot-'+p.id} style={[styles.subdot,{backgroundColor:p.id===project.id?theme.text:theme.textMuted,transform:[{scale:p.id===project.id?1.35:1}]}]}/>)}
+              </Animated.View> : null}
+              <PageDot testID={`profile-card-dot-${entry}`} active={index === pageIndex}/>
+            </View>
           ))}
         </View>
       </View>
@@ -560,13 +586,14 @@ const DOT_GROWTH = 0.6;
  * iniciales en grande. En los dos casos, un fundido a negro abajo para que el
  * texto se lea encima. Es decorado: el nombre ya se lee en el texto.
  */
-function Portrait({ profile }: { profile: Profile }) {
+function Portrait({ profile,cover }: { profile: Profile; cover?:string }) {
   const theme = useTheme();
   const accent = profile.avatar.accent === 'teal' ? theme.teal : theme.brass;
   // Ids únicos por tarjeta: en web los `<defs>` de varias tarjetas comparten documento.
   const tintId = `portrait-tint-${profile.id}`;
   const fadeId = `portrait-fade-${profile.id}`;
-  const imageUrl = profile.avatar.imageUrl;
+  const reduced=useReduceMotion();
+  const imageUrl = cover ?? profile.avatar.imageUrl;
   // Una foto puede ser clara: el fundido arranca antes y pesa más que sobre el
   // color liso, para que el texto de abajo siga leyéndose (≥ 4,5:1).
   const fade = imageUrl
@@ -584,7 +611,7 @@ function Portrait({ profile }: { profile: Profile }) {
           testID="portrait-photo"
           source={{ uri: imageUrl }}
           contentFit="cover"
-          transition={150}
+          transition={reduced?0:150}
           style={StyleSheet.absoluteFill}
         />
       ) : (
@@ -729,6 +756,12 @@ const styles = StyleSheet.create({
     right: 0,
     left: 0,
   },
+  projectPanel:{padding:Spacing.three,gap:Spacing.one,marginBottom:Spacing.two},
+  halves:{flexDirection:'row'},
+  half:{flex:1},
+  dotAnchor:{alignItems:'center',justifyContent:'center'},
+  subdots:{position:'absolute',bottom:11,alignSelf:'center',flexDirection:'row',gap:4,paddingHorizontal:5,paddingVertical:3,borderRadius:Radii.pill},
+  subdot:{width:4,height:4,borderRadius:2},
   dots: {
     flexDirection: 'row',
     justifyContent: 'center',
