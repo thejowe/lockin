@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
+import { FontFamily, Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
 import { BOARD_MAX_POSTS, type BoardPost } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
@@ -82,7 +82,7 @@ export function BoardGrid({
                 backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement,
               },
             ]}>
-            <ThemedText type="subtitle" accessible={false}>
+            <ThemedText type="subtitle" style={styles.plus} accessible={false}>
               +
             </ThemedText>
             <ThemedText type="smallBold" style={styles.centerText}>
@@ -90,7 +90,7 @@ export function BoardGrid({
             </ThemedText>
           </Pressable>
         ) : (
-          <View style={[styles.empty, { borderColor: theme.border }]} />
+          <View style={[styles.empty, { borderColor: theme.textMuted, opacity: 0.6 }]} />
         )}
       </View>
     );
@@ -131,6 +131,7 @@ const styles = StyleSheet.create({
     borderRadius: Radii.small,
   },
   image: { flex: 1, borderRadius: Spacing.half },
+  plus: { fontFamily: FontFamily.sans },
   pin: {
     position: 'absolute',
     top: -PIN_SIZE / 2,

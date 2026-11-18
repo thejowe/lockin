@@ -1,31 +1,27 @@
 /**
- * El tablón personal (decisión del usuario del 2026-10-17): un pequeño muro de
- * fotos en el perfil —el trabajo de la persona, más fotos suyas— con un pie
- * corto. Lo ve cualquiera que abra su perfil (`/person/[id]`) y se edita desde
- * la tab Perfil.
- *
- * Nada se publica desde aquí: `addBoardPost()` sube la foto y el servidor la
- * modera (foto y pie juntos) antes de enseñarla. Un rechazo llega con su motivo
- * ya escrito (`BoardRejectedError`).
+ * Fotos de «Sobre mí». El borrador es privado hasta que addBoardPost confirma
+ * la publicación. Las URLs firmadas se renuevan con la consulta compartida.
  */
 
 import { Image } from 'expo-image';
-import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
-import { Radii, Spacing, Stroke } from '@/constants/theme';
+import { Control, Radii, ScrimAlpha, Spacing, Stroke } from '@/constants/theme';
 import { useQuery, useRepositories, type BoardPost } from '@/data';
 import { isObjectionable, OBJECTIONABLE_MESSAGE } from '@/features/safety/content-filter';
 import { useTheme } from '@/hooks/use-theme';
+import { t } from '@/i18n';
 
 import { pickAvatarPhoto } from './avatar-photo';
 import { BoardGrid } from './board-grid';
-import { Field, PrimaryButton, SecondaryButton, TextField } from './controls';
-import { t } from '@/i18n';
+import { CompactPrimaryButton, CompactSecondaryButton, Field, TextField } from './controls';
 
 const CAPTION_MAX = 280;
-/** Las URLs firmadas valen una hora: se piden otras antes de que caduquen. */
 const REFRESH_MS = 45 * 60 * 1000;
 
 type Draft = { uri: string; caption: string };
@@ -33,52 +29,90 @@ type Draft = { uri: string; caption: string };
 export function Board({
   ownerId,
   ownerName,
-  /** Tablón propio: se puede añadir y quitar. */
   editable = false,
   hideTitle = false,
+  onPhotoAdded,
+  onPhotoCountChange,
 }: {
   ownerId: string;
   ownerName: string;
   editable?: boolean;
   hideTitle?: boolean;
+  /** Se dispara al montar la foto recién aprobada, también con movimiento reducido. */
+  onPhotoAdded?: (photoId: string) => void;
+  onPhotoCountChange?: (count: number | null) => void;
 }) {
   const theme = useTheme();
   const repositories = useRepositories();
   const {
     data: posts,
+    error,
     loading,
+    refreshing,
     refresh,
   } = useQuery(`board:${ownerId}`, () => repositories.profiles.listBoard(ownerId));
 
   const [openId, setOpenId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
-  const [busy, setBusy] = useState<'subir' | 'quitar' | null>(null);
+  const [busy, setBusy] = useState<'elegir' | 'subir' | 'quitar' | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [addition, setAddition] = useState<{
+    post: BoardPost;
+    previousPosts: BoardPost[] | null;
+  } | null>(null);
 
   useEffect(() => {
     const timer = setInterval(refresh, REFRESH_MS);
     return () => clearInterval(timer);
   }, [refresh]);
 
-  const list = posts ?? [];
-  // Por id, de la lista vigente: tras refrescar, el visor usa la URL nueva.
-  const open = list.find((post) => post.id === openId) ?? null;
-  const setOpen = (post: BoardPost | null) => setOpenId(post?.id ?? null);
-  // Sin fotos y sin poder añadir: el tablón ajeno vacío no ocupa sitio.
-  if (!editable && !loading && list.length === 0) return null;
+  // El servidor ya ha aprobado la foto. Ocupa su hueco mientras llegan las URLs actualizadas.
+  const list =
+    addition && addition.previousPosts === posts && addition.post.ownerId === ownerId
+      ? [addition.post, ...(posts ?? [])]
+      : (posts ?? []);
+  const addedId = addition?.post.id;
+  const mountedPhotoId = list.some((post) => post.id === addedId) ? addedId : undefined;
+  const notifiedId = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (mountedPhotoId && notifiedId.current !== mountedPhotoId) {
+      notifiedId.current = mountedPhotoId;
+      onPhotoAdded?.(mountedPhotoId);
+    }
+  }, [mountedPhotoId, onPhotoAdded]);
+
+  const count = loading ? null : list.length;
+  useEffect(() => {
+    onPhotoCountChange?.(count);
+  }, [count, onPhotoCountChange]);
+
+  const open = list.find((post) => post.id === openId);
+  const dialogOpen = !!(open || draft);
+
+  function close() {
+    if (busy) return;
+    setOpenId(null);
+    setDraft(null);
+    setNotice(null);
+  }
 
   async function pick() {
     setNotice(null);
-    const picked = await pickAvatarPhoto('library', [1, 1]);
-    if (picked.status === 'denied') {
-      setNotice(t('Sin permiso para tus fotos no podemos subir ninguna.'));
-      return;
+    setBusy('elegir');
+    try {
+      const picked = await pickAvatarPhoto('library', [1, 1]);
+      if (picked.status === 'denied')
+        setNotice(t('Sin permiso para tus fotos no podemos subir ninguna.'));
+      if (picked.status === 'picked') setDraft({ uri: picked.uri, caption: '' });
+    } catch {
+      setNotice(t('No se ha podido cargar la foto.'));
+    } finally {
+      setBusy(null);
     }
-    if (picked.status === 'picked') setDraft({ uri: picked.uri, caption: '' });
   }
 
   async function publish() {
-    if (!draft) return;
+    if (!draft || busy) return;
     if (draft.caption.length > CAPTION_MAX) {
       setNotice(t('El texto no puede pasar de {CAPTION_MAX} caracteres.', { CAPTION_MAX }));
       return;
@@ -90,7 +124,8 @@ export function Board({
     setBusy('subir');
     setNotice(null);
     try {
-      await repositories.profiles.addBoardPost(draft.uri, draft.caption);
+      const post = await repositories.profiles.addBoardPost(draft.uri, draft.caption);
+      setAddition({ post, previousPosts: posts });
       setDraft(null);
       refresh();
     } catch (cause) {
@@ -101,11 +136,12 @@ export function Board({
   }
 
   async function remove(post: BoardPost) {
+    if (busy) return;
     setBusy('quitar');
     setNotice(null);
     try {
       await repositories.profiles.removeBoardPost(post.id);
-      setOpen(null);
+      setOpenId(null);
       refresh();
     } catch (cause) {
       setNotice(cause instanceof Error ? cause.message : t('No se ha podido quitar la foto.'));
@@ -114,99 +150,178 @@ export function Board({
     }
   }
 
+  if (!editable && !list.length) return null;
+
+  const alert = notice ? (
+    <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
+      {notice}
+    </ThemedText>
+  ) : null;
+
   return (
     <View style={styles.root}>
-      {!hideTitle ? (
-        <ThemedText type="label" themeColor="textSecondary">
+      {!hideTitle && (
+        <ThemedText type="subtitle" accessibilityRole="header">
           {t('Sobre mí')}
         </ThemedText>
-      ) : null}
-      {editable && list.length === 0 && !draft ? (
+      )}
+      {loading ? (
         <ThemedText type="small" themeColor="textSecondary">
-          {t('Fotos tuyas, tus aficiones, tu día a día. Las fotos se revisan antes de publicarse.')}
+          {t('Cargando…')}
         </ThemedText>
-      ) : null}
-
-      {open ? (
-        <View style={[styles.viewer, { borderColor: theme.border }]}>
-          {open.imageUrl ? (
-            <Image
-              source={{ uri: open.imageUrl }}
-              style={styles.large}
-              contentFit="cover"
-              accessibilityLabel={open.caption || t('Foto personal de {ownerName}', { ownerName })}
-            />
-          ) : null}
-          {open.caption ? <ThemedText type="body">{open.caption}</ThemedText> : null}
-          {editable ? (
-            <SecondaryButton
-              label={busy === 'quitar' ? t('Quitando…') : t('Quitar esta foto')}
-              tone="danger"
-              disabled={busy !== null}
-              onPress={() => void remove(open)}
-            />
-          ) : null}
-          <SecondaryButton label={t('Cerrar')} onPress={() => setOpen(null)} />
+      ) : error ? (
+        <View style={styles.root}>
+          <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
+            {t('No se han podido cargar las fotos.')}
+          </ThemedText>
+          <CompactSecondaryButton label={t('Reintentar')} onPress={refresh} />
         </View>
-      ) : null}
-
-      {draft ? (
-        <View style={[styles.viewer, { borderColor: theme.border }]}>
-          <Image source={{ uri: draft.uri }} style={styles.large} contentFit="cover" />
-          <Field
-            label={t('Texto (opcional)')}
-            hint={t('Hasta {CAPTION_MAX} caracteres.', { CAPTION_MAX })}>
-            <TextField
-              value={draft.caption}
-              onChangeText={(caption) => setDraft({ ...draft, caption })}
-              placeholder={t('Qué es, en qué estás trabajando…')}
-              multiline
-              maxLength={CAPTION_MAX}
-              showCount
-              autoCapitalize="sentences"
-              autoCorrect={false}
-              accessibilityLabel={t('Texto de la foto')}
-            />
-          </Field>
-          <PrimaryButton
-            label={busy === 'subir' ? t('Revisando y subiendo…') : t('Publicar en Sobre mí')}
-            disabled={busy !== null}
-            onPress={() => void publish()}
+      ) : (
+        <>
+          {editable && list.length === 0 && (
+            <ThemedText type="small" themeColor="textSecondary">
+              {t(
+                'Fotos tuyas, tus aficiones, tu día a día. Las fotos se revisan antes de publicarse.'
+              )}
+            </ThemedText>
+          )}
+          <BoardGrid
+            posts={list}
+            ownerName={ownerName}
+            onOpen={(post) => {
+              setNotice(null);
+              setOpenId(post.id);
+            }}
+            onAdd={editable ? pick : undefined}
+            disabled={busy !== null || refreshing}
           />
-          <SecondaryButton label={t('Cancelar')} onPress={() => setDraft(null)} />
-        </View>
-      ) : null}
+        </>
+      )}
+      {!dialogOpen && alert}
 
-      <BoardGrid
-        posts={list}
-        ownerName={ownerName}
-        onOpen={setOpen}
-        onAdd={editable ? pick : undefined}
-        disabled={busy !== null || draft !== null}
-      />
-
-      {notice ? (
-        <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
-          {notice}
-        </ThemedText>
-      ) : null}
+      {dialogOpen && (
+        <Modal transparent animationType="none" visible onRequestClose={close}>
+          <SafeAreaView
+            style={[styles.backdrop, { backgroundColor: theme.background + ScrimAlpha }]}>
+            <KeyboardAwareScrollView
+              contentContainerStyle={styles.dialogArea}
+              keyboardShouldPersistTaps="handled"
+              bottomOffset={Spacing.three}>
+              <View
+                style={[
+                  styles.dialog,
+                  { backgroundColor: theme.surfaceOpaque, borderColor: theme.border },
+                ]}>
+                <View style={styles.dialogHeader}>
+                  <ThemedText type="subtitle" accessibilityRole="header" style={styles.dialogTitle}>
+                    {draft ? t('Añadir foto') : t('Sobre mí')}
+                  </ThemedText>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={draft ? t('Cancelar') : t('Cerrar')}
+                    disabled={busy !== null}
+                    accessibilityState={{ disabled: busy !== null }}
+                    onPress={close}
+                    style={styles.close}>
+                    <Icon name="close" color={theme.textSecondary} />
+                  </Pressable>
+                </View>
+                {draft ? (
+                  <>
+                    <Image source={{ uri: draft.uri }} style={styles.preview} contentFit="cover" />
+                    <Field label={t('Texto (opcional)')}>
+                      <TextField
+                        value={draft.caption}
+                        onChangeText={(caption) => setDraft({ ...draft, caption })}
+                        placeholder={t('Qué es, en qué estás trabajando…')}
+                        multiline
+                        editable={busy === null}
+                        maxLength={CAPTION_MAX}
+                        showCount
+                        autoCapitalize="sentences"
+                        autoCorrect={false}
+                        accessibilityLabel={t('Texto de la foto')}
+                        accessibilityHint={t('Hasta {CAPTION_MAX} caracteres.', { CAPTION_MAX })}
+                      />
+                    </Field>
+                    {alert}
+                    {busy === 'subir' ? (
+                      <ThemedText
+                        type="smallBold"
+                        accessibilityRole="progressbar"
+                        accessibilityLabel={t('En revisión…')}
+                        accessibilityLiveRegion="polite">
+                        {t('Revisando y subiendo…')}
+                      </ThemedText>
+                    ) : (
+                      <CompactPrimaryButton
+                        label={t('Publicar en Sobre mí')}
+                        onPress={() => void publish()}
+                      />
+                    )}
+                  </>
+                ) : open ? (
+                  <>
+                    {open.imageUrl ? (
+                      <Image
+                        source={{ uri: open.imageUrl }}
+                        style={styles.large}
+                        contentFit="contain"
+                        accessibilityLabel={
+                          open.caption || t('Foto personal de {ownerName}', { ownerName })
+                        }
+                      />
+                    ) : (
+                      <ThemedText type="small" themeColor="textSecondary">
+                        {t('No se ha podido cargar la foto.')}
+                      </ThemedText>
+                    )}
+                    {!!open.caption && <ThemedText>{open.caption}</ThemedText>}
+                    {alert}
+                    {editable && (
+                      <CompactSecondaryButton
+                        label={busy === 'quitar' ? t('Quitando…') : t('Quitar esta foto')}
+                        tone="danger"
+                        disabled={busy !== null}
+                        onPress={() => void remove(open)}
+                      />
+                    )}
+                  </>
+                ) : null}
+              </View>
+            </KeyboardAwareScrollView>
+          </SafeAreaView>
+        </Modal>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    gap: Spacing.two,
-  },
-  viewer: {
-    gap: Spacing.two,
+  root: { gap: Spacing.two },
+  backdrop: { flex: 1 },
+  dialogArea: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: Spacing.three,
-    borderRadius: Radii.card,
+  },
+  dialog: {
+    width: '100%',
+    maxWidth: 480,
+    gap: Spacing.three,
+    padding: Spacing.three,
+    borderRadius: Radii.large,
     borderWidth: Stroke.hairline,
   },
-  large: {
-    width: '100%',
-    aspectRatio: 1,
-    borderRadius: Radii.medium,
+  dialogHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  dialogTitle: { flex: 1 },
+  close: {
+    width: Control.minTouch,
+    height: Control.minTouch,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  preview: { width: '44%', aspectRatio: 1, borderRadius: Radii.small },
+  large: { width: '100%', aspectRatio: 1, borderRadius: Radii.small },
 });
