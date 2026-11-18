@@ -21,7 +21,7 @@ export async function handleProject(user, body, deps) {
     if (body.action !== 'save') {
       if (!old) return conflict;
       if (!(await deps.change(user, old, body.action))) return conflict;
-      if (body.action === 'remove') await deps.discard(existing);
+      if (body.action === 'remove') await deps.discard(existing).catch(() => {});
       return success;
     }
     const { name, tagline, description, link, images } = body;
@@ -50,7 +50,7 @@ export async function handleProject(user, body, deps) {
       }
       if (!ownsPath(user, image?.pending)) return failure(403, 'invalid-image', slot);
       uploads.push(image.pending);
-      const bytes = await deps.download(image.pending);
+      const bytes = await deps.download(image.pending).catch(() => null);
       if (!bytes || bytes.length > MAX_BYTES || !isJpeg(bytes))
         return failure(422, 'invalid-image', slot);
       const result = await deps.moderate(bytes, '').catch(() => null);
@@ -73,7 +73,7 @@ export async function handleProject(user, body, deps) {
     if (outcome === 'full') return failure(409, 'full');
     if (outcome !== 'saved') return conflict;
     published.length = 0;
-    await deps.discard(existing.filter((path) => !paths.includes(path)));
+    await deps.discard(existing.filter((path) => !paths.includes(path))).catch(() => {});
     return success;
   } catch {
     return failure(503, 'unavailable');

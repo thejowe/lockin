@@ -125,6 +125,7 @@ export function ProjectEditor({
           <ThemedText type="subtitle">{t('Lo que se ve en la tarjeta')}</ThemedText>
           <Field label={t('Nombre del proyecto')}>
             <TextField
+              testID="project-name"
               accessibilityLabel={t('Nombre del proyecto')}
               editable={!busy}
               value={draft.name}
@@ -134,6 +135,7 @@ export function ProjectEditor({
           </Field>
           <Field label={t('Frase corta')}>
             <TextField
+              testID="project-tagline"
               accessibilityLabel={t('Frase corta')}
               editable={!busy}
               value={draft.tagline}

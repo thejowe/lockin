@@ -1,5 +1,6 @@
+import type { ScrollViewInstance } from 'react-native';
 import { Image } from 'expo-image';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Linking,
   Modal,
@@ -70,7 +71,10 @@ export function MyProjects({ ownerId, wizard = false }: { ownerId: string; wizar
         <ProjectEditor
           project={edit === 'new' ? undefined : edit}
           canPromote={edit !== 'new' && list[0]?.id !== edit.id}
-          onClose={() => setEdit(null)}
+          onClose={() => {
+            refresh();
+            setEdit(null);
+          }}
           onSaved={() => {
             refresh();
             setEdit(null);
@@ -84,6 +88,7 @@ export function MyProjects({ ownerId, wizard = false }: { ownerId: string; wizar
 function Gallery({ photos }: { photos: ProjectPhoto[] }) {
   const { width } = useWindowDimensions();
   const theme = useTheme();
+  const pager = useRef<ScrollViewInstance>(null);
   const [start, setStart] = useState<number | null>(null);
   return (
     <>
@@ -106,9 +111,10 @@ function Gallery({ photos }: { photos: ProjectPhoto[] }) {
               horizontal
               pagingEnabled
               contentOffset={{ x: width * start, y: 0 }}
-              ref={(ref) => {
-                if (ref) ref.scrollTo({ x: width * start, animated: false });
-              }}>
+              ref={pager}
+              onContentSizeChange={() =>
+                pager.current?.scrollTo({ x: width * start, animated: false })
+              }>
               {photos.map((p, i) => (
                 <Image
                   key={i}

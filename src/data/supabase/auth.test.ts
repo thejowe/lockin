@@ -1209,7 +1209,9 @@ describe('deleteMyAccount', () => {
       functions: {
         invoke: jest.fn(async (name: string) => {
           order.push(
-            { 'moderate-project': 'proyectos', 'moderate-board': 'tablón', 'apple-token': 'apple' }[name as string] ?? 'foto'
+            { 'moderate-project': 'proyectos', 'moderate-board': 'tablón', 'apple-token': 'apple' }[
+              name as string
+            ] ?? 'foto'
           );
           return { data: null, error: new Error('función caída') };
         }),

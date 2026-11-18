@@ -310,8 +310,15 @@ function initialState(): MockState {
       ['seed-lucia', 'Tinta', 'Un cuaderno para intercambiar bocetos.'],
       ['seed-nuria', 'Semillero', 'Un calendario para compartir huerto.'],
     ].map(([ownerId, name, tagline], index) => ({
-      id: 'seed-project-' + index, ownerId, revision: 'seed', name, tagline,
-      description: '', link: '', cover: null, photos: [],
+      id: 'seed-project-' + index,
+      ownerId,
+      revision: 'seed',
+      name,
+      tagline,
+      description: '',
+      link: '',
+      cover: null,
+      photos: [],
     })),
     ...seedGroups(),
     groupMessages: [],
@@ -431,7 +438,7 @@ export function createMockStore(): MockStore {
       );
 
       state.profiles.delete(userId);
-      state.projects = state.projects.filter(p => p.ownerId !== userId);
+      state.projects = state.projects.filter((p) => p.ownerId !== userId);
       state.boardPosts = state.boardPosts.filter((post) => post.ownerId !== userId);
       for (const key of [...state.chatReads.keys()]) {
         if (key.startsWith(`${userId}:`)) state.chatReads.delete(key);

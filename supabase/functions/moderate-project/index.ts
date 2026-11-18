@@ -103,15 +103,18 @@ Deno.serve(async (request) => {
       if (paths.length) await pending.remove(paths);
     },
     async clearOwnerFiles(user: string) {
-      // Only detached objects can be removed through this maintenance action.
-      const { data, error } = await projects()
-        .delete()
-        .eq('owner_id', user)
-        .select('cover_path,photo_paths');
+      // Include detached images left by an interrupted upload or a failed cleanup.
+      const { error } = await projects().delete().eq('owner_id', user);
       if (error) throw error;
-      await removeFiles(
-        data.flatMap((row) => [row.cover_path, ...row.photo_paths].filter(Boolean))
-      );
+      for (;;) {
+        const page = await bucket.list(user, { search: 'project-', limit: 100 });
+        if (page.error) throw page.error;
+        const paths = page.data
+          .filter((file) => /^project-[a-zA-Z0-9-]+\.jpg$/.test(file.name))
+          .map((file) => user + '/' + file.name);
+        if (!paths.length) break;
+        await removeFiles(paths);
+      }
     },
   });
   return response(result.status, result.body);

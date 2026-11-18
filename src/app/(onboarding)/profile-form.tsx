@@ -38,9 +38,7 @@ export default function ProfileFormScreen() {
   const gate = useRegistrationGate();
   const terms = useTermsGate();
 
-  // Al enviar el último paso se enseña ya la entrada animada y el perfil se
-  // guarda por debajo: entra cuando acaba de guardarse (y de sonar la animación,
-  // o antes si se toca). Si el guardado falla, se vuelve al formulario.
+  // Las fotos y proyectos publicados necesitan el perfil y su avatar ya aprobados.
   const [entering, setEntering] = useState(false);
   const [media, setMedia] = useState<{
     ownerId: string;

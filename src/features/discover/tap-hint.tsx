@@ -127,8 +127,8 @@ export function TapHint({
     <Animated.View
       testID="tap-hint"
       pointerEvents="none"
-      entering={FadeIn.duration(Duration.slow).delay(500)}
-      exiting={FadeOut.duration(Duration.base)}
+      entering={reduceMotion ? undefined : FadeIn.duration(Duration.slow).delay(500)}
+      exiting={reduceMotion ? undefined : FadeOut.duration(Duration.base)}
       style={[styles.root, { bottom }]}>
       <View style={styles.handBox}>
         <Animated.View

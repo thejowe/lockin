@@ -2594,8 +2594,15 @@ function describeSafetyContract(backend: ContractBackend): void {
     });
 
     it('proyectos: orden, límite, propiedad, revisión, bloqueo y borrado de cuenta', async () => {
-      const draft = { name: 'Atlas', tagline: 'Mapas locales', description: '', link: '', cover: null, photos: [] };
-      for (const name of ['Uno', 'Dos', 'Tres']) await a.projects.save({...draft, name});
+      const draft = {
+        name: 'Atlas',
+        tagline: 'Mapas locales',
+        description: '',
+        link: '',
+        cover: null,
+        photos: [],
+      };
+      for (const name of ['Uno', 'Dos', 'Tres']) await a.projects.save({ ...draft, name });
       const [one, two, three] = await b.projects.list(aId);
       expect([one.name, two.name, three.name]).toEqual(['Uno', 'Dos', 'Tres']);
       await expect(a.projects.save(draft)).rejects.toThrow();
@@ -2608,7 +2615,7 @@ function describeSafetyContract(backend: ContractBackend): void {
       await a.projects.remove(two);
       await b.profiles.block(aId);
       expect(await b.projects.list(aId)).toEqual([]);
-      expect((await c.projects.list(aId)).map(p => p.name)).toEqual(['Tres', 'Atlas']);
+      expect((await c.projects.list(aId)).map((p) => p.name)).toEqual(['Tres', 'Atlas']);
       await a.session.deleteMyAccount();
       expect(await c.projects.list(aId)).toEqual([]);
     });

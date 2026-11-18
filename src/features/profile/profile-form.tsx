@@ -643,7 +643,10 @@ export function ProfileForm({
           servidor), no con «Guardar». Necesita perfil ya creado: en el alta no sale.
         */}
         {section === undefined && initial ? (
-          <><MyProjects ownerId={initial.id}/><Board ownerId={initial.id} ownerName={initial.name} editable /></>
+          <>
+            <MyProjects ownerId={initial.id} />
+            <Board ownerId={initial.id} ownerName={initial.name} editable />
+          </>
         ) : null}
 
         {show('links') ? (

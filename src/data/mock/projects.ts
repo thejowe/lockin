@@ -39,6 +39,9 @@ export function mockProjects(
         throw new Error(t('Puedes tener hasta tres proyectos.'));
       const next: Project = {
         ...input,
+        name: input.name.trim(),
+        tagline: input.tagline.trim(),
+        description: input.description.trim(),
         photos: input.photos.map((p) => ({ ...p })),
         cover: input.cover && { ...input.cover },
         id: old?.id ?? store.createId('project'),

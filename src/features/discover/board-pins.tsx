@@ -40,9 +40,7 @@ export function BoardPins({ posts, ownerName }: { posts: BoardPost[]; ownerName:
         <Pressable
           key={post.id}
           accessibilityRole="imagebutton"
-          accessibilityLabel={
-            post.caption || t('Foto personal de {ownerName}', { ownerName })
-          }
+          accessibilityLabel={post.caption || t('Foto personal de {ownerName}', { ownerName })}
           hitSlop={HitSlop.inline}
           onPress={(event) => {
             // Que el toque no pase a la tarjeta y cambie de bloque.
@@ -53,10 +51,17 @@ export function BoardPins({ posts, ownerName }: { posts: BoardPost[]; ownerName:
             styles.photo,
             {
               backgroundColor: theme.surfaceOpaque,
-              transform: [{ rotate: `${TILTS[index % TILTS.length]}deg` }, { scale: pressed ? 0.96 : 1 }],
+              transform: [
+                { rotate: `${TILTS[index % TILTS.length]}deg` },
+                { scale: pressed ? 0.96 : 1 },
+              ],
             },
           ]}>
-          <Image source={{ uri: post.imageUrl ?? undefined }} style={styles.image} contentFit="cover" />
+          <Image
+            source={{ uri: post.imageUrl ?? undefined }}
+            style={styles.image}
+            contentFit="cover"
+          />
           <View style={[styles.pin, { backgroundColor: theme.brass }]} />
         </Pressable>
       ))}

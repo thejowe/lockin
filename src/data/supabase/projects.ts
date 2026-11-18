@@ -13,9 +13,9 @@ export function supabaseProjects(
   userId: () => Promise<string>
 ): ProjectRepository {
   async function mutate(body: Record<string, unknown>) {
-    const { error } = await getClient().functions.invoke('moderate-project', { body });
-    if (!error) return;
-    const details = await error.context?.json?.().catch(() => null);
+    const { data, error } = await getClient().functions.invoke('moderate-project', { body });
+    if (!error && data?.saved === true) return;
+    const details = await error?.context?.json?.().catch(() => null);
     if (Number.isInteger(details?.slot))
       throw new ProjectPhotoError(details.slot, details.error === 'flagged');
     if (details?.error === 'full') throw new Error(t('Puedes tener hasta tres proyectos.'));
@@ -87,7 +87,15 @@ export function supabaseProjects(
         const images = [];
         for (const photo of [input.cover, ...input.photos]) images.push(await stage(photo));
         const { name, tagline, description, link } = input;
-        await mutate({ action: 'save', previous, name, tagline, description, link, images });
+        await mutate({
+          action: 'save',
+          previous: previous && { id: previous.id, revision: previous.revision },
+          name,
+          tagline,
+          description,
+          link,
+          images,
+        });
       } finally {
         if (uploaded.length)
           await client.storage
@@ -96,7 +104,7 @@ export function supabaseProjects(
             .catch(() => undefined);
       }
     },
-    remove: (previous) => mutate({ action: 'remove', previous }),
-    promote: (previous) => mutate({ action: 'promote', previous }),
+    remove: ({ id, revision }) => mutate({ action: 'remove', previous: { id, revision } }),
+    promote: ({ id, revision }) => mutate({ action: 'promote', previous: { id, revision } }),
   };
 }
