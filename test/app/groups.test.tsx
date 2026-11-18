@@ -431,6 +431,7 @@ describe('Descubrir', () => {
         <DiscoverScreen />
       </GestureHandlerRootView>
     );
+    await fireEvent.press(await screen.findByRole('tab', { name: 'Grupos' }));
     const tab = await screen.findByRole('tab', { name: 'Reclutar para Mi Equipo' });
     expect(screen.getByText('Mi Equipo')).toBeTruthy();
 

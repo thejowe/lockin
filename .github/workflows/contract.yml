@@ -102,8 +102,9 @@ jobs:
           cp -r supabase/migrations "$RUNTIME/supabase/migrations"
           # Solo el seed del repo: el de E2E añade triggers que aquí sobran.
           cp supabase/seed.sql "$RUNTIME/supabase/seed.sql"
-          # Auth, Postgres, REST y Realtime reales; el resto no hace falta.
-          supabase --workdir "$RUNTIME" start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor
+          # El contrato de proyectos también escribe a través de moderate-project.
+          cp -r supabase/functions "$RUNTIME/supabase/functions"
+          supabase --workdir "$RUNTIME" start -x studio,imgproxy,logflare,vector,supavisor
           supabase --workdir "$RUNTIME" db reset --local
 
       - name: Credenciales locales (y solo locales)

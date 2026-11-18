@@ -66,7 +66,11 @@ describe('full-journey declara lo que busca la persona', () => {
     assert(retry > first, 'Falta el reintento acotado del like');
     const block = journey.slice(retry, journey.indexOf('- extendedWaitUntil', retry));
     assert.match(block, /times: 1\s/, 'El reintento del like no está acotado a una vez');
-    assert.match(block, /visible: 'Toca a la derecha para ver lo siguiente y a la izquierda para volver'/, 'El reintento no depende de la mano');
+    assert.match(
+      block,
+      /visible: 'Toca a la derecha para ver lo siguiente y a la izquierda para volver'/,
+      'El reintento no depende de la mano'
+    );
     assert.equal((block.match(/tapOn: 'Like'/g) ?? []).length, 1);
     const wait = journey.indexOf("visible: '¡Match!'", retry);
     assert(wait > retry, 'Tras el reintento tiene que seguir una espera dura de «¡Match!»');

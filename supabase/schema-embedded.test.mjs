@@ -1023,9 +1023,18 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
     await db.exec('reset role');
     await db.exec(`insert into public.profile_projects (owner_id,name,tagline)
       select '${ana}', 'Proyecto ' || n, 'Una frase' from generate_series(1,3) n`);
-    await rechaza(`insert into public.profile_projects(owner_id,name,tagline) values ('${ana}','Otro','Texto')`, /project limit/);
-    await rechaza(`update public.profile_projects set photo_paths = array_fill(owner_id::text || '/project-ok.jpg',array[6])`, /invalid project image|check constraint/);
-    await rechaza(`update public.profile_projects set cover_path = 'other/project-test.jpg'`, /invalid project image/);
+    await rechaza(
+      `insert into public.profile_projects(owner_id,name,tagline) values ('${ana}','Otro','Texto')`,
+      /project limit/
+    );
+    await rechaza(
+      `update public.profile_projects set photo_paths = array_fill(owner_id::text || '/project-ok.jpg',array[6])`,
+      /invalid project image|check constraint/
+    );
+    await rechaza(
+      `update public.profile_projects set cover_path = 'other/project-test.jpg'`,
+      /invalid project image/
+    );
     await db.exec('set local role authenticated');
     assert.equal((await db.query('select id from public.profile_projects')).rows.length, 3);
     await rechaza("update public.profile_projects set name='Otro'", /permission denied/);

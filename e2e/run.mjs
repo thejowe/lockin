@@ -575,6 +575,7 @@ if (command === 'build') {
   mkdirSync(app, { recursive: true });
   for (const entry of [
     'src',
+    'supabase/functions/_shared/profile-content.ts',
     'assets',
     // Config plugins locales que `app.json` registra: sin ellos, `prebuild` falla.
     'plugins',

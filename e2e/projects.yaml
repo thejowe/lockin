@@ -1,0 +1,182 @@
+# Dos cuentas de prueba confirmadas en la misma Supabase, con el registro obligatorio activo.
+# La autora empieza sin perfil. La lectora ya tiene perfil, sin filtros ni pase previo a la autora.
+appId: app.cofounder.android
+name: Crear un proyecto en el alta y descubrirlo desde otra cuenta
+---
+- assertTrue: ${AUTHOR_EMAIL && AUTHOR_PASSWORD && VIEWER_EMAIL && VIEWER_PASSWORD && PROFILE_NAME && PROJECT_NAME}
+- runFlow:
+    file: steps/sign-in-projects.yaml
+    env:
+      EMAIL: ${AUTHOR_EMAIL}
+      PASSWORD: ${AUTHOR_PASSWORD}
+- extendedWaitUntil:
+    visible: 'Términos y Normas|¿En qué idioma quieres usar la app\?'
+    timeout: 30000
+- runFlow:
+    when:
+      visible: 'Términos y Normas'
+    commands:
+      - tapOn: 'He leído y acepto los Términos de uso y las Normas de la comunidad'
+      - tapOn: 'Aceptar y continuar'
+- extendedWaitUntil:
+    visible: '¿En qué idioma quieres usar la app?'
+    timeout: 30000
+- tapOn: 'Continuar'
+- extendedWaitUntil:
+    visible: '¿Cómo te llamas?'
+    timeout: 30000
+- tapOn:
+    text: 'Nombre|Cómo te llamas'
+    below: 'Nombre'
+- inputText: ${PROFILE_NAME}
+- hideKeyboard
+- tapOn: 'Continuar'
+- extendedWaitUntil:
+    visible: '¿Cuándo naciste?'
+    timeout: 30000
+- tapOn: 'Día'
+- inputText: '15'
+- hideKeyboard
+- tapOn: 'Mes'
+- inputText: '6'
+- hideKeyboard
+- tapOn: 'Año'
+- inputText: '1990'
+- hideKeyboard
+- tapOn: 'Continuar'
+- extendedWaitUntil:
+    visible: '¿Dónde vives?'
+    timeout: 30000
+- tapOn: 'País|Escribe tu país'
+- inputText: 'Espa'
+- tapOn: 'España'
+- tapOn: 'Ciudad|Tu ciudad'
+- inputText: 'Barcelona'
+- hideKeyboard
+- tapOn: 'Continuar'
+- extendedWaitUntil:
+    visible: '¿Qué dominas?'
+    timeout: 30000
+- tapOn: 'Desarrollo'
+- tapOn: 'Marketing'
+- tapOn: 'Continuar'
+- extendedWaitUntil:
+    visible: '¿Qué le pides a tu cofundador?'
+    timeout: 10000
+- tapOn: 'Busco Diseño'
+- tapOn: 'Continuar'
+- extendedWaitUntil:
+    visible: '¿Qué idiomas hablas?'
+    timeout: 10000
+- tapOn: 'Español'
+- tapOn: 'Continuar'
+- extendedWaitUntil:
+    visible: '¿Qué idiomas debe hablar?'
+    timeout: 10000
+- tapOn: 'Omitir'
+- extendedWaitUntil:
+    visible: '¿En qué punto estás?'
+    timeout: 10000
+- tapOn: 'Solo ganas'
+- tapOn: 'Continuar'
+- extendedWaitUntil:
+    visible: '¿Cuántas horas puedes dedicarle?'
+    timeout: 10000
+- tapOn: 'Continuar'
+- extendedWaitUntil:
+    visible: '¿Cuándo sueles trabajar?'
+    timeout: 10000
+- tapOn: 'Tarde · 12–20'
+- tapOn: 'Continuar'
+- extendedWaitUntil:
+    visible: '¿Cuánto te la juegas?'
+    timeout: 10000
+- tapOn: 'En serio, con equilibrio'
+- tapOn: 'Continuar'
+- extendedWaitUntil:
+    visible: 'Cuéntanos algo más'
+    timeout: 10000
+- tapOn:
+    text: 'Lo que quiero construir es…|Tu respuesta'
+    below: 'Busco a alguien que…'
+- inputText: 'Una herramienta para construir en equipo'
+- hideKeyboard
+- scrollUntilVisible:
+    element: 'Continuar'
+    direction: DOWN
+- tapOn: 'Continuar'
+- extendedWaitUntil:
+    visible: '¿Dónde te encuentran?'
+    timeout: 10000
+- tapOn: 'Omitir'
+- assertVisible: 'Pon tu foto de perfil'
+- addMedia:
+    - ../assets/images/icon.png
+- tapOn: 'Elegir de la galería'
+- tapOn:
+    id: '.*:id/icon_thumbnail'
+    index: 0
+- tapOn:
+    id: '.*:id/crop_image_menu_crop'
+- assertVisible:
+    id: 'wizard-photo'
+- tapOn: 'Continuar'
+- extendedWaitUntil:
+    visible: 'Sobre mí'
+    timeout: 60000
+- tapOn: 'Omitir'
+- tapOn: 'Crear proyecto'
+- tapOn:
+    id: 'project-name'
+- inputText: ${PROJECT_NAME}
+- hideKeyboard
+- tapOn:
+    id: 'project-tagline'
+- inputText: 'Un mapa para compartir talleres'
+- hideKeyboard
+- tapOn: 'Guardar proyecto'
+- extendedWaitUntil:
+    visible: 'Editar ${PROJECT_NAME}'
+    timeout: 30000
+- tapOn: 'Crear perfil'
+- tapOn: 'Entrar a cofounder'
+- tapOn: 'Omitir'
+- assertVisible: 'Matches'
+- runFlow:
+    file: steps/sign-in-projects.yaml
+    env:
+      EMAIL: ${VIEWER_EMAIL}
+      PASSWORD: ${VIEWER_PASSWORD}
+- extendedWaitUntil:
+    visible: 'Encuentra a tu cofundador.*|Matches'
+    timeout: 60000
+- runFlow:
+    when:
+      visible: 'Encuentra a tu cofundador.*'
+    commands:
+      - tapOn: 'Omitir'
+- extendedWaitUntil:
+    visible: 'Like'
+    timeout: 30000
+- repeat:
+    while:
+      visible: 'Siguiente explicación'
+    commands:
+      - tapOn: 'Siguiente explicación'
+- repeat:
+    times: 30
+    while:
+      notVisible: 'Ver el perfil de ${PROFILE_NAME}'
+    commands:
+      - tapOn: 'Pasar'
+- assertVisible: 'Ver el perfil de ${PROFILE_NAME}'
+- repeat:
+    times: 6
+    while:
+      notVisible: ${PROJECT_NAME}
+    commands:
+      - tapOn:
+          id: 'deck-tap-right'
+- assertVisible: ${PROJECT_NAME}
+- assertVisible: 'Un mapa para compartir talleres'
+- takeScreenshot: proyecto-en-deck

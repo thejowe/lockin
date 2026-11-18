@@ -1,5 +1,13 @@
 # TODO — calidad
 
+## Proyectos · 18 de noviembre de 2026
+
+- [x] Jest cubre ambos extremos de la tarjeta, cero, uno y tres proyectos, subpuntos activos, contraste sobre blanco y edición desde el alta y Perfil.
+- [x] Contrato compartido de creación, edición, orden, límite, versión, bloqueo y borrado. La CI de contrato levanta la función Edge en la Supabase desechable.
+- [x] PGlite verifica las filas visibles y los permisos para firmar imágenes en Storage. Las pruebas de moderación simulan rechazo, proveedor caído y respuesta incompleta.
+- [x] Flujo de Maestro en `e2e/projects.yaml`. Usa una build Android en español con registro obligatorio, dos cuentas confirmadas en la misma Supabase de prueba y el servicio de moderación activo para el avatar. La autora empieza sin perfil y la lectora con un perfil compatible que aún no ha pasado a la autora. El flujo añade una imagen a la galería Android, completa el alta, guarda el proyecto y cambia de cuenta para encontrarlo en el deck.
+- [ ] [comprobador] Ejecutar `maestro test e2e/projects.yaml` con `-e` para `AUTHOR_EMAIL`, `AUTHOR_PASSWORD`, `VIEWER_EMAIL`, `VIEWER_PASSWORD`, `PROFILE_NAME` y `PROJECT_NAME`. Usar nombres únicos por ejecución y conservar la captura `proyecto-en-deck`.
+
 ## CI en rojo desde `db763db`: al lock le faltaban `@emnapi/core` y `@emnapi/runtime` (2026-09-16)
 
 CI llevaba tres commits en rojo —`db763db`, `0c124b9`, `d7b2581`— y el rojo
@@ -2571,7 +2579,7 @@ Local:
   declara ahora cuatro trabajos: `quality`, `build`, **`contract`**, `schema`.
 - `npx prettier` sobre `.github/workflows/contract.yml`: la salida formateada
   es **byte a byte igual** al archivo salvo los finales de línea
-  (`diff` tras `tr -d ''` sale vacío). El aviso de `format:check` aquí es el
+  (`diff` tras `tr -d ''` sale vacío). El aviso de `format:check` aquí es el
   CRLF de esta máquina, como siempre; el veredicto se lee del job «Formato».
 - **No ejecutado aquí**: el contrato contra Supabase. Necesita Docker y el CLI
   de Supabase, y escribe usuarios; por eso existe el job.

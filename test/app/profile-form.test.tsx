@@ -123,9 +123,9 @@ describe('ProfileFormScreen', () => {
     await renderRoute(<ProfileFormScreen />);
 
     await fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
-    await fireEvent.press(await screen.findByRole('button',{name:'Omitir'}));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Omitir' }));
     expect(screen.getByText('Tus proyectos')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button',{name:'Crear perfil'}));
+    await fireEvent.press(screen.getByRole('button', { name: 'Crear perfil' }));
     await fireEvent.press(await screen.findByRole('button', { name: 'Entrar a cofounder' }));
 
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/tour'));
@@ -165,8 +165,8 @@ describe('ProfileFormScreen', () => {
       await renderRoute(<ProfileFormScreen />);
 
       await fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
-      await fireEvent.press(await screen.findByRole('button',{name:'Omitir'}));
-      await fireEvent.press(screen.getByRole('button',{name:'Omitir'}));
+      await fireEvent.press(await screen.findByRole('button', { name: 'Omitir' }));
+      await fireEvent.press(screen.getByRole('button', { name: 'Omitir' }));
       expect(await screen.findByLabelText('cofounder')).toBeTruthy();
       expect(router.replace).not.toHaveBeenCalled();
 
