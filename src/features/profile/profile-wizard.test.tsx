@@ -5,8 +5,10 @@
  * Ojo: en RNTL 14 `render` y `fireEvent` son asíncronos.
  */
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
+import { DataProvider } from '@/data';
+import { createMockRepositories, resetState } from '@/data/mock';
 import { setLocalePreference } from '@/i18n';
 
 import { pickAvatarPhoto } from './avatar-photo';
@@ -191,8 +193,24 @@ describe('ProfileWizard', () => {
   });
 
   describe('con foto obligatoria', () => {
-    /** Recorre el asistente hasta el paso de la foto (el siguiente a los enlaces). */
+    let repositories: ReturnType<typeof createMockRepositories>;
+    const onSubmit = jest.fn();
+    const pick = jest.mocked(pickAvatarPhoto);
+
+    beforeEach(() => {
+      resetState();
+      repositories = createMockRepositories();
+      onSubmit.mockReset().mockResolvedValue(undefined);
+      pick.mockReset();
+    });
+
     async function toPhoto() {
+      await render(
+        <DataProvider value={repositories}>
+          <ProfileWizard withPhoto seed={SEED} submitLabel="Continuar" onSubmit={onSubmit} />
+        </DataProvider>
+      );
+      expect(screen.getByRole('progressbar', { name: 'Paso 1 de 13' })).toBeTruthy();
       await toHours();
       await next(); // horas
       await fireEvent.press(screen.getAllByRole('checkbox')[0]);
@@ -203,49 +221,99 @@ describe('ProfileWizard', () => {
       await skip(); // enlaces
     }
 
-    it('añade un último paso de foto, sin «Omitir», y no deja seguir sin ella', async () => {
-      const onSubmit = jest.fn().mockResolvedValue(undefined);
-      await render(
-        <ProfileWizard withPhoto seed={SEED} submitLabel="Crear perfil" onSubmit={onSubmit} />
-      );
-      expect(screen.getByRole('progressbar', { name: 'Paso 1 de 13' })).toBeTruthy();
+    const primary = () => screen.getByRole('button', { name: 'Continuar' });
+    const openSheet = () => fireEvent.press(screen.getByRole('button', { name: 'Añadir foto' }));
+    const gallery = () =>
+      fireEvent.press(screen.getByRole('button', { name: 'Elegir de la galería' }));
+
+    it('sin foto muestra la tarjeta y el consejo, y solo ofrece cámara y galería al tocarla', async () => {
       await toPhoto();
-
       expect(screen.getByText('Pon tu foto de perfil')).toBeTruthy();
+      expect(screen.getByText('Que se te vea la cara y con buena luz')).toBeTruthy();
       expect(screen.queryByRole('button', { name: 'Omitir' })).toBeNull();
-
-      await fireEvent.press(screen.getByRole('button', { name: 'Crear perfil' }));
-      expect(screen.getByText('Añade una foto de perfil para continuar.')).toBeTruthy();
+      expect(screen.queryByRole('button', { name: 'Hacer una foto' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Elegir de la galería' })).toBeNull();
+      expect(primary()).toBeDisabled();
+      await fireEvent.press(primary());
       expect(onSubmit).not.toHaveBeenCalled();
+      await openSheet();
+      expect(screen.getByRole('button', { name: 'Hacer una foto' })).toBeEnabled();
+      expect(screen.getByRole('button', { name: 'Elegir de la galería' })).toBeEnabled();
+      await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
+      expect(pick).not.toHaveBeenCalled();
+      expect(primary()).toBeDisabled();
     });
 
-    it('con la foto elegida entrega su URI junto al perfil', async () => {
-      (pickAvatarPhoto as jest.Mock).mockResolvedValue({ status: 'picked', uri: 'file:///f.jpg' });
-      const onSubmit = jest.fn().mockResolvedValue(undefined);
-      await render(
-        <ProfileWizard withPhoto seed={SEED} submitLabel="Crear perfil" onSubmit={onSubmit} />
-      );
+    it('muestra la vista previa en revisión y solo habilita continuar al aprobarse', async () => {
+      pick.mockResolvedValue({ status: 'picked', uri: 'file:///f.jpg' });
+      let approve!: () => void;
+      const review = new Promise<void>((resolve) => {
+        approve = resolve;
+      });
+      const publish = repositories.profiles.setAvatarPhoto;
+      const upload = jest
+        .spyOn(repositories.profiles, 'setAvatarPhoto')
+        .mockImplementationOnce(async (uri) => {
+          await review;
+          return publish(uri);
+        });
       await toPhoto();
+      await openSheet();
+      await gallery();
+      expect(await screen.findByText('En revisión…')).toBeTruthy();
+      expect(screen.getByTestId('wizard-photo')).toBeTruthy();
+      expect(screen.getByText('Ana')).toBeTruthy();
+      expect(screen.getByText('30')).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Cambiar foto de perfil' })).toBeDisabled();
+      expect(primary()).toBeDisabled();
+      await fireEvent.press(primary());
+      expect(onSubmit).not.toHaveBeenCalled();
+      await act(async () => approve());
+      expect(await screen.findByText('Foto aprobada')).toBeTruthy();
+      expect(primary()).toBeEnabled();
+      expect(onSubmit).not.toHaveBeenCalled();
 
-      await fireEvent.press(screen.getByRole('button', { name: 'Elegir de la galería' }));
-      expect(await screen.findByTestId('wizard-photo')).toBeTruthy();
-      await fireEvent.press(screen.getByRole('button', { name: 'Crear perfil' }));
+      // Cancelar el cambio conserva la foto aprobada.
+      await fireEvent.press(screen.getByRole('button', { name: 'Cambiar foto de perfil' }));
+      pick.mockResolvedValueOnce({ status: 'cancelled' });
+      await gallery();
+      await fireEvent.press(primary());
+      expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ name: 'Ana' }), null);
+      expect(upload).toHaveBeenCalledTimes(1);
+      expect((await repositories.profiles.getCurrent())?.avatar.imageUrl).toBe('file:///f.jpg');
+    });
 
-      await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
-      expect(onSubmit.mock.calls[0][1]).toBe('file:///f.jpg');
+    it('el rechazo de un reemplazo bloquea continuar, explica el motivo y permite reintentar', async () => {
+      pick.mockResolvedValue({ status: 'picked', uri: 'file:///foto.jpg' });
+      await toPhoto();
+      await openSheet();
+      await gallery();
+      expect(await screen.findByText('Foto aprobada')).toBeTruthy();
+      await fireEvent.press(screen.getByRole('button', { name: 'Cambiar foto de perfil' }));
+
+      const reason = 'Esta foto no cumple las normas de la comunidad. Prueba con otra.';
+      jest.spyOn(repositories.profiles, 'setAvatarPhoto').mockRejectedValueOnce(new Error(reason));
+      await gallery();
+      expect(await screen.findByText(reason)).toBeTruthy();
+      expect(screen.queryByTestId('wizard-photo')).toBeNull();
+      expect(primary()).toBeDisabled();
+      await fireEvent.press(primary());
+      expect(onSubmit).not.toHaveBeenCalled();
+      await openSheet();
+      await gallery();
+      expect(await screen.findByText('Foto aprobada')).toBeTruthy();
+      expect(screen.queryByText(reason)).toBeNull();
+      expect(primary()).toBeEnabled();
     });
 
     it('si el permiso se deniega lo explica y sigue sin dejar pasar', async () => {
-      (pickAvatarPhoto as jest.Mock).mockResolvedValue({ status: 'denied' });
-      const onSubmit = jest.fn();
-      await render(
-        <ProfileWizard withPhoto seed={SEED} submitLabel="Crear perfil" onSubmit={onSubmit} />
-      );
+      pick.mockResolvedValue({ status: 'denied' });
       await toPhoto();
-
+      await openSheet();
       await fireEvent.press(screen.getByRole('button', { name: 'Hacer una foto' }));
       expect(await screen.findByText(/Sin permiso de cámara/)).toBeTruthy();
-      await fireEvent.press(screen.getByRole('button', { name: 'Crear perfil' }));
+      expect(pick).toHaveBeenCalledWith('camera');
+      expect(primary()).toBeDisabled();
       expect(onSubmit).not.toHaveBeenCalled();
     });
   });

@@ -16,13 +16,12 @@
  *   (`location-fields.tsx`); si el país tiene varias, se elige una.
  */
 
-import { Image } from 'expo-image';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radii, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { Spacing } from '@/constants/theme';
+import { useRepositories } from '@/data';
 
 import {
   AMBITION_OPTIONS,
@@ -34,8 +33,9 @@ import {
   STARTING_POINT_OPTIONS,
   TIME_BAND_OPTIONS,
 } from './catalog';
-import { pickAvatarPhoto } from './avatar-photo';
-import { Chip, ChipRow, Field, OptionCard, SecondaryButton, Slider, TextField } from './controls';
+import { PhotoCardPicker } from './photo-card-picker';
+import { chooseProfilePhoto, PhotoSourceSheet } from './photo-source-sheet';
+import { Chip, ChipRow, Field, OptionCard, Slider, TextField } from './controls';
 import { BirthDateFields, ageFromBirthDate, birthDateProblem, splitBirthDate } from './birth-date';
 import {
   initialDraft,
@@ -65,7 +65,7 @@ type Snapshot = {
   index: number;
   draft: Draft;
   birth: ReturnType<typeof splitBirthDate>;
-  photoUri: string | null;
+  approvedPhotoUri: string | null;
 };
 
 /**
@@ -148,17 +148,13 @@ export function ProfileWizard({
   seed?: ProfileSeed | null;
   initial?: Profile | null;
   submitLabel: string;
-  /**
-   * Añade al final el paso de la foto de perfil, obligatorio. La foto no puede
-   * subirse hasta que el perfil exista, así que se entrega a `onSubmit` como URI
-   * local ya recortada y comprimida (`avatar-photo.ts`).
-   */
+  /** Añade al final el paso de foto obligatoria, con revisión al elegirla. */
   withPhoto?: boolean;
   extraSteps?: number;
   /** Guarda. Si lanza, el asistente se queda en el último paso y enseña el error. */
   onSubmit: (input: ProfileInput, photoUri: string | null, total?: number) => Promise<void>;
 }) {
-  const theme = useTheme();
+  const { profiles } = useRepositories();
   const steps = stepsFor(seed, withPhoto);
   // Se lee sin vaciar: en modo estricto los inicializadores corren dos veces.
   const [restored] = useState(() => resumeAfterLocaleChange);
@@ -168,7 +164,10 @@ export function ProfileWizard({
   const [index, setIndex] = useState(restored?.index ?? 0);
   const [draft, setDraft] = useState<Draft>(() => restored?.draft ?? initialDraft(initial, seed));
   const [birth, setBirth] = useState(() => restored?.birth ?? splitBirthDate(undefined));
-  const [photoUri, setPhotoUri] = useState<string | null>(() => restored?.photoUri ?? null);
+  const [approvedPhotoUri, setApprovedPhotoUri] = useState(restored?.approvedPhotoUri ?? null);
+  const [pendingPhotoUri, setPendingPhotoUri] = useState<string | null>(null);
+  const [photoSheetOpen, setPhotoSheetOpen] = useState(false);
+  const photoInFlight = useRef(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
@@ -194,25 +193,30 @@ export function ProfileWizard({
     setErrors((current) => ({ ...current, prompts: undefined }));
   }
 
-  async function finish(finalDraft: Draft) {
+  function validForSave(finalDraft: Draft) {
     // Por si algo del borrador no cuadra y ningún paso lo vio (p. ej. la zona).
     const found = validate(finalDraft);
     const firstBad = steps.find((key) => STEP_FIELDS[key].some((field) => found[field]));
     if (firstBad) {
       setErrors(found);
       setIndex(steps.indexOf(firstBad));
-      return;
+      return false;
     }
     if (Object.values(found).some(Boolean)) {
       setSaveError(t('Hay algo en tu ficha que no cuadra. Revísala desde tu perfil.'));
-      return;
+      return false;
     }
+    return true;
+  }
 
+  async function finish(finalDraft: Draft) {
+    if (!validForSave(finalDraft)) return;
     setSaving(true);
     setSaveError(null);
     try {
-      if (extraSteps) await onSubmit(toInput(finalDraft), photoUri, steps.length + extraSteps);
-      else await onSubmit(toInput(finalDraft), photoUri);
+      // La ruta solo necesita subir una URI si todavía está pendiente.
+      if (extraSteps) await onSubmit(toInput(finalDraft), null, steps.length + extraSteps);
+      else await onSubmit(toInput(finalDraft), null);
     } catch (cause) {
       setSaveError(cause instanceof Error ? cause.message : t('No se ha podido guardar.'));
     } finally {
@@ -221,25 +225,32 @@ export function ProfileWizard({
   }
 
   async function choosePhoto(source: 'library' | 'camera') {
-    setPhotoError(null);
+    if (photoInFlight.current) return;
+    photoInFlight.current = true;
     setPicking(true);
     try {
-      const picked = await pickAvatarPhoto(source);
-      if (picked.status === 'picked') setPhotoUri(picked.uri);
-      else if (picked.status === 'denied') {
-        setPhotoError(
-          source === 'camera'
-            ? t(
-                'Sin permiso de cámara no podemos hacerte la foto. Puedes dárselo en los ajustes del móvil.'
-              )
-            : t(
-                'Sin permiso de galería no podemos leer tu foto. Puedes dárselo en los ajustes del móvil.'
-              )
-        );
-      }
-    } catch {
-      setPhotoError(t('No se ha podido subir la foto. Inténtalo de nuevo.'));
+      const uri = await chooseProfilePhoto(source);
+      setPhotoSheetOpen(false);
+      if (!uri || !validForSave(draft)) return;
+
+      setPhotoError(null);
+      setSaveError(null);
+      setApprovedPhotoUri(null);
+      setPendingPhotoUri(uri);
+      // La revisión necesita un perfil propio. En los reintentos ya existe.
+      if (!(await profiles.getCurrent())) await profiles.saveCurrent(toInput(draft));
+      await profiles.setAvatarPhoto(uri);
+      setApprovedPhotoUri(uri);
+    } catch (cause) {
+      setPhotoError(
+        cause instanceof Error
+          ? cause.message
+          : t('No se ha podido subir la foto. Inténtalo de nuevo.')
+      );
     } finally {
+      photoInFlight.current = false;
+      setPendingPhotoUri(null);
+      setPhotoSheetOpen(false);
       setPicking(false);
     }
   }
@@ -247,7 +258,7 @@ export function ProfileWizard({
   async function handleNext() {
     let current = draft;
 
-    if (step === 'photo' && !photoUri) {
+    if (step === 'photo' && (!approvedPhotoUri || photoInFlight.current)) {
       setPhotoError(t('Añade una foto de perfil para continuar.'));
       return;
     }
@@ -308,7 +319,7 @@ export function ProfileWizard({
       void setLocalePreference(locale);
       return;
     }
-    stashForLocaleChange({ index, draft, birth, photoUri });
+    stashForLocaleChange({ index, draft, birth, approvedPhotoUri });
     void setLocalePreference(locale);
   }
 
@@ -630,40 +641,42 @@ export function ProfileWizard({
       return (
         <WizardScreen
           {...common}
-          title={t('Pon tu foto de perfil')}
-          subtitle={t(
-            'Es obligatoria: la gente quiere saber con quién habla. Se revisa antes de publicarse.'
-          )}>
+          onBack={picking || saving ? undefined : common.onBack}
+          busy={picking || saving || !approvedPhotoUri}
+          title={t('Pon tu foto de perfil')}>
           <View style={styles.photo}>
-            <View
-              style={[
-                styles.photoFrame,
-                { backgroundColor: theme.backgroundSelected, borderColor: theme.border },
-              ]}>
-              {photoUri ? (
-                <Image
-                  testID="wizard-photo"
-                  source={{ uri: photoUri }}
-                  contentFit="cover"
-                  style={StyleSheet.absoluteFill}
-                  accessibilityLabel={t('Foto de perfil')}
-                />
-              ) : null}
-            </View>
+            <PhotoCardPicker
+              uri={pendingPhotoUri ?? approvedPhotoUri}
+              name={draft.name.trim()}
+              age={draft.age}
+              disabled={picking || saving}
+              onPress={() => setPhotoSheetOpen(true)}
+            />
+            {pendingPhotoUri || approvedPhotoUri ? (
+              <ThemedText
+                type="small"
+                themeColor="textSecondary"
+                accessibilityLiveRegion="polite"
+                style={styles.photoMessage}>
+                {pendingPhotoUri ? t('En revisión…') : t('Foto aprobada')}
+              </ThemedText>
+            ) : null}
             {photoError ? (
-              <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
+              <ThemedText
+                type="small"
+                themeColor="danger"
+                accessibilityRole="alert"
+                style={styles.photoMessage}>
                 {photoError}
               </ThemedText>
             ) : null}
-            <SecondaryButton
-              label={t('Hacer una foto')}
-              disabled={picking || saving}
-              onPress={() => void choosePhoto('camera')}
-            />
-            <SecondaryButton
-              label={t('Elegir de la galería')}
-              disabled={picking || saving}
-              onPress={() => void choosePhoto('library')}
+            <PhotoSourceSheet
+              visible={photoSheetOpen}
+              onClose={() => {
+                if (!photoInFlight.current) setPhotoSheetOpen(false);
+              }}
+              onChoose={choosePhoto}
+              busy={picking}
             />
           </View>
         </WizardScreen>
@@ -673,16 +686,9 @@ export function ProfileWizard({
 
 const styles = StyleSheet.create({
   photo: {
-    gap: Spacing.three,
+    gap: Spacing.two,
   },
-  photoFrame: {
-    alignSelf: 'center',
-    width: 200,
-    aspectRatio: 4 / 5,
-    borderRadius: Radii.large,
-    borderWidth: 1,
-    overflow: 'hidden',
-  },
+  photoMessage: { textAlign: 'center' },
   hours: {
     gap: Spacing.two,
     paddingTop: Spacing.three,
