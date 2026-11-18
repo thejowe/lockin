@@ -1,6 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { handleProjectRequest } from './http.mjs';
 import { handleProject } from './logic.mjs';
+
+test('GET warms the function without entering the authenticated project handler', async (t) => {
+  const post = t.mock.fn();
+  const url = 'http://localhost/moderate-project';
+  const ping = await handleProjectRequest(new Request(url), post);
+  assert.equal(ping.status, 200);
+  assert.deepEqual(await ping.json(), { pong: true });
+  assert.equal(ping.headers.get('cache-control'), 'no-store');
+  const preflight = await handleProjectRequest(new Request(url, { method: 'OPTIONS' }), post);
+  assert.equal(preflight.status, 204);
+  assert.match(preflight.headers.get('access-control-allow-methods'), /\bGET\b/);
+  assert.equal(post.mock.callCount(), 0);
+
+  const save = new Request(url, { method: 'POST' });
+  await handleProjectRequest(save, post);
+  assert.deepEqual(post.mock.calls[0].arguments, [save]);
+});
 
 const clean = { flagged: false, scores: { sexual: 0, 'sexual/minors': 0, 'violence/graphic': 0 } };
 function fixture() {

@@ -1,6 +1,7 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { moderateBoardImage } from '../_shared/moderate-board-image.ts';
 import { isObjectionable } from '../_shared/profile-content.ts';
+import { handleProjectRequest, response } from './http.mjs';
 import { handleProject } from './logic.mjs';
 
 const admin = createClient(
@@ -10,14 +11,6 @@ const admin = createClient(
 );
 const bucket = admin.storage.from('board');
 const pending = admin.storage.from('avatar-uploads');
-const headers = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Content-Type': 'application/json',
-};
-const response = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), { status, headers });
 type Version = { id: string; revision: string };
 const projects = () => admin.from('profile_projects');
 async function removeFiles(paths: string[]) {
@@ -26,9 +19,7 @@ async function removeFiles(paths: string[]) {
   if (error) throw error;
 }
 
-Deno.serve(async (request) => {
-  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers });
-  if (request.method !== 'POST') return response(405, {});
+async function postProject(request: Request) {
   const { data, error } = await admin.auth.getUser(
     request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '') ?? ''
   );
@@ -119,4 +110,6 @@ Deno.serve(async (request) => {
     },
   });
   return response(result.status, result.body);
-});
+}
+
+Deno.serve((request) => handleProjectRequest(request, postProject));

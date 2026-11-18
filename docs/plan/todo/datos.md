@@ -3,6 +3,7 @@
 ## Proyectos · 18 de noviembre de 2026
 
 - [x] Contrato, semillas, límite concurrente, RLS, URLs firmadas y publicación atómica del proyecto tras moderar sus imágenes.
+- [x] `GET moderate-project` devuelve el ping antes de consultar Auth, Storage o la base de datos.
 - [ ] Aplicar la migración y desplegar `moderate-project` en el entorno de destino tras la revisión.
 
 ## Plan compartido de los chats · 17 de noviembre de 2026
