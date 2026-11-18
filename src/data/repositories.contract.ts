@@ -2602,7 +2602,12 @@ function describeSafetyContract(backend: ContractBackend): void {
         cover: null,
         photos: [],
       };
-      for (const name of ['Uno', 'Dos', 'Tres']) await a.projects.save({ ...draft, name });
+      const draftId = '51bb140c-bbe4-4b36-8846-1319d778fa62';
+      await a.projects.save({ ...draft, name: 'Uno' }, undefined, draftId);
+      await expect(
+        a.projects.save({ ...draft, name: 'Uno' }, undefined, draftId)
+      ).rejects.toThrow();
+      for (const name of ['Dos', 'Tres']) await a.projects.save({ ...draft, name });
       const [one, two, three] = await b.projects.list(aId);
       expect([one.name, two.name, three.name]).toEqual(['Uno', 'Dos', 'Tres']);
       await expect(a.projects.save(draft)).rejects.toThrow();

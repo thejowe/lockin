@@ -69,6 +69,7 @@ export async function handleProject(user, body, deps) {
       cover_path: paths[0],
       photo_paths: paths.slice(1),
     };
+    if (!old && body.draftId !== undefined) values.id = body.draftId;
     const outcome = await deps.save(user, old, values);
     if (outcome === 'full') return failure(409, 'full');
     if (outcome !== 'saved') return conflict;

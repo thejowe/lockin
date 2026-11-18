@@ -23,9 +23,20 @@ export type ProjectVersion = Pick<Project, 'id' | 'revision'>;
 
 export interface ProjectRepository {
   list(ownerId: string): Promise<Project[]>;
-  save(input: ProjectInput, previous?: ProjectVersion): Promise<void>;
+  save(input: ProjectInput, previous?: ProjectVersion, draftId?: string): Promise<void>;
   remove(previous: ProjectVersion): Promise<void>;
   promote(previous: ProjectVersion): Promise<void>;
+}
+
+/** Stable for the lifetime of a new editor, including retries after a lost reply. */
+export function newProjectId(): string {
+  return (
+    globalThis.crypto?.randomUUID?.() ??
+    'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (key) => {
+      const nibble = Math.floor(Math.random() * 16);
+      return (key === 'x' ? nibble : (nibble & 3) | 8).toString(16);
+    })
+  );
 }
 
 export function validateProject(input: ProjectInput) {

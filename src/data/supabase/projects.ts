@@ -63,7 +63,7 @@ export function supabaseProjects(
         photos: p.photo_paths.map(photo),
       }));
     },
-    async save(input, previous) {
+    async save(input, previous, draftId) {
       validateProject(input);
       const owner = await userId();
       const client = getClient();
@@ -89,6 +89,7 @@ export function supabaseProjects(
         const { name, tagline, description, link } = input;
         await mutate({
           action: 'save',
+          draftId,
           previous: previous && { id: previous.id, revision: previous.revision },
           name,
           tagline,

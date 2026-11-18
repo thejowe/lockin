@@ -76,6 +76,7 @@ Deno.serve(async (request) => {
         : projects().insert({ ...values, owner_id: user });
       const { data, error } = await query.select('id');
       if (error?.code === 'PJ003') return 'full';
+      if (error?.code === '23505') return 'conflict';
       if (error) throw error;
       return data.length ? 'saved' : 'conflict';
     },

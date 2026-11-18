@@ -6,6 +6,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Radii, Spacing } from '@/constants/theme';
 import {
   ProjectPhotoError,
+  newProjectId,
   useRepositories,
   type Project,
   type ProjectInput,
@@ -44,6 +45,7 @@ export function ProjectEditor({
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const locked = useRef(false);
+  const [draftId] = useState(newProjectId);
   const [review, setReview] = useState(false);
   const [error, setError] = useState('');
   const [failedSlot, setFailedSlot] = useState<number | null>(null);
@@ -203,7 +205,7 @@ export function ProjectEditor({
               void run(async () => {
                 setReview(true);
                 if (draft.photos.some((photo) => !photo.path)) setDetails(true);
-                await projects.save(draft, project);
+                await projects.save(draft, project, project ? undefined : draftId);
               }, true)
             }
           />
