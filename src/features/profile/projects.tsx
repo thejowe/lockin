@@ -1,6 +1,6 @@
 import type { ScrollViewInstance } from 'react-native';
 import { Image } from 'expo-image';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Linking,
   Modal,
@@ -11,71 +11,154 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { BackArrow } from '@/components/back-arrow';
+import { BottomSheetBackground } from '@/components/BottomSheet';
 import { ThemedText } from '@/components/themed-text';
-import { Icon } from '@/components/icon';
-import { glassStyle } from '@/components/glass';
-import { Radii, Spacing } from '@/constants/theme';
-import type { Project, ProjectPhoto } from '@/data';
+import { MaxContentWidth, Opacity, Radii, Spacing } from '@/constants/theme';
+import type { Project, ProjectInput, ProjectPhoto } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
 import { SecondaryButton } from './controls';
+import { CreateProjectCard, ProjectCover, ProjectPrimaryButton } from './project-card';
 import { ProjectEditor } from './project-editor';
+import { ProjectHandoff, type WindowRect } from './project-handoff';
 import { useProjects } from './use-projects';
+import { WizardProgress } from './wizard';
+
+export function ProjectStep({
+  ownerId,
+  step,
+  total,
+  onBack,
+  onContinue,
+}: {
+  ownerId: string;
+  step: number;
+  total: number;
+  onBack: () => void;
+  onContinue: () => void;
+}) {
+  const collection = useProjectCards(ownerId);
+  return (
+    <BottomSheetBackground style={styles.step}>
+      <View style={styles.stepBar}>
+        <BackArrow onPress={onBack} />
+        <View style={styles.progress}>
+          <WizardProgress step={step} total={total} />
+        </View>
+      </View>
+      <ScrollView contentContainerStyle={styles.stepContent}>
+        <ThemedText type="title" accessibilityRole="header">
+          {t('Tus proyectos')}
+        </ThemedText>
+        <ProjectList collection={collection} onboarding />
+      </ScrollView>
+      <View style={styles.stepFooter}>
+        <ProjectPrimaryButton
+          label={collection.cards.length ? t('Continuar') : t('Ahora no')}
+          onPress={onContinue}
+          disabled={collection.loading}
+        />
+      </View>
+    </BottomSheetBackground>
+  );
+}
 
 export function MyProjects({ ownerId, wizard = false }: { ownerId: string; wizard?: boolean }) {
-  const theme = useTheme();
-  const { data, refresh, loading, error } = useProjects(ownerId);
-  const [edit, setEdit] = useState<Project | 'new' | null>(null);
-  const list = data ?? [];
+  const collection = useProjectCards(ownerId);
   return (
-    <View style={styles.section}>
+    <BottomSheetBackground style={styles.section}>
       {wizard ? null : (
-        <ThemedText type="label" themeColor="textSecondary">
+        <ThemedText type="subtitle" accessibilityRole="header">
           {t('Tus proyectos')}
         </ThemedText>
       )}
+      <ProjectList collection={collection} />
+    </BottomSheetBackground>
+  );
+}
+
+type Arrival = { id: string; draft: ProjectInput; source: WindowRect | null; landed: boolean };
+type Card = { id: string; preview: ProjectInput; project: Project | null };
+
+function useProjectCards(ownerId: string) {
+  const { data, refresh, loading, error, refreshing } = useProjects(ownerId);
+  const [arrival, setArrival] = useState<Arrival | null>(null);
+  useEffect(() => {
+    if (arrival?.landed && !refreshing && !loading) setArrival(null);
+  }, [arrival?.landed, refreshing, loading]);
+  const list = data ?? [];
+  // The repository confirms the write before it fetches the published revision and photo URLs.
+  // Keep its slot occupied across that fetch, without making a synthetic revision editable.
+  const cards: Card[] = list.map((project) => ({
+    id: project.id,
+    preview: project,
+    project,
+  }));
+  if (arrival && !error && !cards.some((card) => card.id === arrival.id)) {
+    cards.push({ id: arrival.id, preview: arrival.draft, project: null });
+  }
+  return { cards, loading, error, refresh, arrival, setArrival };
+}
+
+function ProjectList({
+  collection,
+  onboarding = false,
+}: {
+  collection: ReturnType<typeof useProjectCards>;
+  onboarding?: boolean;
+}) {
+  const { cards, refresh, loading, error, arrival, setArrival } = collection;
+  const [edit, setEdit] = useState<Project | 'new' | null>(null);
+  return (
+    <View style={styles.section}>
       {error ? <SecondaryButton label={t('Reintentar')} onPress={refresh} /> : null}
-      <View style={styles.row}>
-        {list.map((p) => (
+      {cards.map(({ id, preview, project }) => {
+        const landing = arrival?.id === id && !arrival.landed;
+        const cover = <ProjectCover {...(landing ? arrival.draft : preview)} editable />;
+        return (
           <Pressable
-            key={p.id}
+            key={id}
             accessibilityRole="button"
-            accessibilityLabel={t('Editar {name}', { name: p.name })}
-            onPress={() => setEdit(p)}
-            style={[glassStyle(theme), styles.tile]}>
-            {p.cover ? (
-              <Image source={{ uri: p.cover.uri }} style={StyleSheet.absoluteFill} />
-            ) : null}
-            <View style={styles.pencil}>
-              <Icon name="pencil" size={16} color="#fff" />
-            </View>
-            <View style={styles.caption}>
-              <ThemedText type="smallBold" style={styles.white} numberOfLines={2}>
-                {p.name}
-              </ThemedText>
-            </View>
+            accessibilityLabel={t('Editar {name}', { name: preview.name })}
+            accessibilityHint={preview.tagline}
+            disabled={!project}
+            onPress={() => project && setEdit(project)}
+            style={({ pressed }) => [
+              { opacity: pressed ? Opacity.pressed : 1, zIndex: landing ? 1 : 0 },
+            ]}>
+            {landing ? (
+              <ProjectHandoff
+                source={arrival.source}
+                onLand={() =>
+                  setArrival((current) =>
+                    current?.id === id ? { ...current, landed: true } : current
+                  )
+                }>
+                {cover}
+              </ProjectHandoff>
+            ) : (
+              cover
+            )}
           </Pressable>
-        ))}
-        {!loading && !error && list.length < 3 ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('Crear proyecto')}
-            style={[glassStyle(theme), styles.tile, styles.add]}
-            onPress={() => setEdit('new')}>
-            <ThemedText type="title">+</ThemedText>
-            {wizard ? <ThemedText type="small">{t('Crear proyecto')}</ThemedText> : null}
-          </Pressable>
-        ) : null}
-      </View>
+        );
+      })}
+      {!loading && !error && cards.length < 3 ? (
+        <CreateProjectCard
+          prominent={onboarding && cards.length === 0}
+          onPress={() => setEdit('new')}
+        />
+      ) : null}
       {edit ? (
         <ProjectEditor
           project={edit === 'new' ? undefined : edit}
-          canPromote={edit !== 'new' && list[0]?.id !== edit.id}
+          canPromote={edit !== 'new' && cards[0]?.id !== edit.id}
           onClose={() => {
             refresh();
             setEdit(null);
           }}
-          onSaved={() => {
+          onSaved={(id, draft, source) => {
+            setArrival({ id, draft, source, landed: false });
             refresh();
             setEdit(null);
           }}
@@ -168,26 +251,18 @@ export function PublicProjects({ ownerId }: { ownerId: string }) {
   );
 }
 const styles = StyleSheet.create({
+  step: { flex: 1, width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center' },
+  stepBar: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingRight: 64 },
+  progress: { flex: 1 },
+  stepContent: {
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.four,
+    paddingBottom: Spacing.four,
+    gap: Spacing.four,
+  },
+  stepFooter: { paddingHorizontal: Spacing.four, paddingVertical: Spacing.three },
   section: { gap: Spacing.three },
   row: { flexDirection: 'row', gap: Spacing.two },
-  tile: {
-    width: '30%',
-    maxWidth: 110,
-    aspectRatio: 1,
-    overflow: 'hidden',
-    justifyContent: 'flex-end',
-  },
-  add: { alignItems: 'center', justifyContent: 'center' },
-  pencil: {
-    position: 'absolute',
-    right: 4,
-    top: 4,
-    padding: 4,
-    borderRadius: 12,
-    backgroundColor: '#181818',
-  },
-  caption: { backgroundColor: 'rgba(16,16,16,0.88)', padding: 5 },
-  white: { color: '#fff' },
   thumb: { width: 100, height: 100, borderRadius: Radii.small },
   cover: { width: '100%', aspectRatio: 1.6, borderRadius: Radii.card },
 });

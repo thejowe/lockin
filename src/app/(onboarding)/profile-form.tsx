@@ -13,7 +13,7 @@ import {
   useTermsGate,
 } from '@/features/profile';
 import { Board } from '@/features/profile/board';
-import { MyProjects } from '@/features/profile/projects';
+import { ProjectStep } from '@/features/profile/projects';
 import { WizardScreen } from '@/features/profile/wizard';
 import { t } from '@/i18n';
 
@@ -87,26 +87,24 @@ export default function ProfileFormScreen() {
             onSubmit={handleSubmit}
           />
         </View>
-        {media ? (
-          <WizardScreen
-            step={media.step === 'board' ? media.total - 1 : media.total}
+        {media?.step === 'projects' ? (
+          <ProjectStep
+            ownerId={media.ownerId}
+            step={media.total}
             total={media.total}
-            title={media.step === 'board' ? t('Sobre mí') : t('Tus proyectos')}
-            primaryLabel={media.step === 'board' ? t('Continuar') : t('Crear perfil')}
-            onBack={() =>
-              media.step === 'board' ? setMedia(null) : setMedia({ ...media, step: 'board' })
-            }
-            onPrimary={() =>
-              media.step === 'board' ? setMedia({ ...media, step: 'projects' }) : setEntering(true)
-            }
-            onSkip={() =>
-              media.step === 'board' ? setMedia({ ...media, step: 'projects' }) : setEntering(true)
-            }>
-            {media.step === 'board' ? (
-              <Board ownerId={media.ownerId} ownerName={media.name} editable hideTitle />
-            ) : (
-              <MyProjects ownerId={media.ownerId} wizard />
-            )}
+            onBack={() => setMedia({ ...media, step: 'board' })}
+            onContinue={() => setEntering(true)}
+          />
+        ) : media ? (
+          <WizardScreen
+            step={media.total - 1}
+            total={media.total}
+            title={t('Sobre mí')}
+            primaryLabel={t('Continuar')}
+            onBack={() => setMedia(null)}
+            onPrimary={() => setMedia({ ...media, step: 'projects' })}
+            onSkip={() => setMedia({ ...media, step: 'projects' })}>
+            <Board ownerId={media.ownerId} ownerName={media.name} editable hideTitle />
           </WizardScreen>
         ) : null}
       </SafeAreaView>
