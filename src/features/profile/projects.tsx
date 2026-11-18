@@ -1,6 +1,6 @@
 import type { ScrollViewInstance } from 'react-native';
 import { Image } from 'expo-image';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Linking,
   Modal,
@@ -78,27 +78,39 @@ export function MyProjects({ ownerId, wizard = false }: { ownerId: string; wizar
   );
 }
 
-type Arrival = { id: string; draft: ProjectInput; source: WindowRect | null; landed: boolean };
+type Arrival = {
+  id: string;
+  draft: ProjectInput;
+  source: WindowRect | null;
+  landed: boolean;
+  previousList: Project[] | null;
+};
 type Card = { id: string; preview: ProjectInput; project: Project | null };
 
 function useProjectCards(ownerId: string) {
   const { data, refresh, loading, error, refreshing } = useProjects(ownerId);
-  const [arrival, setArrival] = useState<Arrival | null>(null);
-  useEffect(() => {
-    if (arrival?.landed && !refreshing && !loading) setArrival(null);
-  }, [arrival?.landed, refreshing, loading]);
+  const [saved, setSaved] = useState<Arrival | null>(null);
+  const arrival =
+    saved && (!saved.landed || (refreshing && data === saved.previousList)) ? saved : null;
   const list = data ?? [];
   // The repository confirms the write before it fetches the published revision and photo URLs.
   // Keep its slot occupied across that fetch, without making a synthetic revision editable.
-  const cards: Card[] = list.map((project) => ({
-    id: project.id,
-    preview: project,
-    project,
-  }));
-  if (arrival && !error && !cards.some((card) => card.id === arrival.id)) {
+  const cards: Card[] = list.map((project) =>
+    arrival?.id === project.id
+      ? { id: project.id, preview: arrival.draft, project: null }
+      : { id: project.id, preview: project, project }
+  );
+  if (arrival && (!error || !arrival.landed) && !cards.some((card) => card.id === arrival.id)) {
     cards.push({ id: arrival.id, preview: arrival.draft, project: null });
   }
-  return { cards, loading, error, refresh, arrival, setArrival };
+  function onSaved(id: string, draft: ProjectInput, source: WindowRect | null) {
+    setSaved({ id, draft, source, previousList: data, landed: false });
+    refresh();
+  }
+  function onLand(id: string) {
+    setSaved((current) => (current?.id === id ? { ...current, landed: true } : current));
+  }
+  return { cards, loading, error, refresh, arrival, onSaved, onLand };
 }
 
 function ProjectList({
@@ -108,14 +120,14 @@ function ProjectList({
   collection: ReturnType<typeof useProjectCards>;
   onboarding?: boolean;
 }) {
-  const { cards, refresh, loading, error, arrival, setArrival } = collection;
+  const { cards, refresh, loading, error, arrival, onLand, onSaved } = collection;
   const [edit, setEdit] = useState<Project | 'new' | null>(null);
   return (
     <View style={styles.section}>
       {error ? <SecondaryButton label={t('Reintentar')} onPress={refresh} /> : null}
       {cards.map(({ id, preview, project }) => {
         const landing = arrival?.id === id && !arrival.landed;
-        const cover = <ProjectCover {...(landing ? arrival.draft : preview)} editable />;
+        const cover = <ProjectCover {...preview} editable />;
         return (
           <Pressable
             key={id}
@@ -128,13 +140,7 @@ function ProjectList({
               { opacity: pressed ? Opacity.pressed : 1, zIndex: landing ? 1 : 0 },
             ]}>
             {landing ? (
-              <ProjectHandoff
-                source={arrival.source}
-                onLand={() =>
-                  setArrival((current) =>
-                    current?.id === id ? { ...current, landed: true } : current
-                  )
-                }>
+              <ProjectHandoff source={arrival.source} onLand={() => onLand(id)}>
                 {cover}
               </ProjectHandoff>
             ) : (
@@ -158,8 +164,7 @@ function ProjectList({
             setEdit(null);
           }}
           onSaved={(id, draft, source) => {
-            setArrival({ id, draft, source, landed: false });
-            refresh();
+            onSaved(id, draft, source);
             setEdit(null);
           }}
         />

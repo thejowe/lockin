@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { DataProvider, ProjectPhotoError } from '@/data';
 import { createMockRepositories, createMockStore } from '@/data/mock';
 import { buildProfileInput } from '@/data/test-fixtures';
@@ -84,6 +84,41 @@ it('la X permite salir en blanco y protege los cambios hasta confirmar el descar
   await fireEvent.press(screen.getByRole('button', { name: 'Descartar cambios' }));
   expect(screen.queryByLabelText('Nombre del proyecto')).toBeNull();
   expect(await repo.projects.list(me.id)).toEqual([]);
+});
+
+it('conserva la edición y bloquea la revisión antigua mientras se relee la tarjeta', async () => {
+  const { repo, me } = await openProjectStep(['Atlas']);
+  await fireEvent.press(await screen.findByRole('button', { name: 'Editar Atlas' }));
+  await fireEvent.changeText(screen.getByLabelText('Nombre del proyecto'), 'Mapa nuevo');
+
+  const read = repo.projects.list.bind(repo.projects);
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const reload = jest.spyOn(repo.projects, 'list').mockImplementationOnce(async (ownerId) => {
+    await gate;
+    return read(ownerId);
+  });
+  await fireEvent.press(screen.getByRole('button', { name: 'Guardar proyecto' }));
+  await waitFor(() => expect(reload).toHaveBeenCalledWith(me.id));
+  const card = screen.getByRole('button', { name: 'Editar Mapa nuevo' });
+  expect(card).toBeDisabled();
+  expect(screen.getByText('Mapa nuevo')).toBeOnTheScreen();
+  await fireEvent.press(card);
+  expect(screen.queryByLabelText('Nombre del proyecto')).toBeNull();
+
+  await act(async () => release());
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: 'Editar Mapa nuevo' })).toBeEnabled()
+  );
+  await fireEvent.press(screen.getByRole('button', { name: 'Editar Mapa nuevo' }));
+  expect(screen.getByLabelText('Nombre del proyecto')).toHaveDisplayValue('Mapa nuevo');
+  await fireEvent.changeText(screen.getByLabelText('Frase corta'), 'Segunda edición');
+  await fireEvent.press(screen.getByRole('button', { name: 'Guardar proyecto' }));
+  await expect(read(me.id)).resolves.toMatchObject([
+    { name: 'Mapa nuevo', tagline: 'Segunda edición' },
+  ]);
 });
 
 it('el editor del alta publica la ficha completa y la tarjeta abre su edición en Perfil', async () => {
