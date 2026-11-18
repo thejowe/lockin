@@ -128,6 +128,9 @@ it('espera la revisión y monta la foto en el hueco elegido con movimiento reduc
       const second = { ...first, id: 'segunda', caption: 'Cuaderno', imageUrl: 'file:///b.jpg' };
       await act(() => approve(second));
       const slot = within(screen.getByTestId('board-slot-1'));
+      // La caída espera a que la imagen (URL firmada en Supabase) se pinte.
+      expect(slot.getByTestId('board-pin-segunda')).not.toBeVisible();
+      await fireEvent(slot.getByTestId('board-image-segunda'), 'load', { nativeEvent: {} });
       expect(slot.getByTestId('board-photo-segunda')).toHaveStyle({
         transform: [{ rotate: '3deg' }],
       });
@@ -158,7 +161,9 @@ it.each(['flagged', 'unavailable'] as const)(
     await expect(repositories.profiles.listBoard(me.id)).resolves.toHaveLength(0);
 
     await fireEvent.press(screen.getByRole('button', { name: 'Publicar en Sobre mí' }));
-    expect(await screen.findByRole('imagebutton', { name: 'Mi cuaderno' })).toBeVisible();
+    const published = await screen.findByRole('imagebutton', { name: 'Mi cuaderno' });
+    await fireEvent(within(published).getByTestId(/^board-image-/), 'load', { nativeEvent: {} });
+    expect(published).toBeVisible();
     expect(onPhotoAdded).toHaveBeenCalledTimes(1);
   }
 );

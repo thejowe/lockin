@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { StyleSheet, type ViewStyle } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -22,23 +22,44 @@ const tap = { duration: Duration.fast, easing: Easing.bezier(...Curves.inOut) };
 const fade = { ...tap, reduceMotion: ReduceMotion.Never };
 
 /** The motion wrapper carries the photo's existing (statically tilted) pressable. */
+/** Tope de espera a la imagen: una foto que no carga no deja el hueco vacío para siempre. */
+export const PIN_WAIT_MS = 3000;
+
 export function PinDrop({
   id,
   arrivals,
+  ready: imageReady = true,
   children,
 }: {
   id: string;
   arrivals: Arrivals;
+  /**
+   * La imagen ya se puede pintar. Con Supabase llega por URL firmada después de
+   * montar la tarjeta: sin esperar, la caída y la chincheta se veían sobre un
+   * papel vacío. Mientras espera, la foto está oculta.
+   */
+  ready?: boolean;
   children: (pinStyle: AnimatedStyle<ViewStyle>) => ReactNode;
 }) {
   const { pending, reduced, claim, finish } = arrivals;
   const playing = useRef<string>(undefined);
   const active = pending.has(id);
-  // 0 = held above the cork, 1 = paper settled, 2 = pin seated.
-  const progress = useSharedValue(active ? 0 : 2);
+  const [timedOut, setTimedOut] = useState(false);
+  const ready = imageReady || timedOut;
+  useEffect(() => {
+    if (!active || ready) return;
+    const timer = setTimeout(() => setTimedOut(true), PIN_WAIT_MS);
+    return () => clearTimeout(timer);
+  }, [active, ready]);
+  // -1 = waiting for the image (hidden), 0 = held above the cork, 1 = paper settled, 2 = pin seated.
+  const progress = useSharedValue(active ? (ready ? 0 : -1) : 2);
   useLayoutEffect(() => {
     if (!active) {
       progress.set(2);
+      return;
+    }
+    if (!ready) {
+      progress.set(-1);
       return;
     }
     if (playing.current !== id && !claim(id)) {
@@ -69,10 +90,11 @@ export function PinDrop({
       live = false;
       cancelAnimation(progress);
     };
-  }, [active, claim, finish, id, progress, reduced]);
+  }, [active, ready, claim, finish, id, progress, reduced]);
 
   const photo = useAnimatedStyle(() => {
     const p = progress.get();
+    if (p < 0) return { opacity: 0, transform: [] };
     if (reduced) return { opacity: p / 2, transform: [] };
     const fall = Math.min(p, 1);
     // A single 2 dp overshoot; the pin only starts moving after it settles.

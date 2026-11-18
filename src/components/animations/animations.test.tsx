@@ -8,7 +8,7 @@ import * as Haptics from 'expo-haptics';
 
 import { Duration, Opacity, PressScale } from '@/constants/theme';
 import { useReduceMotion } from '@/hooks/use-reduce-motion';
-import { PinDrop } from './PinDrop';
+import { PIN_WAIT_MS, PinDrop } from './PinDrop';
 import { CreateProjectShift, DetailsChevron, SlotPressable } from './ProfileMotion';
 import { ProjectSheetSource, useProjectSaveMotion, useProjectSheet } from './ShrinkToSlot';
 import { useArrivals } from './useArrivals';
@@ -357,6 +357,33 @@ it('does not restart a photo drop or vibrate late when the board recycles its ce
   expect(mockTiming).toHaveBeenCalledTimes(2);
   expect(api.current?.pending.size).toBe(0);
   expect(Haptics.impactAsync).not.toHaveBeenCalled();
+});
+
+it('waits hidden for the photo to load, and never longer than PIN_WAIT_MS', async () => {
+  const api = createRef<ReturnType<typeof useArrivals>>();
+  function Grid({ ready }: { ready: boolean }) {
+    const events = useArrivals();
+    useImperativeHandle(api, () => events);
+    return (
+      <PinDrop id="firmada" arrivals={events} ready={ready}>
+        {(pin) => <Animated.View style={pin} />}
+      </PinDrop>
+    );
+  }
+  const view = await render(<Grid ready={false} />);
+  await act(async () => {
+    api.current!.start('firmada');
+  });
+  await view.rerender(<Grid ready={false} />);
+  // Sin imagen todavía: ni cae ni se ve.
+  expect(mockTiming).not.toHaveBeenCalled();
+  expect(mockStyles.slice(-2)[0]()).toEqual({ opacity: 0, transform: [] });
+
+  // La URL firmada no llega: pasado el tope cae igual.
+  await act(async () => {
+    jest.advanceTimersByTime(PIN_WAIT_MS);
+  });
+  expect(mockTiming).toHaveBeenCalled();
 });
 
 it.each([false, true])(

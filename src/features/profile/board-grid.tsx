@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -32,6 +33,8 @@ export function BoardGrid({
   disabled: boolean;
 }) {
   const theme = useTheme();
+  // Fotos ya pintadas: la caída espera a la imagen (`PinDrop`, `ready`).
+  const [loaded, setLoaded] = useState<ReadonlySet<string>>(() => new Set());
   // En edición la publicación nueva ocupa justo el hueco «Añadir foto».
   const photos = onAdd ? [...posts].reverse() : posts;
   const rows = onAdd
@@ -47,7 +50,11 @@ export function BoardGrid({
     return (
       <View key={index} testID={`board-slot-${index}`} style={styles.slot}>
         {post ? (
-          <PinDrop key={post.id} id={post.id} arrivals={arrivals}>
+          <PinDrop
+            key={post.id}
+            id={post.id}
+            arrivals={arrivals}
+            ready={!post.imageUrl || loaded.has(post.id)}>
             {(pinStyle) => (
               <Pressable
                 testID={`board-photo-${post.id}`}
@@ -66,7 +73,13 @@ export function BoardGrid({
                   },
                 ]}>
                 {post.imageUrl ? (
-                  <Image source={{ uri: post.imageUrl }} style={styles.image} contentFit="cover" />
+                  <Image
+                    testID={`board-image-${post.id}`}
+                    source={{ uri: post.imageUrl }}
+                    style={styles.image}
+                    contentFit="cover"
+                    onLoad={() => setLoaded((previous) => new Set(previous).add(post.id))}
+                  />
                 ) : (
                   <ThemedText type="caption" themeColor="textMuted" style={styles.centerText}>
                     {t('No se ha podido cargar la foto.')}
