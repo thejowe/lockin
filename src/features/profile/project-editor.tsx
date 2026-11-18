@@ -21,7 +21,6 @@ import { t } from '@/i18n';
 import { pickAvatarPhoto } from './avatar-photo';
 import { Field, TextField } from './controls';
 import { ProjectCover, ProjectPrimaryButton } from './project-card';
-import type { WindowRect } from './window-rect';
 
 const empty: ProjectInput = {
   name: '',
@@ -92,20 +91,10 @@ function SaveFooter({
   valid: boolean;
   saving: boolean;
   error: string;
-  onSave: (measureSource: () => WindowRect | null) => void;
+  onSave: () => void;
 }) {
   const frame = useContext(BottomSheetFrame);
   useProjectSheet(frame);
-  function measureSource(): WindowRect | null {
-    // The keyboard or photo review can change the frame while the request is pending.
-    try {
-      const rect = frame?.current?.getBoundingClientRect?.();
-      if (!rect || !rect.width || !rect.height) return null;
-      return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
-    } catch {
-      return null;
-    }
-  }
   return (
     <View style={styles.footer}>
       {error ? (
@@ -116,7 +105,7 @@ function SaveFooter({
       <ProjectPrimaryButton
         label={saving ? t('Guardando…') : t('Guardar proyecto')}
         disabled={busy || !valid}
-        onPress={() => onSave(measureSource)}
+        onPress={onSave}
       />
     </View>
   );
@@ -131,7 +120,8 @@ export function ProjectEditor({
   project?: Project;
   canPromote: boolean;
   onClose: () => void;
-  onSaved: (id: string, draft: ProjectInput, source: WindowRect | null) => void | Promise<void>;
+  /** Puede esperar: la hoja sigue bloqueada mientras vuela hasta su tarjeta. */
+  onSaved: (id: string, draft: ProjectInput) => void | Promise<void>;
 }) {
   const { projects } = useRepositories();
   const theme = useTheme();
@@ -193,12 +183,12 @@ export function ProjectEditor({
       }
     });
   }
-  function save(measureSource: () => WindowRect | null) {
+  function save() {
     void run(async () => {
       setSaving(true);
       if (draft.photos.some((photo) => !photo.path)) setDetails(true);
       await projects.save(draft, project, project ? undefined : draftId);
-      await onSaved(project?.id ?? draftId, draft, measureSource());
+      await onSaved(project?.id ?? draftId, draft);
     });
   }
   function promote() {

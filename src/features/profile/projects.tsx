@@ -23,7 +23,6 @@ import { t } from '@/i18n';
 import { SecondaryButton } from './controls';
 import { CreateProjectCard, ProjectCover } from './project-card';
 import { ProjectEditor } from './project-editor';
-import type { WindowRect } from './window-rect';
 import { useProjects } from './use-projects';
 import { WizardScreen } from './wizard';
 
@@ -50,7 +49,6 @@ export function ProjectStep({
         total={total}
         title={t('Tus proyectos')}
         primaryLabel={collection.cards.length ? t('Continuar') : t('Ahora no')}
-        busy={collection.loading}
         onBack={onBack}
         onPrimary={onContinue}>
         <ProjectList collection={collection} onboarding />
@@ -76,7 +74,6 @@ export function MyProjects({ ownerId, wizard = false }: { ownerId: string; wizar
 type Arrival = {
   id: string;
   draft: ProjectInput;
-  source: WindowRect | null;
   landed: boolean;
   previousList: Project[] | null;
 };
@@ -98,8 +95,8 @@ function useProjectCards(ownerId: string) {
   if (arrival && (!error || !arrival.landed) && !cards.some((card) => card.id === arrival.id)) {
     cards.push({ id: arrival.id, preview: arrival.draft, project: null });
   }
-  function onSaved(id: string, draft: ProjectInput, source: WindowRect | null) {
-    setSaved({ id, draft, source, previousList: data, landed: false });
+  function onSaved(id: string, draft: ProjectInput) {
+    setSaved({ id, draft, previousList: data, landed: false });
     refresh();
   }
   function onLand(id: string) {
@@ -157,8 +154,8 @@ function ProjectList({
               refresh();
               setEdit(null);
             }}
-            onSaved={async (id, draft, source) => {
-              onSaved(id, draft, source);
+            onSaved={async (id, draft) => {
+              onSaved(id, draft);
               // Al crear, la hoja vuela hasta su tarjeta y la vibración llega al aterrizar.
               // Al editar, la tarjeta ya está en su sitio: basta la vibración suave.
               if (edit === 'new') await motion.onProjectSaved(id);

@@ -103,7 +103,6 @@ export default function ProfileFormScreen() {
             total={media.total}
             title={t('Sobre mí')}
             primaryLabel={boardPrimaryLabel}
-            busy={boardPhotoCount === null}
             onBack={() => setMedia(null)}
             onPrimary={() => setMedia({ ...media, step: 'projects' })}>
             <Board
