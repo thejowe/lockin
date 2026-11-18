@@ -156,8 +156,11 @@ name: Crear un proyecto en el alta y descubrirlo desde otra cuenta
     commands:
       - tapOn: 'Omitir'
 - extendedWaitUntil:
-    visible: 'Like'
+    visible: 'Like|Siguiente explicación'
     timeout: 30000
+# El primer cambio de página puede activar el tutorial de botones de esta cuenta.
+- tapOn:
+    point: '75%,50%'
 - repeat:
     while:
       visible: 'Siguiente explicación'
@@ -177,6 +180,15 @@ name: Crear un proyecto en el alta y descubrirlo desde otra cuenta
     commands:
       - tapOn:
           id: 'deck-tap-right'
+- assertVisible: ${PROJECT_NAME}
+- assertVisible: 'Un mapa para compartir talleres'
+- tapOn:
+    point: '25%,50%'
+- assertNotVisible: 'Un mapa para compartir talleres'
+- assertVisible: 'Ver ${PROJECT_NAME}'
+- assertVisible: 'Ver el perfil de ${PROFILE_NAME}'
+- tapOn:
+    point: '75%,50%'
 - assertVisible: ${PROJECT_NAME}
 - assertVisible: 'Un mapa para compartir talleres'
 - takeScreenshot: proyecto-en-deck

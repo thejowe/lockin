@@ -100,7 +100,7 @@ export function DeckActions({
   const lowLikes = likesLeft !== null && likesLeft >= 0 && likesLeft <= LOW_LIKES;
 
   return (
-    <View style={styles.column} pointerEvents={tourStep === null ? 'auto' : 'none'}>
+    <View style={styles.column} pointerEvents={tourStep === null ? 'box-none' : 'none'}>
       <View style={styles.notice} pointerEvents="none">
         {lowLikes ? (
           <ThemedText type="smallBold" style={styles.noticeText}>
@@ -114,6 +114,7 @@ export function DeckActions({
       <View
         ref={rowRef}
         style={styles.row}
+        pointerEvents="box-none"
         onLayout={(event) => {
           const height = event.nativeEvent.layout.height;
           rowRef.current?.measureInWindow((x) => setRowBox({ x, height }));

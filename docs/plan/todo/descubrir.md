@@ -3,6 +3,7 @@
 ## Proyectos · 18 de noviembre de 2026
 
 - [x] Toque por mitades con límite háptico, portada o retrato oscurecido, punto principal y subpuntos por proyecto.
+- [x] Los huecos de la barra inferior dejan pasar los toques a la mitad correspondiente de la tarjeta.
 
 ## Contraste de los controles sobre fotos (2026-10-14)
 
