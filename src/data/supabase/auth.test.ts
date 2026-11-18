@@ -1209,7 +1209,7 @@ describe('deleteMyAccount', () => {
       functions: {
         invoke: jest.fn(async (name: string) => {
           order.push(
-            { 'moderate-board': 'tablón', 'apple-token': 'apple' }[name as string] ?? 'foto'
+            { 'moderate-project': 'proyectos', 'moderate-board': 'tablón', 'apple-token': 'apple' }[name as string] ?? 'foto'
           );
           return { data: null, error: new Error('función caída') };
         }),
@@ -1237,7 +1237,7 @@ describe('deleteMyAccount', () => {
     });
     // La revocación de Apple va ANTES del RPC (después ya no hay sesión), y
     // su fallo se registra pero no impide borrar.
-    expect(order).toEqual(['foto', 'tablón', 'apple', 'rpc']);
+    expect(order).toEqual(['foto', 'tablón', 'proyectos', 'apple', 'rpc']);
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining('revocar el token de Apple'),
       expect.any(Error)

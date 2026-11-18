@@ -19,9 +19,16 @@ alter table public.profile_projects enable row level security;
 revoke all on public.profile_projects from public, anon, authenticated;
 grant select on public.profile_projects to authenticated;
 grant all on public.profile_projects to service_role;
+-- Invoker privileges carry the profile's own visibility rules through to its projects.
+create function public.project_owner_visible(p_owner uuid) returns boolean
+language sql stable security invoker set search_path = '' as $$
+  select exists (select 1 from public.profiles where id = p_owner)
+    and (p_owner = (select auth.uid()) or not public.has_profile_block(p_owner));
+$$;
+revoke all on function public.project_owner_visible(uuid) from public, anon;
+grant execute on function public.project_owner_visible(uuid) to authenticated;
 create policy projects_visible on public.profile_projects for select to authenticated
-  using (exists (select 1 from public.profiles p where p.id = owner_id)
-         and (owner_id = (select auth.uid()) or not public.has_profile_block(owner_id)));
+  using (public.project_owner_visible(owner_id));
 
 create function public.check_profile_project() returns trigger language plpgsql
 set search_path = '' as $$
