@@ -3,7 +3,8 @@
  * final, Filtros).
  *
  * Sale justo después de la mano que enseña a tocar la tarjeta (`tap-hint.tsx`):
- * cada toque en pantalla pasa al siguiente botón. Cada paso marca el botón con
+ * un toque en la mitad derecha pasa al siguiente botón y en la izquierda vuelve
+ * al anterior, igual que en la tarjeta. Cada paso marca el botón con
  * un círculo y una flecha que lleva a una explicación corta.
  *
  * Se recuerda en `AsyncStorage` (comodidad de este teléfono). Si no se puede
@@ -57,11 +58,22 @@ export const TOUR_STEPS = [
 /** Último paso: no marca un botón de la fila sino «Filtros», arriba del deck. */
 export const FILTERS_STEP = TOUR_STEPS.length - 1;
 
+/**
+ * Pie de cada explicación. Como en la tarjeta, la mitad derecha avanza y la
+ * izquierda vuelve; en el primer paso no hay adónde volver.
+ */
+export function tourHint(step: number): string {
+  if (step === 0) return t('Toca a la derecha para seguir');
+  if (step === TOUR_STEPS.length - 1)
+    return t('Toca a la derecha para empezar y a la izquierda para volver');
+  return t('Toca a la derecha para seguir y a la izquierda para volver');
+}
+
 /** Paso actual (índice en `TOUR_STEPS`) o `null` si no hay que enseñarlo. */
 export function useButtonsTour(
   ready: boolean,
   userId: string | null
-): { step: number | null; next: () => void } {
+): { step: number | null; next: () => void; back: () => void } {
   const [unseen, setUnseen] = useState(false);
   const [index, setIndex] = useState(0);
   const finished = useRef(false);
@@ -92,7 +104,11 @@ export function useButtonsTour(
     });
   }, [userId]);
 
-  return { step: ready && unseen && userId !== null ? index : null, next };
+  const back = useCallback(() => {
+    setIndex((current) => Math.max(0, current - 1));
+  }, []);
+
+  return { step: ready && unseen && userId !== null ? index : null, next, back };
 }
 
 export interface TourTarget {
@@ -157,7 +173,6 @@ export function TourSpotlight({
     Math.max(cx - BUBBLE_W / 2, margin - rowX),
     windowWidth - margin - rowX - BUBBLE_W
   );
-  const last = step === TOUR_STEPS.length - 1;
 
   return (
     <View testID="buttons-tour" style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -198,7 +213,7 @@ export function TourSpotlight({
           <ThemedText type="smallBold">{t(info.title)}</ThemedText>
           <ThemedText type="small">{t(info.text)}</ThemedText>
           <ThemedText type="small" style={styles.more}>
-            {step + 1}/{TOUR_STEPS.length} · {last ? t('Toca para empezar') : t('Toca para seguir')}
+            {step + 1}/{TOUR_STEPS.length} · {tourHint(step)}
           </ThemedText>
         </View>
       </Animated.View>
@@ -295,7 +310,7 @@ export function FiltersSpotlight({
           <ThemedText type="smallBold">{t(info.title)}</ThemedText>
           <ThemedText type="small">{t(info.text)}</ThemedText>
           <ThemedText type="small" style={styles.more}>
-            {TOUR_STEPS.length}/{TOUR_STEPS.length} · {t('Toca para empezar')}
+            {TOUR_STEPS.length}/{TOUR_STEPS.length} · {tourHint(FILTERS_STEP)}
           </ThemedText>
         </View>
       </Animated.View>

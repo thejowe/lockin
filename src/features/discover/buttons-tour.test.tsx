@@ -1,6 +1,7 @@
 /**
- * Mini tutorial de botones: sale tras la mano de la tarjeta, avanza con cada
- * toque (Deshacer → Super Like → Boost → Filtros) y no vuelve.
+ * Mini tutorial de botones: sale tras la mano de la tarjeta, avanza con un
+ * toque a la derecha y vuelve con uno a la izquierda (Deshacer → Super Like →
+ * Boost → Filtros). Una vez terminado no vuelve a salir.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -21,9 +22,12 @@ import { Pressable, Text, View } from 'react-native';
 function Harness({ ready = true, user = 'u1' }: { ready?: boolean; user?: string }) {
   const tour = useButtonsTour(ready, user);
   return (
-    <Pressable accessibilityLabel="avanzar" onPress={tour.next}>
-      <Text>{tour.step === null ? 'fuera' : TOUR_STEPS[tour.step].title}</Text>
-    </Pressable>
+    <View>
+      <Pressable accessibilityLabel="volver" onPress={tour.back} />
+      <Pressable accessibilityLabel="avanzar" onPress={tour.next}>
+        <Text>{tour.step === null ? 'fuera' : TOUR_STEPS[tour.step].title}</Text>
+      </Pressable>
+    </View>
   );
 }
 
@@ -43,6 +47,20 @@ it('recorre los cuatro pasos y se recuerda', async () => {
 
   await waitFor(() => expect(screen.getByText('fuera')).toBeTruthy());
   await waitFor(async () => expect(await AsyncStorage.getItem(buttonsTourKey('u1'))).toBe('1'));
+});
+
+it('a la izquierda vuelve al paso anterior y no baja del primero', async () => {
+  await render(<Harness />);
+
+  expect(await screen.findByText('Deshacer')).toBeTruthy();
+  await fireEvent.press(screen.getByLabelText('volver'));
+  expect(screen.getByText('Deshacer')).toBeTruthy();
+  await fireEvent.press(screen.getByLabelText('avanzar'));
+  await fireEvent.press(screen.getByLabelText('avanzar'));
+  expect(await screen.findByText('Boost')).toBeTruthy();
+  await fireEvent.press(screen.getByLabelText('volver'));
+  expect(await screen.findByText('Super Like')).toBeTruthy();
+  expect(await AsyncStorage.getItem(buttonsTourKey('u1'))).toBeNull();
 });
 
 it('no sale mientras la mano de la tarjeta sigue en juego', async () => {
@@ -75,7 +93,12 @@ describe('TourSpotlight', () => {
       expect(screen.getByTestId('buttons-tour')).toBeTruthy();
       expect(screen.getByText(title)).toBeTruthy();
       expect(
-        screen.getByText(new RegExp(`${index + 1}/${TOUR_STEPS.length} · Toca para seguir`))
+        screen.getByText(
+          new RegExp(
+            `${index + 1}/${TOUR_STEPS.length} · Toca a la derecha para seguir` +
+              (index === 0 ? '$' : ' y a la izquierda para volver')
+          )
+        )
       ).toBeTruthy();
     }
   );
@@ -91,7 +114,9 @@ describe('TourSpotlight', () => {
       />
     );
 
-    expect(screen.getByText(/Toca para empezar/)).toBeTruthy();
+    expect(
+      screen.getByText(/Toca a la derecha para empezar y a la izquierda para volver/)
+    ).toBeTruthy();
   });
 
   it('un botón pegado al borde no saca la burbuja de la pantalla', async () => {
@@ -144,7 +169,9 @@ describe('FiltersSpotlight', () => {
       await render(<FiltersSpotlight anchorRef={anchorAt()} />);
 
       expect(await screen.findByText(TOUR_STEPS[FILTERS_STEP].title)).toBeTruthy();
-      expect(screen.getByText(/Toca para empezar/)).toBeTruthy();
+      expect(
+        screen.getByText(/Toca a la derecha para empezar y a la izquierda para volver/)
+      ).toBeTruthy();
     } finally {
       restore();
     }

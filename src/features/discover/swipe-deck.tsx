@@ -367,13 +367,24 @@ export function SwipeDeck({
         del reporte va anclado abajo) y se comerían los toques.
       */}
       {tour.step !== null ? (
-        <Pressable
-          testID="buttons-tour-catcher"
-          accessibilityRole="button"
-          accessibilityLabel={t('Siguiente explicación')}
-          onPress={tour.next}
-          style={[StyleSheet.absoluteFill, styles.tourBackdrop]}
-        />
+        // Como en la tarjeta: la mitad derecha avanza y la izquierda vuelve.
+        <View style={[StyleSheet.absoluteFill, styles.tourBackdrop, styles.tourHalves]}>
+          <Pressable
+            testID="buttons-tour-back"
+            accessibilityRole="button"
+            accessibilityLabel={t('Explicación anterior')}
+            accessibilityState={{ disabled: tour.step === 0 }}
+            onPress={tour.back}
+            style={styles.tourHalf}
+          />
+          <Pressable
+            testID="buttons-tour-catcher"
+            accessibilityRole="button"
+            accessibilityLabel={t('Siguiente explicación')}
+            onPress={tour.next}
+            style={styles.tourHalf}
+          />
+        </View>
       ) : null}
       {safetyOpen ? null : (
         <View style={styles.actions} pointerEvents="box-none">
@@ -582,6 +593,8 @@ const styles = StyleSheet.create({
   tourBackdrop: {
     backgroundColor: 'rgba(0, 0, 0, 0.55)',
   },
+  tourHalves: { flexDirection: 'row' },
+  tourHalf: { flex: 1 },
   actions: {
     position: 'absolute',
     right: 0,
