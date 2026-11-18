@@ -17,7 +17,7 @@ import { ProjectSheetSource, useProjectSaveMotion } from '@/components/animation
 import { BottomSheetBackground } from '@/components/BottomSheet';
 import { ThemedText } from '@/components/themed-text';
 import { Opacity, Radii, Spacing } from '@/constants/theme';
-import type { Project, ProjectInput, ProjectPhoto } from '@/data';
+import { useRepositories, type Project, type ProjectInput, type ProjectPhoto } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
 import { SecondaryButton } from './controls';
@@ -118,6 +118,11 @@ function ProjectList({
   const { cards, refresh, loading, error, arrival, onLand, onSaved } = collection;
   const [edit, setEdit] = useState<Project | 'new' | null>(null);
   const motion = useProjectSaveMotion();
+  const { projects } = useRepositories();
+  function openEditor(target: Project | 'new') {
+    setEdit(target);
+    void projects.warmUpModeration().catch(() => {});
+  }
   return (
     <View style={styles.section}>
       {error ? <SecondaryButton label={t('Reintentar')} onPress={refresh} /> : null}
@@ -132,7 +137,7 @@ function ProjectList({
             accessibilityLabel={t('Editar {name}', { name: preview.name })}
             accessibilityHint={preview.tagline}
             disabled={!project}
-            onPress={() => project && setEdit(project)}
+            onPress={() => project && openEditor(project)}
             style={({ pressed }) => [
               { opacity: pressed ? Opacity.pressed : 1, zIndex: landing ? 1 : 0 },
             ]}>
@@ -144,7 +149,7 @@ function ProjectList({
         <CreateProjectShift id={motion.landedId}>
           <CreateProjectCard
             prominent={onboarding && cards.length === 0}
-            onPress={() => setEdit('new')}
+            onPress={() => openEditor('new')}
           />
         </CreateProjectShift>
       ) : null}

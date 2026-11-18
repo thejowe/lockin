@@ -24,6 +24,9 @@ export function supabaseProjects(
     throw new Error(t('No se ha podido guardar.'));
   }
   return {
+    async warmUpModeration() {
+      await getClient().functions.invoke('moderate-project', { method: 'GET' });
+    },
     async list(ownerId) {
       await userId();
       const client = getClient();

@@ -22,6 +22,7 @@ export interface Project extends ProjectInput {
 export type ProjectVersion = Pick<Project, 'id' | 'revision'>;
 
 export interface ProjectRepository {
+  warmUpModeration(): Promise<void>;
   list(ownerId: string): Promise<Project[]>;
   save(input: ProjectInput, previous?: ProjectVersion, draftId?: string): Promise<void>;
   remove(previous: ProjectVersion): Promise<void>;

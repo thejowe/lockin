@@ -66,6 +66,25 @@ it.each([
   expect(onContinue).toHaveBeenCalledTimes(1);
 });
 
+it('calienta una vez por apertura y deja editar y guardar con el ping fallido o pendiente', async () => {
+  const { repo, me } = await openProjectStep(['Atlas']);
+  const ping = jest.spyOn(repo.projects, 'warmUpModeration');
+  ping.mockRejectedValueOnce(new Error('sin red'));
+  await fireEvent.press(await screen.findByRole('button', { name: 'Crear proyecto' }));
+  expect(ping).toHaveBeenCalledTimes(1);
+  expect(screen.queryByRole('alert')).toBeNull();
+  await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
+
+  let finish!: () => void;
+  ping.mockImplementationOnce(() => new Promise<void>((resolve) => (finish = resolve)));
+  await fireEvent.press(await screen.findByRole('button', { name: 'Editar Atlas' }));
+  await fireEvent.changeText(screen.getByLabelText('Frase corta'), 'Rutas');
+  await fireEvent.press(screen.getByRole('button', { name: 'Guardar proyecto' }));
+  expect(await repo.projects.list(me.id)).toMatchObject([{ name: 'Atlas', tagline: 'Rutas' }]);
+  expect(ping).toHaveBeenCalledTimes(2);
+  finish();
+});
+
 it('la X permite salir en blanco y protege los cambios hasta confirmar el descarte', async () => {
   const { repo, me } = await openProjectStep();
   await fireEvent.press(await screen.findByRole('button', { name: 'Crear proyecto' }));

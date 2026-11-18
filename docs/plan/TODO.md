@@ -2,6 +2,8 @@
 
 ## Proyectos · 18 de noviembre de 2026
 
+La hoja de proyecto entra desde el borde inferior en 360 ms. Abrir el editor anticipa el arranque de `moderate-project`. El despliegue de la función con el nuevo ping queda pendiente.
+
 Seguimiento por bloque en [datos](todo/datos.md), [perfil](todo/perfil.md), [descubrir](todo/descubrir.md), [visual](todo/visual.md) y [calidad](todo/calidad.md).
 
 ## Plan compartido en los chats · 17 de noviembre de 2026

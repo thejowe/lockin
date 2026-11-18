@@ -2,6 +2,7 @@
 
 ## Proyectos · 18 de noviembre de 2026
 
+- [x] Abrir el editor para crear o editar calienta la moderación en segundo plano. El guardado puede empezar aunque el ping falle o esté pendiente.
 - [x] Editor común, orden, borrado confirmado, galería ampliada y enlace externo.
 - [x] Pasos opcionales «Sobre mí» y «Tus proyectos» después de la foto de perfil.
 

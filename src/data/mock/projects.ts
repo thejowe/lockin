@@ -20,6 +20,7 @@ export function mockProjects(
     return row;
   }
   return {
+    warmUpModeration: () => Promise.resolve(),
     async list(ownerId) {
       if (!store.state.profiles.has(ownerId) || blocked(actor, ownerId)) return [];
       return store.state.projects
