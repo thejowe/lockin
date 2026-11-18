@@ -26,7 +26,7 @@ it('no intercepta toques: deja pasar el dedo a la tarjeta', async () => {
   await render(<TapHint bottom={0} />);
 
   expect(screen.getByTestId('tap-hint')).toHaveProp('pointerEvents', 'none');
-  expect(screen.getByText('Toca para ver más')).toBeTruthy();
+  expect(screen.getByText('Toca a la derecha para ver lo siguiente y a la izquierda para volver')).toBeTruthy();
 });
 
 it('sale la primera vez y, al tocar la tarjeta, se va para siempre', async () => {

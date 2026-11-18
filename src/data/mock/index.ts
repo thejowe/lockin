@@ -7,6 +7,7 @@
  */
 
 import { createMockAgreementRepository } from './agreement';
+import { t } from '@/i18n';
 import { mockProjects } from './projects';
 import { createMockChatPlan } from './chat-plan';
 import {
@@ -419,7 +420,7 @@ export function createMockRepositories(
     async removeBoardPost(postId) {
       const state = getState();
       const post = state.boardPosts.find((entry) => entry.id === postId);
-      if (!post || post.ownerId !== actorId) throw new Error('Esa foto no está en tu tablón.');
+      if (!post || post.ownerId !== actorId) throw new Error(t('Esa foto no está en Sobre mí.'));
       state.boardPosts = state.boardPosts.filter((entry) => entry.id !== postId);
     },
 

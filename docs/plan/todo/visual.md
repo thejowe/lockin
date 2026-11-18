@@ -1,5 +1,10 @@
 # visual — pulido visual de la app
 
+## Proyectos · 18 de noviembre de 2026
+
+- [x] Panel y miniaturas con texto protegido sobre la imagen, animaciones con movimiento reducido y textos en es/en/ca.
+- [x] «Sobre mí» para fotos personales y nueva pista en la tarjeta y el tutorial. Las capturas del tutorial se toman con la pista desactivada.
+
 Bloque 13 de `PLAN.md`. Agente: `.claude/agents/visual.md`. Abierto el 2026-09-29
 a petición del usuario («tenemos que mejorar la parte visual de la aplicación»).
 Todos los bloques de producto están cerrados; este pule lo que ya existe sin

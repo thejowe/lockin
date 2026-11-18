@@ -41,9 +41,9 @@ async function renderBoard(ownerId = me.id, editable = true) {
 it('añade una foto con su pie y la enseña en el tablón', async () => {
   await renderBoard();
 
-  await fireEvent.press(screen.getByRole('button', { name: 'Añadir una foto al tablón' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Añadir una foto a Sobre mí' }));
   await fireEvent.changeText(screen.getByLabelText('Texto de la foto'), 'Mi primer prototipo');
-  await fireEvent.press(screen.getByRole('button', { name: 'Publicar en el tablón' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Publicar en Sobre mí' }));
 
   await waitFor(() =>
     expect(screen.getByRole('imagebutton', { name: 'Mi primer prototipo' })).toBeTruthy()
@@ -65,9 +65,9 @@ it('un texto objetable no se manda', async () => {
   await renderBoard();
   const spy = jest.spyOn(repositories.profiles, 'addBoardPost');
 
-  await fireEvent.press(screen.getByRole('button', { name: 'Añadir una foto al tablón' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Añadir una foto a Sobre mí' }));
   await fireEvent.changeText(screen.getByLabelText('Texto de la foto'), 'puta');
-  await fireEvent.press(screen.getByRole('button', { name: 'Publicar en el tablón' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Publicar en Sobre mí' }));
 
   expect(await screen.findByRole('alert')).toBeTruthy();
   expect(spy).not.toHaveBeenCalled();
@@ -79,7 +79,7 @@ it(`con ${BOARD_MAX_POSTS} fotos ya no ofrece añadir más`, async () => {
   }
   await renderBoard();
 
-  expect(screen.queryByRole('button', { name: 'Añadir una foto al tablón' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Añadir una foto a Sobre mí' })).toBeNull();
   await expect(repositories.profiles.addBoardPost('file:///x.jpg', '')).rejects.toThrow(/ya tiene/);
 });
 
@@ -87,8 +87,8 @@ it('el tablón ajeno vacío no ocupa sitio, y uno ajeno no se edita', async () =
   const [other] = await repositories.profiles.list();
   await renderBoard(other.id, false);
 
-  expect(screen.queryByText('Tablón')).toBeNull();
-  expect(screen.queryByRole('button', { name: 'Añadir una foto al tablón' })).toBeNull();
+  expect(screen.queryByText('Sobre mí')).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Añadir una foto a Sobre mí' })).toBeNull();
 });
 
 it('con un bloqueo, el tablón del otro no se lista', async () => {

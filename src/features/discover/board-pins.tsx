@@ -41,7 +41,7 @@ export function BoardPins({ posts, ownerName }: { posts: BoardPost[]; ownerName:
           key={post.id}
           accessibilityRole="imagebutton"
           accessibilityLabel={
-            post.caption || t('Foto del tablón de {ownerName}', { ownerName })
+            post.caption || t('Foto personal de {ownerName}', { ownerName })
           }
           hitSlop={HitSlop.inline}
           onPress={(event) => {
@@ -78,7 +78,7 @@ export function BoardPins({ posts, ownerName }: { posts: BoardPost[]; ownerName:
                 style={styles.large}
                 contentFit="contain"
                 accessibilityLabel={
-                  open.caption || t('Foto del tablón de {ownerName}', { ownerName })
+                  open.caption || t('Foto personal de {ownerName}', { ownerName })
                 }
               />
               {open.caption ? (

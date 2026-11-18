@@ -277,15 +277,13 @@ describe('ProfileCard', () => {
         cover: i === 1 ? { uri: 'https://example.com/cover.jpg' } : null,
         photos: [],
       }));
-      const query = jest
-        .spyOn(projectQuery, 'useProjects')
-        .mockReturnValue({
-          data: rows,
-          loading: false,
-          refreshing: false,
-          error: null,
-          refresh: jest.fn(),
-        });
+      const query = jest.spyOn(projectQuery, 'useProjects').mockReturnValue({
+        data: rows,
+        loading: false,
+        refreshing: false,
+        error: null,
+        refresh: jest.fn(),
+      });
       const haptic = jest.spyOn(Haptics, 'selectionAsync').mockResolvedValue();
       try {
         await render(
@@ -302,9 +300,19 @@ describe('ProfileCard', () => {
         for (let i = 0; i < count; i++) {
           await press('right');
           expect(screen.getByText(rows[i].name)).toBeTruthy();
+          const panel = StyleSheet.flatten(screen.getByTestId('deck-project-panel').props.style);
+          expect(
+            contrastRatio(Colors.dark.text, '#FFFFFF', panel.backgroundColor)
+          ).toBeGreaterThanOrEqual(4.5);
+          if (count > 1) {
+            const dot = StyleSheet.flatten(
+              screen.getByTestId('subdot-' + rows[i].id, HIDDEN).props.style
+            );
+            expect(dot.backgroundColor).toBe(Colors.dark.text);
+          }
           expect(screen.queryByText('Solo en perfil')).toBeNull();
           if (rows[i].cover)
-            expect(screen.getByTestId('portrait-photo', HIDDEN).props.source).toMatchObject({
+            expect(screen.getByTestId('portrait-photo', HIDDEN).props.source[0]).toMatchObject({
               uri: rows[i].cover?.uri,
             });
           expect(!!screen.queryByTestId('project-subdots', HIDDEN)).toBe(count > 1);

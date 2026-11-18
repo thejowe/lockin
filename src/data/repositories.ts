@@ -90,7 +90,7 @@ const BOARD_MESSAGES: Record<BoardRejectedReason, string> = {
     return t('No hemos podido usar esa imagen. Prueba con otra foto.');
   },
   get 'board-full'() {
-    return t('Tu tablón ya tiene {BOARD_MAX_POSTS} fotos. Quita alguna para subir otra.', {
+    return t('Sobre mí ya tiene {BOARD_MAX_POSTS} fotos. Quita alguna para subir otra.', {
       BOARD_MAX_POSTS,
     });
   },

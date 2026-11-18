@@ -107,7 +107,7 @@ export const TOUR_PAGES = [
   {
     shot: 'discover',
     title: tk('Encuentra a tu cofundador'),
-    body: tk('Perfiles que complementan lo que dominas. Si os dais like los dos, hay match.'),
+    body: tk('Toca a la derecha para ver lo siguiente y a la izquierda para volver'),
   },
   {
     shot: 'matches',
@@ -122,7 +122,7 @@ export const TOUR_PAGES = [
   {
     shot: 'profile',
     title: tk('Destaca con tu perfil'),
-    body: tk('Vincula GitHub o LinkedIn y enseña en tu tablón en qué trabajas.'),
+    body: tk('Vincula GitHub o LinkedIn y comparte tus proyectos.'),
   },
 ] as const satisfies readonly { shot: Shot; title: string; body: string }[];
 
@@ -499,7 +499,7 @@ function Highlight({ shot, compact }: { shot: Shot; compact: boolean }) {
       return (
         <View style={styles.cardColumn}>
           <Checked text={t('Sello de GitHub o LinkedIn en tu tarjeta')} />
-          <Checked text={t('Tu tablón: lo que construyes, en fotos')} />
+          <Checked text={t('Sobre mí recoge tus fotos personales')} />
           <Checked text={t('Edítalo cuando quieras desde Perfil')} />
         </View>
       );

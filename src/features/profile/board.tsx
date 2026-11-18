@@ -118,12 +118,14 @@ export function Board({
 
   return (
     <View style={styles.root}>
-      {!hideTitle ? <ThemedText type="label" themeColor="textSecondary">{t('Sobre mí')}</ThemedText> : null}
+      {!hideTitle ? (
+        <ThemedText type="label" themeColor="textSecondary">
+          {t('Sobre mí')}
+        </ThemedText>
+      ) : null}
       {editable && list.length === 0 && !draft ? (
         <ThemedText type="small" themeColor="textSecondary">
-          {t(
-            'Enseña en qué trabajas, lo que has construido o algo más de ti. Las fotos se revisan antes de publicarse.'
-          )}
+          {t('Fotos tuyas, tus aficiones, tu día a día. Las fotos se revisan antes de publicarse.')}
         </ThemedText>
       ) : null}
 
@@ -134,9 +136,7 @@ export function Board({
               source={{ uri: open.imageUrl }}
               style={styles.large}
               contentFit="cover"
-              accessibilityLabel={
-                open.caption || t('Foto del tablón de {ownerName}', { ownerName })
-              }
+              accessibilityLabel={open.caption || t('Foto personal de {ownerName}', { ownerName })}
             />
           ) : null}
           {open.caption ? <ThemedText type="body">{open.caption}</ThemedText> : null}
@@ -171,7 +171,7 @@ export function Board({
             />
           </Field>
           <PrimaryButton
-            label={busy === 'subir' ? t('Revisando y subiendo…') : t('Publicar en el tablón')}
+            label={busy === 'subir' ? t('Revisando y subiendo…') : t('Publicar en Sobre mí')}
             disabled={busy !== null}
             onPress={() => void publish()}
           />
@@ -184,7 +184,7 @@ export function Board({
           <Pressable
             key={post.id}
             accessibilityRole="imagebutton"
-            accessibilityLabel={post.caption || t('Foto del tablón de {ownerName}', { ownerName })}
+            accessibilityLabel={post.caption || t('Foto personal de {ownerName}', { ownerName })}
             onPress={() => setOpen(post)}
             style={[styles.cell, { backgroundColor: theme.backgroundElement }]}>
             {post.imageUrl ? (
@@ -195,7 +195,7 @@ export function Board({
         {editable && !full && !draft ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={t('Añadir una foto al tablón')}
+            accessibilityLabel={t('Añadir una foto a Sobre mí')}
             onPress={() => void pick()}
             style={[
               styles.cell,

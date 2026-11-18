@@ -4,7 +4,7 @@
  * Decisión del usuario del 2026-10-17: quien entra por primera vez no sabe que
  * un toque en la tarjeta pasa al siguiente bloque de información (qué busca,
  * horario, respuestas). Sobre la información de la primera tarjeta aparece una
- * mano que pulsa, con una onda en la yema y un «Toca para ver más».
+ * mano que pulsa, con una onda en la yema y un «Toca a la derecha para ver lo siguiente y a la izquierda para volver».
  *
  * - No intercepta nada (`pointerEvents="none"`): el toque llega a la tarjeta,
  *   que pasa de bloque, y eso es lo que la retira (`useTapHint().dismiss`). Una
@@ -146,7 +146,9 @@ export function TapHint({
           styles.label,
           { backgroundColor: `${theme.background}B3`, borderColor: theme.border },
         ]}>
-        <ThemedText type="smallBold">{t('Toca para ver más')}</ThemedText>
+        <ThemedText type="smallBold" style={{ textAlign: 'center' }}>
+          {t('Toca a la derecha para ver lo siguiente y a la izquierda para volver')}
+        </ThemedText>
       </View>
     </Animated.View>
   );
@@ -177,6 +179,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   label: {
+    maxWidth: '88%',
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.one + 2,
     borderRadius: Radii.pill,

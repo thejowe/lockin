@@ -16,16 +16,16 @@ import { t } from '@/i18n';
 export function usePremiumBadge(profileId: string): boolean {
   // `repositories.premium` solo se toca en el efecto, nunca al renderizar.
   const repositories = useRepositories();
-  const [badged, setBadged] = useState(false);
+  const [owner, setOwner] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    setBadged(false);
     repositories.premium.listBadges([profileId]).then(
       (ids) => {
-        if (!cancelled) setBadged(ids.includes(profileId));
+        if (!cancelled) setOwner(ids.includes(profileId) ? profileId : null);
       },
       () => {
+        if (!cancelled) setOwner(null);
         // Sin saberlo no se pone el distintivo: es decorativo, no merece un error.
       }
     );
@@ -34,7 +34,7 @@ export function usePremiumBadge(profileId: string): boolean {
     };
   }, [repositories, profileId]);
 
-  return badged;
+  return owner === profileId;
 }
 
 export function PremiumBadge({ profileId, size = 18 }: { profileId: string; size?: number }) {
