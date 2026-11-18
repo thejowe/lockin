@@ -120,7 +120,9 @@ it('espera la revisión y monta la foto en el hueco elegido con movimiento reduc
       );
       await fireEvent.press(screen.getByRole('button', { name: 'Publicar en Sobre mí' }));
       expect(screen.getByRole('progressbar', { name: 'En revisión…' })).toBeVisible();
-      expect(screen.getByRole('button', { name: 'Cancelar' })).toBeDisabled();
+      // Cerrar la hoja durante la revisión no descarta la subida.
+      await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
+      expect(screen.getByRole('progressbar', { name: 'En revisión…' })).toBeVisible();
       expect(onPhotoAdded).not.toHaveBeenCalled();
 
       const second = { ...first, id: 'segunda', caption: 'Cuaderno', imageUrl: 'file:///b.jpg' };

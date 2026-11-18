@@ -37,9 +37,19 @@ function valid(rect?: Rect): rect is Rect {
   );
 }
 
+/**
+ * El panel de BottomSheet es un `Animated.View`: en nativo su ref es la instancia
+ * de clase de Reanimated, que no tiene `getBoundingClientRect`. Se mide la vista
+ * nativa que envuelve. Sin esto la trayectoria salía `null` y solo quedaba el fundido.
+ */
+function host(view: ViewInstance | null): ViewInstance | null {
+  if (!view || typeof view.getBoundingClientRect === 'function') return view;
+  return (view as { _componentRef?: ViewInstance | null })._componentRef ?? view;
+}
+
 function trajectory(sheet: ViewInstance | null, card: ViewInstance | null): Flight | null {
-  const from = sheet?.getBoundingClientRect?.();
-  const to = card?.getBoundingClientRect?.();
+  const from = host(sheet)?.getBoundingClientRect?.();
+  const to = host(card)?.getBoundingClientRect?.();
   if (!valid(from) || !valid(to)) return null;
   return {
     dx: to.x - from.x + (to.width - from.width) / 2,

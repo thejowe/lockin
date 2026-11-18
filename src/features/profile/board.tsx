@@ -5,22 +5,25 @@
 
 import { Image } from 'expo-image';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, View } from 'react-native';
 
 import { useArrivals } from '@/components/animations/useArrivals';
-import { Icon } from '@/components/icon';
+import { BottomSheet } from '@/components/BottomSheet';
 import { ThemedText } from '@/components/themed-text';
-import { Control, Radii, ScrimAlpha, Spacing, Stroke } from '@/constants/theme';
+import { Radii, Spacing } from '@/constants/theme';
 import { useQuery, useRepositories, type BoardPost } from '@/data';
 import { isObjectionable, OBJECTIONABLE_MESSAGE } from '@/features/safety/content-filter';
-import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
 
 import { pickAvatarPhoto } from './avatar-photo';
 import { BoardGrid } from './board-grid';
-import { CompactPrimaryButton, CompactSecondaryButton, Field, TextField } from './controls';
+import {
+  CompactSecondaryButton,
+  Field,
+  PrimaryButton,
+  SecondaryButton,
+  TextField,
+} from './controls';
 
 const CAPTION_MAX = 280;
 const REFRESH_MS = 45 * 60 * 1000;
@@ -43,7 +46,6 @@ export function Board({
   onPhotoAdded?: (photoId: string) => void;
   onPhotoCountChange?: (count: number | null) => void;
 }) {
-  const theme = useTheme();
   const repositories = useRepositories();
   const {
     data: posts,
@@ -205,129 +207,84 @@ export function Board({
       )}
       {!dialogOpen && alert}
 
-      {dialogOpen && (
-        <Modal transparent animationType="none" visible onRequestClose={close}>
-          <SafeAreaView
-            style={[styles.backdrop, { backgroundColor: theme.background + ScrimAlpha }]}>
-            <KeyboardAwareScrollView
-              contentContainerStyle={styles.dialogArea}
-              keyboardShouldPersistTaps="handled"
-              bottomOffset={Spacing.three}>
-              <View
-                style={[
-                  styles.dialog,
-                  { backgroundColor: theme.surfaceOpaque, borderColor: theme.border },
-                ]}>
-                <View style={styles.dialogHeader}>
-                  <ThemedText type="subtitle" accessibilityRole="header" style={styles.dialogTitle}>
-                    {draft ? t('Añadir foto') : t('Sobre mí')}
-                  </ThemedText>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={draft ? t('Cancelar') : t('Cerrar')}
-                    disabled={busy !== null}
-                    accessibilityState={{ disabled: busy !== null }}
-                    onPress={close}
-                    style={styles.close}>
-                    <Icon name="close" color={theme.textSecondary} />
-                  </Pressable>
-                </View>
-                {draft ? (
-                  <>
-                    <Image source={{ uri: draft.uri }} style={styles.preview} contentFit="cover" />
-                    <Field label={t('Texto (opcional)')}>
-                      <TextField
-                        value={draft.caption}
-                        onChangeText={(caption) => setDraft({ ...draft, caption })}
-                        placeholder={t('Qué es, en qué estás trabajando…')}
-                        multiline
-                        editable={busy === null}
-                        maxLength={CAPTION_MAX}
-                        showCount
-                        autoCapitalize="sentences"
-                        autoCorrect={false}
-                        accessibilityLabel={t('Texto de la foto')}
-                        accessibilityHint={t('Hasta {CAPTION_MAX} caracteres.', { CAPTION_MAX })}
-                      />
-                    </Field>
-                    {alert}
-                    {busy === 'subir' ? (
-                      <ThemedText
-                        type="smallBold"
-                        accessibilityRole="progressbar"
-                        accessibilityLabel={t('En revisión…')}
-                        accessibilityLiveRegion="polite">
-                        {t('Revisando y subiendo…')}
-                      </ThemedText>
-                    ) : (
-                      <CompactPrimaryButton
-                        label={t('Publicar en Sobre mí')}
-                        onPress={() => void publish()}
-                      />
-                    )}
-                  </>
-                ) : open ? (
-                  <>
-                    {open.imageUrl ? (
-                      <Image
-                        source={{ uri: open.imageUrl }}
-                        style={styles.large}
-                        contentFit="contain"
-                        accessibilityLabel={
-                          open.caption || t('Foto personal de {ownerName}', { ownerName })
-                        }
-                      />
-                    ) : (
-                      <ThemedText type="small" themeColor="textSecondary">
-                        {t('No se ha podido cargar la foto.')}
-                      </ThemedText>
-                    )}
-                    {!!open.caption && <ThemedText>{open.caption}</ThemedText>}
-                    {alert}
-                    {editable && (
-                      <CompactSecondaryButton
-                        label={busy === 'quitar' ? t('Quitando…') : t('Quitar esta foto')}
-                        tone="danger"
-                        disabled={busy !== null}
-                        onPress={() => void remove(open)}
-                      />
-                    )}
-                  </>
-                ) : null}
-              </View>
-            </KeyboardAwareScrollView>
-          </SafeAreaView>
-        </Modal>
-      )}
+      {/* La misma hoja inferior que la foto de perfil y el editor de proyectos. */}
+      <BottomSheet
+        visible={dialogOpen}
+        onClose={close}
+        title={draft ? t('Añadir foto') : t('Sobre mí')}
+        snapPoints={[0.85]}
+        footer={
+          draft ? (
+            busy === 'subir' ? (
+              <ThemedText
+                type="smallBold"
+                accessibilityRole="progressbar"
+                accessibilityLabel={t('En revisión…')}
+                accessibilityLiveRegion="polite">
+                {t('Revisando y subiendo…')}
+              </ThemedText>
+            ) : (
+              <PrimaryButton label={t('Publicar en Sobre mí')} onPress={() => void publish()} />
+            )
+          ) : open && editable ? (
+            <SecondaryButton
+              label={busy === 'quitar' ? t('Quitando…') : t('Quitar esta foto')}
+              tone="danger"
+              disabled={busy !== null}
+              onPress={() => void remove(open)}
+            />
+          ) : undefined
+        }>
+        <View style={styles.sheetBody}>
+          {draft ? (
+            <>
+              <Image source={{ uri: draft.uri }} style={styles.preview} contentFit="cover" />
+              <Field label={t('Texto (opcional)')}>
+                <TextField
+                  value={draft.caption}
+                  onChangeText={(caption) => setDraft({ ...draft, caption })}
+                  placeholder={t('Qué es, en qué estás trabajando…')}
+                  multiline
+                  editable={busy === null}
+                  maxLength={CAPTION_MAX}
+                  showCount
+                  autoCapitalize="sentences"
+                  autoCorrect={false}
+                  accessibilityLabel={t('Texto de la foto')}
+                  accessibilityHint={t('Hasta {CAPTION_MAX} caracteres.', { CAPTION_MAX })}
+                />
+              </Field>
+              {alert}
+            </>
+          ) : open ? (
+            <>
+              {open.imageUrl ? (
+                <Image
+                  source={{ uri: open.imageUrl }}
+                  style={styles.large}
+                  contentFit="contain"
+                  accessibilityLabel={
+                    open.caption || t('Foto personal de {ownerName}', { ownerName })
+                  }
+                />
+              ) : (
+                <ThemedText type="small" themeColor="textSecondary">
+                  {t('No se ha podido cargar la foto.')}
+                </ThemedText>
+              )}
+              {!!open.caption && <ThemedText>{open.caption}</ThemedText>}
+              {alert}
+            </>
+          ) : null}
+        </View>
+      </BottomSheet>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { gap: Spacing.two },
-  backdrop: { flex: 1 },
-  dialogArea: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: Spacing.three,
-  },
-  dialog: {
-    width: '100%',
-    maxWidth: 480,
-    gap: Spacing.three,
-    padding: Spacing.three,
-    borderRadius: Radii.large,
-    borderWidth: Stroke.hairline,
-  },
-  dialogHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  dialogTitle: { flex: 1 },
-  close: {
-    width: Control.minTouch,
-    height: Control.minTouch,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  sheetBody: { gap: Spacing.three },
   preview: { width: '44%', aspectRatio: 1, borderRadius: Radii.small },
   large: { width: '100%', aspectRatio: 1, borderRadius: Radii.small },
 });

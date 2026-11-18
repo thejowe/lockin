@@ -170,6 +170,44 @@ it.each([false, true])(
   }
 );
 
+it('measures the native view behind an Animated.View panel, as on device', async () => {
+  // En nativo el ref de un Animated.View es la instancia de clase de Reanimated,
+  // sin getBoundingClientRect: la vista medible está en `_componentRef`.
+  const animated = { current: { _componentRef: sheet } as unknown as ViewInstance };
+  function AnimatedFooter() {
+    useProjectSheet(animated);
+    return null;
+  }
+  function AnimatedList({ api }: { api: Ref<ProjectMotion> }) {
+    const motion = useProjectSaveMotion();
+    useImperativeHandle(api, () => motion);
+    return (
+      <ProjectSheetSource value={motion.source}>
+        <AnimatedFooter />
+        {motion.transition}
+      </ProjectSheetSource>
+    );
+  }
+  const api = createRef<ProjectMotion>();
+  await render(<AnimatedList api={api} />);
+  api.current!.slot.current = host(60, 200, 200, 100);
+  await act(async () => {
+    void api.current!.onProjectSaved('nativo');
+  });
+  await act(async () => {
+    jest.advanceTimersByTime(20);
+  });
+  expect(mockTiming.mock.calls[0][1].duration).toBe(Duration.slow);
+  mockValues[1].set(0.5);
+  mockPaint();
+  expect(mockNative.mock.lastCall?.[1].transform).toEqual([
+    { translateX: -20 },
+    { translateY: -175 },
+    { scaleX: 0.75 },
+    { scaleY: 0.625 },
+  ]);
+});
+
 it('fades when the destination cannot be measured and ignores completion after leaving', async () => {
   const api = createRef<ProjectMotion>();
   const view = await render(<List api={api} />);
