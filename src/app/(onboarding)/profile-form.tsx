@@ -40,6 +40,8 @@ export default function ProfileFormScreen() {
 
   // Las fotos y proyectos publicados necesitan el perfil y su avatar ya aprobados.
   const [entering, setEntering] = useState(false);
+  const [boardPhotoCount, setBoardPhotoCount] = useState<number | null>(null);
+  const boardPrimaryLabel = boardPhotoCount ? t('Continuar') : t('Ahora no');
   const [media, setMedia] = useState<{
     ownerId: string;
     name: string;
@@ -92,18 +94,23 @@ export default function ProfileFormScreen() {
             step={media.step === 'board' ? media.total - 1 : media.total}
             total={media.total}
             title={media.step === 'board' ? t('Sobre mí') : t('Tus proyectos')}
-            primaryLabel={media.step === 'board' ? t('Continuar') : t('Crear perfil')}
+            primaryLabel={media.step === 'board' ? boardPrimaryLabel : t('Crear perfil')}
+            busy={media.step === 'board' && boardPhotoCount === null}
             onBack={() =>
               media.step === 'board' ? setMedia(null) : setMedia({ ...media, step: 'board' })
             }
             onPrimary={() =>
               media.step === 'board' ? setMedia({ ...media, step: 'projects' }) : setEntering(true)
             }
-            onSkip={() =>
-              media.step === 'board' ? setMedia({ ...media, step: 'projects' }) : setEntering(true)
-            }>
+            onSkip={media.step === 'projects' ? () => setEntering(true) : undefined}>
             {media.step === 'board' ? (
-              <Board ownerId={media.ownerId} ownerName={media.name} editable hideTitle />
+              <Board
+                ownerId={media.ownerId}
+                ownerName={media.name}
+                editable
+                hideTitle
+                onPhotoCountChange={setBoardPhotoCount}
+              />
             ) : (
               <MyProjects ownerId={media.ownerId} wizard />
             )}
