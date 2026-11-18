@@ -63,7 +63,7 @@ export function PhotoSourceSheet({
               accessibilityRole="button"
               accessibilityState={{ disabled: busy }}
               disabled={busy}
-              onPress={action.press}
+              onPress={() => void action.press()}
               style={({ pressed }) => [
                 styles.row,
                 {
