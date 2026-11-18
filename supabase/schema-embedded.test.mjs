@@ -1030,7 +1030,11 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
     assert.equal((await db.query('select id from public.profile_projects')).rows.length, 3);
     await rechaza("update public.profile_projects set name='Otro'", /permission denied/);
     await db.exec('reset role');
-    await db.exec(`insert into public.user_blocks(blocker_id,blocked_id) values ('${ana}','${bea}');
+    await db.exec(`insert into auth.users (id,email) values ('${bea}','bea@project.test') on conflict do nothing;
+      insert into public.profiles(id,name,age,location,timezone,avatar_initials,specialties,looking_for,starting_point,availability_hours_per_week,availability_bands,ambition)
+        select '${bea}','Bea',age,location,timezone,'B',specialties,looking_for,starting_point,availability_hours_per_week,availability_bands,ambition
+        from public.profiles where id='${ana}';
+      insert into public.user_blocks(blocker_id,blocked_id) values ('${ana}','${bea}');
       create or replace function auth.uid() returns uuid language sql as $$ select '${bea}'::uuid $$;
       set local role authenticated`);
     assert.equal((await db.query('select id from public.profile_projects')).rows.length, 0);
