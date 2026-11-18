@@ -989,6 +989,9 @@ if (command === 'test') {
       const { error: otherProfileError } = await admin.from('profiles').insert({
         id: otherId,
         name: otherName,
+        // La puerta de foto (`RequirePhoto`) no deja entrar sin foto aprobada. La
+        // ruta basta: sin objeto en storage queda `hasPhoto` sin URL firmada.
+        avatar_url: otherId + '/e2e.jpg',
         age: 28,
         location: 'Barcelona',
         timezone: 'Europe/Madrid',
@@ -1175,6 +1178,8 @@ if (command === 'test') {
       const { error: profileError } = await admin.from('profiles').insert({
         id: userId,
         name: profileName,
+        // Ver la otra ficha: sin foto la puerta mandaría a `/photo`.
+        avatar_url: userId + '/e2e.jpg',
         age: 28,
         location: 'Barcelona',
         timezone: 'Europe/Madrid',

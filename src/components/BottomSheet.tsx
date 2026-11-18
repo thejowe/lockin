@@ -45,7 +45,7 @@ import {
   Radii,
   Spacing,
 } from '@/constants/theme';
-import { useReduceMotion } from '@/hooks/use-reduce-motion';
+import { useReduceMotionSetting } from '@/hooks/use-reduce-motion';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
 import { glassStyle } from './glass';
@@ -97,9 +97,11 @@ type Props = {
 };
 
 export function BottomSheet({ visible, ...props }: Props) {
+  // El valor que Reanimated leyó al arrancar la app sirve solo hasta que el
+  // sistema responde; desde ahí manda el ajuste en vivo, también si se apaga.
   const initiallyReduced = useReducedMotion();
-  const liveReduced = useReduceMotion();
-  const reduced = liveReduced || initiallyReduced;
+  const liveReduced = useReduceMotionSetting();
+  const reduced = liveReduced ?? initiallyReduced;
   return (
     <Modal
       visible={visible}

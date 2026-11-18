@@ -14,6 +14,8 @@ export default function OnboardingLayout() {
       {/* El tutorial pasa páginas en horizontal: el gesto de volver se las comería, y
           detrás ya no hay nada a lo que volver (llega con `replace`). */}
       <Stack.Screen name="tour" options={{ gestureEnabled: false }} />
+      {/* La puerta de foto no tiene detrás nada a lo que volver. */}
+      <Stack.Screen name="photo" options={{ gestureEnabled: false }} />
     </Stack>
   );
 }

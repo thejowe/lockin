@@ -7,8 +7,11 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Spacing } from '@/constants/theme';
 import { BottomSheet } from './BottomSheet';
 
-const mockReduced = jest.fn(() => false);
-jest.mock('@/hooks/use-reduce-motion', () => ({ useReduceMotion: () => mockReduced() }));
+const mockReduced = jest.fn<boolean | null, []>(() => false);
+jest.mock('@/hooks/use-reduce-motion', () => ({
+  useReduceMotion: () => mockReduced() ?? false,
+  useReduceMotionSetting: () => mockReduced(),
+}));
 beforeEach(() => mockReduced.mockReturnValue(false));
 
 const frame = { x: 0, y: 0, height: 800, width: 400 };
@@ -86,6 +89,27 @@ it('descuenta solo el teclado que tapa la hoja y recupera el inset al cerrarlo',
     height: frame.height - insets.top - Spacing.two,
     paddingBottom: insets.bottom,
   });
+});
+
+it('sigue el ajuste de reducir movimiento si cambia con la app abierta', async () => {
+  // Arrancó con el ajuste puesto (lo que leyó Reanimated) y el sistema aún no ha respondido.
+  const reanimated = jest.requireMock('react-native-reanimated');
+  const startup = jest.spyOn(reanimated, 'useReducedMotion').mockReturnValue(true);
+  mockReduced.mockReturnValue(null);
+  await openSheet();
+  expect(screen.root?.props.animationType).toBe('fade');
+
+  // Lo apaga en Ajustes: las hojas que se abren desde ese momento ya se deslizan.
+  mockReduced.mockReturnValue(false);
+  await openSheet();
+  expect(screen.root?.props.animationType).not.toBe('fade');
+  expect(screen.getByTestId('bottom-sheet-panel').props.entering).toBeDefined();
+
+  // Y al revés: si lo vuelve a activar, la siguiente vuelve al fundido.
+  mockReduced.mockReturnValue(true);
+  await openSheet();
+  expect(screen.root?.props.animationType).toBe('fade');
+  startup.mockRestore();
 });
 
 it('con movimiento reducido la hoja entra por fundido y conserva el cierre por gesto', async () => {

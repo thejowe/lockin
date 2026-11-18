@@ -19,8 +19,8 @@ import {
 import { ThemeOverride, useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
 import { pickAvatarPhoto } from './avatar-photo';
-import { Field, TextField } from './controls';
-import { ProjectCover, ProjectPrimaryButton } from './project-card';
+import { Field, PrimaryButton, TextField } from './controls';
+import { ProjectCover } from './project-card';
 
 const empty: ProjectInput = {
   name: '',
@@ -102,7 +102,7 @@ function SaveFooter({
           {error}
         </ThemedText>
       ) : null}
-      <ProjectPrimaryButton
+      <PrimaryButton
         label={saving ? t('Guardando…') : t('Guardar proyecto')}
         disabled={busy || !valid}
         onPress={onSave}

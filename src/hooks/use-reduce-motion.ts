@@ -22,7 +22,16 @@ import { AccessibilityInfo } from 'react-native';
 
 /** `true` si el sistema pide reducir movimiento. Se actualiza si cambia en caliente. */
 export function useReduceMotion(): boolean {
-  const [reduceMotion, setReduceMotion] = useState(false);
+  return useReduceMotionSetting() ?? false;
+}
+
+/**
+ * Lo mismo, pero `null` mientras el sistema no ha respondido: para quien tiene un
+ * valor mejor que «animar» con el que arrancar (la hoja inferior usa el que
+ * Reanimated leyó al iniciar la app) y aun así debe seguir los cambios en caliente.
+ */
+export function useReduceMotionSetting(): boolean | null {
+  const [reduceMotion, setReduceMotion] = useState<boolean | null>(null);
 
   useEffect(() => {
     let mounted = true;

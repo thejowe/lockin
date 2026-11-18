@@ -1,46 +1,13 @@
 import { Image } from 'expo-image';
-import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { SlotPressable } from '@/components/animations/ProfileMotion';
 import { glassStyle } from '@/components/glass';
 import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
-import { Control, Opacity, Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing } from '@/constants/theme';
 import type { ProjectInput } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
-
-/** The project brief uses the original ember accent for the primary action. */
-const ember = '#FF8645';
-
-export function ProjectPrimaryButton({
-  label,
-  onPress,
-  disabled = false,
-}: {
-  label: string;
-  onPress: () => void;
-  disabled?: boolean;
-}) {
-  const theme = useTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ disabled }}
-      disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.primary,
-        {
-          backgroundColor: disabled ? theme.backgroundElement : ember,
-          opacity: pressed ? Opacity.pressed : 1,
-        },
-      ]}>
-      <ThemedText type="bodyStrong" themeColor={disabled ? 'textMuted' : 'onAccent'}>
-        {label}
-      </ThemedText>
-    </Pressable>
-  );
-}
 
 export function CreateProjectCard({
   onPress,
@@ -134,14 +101,6 @@ export function ProjectCover({
 }
 
 const styles = StyleSheet.create({
-  primary: {
-    minHeight: Control.button,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two,
-    borderRadius: Radii.pill,
-  },
   create: {
     minHeight: 184,
     justifyContent: 'center',
