@@ -15,8 +15,10 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  TextInput,
   View,
   useWindowDimensions,
+  type ScrollViewInstance,
   type ViewInstance,
   type ViewProps,
 } from 'react-native';
@@ -27,6 +29,7 @@ import Animated, {
   ReduceMotion,
   SlideInDown,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
@@ -80,7 +83,9 @@ type Props = {
 };
 
 export function BottomSheet({ visible, ...props }: Props) {
-  const reduced = useReduceMotion();
+  const initiallyReduced = useReducedMotion();
+  const liveReduced = useReduceMotion();
+  const reduced = liveReduced || initiallyReduced;
   return (
     <Modal
       visible={visible}
@@ -108,18 +113,18 @@ function SheetContents({
   const insets = useSafeAreaInsets();
   const blurTarget = useContext(BackdropTarget);
   const frame = useRef<ViewInstance>(null);
+  const scroll = useRef<ScrollViewInstance>(null);
+  const footerHeight = useRef(0);
   const [layoutHeight, setLayoutHeight] = useState(0);
-  const [keyboardTop, setKeyboardTop] = useState<number | undefined>(
-    () => Keyboard.metrics()?.screenY
-  );
+  const [keyboard, setKeyboard] = useState(() => Keyboard.metrics?.());
   useEffect(() => {
     const show = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillChangeFrame' : 'keyboardDidShow',
-      (e) => setKeyboardTop(e.endCoordinates.screenY)
+      (e) => setKeyboard(e.endCoordinates)
     );
     const hide = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-      () => setKeyboardTop(undefined)
+      () => setKeyboard(undefined)
     );
     return () => {
       show.remove();
@@ -129,14 +134,18 @@ function SheetContents({
 
   // A resized Android modal has already lost the IME height. Only reserve the remaining overlap.
   const screenHeight = layoutHeight || windowHeight;
+  const keyboardTop = keyboard?.screenY;
+  const fullHeight = keyboard
+    ? Math.max(screenHeight, keyboard.screenY + keyboard.height)
+    : screenHeight;
   const overlap = Math.max(0, screenHeight - (keyboardTop ?? screenHeight));
   const available = Math.max(0, screenHeight - overlap - insets.top - Spacing.two);
   const points = (snapPoints.length ? snapPoints : defaultPoints).map((point) => {
     const dp =
       typeof point === 'string'
-        ? (parseFloat(point) * screenHeight) / 100
+        ? (parseFloat(point) * fullHeight) / 100
         : point <= 1
-          ? point * screenHeight
+          ? point * fullHeight
           : point;
     return Math.min(available, Math.max(Control.button, dp));
   });
@@ -149,6 +158,7 @@ function SheetContents({
   const panelStyle = useAnimatedStyle(() => ({ height: Math.min(available, height.get()) }));
 
   const pan = Gesture.Pan()
+    .withTestId('bottom-sheet-pan')
     .activeOffsetY([-5, 5])
     .onStart(() => {
       start.set(height.get());
@@ -159,7 +169,11 @@ function SheetContents({
           Math.max(Control.button, Math.min(Math.max(...points), start.get() - e.translationY))
         );
     })
-    .onEnd((e) => {
+    .onEnd((e, success) => {
+      if (!success) {
+        height.set(reduced ? start.get() : withTiming(start.get(), timing));
+        return;
+      }
       const intended = start.get() - e.translationY - e.velocityY * 0.12;
       const lowest = Math.min(...points);
       const dismiss = intended < lowest - Math.min(72, lowest * 0.2);
@@ -170,10 +184,21 @@ function SheetContents({
           );
       height.set(reduced ? next : withTiming(next, timing));
       if (dismiss) scheduleOnRN(onClose);
-    })
-    .onFinalize((_event, success) => {
-      if (!success) height.set(reduced ? start.get() : withTiming(start.get(), timing));
     });
+
+  function revealFocusedInput() {
+    if (keyboardTop === undefined || Platform.OS === 'web') return;
+    const focused = TextInput.State.currentlyFocusedInput();
+    if (focused) {
+      scroll.current
+        ?.getScrollResponder()
+        ?.scrollResponderScrollNativeHandleToKeyboard(
+          focused,
+          footerHeight.current + Spacing.two,
+          true
+        );
+    }
+  }
 
   return (
     <GestureHandlerRootView
@@ -249,13 +274,21 @@ function SheetContents({
             </View>
           </GestureDetector>
           <ScrollView
+            ref={scroll}
+            onLayout={revealFocusedInput}
             style={styles.body}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={styles.content}>
             {children}
           </ScrollView>
           {footer ? (
-            <View style={[styles.footer, { borderColor: theme.border }]}>{footer}</View>
+            <View
+              onLayout={(e) => {
+                footerHeight.current = e.nativeEvent.layout.height;
+              }}
+              style={[styles.footer, { borderColor: theme.border }]}>
+              {footer}
+            </View>
           ) : null}
         </BottomSheetFrame.Provider>
       </Animated.View>
