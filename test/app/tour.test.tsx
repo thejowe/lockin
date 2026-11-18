@@ -72,7 +72,7 @@ describe('TourScreen', () => {
     await renderRoute(<TourScreen />);
 
     const first = screen.getByLabelText(
-      'Encuentra a tu cofundador. Perfiles que complementan lo que dominas. Si os dais like los dos, hay match.'
+      'Encuentra a tu cofundador. Toca a la derecha para ver lo siguiente y a la izquierda para volver'
     );
     expect(first.props.accessibilityHint).toBe('Paso 1 de 4');
   });

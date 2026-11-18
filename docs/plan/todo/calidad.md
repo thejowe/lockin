@@ -5,6 +5,8 @@
 - [x] Jest cubre ambos extremos de la tarjeta, cero, uno y tres proyectos, subpuntos activos, contraste sobre blanco y edición desde el alta y Perfil.
 - [x] Contrato compartido de creación, edición, orden, límite, versión, bloqueo y borrado. La CI de contrato levanta la función Edge en la Supabase desechable.
 - [x] PGlite verifica las filas visibles y los permisos para firmar imágenes en Storage. Las pruebas de moderación simulan rechazo, proveedor caído y respuesta incompleta.
+- [x] Verificación local del 18 de noviembre. Pasaron TypeScript, 2.283 pruebas de Jest, 289 de esquema, 119 de funciones Edge y 99 del ejecutor E2E. ESLint terminó con cinco avisos y Expo exportó el bundle de Android.
+- [ ] Ejecutar el contrato contra Supabase real. GitHub Actions bloqueó el arranque de los trabajos por la facturación de la cuenta. [Ejecución de CI](https://github.com/thejowe/lockin/actions/runs/44207668832)
 - [x] Flujo de Maestro en `e2e/projects.yaml`. Usa una build Android en español con registro obligatorio, dos cuentas confirmadas en la misma Supabase de prueba y el servicio de moderación activo para el avatar. La autora empieza sin perfil y la lectora con un perfil compatible que aún no ha pasado a la autora. El flujo añade una imagen a la galería Android, completa el alta, guarda el proyecto y cambia de cuenta para encontrarlo en el deck.
 - [ ] [comprobador] Ejecutar `maestro test e2e/projects.yaml` con `-e` para `AUTHOR_EMAIL`, `AUTHOR_PASSWORD`, `VIEWER_EMAIL`, `VIEWER_PASSWORD`, `PROFILE_NAME` y `PROJECT_NAME`. Usar nombres únicos por ejecución y conservar la captura `proyecto-en-deck`.
 
