@@ -18,14 +18,13 @@ import { CreateProjectShift } from '@/components/animations/ProfileMotion';
    ```
 
 3. En esa tarjeta renderiza `{cover}` directamente. Sustituye la instancia provisional de `ProjectHandoff` por una única `{motion.transition}` al final de `ProjectList`, fuera del bucle. Del import de `./project-handoff` conserva solo `import type { WindowRect } from './project-handoff';`.
-4. Envuelve el `ProjectEditor` existente con `<ProjectSheetSource value={motion.source}>` y `</ProjectSheetSource>`. En la versión de A que emite `onSaved(id, draft, source)`, el cuerpo completo del callback queda así.
+4. Envuelve el `ProjectEditor` existente con `<ProjectSheetSource value={motion.source}>` y `</ProjectSheetSource>`. En A (`0de08cd`), conserva los dos callbacks de `collection` que reservan y liberan la tarjeta.
 
    ```tsx
    onSaved={async (id, draft, source) => {
-     setArrival({ id, draft, source, landed: false });
-     refresh();
+     onSaved(id, draft, source);
      if (edit === 'new') await motion.onProjectSaved(id);
-     setArrival(current => current?.id === id ? { ...current, landed: true } : current);
+     onLand(id);
      setEdit(null);
    }}
    ```
