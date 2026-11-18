@@ -27,7 +27,6 @@ import Animated, {
   Easing,
   FadeIn,
   ReduceMotion,
-  SlideInDown,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -85,6 +84,7 @@ export function BottomSheetBackground({ children, ...props }: ViewProps) {
 type SnapPoint = number | `${number}%`;
 const defaultPoints = [0.68];
 const timing = { duration: Duration.base, easing: Easing.bezier(...Curves.out) };
+const entranceTiming = { ...timing, duration: Duration.slow, reduceMotion: ReduceMotion.Never };
 
 type Props = {
   visible: boolean;
@@ -170,11 +170,25 @@ function SheetContents({
   useEffect(() => {
     height.set(reduced ? initial : withTiming(initial, timing));
   }, [height, initial, reduced]);
+  // Fabric recibe la posición oculta en el primer render, antes de medir el modal.
+  const hiddenFraction = useSharedValue(reduced ? 0 : 1);
+  const hasLayout = layoutHeight > 0;
+  useEffect(() => {
+    if (reduced) hiddenFraction.set(0);
+    else if (hasLayout) hiddenFraction.set(withTiming(0, entranceTiming));
+  }, [hasLayout, hiddenFraction, reduced]);
+
   const motion = useSharedValue<SheetMotionStyle | null>(null);
-  const panelStyle = useAnimatedStyle(() => ({
-    height: Math.min(available, height.get()),
-    ...(motion.get() ?? { opacity: 1, transform: [] }),
-  }));
+  const panelStyle = useAnimatedStyle(() => {
+    const panelHeight = Math.min(available, height.get());
+    return {
+      height: panelHeight,
+      ...(motion.get() ?? {
+        opacity: 1,
+        transform: [{ translateY: (panelHeight + overlap) * hiddenFraction.get() }],
+      }),
+    };
+  });
 
   const pan = Gesture.Pan()
     .withTestId('bottom-sheet-pan')
@@ -246,15 +260,6 @@ function SheetContents({
         accessibilityViewIsModal
         onAccessibilityEscape={onClose}
         testID="bottom-sheet-panel"
-        entering={
-          reduced
-            ? undefined
-            : // `Never` y no `System`: Reanimated resuelve `System` con el valor del
-              // arranque, y aquí ya manda el ajuste en vivo.
-              SlideInDown.duration(Duration.base)
-                .easing(timing.easing)
-                .reduceMotion(ReduceMotion.Never)
-        }
         style={[
           glassStyle(theme, { radius: Radii.sheet }),
           styles.sheet,

@@ -2,6 +2,7 @@
 
 ## Proyectos · 18 de noviembre de 2026
 
+- [x] La hoja arranca bajo el borde del modal y sube en 360 ms. Con movimiento reducido entra por fundido.
 - [x] Panel y miniaturas con texto protegido sobre la imagen, animaciones con movimiento reducido y textos en es/en/ca.
 - [x] «Sobre mí» para fotos personales y nueva pista en la tarjeta y el tutorial. Las capturas del tutorial se toman con la pista desactivada.
 
