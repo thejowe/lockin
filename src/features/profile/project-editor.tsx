@@ -4,7 +4,7 @@ import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { DetailsChevron } from '@/components/animations/ProfileMotion';
 import { useProjectSheet } from '@/components/animations/ShrinkToSlot';
-import { BottomSheet, BottomSheetFrame } from '@/components/BottomSheet';
+import { BottomSheet, BottomSheetFrame, BottomSheetMotion } from '@/components/BottomSheet';
 import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { Control, Duration, Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
@@ -94,7 +94,7 @@ function SaveFooter({
   onSave: () => void;
 }) {
   const frame = useContext(BottomSheetFrame);
-  useProjectSheet(frame);
+  useProjectSheet(frame, useContext(BottomSheetMotion));
   return (
     <View style={styles.footer}>
       {error ? (

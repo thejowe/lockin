@@ -1,3 +1,5 @@
+import type { SharedValue } from 'react-native-reanimated';
+import type { SheetMotionStyle } from '@/components/BottomSheet';
 import { act, createRef, useImperativeHandle, type Ref } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Platform, View, type ViewInstance, type ViewStyle } from 'react-native';
@@ -206,6 +208,44 @@ it('measures the native view behind an Animated.View panel, as on device', async
     { scaleX: 0.75 },
     { scaleY: 0.625 },
   ]);
+});
+
+it("drives the sheet's own motion style instead of setNativeProps when it offers one", async () => {
+  // En Fabric, un setNativeProps desde fuera lo pisa el siguiente commit de React.
+  const motion = {
+    set: jest.fn(),
+    get: () => null,
+  } as unknown as SharedValue<SheetMotionStyle | null>;
+  function MotionFooter() {
+    useProjectSheet(panel, motion);
+    return null;
+  }
+  function MotionList({ api }: { api: Ref<ProjectMotion> }) {
+    const save = useProjectSaveMotion();
+    useImperativeHandle(api, () => save);
+    return (
+      <ProjectSheetSource value={save.source}>
+        <MotionFooter />
+        {save.transition}
+      </ProjectSheetSource>
+    );
+  }
+  const api = createRef<ProjectMotion>();
+  await render(<MotionList api={api} />);
+  api.current!.slot.current = host(60, 200, 200, 100);
+  await act(async () => {
+    void api.current!.onProjectSaved('estilo');
+  });
+  await act(async () => {
+    jest.advanceTimersByTime(20);
+  });
+  mockValues[1].set(0.5);
+  mockPaint();
+  expect(mockNative).not.toHaveBeenCalled();
+  expect(jest.mocked(motion.set).mock.lastCall?.[0]).toEqual({
+    opacity: 1,
+    transform: [{ translateX: -20 }, { translateY: -175 }, { scaleX: 0.75 }, { scaleY: 0.625 }],
+  });
 });
 
 it('fades when the destination cannot be measured and ignores completion after leaving', async () => {

@@ -32,6 +32,7 @@ import Animated, {
   useReducedMotion,
   useSharedValue,
   withTiming,
+  type SharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
@@ -55,6 +56,19 @@ type SurfaceRef = RefObject<ViewInstance | null>;
 const BackdropTarget = createContext<SurfaceRef | undefined>(undefined);
 /** Measured in window coordinates for a handoff from the sheet to its originating screen. */
 export const BottomSheetFrame = createContext<SurfaceRef | null>(null);
+
+/**
+ * Movimiento que otro componente aplica al panel (p. ej. el vuelo hasta una
+ * tarjeta al guardar). Lo compone el propio estilo animado de la hoja: un
+ * `setNativeProps` desde fuera lo pisaba el siguiente commit de React en Fabric.
+ */
+export type SheetMotionStyle = {
+  opacity: number;
+  transform: (
+    { translateX: number } | { translateY: number } | { scaleX: number } | { scaleY: number }
+  )[];
+};
+export const BottomSheetMotion = createContext<SharedValue<SheetMotionStyle | null> | null>(null);
 
 /** Wrap the presenting content so expo-blur can sample it on Android. */
 export function BottomSheetBackground({ children, ...props }: ViewProps) {
@@ -154,7 +168,11 @@ function SheetContents({
   useEffect(() => {
     height.set(reduced ? initial : withTiming(initial, timing));
   }, [height, initial, reduced]);
-  const panelStyle = useAnimatedStyle(() => ({ height: Math.min(available, height.get()) }));
+  const motion = useSharedValue<SheetMotionStyle | null>(null);
+  const panelStyle = useAnimatedStyle(() => ({
+    height: Math.min(available, height.get()),
+    ...(motion.get() ?? { opacity: 1, transform: [] }),
+  }));
 
   const pan = Gesture.Pan()
     .withTestId('bottom-sheet-pan')
@@ -235,7 +253,7 @@ function SheetContents({
           glassStyle(theme, { radius: Radii.sheet }),
           styles.sheet,
           {
-            backgroundColor: theme.surfaceOpaque + 'F5',
+            backgroundColor: theme.surfaceOpaque,
             marginBottom: overlap,
             paddingBottom: keyboardTop === undefined ? insets.bottom : 0,
             paddingLeft: insets.left,
@@ -244,41 +262,45 @@ function SheetContents({
           panelStyle,
         ]}>
         <BottomSheetFrame.Provider value={frame}>
-          <GestureDetector gesture={pan}>
-            <View collapsable={false} style={styles.chrome}>
-              <View style={[styles.handle, { backgroundColor: theme.textMuted }]} />
-              <View style={styles.header}>
-                {title ? (
-                  <ThemedText type="subtitle" accessibilityRole="header" style={styles.title}>
-                    {title}
-                  </ThemedText>
-                ) : null}
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={t('Cerrar')}
-                  onPress={onClose}
-                  style={({ pressed }) => [
-                    styles.close,
-                    {
-                      backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement,
-                    },
-                  ]}>
-                  <Icon name="close" color={theme.text} size={18} />
-                </Pressable>
+          <BottomSheetMotion.Provider value={motion}>
+            <GestureDetector gesture={pan}>
+              <View collapsable={false} style={styles.chrome}>
+                <View style={[styles.handle, { backgroundColor: theme.textMuted }]} />
+                <View style={styles.header}>
+                  {title ? (
+                    <ThemedText type="subtitle" accessibilityRole="header" style={styles.title}>
+                      {title}
+                    </ThemedText>
+                  ) : null}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t('Cerrar')}
+                    onPress={onClose}
+                    style={({ pressed }) => [
+                      styles.close,
+                      {
+                        backgroundColor: pressed
+                          ? theme.backgroundSelected
+                          : theme.backgroundElement,
+                      },
+                    ]}>
+                    <Icon name="close" color={theme.text} size={18} />
+                  </Pressable>
+                </View>
               </View>
-            </View>
-          </GestureDetector>
-          <ScrollView
-            ref={scroll}
-            onLayout={revealFocusedInput}
-            style={styles.body}
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={styles.content}>
-            {children}
-          </ScrollView>
-          {footer ? (
-            <View style={[styles.footer, { borderColor: theme.border }]}>{footer}</View>
-          ) : null}
+            </GestureDetector>
+            <ScrollView
+              ref={scroll}
+              onLayout={revealFocusedInput}
+              style={styles.body}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.content}>
+              {children}
+            </ScrollView>
+            {footer ? (
+              <View style={[styles.footer, { borderColor: theme.border }]}>{footer}</View>
+            ) : null}
+          </BottomSheetMotion.Provider>
         </BottomSheetFrame.Provider>
       </Animated.View>
     </GestureHandlerRootView>

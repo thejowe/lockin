@@ -17,9 +17,11 @@ import {
   useAnimatedRef,
   useSharedValue,
   withTiming,
+  type SharedValue,
 } from 'react-native-reanimated';
 import { scheduleOnRN, scheduleOnUI } from 'react-native-worklets';
 
+import type { SheetMotionStyle } from '@/components/BottomSheet';
 import { Curves, Duration } from '@/constants/theme';
 import { useReduceMotion } from '@/hooks/use-reduce-motion';
 
@@ -59,7 +61,7 @@ function trajectory(sheet: ViewInstance | null, card: ViewInstance | null): Flig
   };
 }
 
-function sheetFrame(progress: number, path: Flight | null) {
+function sheetFrame(progress: number, path: Flight | null): SheetMotionStyle {
   'worklet';
   if (!path) return { opacity: 1 - progress, transform: [] };
   return {
@@ -80,11 +82,14 @@ function sheetFrame(progress: number, path: Flight | null) {
  */
 export function ShrinkToSlot({
   sheet,
+  motion,
   slot,
   reduced,
   onLand,
 }: {
   sheet: ViewInstance | null;
+  /** El estilo de vuelo de la propia hoja (BottomSheetMotion). Sin él, setNativeProps. */
+  motion: SharedValue<SheetMotionStyle | null> | null;
   slot: RefObject<ViewInstance | null>;
   reduced: boolean;
   onLand: () => void;
@@ -102,7 +107,9 @@ export function ShrinkToSlot({
   useAnimatedReaction(
     () => ({ p: progress.get(), flight: path.get() }),
     ({ p, flight }) => {
-      if (p >= 0) setNativeProps(panel, hasSheet ? sheetFrame(p, flight) : { opacity: p });
+      if (p < 0) return;
+      if (hasSheet && motion) motion.set(sheetFrame(p, flight));
+      else setNativeProps(panel, hasSheet ? sheetFrame(p, flight) : { opacity: p });
     }
   );
 
@@ -123,7 +130,7 @@ export function ShrinkToSlot({
         complete();
         return;
       }
-      panel(surface);
+      if (!(sheet && motion)) panel(surface);
       attached = true;
       const flight = reduced ? null : trajectory(sheet, slot.current);
       path.set(flight);
@@ -148,38 +155,47 @@ export function ShrinkToSlot({
       cancelAnimation(progress);
       if (!landed.current) {
         progress.set(-1);
-        if (attached)
+        if (attached && sheet && motion) motion.set(null);
+        else if (attached)
           scheduleOnUI(() => {
             'worklet';
             setNativeProps(panel, { opacity: 1, transform: [] });
           });
       }
     };
-  }, [sheet, slot, reduced, panel, path, progress]);
+  }, [sheet, motion, slot, reduced, panel, path, progress]);
   return null;
 }
 
-type Save = { id: string; sheet: ViewInstance | null; done: Promise<void>; resolve: () => void };
+type SheetMotion = SharedValue<SheetMotionStyle | null>;
+type Save = {
+  id: string;
+  sheet: ViewInstance | null;
+  motion: SheetMotion | null;
+  done: Promise<void>;
+  resolve: () => void;
+};
 type PanelRef = RefObject<ViewInstance | null>;
-export const ProjectSheetSource = createContext<RefObject<PanelRef | null> | null>(null);
+type Source = { frame: PanelRef | null; motion: SheetMotion | null };
+export const ProjectSheetSource = createContext<RefObject<Source | null> | null>(null);
 
-/** Register BottomSheetFrame from inside its provider. Read the host only on save. */
-export function useProjectSheet(frame: PanelRef | null) {
+/** Register BottomSheetFrame (and its motion style) from inside its provider. Read on save. */
+export function useProjectSheet(frame: PanelRef | null, motion: SheetMotion | null = null) {
   const sourceRef = useContext(ProjectSheetSource);
   useLayoutEffect(() => {
     if (!sourceRef) return;
-    sourceRef.current = frame;
+    sourceRef.current = { frame, motion };
     return () => {
       sourceRef.current = null;
     };
-  }, [sourceRef, frame]);
+  }, [sourceRef, frame, motion]);
 }
 
 /** Await onProjectSaved inside the editor's existing save lock, then close it. */
 export function useProjectSaveMotion() {
   const reduced = useReduceMotion();
   const slot = useRef<ViewInstance>(null);
-  const source = useRef<PanelRef | null>(null);
+  const source = useRef<Source | null>(null);
   const seen = useRef(new Set<string>());
   const current = useRef<Save | null>(null);
   const [save, setSave] = useState<Save | null>(null);
@@ -200,7 +216,13 @@ export function useProjectSaveMotion() {
     const done = new Promise<void>((finish) => {
       resolve = finish;
     });
-    const next = { id, sheet: source.current?.current ?? null, done, resolve };
+    const next = {
+      id,
+      sheet: source.current?.frame?.current ?? null,
+      motion: source.current?.motion ?? null,
+      done,
+      resolve,
+    };
     current.current = next;
     setSave(next);
     return done;
@@ -209,6 +231,7 @@ export function useProjectSaveMotion() {
     <ShrinkToSlot
       key={save.id}
       sheet={save.sheet}
+      motion={save.motion}
       slot={slot}
       reduced={reduced}
       onLand={() => {
