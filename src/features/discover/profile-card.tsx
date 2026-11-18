@@ -330,7 +330,7 @@ export function ProfileCard({
               {topSlot}
             </View>
           ) : null}
-          <View style={styles.menu}>
+          <View style={styles.menu} pointerEvents="box-none">
             {/* «i»: el perfil completo, con sus redes (2026-10-17). */}
             {onOpenProfile ? (
               <Pressable
@@ -413,9 +413,11 @@ export function ProfileCard({
                 );
               })}
             </View>
-            <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
-              {profile.location}
-            </ThemedText>
+            <View pointerEvents="none">
+              <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+                {profile.location}
+              </ThemedText>
+            </View>
           </View>
         ) : null}
 
