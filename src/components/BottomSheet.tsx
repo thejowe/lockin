@@ -114,7 +114,6 @@ function SheetContents({
   const blurTarget = useContext(BackdropTarget);
   const frame = useRef<ViewInstance>(null);
   const scroll = useRef<ScrollViewInstance>(null);
-  const footerHeight = useRef(0);
   const [layoutHeight, setLayoutHeight] = useState(0);
   const [keyboard, setKeyboard] = useState(() => Keyboard.metrics?.());
   useEffect(() => {
@@ -188,15 +187,13 @@ function SheetContents({
 
   function revealFocusedInput() {
     if (keyboardTop === undefined || Platform.OS === 'web') return;
+    const viewport = scroll.current?.getNativeScrollRef();
     const focused = TextInput.State.currentlyFocusedInput();
-    if (focused) {
-      scroll.current
-        ?.getScrollResponder()
-        ?.scrollResponderScrollNativeHandleToKeyboard(
-          focused,
-          footerHeight.current + Spacing.two,
-          true
-        );
+    if (focused && viewport?.contains(focused)) {
+      const field = focused.getBoundingClientRect();
+      const bounds = viewport.getBoundingClientRect();
+      const overlap = field.bottom + Spacing.two - bounds.bottom;
+      if (overlap > 0) viewport.scrollTo({ y: viewport.scrollTop + overlap, animated: !reduced });
     }
   }
 
@@ -211,9 +208,7 @@ function SheetContents({
           tint="dark"
           intensity={BlurIntensity.sheet}
           blurTarget={blurTarget}
-          blurMethod={
-            Platform.OS === 'android' && blurTarget ? 'dimezisBlurViewSdk31Plus' : undefined
-          }
+          blurMethod={Platform.OS === 'android' && blurTarget ? 'dimezisBlurView' : undefined}
           style={StyleSheet.absoluteFill}
         />
         <Pressable
@@ -282,13 +277,7 @@ function SheetContents({
             {children}
           </ScrollView>
           {footer ? (
-            <View
-              onLayout={(e) => {
-                footerHeight.current = e.nativeEvent.layout.height;
-              }}
-              style={[styles.footer, { borderColor: theme.border }]}>
-              {footer}
-            </View>
+            <View style={[styles.footer, { borderColor: theme.border }]}>{footer}</View>
           ) : null}
         </BottomSheetFrame.Provider>
       </Animated.View>
