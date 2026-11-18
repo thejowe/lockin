@@ -18,6 +18,7 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { buildProfileInput } from '@/data/test-fixtures';
+import * as avatarPhoto from '@/features/profile/avatar-photo';
 
 import { renderRoute, repositories, resetRepositories, resetRouter, router } from '../routes';
 
@@ -119,11 +120,37 @@ describe('ProfileFormScreen', () => {
     await waitFor(() => expect(mockForm.props).not.toBeNull());
   });
 
+  it('Sobre mí cambia la acción al publicar y al quitar la última foto', async () => {
+    const picker = jest.spyOn(avatarPhoto, 'pickAvatarPhoto').mockResolvedValue({
+      status: 'picked',
+      uri: 'file:///cuaderno.jpg',
+    });
+    try {
+      await renderRoute(<ProfileFormScreen />);
+      await fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
+      expect(await screen.findByRole('button', { name: 'Ahora no' })).toBeVisible();
+      await fireEvent.press(screen.getByRole('button', { name: 'Añadir una foto a Sobre mí' }));
+      await fireEvent.press(screen.getByRole('button', { name: 'Publicar en Sobre mí' }));
+
+      await fireEvent.press(await screen.findByRole('button', { name: 'Continuar' }));
+      expect(screen.getByText('Tus proyectos')).toBeVisible();
+      await fireEvent.press(screen.getByRole('button', { name: 'Volver' }));
+      expect(await screen.findByRole('button', { name: 'Continuar' })).toBeVisible();
+      await fireEvent.press(screen.getByRole('imagebutton'));
+      await fireEvent.press(screen.getByRole('button', { name: 'Quitar esta foto' }));
+      expect(await screen.findByRole('button', { name: 'Ahora no' })).toBeVisible();
+      expect(screen.queryByRole('button', { name: 'Omitir' })).toBeNull();
+    } finally {
+      picker.mockRestore();
+    }
+  });
+
   it('guarda el perfil y sustituye la ruta por el tutorial: atrás no vuelve al onboarding', async () => {
     await renderRoute(<ProfileFormScreen />);
 
     await fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
-    await fireEvent.press(await screen.findByRole('button', { name: 'Omitir' }));
+    expect(screen.queryByRole('button', { name: 'Omitir' })).toBeNull();
+    await fireEvent.press(await screen.findByRole('button', { name: 'Ahora no' }));
     expect(screen.getByText('Tus proyectos')).toBeTruthy();
     await fireEvent.press(await screen.findByRole('button', { name: 'Ahora no' }));
     await fireEvent.press(await screen.findByRole('button', { name: 'Entrar a cofounder' }));
@@ -165,7 +192,8 @@ describe('ProfileFormScreen', () => {
       await renderRoute(<ProfileFormScreen />);
 
       await fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
-      await fireEvent.press(await screen.findByRole('button', { name: 'Omitir' }));
+      await fireEvent.press(await screen.findByRole('button', { name: 'Ahora no' }));
+      expect(await screen.findByText('Tus proyectos')).toBeTruthy();
       await fireEvent.press(await screen.findByRole('button', { name: 'Ahora no' }));
       expect(await screen.findByLabelText('cofounder')).toBeTruthy();
       expect(router.replace).not.toHaveBeenCalled();

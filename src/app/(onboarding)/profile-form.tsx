@@ -40,6 +40,8 @@ export default function ProfileFormScreen() {
 
   // Las fotos y proyectos publicados necesitan el perfil y su avatar ya aprobados.
   const [entering, setEntering] = useState(false);
+  const [boardPhotoCount, setBoardPhotoCount] = useState<number | null>(null);
+  const boardPrimaryLabel = boardPhotoCount ? t('Continuar') : t('Ahora no');
   const [media, setMedia] = useState<{
     ownerId: string;
     name: string;
@@ -100,11 +102,17 @@ export default function ProfileFormScreen() {
             step={media.total - 1}
             total={media.total}
             title={t('Sobre mí')}
-            primaryLabel={t('Continuar')}
+            primaryLabel={boardPrimaryLabel}
+            busy={boardPhotoCount === null}
             onBack={() => setMedia(null)}
-            onPrimary={() => setMedia({ ...media, step: 'projects' })}
-            onSkip={() => setMedia({ ...media, step: 'projects' })}>
-            <Board ownerId={media.ownerId} ownerName={media.name} editable hideTitle />
+            onPrimary={() => setMedia({ ...media, step: 'projects' })}>
+            <Board
+              ownerId={media.ownerId}
+              ownerName={media.name}
+              editable
+              hideTitle
+              onPhotoCountChange={setBoardPhotoCount}
+            />
           </WizardScreen>
         ) : null}
       </SafeAreaView>
