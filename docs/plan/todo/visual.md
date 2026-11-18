@@ -853,9 +853,12 @@ y `redisenio/animaciones` (D: `src/components/animations/`, vuelo de la hoja, ch
   Perfil y reapertura en frío. Rondas 5 y 6 abajo. Hizo falta desplegar `moderate-project` en
   producción (2026-11-18, con ok del usuario). Arreglado por el camino: la chincheta esperaba a la
   foto firmada y «Tus proyectos» salía como «T» (BlurTargetView, ahora un View).
-- [ ] `[comprobador]` Grabar el vuelo de la hoja contra Supabase: verificado con el mock (ronda 4),
-  pero con Supabase el guardado tardó >8 s (arranque en frío de `moderate-project`) y la grabación
-  terminó antes. No se creó otro proyecto en la cuenta demo.
+- [x] `[comprobador]` Vuelo de la hoja contra Supabase (ronda 7, desde Perfil con portada y un
+  proyecto temporal ya borrado): «Guardando…», aviso de guardado lento y vuelo hasta la tarjeta.
+  Guardado medido en caliente: 0,2–0,5 s sin imagen, 1,4–2,8 s con portada; ~8 s en frío.
+- [x] `[comprobador]` Reducir movimiento cambia en vivo en la hoja (ronda 7) y el paso de foto no salta.
+- [ ] Menor: con animaciones normales la hoja asoma 1–2 fotogramas por encima de su sitio antes de
+  deslizarse, y el deslizamiento es corto (~135 px). Sin tocar.
 - [x] (usuario, 2026-11-18) **Puerta de foto**: sin foto aprobada no se entra a las pestañas ni a
   chat/grupo/likes, también las cuentas antiguas (4 en producción el 2026-11-18). `/photo` pide los
   Términos, deja ir a Ajustes y solo sale con foto aprobada (`require-photo.tsx`,
@@ -1076,3 +1079,45 @@ Supabase»). Lo instalé sin `pm clear` y la sesión de la cuenta demo se conser
   velo. Al cerrarla con «Cerrar» sin tocar nada, Perfil queda igual, con «Tus proyectos» entero
   (`99b-tras-cerrar.png`).
 - Vuelo contra Supabase: no lo hice, como pediste, para no crear proyectos en la cuenta demo.
+
+#### Ronda 7 (2026-11-18, `da49b1c`)
+
+**A) APK release de producción contra Supabase** (`build-ronda7-supabase.log`; el logcat dice «backend de datos:
+Supabase»). Lo instalé sin `pm clear` y se conservó la sesión de la cuenta demo. Escalas a 1.
+
+- ✅ **Vuelo contra Supabase** al crear «Temporal vuelo» / «Prueba de vuelo» con portada (cuaderno, `100b`).
+  Grabación en `100-vuelo-supabase/`: 48 fotogramas a 144×320 en unos 27 s. `screenrecord` no da marcas de tiempo, así
+  que los tiempos son por fotograma:
+  - f000: «Guardar proyecto»;
+  - f001–f027: «Guardando…»;
+  - f028–f034: aparece el aviso «Revisando el proyecto antes de publicarlo…» bajo el botón;
+  - f035: la hoja, ya encogida y semitransparente, cae sobre el hueco de su tarjeta;
+  - f036–f037: se va el velo;
+  - f038 en adelante: la lista con «Temporal vuelo» y su portada (`100-zoom-f032-f040.png`, `100c-tras-vuelo.png`).
+
+  El vuelo solo deja un fotograma intermedio a esta cadencia, pero se ve encogerse y aterrizar en la tarjeta.
+- ✅ **Borrado del proyecto temporal**: Editar → «Eliminar proyecto» → «¿Eliminar este proyecto?» → «Confirmar
+  eliminación» (`101a`). En Perfil queda solo «cofounder», con «Tus proyectos» entero (`101-tras-eliminar.png`).
+- ✅/⚠️ **Reducir movimiento en vivo**: el mismo proceso (pid 19236) durante todo el recorrido, sin cerrar ni reiniciar.
+  - Escalas a 1: la hoja entra moviéndose y se asienta en su sitio (`102-hoja-normal/`, f005–f010).
+  - Con `transition_animation_scale` y `animator_duration_scale` a 0: entra con fundido en su sitio, sin
+    desplazarse: f009 semitransparente, f010 más opaca, f011 final (`103-hoja-reducida/`).
+  - De nuevo a 1, sin reiniciar: vuelve a moverse; el borde superior pasa de y≈125 a 119, 115, 108 y 107 en f008–f011
+    (`104-hoja-normal-otra-vez/`).
+  - ⚠️ Con escalas a 1, en los primeros fotogramas (102: f005–f008; 104: f006–f007) el panel aparece **por encima** de su
+    posición final y luego salta hacia abajo antes de subir hasta su sitio. Es un destello de uno o dos fotogramas
+    antes del deslizamiento, que además es corto: arranca unos 18 px por debajo de la posición final a 144×320,
+    unos 135 px reales. No es un deslizamiento desde el borde de la pantalla.
+
+**B) APK mock** (`build-ronda7-mock.log`, `pm clear`, alta hasta la foto).
+
+- ✅ **Paso de foto sin saltos** (`105-foto-sin-salto/`, 158 fotogramas a 216×480; comparativa
+  `105-comparativa-f141-f143-f150.png`). Medido en píxeles, el título queda en y=66, el borde superior de la tarjeta en
+  y=84 y el botón en y=421, igual en f141 (sin foto y sin flecha), f143 (foto elegida, ya con flecha), f150 (aprobada)
+  y f157. La flecha aparece sin mover nada. ⚠️ El mock aprueba al instante, así que «En revisión…» no se llega a ver en
+  esta build; el estado «En revisión…» real solo se ve contra Supabase.
+
+**Al acabar**: reinstalé el APK de producción con `pm clear` y volví a iniciar sesión con la cuenta demo. Entra directa,
+sin pasar por `/photo`, y Perfil muestra «Revisión Apple», la foto y los datos (`106-sesion-demo-perfil.png`). Tras el
+`pm clear`, la app sale en inglés, el idioma del emulador; el idioma es del dispositivo, no de la cuenta. Escalas
+1/1/1 y fuente 1.0.
