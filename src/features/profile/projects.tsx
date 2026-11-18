@@ -59,15 +59,18 @@ export function ProjectStep({
 
 export function MyProjects({ ownerId, wizard = false }: { ownerId: string; wizard?: boolean }) {
   const collection = useProjectCards(ownerId);
+  // Un View y no BottomSheetBackground: en Android el BlurTargetView pintaba el
+  // título como «T» (comprobador, ronda 5). Con el panel de la hoja ya opaco, el
+  // desenfoque de fondo no aporta nada aquí y la hoja cae al velo.
   return (
-    <BottomSheetBackground style={styles.section}>
+    <View style={styles.section}>
       {wizard ? null : (
         <ThemedText type="subtitle" accessibilityRole="header">
           {t('Tus proyectos')}
         </ThemedText>
       )}
       <ProjectList collection={collection} />
-    </BottomSheetBackground>
+    </View>
   );
 }
 

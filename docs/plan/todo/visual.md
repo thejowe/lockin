@@ -848,14 +848,26 @@ y `redisenio/animaciones` (D: `src/components/animations/`, vuelo de la hoja, ch
   (no se podía medir el `Animated.View` y Fabric pisaba el `setNativeProps`; ahora lo compone
   `BottomSheetMotion`), «Publicar en Sobre mí» cortado en Android (`Button` a todo el ancho), el
   borrador de Sobre mí pasa a la hoja compartida y el panel de la hoja es opaco.
-- [ ] `[comprobador]` Lo mismo con **Supabase** y una cuenta con email confirmado: con una cuenta
-  anónima `moderate-avatar` responde 401 y el alta no pasa de la foto. Falta también ver el vuelo
-  en el paso del alta (solo se grabó desde Perfil).
-- [ ] (usuario) Decidir: si se cierra la app con el perfil creado y la foto rechazada o sin revisar,
-  `isOnboarded()` (perfil + modo) deja entrar sin foto. Pasaba ya antes; el paso de foto de B
-  agranda la ventana. Taparlo afecta a las cuentas antiguas sin foto.
-- [ ] (usuario) Decidir: el botón «Guardar proyecto» del editor conserva el naranja brasa `#FF8645`
-  que pidió el encargo de A, mientras que el resto de botones principales son blancos (`theme.brass`).
+- [x] `[comprobador]` Alta completa con **Supabase** real y cuenta confirmada (la cuenta demo de la
+  revisión de Apple, credenciales fuera del repo): foto aprobada, Sobre mí, proyecto, editar desde
+  Perfil y reapertura en frío. Rondas 5 y 6 abajo. Hizo falta desplegar `moderate-project` en
+  producción (2026-11-18, con ok del usuario). Arreglado por el camino: la chincheta esperaba a la
+  foto firmada y «Tus proyectos» salía como «T» (BlurTargetView, ahora un View).
+- [ ] `[comprobador]` Grabar el vuelo de la hoja contra Supabase: verificado con el mock (ronda 4),
+  pero con Supabase el guardado tardó >8 s (arranque en frío de `moderate-project`) y la grabación
+  terminó antes. No se creó otro proyecto en la cuenta demo.
+- [x] (usuario, 2026-11-18) **Puerta de foto**: sin foto aprobada no se entra a las pestañas ni a
+  chat/grupo/likes, también las cuentas antiguas (4 en producción el 2026-11-18). `/photo` pide los
+  Términos, deja ir a Ajustes y solo sale con foto aprobada (`require-photo.tsx`,
+  `photo-gate-screen.tsx`, `test/app/photo-gate.test.tsx`).
+- [x] (usuario, 2026-11-18) Reducir movimiento en la hoja sigue el ajuste en vivo
+  (`useReduceMotionSetting`).
+- [x] (usuario, 2026-11-18) Producción: aplicada la migración `chat_reads` y borrada la cuenta anónima
+  de prueba «Comprobador Rediseno» con `delete_my_account()`.
+- [ ] Aparte (no en este merge): Formato (14 archivos ajenos), umbral de cobertura y E2E
+  `full-journey`, rojos ya en la base.
+- [x] (usuario, 2026-11-18) «Guardar proyecto» pasa al `PrimaryButton` blanco común, con el mismo
+  estado desactivado. Fuera el naranja propio del editor.
 
 ### Hallazgos del comprobador — rediseño (2026-11-18, commit `834740e`)
 
@@ -989,3 +1001,78 @@ APK release **mock**, recompilado con `--rerun` (`build-ronda4-mock.log`). Alta 
   `78-reducir-crear-final.png`). Nada se queda a medias.
 
 Al acabar, escalas a 1/1/1 y fuente a 1.0. No hay commits; los cambios sin commitear siguen intactos.
+
+#### Ronda 5 (Supabase), parcial (2026-11-18, `3fde8b9`)
+
+APK release contra **Supabase real**, con la configuración de producción: sin `EXPO_PUBLIC_REQUIRE_ACCOUNT` y sin mock.
+Compilado con `--rerun` (`build-ronda5-supabase.log`); el logcat dice «backend de datos: Supabase». Antes de empezar,
+`pm clear`. Cuenta demo `joeldetorres123+appreview@gmail.com`, registrada desde la bienvenida. El coordinador confirmó
+el correo. Los recortes de pantalla no muestran la contraseña.
+
+- ✅ **Registro → «Verify your email»** (`79`, `80-confirmar-correo.png`). Tras la confirmación, la app vuelve al paso
+  de idioma (`82`).
+- ✅ **Alta en español**:
+  - idioma (`83`) y nombre «Revisión Apple» (`84`);
+  - nacimiento 10/3/1996, 30 años (`85`);
+  - Barcelona, España, zona horaria de Madrid (`86`);
+  - qué domina, qué busca e idiomas (`87`, `87b`, `87c`);
+  - punto de partida, horas, franjas y ambición (`87d`–`87g`, contacto `87-hoja-pasos.png`);
+  - respuesta corta (`88`) y enlaces omitidos (`89a`).
+- ✅ **Foto de perfil**: tarjeta (`89b`), hoja «Foto de perfil» (`89c`), galería (`89d`), recorte (`89e`), «En revisión…»
+  y luego «Foto aprobada» por `moderate-avatar` (`89f-revision-hoja.png`, `89g`). La imagen es el retrato ficticio
+  `appleimatges/source/alex.png` de la ficha de la tienda, convertido a JPG y subido a la galería del emulador.
+  Observación: mientras dura «En revisión…» la pantalla se desplaza hacia arriba, el botón de volver queda oculto y el
+  título sube. Al aprobarse la foto vuelve a su sitio (`89f`, fotogramas 3–4 frente a 5). Ya pasó en la primera pasada
+  (`06b`).
+- ✅ **«Sobre mí»**: el borrador lleva el texto «Bocetos de la primera version», escrito sin tilde porque `adb input`
+  no admite caracteres acentuados (`89i`). «Revisando y subiendo…» y después la chincheta se clava
+  (`90-pin-supabase/`, f007–f022). ⚠️ Con Supabase la caída y la chincheta se animan sobre una tarjeta gris vacía,
+  porque la foto llega por URL firmada después: aparece en f023, cuando la animación ya ha terminado.
+- ❌ **«Tus proyectos»: no se puede guardar.** En el editor, con «cofounder» y «App para encontrar cofundador» (`90d`),
+  «Guardar proyecto» muestra «Guardando…» y después «No se ha podido guardar.» (`91b-proyectos-con-uno.png`). La hoja
+  no vuela, porque el guardado falla antes (`91-vuelo-alta-supabase/`). Causa: la Edge Function `moderate-project` no
+  existe en producción. `POST /functions/v1/moderate-project` responde **404 «Requested function was not found»**,
+  mientras que `moderate-avatar` responde 401 sin JWT de usuario. La tabla `profile_projects` sí existe: con la clave
+  anon da 42501 «permission denied». `src/data/supabase/projects.ts` guarda solo a través de esa función.
+- Pendiente: Descubrir y Perfil. La app sigue en el editor del alta, con el error a la vista.
+
+#### Ronda 5 (Supabase), cierre (2026-11-18)
+
+Con `moderate-project` ya desplegada en producción, y desde la misma hoja «Crear proyecto» del alta:
+
+- ✅ **El proyecto se guarda**, pero ⚠️ **el vuelo no quedó grabado.** Tras «Guardar proyecto», la hoja pasó más de 8 s en
+  «Guardando…», probablemente por el arranque en frío de la función. La grabación de `92-vuelo-alta-supabase/`
+  (11 fotogramas) terminó antes del vuelo. Pocos segundos después, la lista ya mostraba la tarjeta «cofounder»
+  (`92c-estado.png`). Repetir el vuelo dentro del alta exigía crear un segundo proyecto en la cuenta demo de
+  producción; el clasificador de permisos bloqueó esa acción y no la hice. El vuelo está verificado en mock en la
+  ronda 4.
+- ✅ **Entrada a la app**: «Continuar», tutorial (`92d`) omitido, y Descubrir con perfiles reales (`93-descubrir.png`).
+- ✅/❌ **Perfil**:
+  - foto aprobada, «Revisión Apple», 30 · Barcelona, España (`94-perfil.png`);
+  - proyecto y «Sobre mí» con el cuaderno y su chincheta (`95-perfil-proyecto-sobre-mi.png`, `95b-perfil-sobre-mi.png`);
+  - ❌ **el encabezado «Tus proyectos» del Perfil se pinta solo como «T»** (`95`, `95c-titulo-proyectos.png`, `96`). El
+    volcado de UI tiene el texto completo «Tus proyectos» en una caja de una línea a todo el ancho (63–1017 × 485–567).
+    Es el mismo tipo de recorte que tenía antes «Publicar en Sobre mí». El texto sale de
+    `src/features/profile/projects.tsx:66`.
+  - «Lo que domina» muestra solo «Producto»: un toque mío en «Desarrollo» no entró en el paso 5. Es un fallo del
+    recorrido, no de la app.
+- ✅ **Editar contra Supabase**: «App para encontrar cofundador» → «… en España» (`96a-editar-teclado.png`). Tras guardar,
+  la tarjeta muestra la frase nueva (`96-editar-guardado.png`).
+- ✅ **Puerta de foto con una cuenta que sí tiene foto**: quité la app de recientes y la cerré con `am kill`, sin
+  force-stop (`pidof` vacío). Al relanzarla, en el logcat aparecen `Running "main"` y «backend de datos: Supabase», y
+  entra directa a Descubrir, sin pasar por `/photo` (`97-reapertura-secuencia.png`, `97-reapertura.png`). El primer
+  intento no cerró la app (`97a-recientes.png`) y lo repetí.
+
+#### Ronda 6 (2026-11-18): el título «T», con el cambio sin commitear en `projects.tsx` (`MyProjects` dentro de un `View`)
+
+APK release de producción contra Supabase (`build-ronda6-supabase.log`; el logcat dice «backend de datos:
+Supabase»). Lo instalé sin `pm clear` y la sesión de la cuenta demo se conservó.
+
+- ✅ **«Tus proyectos» se lee entero** en Perfil (`98-tus-proyectos.png`). Sigue entero tras ir a Matches
+  (`98c-en-matches.png`) y volver a Perfil (`98b-tras-cambiar-pestana.png`). El volcado de UI da el texto en
+  63–1017 × 516–598.
+- ✅ **La hoja «Editar proyecto» se ve bien sobre el velo**: panel opaco, título entero, datos actuales y «Guardar
+  proyecto» desactivado porque no hay cambios (`99-editar-sobre-velo.png`). La página de detrás queda atenuada por el
+  velo. Al cerrarla con «Cerrar» sin tocar nada, Perfil queda igual, con «Tus proyectos» entero
+  (`99b-tras-cerrar.png`).
+- Vuelo contra Supabase: no lo hice, como pediste, para no crear proyectos en la cuenta demo.
