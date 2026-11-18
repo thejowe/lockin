@@ -1,49 +1,13 @@
-/**
- * Hoja «Foto de perfil»: hacer una foto, elegir de la galería o eliminarla.
- *
- * Desde el 2026-10-30 no es un bloque más del perfil: se abre al pulsar la
- * cámara translúcida que lleva la foto propia arriba del todo
- * (`ProfileDetails` → `onAvatarPress`), y arriba de la hoja se ve la foto un
- * poco más grande (decisión del usuario).
- *
- * La foto no pasa por el formulario de la ficha: tiene sus propios métodos en
- * `repositories.profiles` porque la publica el servidor, y solo después de
- * revisarla. Por eso un fallo aquí casi nunca es «la red»: puede ser que la
- * foto no cumpla las normas, y el mensaje (ya traducido por la capa de datos)
- * se enseña tal cual, sin cerrar la hoja.
- *
- * El permiso denegado y el selector cancelado no son errores de la subida: el
- * primero se explica, el segundo no hace nada.
- */
-
-import { useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRef, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { MaxContentWidth, Radii, ScrimAlpha, Spacing, Stroke } from '@/constants/theme';
-import { useRepositories } from '@/data';
-import { useTheme } from '@/hooks/use-theme';
-
-import { pickAvatarPhoto } from './avatar-photo';
-import { SecondaryButton } from './controls';
-import { ProfileAvatar } from './profile-avatar';
-
-import type { Profile } from '@/data';
+import { Spacing } from '@/constants/theme';
+import { useRepositories, type Profile } from '@/data';
 import { t } from '@/i18n';
 
-const DENIED = {
-  get library() {
-    return t(
-      'Sin permiso de galería no podemos leer tu foto. Puedes dárselo en los ajustes del móvil.'
-    );
-  },
-  get camera() {
-    return t(
-      'Sin permiso de cámara no podemos hacerte la foto. Puedes dárselo en los ajustes del móvil.'
-    );
-  },
-} as const;
+import { chooseProfilePhoto, PhotoSourceSheet } from './photo-source-sheet';
+import { ProfileAvatar } from './profile-avatar';
 
 export function PhotoSection({
   profile,
@@ -56,176 +20,81 @@ export function PhotoSection({
   visible: boolean;
   onClose: () => void;
 }) {
-  const repositories = useRepositories();
-  const theme = useTheme();
-  const insets = useSafeAreaInsets();
-
-  const [busy, setBusy] = useState(false);
+  const { profiles } = useRepositories();
+  const inFlight = useRef(false);
+  const [action, setAction] = useState<'picking' | 'uploading' | 'removing' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const hasPhoto = Boolean(profile.avatar.imageUrl || profile.avatar.hasPhoto);
 
   function close() {
-    // Con una subida en vuelo no se cierra: el resultado tiene que verse aquí.
-    if (busy) return;
+    if (inFlight.current) return;
     setError(null);
     onClose();
   }
 
-  async function choose(source: 'library' | 'camera') {
+  async function change(source: 'camera' | 'library' | 'remove') {
+    if (inFlight.current) return;
+    inFlight.current = true;
     setError(null);
-
-    // Todo dentro del `try`: el selector nativo o el recorte también pueden
-    // rechazar (una imagen dañada, un permiso que cambia a mitad), y eso no
-    // puede quedarse como una promesa rechazada sin enseñar nada.
-    setBusy(true);
     try {
-      const picked = await pickAvatarPhoto(source);
-      if (picked.status === 'cancelled') return;
-      if (picked.status === 'denied') {
-        setError(DENIED[source]);
-        return;
+      if (source === 'remove') {
+        setAction('removing');
+        await profiles.removeAvatarPhoto();
+      } else {
+        setAction('picking');
+        const uri = await chooseProfilePhoto(source);
+        if (!uri) return;
+        setAction('uploading');
+        await profiles.setAvatarPhoto(uri);
       }
-
-      await repositories.profiles.setAvatarPhoto(picked.uri);
-      onChange();
-      onClose();
-    } catch (cause) {
-      // `AvatarRejectedError` ya trae el mensaje de normas o de «más tarde».
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : t('No se ha podido subir la foto. Inténtalo de nuevo.')
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function remove() {
-    setError(null);
-    setBusy(true);
-    try {
-      await repositories.profiles.removeAvatarPhoto();
       onChange();
       onClose();
     } catch (cause) {
       setError(
         cause instanceof Error
           ? cause.message
-          : t('No se ha podido quitar la foto. Inténtalo de nuevo.')
+          : source === 'remove'
+            ? t('No se ha podido quitar la foto. Inténtalo de nuevo.')
+            : t('No se ha podido subir la foto. Inténtalo de nuevo.')
       );
     } finally {
-      setBusy(false);
+      inFlight.current = false;
+      setAction(null);
     }
   }
 
   return (
-    <Modal
+    <PhotoSourceSheet
       visible={visible}
-      transparent
-      animationType="slide"
-      // Android: el botón atrás cierra la hoja, no la pantalla de debajo.
-      onRequestClose={close}>
-      <View style={styles.backdrop}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('Cerrar')}
-          onPress={close}
-          style={[StyleSheet.absoluteFill, { backgroundColor: theme.background + ScrimAlpha }]}
-        />
-        <View
-          accessibilityViewIsModal
-          style={[
-            styles.sheet,
-            {
-              backgroundColor: theme.surfaceOpaque,
-              borderColor: theme.border,
-              paddingBottom: Spacing.four + insets.bottom,
-            },
-          ]}>
-          <View style={[styles.grabber, { backgroundColor: theme.border }]} />
-
-          <View style={styles.header}>
-            <ProfileAvatar avatar={profile.avatar} size="xlarge" />
-            <ThemedText type="heading">{t('Foto de perfil')}</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
-              {hasPhoto ? t('Es lo que ve la gente en tu tarjeta.') : t('Aún no tienes foto')}
-            </ThemedText>
-          </View>
-
-          {busy ? (
-            <ThemedText
-              type="small"
-              themeColor="textSecondary"
-              accessibilityLiveRegion="polite"
-              style={styles.center}>
-              {t('Subiendo…')}
-            </ThemedText>
-          ) : null}
-
-          {error ? (
-            <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
-              {error}
-            </ThemedText>
-          ) : null}
-
-          <View style={styles.actions}>
-            <SecondaryButton
-              label={t('Hacer una foto')}
-              disabled={busy}
-              onPress={() => choose('camera')}
-            />
-            <SecondaryButton
-              label={t('Elegir de la galería')}
-              disabled={busy}
-              onPress={() => choose('library')}
-            />
-            {hasPhoto ? (
-              <SecondaryButton
-                label={t('Eliminar foto')}
-                tone="danger"
-                disabled={busy}
-                onPress={remove}
-              />
-            ) : null}
-          </View>
+      onClose={close}
+      onChoose={change}
+      onRemove={hasPhoto ? () => void change('remove') : undefined}
+      busy={action !== null}>
+      <View style={styles.identity}>
+        <ProfileAvatar avatar={profile.avatar} size="medium" />
+        <View style={styles.summary}>
+          <ThemedText type="heading" numberOfLines={2}>
+            {profile.name} · {profile.age}
+          </ThemedText>
+          <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">
+            {action === 'uploading'
+              ? t('Subiendo…')
+              : hasPhoto
+                ? t('Es lo que ve la gente en tu tarjeta.')
+                : t('Aún no tienes foto')}
+          </ThemedText>
         </View>
       </View>
-    </Modal>
+      {error ? (
+        <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
+          {error}
+        </ThemedText>
+      ) : null}
+    </PhotoSourceSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    gap: Spacing.three,
-    paddingTop: Spacing.two,
-    paddingHorizontal: Spacing.four,
-    borderTopLeftRadius: Radii.large,
-    borderTopRightRadius: Radii.large,
-    borderWidth: Stroke.hairline,
-    width: '100%',
-    maxWidth: MaxContentWidth,
-    alignSelf: 'center',
-  },
-  grabber: {
-    alignSelf: 'center',
-    width: 36,
-    height: 5,
-    borderRadius: Radii.pill,
-  },
-  header: {
-    alignItems: 'center',
-    gap: Spacing.two,
-    paddingTop: Spacing.two,
-  },
-  center: {
-    textAlign: 'center',
-  },
-  actions: {
-    gap: Spacing.two,
-  },
+  identity: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
+  summary: { flex: 1, gap: Spacing.one },
 });
