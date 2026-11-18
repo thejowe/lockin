@@ -186,14 +186,14 @@ describe('PhotoSection', () => {
         })
     );
 
-    // Sin `await`: la subida queda pendiente a propósito y el `press` no termina.
-    void fireEvent.press(screen.getByRole('button', { name: 'Elegir de la galería' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Elegir de la galería' }));
 
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Hacer una foto' })).toBeDisabled()
-    );
+    expect(await screen.findByText('Subiendo…')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Hacer una foto' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Elegir de la galería' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Eliminar foto' })).toBeDisabled();
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
+    expect(onClose).not.toHaveBeenCalled();
 
     finish();
     await waitFor(() =>
