@@ -11,22 +11,22 @@
 
 import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Radii, Spacing, Stroke } from '@/constants/theme';
-import { BOARD_MAX_POSTS, useQuery, useRepositories, type BoardPost } from '@/data';
+import { useQuery, useRepositories, type BoardPost } from '@/data';
 import { isObjectionable, OBJECTIONABLE_MESSAGE } from '@/features/safety/content-filter';
 import { useTheme } from '@/hooks/use-theme';
 
 import { pickAvatarPhoto } from './avatar-photo';
+import { BoardGrid } from './board-grid';
 import { Field, PrimaryButton, SecondaryButton, TextField } from './controls';
 import { t } from '@/i18n';
 
 const CAPTION_MAX = 280;
 /** Las URLs firmadas valen una hora: se piden otras antes de que caduquen. */
 const REFRESH_MS = 45 * 60 * 1000;
-const COLUMNS = 3;
 
 type Draft = { uri: string; caption: string };
 
@@ -114,8 +114,6 @@ export function Board({
     }
   }
 
-  const full = list.length >= BOARD_MAX_POSTS;
-
   return (
     <View style={styles.root}>
       {!hideTitle ? (
@@ -179,35 +177,13 @@ export function Board({
         </View>
       ) : null}
 
-      <View style={styles.grid}>
-        {list.map((post) => (
-          <Pressable
-            key={post.id}
-            accessibilityRole="imagebutton"
-            accessibilityLabel={post.caption || t('Foto personal de {ownerName}', { ownerName })}
-            onPress={() => setOpen(post)}
-            style={[styles.cell, { backgroundColor: theme.backgroundElement }]}>
-            {post.imageUrl ? (
-              <Image source={{ uri: post.imageUrl }} style={styles.fill} contentFit="cover" />
-            ) : null}
-          </Pressable>
-        ))}
-        {editable && !full && !draft ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('Añadir una foto a Sobre mí')}
-            onPress={() => void pick()}
-            style={[
-              styles.cell,
-              styles.add,
-              { borderColor: theme.border, backgroundColor: theme.backgroundElement },
-            ]}>
-            <ThemedText type="title" themeColor="textSecondary" accessible={false}>
-              +
-            </ThemedText>
-          </Pressable>
-        ) : null}
-      </View>
+      <BoardGrid
+        posts={list}
+        ownerName={ownerName}
+        onOpen={setOpen}
+        onAdd={editable ? pick : undefined}
+        disabled={busy !== null || draft !== null}
+      />
 
       {notice ? (
         <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
@@ -218,32 +194,9 @@ export function Board({
   );
 }
 
-const GAP = Spacing.two;
-
 const styles = StyleSheet.create({
   root: {
     gap: Spacing.two,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: GAP,
-  },
-  cell: {
-    width: `${100 / COLUMNS - 3}%`,
-    aspectRatio: 1,
-    borderRadius: Radii.medium,
-    overflow: 'hidden',
-  },
-  add: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: Stroke.hairline,
-    borderStyle: 'dashed',
-  },
-  fill: {
-    width: '100%',
-    height: '100%',
   },
   viewer: {
     gap: Spacing.two,
