@@ -1,22 +1,25 @@
 import { Image } from 'expo-image';
-import { useRef, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useContext, useRef, useState, type ReactNode } from 'react';
+import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
+import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
+import { BottomSheet, BottomSheetFrame } from '@/components/BottomSheet';
+import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
-import { Radii, Spacing } from '@/constants/theme';
+import { Control, Duration, Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
 import {
-  ProjectPhotoError,
   newProjectId,
+  ProjectPhotoError,
   useRepositories,
+  validateProject,
   type Project,
   type ProjectInput,
-  type ProjectPhoto,
 } from '@/data';
-import { useReduceMotion } from '@/hooks/use-reduce-motion';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
 import { pickAvatarPhoto } from './avatar-photo';
-import { Field, PrimaryButton, SecondaryButton, TextField } from './controls';
+import { Field, TextField } from './controls';
+import { ProjectCover, ProjectPrimaryButton } from './project-card';
+import type { WindowRect } from './project-handoff';
 
 const empty: ProjectInput = {
   name: '',
@@ -26,6 +29,84 @@ const empty: ProjectInput = {
   cover: null,
   photos: [],
 };
+const compact = [0.68];
+const expanded = [0.94];
+const detailsFade = FadeIn.duration(Duration.fast).reduceMotion(ReduceMotion.Never);
+
+function EditorAction({
+  label,
+  onPress,
+  disabled = false,
+  danger = false,
+  expanded,
+  children,
+}: {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+  danger?: boolean;
+  expanded?: boolean;
+  children?: ReactNode;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled, expanded }}
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [styles.action, { opacity: pressed ? Opacity.pressed : 1 }]}>
+      <ThemedText
+        type="smallBold"
+        themeColor={danger ? 'danger' : 'textSecondary'}
+        style={styles.flex}>
+        {label}
+      </ThemedText>
+      {children}
+    </Pressable>
+  );
+}
+
+function SaveFooter({
+  busy,
+  valid,
+  saving,
+  error,
+  onSave,
+}: {
+  busy: boolean;
+  valid: boolean;
+  saving: boolean;
+  error: string;
+  onSave: (measureSource: () => WindowRect | null) => void;
+}) {
+  const frame = useContext(BottomSheetFrame);
+  function measureSource(): WindowRect | null {
+    // The keyboard or photo review can change the frame while the request is pending.
+    try {
+      const rect = frame?.current?.getBoundingClientRect?.();
+      if (!rect || !rect.width || !rect.height) return null;
+      return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+    } catch {
+      return null;
+    }
+  }
+  return (
+    <View style={styles.footer}>
+      {error ? (
+        <ThemedText accessibilityRole="alert" type="small" themeColor="danger">
+          {error}
+        </ThemedText>
+      ) : null}
+      <ProjectPrimaryButton
+        label={saving ? t('Guardando…') : t('Guardar proyecto')}
+        disabled={busy || !valid}
+        onPress={() => onSave(measureSource)}
+      />
+    </View>
+  );
+}
+
 export function ProjectEditor({
   project,
   canPromote,
@@ -35,26 +116,38 @@ export function ProjectEditor({
   project?: Project;
   canPromote: boolean;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (id: string, draft: ProjectInput, source: WindowRect | null) => void;
 }) {
   const { projects } = useRepositories();
   const theme = useTheme();
-  const reduced = useReduceMotion();
-  const [draft, setDraft] = useState<ProjectInput>(project ?? empty);
+  const original = project ?? empty;
+  const [draft, setDraft] = useState<ProjectInput>(original);
   const [details, setDetails] = useState(false);
-  const [confirm, setConfirm] = useState(false);
+  const [confirmation, setConfirmation] = useState<'discard' | 'remove' | 'promote' | null>(null);
   const [busy, setBusy] = useState(false);
   const locked = useRef(false);
   const [draftId] = useState(newProjectId);
-  const [review, setReview] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [failedSlot, setFailedSlot] = useState<number | null>(null);
-  const change = (patch: Partial<ProjectInput>) => {
+
+  const dirty = draft !== original && JSON.stringify(draft) !== JSON.stringify(original);
+  const hasRequiredFields = !!(draft.name.trim() && draft.tagline.trim());
+  let validationError = '';
+  if (hasRequiredFields) {
+    try {
+      validateProject(draft);
+    } catch (cause) {
+      if (cause instanceof Error) validationError = cause.message;
+    }
+  }
+
+  function change(patch: Partial<ProjectInput>) {
     setDraft((current) => ({ ...current, ...patch }));
     setError('');
     setFailedSlot(null);
-  };
-  async function run(task: () => Promise<void>, close = false) {
+  }
+  async function run(task: () => Promise<void>) {
     if (locked.current) return;
     locked.current = true;
     setBusy(true);
@@ -62,7 +155,6 @@ export function ProjectEditor({
     setFailedSlot(null);
     try {
       await task();
-      if (close) onSaved();
     } catch (cause) {
       if (cause instanceof ProjectPhotoError) {
         setFailedSlot(cause.slot);
@@ -72,7 +164,7 @@ export function ProjectEditor({
     } finally {
       locked.current = false;
       setBusy(false);
-      setReview(false);
+      setSaving(false);
     }
   }
   function pick(cover: boolean) {
@@ -86,45 +178,137 @@ export function ProjectEditor({
       }
     });
   }
-  function photoItem(photo: ProjectPhoto, slot: number) {
-    const label = slot === 0 ? t('Portada') : t('Foto {n}', { n: slot });
-    return (
-      <View key={slot} style={styles.photoRow}>
-        <Image source={{ uri: photo.uri }} style={styles.thumb} accessibilityLabel={label} />
-        <View style={styles.photoActions}>
-          <ThemedText type="smallBold">{label}</ThemedText>
-          {review && !photo.path ? (
-            <ThemedText accessibilityLiveRegion="polite">{t('En revisión…')}</ThemedText>
-          ) : null}
-          {failedSlot === slot ? <ThemedText themeColor="danger">{error}</ThemedText> : null}
-          <SecondaryButton
-            label={t('Quitar esta foto')}
-            disabled={busy}
-            onPress={() =>
-              change(
-                slot === 0
-                  ? { cover: null }
-                  : { photos: draft.photos.filter((_, i) => i !== slot - 1) }
-              )
-            }
-          />
-        </View>
-      </View>
-    );
+  function save(measureSource: () => WindowRect | null) {
+    void run(async () => {
+      setSaving(true);
+      if (draft.photos.some((photo) => !photo.path)) setDetails(true);
+      await projects.save(draft, project, project ? undefined : draftId);
+      onSaved(project?.id ?? draftId, draft, measureSource());
+    });
   }
+  function promote() {
+    if (!project) return;
+    void run(async () => {
+      await projects.promote(project);
+      onClose();
+    });
+  }
+  function requestExit(action: 'discard' | 'promote') {
+    if (locked.current) return;
+    if (confirmation) {
+      setConfirmation(null);
+    } else if (dirty) {
+      Keyboard.dismiss();
+      setConfirmation(action);
+    } else if (action === 'promote') {
+      promote();
+    } else {
+      onClose();
+    }
+  }
+  function confirmExit() {
+    if (confirmation === 'remove' && project) {
+      void run(async () => {
+        await projects.remove(project);
+        onClose();
+      });
+    } else if (confirmation === 'promote') {
+      promote();
+    } else {
+      onClose();
+    }
+  }
+
+  const coverAction = draft.cover ? t('Cambiar portada') : t('Añadir portada');
   return (
-    <Modal
+    <BottomSheet
       visible
-      animationType={reduced ? 'none' : 'slide'}
-      onRequestClose={() => {
-        if (!busy) onClose();
-      }}>
-      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.form}>
-          <ThemedText type="title">
-            {project ? t('Editar proyecto') : t('Crear proyecto')}
+      title={project ? t('Editar proyecto') : t('Crear proyecto')}
+      onClose={() => requestExit('discard')}
+      snapPoints={details && !confirmation ? expanded : compact}
+      footer={
+        confirmation ? undefined : (
+          <SaveFooter
+            busy={busy}
+            saving={saving}
+            valid={dirty && hasRequiredFields && !validationError}
+            error={error || validationError}
+            onSave={save}
+          />
+        )
+      }>
+      {confirmation ? (
+        <View style={styles.confirm}>
+          <ThemedText type="heading" accessibilityRole="header">
+            {confirmation === 'remove'
+              ? t('¿Eliminar este proyecto?')
+              : t('¿Descartar los cambios de este proyecto?')}
           </ThemedText>
-          <ThemedText type="subtitle">{t('Lo que se ve en la tarjeta')}</ThemedText>
+          <EditorAction
+            label={confirmation === 'remove' ? t('Conservar proyecto') : t('Seguir editando')}
+            disabled={busy}
+            onPress={() => setConfirmation(null)}
+          />
+          <EditorAction
+            danger
+            label={confirmation === 'remove' ? t('Confirmar eliminación') : t('Descartar cambios')}
+            disabled={busy}
+            onPress={confirmExit}
+          />
+          {error ? (
+            <ThemedText type="small" accessibilityRole="alert" themeColor="danger">
+              {error}
+            </ThemedText>
+          ) : null}
+        </View>
+      ) : (
+        <View style={styles.form}>
+          <View style={styles.preview}>
+            <ThemedText type="label" themeColor="textSecondary">
+              {t('Lo que se ve en la tarjeta')}
+            </ThemedText>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={coverAction}
+              accessibilityState={{ disabled: busy }}
+              disabled={busy}
+              onPress={() => pick(true)}
+              style={({ pressed }) => ({ opacity: pressed ? Opacity.pressed : 1 })}>
+              <ProjectCover
+                cover={draft.cover}
+                name={draft.name}
+                placeholder={t('Nombre del proyecto')}
+                tagline={draft.tagline || t('Frase corta')}
+              />
+              <View
+                style={[
+                  styles.coverAction,
+                  { backgroundColor: theme.surfaceOpaque, borderColor: theme.border },
+                ]}>
+                <Icon name="camera" size={16} color={theme.text} />
+                <ThemedText type="smallBold">{coverAction}</ThemedText>
+              </View>
+            </Pressable>
+            {draft.cover ? (
+              <View>
+                {saving && !draft.cover.path ? (
+                  <ThemedText type="small" accessibilityLiveRegion="polite">
+                    {t('En revisión…')}
+                  </ThemedText>
+                ) : null}
+                {failedSlot === 0 ? (
+                  <ThemedText type="small" themeColor="danger">
+                    {error}
+                  </ThemedText>
+                ) : null}
+                <EditorAction
+                  label={t('Quitar esta foto')}
+                  disabled={busy}
+                  onPress={() => change({ cover: null })}
+                />
+              </View>
+            ) : null}
+          </View>
           <Field label={t('Nombre del proyecto')}>
             <TextField
               testID="project-name"
@@ -146,22 +330,19 @@ export function ProjectEditor({
               onChangeText={(tagline) => change({ tagline })}
             />
           </Field>
-          {draft.cover ? (
-            photoItem(draft.cover, 0)
-          ) : (
-            <SecondaryButton
-              label={t('Añadir portada')}
+          <View style={[styles.detailHeader, { borderColor: theme.border }]}>
+            <EditorAction
+              label={details ? t('Ocultar detalles') : t('Más detalles')}
               disabled={busy}
-              onPress={() => pick(true)}
-            />
-          )}
-          <SecondaryButton
-            label={details ? t('Ocultar detalles') : t('Más detalles')}
-            disabled={busy}
-            onPress={() => setDetails(!details)}
-          />
+              expanded={details}
+              onPress={() => setDetails(!details)}>
+              <View style={{ transform: [{ rotate: details ? '90deg' : '-90deg' }] }}>
+                <Icon name="back" color={theme.textSecondary} size={18} />
+              </View>
+            </EditorAction>
+          </View>
           {details ? (
-            <>
+            <Animated.View entering={detailsFade} style={styles.details}>
               <Field label={t('Descripción')}>
                 <TextField
                   accessibilityLabel={t('Descripción')}
@@ -172,14 +353,6 @@ export function ProjectEditor({
                   onChangeText={(description) => change({ description })}
                 />
               </Field>
-              {draft.photos.map((photo, i) => photoItem(photo, i + 1))}
-              {draft.photos.length < 5 ? (
-                <SecondaryButton
-                  label={t('Añadir foto ({n}/5)', { n: draft.photos.length })}
-                  disabled={busy}
-                  onPress={() => pick(false)}
-                />
-              ) : null}
               <Field label={t('Enlace del proyecto')}>
                 <TextField
                   accessibilityLabel={t('Enlace del proyecto')}
@@ -191,65 +364,95 @@ export function ProjectEditor({
                   onChangeText={(link) => change({ link })}
                 />
               </Field>
-            </>
-          ) : null}
-          {error ? (
-            <ThemedText accessibilityRole="alert" themeColor="danger">
-              {error}
-            </ThemedText>
-          ) : null}
-          <PrimaryButton
-            label={busy ? t('Guardando…') : t('Guardar proyecto')}
-            disabled={busy || !draft.name.trim() || !draft.tagline.trim()}
-            onPress={() =>
-              void run(async () => {
-                setReview(true);
-                if (draft.photos.some((photo) => !photo.path)) setDetails(true);
-                await projects.save(draft, project, project ? undefined : draftId);
-              }, true)
-            }
-          />
-          {project && canPromote ? (
-            <SecondaryButton
-              label={t('Mover al principio')}
-              disabled={busy}
-              onPress={() => void run(() => projects.promote(project), true)}
-            />
+              <View style={styles.gallery}>
+                {draft.photos.map((photo, i) => (
+                  <View key={i} style={styles.photoRow}>
+                    <Image source={{ uri: photo.uri }} style={styles.thumb} />
+                    <View style={styles.flex}>
+                      <ThemedText type="smallBold">{t('Foto {n}', { n: i + 1 })}</ThemedText>
+                      {saving && !photo.path ? (
+                        <ThemedText type="small" accessibilityLiveRegion="polite">
+                          {t('En revisión…')}
+                        </ThemedText>
+                      ) : null}
+                      {failedSlot === i + 1 ? (
+                        <ThemedText type="small" themeColor="danger">
+                          {error}
+                        </ThemedText>
+                      ) : null}
+                      <EditorAction
+                        label={t('Quitar esta foto')}
+                        disabled={busy}
+                        onPress={() =>
+                          change({ photos: draft.photos.filter((_, index) => index !== i) })
+                        }
+                      />
+                    </View>
+                  </View>
+                ))}
+                {draft.photos.length < 5 ? (
+                  <EditorAction
+                    label={t('Añadir foto ({n}/5)', { n: draft.photos.length })}
+                    disabled={busy}
+                    onPress={() => pick(false)}
+                  />
+                ) : null}
+              </View>
+            </Animated.View>
           ) : null}
           {project ? (
-            confirm ? (
-              <View style={styles.form}>
-                <ThemedText>{t('¿Eliminar este proyecto?')}</ThemedText>
-                <SecondaryButton
-                  tone="danger"
+            <View style={[styles.detailHeader, { borderColor: theme.border }]}>
+              {canPromote ? (
+                <EditorAction
+                  label={t('Mover al principio')}
                   disabled={busy}
-                  label={t('Confirmar eliminación')}
-                  onPress={() => void run(() => projects.remove(project), true)}
+                  onPress={() => requestExit('promote')}
                 />
-                <SecondaryButton
-                  label={t('Conservar proyecto')}
-                  disabled={busy}
-                  onPress={() => setConfirm(false)}
-                />
-              </View>
-            ) : (
-              <SecondaryButton
+              ) : null}
+              <EditorAction
                 label={t('Eliminar proyecto')}
-                tone="danger"
+                danger
                 disabled={busy}
-                onPress={() => setConfirm(true)}
+                onPress={() => {
+                  Keyboard.dismiss();
+                  setConfirmation('remove');
+                }}
               />
-            )
+            </View>
           ) : null}
-          <SecondaryButton label={t('Cancelar')} disabled={busy} onPress={onClose} />
-        </ScrollView>
-      </SafeAreaView>
-    </Modal>
+        </View>
+      )}
+    </BottomSheet>
   );
 }
+
 const styles = StyleSheet.create({
-  form: { padding: Spacing.four, gap: Spacing.three },
-  photoRow: { flexDirection: 'row', gap: Spacing.three, alignItems: 'center' },
-  photoActions: { flex: 1 },
-  thumb: { width: 80, height: 96, borderRadius: Radii.small },
+  form: { paddingTop: Spacing.two, gap: Spacing.four },
+  details: { gap: Spacing.four },
+  confirm: { paddingVertical: Spacing.four, gap: Spacing.two },
+  preview: { gap: Spacing.two },
+  coverAction: {
+    position: 'absolute',
+    top: Spacing.two,
+    right: Spacing.two,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: Stroke.hairline,
+    gap: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    borderRadius: Radii.pill,
+  },
+  detailHeader: { borderTopWidth: Stroke.hairline, paddingTop: Spacing.two },
+  action: {
+    minHeight: Control.minTouch,
+    flexDirection: 'row',
+    gap: Spacing.two,
+    alignItems: 'center',
+  },
+  flex: { flex: 1 },
+  gallery: { gap: Spacing.three },
+  photoRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
+  thumb: { width: 64, height: 64, borderRadius: Radii.small },
+  footer: { gap: Spacing.two },
 });
