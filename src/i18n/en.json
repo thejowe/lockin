@@ -1213,6 +1213,10 @@
   "Crear proyecto": "Create project",
   "Editar proyecto": "Edit project",
   "Editar {name}": "Edit {name}",
+  "Enséñale a la gente lo que has construido": "Show people what you’ve built",
+  "Cambiar portada": "Change cover",
+  "¿Descartar los cambios de este proyecto?": "Discard your changes to this project?",
+  "Seguir editando": "Keep editing",
   "Lo que se ve en la tarjeta": "Shown on the card",
   "Nombre del proyecto": "Project name",
   "Frase corta": "Tagline",
@@ -1243,9 +1247,5 @@
   "Fotos tuyas, tus aficiones, tu día a día. Las fotos se revisan antes de publicarse.": "Photos of you, your hobbies and your everyday life. Photos are reviewed before publication.",
   "Vincula GitHub o LinkedIn y comparte tus proyectos.": "Connect GitHub or LinkedIn and share your projects.",
   "Sobre mí recoge tus fotos personales": "About me shows your personal photos",
-  "Esa foto no está en Sobre mí.": "That photo isn’t in About me.",
-  "Enséñale a la gente lo que has construido": "Show people what you’ve built",
-  "Cambiar portada": "Change cover",
-  "¿Descartar los cambios de este proyecto?": "Discard your changes to this project?",
-  "Seguir editando": "Keep editing"
+  "Esa foto no está en Sobre mí.": "That photo isn’t in About me."
 }
