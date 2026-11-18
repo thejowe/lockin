@@ -35,10 +35,12 @@ export function Board({
   ownerName,
   /** Tablón propio: se puede añadir y quitar. */
   editable = false,
+  hideTitle = false,
 }: {
   ownerId: string;
   ownerName: string;
   editable?: boolean;
+  hideTitle?: boolean;
 }) {
   const theme = useTheme();
   const repositories = useRepositories();
@@ -116,9 +118,7 @@ export function Board({
 
   return (
     <View style={styles.root}>
-      <ThemedText type="label" themeColor="textSecondary">
-        {editable ? t('Tu tablón') : t('Tablón')}
-      </ThemedText>
+      {!hideTitle ? <ThemedText type="label" themeColor="textSecondary">{t('Sobre mí')}</ThemedText> : null}
       {editable && list.length === 0 && !draft ? (
         <ThemedText type="small" themeColor="textSecondary">
           {t(

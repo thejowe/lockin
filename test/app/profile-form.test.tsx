@@ -122,7 +122,10 @@ describe('ProfileFormScreen', () => {
   it('guarda el perfil y sustituye la ruta por el tutorial: atrás no vuelve al onboarding', async () => {
     await renderRoute(<ProfileFormScreen />);
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Crear perfil' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
+    await fireEvent.press(await screen.findByRole('button',{name:'Omitir'}));
+    expect(screen.getByText('Tus proyectos')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button',{name:'Crear perfil'}));
     await fireEvent.press(await screen.findByRole('button', { name: 'Entrar a cofounder' }));
 
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/tour'));
@@ -137,7 +140,7 @@ describe('ProfileFormScreen', () => {
     const upload = jest.spyOn(repositories.profiles, 'setAvatarPhoto');
 
     expect(mockForm.props?.withPhoto).toBe(true);
-    await fireEvent.press(screen.getByRole('button', { name: 'Crear perfil' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
 
     await waitFor(() => expect(upload).toHaveBeenCalledWith('file:///tmp/foto.jpg'));
   });
@@ -148,7 +151,7 @@ describe('ProfileFormScreen', () => {
       .spyOn(repositories.profiles, 'setAvatarPhoto')
       .mockRejectedValueOnce(new Error('Esta foto no cumple las normas'));
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Crear perfil' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
 
     await waitFor(() =>
       expect(screen.queryByRole('button', { name: 'Entrar a cofounder' })).toBeNull()
@@ -161,7 +164,9 @@ describe('ProfileFormScreen', () => {
     try {
       await renderRoute(<ProfileFormScreen />);
 
-      await fireEvent.press(screen.getByRole('button', { name: 'Crear perfil' }));
+      await fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
+      await fireEvent.press(await screen.findByRole('button',{name:'Omitir'}));
+      await fireEvent.press(screen.getByRole('button',{name:'Omitir'}));
       expect(await screen.findByLabelText('cofounder')).toBeTruthy();
       expect(router.replace).not.toHaveBeenCalled();
 
@@ -177,7 +182,7 @@ describe('ProfileFormScreen', () => {
     await renderRoute(<ProfileFormScreen />);
     jest.spyOn(repositories.profiles, 'saveCurrent').mockRejectedValueOnce(new Error('sin red'));
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Crear perfil' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
 
     await waitFor(() =>
       expect(screen.queryByRole('button', { name: 'Entrar a cofounder' })).toBeNull()

@@ -1,3 +1,4 @@
+import { MyProjects } from '@/features/profile/projects';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View, type ScrollViewInstance } from 'react-native';
@@ -248,6 +249,7 @@ export default function ProfileScreen() {
             </Animated.View>
           ) : null}
 
+          {terms.gate === 'accepted' ? <MyProjects ownerId={profile.id}/> : null}
           {/* El tablón propio: fotos del trabajo y de una misma (2026-10-17). */}
           <Animated.View entering={entering.up(2)}>
             <Board ownerId={profile.id} ownerName={profile.name} editable />

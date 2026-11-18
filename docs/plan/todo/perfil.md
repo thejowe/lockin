@@ -1,5 +1,10 @@
 # TODO — perfil
 
+## Proyectos · 18 de noviembre de 2026
+
+- [x] Editor común, orden, borrado confirmado, galería ampliada y enlace externo.
+- [x] Pasos opcionales «Sobre mí» y «Tus proyectos» después de la foto de perfil.
+
 ## Onboarding
 - [x] Pantalla de selección de modo (Par / Lock-In / ambos)
 - [x] Guardar el modo elegido (a través de la capa de datos de `arquitecto`)

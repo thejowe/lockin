@@ -142,6 +142,7 @@ export function ProfileWizard({
   initial = null,
   submitLabel,
   withPhoto = false,
+  extraSteps = 0,
   onSubmit,
 }: {
   seed?: ProfileSeed | null;
@@ -153,8 +154,9 @@ export function ProfileWizard({
    * local ya recortada y comprimida (`avatar-photo.ts`).
    */
   withPhoto?: boolean;
+  extraSteps?: number;
   /** Guarda. Si lanza, el asistente se queda en el último paso y enseña el error. */
-  onSubmit: (input: ProfileInput, photoUri: string | null) => Promise<void>;
+  onSubmit: (input: ProfileInput, photoUri: string | null, total?: number) => Promise<void>;
 }) {
   const theme = useTheme();
   const steps = stepsFor(seed, withPhoto);
@@ -209,7 +211,8 @@ export function ProfileWizard({
     setSaving(true);
     setSaveError(null);
     try {
-      await onSubmit(toInput(finalDraft), photoUri);
+      if (extraSteps) await onSubmit(toInput(finalDraft), photoUri, steps.length + extraSteps);
+      else await onSubmit(toInput(finalDraft), photoUri);
     } catch (cause) {
       setSaveError(cause instanceof Error ? cause.message : t('No se ha podido guardar.'));
     } finally {
@@ -290,7 +293,7 @@ export function ProfileWizard({
 
   const common = {
     step: index + 1,
-    total: steps.length,
+    total: steps.length + extraSteps,
     onBack: index > 0 ? () => setIndex(index - 1) : undefined,
     onSkip: optional ? () => void handleSkip() : undefined,
     primaryLabel: last ? (saving ? t('Guardando…') : submitLabel) : t('Continuar'),

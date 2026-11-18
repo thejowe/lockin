@@ -48,6 +48,7 @@ import {
   Stepper,
   TextField,
 } from './controls';
+import { MyProjects } from './projects';
 import { Board } from './board';
 import { LocationFields } from './location-fields';
 import {
@@ -642,7 +643,7 @@ export function ProfileForm({
           servidor), no con «Guardar». Necesita perfil ya creado: en el alta no sale.
         */}
         {section === undefined && initial ? (
-          <Board ownerId={initial.id} ownerName={initial.name} editable />
+          <><MyProjects ownerId={initial.id}/><Board ownerId={initial.id} ownerName={initial.name} editable /></>
         ) : null}
 
         {show('links') ? (

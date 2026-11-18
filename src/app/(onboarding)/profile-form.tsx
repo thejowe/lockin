@@ -12,6 +12,9 @@ import {
   useRegistrationGate,
   useTermsGate,
 } from '@/features/profile';
+import { Board } from '@/features/profile/board';
+import { MyProjects } from '@/features/profile/projects';
+import { WizardScreen } from '@/features/profile/wizard';
 import { t } from '@/i18n';
 
 /**
@@ -39,26 +42,25 @@ export default function ProfileFormScreen() {
   // guarda por debajo: entra cuando acaba de guardarse (y de sonar la animación,
   // o antes si se toca). Si el guardado falla, se vuelve al formulario.
   const [entering, setEntering] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [media, setMedia] = useState<{
+    ownerId: string;
+    name: string;
+    step: 'board' | 'projects';
+    total: number;
+  } | null>(null);
 
-  async function handleSubmit(input: ProfileInput, photoUri: string | null) {
-    setEntering(true);
-    try {
-      // El modo lo guarda la bienvenida, pero no siempre se pasa por ella con esta
-      // sesión: con Google/Apple, si Android mató el proceso con el navegador
-      // abierto, la sesión nueva nace en `/auth/callback`. Sin modo, `isOnboarded()`
-      // seguiría en `false` y cada arranque volvería aquí.
-      await repositories.session.setActiveMode('par');
-      await repositories.profiles.saveCurrent(input);
-      // La foto es obligatoria y solo se sube con el perfil ya creado. Si el
-      // servidor la rechaza, el error vuelve al paso de la foto (guardar el
-      // perfil es idempotente) y no se entra a la app sin ella.
-      if (photoUri) await repositories.profiles.setAvatarPhoto(photoUri);
-      setSaved(true);
-    } catch (cause) {
-      setEntering(false);
-      throw cause;
-    }
+  async function handleSubmit(input: ProfileInput, photoUri: string | null, total = 17) {
+    // El modo lo guarda la bienvenida, pero no siempre se pasa por ella con esta
+    // sesión: con Google/Apple, si Android mató el proceso con el navegador
+    // abierto, la sesión nueva nace en `/auth/callback`. Sin modo, `isOnboarded()`
+    // seguiría en `false` y cada arranque volvería aquí.
+    await repositories.session.setActiveMode('par');
+    const profile = await repositories.profiles.saveCurrent(input);
+    // La foto es obligatoria y solo se sube con el perfil ya creado. Si el
+    // servidor la rechaza, el error vuelve al paso de la foto (guardar el
+    // perfil es idempotente) y no se entra a la app sin ella.
+    if (photoUri) await repositories.profiles.setAvatarPhoto(photoUri);
+    setMedia({ ownerId: profile.id, name: profile.name, step: 'board', total });
   }
 
   if (gate === 'checking') return null;
@@ -79,14 +81,43 @@ export default function ProfileFormScreen() {
   return (
     <Screen ambient="plum">
       <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
-        <ProfileWizard withPhoto submitLabel={t('Crear perfil')} onSubmit={handleSubmit} />
+        <View style={media ? styles.hidden : styles.root}>
+          <ProfileWizard
+            withPhoto
+            extraSteps={2}
+            submitLabel={t('Continuar')}
+            onSubmit={handleSubmit}
+          />
+        </View>
+        {media ? (
+          <WizardScreen
+            step={media.step === 'board' ? media.total - 1 : media.total}
+            total={media.total}
+            title={media.step === 'board' ? t('Sobre mí') : t('Tus proyectos')}
+            primaryLabel={media.step === 'board' ? t('Continuar') : t('Crear perfil')}
+            onBack={() =>
+              media.step === 'board' ? setMedia(null) : setMedia({ ...media, step: 'board' })
+            }
+            onPrimary={() =>
+              media.step === 'board' ? setMedia({ ...media, step: 'projects' }) : setEntering(true)
+            }
+            onSkip={() =>
+              media.step === 'board' ? setMedia({ ...media, step: 'projects' }) : setEntering(true)
+            }>
+            {media.step === 'board' ? (
+              <Board ownerId={media.ownerId} ownerName={media.name} editable hideTitle />
+            ) : (
+              <MyProjects ownerId={media.ownerId} wizard />
+            )}
+          </WizardScreen>
+        ) : null}
       </SafeAreaView>
       {/* Encima y no en su lugar: si el guardado falla, el asistente sigue como estaba. */}
       {entering ? (
         <View style={StyleSheet.absoluteFill}>
           {/* `replace`: una vez creado el perfil, volver al formulario no tiene sentido.
               Antes de Descubrir, el mini tutorial de lo que hay en la app (`/tour`). */}
-          <WelcomeSplash ready={saved} onEnter={() => router.replace('/tour')} />
+          <WelcomeSplash ready onEnter={() => router.replace('/tour')} />
         </View>
       ) : null}
     </Screen>
@@ -94,6 +125,7 @@ export default function ProfileFormScreen() {
 }
 
 const styles = StyleSheet.create({
+  hidden: { display: 'none' },
   root: {
     flex: 1,
   },
