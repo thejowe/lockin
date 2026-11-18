@@ -49,7 +49,7 @@ function trajectory(sheet: ViewInstance | null, card: ViewInstance | null): Flig
   };
 }
 
-export function sheetFrame(progress: number, path: Flight | null) {
+function sheetFrame(progress: number, path: Flight | null) {
   'worklet';
   if (!path) return { opacity: 1 - progress, transform: [] };
   return {
@@ -99,6 +99,7 @@ export function ShrinkToSlot({
   useLayoutEffect(() => {
     if (landed.current) return;
     let live = true;
+    let attached = false;
     const complete = () => {
       if (!live || landed.current) return;
       landed.current = true;
@@ -113,6 +114,7 @@ export function ShrinkToSlot({
         return;
       }
       panel(surface);
+      attached = true;
       const flight = reduced ? null : trajectory(sheet, slot.current);
       path.set(flight);
       progress.set(0);
@@ -136,7 +138,7 @@ export function ShrinkToSlot({
       cancelAnimation(progress);
       if (!landed.current) {
         progress.set(-1);
-        if (panel.current)
+        if (attached)
           scheduleOnUI(() => {
             'worklet';
             setNativeProps(panel, { opacity: 1, transform: [] });
@@ -153,14 +155,14 @@ export const ProjectSheetSource = createContext<RefObject<PanelRef | null> | nul
 
 /** Register BottomSheetFrame from inside its provider. Read the host only on save. */
 export function useProjectSheet(frame: PanelRef | null) {
-  const source = useContext(ProjectSheetSource);
+  const sourceRef = useContext(ProjectSheetSource);
   useLayoutEffect(() => {
-    if (!source) return;
-    source.current = frame;
+    if (!sourceRef) return;
+    sourceRef.current = frame;
     return () => {
-      source.current = null;
+      sourceRef.current = null;
     };
-  }, [source, frame]);
+  }, [sourceRef, frame]);
 }
 
 /** Await onProjectSaved inside the editor's existing save lock, then close it. */

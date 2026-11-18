@@ -1,4 +1,4 @@
-import { useLayoutEffect, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, type ReactNode } from 'react';
 import { StyleSheet, type ViewStyle } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -31,7 +31,8 @@ export function PinDrop({
   arrivals: Arrivals;
   children: (pinStyle: AnimatedStyle<ViewStyle>) => ReactNode;
 }) {
-  const { pending, reduced, finish } = arrivals;
+  const { pending, reduced, claim, finish } = arrivals;
+  const playing = useRef<string>(undefined);
   const active = pending.has(id);
   // 0 = held above the cork, 1 = paper settled, 2 = pin seated.
   const progress = useSharedValue(active ? 0 : 2);
@@ -40,6 +41,13 @@ export function PinDrop({
       progress.set(2);
       return;
     }
+    if (playing.current !== id && !claim(id)) {
+      // The old cell already started this drop before it was recycled.
+      progress.set(2);
+      finish(id);
+      return;
+    }
+    playing.current = id;
     let live = true;
     const landed = () => {
       if (!live) return;
@@ -61,7 +69,7 @@ export function PinDrop({
       live = false;
       cancelAnimation(progress);
     };
-  }, [active, finish, id, progress, reduced]);
+  }, [active, claim, finish, id, progress, reduced]);
 
   const photo = useAnimatedStyle(() => {
     const p = progress.get();
