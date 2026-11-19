@@ -1,5 +1,20 @@
 # Bloque `tiendas-cumplimiento` — envío a App Store y Google Play
 
+## TestFlight 1.0.1 · 17 de noviembre de 2026
+
+- [x] Subir los planes compartidos, el texto libre y el contador de mensajes sin leer. TypeScript y 112 pruebas de chat, seguridad y navegación pasaron tras integrar las ramas.
+- [x] Configurar la versión iOS 1.0.1 y lanzar el flujo de firma y subida del repositorio sobre `015856a`. [Compilación en GitHub Actions](https://github.com/thejowe/lockin/actions/runs/44187747041)
+- [x] Apple validó la compilación 65 de iOS 1.0.1 y la habilitó para los testers internos. El borrador 1.0.1 tiene seleccionada la misma compilación, con el identificador `20a2cdaf-aa13-4054-bbc9-cfc7d84b5167` y el estado `PREPARE_FOR_SUBMISSION`. [TestFlight](https://appstoreconnect.apple.com/apps/6828604279/testflight/ios/20a2cdaf-aa13-4054-bbc9-cfc7d84b5167) · [Ficha 1.0.1](https://appstoreconnect.apple.com/apps/6828604279/distribution/ios/version/d9bb9783-aa1a-4438-9196-53a1b928d83f)
+
+## English App Store campaign · 17 November 2026
+
+- [x] Redesign all four screens shown on the public 1.0 page and extend the gallery to seven for the 1.0.1 draft. Export opaque 1320 × 2868 and 1179 × 2556 PNGs from English demo profiles. [Artwork, preview and capture sources](../../../appleimatges/README.md)
+- [x] Save the English name, subtitle, keywords, description, promotional text, release notes and URLs to the editable 1.0.1 localization. Read back each field from App Store Connect. [Copy](../../../appleimatges/listing.md)
+- [x] Upload both English iPhone sets to the draft. App Store Connect reported all 14 screenshots complete. File order, dimensions and source checksums matched the local exports.
+- [x] Use the official white-on-black wordmark and retain the original iOS icon. Confirm that the icon files in the campaign package match the repository originals. [Icon](../../../appleimatges/icon/cofounder-1024.png)
+- [x] Compare the draft at search size with LinkedIn, BFF and CoffeeSpace. Lead with the Discover deck captured during a right swipe, showing the next profile and Like feedback. Follow with complementary skills and a conversation about a first user test. [Search preview](../../../appleimatges/search-preview.jpg) · [Reference galleries and comparison](../../../appleimatges/comparison.html)
+- [ ] For release, compare the artwork to the selected native build and submit the version for App Review. The artwork and copy can be staged independently of build selection.
+
 Origen: encargo del 2026-10-14 (fuente: `docs/tiendas-revisadas/INFORME.md`, 39 hallazgos).
 Regla de `pilar`: todo agente que escribe código pasa por `codex review` antes de fusionar.
 Nada se aplica en producción (migraciones, secretos, borrados) sin permiso expreso del usuario.

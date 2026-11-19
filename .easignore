@@ -62,6 +62,9 @@ example
 # Salida de scripts/build-web.mjs (GitHub Pages)
 _site/
 
+# App Store campaign files are separate from the app's bundled brand assets.
+/appleimatges/
+
 # logs del túnel de Expo
 expo-tunnel.log
 

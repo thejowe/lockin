@@ -1,72 +1,58 @@
-> Translation of `docs/tiendas/ficha-app-store.md`, without native review. If the Spanish original changes, change this copy. English is the primary language of the store listing.
+# English (U.S.) App Store listing for the Groups and Premium build
 
-# cofounder — App Store listing (English)
-
-Reviewed on 7 November 2026 against the Spanish listing. Copy only the content of each field.
-
-Updated on 9 November 2026 with Groups, group chat and optional push notifications; content prepared for the build with Groups.
+This copy covers the 1.0.1 draft with Groups, group chat and cofounder Premium. A copy of the public-facing fields accompanies the artwork. [English campaign copy](../../../appleimatges/listing.md)
 
 ## Name
 
-cofounder
+cofounder – Startup Match
 
 ## Subtitle
 
-Find who to build with
+Find a business partner
 
 ## Promotional text
 
-Swipe through people who want to start something, match when the interest is mutual, and chat to see if you fit as cofounders.
+Find the designer who can bring your prototype to life, or the developer who can build what you’ve sketched. A mutual like opens a private chat.
 
 ## Description
 
-Want to build something but need someone to build it with? cofounder helps you find a cofounder among people at a similar point to yours.
+Maybe you can build a prototype in a weekend. Maybe you know the first ten people who’d try it. Find a cofounder whose skills complement yours, even if you’re still figuring out what to build.
 
-You don't need to have built anything. You can have no idea yet, an idea you haven't started, or have tried something small. Here nobody hires anybody: the relationship is between peers, and you both contribute and decide together.
+What would working with you look like? Tell people what you do well, what you need a hand with and how many hours a week you can give a project. Add a short answer in your own words, link your portfolio or verify that a GitHub account belongs to you.
 
-YOUR PROFILE
-Tell people who you are and what you bring: name, age, location and time zone, specialties, starting point, availability and level of ambition. Answer one or two short questions so your way of thinking shows, not just what you can do. If you like, add links to GitHub, your portfolio or LinkedIn.
+Explore one profile at a time. Compare skills, schedules and ambitions, then like the people you’d want to work with. If they like your profile too, a private chat opens.
 
-To create your profile you add a photo, which is only published after passing an automatic safety review.
+“What could we test this Saturday?” is one way to start. Ask your own question or pick a conversation starter in the app. The first thing you try together is up to you.
 
-SWIPE
-Profiles appear full screen, one by one. Swipe to show you're interested in someone or to move on to the next.
+If your idea needs a few more hands, create or join a group of up to six. See which skills the group is looking for and talk with the other members in a shared chat.
 
-MATCH AND CHAT
-When the interest is mutual, you match and a private chat opens between the two of you. To break the ice, the app suggests a few questions to start with.
+You can block or report people and groups, report messages, and delete your account and data in the app. The minimum age to use cofounder is 16.
 
-GROUPS
-Besides 1:1 matching, you can create or join a group to complement profiles on a project (max 6 people), see who is in it and talk in a group chat. Nobody hires anybody: it remains peer-to-peer.
+cofounder Premium is an optional monthly or yearly subscription. Payment is charged to your Apple account. Your subscription renews automatically unless you cancel at least 24 hours before the end of the current period. Manage or cancel it in your Apple account settings.
 
-VERIFIED GITHUB
-You can link your GitHub account to show "GitHub verified" on your profile. It indicates that the GitHub link belongs to whoever publishes it; it does not verify the person's identity or knowledge.
+Terms of Use (EULA)
+https://getcofounder.app/en/terminos/
 
-SAFETY AND CONTROL
-You can block or report anyone from the app. You can also block or report a group and report a group chat message. You can delete your account and your data whenever you want from Settings > Account.
-
-WHAT IT IS NOT
-cofounder is not a dating app or a job board. It offers no legal advice or funding, and does not guarantee results: it helps you meet people to build with; what you do together is up to you.
-
-For people aged 16 or over.
-
-SUBSCRIPTION
-cofounder Premium is an auto-renewable subscription (monthly or yearly). Payment is charged to your Apple account and renews automatically unless you cancel at least 24 hours before the end of the period; manage or cancel it in your Apple account settings.
-
-Terms of Use (EULA): https://getcofounder.app/terminos
-Privacy Policy: https://getcofounder.app/privacidad
+Privacy Policy
+https://getcofounder.app/en/privacidad/
 
 ## Keywords
 
-partner,startup,entrepreneur,founder,cofounder,project,team,idea,business,collaborate,github,peers
+entrepreneur,technical,founder,developer,designer,collaborator,team,venture,side,project,ideas,solo
+
+## What’s New in This Version
+
+The “GitHub verified” badge now follows your app language in English and Catalan. This update also includes design improvements and bug fixes.
 
 ## URLs
 
-- Privacy policy: https://getcofounder.app/privacidad
-- Support: https://getcofounder.app/soporte
-- Terms of Use (EULA): https://getcofounder.app/terminos
-- Community Guidelines: https://getcofounder.app/normas
-
-Pending the multilingual website: when `web/` publishes English pages, the privacy policy and terms can point to `/en/...` (and `/ca/...` for Catalan). Until then, the registered URLs (without a language prefix) are the ones to use.
+| Field | Destination |
+| --- | --- |
+| Marketing | https://getcofounder.app/en/ |
+| Support | https://getcofounder.app/en/soporte/ |
+| Privacy policy | https://getcofounder.app/en/privacidad/ |
+| Terms of Use (EULA) | https://getcofounder.app/en/terminos/ |
+| Community Guidelines | https://getcofounder.app/en/normas/ |
 
 ## Category
 
@@ -89,20 +75,21 @@ Minimum age: 16, self-declared. In the App Store Connect questionnaire, declare:
 
 ## Limits
 
-| Field | Text | Limit |
-| --- | --- | --- |
-| Name | 9 characters | 30 |
-| Subtitle | 22 characters | 30 |
-| Promotional text | 126 characters | 170 |
-| Description | 2328 characters | 4000 |
-| Keywords | 98 bytes | 100 |
-| App Review Notes | 3379 characters | 4000 |
+| Field | Used | Limit |
+| --- | ---: | ---: |
+| Name | 25 characters | 30 |
+| Subtitle | 23 characters | 30 |
+| Promotional text | 144 characters | 170 |
+| Description | 1487 characters | 4,000 |
+| Keywords | 99 UTF-8 bytes | 100 |
+| What’s New in This Version | 142 characters | 4,000 |
+| App Review Notes | 3437 characters | 4,000 |
 
-The keywords do not repeat the name or the category (Apple already indexes them) and use no third-party names except "github", which describes a real feature (GitHub verified). Bundle ID: `app.cofounder.mobile`; version 1.0.0.
+Counts include line breaks. The app’s bundle ID is `app.cofounder.mobile`. [Apple’s field specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/platform-version-information/)
 
 ## App Review Notes
 
-Text to paste into App Store Connect (in English, the reviewer reads it in that language):
+Paste the fenced text into App Review Notes after the demo account details have been filled in.
 
 ```
 cofounder is a peer-to-peer app for finding a startup co-founder. Users create a
@@ -139,7 +126,7 @@ USER-GENERATED CONTENT (Guideline 1.2)
   If the admin leaves or deletes their account, the longest-standing member
   becomes admin; an empty group and its chat are deleted.
 - Contact: soporte@getcofounder.app. Child-safety standards:
-  https://getcofounder.app/seguridad-infantil
+  https://getcofounder.app/en/seguridad-infantil/
 
 SUBSCRIPTION (Guideline 3.1.2)
 - cofounder Premium is an optional auto-renewable subscription (monthly or

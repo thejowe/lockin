@@ -15,6 +15,15 @@ Fusionadas `deck/rechazados-vuelven` y `perfil/barra-horas` en la rama principal
 
 Seguimiento por bloque en [datos](todo/datos.md), [perfil](todo/perfil.md), [descubrir](todo/descubrir.md), [visual](todo/visual.md) y [calidad](todo/calidad.md).
 
+## TestFlight 1.0.1 · 17 de noviembre de 2026
+
+La compilación 65 de iOS 1.0.1, del commit `015856a`, está en TestFlight para pruebas internas y seleccionada en la ficha 1.0.1 de la App Store. Incluye planes compartidos, texto libre e indicadores de mensajes sin leer. [Verificación en Apple](todo/tiendas-cumplimiento.md#testflight-101--17-de-noviembre-de-2026)
+
+## English App Store redesign · 17 November 2026
+
+- [x] Seven English screenshot designs in both iPhone sizes, search-focused listing copy and the original cofounder logo in its official colors. [Campaign preview](../../appleimatges/preview.jpg) · [Store block](todo/tiendas-cumplimiento.md#english-app-store-campaign--17-november-2026)
+- [x] Compared U.S. iPhone galleries for LinkedIn, BFF and CoffeeSpace. The first three English screenshots now show a profile being swiped, complementary skills and a first conversation. [Search preview](../../appleimatges/search-preview.jpg) · [Before and after](../../appleimatges/comparison.html)
+
 ## Plan compartido en los chats · 17 de noviembre de 2026
 
 Los matches y los grupos tienen una lista de tareas compartida y reuniones con fecha, hora y lugar o enlace. La migración ya está aplicada en Supabase. El recorrido y las comprobaciones están en [el bloque de chat](todo/chat.md).
