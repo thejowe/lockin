@@ -6,7 +6,9 @@ export const SUPABASE_FIXTURE_SQL = `create schema auth;
         id uuid primary key,
         email text,
         created_at timestamptz not null default now(),
-        last_sign_in_at timestamptz
+        last_sign_in_at timestamptz,
+        banned_until timestamptz,
+        deleted_at timestamptz
       );
       -- Tabla mínima de GoTrue; refreshed_at es timestamp sin zona, como allí.
       create table auth.sessions (

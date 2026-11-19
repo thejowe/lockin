@@ -220,7 +220,8 @@ export interface ProfileRepository {
 /** El deck de swipe y lo que pasa al soltar una tarjeta. */
 export interface DiscoveryRepository {
   /**
-   * Perfiles pendientes de decidir, ya filtrados por modo y sin los ya vistos.
+   * Perfiles elegibles con los filtros actuales. Entre los nuevos van primero
+   * los Super Likes recibidos, luego los Boost y después el encaje mutuo.
    * Decisión de producto: encaje mutuo = dos direcciones con el mismo peso:
    * A = existe intersección entre lo que yo domino y lo que el otro busca;
    * B = existe intersección entre lo que el otro domina y lo que yo busco.
@@ -232,8 +233,9 @@ export interface DiscoveryRepository {
    * después el activo de sesión y por último el declarado en el perfil.
    * Empates: id ascendente por orden binario (UUID en Supabase), sin azar ni
    * timestamps. Mismos datos y filtros producen el mismo orden.
-   * No se eliminan candidatos por puntuación: también salen los de 0. Cada
-   * like/pass persistido los excluye de futuras cargas y deja avanzar al resto.
+   * También salen los de puntuación 0. Tras todos los nuevos vienen los pass
+   * de hace al menos 48 horas, del más antiguo al más reciente, con desempate
+   * por id. Los likes enviados, matches, bloqueos y bajas quedan excluidos.
    * Supabase entrega hasta 50 pendientes por carga; al consumirlos, recargar
    * obtiene los siguientes. El ranking ocurre antes del límite de página.
    * Esto NO condiciona matches: siguen dependiendo solo del like recíproco.
@@ -253,8 +255,8 @@ export interface DiscoveryRepository {
    *
    * `options.super` marca el like como Super Like. Los likes gastan cupo
    * (`QuotaExceededError`); el pass no. El orden es siempre idempotencia, luego
-   * cupo, luego registro: repetir la misma decisión no gasta, y un rechazo por
-   * cupo no deja nada escrito.
+   * cupo, luego registro. Un segundo pass tras el plazo inicia otra espera.
+   * Un rechazo por cupo conserva la decisión vigente.
    */
   recordDecision(
     profileId: string,
@@ -262,7 +264,7 @@ export interface DiscoveryRepository {
     mode?: ModePreference,
     options?: { super?: boolean }
   ): Promise<DecisionResult>;
-  /** Perfiles ya decididos, para excluirlos del deck. */
+  /** Perfiles con una decisión vigente, incluidos los pass que ya pueden volver. */
   listDecided(): Promise<string[]>;
 }
 

@@ -5,9 +5,9 @@
  * cada swipe releyera el repositorio, la pila entera se re-montaría a mitad de
  * animación. La decisión sí se persiste al instante a través de `@/data`.
  *
- * El deck es siempre una derivada de lo que devolvió el repositorio menos lo
- * decidido en esta sesión. De lo decidido se guarda la tarjeta entera (no solo
- * el id) únicamente para poder devolverla arriba al deshacer sin releer el deck.
+ * Un swipe oculta la tarjeta en la página actual y en las lecturas que ya
+ * estaban en vuelo. Una lectura iniciada después de guardarlo decide si puede
+ * volver. Conservamos la tarjeta para devolverla arriba al deshacer.
  *
  * Los cupos y Premium no se deciden aquí: el servidor rechaza con
  * `QuotaExceededError` o `PremiumRequiredError`, y el hook solo devuelve la
@@ -62,7 +62,7 @@ interface Session {
   mode: ModePreference;
   /** El filtro con el que se ancló lo restaurado (`filterSignature`). */
   signature: string;
-  decided: DeckProfile[];
+  decided: { profile: DeckProfile; confirmedAt: number }[];
   restored: string[];
   restoredCards: DeckProfile[];
   restoredBase: DeckProfile[] | null;
@@ -163,7 +163,11 @@ export function useDeck(
   const signature = useMemo(() => filterSignature(filter), [filter]);
   // Sin filtro la clave sigue siendo `deck:${mode}`, la que releen otras pantallas.
   const deckKey = signature === '' ? `deck:${mode}` : `deck:${mode}:${signature}`;
-  const query = useQuery(deckKey, () => repositories.discovery.getDeck({ ...filter, mode }));
+  const query = useQuery(deckKey, async () => {
+    const startedAt = performance.now();
+    const deck = await repositories.discovery.getDeck({ ...filter, mode });
+    return { deck, startedAt };
+  });
   const { refresh } = query;
 
   // Premium caducado con filtros premium puestos: se quitan y se avisa una vez.
@@ -193,11 +197,14 @@ export function useDeck(
   // El último deck bueno de este modo: si una relectura falla, `useQuery` suelta
   // el dato, y el deck usable no puede desaparecer por eso. Se ajusta en render
   // (patrón de React para estado derivado), sin un efecto.
-  const [kept, setKept] = useState<{ key: string; deck: DeckProfile[] } | null>(null);
-  if (query.data !== null && kept?.deck !== query.data) {
-    setKept({ key: deckKey, deck: query.data });
+  const [kept, setKept] = useState<{ key: string; read: NonNullable<typeof query.data> } | null>(
+    null
+  );
+  if (query.data !== null && kept?.read !== query.data) {
+    setKept({ key: deckKey, read: query.data });
   }
-  const data = query.data ?? (kept?.key === deckKey ? kept.deck : null);
+  const read = query.data ?? (kept?.key === deckKey ? kept.read : null);
+  const data = read?.deck ?? null;
   const error = query.data === null && data !== null ? null : query.error;
   // Con un deck retenido no se vuelve a cargar: la pantalla desmontaría el
   // stack para enseñar un spinner en cada relectura tras un fallo.
@@ -211,11 +218,16 @@ export function useDeck(
   // Cambiar de modo relee el deck, así que lo decidido con el modo anterior ya
   // no aplica: se descarta comparando en render, sin un efecto de reinicio.
   const current = fit(session, mode, signature);
-  const decidedIds = new Set(current.decided.map((profile) => profile.id));
+  const hiddenIds = new Set(
+    current.decided
+      .filter((entry) => entry.confirmedAt >= (read?.startedAt ?? 0))
+      .map(({ profile }) => profile.id)
+  );
   const freshRead = data !== null && current.restoredBase !== data;
   const pinned = data
     ? current.restored.flatMap((id) => {
-        if (current.gone.includes(id)) return [];
+        if (current.gone.includes(id) || current.decided.some(({ profile }) => profile.id === id))
+          return [];
         const stale = current.restoredCards.find((profile) => profile.id === id);
         const card = freshRead ? (data.find((profile) => profile.id === id) ?? stale) : stale;
         return card ? [card] : [];
@@ -226,7 +238,7 @@ export function useDeck(
         .filter(
           (profile, index, all) => all.findIndex((other) => other.id === profile.id) === index
         )
-        .filter((profile) => !decidedIds.has(profile.id))
+        .filter((profile) => !hiddenIds.has(profile.id))
     : null;
 
   // Lo último pintado, para los callbacks: así no cierran sobre un deck viejo.
@@ -253,7 +265,7 @@ export function useDeck(
       (id) =>
         !seen.gone.includes(id) &&
         // Una carta que se ha vuelto a decidir tras deshacer ya no se espera en el deck.
-        !seen.decided.some((profile) => profile.id === id) &&
+        !seen.decided.some(({ profile }) => profile.id === id) &&
         !data.some((profile) => profile.id === id)
     );
     let cancelled = false;
@@ -291,7 +303,13 @@ export function useDeck(
       // el repositorio evita un hueco en blanco mientras se resuelve la promesa.
       setSession((previous) => {
         const base = fit(previous, mode, signature);
-        return { ...base, decided: [...base.decided, profile] };
+        return {
+          ...base,
+          decided: [
+            ...base.decided.filter((entry) => entry.profile.id !== profile.id),
+            { profile, confirmedAt: Infinity },
+          ],
+        };
       });
 
       // El modo del deck viaja con la decisión: es el del chip, que puede no
@@ -302,6 +320,13 @@ export function useDeck(
 
       saved.then(
         (result) => {
+          const confirmedAt = performance.now();
+          setSession((previous) => ({
+            ...previous,
+            decided: previous.decided.map((entry) =>
+              entry.profile === profile ? { profile, confirmedAt } : entry
+            ),
+          }));
           if (result.match) {
             lastMatched.current = true;
             setMatch({ match: result.match, profile });
@@ -312,7 +337,7 @@ export function useDeck(
           // en silencio sería peor que pedir la decisión otra vez.
           setSession((previous) => ({
             ...previous,
-            decided: previous.decided.filter((other) => other.id !== profile.id),
+            decided: previous.decided.filter((entry) => entry.profile !== profile),
           }));
           const reason = blockedBy(cause);
           if (reason !== null) setBlocked(reason);
@@ -354,12 +379,12 @@ export function useDeck(
         // Con otro filtro no se ancla nada: puede que ya no encaje, y de eso
         // decide el servidor al releer (devuelve la carta si encaja).
         if (nowSignature !== startedWith) {
-          return { ...base, decided: base.decided.filter((other) => other.id !== id) };
+          return { ...base, decided: base.decided.filter(({ profile }) => profile.id !== id) };
         }
-        const profile = base.decided.find((other) => other.id === id);
+        const profile = base.decided.find((entry) => entry.profile.id === id)?.profile;
         return {
           ...base,
-          decided: base.decided.filter((other) => other.id !== id),
+          decided: base.decided.filter((entry) => entry.profile.id !== id),
           restored: [id, ...base.restored.filter((other) => other !== id)],
           restoredCards: profile
             ? [profile, ...base.restoredCards.filter((other) => other.id !== id)]

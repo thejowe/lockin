@@ -38,10 +38,19 @@ import type {
 /** Id del perfil propio dentro del mock. Estable para que los matches lo referencien. */
 export const CURRENT_USER_ID = 'me';
 
+export interface DecisionMeta {
+  atMs: number;
+  seq: number;
+  isSuper: boolean;
+  previousPassAtMs?: number;
+}
+
 export interface MockState {
   session: Session;
   /** Todos los perfiles, incluido el del usuario una vez creado. */
   profiles: Map<string, Profile>;
+  /** Suspensiones de Auth que ocultan la cuenta en Descubrir, hasta este instante. */
+  bannedUntil: Map<string, number>;
   /** Swipes del usuario: id del perfil -> decisión. */
   decisions: Map<string, Decision>;
   /** Perfiles que ya dieron like al usuario. Un like nuestro cierra el match. */
@@ -59,7 +68,7 @@ export interface MockState {
   likeEvents: { actorId: string; targetId: string; kind: 'like' | 'super'; atMs: number }[];
   boosts: { userId: string; startsAtMs: number; endsAtMs: number }[];
   /** Cuándo y cómo se tomó la decisión vigente: actor -> perfil -> metadatos. */
-  decisionMeta: Map<string, Map<string, { atMs: number; seq: number; isSuper: boolean }>>;
+  decisionMeta: Map<string, Map<string, DecisionMeta>>;
   /** Contador monotónico de decisiones: ordena las que caen en el mismo milisegundo. */
   decisionSeq: number;
   matches: Match[];
@@ -278,6 +287,7 @@ function initialState(): MockState {
   return {
     session: { profileId: null, activeMode: null },
     profiles: new Map(SEED_PROFILES.map((profile) => [profile.id, profile])),
+    bannedUntil: new Map(),
     decisions: new Map(),
     incomingLikes: new Set(SEED_RECIPROCAL_IDS),
     // Cada like semilla, un minuto más viejo que el anterior: orden estable.
@@ -438,6 +448,7 @@ export function createMockStore(): MockStore {
       );
 
       state.profiles.delete(userId);
+      state.bannedUntil.delete(userId);
       state.projects = state.projects.filter((p) => p.ownerId !== userId);
       state.boardPosts = state.boardPosts.filter((post) => post.ownerId !== userId);
       for (const key of [...state.chatReads.keys()]) {

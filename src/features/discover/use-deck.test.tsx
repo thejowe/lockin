@@ -12,6 +12,7 @@ import { act } from 'react';
 
 import { DataProvider, PremiumRequiredError, QuotaExceededError } from '@/data';
 import {
+  advanceMockClock,
   createMockRepositories,
   CURRENT_USER_ID,
   resetState,
@@ -182,6 +183,34 @@ describe('useDeck', () => {
     });
 
     await waitFor(() => expect(getDeck).toHaveBeenCalledTimes(2));
+  });
+
+  it('recargar una pantalla aún montada trae al final un pass que ya puede volver', async () => {
+    const { result } = await renderDeck();
+    const target = result.current.cards![0];
+    await act(async () => result.current.decide(target, 'pass'));
+    await act(async () => result.current.refresh());
+    expect(result.current.cards!.map((p) => p.id)).not.toContain(target.id);
+    advanceMockClock(48 * 3_600_000);
+    await act(async () => result.current.refresh());
+    await waitFor(() => expect(result.current.cards!.slice(-1)[0].id).toBe(target.id));
+  });
+
+  it('una lectura iniciada antes de confirmar el swipe no repone la tarjeta', async () => {
+    const { result } = await renderDeck();
+    const stale = result.current.cards!;
+    const target = stale[0];
+    let finishRead!: (page: typeof stale) => void;
+    jest.spyOn(repositories.discovery, 'getDeck').mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishRead = resolve;
+        })
+    );
+    await act(async () => result.current.refresh());
+    await act(async () => result.current.decide(target, 'pass'));
+    await act(async () => finishRead(stale));
+    expect(result.current.cards!.map((p) => p.id)).not.toContain(target.id);
   });
 
   describe('Premium', () => {

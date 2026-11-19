@@ -967,6 +967,17 @@ export function describeRepositoryContract(backend: ContractBackend): void {
         expect(deck.slice(1).every((profile) => profile.superLikedMe === false)).toBe(true);
       });
 
+      it('un Super Like y un Boost conservan la insignia del reciclado y su puesto al final', async () => {
+        const target = fixture.reciprocalBId;
+        await repositories.discovery.recordDecision(target, 'pass');
+        await fixture.ageLastDecision(48 * 60);
+        await fixture.superLikeFrom(target);
+        await fixture.boostAs(target);
+        const deck = await repositories.discovery.getDeck({ mode: 'ambos' });
+        expect(deck.length).toBeGreaterThan(1);
+        expect(deck[deck.length - 1]).toMatchObject({ id: target, superLikedMe: true });
+      });
+
       it('los filtros premium exigen Premium, el de especialidad no', async () => {
         await expect(
           repositories.discovery.getDeck({ mode: 'ambos', ambition: ['todo-o-nada'] })
@@ -1074,7 +1085,7 @@ export function describeRepositoryContract(backend: ContractBackend): void {
         ).toEqual([ids[2]]);
       });
 
-      it('consume todos los pendientes, incluidos cero, sin reciclar swipes', async () => {
+      it('consume todos los pendientes, incluidos cero, sin repetir swipes recientes', async () => {
         const { ids, read } = await setup([
           candidate(['diseno'], ['dev']),
           candidate(['ventas'], ['dev']),
@@ -1096,6 +1107,52 @@ export function describeRepositoryContract(backend: ContractBackend): void {
         expect(ids).toEqual([...ids].sort());
       });
 
+      it('dos pass consecutivos esperan el plazo completo cada uno; reintentar no mueve la fecha', async () => {
+        const {
+          ids: [target],
+          read,
+        } = await setup([
+          candidate(['dev'], []),
+          candidate(['ventas'], []),
+          candidate(['datos'], []),
+        ]);
+        for (let round = 0; round < 2; round++) {
+          await repositories.discovery.recordDecision(target, 'pass');
+          await fixture.ageLastDecision(48 * 60 - 1);
+          expect(await read()).not.toContain(target);
+          await repositories.discovery.recordDecision(target, 'pass');
+          await fixture.ageLastDecision(1);
+          expect((await read()).slice(-1)).toEqual([target]);
+        }
+      });
+
+      it('ordena los rechazos por antigüedad tras los nuevos y restaura su puesto al deshacer', async () => {
+        const {
+          ids: [older, newer, fresh],
+          read,
+          filter,
+        } = await setup([
+          candidate(['ventas'], []),
+          candidate(['diseno'], ['dev']),
+          candidate(['datos'], []),
+        ]);
+        await fixture.setPremium(true);
+        await repositories.discovery.recordDecision(older, 'pass');
+        await fixture.ageLastDecision(72 * 60);
+        await repositories.discovery.recordDecision(newer, 'pass');
+        await fixture.ageLastDecision(48 * 60);
+        expect(await read()).toEqual([fresh, older, newer]);
+        const filtered = await repositories.discovery.getDeck({
+          ...filter,
+          specialties: ['ventas'],
+        });
+        expect(filtered.map((profile) => profile.id)).toEqual([older]);
+        await repositories.discovery.recordDecision(older, 'pass');
+        expect(await read()).toEqual([fresh, newer]);
+        await expect(repositories.premium.undoLastDecision()).resolves.toBe(older);
+        expect(await read()).toEqual([fresh, older, newer]);
+      });
+
       it('un like recíproco sigue dando match con cero encaje', async () => {
         await fixture.prepareSwiper();
         await repositories.profiles.saveCurrent(candidate(['dev'], [], 'lockin'));
@@ -1115,6 +1172,37 @@ export function describeRepositoryContract(backend: ContractBackend): void {
 
         expect(result.decision).toBe('like');
         expect(result.match?.profileIds).toEqual([fixture.currentUserId, fixture.reciprocalAId]);
+      });
+
+      it('el like a un pass reciclado respeta el cupo y crea el match una sola vez', async () => {
+        const target = fixture.reciprocalAId;
+        await repositories.discovery.recordDecision(target, 'pass');
+        await fixture.ageLastDecision(48 * 60);
+        await fixture.seedLikeEvents('like', 24, 1);
+        expect((await repositories.premium.getQuotas()).likesLeft).toBe(1);
+        const result = await repositories.discovery.recordDecision(target, 'like');
+        expect(result.match?.profileIds).toContain(target);
+        expect((await repositories.premium.getQuotas()).likesLeft).toBe(0);
+        expect((await repositories.discovery.recordDecision(target, 'like')).match?.id).toBe(
+          result.match?.id
+        );
+        await fixture.ageLastDecision(72 * 60);
+        expect(
+          (await repositories.discovery.getDeck({ mode: 'ambos' })).map((p) => p.id)
+        ).not.toContain(target);
+      });
+
+      it('agotar el cupo conserva el pass reciclado en la cola', async () => {
+        const target = fixture.reciprocalAId;
+        await repositories.discovery.recordDecision(target, 'pass');
+        await fixture.ageLastDecision(48 * 60);
+        await fixture.seedLikeEvents('like', 25, 1);
+        await expect(repositories.discovery.recordDecision(target, 'like')).rejects.toBeInstanceOf(
+          QuotaExceededError
+        );
+        expect(
+          (await repositories.discovery.getDeck({ mode: 'ambos' })).map((p) => p.id)
+        ).toContain(target);
       });
 
       it('un like sin reciprocidad no crea match', async () => {

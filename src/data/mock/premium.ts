@@ -19,7 +19,7 @@ import {
 import { PremiumRequiredError, QuotaExceededError } from '../premium-errors';
 import { CURRENT_USER_ID, defaultMockStore } from './store';
 
-import type { MockStore } from './store';
+import type { DecisionMeta, MockStore } from './store';
 import type { PremiumRepository } from '../repositories';
 import type { Decision, IncomingLike, PremiumQuotas, Profile, ProfileFilter } from '../types';
 
@@ -33,6 +33,21 @@ const SIMULATED_PREMIUM_MS = 30 * DAY_MS;
 const iso = (ms: number): string => new Date(ms).toISOString();
 
 export const premiumTopic = (actorId: string): string => `premium:${actorId}`;
+
+function latestDecision(meta: Map<string, DecisionMeta>, decisions: Map<string, Decision>) {
+  let latest: { target: string; entry: DecisionMeta } | undefined;
+  for (const [id, entry] of meta) {
+    if (!decisions.has(id)) continue;
+    if (
+      !latest ||
+      entry.atMs > latest.entry.atMs ||
+      (entry.atMs === latest.entry.atMs && entry.seq > latest.entry.seq)
+    ) {
+      latest = { target: id, entry };
+    }
+  }
+  return latest;
+}
 
 export function isMockPremium(store: MockStore, actorId: string): boolean {
   const until = store.state.premium.get(actorId);
@@ -276,28 +291,23 @@ export function createMockPremiumRepository(
       const meta = state.decisionMeta.get(actorId);
       if (!meta) return null;
 
-      let lastId: string | null = null;
-      let lastAt = -Infinity;
-      let lastSeq = -Infinity;
-      for (const [id, entry] of meta) {
-        if (decisions.has(id) && entry.seq > lastSeq) {
-          lastId = id;
-          lastAt = entry.atMs;
-          lastSeq = entry.seq;
-        }
-      }
-      if (lastId === null) return null;
-      if (store.nowMs() - lastAt >= UNDO_WINDOW_MINUTES * MINUTE_MS) return null;
-
-      const target = lastId;
+      const last = latestDecision(meta, decisions);
+      if (!last) return null;
+      const { target, entry } = last;
+      if (store.nowMs() - entry.atMs >= UNDO_WINDOW_MINUTES * MINUTE_MS) return null;
       const madeMatch = state.matches.some(
         (match) => match.profileIds.includes(actorId) && match.profileIds.includes(target)
       );
-      if (decisions.get(target) === 'like' && madeMatch) return null;
+      if (madeMatch) return null;
 
       // El like gastado (`likeEvents`) no se devuelve: deshacer no borra el registro.
-      decisions.delete(target);
-      meta.delete(target);
+      if (entry.previousPassAtMs === undefined) {
+        decisions.delete(target);
+        meta.delete(target);
+      } else {
+        decisions.set(target, 'pass');
+        meta.set(target, { atMs: entry.previousPassAtMs, seq: entry.seq, isSuper: false });
+      }
       notifyQuotas(store, actorId);
       return target;
     },
@@ -391,11 +401,9 @@ export function seedMockLikeEvents(kind: 'like' | 'super', count: number, ageHou
 /** Retrasa `minutes` minutos la última decisión del usuario de la app. */
 export function ageMockLastDecision(minutes: number): void {
   const meta = defaultMockStore.state.decisionMeta.get(CURRENT_USER_ID);
-  let last: { atMs: number; seq: number } | null = null;
-  for (const entry of meta?.values() ?? []) {
-    if (!last || entry.seq > last.seq) last = entry;
-  }
-  if (last) last.atMs -= minutes * MINUTE_MS;
+  if (!meta) return;
+  const last = latestDecision(meta, defaultMockStore.state.decisions);
+  if (last) last.entry.atMs -= minutes * MINUTE_MS;
 }
 
 /** Crea un Boost ya terminado del usuario de la app, de hace `ageDays` días. */

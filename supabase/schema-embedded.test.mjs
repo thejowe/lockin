@@ -1332,24 +1332,7 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
              array['dev']::public.specialty[], 'ambos', 'solo-ganas', 10,
              array['tarde']::public.time_band[], 'equilibrado'
       from (values ('${viewer}', 'Viewer'), ('${c1}', 'C1'), ('${c2}', 'C2'), ('${c3}', 'C3'))
-        as p(id, name);
-      insert into public.matches (id, profile_a, profile_b, mode) values
-        ('${matchViewerC1}', '${viewer}', '${c1}', 'par'),
-        ('${matchViewerC2}', '${viewer}', '${c2}', 'par'),
-        ('${matchForeign}', '${c1}', '${c3}', 'par');
-      insert into public.messages (match_id, sender_id, body, sent_at) values
-        ('${matchViewerC1}', '${viewer}', 'primero e110', now() - interval '2 minutes'),
-        ('${matchViewerC1}', '${c1}', 'segundo e110', now() - interval '1 minute'),
-        ('${matchViewerC1}', '${viewer}', 'último e110', now()),
-        ('${matchViewerC2}', '${c2}', 'primero e111', now() - interval '1 minute'),
-        ('${matchViewerC2}', '${viewer}', 'último e111', now()),
-        ('${matchForeign}', '${c1}', 'único e112', now());
-      insert into public.lockin_sessions
-        (id, match_id, proposed_by, starts_at, blocks, status, responded_at)
-      values
-        ('${sessionLive}', '${matchViewerC1}', '${viewer}', now() - interval '10 minutes', 1, 'aceptada', now() - interval '15 minutes'),
-        ('${sessionRejected}', '${matchViewerC2}', '${viewer}', now() + interval '10 minutes', 1, 'rechazada', now()),
-        ('${sessionForeignLive}', '${matchForeign}', '${c1}', now() - interval '5 minutes', 1, 'aceptada', now() - interval '10 minutes');`);
+        as p(id, name);`);
 
     // 6c — `excludeIds` bajado al SQL: la página no encoge al excluir.
     await asActor(viewer);
@@ -1370,6 +1353,27 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
         'llevaba una plaza y devolvía uno solo'
     );
     assert.deepEqual(await deck([c2], 50), [c1, c3], 'excluye exactamente el pedido, nada más');
+
+    // Las comprobaciones del deck parten de candidatos sin match. Solo ahora
+    // sembramos los matches y sus conversaciones para el resto de la prueba.
+    await db.exec(`insert into public.matches (id, profile_a, profile_b, mode) values
+        ('${matchViewerC1}', '${viewer}', '${c1}', 'par'),
+        ('${matchViewerC2}', '${viewer}', '${c2}', 'par'),
+        ('${matchForeign}', '${c1}', '${c3}', 'par');
+      insert into public.messages (match_id, sender_id, body, sent_at) values
+        ('${matchViewerC1}', '${viewer}', 'primero e110', now() - interval '2 minutes'),
+        ('${matchViewerC1}', '${c1}', 'segundo e110', now() - interval '1 minute'),
+        ('${matchViewerC1}', '${viewer}', 'último e110', now()),
+        ('${matchViewerC2}', '${c2}', 'primero e111', now() - interval '1 minute'),
+        ('${matchViewerC2}', '${viewer}', 'último e111', now()),
+        ('${matchForeign}', '${c1}', 'único e112', now());
+      insert into public.lockin_sessions
+        (id, match_id, proposed_by, starts_at, blocks, status, responded_at)
+      values
+        ('${sessionLive}', '${matchViewerC1}', '${viewer}', now() - interval '10 minutes', 1, 'aceptada', now() - interval '15 minutes'),
+        ('${sessionRejected}', '${matchViewerC2}', '${viewer}', now() + interval '10 minutes', 1, 'rechazada', now()),
+        ('${sessionForeignLive}', '${matchForeign}', '${c1}', now() - interval '5 minutes', 1, 'aceptada', now() - interval '10 minutes');`);
+    assert.deepEqual(await deck(null, 50), [c3]);
 
     // 6b — último mensaje por match vía `distinct on` en SQL, no una ventana
     // de 200 mensajes agrupada en el cliente. `matchForeign` va en la consulta
@@ -1977,7 +1981,9 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
     };
 
     await t.test('bloquear excluye el deck en ambas direcciones y conserva la firma única', () =>
-      withSafetyPair(async () => {
+      withSafetyPair(async (matchId) => {
+        // El control previo al bloqueo necesita una pareja elegible.
+        await db.query('delete from public.matches where id = $1', [matchId]);
         for (const [actor, other] of [
           [safetyA, safetyB],
           [safetyB, safetyA],

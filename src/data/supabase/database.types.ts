@@ -126,7 +126,9 @@ export type DecisionRow = {
   actor_id: string;
   target_id: string;
   decision: Decision;
+  is_super: boolean;
   created_at: string;
+  previous_pass_at: string | null;
 };
 
 /**
@@ -427,8 +429,8 @@ export type Database = {
       };
       decisions: {
         Row: DecisionRow;
-        Insert: Omit<DecisionRow, 'created_at'>;
-        Update: Partial<Omit<DecisionRow, 'created_at'>>;
+        Insert: Record<string, never>;
+        Update: Record<string, never>;
         Relationships: [];
       };
       matches: {

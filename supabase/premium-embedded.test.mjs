@@ -118,10 +118,131 @@ test('Premium: tablas, cupos, deshacer, Boost, likes recibidos y deck', async (t
     };
     const deckIds = async (args = '') =>
       (await rows(`select id from public.discovery_deck(${args})`)).map((r) => r.id);
+    // now() es fijo durante tx: las sondas del límite pueden distinguir un microsegundo.
+    const seedPass = (target, age) =>
+      asOwner(`insert into public.decisions (actor_id, target_id, decision, created_at)
+        values ('${ME}', '${target}', 'pass', now() - interval '${age}');`);
     const isoMs = (iso) => {
       assert.match(iso, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/, `no es ISO: ${iso}`);
       return Date.parse(iso);
     };
+
+    await t.test(
+      'deck: límite inclusivo de 48 horas, cola cronológica y ranking antes de LIMIT',
+      () =>
+        tx(async () => {
+          await seedPass(T[0], '47 hours 59 minutes 59.999999 seconds');
+          await seedPass(T[1], '48 hours');
+          await seedPass(T[2], '72 hours');
+          await asOwner(`insert into public.decisions (actor_id, target_id, decision, is_super)
+          values ('${T[4]}', '${ME}', 'like', true), ('${T[1]}', '${ME}', 'like', true);
+          insert into public.boosts (user_id, starts_at, ends_at)
+          values ('${T[3]}', now(), now() + interval '1 minute'),
+                 ('${T[1]}', now(), now() + interval '1 minute');`);
+          await actingAs(ME);
+          const fresh = ALL.filter((id) => id !== ME && !T.slice(0, 5).includes(id)).sort();
+          const expected = [T[4], T[3], ...fresh, T[2], T[1]];
+          assert.deepEqual(await deckIds(), expected);
+          assert.deepEqual(
+            await deckIds(`p_limit => ${expected.length - 1}`),
+            expected.slice(0, -1)
+          );
+          const [recycled] = await rows(
+            `select super_liked_me from public.discovery_deck() where id = '${T[1]}'`
+          );
+          assert.equal(recycled.super_liked_me, true);
+        })
+    );
+
+    await t.test('deck: likes, matches, bloqueos, bajas y suspensiones siguen fuera', () =>
+      tx(async () => {
+        await asOwner(`insert into public.decisions (actor_id, target_id, decision, is_super, created_at)
+          values ('${ME}', '${T[0]}', 'like', false, now() - interval '1 year'),
+                 ('${ME}', '${T[1]}', 'like', true, now() - interval '1 year');`);
+        for (const target of [...T.slice(2), LIKER_1, LIKER_2, LIKER_3])
+          await seedPass(target, '1 year');
+        await asOwner(`insert into public.matches (profile_a, profile_b, mode) values ('${ME}', '${T[2]}', 'par');
+          insert into public.user_blocks (blocker_id, blocked_id) values ('${ME}', '${T[3]}'), ('${T[4]}', '${ME}');
+          delete from auth.users where id = '${T[5]}';
+          update auth.users set deleted_at = now() where id = '${T[6]}';
+          update auth.users set banned_until = now() + interval '1 minute' where id = '${LIKER_1}';
+          update auth.users set banned_until = now() where id = '${LIKER_2}';
+          insert into public.blocked_account_emails (email_hash)
+          select public.email_block_hash(email) from auth.users where id = '${LIKER_3}';`);
+        await actingAs(ME);
+        assert.deepEqual(await deckIds(), [OTHER, LIKER_2]);
+      })
+    );
+
+    await t.test('deck: los filtros y exclusiones se aplican también al pass que vuelve', () =>
+      tx(async () => {
+        await seedPass(T[0], '48 hours');
+        await setPremium(ME);
+        await actingAs(ME);
+        assert.ok((await deckIds("p_mode => 'lockin', p_min_hours_per_week => 10")).includes(T[0]));
+        for (const args of [
+          "p_mode => 'par'",
+          'p_min_hours_per_week => 11',
+          "p_specialties => array['ventas']::public.specialty[]",
+          'p_require_github => true',
+          `p_exclude_ids => array['${T[0]}']::uuid[]`,
+        ]) {
+          assert.ok(!(await deckIds(args)).includes(T[0]), args);
+        }
+      })
+    );
+
+    await t.test('un like a un pass vencido respeta el cupo y cierra el match recíproco', () =>
+      tx(async () => {
+        await seedPass(T[0], '48 hours');
+        await actingAs(T[0]);
+        assert.equal((await like(ME)).ok, true);
+        await seedLikeEvents('like', 25, 1);
+        await actingAs(ME);
+        assert.equal((await like(T[0])).code, 'LQ001');
+        assert.ok((await deckIds()).includes(T[0]));
+        await asOwner(`update public.like_events set created_at = now() - interval '24 hours'
+          where actor_id = '${ME}'`);
+        await actingAs(ME);
+        const match = (await like(T[0])).rows[0].match_id;
+        assert.ok(match);
+        assert.equal((await quotas()).likes_left, 24);
+        assert.equal((await like(T[0])).rows[0].match_id, match);
+        assert.equal((await quotas()).likes_left, 24);
+        assert.ok(!(await deckIds()).includes(T[0]));
+      })
+    );
+
+    await t.test('redecidir y deshacer conserva la fecha original y el cupo gastado', () =>
+      tx(async () => {
+        await seedPass(T[0], '72 hours');
+        await seedPass(T[1], '48 hours');
+        await setPremium(ME);
+        await actingAs(ME);
+        const undo = async () => (await rows('select public.undo_last_decision() as id'))[0].id;
+        const stamp = async () =>
+          (
+            await rows(`select created_at::text as stamp from public.decisions
+          where target_id = '${T[0]}' and actor_id = '${ME}'`)
+          )[0].stamp;
+        const original = await stamp();
+        assert.equal((await pass(T[0])).ok, true);
+        const renewed = await stamp();
+        assert.notEqual(renewed, original);
+        assert.equal((await deckIds()).includes(T[0]), false);
+        assert.equal((await pass(T[0])).ok, true);
+        assert.equal(await stamp(), renewed, 'reintentar no alarga la espera');
+        assert.equal(await undo(), T[0]);
+        assert.equal(await stamp(), original);
+        assert.deepEqual((await deckIds()).slice(-2), [T[0], T[1]]);
+        assert.equal((await like(T[0])).rows[0].match_id, null);
+        assert.equal(await eventCount(), 1);
+        assert.equal(await undo(), T[0]);
+        assert.equal(await stamp(), original);
+        assert.equal(await eventCount(), 1);
+        assert.equal(await undo(), null);
+      })
+    );
 
     // =======================================================================
     // Tarea 2 — tablas
@@ -223,6 +344,7 @@ test('Premium: tablas, cupos, deshacer, Boost, likes recibidos y deck', async (t
       async () => {
         const sigs = [
           'public.is_premium(uuid)',
+          'public.pass_cooldown()',
           'public.premium_limits()',
           'public.like_window_reset(uuid,text,interval,integer,timestamptz)',
           'public.purge_old_premium_records()',
