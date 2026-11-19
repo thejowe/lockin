@@ -91,7 +91,7 @@ describe('suggestIcebreakers — forma del resultado', () => {
 
     expect(suggestIcebreakers(them, null, 'par')).toEqual([
       'Has puesto «Un CRM.». Cuéntame más.',
-      'Veo que llevas desarrollo. ¿Cómo llegaste ahí?',
+      'Veo que llevas programación. ¿Cómo llegaste ahí?',
       'Dices que ya tocaste algo. ¿Qué tienes montado y qué te falta?',
     ]);
   });
@@ -107,7 +107,7 @@ describe('suggestIcebreakers — forma del resultado', () => {
     });
 
     expect(suggestIcebreakers(them, buildMe(), 'par')).toEqual([
-      'Yo voy más por desarrollo y tú por diseño — eso encaja. ¿Qué parte te apetecería llevar?',
+      'Yo voy más por programación y tú por diseño — eso encaja. ¿Qué parte te apetecería llevar?',
       'Los dos solemos estar por la noche. ¿Hablamos esta semana a esa hora?',
       'Has puesto «Un CRM.». Cuéntame más.',
     ]);
@@ -119,7 +119,7 @@ describe('especialidades complementarias', () => {
     const them = buildThem({ specialties: ['diseno', 'producto'] });
 
     expect(suggestIcebreakers(them, buildMe({ specialties: ['dev'] }), 'par')[0]).toBe(
-      'Yo voy más por desarrollo y tú por diseño y producto — eso encaja. ¿Qué parte te apetecería llevar?'
+      'Yo voy más por programación y tú por diseño y producto — eso encaja. ¿Qué parte te apetecería llevar?'
     );
   });
 
@@ -151,7 +151,7 @@ describe('especialidades complementarias', () => {
 
     expect(suggestions.slice(0, 2)).toEqual([
       'Yo voy más por marketing y tú por diseño — eso encaja. ¿Qué parte te apetecería llevar?',
-      'Los dos venimos de desarrollo. ¿En qué parte te sientes más fuerte?',
+      'Los dos venimos de programación. ¿En qué parte te sientes más fuerte?',
     ]);
   });
 });
@@ -162,7 +162,7 @@ describe('especialidades compartidas', () => {
     const me = buildMe({ specialties: ['dev', 'datos'] });
 
     expect(suggestIcebreakers(them, me, 'par')[0]).toBe(
-      'Los dos venimos de desarrollo y datos. ¿En qué parte te sientes más fuerte?'
+      'Los dos venimos de programación y datos. ¿En qué parte te sientes más fuerte?'
     );
   });
 
@@ -286,7 +286,7 @@ describe('reglas de reserva', () => {
     const them = buildThem({ specialties: ['dev', 'datos'] });
 
     expect(suggestIcebreakers(them, null, 'par')[0]).toBe(
-      'Veo que llevas desarrollo y datos. ¿Cómo llegaste ahí?'
+      'Veo que llevas programación y datos. ¿Cómo llegaste ahí?'
     );
   });
 
