@@ -28,7 +28,12 @@ export async function verifyPersistence(status, profileName, message) {
   assert.deepEqual(profile.seeking_specialties, ['diseno']);
   assert.equal(profile.starting_point, 'solo-ganas');
   assert.equal(profile.ambition, 'equilibrado');
-  assert.deepEqual(profile.availability_bands, ['tarde']);
+  // Jornada de la barra: el tramo propuesto más el segundo que añade el flujo.
+  assert.deepEqual(profile.work_ranges, [
+    { start_min: 540, end_min: 840 },
+    { start_min: 900, end_min: 960 },
+  ]);
+  assert.deepEqual(profile.availability_bands, ['manana', 'tarde']);
   assert.equal(profile.prompts[0].answer, 'Una herramienta para construir en equipo');
   const { data: auth, error } = await client.auth.admin.getUserById(profile.id);
   assert.ifError(error);

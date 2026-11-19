@@ -1,5 +1,16 @@
 # TODO maestro — LockIn MVP
 
+## Rechazados que vuelven y barra de horas · 19 de noviembre de 2026
+
+Fusionadas `deck/rechazados-vuelven` y `perfil/barra-horas` en la rama principal. Detalle en [descubrir](todo/descubrir.md) y [perfil](todo/perfil.md).
+
+- [x] Un pass vuelve al deck de Cofundador a las 48 horas (`pass_cooldown()`), detrás de los nuevos y del más antiguo al más reciente. Likes, matches, bloqueos y bajas nunca vuelven. Deshacer restaura la fecha del rechazo anterior.
+- [x] Jornada con barra de dos tiradores (pasos de 30 min, mínimo 1 h) y hasta dos tramos sin solape en el alta y el perfil; `work_ranges` en `profiles` y las franjas antiguas se derivan para el filtro Premium y `discovery_deck`.
+- [x] Calidad tras la fusión: tsc, ESLint y Prettier en lo tocado, Jest 2.321 (las 3 suites con timeout por carga pasan en serie), SQL 295, funciones 119, guardias E2E 99.
+- [x] E2E de Maestro del alta (`full-journey.yaml`, `projects.yaml`) y `verify.mjs`: acepta 09:00–14:00, añade 15:00–16:00 y comprueba `work_ranges` y `['manana', 'tarde']`.
+- [ ] Comprobación en el emulador: la hace el usuario a mano.
+- [ ] Aplicar en producción `20261119214427_recycle_discovery_passes.sql` y `20261119215204_profile_work_range.sql`, solo con el ok del usuario y antes de distribuir un cliente que escriba `work_ranges`.
+
 ## Proyectos · 18 de noviembre de 2026
 
 Seguimiento por bloque en [datos](todo/datos.md), [perfil](todo/perfil.md), [descubrir](todo/descubrir.md), [visual](todo/visual.md) y [calidad](todo/calidad.md).
