@@ -6,6 +6,7 @@
  * `src/data/index.ts` elegirá entre las dos — las pantallas no se enteran.
  */
 
+import { availabilityForRanges } from '../work-range';
 import { createMockAgreementRepository } from './agreement';
 import { t } from '@/i18n';
 import { mockProjects } from './projects';
@@ -38,7 +39,6 @@ import { createMockUnreadRepository } from './unread';
 import { BOARD_MAX_POSTS, BoardRejectedError } from '../repositories';
 import { REPORT_MAX_LENGTH, REPORT_REASONS } from '../types';
 
-import { availabilityForRanges } from '../work-range';
 import type { MockStore } from './store';
 
 import type {
