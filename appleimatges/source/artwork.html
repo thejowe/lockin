@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>cofounder · App Store artwork</title>
+  <style>
+    @font-face { font-family: Instrument; src: url("../../web/fonts/InstrumentSans_400Regular.ttf"); font-weight: 400; }
+    @font-face { font-family: Instrument; src: url("../../web/fonts/InstrumentSans_600SemiBold.ttf"); font-weight: 600; }
+    @font-face { font-family: InstrumentSerif; src: url("../../web/fonts/InstrumentSerif_400Regular_Italic.ttf"); font-style: italic; }
+    :root { --ink:#291a36; --paper:#fff4df; --orange:#ff794d; --lilac:#d7c7ff; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #19131d; font-family: Instrument, sans-serif; }
+    main { display: flex; gap: 16px; align-items: flex-start; width: max-content; }
+    .poster { width: 440px; height: 956px; position: relative; overflow: hidden; isolation: isolate; color: var(--ink); }
+    .discover { background: var(--orange); }
+    .matches { background: var(--paper); }
+    .chat { background: var(--ink); color: var(--paper); }
+    .profile { background: var(--lilac); }
+    .prompt { background: var(--paper); }
+    .groups { background: var(--ink); color: var(--paper); }
+    .matched { background: var(--orange); }
+    .mast, .copy { position: absolute; left: 28px; right: 28px; }
+    .mast { top: 27px; display: flex; align-items: center; justify-content: space-between; height: 30px; }
+    .brand { display: inline-block; width: 137px; height: 33px; border-radius: 6px; background: #000 url("official-wordmark.png") center / 157% auto no-repeat; font-size: 0; }
+    .section { font-size: 13px; letter-spacing: -.2px; font-weight: 600; }
+    .copy { top: 87px; }
+    h1 { margin: 0; font-size: 77px; font-weight: 600; line-height: .9; letter-spacing: -5.2px; }
+    h1 em { display: block; font: italic 99px/.83 InstrumentSerif, Georgia, serif; letter-spacing: -4px; padding: 3px 0 5px; }
+    .copy p { font-size: 19px; font-weight: 400; line-height: 1.22; letter-spacing: -.5px; margin: 19px 0 0; }
+    .chat h1 em { color: var(--lilac); }
+    .graphic { width: 100%; height: 100%; position: absolute; inset: 0; z-index: -1; }
+    .screen { position: absolute; border: 2px solid var(--ink); background: #141215; padding: 4px; border-radius: 37px; }
+    .screen img { display: block; width: 100%; height: auto; border-radius: 31px; }
+    .discover .copy p, .matches .copy p, .chat .copy p { font-size: 25px; line-height: 1.12; letter-spacing: -.8px; }
+    .discover h1 { font-size: 68px; letter-spacing: -4.4px; }
+    .discover h1 em { font-size: 91px; letter-spacing: -3.9px; }
+    .swipe-window { position: absolute; left: 39px; top: 307px; width: 357px; height: 632px; overflow: hidden; border: 3px solid var(--ink); border-radius: 24px; background: #000; box-shadow: 6px 7px 0 var(--ink); }
+    .swipe-window img { position: absolute; top: -45px; display: block; width: 100%; height: auto; }
+    .detail { overflow: hidden; position: relative; background: #000; }
+    .detail img { display: block; position: absolute; max-width: none; height: auto; }
+    .skill-card { position: absolute; overflow: hidden; background: #000; border: 3px solid var(--ink); border-radius: 22px; box-shadow: 4px 5px 0 var(--ink); }
+    .skill-card .detail { width: 100%; height: 100%; }
+    .maya-skills { width: 363px; height: 324px; left: 25px; top: 319px; transform: rotate(-2deg); }
+    .maya-skills img { width: 368px; left: -5px; top: -212px; }
+    .alex-skills { width: 357px; height: 281px; left: 57px; top: 645px; transform: rotate(2deg); }
+    .alex-skills img { width: 377px; left: -11px; top: -71px; }
+    .chat-detail { position: absolute; left: 21px; right: 21px; top: 325px; padding: 13px 0 16px; background: #000; border: 2px solid #ccb5e5; border-radius: 25px; box-shadow: 5px 6px 0 #120e19; overflow: hidden; }
+    .chat-contact { height: 65px; margin-bottom: 8px; }
+    .chat-contact img { width: 517px; left: 0; top: -4px; }
+    .chat-exchange { height: 201px; }
+    .chat-exchange img { width: 424px; left: -15px; top: -507px; }
+    .notebook { position: absolute; width: 367px; left: 50px; bottom: 40px; transform: rotate(-8deg); filter: drop-shadow(4px 9px 5px #0e0b1680); }
+    .profile .screen { width: 374px; left: 30px; top: 339px; transform: rotate(3deg); box-shadow: 6px 7px 0 var(--ink); }
+    .prompt .screen { width: 335px; left: 51px; top: 341px; transform: rotate(-2.5deg); box-shadow: 5px 7px 0 var(--ink); }
+    .groups h1 em { color: var(--lilac); }
+    .groups .screen { width: 357px; left: 39px; top: 345px; border-color: #c4a3e5; background: #21192b; box-shadow: 5px 7px 0 #0e0b13; }
+    .matched .screen { width: 326px; left: 57px; top: 345px; transform: rotate(2.5deg); box-shadow: 5px 7px 0 var(--ink); }
+    @media screen and (max-width: 630px) {
+      html:not(.export) main { zoom: .81; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <article class="poster discover" id="discover">
+      <svg class="graphic" aria-hidden="true" viewBox="0 0 440 956">
+        <path d="M-66 812 C34 640 167 630 278 616 S443 554 508 419 L550 509 C478 659 410 716 291 742 S103 801 -31 946 Z" fill="#D7C7FF"/>
+        <g class="contours" data-shape="discover" fill="none" stroke="#291A36" stroke-width="1.45"></g>
+      </svg>
+      <div class="mast"><span class="brand">cofounder</span><span class="section">Discover</span></div>
+      <div class="copy"><h1>Swipe to find<em>a cofounder.</em></h1><p>Left to pass. Right to like.</p></div>
+      <div class="swipe-window"><img src="ui/swipe-right.png" alt="A right swipe tilts Maya’s profile card, reveals Alex’s card underneath and lights up the Like heart."></div>
+    </article>
+    <article class="poster matches" id="matches">
+      <svg class="graphic" aria-hidden="true" viewBox="0 0 440 956" preserveAspectRatio="none">
+        <path d="M-110 994Q57 769 305 785Q426 790 541 705V996Z" fill="#e8d7df"/>
+        <g class="contours" data-shape="matches" fill="none" stroke="#94798d" stroke-width="1"></g>
+      </svg>
+      <div class="mast"><span class="brand">cofounder</span><span class="section">Skills</span></div>
+      <div class="copy"><h1>Match on<em>skills.</em></h1><p>Maya designs. Alex builds.</p></div>
+      <div class="skill-card maya-skills"><div class="detail"><img src="ui/discover.png" alt="Maya is good at design and product and is looking for development."></div></div>
+      <div class="skill-card alex-skills"><div class="detail"><img src="ui/profile.png" alt="Alex is good at development and data and is looking for design and product."></div></div>
+    </article>
+    <article class="poster chat" id="chat">
+      <svg class="graphic" aria-hidden="true" viewBox="0 0 440 956" preserveAspectRatio="none">
+        <path d="M-111 905C93 892 92 709 197 623S434 567 552 389" fill="none" stroke="#FF794D" stroke-width="45"/>
+        <g class="contours" data-shape="chat" fill="none" stroke="#D7C7FF" stroke-width="1.2"></g>
+      </svg>
+      <div class="mast"><span class="brand">cofounder</span><span class="section">Chat</span></div>
+      <div class="copy"><h1>Plan your<em>first test.</em></h1><p>Pick a day to try your prototype.</p></div>
+      <div class="chat-detail">
+        <div class="detail chat-contact"><img src="ui/chat.png" alt="Chat with Maya Ellis."></div>
+        <div class="detail chat-exchange"><img src="ui/chat.png" alt="Maya suggests three gardeners to test the idea on Saturday. Alex offers to bring the prototype."></div>
+      </div>
+      <img class="notebook" src="notebook.png" alt="An illustrated garden app prototype.">
+    </article>
+    <article class="poster profile" id="profile">
+      <svg class="graphic" aria-hidden="true" viewBox="0 0 440 956" preserveAspectRatio="none">
+        <path d="M-90 427C60 370 110 387 250 452C390 519 451 501 540 430V534Q424 618 231 537Q68 462 -90 540Z" fill="#ff794d"/>
+        <g class="contours" data-shape="profile" fill="none" stroke="#61496f" stroke-width="1.25"></g>
+      </svg>
+      <div class="mast"><span class="brand">cofounder</span><span class="section">Profile</span></div>
+      <div class="copy"><h1>Show what<em>you bring.</em></h1><p>Your skills, your availability<br>and the kind of partner you need.</p></div>
+      <div class="screen"><img src="ui/profile.png" alt="A profile showing skills and preferences."></div>
+    </article>
+    <article class="poster prompt" id="prompt">
+      <svg class="graphic" aria-hidden="true" viewBox="0 0 440 956" preserveAspectRatio="none">
+        <path d="M-135 862C-39 692 92 621 291 599C396 586 511 520 591 396V586C506 710 429 746 330 769C141 814 101 839 -15 1028Z" fill="#FF794D"/>
+        <g class="contours" data-shape="discover" fill="none" stroke="#291A36" stroke-width="1.45"></g>
+      </svg>
+      <div class="mast"><span class="brand">cofounder</span><span class="section">Profile prompts</span></div>
+      <div class="copy"><h1>See how<em>they think.</em></h1><p>A short answer gives you<br>something real to ask about.</p></div>
+      <div class="screen"><img src="ui/prompt.png" alt="Maya’s answer to a profile prompt."></div>
+    </article>
+    <article class="poster groups" id="groups">
+      <svg class="graphic" aria-hidden="true" viewBox="0 0 440 956" preserveAspectRatio="none">
+        <path d="M-90 427C60 370 110 387 250 452C390 519 451 501 540 430V534Q424 618 231 537Q68 462 -90 540Z" fill="#D7C7FF"/>
+        <g class="contours" data-shape="profile" fill="none" stroke="#FF794D" stroke-width="1.25"></g>
+      </svg>
+      <div class="mast"><span class="brand">cofounder</span><span class="section">Groups</span></div>
+      <div class="copy"><h1>Find your<em>crew.</em></h1><p>Explore groups of up to six.<br>See where your skills fit.</p></div>
+      <div class="screen"><img src="ui/groups.png" alt="A group profile with its project and open roles."></div>
+    </article>
+    <article class="poster matched" id="matched">
+      <svg class="graphic" aria-hidden="true" viewBox="0 0 440 956" preserveAspectRatio="none">
+        <path d="M-111 905C93 892 92 709 197 623S434 567 552 389" fill="none" stroke="#FFF4DF" stroke-width="64"/>
+        <g class="contours" data-shape="chat" fill="none" stroke="#291A36" stroke-width="1.2"></g>
+      </svg>
+      <div class="mast"><span class="brand">cofounder</span><span class="section">Mutual match</span></div>
+      <div class="copy"><h1>It starts<em>with two.</em></h1><p>You found each other.<br>What will you try first?</p></div>
+      <div class="screen"><img src="ui/matched.png" alt="Maya and Alex’s mutual match in cofounder."></div>
+    </article>
+  </main>
+  <script>
+    // Repeated contours give the four print backgrounds a common rhythm.
+    const contours = {
+      discover: 'M-159 868C-12 640 64 620 280 580S493 475 589 365',
+      matches: 'M-115 1000Q76 775 304 793Q430 804 543 705',
+      chat: 'M-111 905C93 892 92 709 197 623S434 567 552 389',
+      profile: 'M-110 562C38 471 95 479 239 542C366 598 457 589 555 512'
+    };
+    document.querySelectorAll('.contours').forEach(group => {
+      const name = group.dataset.shape;
+      const count = name === 'matches' ? 9 : 13;
+      for (let i = 0; i < count; i++) {
+        const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+        path.setAttribute('d', contours[name]);
+        path.setAttribute('transform', 'translate(0 ' + (name === 'chat' ? (i * 6 + 35) : i * 6.8) + ')');
+        group.appendChild(path);
+      }
+    });
+    const target = new URLSearchParams(location.search).get('frame');
+    if (target) {
+      document.documentElement.classList.add('export');
+      document.querySelectorAll('.poster').forEach(poster => { poster.hidden = poster.id !== target; });
+    }
+  </script>
+</body>
+</html>
