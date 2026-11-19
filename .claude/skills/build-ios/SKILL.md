@@ -92,7 +92,7 @@ gh run list -w ios-testflight.yml -L 1 --json databaseId,url,headSha
 gh run view <id> --log-failed | tail -80
 ```
 
-Antes de lanzar, mira si el último run con `success` ya tiene el `headSha` de HEAD: si es así, ya está en TestFlight y no hace falta relanzar (salvo que el usuario lo pida). El Xcode lo elige el propio workflow (el más nuevo del runner `macos-26`).
+Antes de lanzar, mira si el último run con `success` ya tiene el `headSha` de HEAD: si es así, ya está en TestFlight y no hace falta relanzar (salvo que el usuario lo pida). El workflow corre en el runner `xcode-27` y elige el Xcode 27 más nuevo; si el iOS SDK sale < 27, falla a propósito. **Regla fija: iOS siempre con iOS SDK 27+** (el runner `macos-26` solo tiene Xcode 26 / SDK 26.x: no volver a él). En EAS cloud, `production.ios.image: "latest"` en `eas.json`.
 
 No sirve como alternativa: OTA (`eas update`) cuando hay módulos nativos nuevos desde el último build (crash), ni el perfil `production` sin `channel`.
 
