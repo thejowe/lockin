@@ -38,7 +38,7 @@ import { createMockUnreadRepository } from './unread';
 import { BOARD_MAX_POSTS, BoardRejectedError } from '../repositories';
 import { REPORT_MAX_LENGTH, REPORT_REASONS } from '../types';
 
-import type { MockStore } from './store';
+import type { DecisionMeta, MockStore } from './store';
 
 import type {
   DiscoveryRepository,
@@ -108,6 +108,17 @@ export interface MockRepositoriesOptions {
 }
 
 const MATCHES_TOPIC = 'matches';
+// Espejo de public.pass_cooldown().
+const PASS_COOLDOWN_MS = 48 * 60 * 60 * 1000;
+
+function recycledPassAt(
+  decision: Decision | undefined,
+  meta: DecisionMeta | undefined,
+  now: number
+) {
+  if (decision === 'pass' && meta && meta.atMs <= now - PASS_COOLDOWN_MS) return meta.atMs;
+  return undefined;
+}
 const TERMS_VERSION_FORMAT = /^\d{4}-\d{2}-\d{2}$/;
 const messagesTopic = (matchId: string) => `messages:${matchId}`;
 
@@ -481,15 +492,17 @@ export function createMockRepositories(
     async getDeck(filter: ProfileFilter = {}): Promise<DeckProfile[]> {
       // Los filtros avanzados son de pago: sin Premium el deck ni se carga.
       if (usesPremiumFilters(filter)) requireMockPremium(store, actorId);
-      const decided = [...actorDecisions().keys()];
-
       const mode = filter.mode ?? effectiveMode();
       const viewer = currentProfile();
-      const candidates = await profiles.list({
-        ...filter,
-        mode,
-        excludeIds: [...decided, ...(filter.excludeIds ?? [])],
-      });
+      const candidates = await profiles.list({ ...filter, mode });
+      const state = getState();
+      const decisions = actorDecisions();
+      const meta = state.decisionMeta.get(actorId);
+      const matched = new Set(
+        state.matches
+          .filter((match) => match.profileIds.includes(actorId))
+          .flatMap((m) => m.profileIds)
+      );
       // Espejo del criterio de producto en DiscoveryRepository.getDeck.
       const score = (other: Profile): number => {
         if (!viewer) return 0;
@@ -507,25 +520,37 @@ export function createMockRepositories(
       };
       const boosted = boostedIds(store);
       const nowMs = store.nowMs();
-      return (
-        candidates
-          .filter((candidate) => !isBlocked(actorId, candidate.id))
-          .filter((candidate) => matchesPremiumFilters(candidate, viewer, filter, nowMs))
-          .map((candidate): DeckProfile => ({
+      return candidates
+        .filter(
+          ({ id }) =>
+            !matched.has(id) && !isBlocked(actorId, id) && (state.bannedUntil.get(id) ?? 0) <= nowMs
+        )
+        .filter((candidate) => matchesPremiumFilters(candidate, viewer, filter, nowMs))
+        .flatMap((candidate) => {
+          const decision = decisions.get(candidate.id);
+          const passedAt = recycledPassAt(decision, meta?.get(candidate.id), nowMs);
+          if (decision && passedAt === undefined) return [];
+          const card = {
             ...candidate,
             superLikedMe: superLikedActor(store, actorId, candidate.id),
-          }))
-          // Primero quien te dio un Super Like, después quien tiene un Boost en
-          // curso y, dentro de cada grupo, el orden de siempre. El Boost solo
-          // reordena: nunca mete a quien el filtro dejó fuera.
-          .sort(
-            (a, b) =>
-              Number(b.superLikedMe) - Number(a.superLikedMe) ||
-              Number(boosted.has(b.id)) - Number(boosted.has(a.id)) ||
-              score(b) - score(a) ||
-              (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
-          )
-      );
+          };
+          return [{ card, passedAt }];
+        })
+        .sort((a, b) => {
+          const byId = a.card.id < b.card.id ? -1 : a.card.id > b.card.id ? 1 : 0;
+          if (a.passedAt !== undefined || b.passedAt !== undefined) {
+            if (a.passedAt === undefined) return -1;
+            if (b.passedAt === undefined) return 1;
+            return a.passedAt - b.passedAt || byId;
+          }
+          return (
+            Number(b.card.superLikedMe) - Number(a.card.superLikedMe) ||
+            Number(boosted.has(b.card.id)) - Number(boosted.has(a.card.id)) ||
+            score(b.card) - score(a.card) ||
+            byId
+          );
+        })
+        .map(({ card }) => card);
     },
 
     async recordDecision(
@@ -536,17 +561,21 @@ export function createMockRepositories(
     ): Promise<DecisionResult> {
       const state = getState();
       const isSuper = decision === 'like' && options?.super === true;
-      const meta = state.decisionMeta.get(actorId) ?? new Map();
+      const meta = state.decisionMeta.get(actorId) ?? new Map<string, DecisionMeta>();
       state.decisionMeta.set(actorId, meta);
       const previous = meta.get(profileId);
-      // Idempotencia primero: repetir la misma decisión no gasta ni se reescribe.
+      const decisions = actorDecisions();
+      const now = store.nowMs();
+      const previousPassAtMs = recycledPassAt(decisions.get(profileId), previous, now);
       const unchanged =
-        actorDecisions().get(profileId) === decision && (previous?.isSuper ?? false) === isSuper;
+        decisions.get(profileId) === decision &&
+        (previous?.isSuper ?? false) === isSuper &&
+        previousPassAtMs === undefined;
       // Después el cupo, y solo después el registro: un rechazo no escribe nada.
       if (decision === 'like' && !unchanged) chargeLike(store, actorId, profileId, isSuper);
-      actorDecisions().set(profileId, decision);
+      decisions.set(profileId, decision);
       if (!unchanged)
-        meta.set(profileId, { atMs: store.nowMs(), seq: (state.decisionSeq += 1), isSuper });
+        meta.set(profileId, { atMs: now, seq: ++state.decisionSeq, isSuper, previousPassAtMs });
       if (decision === 'like' && !unchanged) notifyQuotas(store, actorId);
 
       const other = state.profiles.get(profileId);

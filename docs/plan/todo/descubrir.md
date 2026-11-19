@@ -1,5 +1,15 @@
 # TODO — descubrir
 
+## Rechazos que vuelven al deck de Cofundador (2026-11-19)
+
+- [x] Un pass vuelve al cumplir 48 horas. Los reciclados cierran la cola por
+  fecha del último pass, después de los nuevos con Super Like, Boost y el resto.
+- [x] Repetir el pass reinicia la espera. El like consume cupo y puede crear
+  match. Deshacer un swipe reciclado restaura la fecha del rechazo anterior.
+- [x] SQL y mock aplican los filtros, bloqueos, bajas, suspensiones y matches
+  también a los reciclados. La recarga del deck respeta el orden del repositorio.
+- [ ] Pendiente de revisión y despliegue de `20261119214427_recycle_discovery_passes.sql`.
+
 ## Proyectos · 18 de noviembre de 2026
 
 - [x] Toque por mitades con límite háptico, portada o retrato oscurecido, punto principal y subpuntos por proyecto.
@@ -95,10 +105,9 @@ Si en algún momento se quiere que pese de verdad, el sitio es el orden del deck
 - [x] Se conserva el catálogo elegible completo, incluidos ceros: las tres
   tarjetas visibles son solo la ventana de swipe-deck, no un top 3 del ranking.
   useDeck consume la lista local sin reordenarla durante el gesto; las decisiones
-  persistidas quedan fuera de nuevas cargas. Supabase sirve 50 pendientes por
-  carga; el botón de recarga permite avanzar a la siguiente al agotarla. No
-  reciclamos passes ni aleatorizamos recargas. Sin nuevas decisiones, la misma
-  persona sigue arriba deliberadamente: eso garantiza estabilidad.
+  persistidas dejan avanzar la cola. Supabase sirve 50 pendientes por carga y
+  el botón de recarga permite avanzar a la siguiente al agotarla. Desde el
+  2026-11-19, los pass que cumplen el plazo vuelven al final.
 - [x] Verificación remota tras pegar 20260907000200: **35/35** del contrato
   contra Supabase real el 2026-09-07 (53.912 s; véase datos.md).
 - [x] Coverage completo en serie: 382 tests, 34 suites, suelo superado.

@@ -279,6 +279,22 @@ describe('foto de perfil (mock)', () => {
   });
 });
 
+describe('cuentas suspendidas en el deck', () => {
+  it('un pass vencido sigue oculto mientras la cuenta esté suspendida', async () => {
+    const store = createMockStore();
+    const { discovery } = createMockRepositories(store);
+    await discovery.recordDecision(NON_RECIPROCAL_ID, 'pass');
+    store.advanceClock(48 * 3_600_000);
+    store.state.bannedUntil.set(NON_RECIPROCAL_ID, store.nowMs() + 60_000);
+    const ids = async () => (await discovery.getDeck()).map((p) => p.id);
+    expect(await ids()).not.toContain(NON_RECIPROCAL_ID);
+    store.advanceClock(60_000);
+    expect(await ids()).toContain(NON_RECIPROCAL_ID);
+    store.deleteUser(NON_RECIPROCAL_ID);
+    expect(await ids()).not.toContain(NON_RECIPROCAL_ID);
+  });
+});
+
 describe('Premium: deshacer con el reloj parado', () => {
   it('con dos decisiones en el mismo milisegundo deshace la última', async () => {
     resetState();
