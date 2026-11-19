@@ -2,7 +2,7 @@
  * Traducción entre filas de Postgres y los tipos de dominio de `src/data/types.ts`.
  *
  * Está aislada del resto a propósito: es lo único que sabe que `availability`
- * vive en dos columnas o que el par de un match va ordenado alfabéticamente.
+ * vive en varias columnas o que el par de un match va ordenado alfabéticamente.
  * Si el esquema cambia, este archivo absorbe el golpe y `index.ts` no se entera.
  */
 
@@ -19,6 +19,7 @@ import type {
   ProfileReportInput,
 } from '../types';
 import { t } from '@/i18n';
+import { availabilityForRanges, rangesFromBands } from '../work-range';
 
 /** Los reportes se envían al RPC sin devolver ni mapear filas privadas. */
 export function toReportArgs({ profileId, reason, details }: ProfileReportInput) {
@@ -57,7 +58,7 @@ export function initialsFrom(name: string): string {
 }
 
 /** Columnas `link_*` -> `ProfileLinks`, sin claves para los enlaces ausentes. */
-function toLinks(row: ProfileRow): ProfileLinks {
+function toLinks(row: ReadableProfileRow): ProfileLinks {
   const links: ProfileLinks = {};
   if (row.link_github) links.github = row.link_github;
   if (row.link_portfolio) links.portfolio = row.link_portfolio;
@@ -73,18 +74,24 @@ function toLinks(row: ProfileRow): ProfileLinks {
  * fila a medias sería un sello sin fecha, y preferimos leerlo como «no
  * verificado» antes que pintar medio sello.
  */
-function toGithubVerification(row: ProfileRow): GithubVerification | null {
+function toGithubVerification(row: ReadableProfileRow): GithubVerification | null {
   if (!row.github_handle || !row.github_verified_at) return null;
   return { handle: row.github_handle, verifiedAt: row.github_verified_at };
 }
 
 /** Como el de GitHub: las dos columnas o ninguna (`profiles_linkedin_verification_complete`). */
-function toLinkedinVerification(row: ProfileRow): LinkedinVerification | null {
+function toLinkedinVerification(row: ReadableProfileRow): LinkedinVerification | null {
   if (!row.linkedin_name || !row.linkedin_verified_at) return null;
   return { name: row.linkedin_name, verifiedAt: row.linkedin_verified_at };
 }
 
-export function toProfile(row: ProfileRow): Profile {
+type ReadableProfileRow = Omit<ProfileRow, 'work_ranges'> &
+  Partial<Pick<ProfileRow, 'work_ranges'>>;
+
+export function toProfile(row: ReadableProfileRow): Profile {
+  const ranges =
+    row.work_ranges?.map(({ start_min, end_min }) => ({ startMin: start_min, endMin: end_min })) ??
+    rangesFromBands(row.availability_bands);
   return {
     id: row.id,
     name: row.name,
@@ -105,10 +112,7 @@ export function toProfile(row: ProfileRow): Profile {
     seekingLanguages: row.seeking_languages ?? [],
     lookingFor: row.looking_for,
     startingPoint: row.starting_point,
-    availability: {
-      hoursPerWeek: row.availability_hours_per_week,
-      bands: row.availability_bands,
-    },
+    availability: availabilityForRanges(row.availability_hours_per_week, ranges),
     ambition: row.ambition,
     links: toLinks(row),
     githubVerification: toGithubVerification(row),
@@ -135,6 +139,10 @@ export function toProfileInsert(
   input: ProfileInput,
   existing: Profile | null
 ): ProfileInsert {
+  const availability = availabilityForRanges(
+    input.availability.hoursPerWeek,
+    input.availability.ranges
+  );
   return {
     id,
     name: input.name,
@@ -156,8 +164,12 @@ export function toProfileInsert(
     seeking_languages: input.seekingLanguages ?? [],
     looking_for: input.lookingFor,
     starting_point: input.startingPoint,
-    availability_hours_per_week: input.availability.hoursPerWeek,
-    availability_bands: input.availability.bands,
+    availability_hours_per_week: availability.hoursPerWeek,
+    availability_bands: availability.bands,
+    work_ranges: availability.ranges.map(({ startMin, endMin }) => ({
+      start_min: startMin,
+      end_min: endMin,
+    })),
     ambition: input.ambition,
     link_github: input.links.github ?? null,
     link_portfolio: input.links.portfolio ?? null,

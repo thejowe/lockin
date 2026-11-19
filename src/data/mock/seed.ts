@@ -54,6 +54,7 @@
  * `githubVerification: null`.
  */
 
+import { availabilityForRanges } from '../work-range';
 import type { Profile } from '../types';
 
 const now = '2026-01-01T09:00:00.000Z';
@@ -73,7 +74,7 @@ export const SEED_PROFILES: Profile[] = [
     seekingLanguages: [],
     lookingFor: 'par',
     startingPoint: 'idea-sin-empezar',
-    availability: { hoursPerWeek: 25, bands: ['tarde', 'noche'] },
+    availability: availabilityForRanges(25, [{ startMin: 720, endMin: 1440 }]),
     ambition: 'todo-o-nada',
     links: { github: 'https://github.com/example-nuria' },
     // Verificada: uno de los dos perfiles del catálogo que nace con sello.
@@ -109,7 +110,7 @@ export const SEED_PROFILES: Profile[] = [
     seekingLanguages: [],
     lookingFor: 'par',
     startingPoint: 'algo-empezado',
-    availability: { hoursPerWeek: 20, bands: ['manana', 'tarde'] },
+    availability: availabilityForRanges(20, [{ startMin: 360, endMin: 1200 }]),
     ambition: 'equilibrado',
     links: {},
     githubVerification: null,
@@ -136,7 +137,7 @@ export const SEED_PROFILES: Profile[] = [
     seekingLanguages: [],
     lookingFor: 'ambos',
     startingPoint: 'algo-empezado',
-    availability: { hoursPerWeek: 15, bands: ['manana'] },
+    availability: availabilityForRanges(15, [{ startMin: 360, endMin: 720 }]),
     ambition: 'equilibrado',
     links: { portfolio: 'https://example.com/marc' },
     githubVerification: null,
@@ -163,7 +164,7 @@ export const SEED_PROFILES: Profile[] = [
     seekingLanguages: [],
     lookingFor: 'lockin',
     startingPoint: 'solo-ganas',
-    availability: { hoursPerWeek: 10, bands: ['noche'] },
+    availability: availabilityForRanges(10, [{ startMin: 1200, endMin: 1440 }]),
     ambition: 'lifestyle',
     links: {},
     githubVerification: null,
@@ -190,7 +191,7 @@ export const SEED_PROFILES: Profile[] = [
     seekingLanguages: [],
     lookingFor: 'par',
     startingPoint: 'solo-ganas',
-    availability: { hoursPerWeek: 30, bands: ['manana', 'tarde'] },
+    availability: availabilityForRanges(30, [{ startMin: 360, endMin: 1200 }]),
     ambition: 'todo-o-nada',
     links: { linkedin: 'https://linkedin.com/in/example-diego' },
     githubVerification: null,
@@ -221,7 +222,10 @@ export const SEED_PROFILES: Profile[] = [
     seekingLanguages: [],
     lookingFor: 'ambos',
     startingPoint: 'idea-sin-empezar',
-    availability: { hoursPerWeek: 20, bands: ['noche', 'madrugada'] },
+    availability: availabilityForRanges(20, [
+      { startMin: 0, endMin: 360 },
+      { startMin: 1200, endMin: 1440 },
+    ]),
     ambition: 'equilibrado',
     links: {
       github: 'https://github.com/example-ines',
@@ -257,7 +261,7 @@ export const SEED_PROFILES: Profile[] = [
     seekingLanguages: [],
     lookingFor: 'lockin',
     startingPoint: 'algo-empezado',
-    availability: { hoursPerWeek: 8, bands: ['manana'] },
+    availability: availabilityForRanges(8, [{ startMin: 360, endMin: 720 }]),
     ambition: 'lifestyle',
     links: {},
     githubVerification: null,
@@ -288,7 +292,7 @@ export const SEED_PROFILES: Profile[] = [
     seekingLanguages: [],
     lookingFor: 'par',
     startingPoint: 'algo-empezado',
-    availability: { hoursPerWeek: 35, bands: ['tarde', 'noche'] },
+    availability: availabilityForRanges(35, [{ startMin: 720, endMin: 1440 }]),
     ambition: 'todo-o-nada',
     links: { portfolio: 'https://example.com/lucia' },
     githubVerification: null,
@@ -319,7 +323,7 @@ export const SEED_PROFILES: Profile[] = [
     seekingLanguages: [],
     lookingFor: 'ambos',
     startingPoint: 'idea-sin-empezar',
-    availability: { hoursPerWeek: 12, bands: ['noche'] },
+    availability: availabilityForRanges(12, [{ startMin: 1200, endMin: 1440 }]),
     ambition: 'equilibrado',
     links: {
       linkedin: 'https://linkedin.com/in/example-omar',

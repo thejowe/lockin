@@ -10,6 +10,7 @@ import { PremiumRequiredError, QuotaExceededError } from '../premium-errors';
 import { ensureUserId } from './auth';
 import { getSupabaseClient } from './client';
 import { toProfile } from './mappers';
+import { addProfileWorkRanges } from './profile-work-ranges';
 
 import type { LockInSupabaseClient } from './client';
 import type { IncomingLikeRow, PremiumQuotasRow } from './database.types';
@@ -174,7 +175,7 @@ export function createSupabasePremiumRepository({
       });
       if (error) throw toPremiumError(error);
 
-      const rows = (data ?? []) as IncomingLikeRow[];
+      const rows = await addProfileWorkRanges(client, (data ?? []) as IncomingLikeRow[]);
       const profiles = await signProfiles(rows.map(toProfile));
       return rows.map((row, index): IncomingLike => ({
         profile: profiles[index],

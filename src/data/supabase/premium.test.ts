@@ -23,7 +23,7 @@ type RpcResult = {
   error: { code?: string; message: string; details?: string } | null;
 };
 
-const profileRow = (id: string): ProfileRow => ({
+const profileRow = (id: string): Omit<ProfileRow, 'work_ranges'> => ({
   id,
   name: id,
   age: 30,
@@ -75,7 +75,25 @@ function fakeClient(results: Record<string, RpcResult> = {}) {
     data: null,
     error: null as { message: string } | null,
   }));
-  return { client: { rpc, functions: { invoke } } as unknown as LockInSupabaseClient, rpc, invoke };
+  const from = () => ({
+    select: () => ({
+      in: async (_column: string, ids: string[]) => ({
+        data: [...ids].reverse().map((id) => ({
+          id,
+          work_ranges: [
+            { start_min: id === 'a' ? 780 : 810, end_min: 1050 },
+            { start_min: 1200, end_min: 1350 },
+          ],
+        })),
+        error: null,
+      }),
+    }),
+  });
+  return {
+    client: { from, rpc, functions: { invoke } } as unknown as LockInSupabaseClient,
+    rpc,
+    invoke,
+  };
 }
 
 const deps = (client: LockInSupabaseClient) => ({
@@ -391,6 +409,10 @@ describe('createSupabasePremiumRepository: bordes', () => {
 
     expect(signProfiles).toHaveBeenCalledTimes(1);
     expect(like.profile.name).toBe('firmado');
+    expect(like.profile.availability.ranges).toEqual([
+      { startMin: 810, endMin: 1050 },
+      { startMin: 1200, endMin: 1350 },
+    ]);
     expect(like.isSuper).toBe(true);
   });
 
@@ -472,6 +494,7 @@ describe('discovery sobre Supabase con Premium', () => {
       ['a', true],
       ['b', false],
     ]);
+    expect(deck.map((card) => card.availability.ranges[0].startMin)).toEqual([780, 810]);
   });
 
   it('getDeck sin filtros premium manda null en todos', async () => {

@@ -8,6 +8,7 @@
  * No lo importes desde código de producción.
  */
 
+import { availabilityForRanges } from './work-range';
 import type { ModePreference, Profile, ProfileInput, Specialty } from './types';
 
 const BASE_PROFILE: Profile = {
@@ -24,7 +25,7 @@ const BASE_PROFILE: Profile = {
   seekingLanguages: [],
   lookingFor: 'ambos',
   startingPoint: 'idea-sin-empezar',
-  availability: { hoursPerWeek: 12, bands: ['noche'] },
+  availability: availabilityForRanges(12, [{ startMin: 1200, endMin: 1440 }]),
   ambition: 'equilibrado',
   links: {},
   githubVerification: null,

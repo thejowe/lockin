@@ -38,6 +38,7 @@ import { createMockUnreadRepository } from './unread';
 import { BOARD_MAX_POSTS, BoardRejectedError } from '../repositories';
 import { REPORT_MAX_LENGTH, REPORT_REASONS } from '../types';
 
+import { availabilityForRanges } from '../work-range';
 import type { MockStore } from './store';
 
 import type {
@@ -292,6 +293,10 @@ export function createMockRepositories(
 
       const profile: Profile = {
         ...input,
+        availability: availabilityForRanges(
+          input.availability.hoursPerWeek,
+          input.availability.ranges
+        ),
         id: existing?.id ?? actorId,
         // Ausente significa «abierto a cualquiera»; ver `ProfileInput` en types.ts.
         seekingSpecialties: input.seekingSpecialties ?? [],

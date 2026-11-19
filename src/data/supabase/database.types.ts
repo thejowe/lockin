@@ -60,6 +60,7 @@ export type ProfileRow = {
   starting_point: StartingPoint;
   availability_hours_per_week: number;
   availability_bands: TimeBand[];
+  work_ranges: { start_min: number; end_min: number }[];
   ambition: Ambition;
   link_github: string | null;
   github_handle: string | null;
@@ -77,11 +78,12 @@ export type ProfileRow = {
   updated_at: string;
 };
 
-/** Una fila de `discovery_deck()`: las columnas de `profiles` y si te dio Super Like. */
-export type DeckRow = ProfileRow & { super_liked_me: boolean };
+/** Las columnas históricas de perfil que proyectan los RPC del deck y de likes. */
+type RpcProfileRow = Omit<ProfileRow, 'work_ranges'>;
+export type DeckRow = RpcProfileRow & { super_liked_me: boolean };
 
 /** Una fila de `incoming_likes()`: el perfil de quien dio like, si fue Super Like y cuándo. */
-export type IncomingLikeRow = ProfileRow & { is_super: boolean; liked_at: string };
+export type IncomingLikeRow = RpcProfileRow & { is_super: boolean; liked_at: string };
 
 /** La fila única de `premium_quotas()`. */
 export type PremiumQuotasRow = {

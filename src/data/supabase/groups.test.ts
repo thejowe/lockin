@@ -71,6 +71,7 @@ const profile = (id: string): ProfileRow => ({
   starting_point: 'solo-ganas',
   availability_hours_per_week: 10,
   availability_bands: ['tarde'],
+  work_ranges: [{ start_min: 720, end_min: 1200 }],
   ambition: 'lifestyle',
   link_github: null,
   github_handle: null,

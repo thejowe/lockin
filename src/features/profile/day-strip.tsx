@@ -1,175 +1,114 @@
-/**
- * La jornada: una regla de 24 horas con las franjas en las que la persona
- * trabaja, a escala (madrugada 00–06, mañana 06–12, tarde 12–20, noche 20–00).
- *
- * Es la firma visual de cofounder: la app va de trabajar a la vez, así que la
- * disponibilidad no se resume en una frase sino que se ve como un día. Si quien
- * mira está en la misma zona horaria, las franjas en las que coincidís salen en
- * verde-azulado (el acento de Lock-In) y además se dicen en texto: el color solo
- * no basta, ni para un lector de pantalla ni para quien no lo distingue.
- *
- * Con zonas horarias distintas no se marca coincidencia: «mañana» en Bogotá y
- * «mañana» en Madrid no son las mismas horas, y prometer un solape que no existe
- * sería peor que no decir nada.
- */
-
+/** Jornada y coincidencias exactas, en la hora local de quien mira. */
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Radii, Spacing } from '@/constants/theme';
+import { formatWorkMinute, type WorkRange } from '@/data/work-range';
 import { useTheme } from '@/hooks/use-theme';
-
 import { joinList, t } from '@/i18n';
 
-import { TIME_BAND_OPTIONS, timeBandLabel, timeBandPhrase } from './catalog';
+import { projectRanges, sharedPeriods, type DayPeriod, type DaySchedule } from './day-schedule';
+import { DayTicks } from './day-ticks';
+import { deviceTimezone, zoneLabel } from './locations';
 
-import type { TimeBand } from '@/data';
+export type { DaySchedule } from './day-schedule';
 
-/** Horas que ocupa cada franja, en el orden del día. Suman 24. */
-const BAND_HOURS: Record<TimeBand, number> = {
-  madrugada: 6,
-  manana: 6,
-  tarde: 8,
-  noche: 4,
-};
-
-/** Marcas bajo la regla: el inicio de cada franja y el cierre del día. */
-const TICKS = [0, 6, 12, 20, 24];
-
-export interface DaySchedule {
-  bands: TimeBand[];
-  timezone: string;
+function rangeText(periods: DayPeriod[]) {
+  const ordered = [...periods].sort((a, b) => a[0].startMin - b[0].startMin);
+  return joinList(
+    ordered.map((period, i) => {
+      const phrase = t('De {start} a {end}', {
+        start: formatWorkMinute(period[0].startMin),
+        end: formatWorkMinute(period[period.length - 1].endMin),
+      });
+      return i === 0 ? phrase : phrase.toLowerCase();
+    })
+  );
 }
 
 export function DayStrip({
   hoursPerWeek,
-  bands,
+  ranges,
   timezone,
   viewer,
 }: {
   hoursPerWeek: number;
-  bands: TimeBand[];
+  ranges: WorkRange[];
   timezone: string;
-  /** Jornada de quien mira. Sin ella (o en otra zona) no se marca coincidencia. */
   viewer?: DaySchedule;
 }) {
   const theme = useTheme();
-  const shared =
-    viewer && viewer.timezone === timezone
-      ? bands.filter((band) => viewer.bands.includes(band))
-      : [];
-
-  const worked = joinList(bands.map(timeBandLabel)) || t('Sin franja');
+  const now = new Date();
+  const localZone = deviceTimezone() ?? viewer?.timezone ?? timezone;
+  const projected = projectRanges(ranges, timezone, localZone, now);
+  const displayZone = projected ? localZone : timezone;
+  const worked = projected ?? ranges.map((range): DayPeriod => [range]);
+  const own = viewer ? projectRanges(viewer.ranges, viewer.timezone, displayZone, now) : null;
+  const shared = sharedPeriods(worked, own ?? []);
+  const workedText = rangeText(worked);
+  const when = rangeText(shared).toLowerCase();
+  const city = zoneLabel(displayZone);
   const label =
     t('Jornada, hora de {v}: {hoursPerWeek} horas por semana, {v2}.', {
-      v: timezoneCity(timezone),
+      v: city,
       hoursPerWeek,
-      v2: worked.toLowerCase(),
-    }) + (shared.length > 0 ? t(' Coincidís {when}.', { when: sharedPhrase(shared) }) : '');
+      v2: workedText.toLowerCase(),
+    }) + (when ? t(' Coincidís {when}.', { when }) : '');
 
   return (
     <View accessible accessibilityLabel={label} style={styles.root}>
       <View style={styles.header}>
-        <ThemedText type="caption" themeColor="textMuted" numberOfLines={1} style={styles.title}>
-          {t('Jornada · hora de {city}', { city: timezoneCity(timezone) })}
+        <ThemedText type="caption" themeColor="textMuted" style={styles.title}>
+          {t('Jornada · hora de {city}', { city })}
         </ThemedText>
         <ThemedText type="mono" themeColor="textSecondary">
           {t('{hoursPerWeek} h/sem', { hoursPerWeek })}
         </ThemedText>
       </View>
-
-      <View style={styles.track}>
-        {TIME_BAND_OPTIONS.map(({ value }) => {
-          const isShared = shared.includes(value);
-          const isWorked = bands.includes(value);
-          return (
-            <View
-              key={value}
-              style={[
-                styles.segment,
-                {
-                  flex: BAND_HOURS[value],
-                  backgroundColor: isShared
-                    ? theme.teal
-                    : isWorked
-                      ? theme.textSecondary
-                      : theme.backgroundSelected,
-                },
-              ]}
-            />
-          );
-        })}
+      <ThemedText type="mono">{workedText}</ThemedText>
+      <View style={[styles.track, { backgroundColor: theme.backgroundSelected }]}>
+        <Segments testID="workday-period" ranges={worked.flat()} color={theme.text} />
+        <Segments testID="workday-overlap" ranges={shared.flat()} color={theme.teal} />
       </View>
-
-      <View style={styles.ticks}>
-        {TICKS.map((hour) => (
-          <ThemedText
-            key={hour}
-            type="mono"
-            themeColor="textMuted"
-            style={[styles.tick, hour === 24 ? styles.tickEnd : { left: `${(hour / 24) * 100}%` }]}>
-            {String(hour).padStart(2, '0')}
-          </ThemedText>
-        ))}
-      </View>
-
-      {shared.length > 0 ? (
+      <DayTicks />
+      {when ? (
         <ThemedText type="smallBold" themeColor="teal">
-          {t('Coincidís {when}', { when: sharedPhrase(shared) })}
+          {t('Coincidís {when}', { when })}
         </ThemedText>
       ) : null}
     </View>
   );
 }
 
-/** «por la mañana y por la tarde», «de madrugada»: como se dice, no como se guarda. */
-function sharedPhrase(bands: TimeBand[]): string {
-  return joinList(bands.map(timeBandPhrase));
+function Segments({
+  ranges,
+  color,
+  testID,
+}: {
+  ranges: WorkRange[];
+  color: string;
+  testID: string;
+}) {
+  return ranges.map(({ startMin, endMin }) => (
+    <View
+      key={startMin}
+      testID={testID}
+      style={[
+        styles.segment,
+        {
+          left: `${(startMin / 1440) * 100}%`,
+          width: `${((endMin - startMin) / 1440) * 100}%`,
+          backgroundColor: color,
+        },
+      ]}
+    />
+  ));
 }
-
-/**
- * La zona horaria como se lee: «America/Mexico_City» → «Mexico City».
- */
-export function timezoneCity(timezone: string): string {
-  return (timezone.split('/').pop() ?? timezone).replace(/_/g, ' ');
-}
-
-/** Alto de la regla: se lee de un vistazo sin competir con el texto. */
-const TRACK_HEIGHT = 8;
-/** Alto de la fila de marcas: una línea de `Typography.mono`. */
-const TICKS_HEIGHT = 18;
-/** Ancho reservado a cada marca para centrarla bajo su hora. */
-const TICK_WIDTH = 20;
 
 const styles = StyleSheet.create({
-  root: {
-    gap: Spacing.one + Spacing.half,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: Spacing.two,
-  },
-  title: {
-    flex: 1,
-  },
-  track: {
-    flexDirection: 'row',
-    height: TRACK_HEIGHT,
-    gap: Spacing.half,
-  },
-  segment: {
-    borderRadius: Radii.small / 2,
-  },
-  ticks: {
-    height: TICKS_HEIGHT,
-  },
-  tick: {
-    position: 'absolute',
-    width: TICK_WIDTH,
-  },
-  tickEnd: {
-    right: 0,
-    textAlign: 'right',
-  },
+  root: { gap: Spacing.one + Spacing.half },
+  header: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.two },
+  title: { flex: 1 },
+  track: { height: Spacing.two, borderRadius: Radii.pill, overflow: 'hidden' },
+  segment: { position: 'absolute', top: 0, bottom: 0 },
 });

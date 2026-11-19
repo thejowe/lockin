@@ -85,6 +85,7 @@ test('ve las constraints de `alter table … add constraint`', () => {
     'profiles.profiles_github_verification_complete check',
     'profiles.profiles_linkedin_verification_complete check',
     'profiles.profiles_specialties_check check',
+    'profiles.profiles_valid_work_ranges check',
     'user_reports.user_reports_distinct_parties check',
     'user_reports.user_reports_reported_id_fkey foreign',
     'user_reports.user_reports_reporter_id_fkey foreign',

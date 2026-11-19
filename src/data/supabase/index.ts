@@ -57,6 +57,7 @@ import { addBoardPost, listBoardPosts, removeBoardPost } from './board';
 
 import { deleteAvatar, uploadAvatar } from './avatar';
 import type { DeckRow, MatchRow, MessageRow, ProfileRow } from './database.types';
+import { addProfileWorkRanges } from './profile-work-ranges';
 import type { AvatarSigner } from './avatar-urls';
 import type { LockInSupabaseClient } from './client';
 import type {
@@ -708,7 +709,7 @@ export function createSupabaseRepositories({
       });
       if (error) throw toPremiumError(error);
 
-      const rows = data as DeckRow[];
+      const rows = await addProfileWorkRanges(client, data as DeckRow[]);
       const profiles = await signer.signProfiles(rows.map(toProfile));
       return profiles.map((profile, index) => ({
         ...profile,

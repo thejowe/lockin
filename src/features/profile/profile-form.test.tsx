@@ -34,7 +34,13 @@ async function fillValidForm() {
   await fireEvent.press(screen.getByLabelText('Desarrollo'));
   await fireEvent.press(screen.getByLabelText('Español'));
   await fireEvent.press(screen.getByLabelText('Idea sin empezar'));
-  await fireEvent.press(screen.getByLabelText('Noche · 20–00'));
+  await fireEvent(
+    screen.getByRole('adjustable', { name: 'Inicio de la jornada' }),
+    'accessibilityAction',
+    {
+      nativeEvent: { actionName: 'increment' },
+    }
+  );
   await fireEvent.press(screen.getByLabelText('Apostarlo todo'));
   // La etiqueta del primer prompt la comparten su chip y su campo de texto, así
   // que aquí el campo se busca por el placeholder, que sí es único.
@@ -130,7 +136,7 @@ describe('ProfileForm', () => {
 
     expect(await screen.findByText('Escribe tu nombre.')).toBeTruthy();
     expect(screen.getByText('Elige al menos una especialidad.')).toBeTruthy();
-    expect(screen.getByText('Marca al menos una franja horaria.')).toBeTruthy();
+    expect(screen.getByText('De 09:00 a 14:00')).toBeTruthy();
     // Las respuestas son opcionales: no se piden.
     expect(screen.queryByText('Responde al menos a la primera pregunta.')).toBeNull();
     expect(onSubmit).not.toHaveBeenCalled();
@@ -274,7 +280,11 @@ describe('ProfileForm', () => {
       lookingFor: 'par',
       startingPoint: 'idea-sin-empezar',
       ambition: 'todo-o-nada',
-      availability: { hoursPerWeek: 10, bands: ['noche'] },
+      availability: {
+        hoursPerWeek: 10,
+        ranges: [{ startMin: 570, endMin: 840 }],
+        bands: ['manana', 'tarde'],
+      },
       otherSpecialty: null,
       languages: ['es'],
       seekingLanguages: [],
@@ -626,7 +636,16 @@ describe('ProfileForm', () => {
 
   it('el stepper de disponibilidad respeta el máximo', async () => {
     const onSubmit = jest.fn<Promise<void>, [ProfileInput]>().mockResolvedValue(undefined);
-    const profile = buildProfile({ availability: { hoursPerWeek: 58, bands: ['noche'] } });
+    const profile = buildProfile({
+      availability: {
+        hoursPerWeek: 58,
+        ranges: [
+          { startMin: 540, endMin: 660 },
+          { startMin: 1230, endMin: 1440 },
+        ],
+        bands: ['manana', 'noche'],
+      },
+    });
     await render(<ProfileForm initial={profile} submitLabel="Guardar" onSubmit={onSubmit} />);
 
     // Arranca en 58 h y el máximo es 60: cinco sumas no pueden pasar de ahí.
@@ -636,7 +655,14 @@ describe('ProfileForm', () => {
     await fireEvent.press(screen.getByText('Guardar'));
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
-    expect(onSubmit.mock.calls[0][0].availability.hoursPerWeek).toBe(60);
+    expect(onSubmit.mock.calls[0][0].availability).toEqual({
+      hoursPerWeek: 60,
+      ranges: [
+        { startMin: 540, endMin: 660 },
+        { startMin: 1230, endMin: 1440 },
+      ],
+      bands: ['manana', 'noche'],
+    });
   });
 
   it('no queda ningún campo de texto sin declarar los dos props', async () => {

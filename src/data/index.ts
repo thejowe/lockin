@@ -10,6 +10,7 @@
 
 export { presence, repositories, roomPresence, videoSignal } from './active';
 export * from './types';
+export type { WorkRange } from './work-range';
 export * from './projects';
 export * from './repositories';
 export {

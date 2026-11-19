@@ -23,6 +23,7 @@ import {
 import { ThemedText } from '@/components/themed-text';
 import { OBJECTIONABLE_MESSAGE, isObjectionable } from '@/features/safety/content-filter';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { availabilityForRanges, type WorkRange } from '@/data/work-range';
 
 import {
   AGE_MAX,
@@ -36,7 +37,6 @@ import {
   PROMPT_QUESTIONS,
   SPECIALTIES_MAX,
   STARTING_POINT_OPTIONS,
-  TIME_BAND_OPTIONS,
 } from './catalog';
 import {
   Chip,
@@ -51,6 +51,7 @@ import {
 import { MyProjects } from './projects';
 import { Board } from './board';
 import { LocationFields } from './location-fields';
+import { WorkRangeEditor } from './work-range-slider';
 import {
   cityFromLocation,
   countryByIso,
@@ -62,15 +63,7 @@ import {
 } from './locations';
 import { LanguagePicker, MasteryPicker, SeekingSpecialtyPicker } from './pickers';
 
-import type {
-  Ambition,
-  Language,
-  Profile,
-  ProfileInput,
-  Specialty,
-  StartingPoint,
-  TimeBand,
-} from '@/data';
+import type { Ambition, Language, Profile, ProfileInput, Specialty, StartingPoint } from '@/data';
 import { t } from '@/i18n';
 
 /** Estado del formulario. Los números viven como texto mientras se teclean. */
@@ -92,7 +85,7 @@ export interface Draft {
   seekingLanguages: Language[];
   startingPoint: StartingPoint | null;
   hoursPerWeek: number;
-  bands: TimeBand[];
+  workRanges: WorkRange[];
   ambition: Ambition | null;
   github: string;
   portfolio: string;
@@ -116,7 +109,6 @@ const FIELD_ORDER: (keyof Draft)[] = [
   'seekingSpecialties',
   'languages',
   'startingPoint',
-  'bands',
   'ambition',
   'prompts',
   'github',
@@ -162,7 +154,7 @@ export function initialDraft(profile: Profile | null, seed: ProfileSeed | null):
     seekingLanguages: profile?.seekingLanguages ?? [],
     startingPoint: profile?.startingPoint ?? null,
     hoursPerWeek: profile?.availability.hoursPerWeek ?? 10,
-    bands: profile?.availability.bands ?? [],
+    workRanges: profile?.availability.ranges ?? [{ startMin: 540, endMin: 840 }],
     ambition: profile?.ambition ?? null,
     github: profile?.links.github ?? '',
     portfolio: profile?.links.portfolio ?? '',
@@ -215,7 +207,6 @@ export function validate(draft: Draft): Errors {
   }
   if (draft.languages.length === 0) errors.languages = t('Elige al menos un idioma.');
   if (!draft.startingPoint) errors.startingPoint = t('Elige tu punto de partida.');
-  if (draft.bands.length === 0) errors.bands = t('Marca al menos una franja horaria.');
   if (!draft.ambition) errors.ambition = t('Elige tu nivel de compromiso.');
   // Las respuestas son opcionales desde el 2026-10-30 (decisión del usuario):
   // sin ninguna, la tarjeta del deck se queda en sus dos primeras páginas.
@@ -264,7 +255,7 @@ export function toInput(draft: Draft): ProfileInput {
     // lock-in o «ambos», para que aparezcan en el único deck que hay.
     lookingFor: 'par',
     startingPoint: draft.startingPoint as StartingPoint,
-    availability: { hoursPerWeek: draft.hoursPerWeek, bands: draft.bands },
+    availability: availabilityForRanges(draft.hoursPerWeek, draft.workRanges),
     ambition: draft.ambition as Ambition,
     links: {
       github: link(draft.github),
@@ -307,7 +298,7 @@ export type ProfileSection = 'basics' | 'specialties' | 'work' | 'prompts' | 'li
 const SECTION_FIELDS: Record<ProfileSection, (keyof Draft)[]> = {
   basics: ['name', 'age', 'country', 'city', 'timezone'],
   specialties: ['specialties', 'seekingSpecialties', 'languages'],
-  work: ['startingPoint', 'bands', 'ambition'],
+  work: ['startingPoint', 'ambition'],
   prompts: ['prompts'],
   links: ['github'],
 };
@@ -570,21 +561,11 @@ export function ProfileForm({
               />
             </Field>
 
-            <Field
-              label={t('Cuándo sueles trabajar')}
-              error={errors.bands}
-              onLayout={track('bands')}>
-              <ChipRow>
-                {TIME_BAND_OPTIONS.map((option) => (
-                  <Chip
-                    key={option.value}
-                    label={`${option.label} · ${option.description}`}
-                    multiple
-                    selected={draft.bands.includes(option.value)}
-                    onPress={() => update('bands', toggle(draft.bands, option.value))}
-                  />
-                ))}
-              </ChipRow>
+            <Field label={t('Cuándo sueles trabajar')}>
+              <WorkRangeEditor
+                value={draft.workRanges}
+                onChange={(range) => update('workRanges', range)}
+              />
             </Field>
 
             <Field label={t('Ambición')} error={errors.ambition} onLayout={track('ambition')}>

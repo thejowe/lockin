@@ -1015,6 +1015,28 @@ export function describeRepositoryContract(backend: ContractBackend): void {
         expect(await read()).toEqual([ids[2], ids[1], ids[0]]);
       });
 
+      it('entrega las horas exactas de la tarjeta al filtrar por franjas Premium', async () => {
+        const availability = {
+          hoursPerWeek: 12,
+          ranges: [
+            { startMin: 90, endMin: 210 },
+            { startMin: 810, endMin: 870 },
+          ],
+          bands: ['madrugada', 'tarde'] as ProfileInput['availability']['bands'],
+        };
+        const { ids, filter } = await setup([
+          buildProfileInput({ availability }),
+          buildProfileInput(),
+          buildProfileInput(),
+        ]);
+        await fixture.setPremium(true);
+        const cards = await repositories.discovery.getDeck({ ...filter, timeBands: ['tarde'] });
+        expect(cards).toHaveLength(1);
+        expect(cards[0]).toMatchObject({ id: ids[0], availability });
+        const inGap = await repositories.discovery.getDeck({ ...filter, timeBands: ['manana'] });
+        expect(inGap.map((card) => card.id)).not.toContain(ids[0]);
+      });
+
       it('da el mismo peso a ambas direcciones y desempata por id', async () => {
         const { ids, read } = await setup([
           candidate(['ventas'], ['dev']),
@@ -1310,6 +1332,43 @@ export function describeRepositoryContract(backend: ContractBackend): void {
     });
 
     describe('profiles.saveCurrent', () => {
+      it('guarda medias horas y recalcula las franjas cuando se edita la jornada', async () => {
+        await repositories.profiles.saveCurrent(buildProfileInput());
+        const saved = await repositories.profiles.saveCurrent(
+          buildProfileInput({
+            availability: {
+              hoursPerWeek: 8,
+              ranges: [
+                { startMin: 1230, endMin: 1290 },
+                { startMin: 510, endMin: 630 },
+              ],
+              bands: ['tarde'],
+            },
+          })
+        );
+        const expected = {
+          hoursPerWeek: 8,
+          ranges: [
+            { startMin: 510, endMin: 630 },
+            { startMin: 1230, endMin: 1290 },
+          ],
+          bands: ['manana', 'noche'],
+        };
+        expect(saved.availability).toEqual(expected);
+        expect((await repositories.profiles.getCurrent())?.availability).toEqual(expected);
+        const remaining = [expected.ranges[0]];
+        await repositories.profiles.saveCurrent(
+          buildProfileInput({
+            availability: { ...saved.availability, ranges: remaining },
+          })
+        );
+        expect((await repositories.profiles.getCurrent())?.availability).toEqual({
+          hoursPerWeek: 8,
+          ranges: remaining,
+          bands: ['manana'],
+        });
+      });
+
       /**
        * `seekingSpecialties` es lo que el perfil quiere que domine la otra
        * persona. Se guarda tal cual: el repositorio no lo deduce de
