@@ -63,12 +63,6 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {
-  GoogleSignin,
-  isCancelledResponse,
-  isErrorWithCode,
-  statusCodes,
-} from '@react-native-google-signin/google-signin';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
@@ -1488,7 +1482,10 @@ export async function unlinkLinkedinIdentity(): Promise<void> {
  */
 export async function signInWithProvider(provider: 'google' | 'apple'): Promise<boolean> {
   if (provider === 'apple' && Platform.OS === 'ios') return signInWithAppleNative();
-  if (provider === 'google' && Platform.OS !== 'web') return signInWithGoogleNative();
+  if (provider === 'google' && Platform.OS !== 'web') {
+    const google = loadGoogleSignin();
+    if (google) return signInWithGoogleNative(google);
+  }
 
   const client = getSupabaseClient();
   const redirectTo = authRedirectUrl();
@@ -1526,6 +1523,21 @@ const GOOGLE_IOS_CLIENT_ID =
 
 let googleConfigured = false;
 
+type GoogleSigninSdk = typeof import('@react-native-google-signin/google-signin');
+
+/**
+ * El SDK es nativo y exige su TurboModule al importarse: se carga solo cuando
+ * hace falta. En Expo Go no existe y `signInWithProvider` cae al navegador.
+ */
+function loadGoogleSignin(): GoogleSigninSdk | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return require('@react-native-google-signin/google-signin') as GoogleSigninSdk;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Google con el selector de cuentas nativo. Por el navegador, Google enseña
  * «Ir a grrzmzktrhksbttpbblg.supabase.co» (el dominio de la vuelta de Supabase);
@@ -1537,7 +1549,8 @@ let googleConfigured = false;
  *
  * @returns `true` si se entró; `false` si la persona cerró el selector.
  */
-async function signInWithGoogleNative(): Promise<boolean> {
+async function signInWithGoogleNative(google: GoogleSigninSdk): Promise<boolean> {
+  const { GoogleSignin, isCancelledResponse, isErrorWithCode, statusCodes } = google;
   if (!googleConfigured) {
     GoogleSignin.configure({
       webClientId: GOOGLE_WEB_CLIENT_ID,
