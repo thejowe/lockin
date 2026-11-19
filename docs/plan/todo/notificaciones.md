@@ -5,6 +5,11 @@ Migración aplicada en producción el 2026-11-11 por orden del usuario.
 Proyecto: `grrzmzktrhksbttpbblg`. Edge Function v4 desplegada el 2026-11-11
 con autorización explícita; transporte backend comprobado. Recepción física pendiente.
 
+## Avisos de proyectos conjuntos · 19 de noviembre de 2026
+
+- [x] La creación, la propuesta de publicación y el borrado avisan al otro autor según `notify_messages`. Los recordatorios de tareas y reuniones consultan `notify_reminders`, la asignación y el estado vigente antes del envío. Cada dispositivo tiene su propia marca de entrega.
+- [ ] Pendiente de revisión y despliegue junto con el proyecto conjunto. La prueba local simula la respuesta de Expo; la recepción en un teléfono requiere una comprobación posterior. [Estado del chat](chat.md).
+
 ## Alcance
 
 - Resumen diario de likes no vistos, match, mensajes 1:1 y de grupo, actividad

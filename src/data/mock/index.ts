@@ -14,6 +14,7 @@ import { createMockChatPlan } from './chat-plan';
 import {
   CURRENT_USER_ID,
   defaultMockStore,
+  detachProjectAuthor,
   initialsFrom,
   isBlockedPair,
   matchesMode,
@@ -246,6 +247,10 @@ export function createMockRepositories(
       const blocks = getState().userBlocks.get(actorId) ?? new Set<string>();
       blocks.add(profileId);
       getState().userBlocks.set(actorId, blocks);
+      for (const match of getState().matches) {
+        if (match.profileIds.includes(actorId) && match.profileIds.includes(profileId))
+          detachProjectAuthor(getState(), actorId, match.id);
+      }
       // Espejo de `block_profile`: las filas `invitada`/`aceptada` de la persona
       // bloqueada en las salas de quien bloquea que aún no han empezado pasan a
       // `rechazada`. Las que ya empezaron o se cancelaron no se tocan.
@@ -619,6 +624,37 @@ export function createMockRepositories(
   };
 
   const matches: MatchRepository = {
+    async unmatch(matchId) {
+      const state = getState();
+      const match = state.matches.find((row) => row.id === matchId);
+      if (!match?.profileIds.includes(actorId)) throw new Error('Conversation unavailable');
+      const peer = match.profileIds[0] === actorId ? match.profileIds[1] : match.profileIds[0];
+      actorDecisions().set(peer, 'pass');
+      const meta = state.decisionMeta.get(actorId)?.get(peer);
+      if (meta)
+        Object.assign(meta, { atMs: store.nowMs(), seq: ++state.decisionSeq, isSuper: false });
+      if (peer === CURRENT_USER_ID) {
+        state.incomingLikes.delete(actorId);
+        state.incomingSupers.delete(actorId);
+      }
+      detachProjectAuthor(state, actorId, matchId);
+      state.matches = state.matches.filter((row) => row.id !== matchId);
+      state.chatPlan = state.chatPlan.filter(
+        (row) => row.scope.kind !== 'match' || row.scope.id !== matchId
+      );
+      state.projectDeletions.delete(matchId);
+      state.messages = state.messages.filter((row) => row.matchId !== matchId);
+      const sessions = new Set(
+        state.lockInSessions.filter((row) => row.matchId === matchId).map((row) => row.id)
+      );
+      state.lockInSessions = state.lockInSessions.filter((row) => row.matchId !== matchId);
+      state.attendance = state.attendance.filter((row) => !sessions.has(row.sessionId));
+      state.ratings = state.ratings.filter((row) => !sessions.has(row.sessionId));
+      state.agreementAnswers = state.agreementAnswers.filter((row) => row.matchId !== matchId);
+      state.agreementSeeded.delete(matchId);
+      notify(MATCHES_TOPIC);
+      notify(messagesTopic(matchId));
+    },
     async list() {
       return getState()
         .matches.map(withCounterpart)

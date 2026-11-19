@@ -11,6 +11,10 @@ Fusionadas `deck/rechazados-vuelven` y `perfil/barra-horas` en la rama principal
 - [ ] Comprobación en el emulador: la hace el usuario a mano.
 - [ ] Aplicar en producción `20261119214427_recycle_discovery_passes.sql` y `20261119215204_profile_work_range.sql`, solo con el ok del usuario y antes de distribuir un cliente que escriba `work_ranges`.
 
+## Proyecto conjunto en el chat · 19 de noviembre de 2026
+
+Rama local `chat/proyecto-conjunto`. El proyecto privado se crea desde el match y conserva el plan existente. La publicación en ambos perfiles requiere dos consentimientos. [Implementación y verificación local](todo/chat.md).
+
 ## Proyectos · 18 de noviembre de 2026
 
 Seguimiento por bloque en [datos](todo/datos.md), [perfil](todo/perfil.md), [descubrir](todo/descubrir.md), [visual](todo/visual.md) y [calidad](todo/calidad.md).

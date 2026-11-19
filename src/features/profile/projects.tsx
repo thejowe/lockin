@@ -19,6 +19,7 @@ import type { Project, ProjectPhoto } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
 import { SecondaryButton } from './controls';
+import { ProjectAuthorFaces } from './project-author-faces';
 import { ProjectEditor } from './project-editor';
 import { useProjects } from './use-projects';
 
@@ -44,12 +45,17 @@ export function MyProjects({ ownerId, wizard = false }: { ownerId: string; wizar
             onPress={() => setEdit(p)}
             style={[glassStyle(theme), styles.tile]}>
             {p.cover ? (
-              <Image source={{ uri: p.cover.uri }} style={StyleSheet.absoluteFill} />
+              <Image
+                source={p.cover}
+                cachePolicy={p.cover.headers ? 'none' : undefined}
+                style={StyleSheet.absoluteFill}
+              />
             ) : null}
             <View style={styles.pencil}>
               <Icon name="pencil" size={16} color="#fff" />
             </View>
             <View style={styles.caption}>
+              <ProjectAuthorFaces project={p} compact />
               <ThemedText type="smallBold" style={styles.white} numberOfLines={2}>
                 {p.name}
               </ThemedText>
@@ -99,7 +105,7 @@ function Gallery({ photos }: { photos: ProjectPhoto[] }) {
             accessibilityRole="imagebutton"
             accessibilityLabel={t('Ampliar foto {n}', { n: i + 1 })}
             onPress={() => setStart(i)}>
-            <Image style={styles.thumb} source={{ uri: p.uri }} />
+            <Image style={styles.thumb} source={p} cachePolicy={p.headers ? 'none' : undefined} />
           </Pressable>
         ))}
       </ScrollView>
@@ -121,7 +127,8 @@ function Gallery({ photos }: { photos: ProjectPhoto[] }) {
                   accessibilityLabel={t('Foto {n}', { n: i + 1 })}
                   contentFit="contain"
                   style={{ width, height: '100%' }}
-                  source={{ uri: p.uri }}
+                  source={p}
+                  cachePolicy={p.headers ? 'none' : undefined}
                 />
               ))}
             </ScrollView>
@@ -144,8 +151,15 @@ export function PublicProjects({ ownerId }: { ownerId: string }) {
       </ThemedText>
       {data.map((p) => (
         <View key={p.id} style={styles.section}>
-          {p.cover ? <Image source={{ uri: p.cover.uri }} style={styles.cover} /> : null}
+          {p.cover ? (
+            <Image
+              source={p.cover}
+              cachePolicy={p.cover.headers ? 'none' : undefined}
+              style={styles.cover}
+            />
+          ) : null}
           <ThemedText type="subtitle">{p.name}</ThemedText>
+          <ProjectAuthorFaces project={p} />
           <ThemedText type="smallBold">{p.tagline}</ThemedText>
           {p.description ? <ThemedText>{p.description}</ThemedText> : null}
           {p.photos.length ? <Gallery photos={p.photos} /> : null}

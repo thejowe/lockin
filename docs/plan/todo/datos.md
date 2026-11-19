@@ -1,5 +1,10 @@
 # TODO — datos
 
+## Autoría de proyectos · 19 de noviembre de 2026
+
+- [x] La migración rellena `project_authors` desde los proyectos de perfil existentes. `project_workspaces` protege las notas y propuestas de publicación. La función de moderación comprueba de nuevo autoría y revisión al confirmar la escritura.
+- [x] PGlite cubre backfill, visibilidad de las imágenes, consentimiento, cupos y retirada de autoría. [Estado y archivos pendientes de desplegar](chat.md).
+
 ## Proyectos · 18 de noviembre de 2026
 
 - [x] Contrato, semillas, límite concurrente, RLS, URLs firmadas y publicación atómica del proyecto tras moderar sus imágenes.

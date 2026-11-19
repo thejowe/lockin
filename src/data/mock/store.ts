@@ -95,6 +95,19 @@ export interface MockState {
   /** Tablones personales. En el mock no hay moderación: se publica tal cual. */
   boardPosts: BoardPost[];
   projects: import('../projects').Project[];
+  jointProjects: Map<
+    string,
+    {
+      matchId: string | null;
+      authorIds: string[];
+      published: boolean;
+      proposedBy: string | null;
+      notes: string;
+      notesBy: string | null;
+      notesRevision: string;
+    }
+  >;
+  projectDeletions: Map<string, { id: string; actorId: string }>;
   /** Grupos, sus puestos y sus miembros (espejo de `20261109130000_groups.sql`). */
   groups: Group[];
   groupRoles: GroupRole[];
@@ -315,6 +328,8 @@ function initialState(): MockState {
     userBlocks: new Map(),
     termsAcceptances: new Map(),
     boardPosts: [],
+    jointProjects: new Map(),
+    projectDeletions: new Map(),
     projects: [
       ['seed-lucia', 'Atlas del barrio', 'Un mapa colaborativo de talleres locales.'],
       ['seed-lucia', 'Tinta', 'Un cuaderno para intercambiar bocetos.'],
@@ -378,6 +393,24 @@ export function isBlockedPair(state: MockState, a: string, b: string): boolean {
   return Boolean(state.userBlocks.get(a)?.has(b) || state.userBlocks.get(b)?.has(a));
 }
 
+export function detachProjectAuthor(state: MockState, userId: string, matchId?: string) {
+  for (const [id, joint] of state.jointProjects) {
+    if (!joint.authorIds.includes(userId) || (matchId && joint.matchId !== matchId)) continue;
+    joint.published = false;
+    joint.proposedBy = null;
+    joint.authorIds = joint.authorIds.filter((author) => author !== userId);
+    joint.matchId = null;
+    const project = state.projects.find((row) => row.id === id);
+    if (!joint.authorIds.length) {
+      state.projects = state.projects.filter((row) => row.id !== id);
+      state.jointProjects.delete(id);
+    } else if (project) {
+      project.ownerId = joint.authorIds[0];
+      project.revision = project.revision + '-detached';
+    }
+  }
+}
+
 export function createMockStore(): MockStore {
   let state = initialState();
 
@@ -408,6 +441,7 @@ export function createMockStore(): MockStore {
 
     advanceClock(ms) {
       clockOffsetMs += ms;
+      notify('project-notifications');
     },
 
     reset() {
@@ -447,6 +481,11 @@ export function createMockStore(): MockStore {
           .map((session) => session.id)
       );
 
+      detachProjectAuthor(state, userId);
+      for (const matchId of matchIds) state.projectDeletions.delete(matchId);
+      for (const joint of state.jointProjects.values()) {
+        if (joint.notesBy === userId) joint.notesBy = null;
+      }
       state.profiles.delete(userId);
       state.bannedUntil.delete(userId);
       state.projects = state.projects.filter((p) => p.ownerId !== userId);

@@ -18,7 +18,12 @@ import {
   validateGroupUpdate,
 } from '../groups';
 import { REPORT_MAX_LENGTH, REPORT_REASONS } from '../types';
-import { defaultMockStore, isBlockedPair, removeMockGroupMember } from './store';
+import {
+  defaultMockStore,
+  detachProjectAuthor,
+  isBlockedPair,
+  removeMockGroupMember,
+} from './store';
 
 import type { MockState, MockStore } from './store';
 import type { GroupRepository } from '../repositories';
@@ -403,6 +408,10 @@ export function createMockGroupRepository(
       const blocks = state.userBlocks.get(actorId) ?? new Set<string>();
       blocks.add(group.adminId);
       state.userBlocks.set(actorId, blocks);
+      for (const match of state.matches) {
+        if (match.profileIds.includes(actorId) && match.profileIds.includes(group.adminId))
+          detachProjectAuthor(state, actorId, match.id);
+      }
       // El bloqueo al admin cambia también deck y matches de cofundador.
       store.notify('matches');
       store.notify(groupsTopic(actorId));

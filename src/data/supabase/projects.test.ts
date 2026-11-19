@@ -1,3 +1,5 @@
+import { createClient, type Session } from '@supabase/supabase-js';
+import type { Database } from './database.types';
 import { supabaseProjects } from './projects';
 import type { LockInSupabaseClient } from './client';
 import type { ProjectInput } from '../projects';
@@ -57,4 +59,70 @@ it('una respuesta ilegible nunca confirma la publicación', async () => {
   const { repo, invoke } = fixture();
   invoke.mockResolvedValue({ data: {}, error: null });
   await expect(repo.save(input)).rejects.toThrow();
+});
+
+it('lee la ficha por un coautor y carga las imágenes compartidas con una petición autenticada', async () => {
+  const path = 'shared/p/project-cover.jpg';
+  const fetch = jest.fn(
+    async (_request: RequestInfo | URL) =>
+      new Response(
+        JSON.stringify([
+          {
+            id: 'p',
+            owner_id: 'first',
+            revision: 'r',
+            name: 'Atlas',
+            tagline: 'Demo',
+            link: '',
+            description: '',
+            cover_path: path,
+            photo_paths: [],
+            project_authors: [
+              {
+                profiles: {
+                  id: 'first',
+                  name: 'Ana',
+                  avatar_initials: 'A',
+                  avatar_accent: 'brass',
+                  prompts: [],
+                },
+              },
+              {
+                profiles: {
+                  id: 'second',
+                  name: 'Pau',
+                  avatar_initials: 'P',
+                  avatar_accent: 'teal',
+                  prompts: [],
+                },
+              },
+            ],
+          },
+        ]),
+        { status: 200, headers: { 'content-type': 'application/json' } }
+      )
+  );
+  const client = createClient<Database>('https://example.supabase.co', 'test-key', {
+    global: { fetch },
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  });
+  jest.spyOn(client.auth, 'getSession').mockResolvedValue({
+    data: { session: { access_token: 'test-token' } as Session },
+    error: null,
+  });
+  const repo = supabaseProjects(
+    () => client,
+    async () => 'reader'
+  );
+  const cards = await repo.list('second');
+  expect(cards).toHaveLength(1);
+  expect(cards[0].authors?.map((author) => author.id)).toEqual(['first', 'second']);
+  expect(cards[0].cover).toMatchObject({
+    uri: 'https://example.supabase.co/storage/v1/object/authenticated/board/' + path,
+    headers: { Authorization: 'Bearer test-token' },
+  });
+  expect(fetch).toHaveBeenCalledTimes(1);
+  const url = new URL(String(fetch.mock.calls[0][0]));
+  expect(url.searchParams.get('listed.user_id')).toBe('eq.second');
+  expect(url.searchParams.get('published')).toBe('eq.true');
 });

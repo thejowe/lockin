@@ -1,4 +1,4 @@
-import type { ChatPlanRepository, ChatScope } from '../chat-plan';
+import type { ChatPlanRepository, ChatScope, TaskDetails } from '../chat-plan';
 import { isBlockedPair, type MockStore } from './store';
 
 export function createMockChatPlan(store: MockStore, actorId: string): ChatPlanRepository {
@@ -23,15 +23,32 @@ export function createMockChatPlan(store: MockStore, actorId: string): ChatPlanR
     );
   }
 
+  function validateDetails(scope: ChatScope, details: Partial<TaskDetails>, meeting: boolean) {
+    const joint = [...store.state.jointProjects.values()].find((p) => p.matchId === scope.id);
+    if (
+      scope.kind !== 'match' ||
+      meeting ||
+      !joint?.authorIds.includes(actorId) ||
+      (details.assigneeId != null && !joint.authorIds.includes(details.assigneeId)) ||
+      (details.dueAt != null && !Number.isFinite(Date.parse(details.dueAt))) ||
+      (details.status !== undefined && !['pending', 'in_progress', 'done'].includes(details.status))
+    )
+      throw new Error('Invalid task details');
+  }
   return {
     async list(scope) {
-      return visible(scope).map(({ id, title, startsAt, place, closed }) => ({
-        id,
-        title,
-        startsAt,
-        place,
-        closed,
-      }));
+      return visible(scope).map(
+        ({ id, title, startsAt, place, closed, assigneeId, dueAt, status }) => ({
+          id,
+          title,
+          startsAt,
+          place,
+          closed,
+          assigneeId: assigneeId ?? null,
+          dueAt: dueAt ?? null,
+          status: status ?? (closed && !startsAt ? 'done' : 'pending'),
+        })
+      );
     },
     async add(scope, draft) {
       if (!isMember(scope)) throw new Error('Conversation unavailable');
@@ -48,12 +65,33 @@ export function createMockChatPlan(store: MockStore, actorId: string): ChatPlanR
       ) {
         throw new Error('Invalid plan item');
       }
-      store.state.chatPlan.push({ ...draft, scope, authorId: actorId, closed: false });
+      if (
+        (draft.status !== undefined && draft.status !== 'pending') ||
+        draft.assigneeId != null ||
+        draft.dueAt != null
+      )
+        validateDetails(scope, draft, draft.startsAt !== null);
+      store.state.chatPlan.push({
+        ...draft,
+        scope,
+        authorId: actorId,
+        closed: draft.status === 'done',
+      });
+      store.notify('project-notifications');
+    },
+    async updateTask(scope, id, details) {
+      const item = visible(scope).find((row) => row.id === id);
+      if (!item) throw new Error('Plan item unavailable');
+      validateDetails(scope, details, item.startsAt !== null);
+      Object.assign(item, details, { closed: details.status === 'done' });
+      store.notify('project-notifications');
     },
     async setClosed(scope, id, closed) {
       const item = visible(scope).find((item) => item.id === id);
       if (!item) throw new Error('Plan item unavailable');
       item.closed = closed;
+      if (!item.startsAt) item.status = closed ? 'done' : 'pending';
+      store.notify('project-notifications');
     },
   };
 }

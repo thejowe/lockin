@@ -270,6 +270,7 @@ export interface DiscoveryRepository {
 
 /** Matches del usuario actual. */
 export interface MatchRepository {
+  unmatch(matchId: string): Promise<void>;
   /** Matches con el perfil del otro lado y el último mensaje ya resueltos. */
   list(): Promise<MatchWithProfile[]>;
   getById(matchId: string): Promise<MatchWithProfile | null>;

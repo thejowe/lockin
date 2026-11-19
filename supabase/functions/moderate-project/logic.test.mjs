@@ -64,3 +64,52 @@ test('foreign uploads, invented existing images and stale revisions cannot be pu
     assert.deepEqual(stored, []);
   }
 });
+
+test('coauthor edits can retain an approved gallery while new images use shared storage', async () => {
+  const { deps, body, stored } = fixture();
+  const cover = 'shared/project/project-original.jpg';
+  const old = { id: 'project', revision: 'r1', joint: true, cover_path: cover, photo_paths: [] };
+  const scopes = [];
+  deps.find = async () => old;
+  deps.upload = async (user, bytes, joint) => {
+    scopes.push({ user, joint });
+    return 'shared/project/project-extra.jpg';
+  };
+  const reply = await handleProject(
+    'peer',
+    {
+      ...body,
+      previous: { id: old.id, revision: old.revision },
+      images: [{ keep: cover }, { pending: 'peer/new.jpg' }],
+    },
+    deps
+  );
+  assert.equal(reply.status, 200);
+  assert.deepEqual(scopes, [{ user: 'peer', joint: true }]);
+  assert.equal(stored[0].cover_path, cover);
+  assert.deepEqual(stored[0].photo_paths, ['shared/project/project-extra.jpg']);
+});
+
+test('a lost edit race discards only newly staged shared files', async () => {
+  const { deps, body, discarded } = fixture();
+  const cover = 'shared/project/project-original.jpg';
+  deps.find = async () => ({
+    id: 'project',
+    revision: 'r1',
+    joint: true,
+    cover_path: cover,
+    photo_paths: [],
+  });
+  deps.save = async () => 'conflict';
+  const reply = await handleProject(
+    'me',
+    {
+      ...body,
+      previous: { id: 'project', revision: 'r1' },
+      images: [{ keep: cover }, { pending: 'me/1.jpg' }],
+    },
+    deps
+  );
+  assert.equal(reply.status, 409);
+  assert.deepEqual(discarded, ['me/project-1.jpg']);
+});

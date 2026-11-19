@@ -1,8 +1,11 @@
 import { isObjectionable, OBJECTIONABLE_MESSAGE } from '@/features/safety/content-filter';
+import type { Profile } from './types';
 import { t } from '@/i18n';
 
 export interface ProjectPhoto {
   uri: string;
+  /** Shared images require a fresh authenticated Storage read. */
+  headers?: Record<string, string>;
   /** Immutable key from a published project. New local photos have no key. */
   path?: string;
 }
@@ -16,15 +19,37 @@ export interface ProjectInput {
 }
 export interface Project extends ProjectInput {
   id: string;
+  /** Compatibility id of a historical author. Permissions use project authors. */
   ownerId: string;
+  authors?: Pick<Profile, 'id' | 'name' | 'avatar'>[];
   revision: string;
 }
 export type ProjectVersion = Pick<Project, 'id' | 'revision'>;
 
+export interface JointWorkspace {
+  project: Project;
+  published: boolean;
+  proposedBy: string | null;
+  hasCapacity: boolean;
+  notes: string;
+  notesBy: string | null;
+  notesRevision: string;
+}
+export type PublicationAction = 'propose' | 'accept' | 'reject' | 'private';
+
 export interface ProjectRepository {
   list(ownerId: string): Promise<Project[]>;
-  save(input: ProjectInput, previous?: ProjectVersion, draftId?: string): Promise<void>;
+  save(
+    input: ProjectInput,
+    previous?: ProjectVersion,
+    draftId?: string,
+    matchId?: string
+  ): Promise<void>;
   remove(previous: ProjectVersion): Promise<void>;
+  lastDeletion(matchId: string): Promise<{ id: string; actorId: string } | null>;
+  workspace(matchId: string): Promise<JointWorkspace | null>;
+  publication(project: ProjectVersion, action: PublicationAction): Promise<void>;
+  saveNotes(projectId: string, text: string, revision: string): Promise<void>;
   promote(previous: ProjectVersion): Promise<void>;
 }
 

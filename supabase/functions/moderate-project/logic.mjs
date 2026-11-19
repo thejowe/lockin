@@ -57,7 +57,7 @@ export async function handleProject(user, body, deps) {
       if (!isComplete(result)) return failure(503, 'unavailable', slot);
       if (!boardVerdict(result)) return failure(422, 'flagged', slot);
       // Private and unreadable until the complete row commits.
-      const path = await deps.upload(user, bytes);
+      const path = await deps.upload(user, bytes, old ? old.joint : body.matchId != null);
       published.push(path);
       paths.push(path);
     }

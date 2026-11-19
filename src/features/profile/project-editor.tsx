@@ -1,6 +1,8 @@
 import { Image } from 'expo-image';
-import { useRef, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, View } from 'react-native';
+import { useRef, useState, type ReactNode } from 'react';
+import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { Frosted } from '@/components/glass';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { Radii, Spacing } from '@/constants/theme';
@@ -18,6 +20,40 @@ import { t } from '@/i18n';
 import { pickAvatarPhoto } from './avatar-photo';
 import { Field, PrimaryButton, SecondaryButton, TextField } from './controls';
 
+export function ProjectBottomSheet({
+  onClose,
+  children,
+}: {
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  const theme = useTheme();
+  const reduced = useReduceMotion();
+  return (
+    <Modal visible transparent animationType={reduced ? 'none' : 'slide'} onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        behavior="padding"
+        style={[styles.backdrop, { backgroundColor: theme.background + '99' }]}>
+        <Pressable
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          accessible={false}
+          onPress={onClose}
+          style={StyleSheet.absoluteFill}
+        />
+        <Frosted
+          accessibilityViewIsModal
+          radius={Radii.sheet}
+          style={[styles.sheet, { backgroundColor: theme.surfaceOpaque }]}>
+          <SafeAreaView edges={['bottom']} style={{ flexShrink: 1 }}>
+            {children}
+          </SafeAreaView>
+        </Frosted>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
 const empty: ProjectInput = {
   name: '',
   tagline: '',
@@ -29,17 +65,18 @@ const empty: ProjectInput = {
 export function ProjectEditor({
   project,
   canPromote,
+  matchId,
   onClose,
   onSaved,
 }: {
   project?: Project;
   canPromote: boolean;
+  matchId?: string;
   onClose: () => void;
   onSaved: () => void;
 }) {
   const { projects } = useRepositories();
-  const theme = useTheme();
-  const reduced = useReduceMotion();
+  const isJoint = !!matchId || (project?.authors?.length ?? 0) > 1;
   const [draft, setDraft] = useState<ProjectInput>(project ?? empty);
   const [details, setDetails] = useState(false);
   const [confirm, setConfirm] = useState(false);
@@ -90,7 +127,12 @@ export function ProjectEditor({
     const label = slot === 0 ? t('Portada') : t('Foto {n}', { n: slot });
     return (
       <View key={slot} style={styles.photoRow}>
-        <Image source={{ uri: photo.uri }} style={styles.thumb} accessibilityLabel={label} />
+        <Image
+          cachePolicy={photo.headers ? 'none' : undefined}
+          source={{ uri: photo.uri, headers: photo.headers }}
+          style={styles.thumb}
+          accessibilityLabel={label}
+        />
         <View style={styles.photoActions}>
           <ThemedText type="smallBold">{label}</ThemedText>
           {review && !photo.path ? (
@@ -113,141 +155,155 @@ export function ProjectEditor({
     );
   }
   return (
-    <Modal
-      visible
-      animationType={reduced ? 'none' : 'slide'}
-      onRequestClose={() => {
+    <ProjectBottomSheet
+      onClose={() => {
         if (!busy) onClose();
       }}>
-      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.form}>
-          <ThemedText type="title">
-            {project ? t('Editar proyecto') : t('Crear proyecto')}
-          </ThemedText>
-          <ThemedText type="subtitle">{t('Lo que se ve en la tarjeta')}</ThemedText>
-          <Field label={t('Nombre del proyecto')}>
-            <TextField
-              testID="project-name"
-              accessibilityLabel={t('Nombre del proyecto')}
-              editable={!busy}
-              value={draft.name}
-              maxLength={100}
-              onChangeText={(name) => change({ name })}
-            />
-          </Field>
-          <Field label={t('Frase corta')}>
-            <TextField
-              testID="project-tagline"
-              accessibilityLabel={t('Frase corta')}
-              editable={!busy}
-              value={draft.tagline}
-              maxLength={100}
-              showCount
-              onChangeText={(tagline) => change({ tagline })}
-            />
-          </Field>
-          {draft.cover ? (
-            photoItem(draft.cover, 0)
-          ) : (
-            <SecondaryButton
-              label={t('Añadir portada')}
-              disabled={busy}
-              onPress={() => pick(true)}
-            />
-          )}
-          <SecondaryButton
-            label={details ? t('Ocultar detalles') : t('Más detalles')}
-            disabled={busy}
-            onPress={() => setDetails(!details)}
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.form}>
+        <ThemedText type="title">
+          {project
+            ? t('Editar proyecto')
+            : isJoint
+              ? t('Crear proyecto juntos')
+              : t('Crear proyecto')}
+        </ThemedText>
+        <ThemedText type="subtitle">
+          {isJoint ? t('Ficha del proyecto') : t('Lo que se ve en la tarjeta')}
+        </ThemedText>
+        <Field label={t('Nombre del proyecto')}>
+          <TextField
+            testID="project-name"
+            accessibilityLabel={t('Nombre del proyecto')}
+            editable={!busy}
+            value={draft.name}
+            maxLength={100}
+            onChangeText={(name) => change({ name })}
           />
-          {details ? (
-            <>
-              <Field label={t('Descripción')}>
-                <TextField
-                  accessibilityLabel={t('Descripción')}
-                  multiline
-                  maxLength={5000}
-                  editable={!busy}
-                  value={draft.description}
-                  onChangeText={(description) => change({ description })}
-                />
-              </Field>
-              {draft.photos.map((photo, i) => photoItem(photo, i + 1))}
-              {draft.photos.length < 5 ? (
-                <SecondaryButton
-                  label={t('Añadir foto ({n}/5)', { n: draft.photos.length })}
-                  disabled={busy}
-                  onPress={() => pick(false)}
-                />
-              ) : null}
-              <Field label={t('Enlace del proyecto')}>
-                <TextField
-                  accessibilityLabel={t('Enlace del proyecto')}
-                  inputMode="url"
-                  autoCorrect={false}
-                  autoCapitalize="none"
-                  editable={!busy}
-                  value={draft.link}
-                  onChangeText={(link) => change({ link })}
-                />
-              </Field>
-            </>
-          ) : null}
-          {error ? (
-            <ThemedText accessibilityRole="alert" themeColor="danger">
-              {error}
-            </ThemedText>
-          ) : null}
-          <PrimaryButton
-            label={busy ? t('Guardando…') : t('Guardar proyecto')}
-            disabled={busy || !draft.name.trim() || !draft.tagline.trim()}
-            onPress={() =>
-              void run(async () => {
-                setReview(true);
-                if (draft.photos.some((photo) => !photo.path)) setDetails(true);
-                await projects.save(draft, project, project ? undefined : draftId);
-              }, true)
-            }
+        </Field>
+        <Field label={t('Frase corta')}>
+          <TextField
+            testID="project-tagline"
+            accessibilityLabel={t('Frase corta')}
+            editable={!busy}
+            value={draft.tagline}
+            maxLength={100}
+            showCount
+            onChangeText={(tagline) => change({ tagline })}
           />
-          {project && canPromote ? (
-            <SecondaryButton
-              label={t('Mover al principio')}
-              disabled={busy}
-              onPress={() => void run(() => projects.promote(project), true)}
-            />
-          ) : null}
-          {project ? (
-            confirm ? (
-              <View style={styles.form}>
-                <ThemedText>{t('¿Eliminar este proyecto?')}</ThemedText>
-                <SecondaryButton
-                  tone="danger"
-                  disabled={busy}
-                  label={t('Confirmar eliminación')}
-                  onPress={() => void run(() => projects.remove(project), true)}
-                />
-                <SecondaryButton
-                  label={t('Conservar proyecto')}
-                  disabled={busy}
-                  onPress={() => setConfirm(false)}
-                />
-              </View>
-            ) : (
+        </Field>
+        {draft.cover ? (
+          photoItem(draft.cover, 0)
+        ) : (
+          <SecondaryButton label={t('Añadir portada')} disabled={busy} onPress={() => pick(true)} />
+        )}
+        <SecondaryButton
+          label={details ? t('Ocultar detalles') : t('Más detalles')}
+          disabled={busy}
+          onPress={() => setDetails(!details)}
+        />
+        {details ? (
+          <>
+            <Field label={t('Descripción')}>
+              <TextField
+                accessibilityLabel={t('Descripción')}
+                multiline
+                maxLength={5000}
+                editable={!busy}
+                value={draft.description}
+                onChangeText={(description) => change({ description })}
+              />
+            </Field>
+            {draft.photos.map((photo, i) => photoItem(photo, i + 1))}
+            {draft.photos.length < 5 ? (
               <SecondaryButton
-                label={t('Eliminar proyecto')}
+                label={t('Añadir foto ({n}/5)', { n: draft.photos.length })}
+                disabled={busy}
+                onPress={() => pick(false)}
+              />
+            ) : null}
+            <Field label={t('Enlace del proyecto')}>
+              <TextField
+                accessibilityLabel={t('Enlace del proyecto')}
+                inputMode="url"
+                autoCorrect={false}
+                autoCapitalize="none"
+                editable={!busy}
+                value={draft.link}
+                onChangeText={(link) => change({ link })}
+              />
+            </Field>
+          </>
+        ) : null}
+        {error ? (
+          <ThemedText accessibilityRole="alert" themeColor="danger">
+            {error}
+          </ThemedText>
+        ) : null}
+        <PrimaryButton
+          label={busy ? t('Guardando…') : t('Guardar proyecto')}
+          disabled={busy || !draft.name.trim() || !draft.tagline.trim()}
+          onPress={() =>
+            void run(async () => {
+              setReview(true);
+              if (draft.photos.some((photo) => !photo.path)) setDetails(true);
+              if (!project && matchId) await projects.save(draft, undefined, draftId, matchId);
+              else await projects.save(draft, project, project ? undefined : draftId);
+            }, true)
+          }
+        />
+        {project && canPromote ? (
+          <SecondaryButton
+            label={t('Mover al principio')}
+            disabled={busy}
+            onPress={() => void run(() => projects.promote(project), true)}
+          />
+        ) : null}
+        {project ? (
+          confirm ? (
+            <View style={styles.form}>
+              <ThemedText>{t('¿Eliminar este proyecto?')}</ThemedText>
+              {isJoint && (
+                <ThemedText themeColor="textSecondary">
+                  {t(
+                    'Avisaremos a la otra persona. Las tareas y las reuniones seguirán en el plan compartido.'
+                  )}
+                </ThemedText>
+              )}
+              <SecondaryButton
                 tone="danger"
                 disabled={busy}
-                onPress={() => setConfirm(true)}
+                label={t('Confirmar eliminación')}
+                onPress={() => void run(() => projects.remove(project), true)}
               />
-            )
-          ) : null}
-          <SecondaryButton label={t('Cancelar')} disabled={busy} onPress={onClose} />
-        </ScrollView>
-      </SafeAreaView>
-    </Modal>
+              <SecondaryButton
+                label={t('Conservar proyecto')}
+                disabled={busy}
+                onPress={() => setConfirm(false)}
+              />
+            </View>
+          ) : (
+            <SecondaryButton
+              label={t('Eliminar proyecto')}
+              tone="danger"
+              disabled={busy}
+              onPress={() => setConfirm(true)}
+            />
+          )
+        ) : null}
+        <SecondaryButton label={t('Cancelar')} disabled={busy} onPress={onClose} />
+      </ScrollView>
+    </ProjectBottomSheet>
   );
 }
 const styles = StyleSheet.create({
+  backdrop: { flex: 1, justifyContent: 'flex-end' },
+  sheet: {
+    maxHeight: '94%',
+    width: '100%',
+    borderBottomRightRadius: 0,
+    borderBottomLeftRadius: 0,
+    overflow: 'hidden',
+  },
   form: { padding: Spacing.four, gap: Spacing.three },
   photoRow: { flexDirection: 'row', gap: Spacing.three, alignItems: 'center' },
   photoActions: { flex: 1 },
