@@ -14,7 +14,6 @@
 import { getIntlLocale, sameTextInAllLocales, t } from '@/i18n';
 
 import { COUNTRIES, type Country } from './countries';
-import { timezoneCity } from './day-strip';
 
 /** Zonas de cada país (ISO 3166-1 alfa-2). La primera es la de por defecto. */
 export const COUNTRY_TIMEZONES: Readonly<Record<string, readonly string[]>> = {
@@ -500,6 +499,11 @@ export function timezoneForCountry(iso: string, deviceZone?: string): string {
   const device = deviceZone ? (TIMEZONE_ALIASES[deviceZone] ?? deviceZone) : undefined;
   if (device && zones.includes(device)) return device;
   return zones[0] ?? '';
+}
+
+/** «America/Mexico_City» → «Mexico City». */
+export function timezoneCity(timezone: string): string {
+  return (timezone.split('/').pop() ?? timezone).replace(/_/g, ' ');
 }
 
 /** «New York», «Canarias»: cómo se enseña una zona en el selector. */

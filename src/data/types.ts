@@ -9,6 +9,8 @@
  * equity ofrecido ni rol vacante — eso es Modo Talento (Fase 4), fuera del MVP.
  */
 
+import type { WorkRange } from './work-range';
+
 /** Los dos modos del MVP. El Modo Talento es Fase 4 y no existe aquí a propósito. */
 export type Mode = 'par' | 'lockin';
 
@@ -85,7 +87,9 @@ export type TimeBand = 'madrugada' | 'manana' | 'tarde' | 'noche';
 export interface Availability {
   /** Horas por semana que la persona puede dedicar. */
   hoursPerWeek: number;
-  /** Franjas en las que suele estar disponible. Al menos una. */
+  /** Uno o dos tramos en la zona del perfil, ordenados por inicio. */
+  ranges: WorkRange[];
+  /** Franjas que se solapan con la jornada, para los filtros de disponibilidad. */
   bands: TimeBand[];
 }
 

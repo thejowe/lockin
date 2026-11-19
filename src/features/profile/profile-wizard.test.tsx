@@ -166,7 +166,14 @@ describe('ProfileWizard', () => {
     await render(<ProfileWizard seed={SEED} submitLabel="Crear perfil" onSubmit={onSubmit} />);
     await toHours();
     await next(); // horas
-    await fireEvent.press(screen.getAllByRole('checkbox')[0]); // una franja
+    await fireEvent(
+      screen.getByRole('adjustable', { name: 'Fin de la jornada' }),
+      'accessibilityAction',
+      {
+        nativeEvent: { actionName: 'decrement' },
+      }
+    );
+    await fireEvent.press(screen.getByRole('button', { name: '+ Añadir otro tramo' }));
     await next();
     await fireEvent.press(screen.getAllByRole('radio')[0]); // ambición
     await next();
@@ -186,7 +193,14 @@ describe('ProfileWizard', () => {
       languages: ['es'],
       seekingLanguages: [],
       prompts: [],
-      availability: { hoursPerWeek: 10 },
+      availability: {
+        hoursPerWeek: 10,
+        ranges: [
+          { startMin: 540, endMin: 810 },
+          { startMin: 870, endMin: 930 },
+        ],
+        bands: ['manana', 'tarde'],
+      },
     });
   });
 
@@ -195,8 +209,7 @@ describe('ProfileWizard', () => {
     async function toPhoto() {
       await toHours();
       await next(); // horas
-      await fireEvent.press(screen.getAllByRole('checkbox')[0]);
-      await next();
+      await next(); // jornada
       await fireEvent.press(screen.getAllByRole('radio')[0]);
       await next();
       await skip(); // respuestas
@@ -288,8 +301,7 @@ describe('ProfileWizard', () => {
     await fireEvent.press(screen.getAllByRole('radio')[0]);
     await next();
     await next(); // horas
-    await fireEvent.press(screen.getAllByRole('checkbox')[0]);
-    await next();
+    await next(); // jornada
     await fireEvent.press(screen.getAllByRole('radio')[0]);
     await next();
     await skip();
@@ -327,8 +339,7 @@ describe('ProfileWizard', () => {
     await fireEvent.press(screen.getAllByRole('radio')[0]);
     await next();
     await next(); // horas
-    await fireEvent.press(screen.getAllByRole('checkbox')[0]);
-    await next();
+    await next(); // jornada
     await fireEvent.press(screen.getAllByRole('radio')[0]);
     await next();
 
@@ -371,8 +382,7 @@ describe('ProfileWizard', () => {
     await render(<ProfileWizard seed={SEED} submitLabel="Crear perfil" onSubmit={onSubmit} />);
     await toHours();
     await next();
-    await fireEvent.press(screen.getAllByRole('checkbox')[0]);
-    await next();
+    await next(); // jornada
     await fireEvent.press(screen.getAllByRole('radio')[0]);
     await next();
     await skip();

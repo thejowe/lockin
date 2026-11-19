@@ -16,6 +16,7 @@ import { Linking } from 'react-native';
 
 import { buildProfile } from '@/data/test-fixtures';
 
+import * as locations from './locations';
 import { ProfileDetails } from './profile-details';
 
 let openURL: jest.SpyInstance;
@@ -27,6 +28,30 @@ beforeEach(() => {
 afterEach(() => openURL.mockRestore());
 
 describe('ProfileDetails', () => {
+  it('presenta en la zona del móvil los minutos exactos de la ficha', async () => {
+    const zone = jest.spyOn(locations, 'deviceTimezone').mockReturnValue('UTC');
+    try {
+      await render(
+        <ProfileDetails
+          profile={buildProfile({
+            timezone: 'Asia/Kolkata',
+            availability: {
+              hoursPerWeek: 12,
+              ranges: [
+                { startMin: 540, endMin: 870 },
+                { startMin: 1020, endMin: 1140 },
+              ],
+              bands: ['manana', 'tarde'],
+            },
+          })}
+        />
+      );
+      expect(screen.getByText('De 03:30 a 09:00 y de 11:30 a 13:30')).toBeTruthy();
+    } finally {
+      zone.mockRestore();
+    }
+  });
+
   it('la cámara de la foto solo existe en el perfil propio y abre la hoja', async () => {
     const onAvatarPress = jest.fn();
     await render(<ProfileDetails profile={buildProfile()} onAvatarPress={onAvatarPress} />);

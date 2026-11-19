@@ -32,7 +32,6 @@ import {
   PROMPT_MAX_LENGTH,
   PROMPT_QUESTIONS,
   STARTING_POINT_OPTIONS,
-  TIME_BAND_OPTIONS,
 } from './catalog';
 import { pickAvatarPhoto } from './avatar-photo';
 import { Chip, ChipRow, Field, OptionCard, SecondaryButton, Slider, TextField } from './controls';
@@ -40,7 +39,6 @@ import { BirthDateFields, ageFromBirthDate, birthDateProblem, splitBirthDate } f
 import {
   initialDraft,
   toInput,
-  toggle,
   validate,
   withCountry,
   type Draft,
@@ -50,6 +48,7 @@ import {
 import { LocationFields } from './location-fields';
 import { LanguagePicker, MasteryPicker, SeekingSpecialtyPicker } from './pickers';
 import { WizardScreen } from './wizard';
+import { WorkRangeEditor } from './work-range-slider';
 
 import type { Profile, ProfileInput } from '@/data';
 import { getLocale, setLocalePreference, t, type AppLocale } from '@/i18n';
@@ -90,7 +89,7 @@ type StepKey =
   | 'seekingLanguages'
   | 'startingPoint'
   | 'hours'
-  | 'bands'
+  | 'workRanges'
   | 'ambition'
   | 'prompts'
   | 'links'
@@ -108,7 +107,7 @@ const STEP_FIELDS: Record<StepKey, (keyof Draft)[]> = {
   seekingLanguages: [],
   startingPoint: ['startingPoint'],
   hours: [],
-  bands: ['bands'],
+  workRanges: [],
   ambition: ['ambition'],
   prompts: ['prompts'],
   links: ['github'],
@@ -129,7 +128,7 @@ function stepsFor(seed: ProfileSeed | null, withPhoto: boolean): StepKey[] {
     'seekingLanguages',
     'startingPoint',
     'hours',
-    'bands',
+    'workRanges',
     'ambition',
     'prompts',
     'links',
@@ -497,22 +496,13 @@ export function ProfileWizard({
         </WizardScreen>
       );
 
-    case 'bands':
+    case 'workRanges':
       return (
         <WizardScreen {...common} title={t('¿Cuándo sueles trabajar?')}>
-          <Field label={t('Franjas')} error={errors.bands}>
-            <ChipRow>
-              {TIME_BAND_OPTIONS.map((option) => (
-                <Chip
-                  key={option.value}
-                  label={`${option.label} · ${option.description}`}
-                  multiple
-                  selected={draft.bands.includes(option.value)}
-                  onPress={() => update('bands', toggle(draft.bands, option.value))}
-                />
-              ))}
-            </ChipRow>
-          </Field>
+          <WorkRangeEditor
+            value={draft.workRanges}
+            onChange={(range) => update('workRanges', range)}
+          />
         </WizardScreen>
       );
 

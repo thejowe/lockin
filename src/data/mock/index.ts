@@ -6,6 +6,7 @@
  * `src/data/index.ts` elegirá entre las dos — las pantallas no se enteran.
  */
 
+import { availabilityForRanges } from '../work-range';
 import { createMockAgreementRepository } from './agreement';
 import { t } from '@/i18n';
 import { mockProjects } from './projects';
@@ -303,6 +304,10 @@ export function createMockRepositories(
 
       const profile: Profile = {
         ...input,
+        availability: availabilityForRanges(
+          input.availability.hoursPerWeek,
+          input.availability.ranges
+        ),
         id: existing?.id ?? actorId,
         // Ausente significa «abierto a cualquiera»; ver `ProfileInput` en types.ts.
         seekingSpecialties: input.seekingSpecialties ?? [],

@@ -234,7 +234,7 @@ export function ProfileDetails({
         <View style={[styles.divider, { backgroundColor: theme.border }]} />
         <DayStrip
           hoursPerWeek={profile.availability.hoursPerWeek}
-          bands={profile.availability.bands}
+          ranges={profile.availability.ranges}
           timezone={profile.timezone}
         />
         <View style={[styles.divider, { backgroundColor: theme.border }]} />

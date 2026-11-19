@@ -15,6 +15,7 @@ import { Linking, StyleSheet } from 'react-native';
 import { Colors } from '@/constants/theme';
 import { buildProfile } from '@/data/test-fixtures';
 
+import * as locations from '@/features/profile/locations';
 import * as projectQuery from '@/features/profile/use-projects';
 import * as Haptics from 'expo-haptics';
 import { ProfileCard } from './profile-card';
@@ -332,6 +333,39 @@ describe('ProfileCard', () => {
       } finally {
         query.mockRestore();
         haptic.mockRestore();
+      }
+    });
+
+    it('el bloque de jornada usa los minutos exactos de tarjeta y espectador', async () => {
+      const zone = jest.spyOn(locations, 'deviceTimezone').mockReturnValue('UTC');
+      try {
+        await render(
+          <ProfileCard
+            profile={buildProfile({
+              timezone: 'Asia/Kolkata',
+              availability: {
+                hoursPerWeek: 18,
+                ranges: [
+                  { startMin: 540, endMin: 870 },
+                  { startMin: 1020, endMin: 1140 },
+                ],
+                bands: ['manana', 'tarde'],
+              },
+            })}
+            viewerSchedule={{
+              ranges: [
+                { startMin: 240, endMin: 510 },
+                { startMin: 720, endMin: 840 },
+              ],
+              timezone: 'UTC',
+            }}
+          />
+        );
+        await fireEvent.press(screen.getByRole('button', { name: 'Ver cuándo trabaja' }));
+        expect(screen.getByText('De 03:30 a 09:00 y de 11:30 a 13:30')).toBeTruthy();
+        expect(screen.getByText('Coincidís de 04:00 a 08:30 y de 12:00 a 13:30')).toBeTruthy();
+      } finally {
+        zone.mockRestore();
       }
     });
 

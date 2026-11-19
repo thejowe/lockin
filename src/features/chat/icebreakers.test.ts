@@ -20,6 +20,7 @@
  *   en el recorte de tres.
  */
 
+import { availabilityForRanges } from '@/data/work-range';
 import { buildProfile } from '@/data/test-fixtures';
 
 import { suggestIcebreakers } from './icebreakers';
@@ -34,7 +35,7 @@ function buildMe(overrides: Partial<Profile> = {}): Profile {
     location: 'Barcelona',
     timezone: 'Europe/Madrid',
     specialties: ['dev'],
-    availability: { hoursPerWeek: 12, bands: ['noche'] },
+    availability: availabilityForRanges(12, [{ startMin: 1200, endMin: 1440 }]),
     ambition: 'equilibrado',
     prompts: [],
     ...overrides,
@@ -49,7 +50,7 @@ function buildThem(overrides: Partial<Profile> = {}): Profile {
     location: 'Bogotá',
     timezone: 'America/Bogota',
     specialties: [],
-    availability: { hoursPerWeek: 8, bands: ['manana'] },
+    availability: availabilityForRanges(8, [{ startMin: 360, endMin: 720 }]),
     ambition: 'lifestyle',
     prompts: [],
     ...overrides,
@@ -60,7 +61,7 @@ describe('suggestIcebreakers — forma del resultado', () => {
   it('nunca devuelve más de tres sugerencias', () => {
     const them = buildThem({
       specialties: ['diseno', 'producto'],
-      availability: { hoursPerWeek: 10, bands: ['noche'] },
+      availability: availabilityForRanges(10, [{ startMin: 1200, endMin: 1440 }]),
       ambition: 'equilibrado',
       prompts: [{ question: '¿Qué quieres construir?', answer: 'Un CRM.' }],
     });
@@ -83,7 +84,7 @@ describe('suggestIcebreakers — forma del resultado', () => {
       // Coincide con el perfil propio de referencia en todo lo que dispararía
       // una regla de pareja: si alguna se colara, se vería aquí.
       specialties: ['dev'],
-      availability: { hoursPerWeek: 12, bands: ['noche'] },
+      availability: availabilityForRanges(12, [{ startMin: 1200, endMin: 1440 }]),
       ambition: 'equilibrado',
       startingPoint: 'algo-empezado',
       prompts: [{ question: '¿Qué quieres construir?', answer: 'Un CRM.' }],
@@ -99,7 +100,7 @@ describe('suggestIcebreakers — forma del resultado', () => {
   it('las reglas de pareja van antes que las que solo miran al otro', () => {
     const them = buildThem({
       specialties: ['diseno'],
-      availability: { hoursPerWeek: 10, bands: ['noche'] },
+      availability: availabilityForRanges(10, [{ startMin: 1200, endMin: 1440 }]),
       // Mismo huso: así solo saltan dos reglas de pareja y se ve que la tercera
       // plaza se la lleva la primera regla individual, no al revés.
       timezone: 'Europe/Madrid',
@@ -179,7 +180,9 @@ describe('franja horaria compartida', () => {
   const me = buildMe({ specialties: [] });
 
   it('propone el Lock-In sobre la franja que comparten', () => {
-    const them = buildThem({ availability: { hoursPerWeek: 10, bands: ['noche'] } });
+    const them = buildThem({
+      availability: availabilityForRanges(10, [{ startMin: 1200, endMin: 1440 }]),
+    });
 
     expect(suggestIcebreakers(them, me, 'par')[0]).toBe(
       'Los dos solemos estar por la noche. ¿Hablamos esta semana a esa hora?'
@@ -187,10 +190,12 @@ describe('franja horaria compartida', () => {
   });
 
   it('con varias franjas comunes usa la primera del otro perfil', () => {
-    const them = buildThem({ availability: { hoursPerWeek: 10, bands: ['tarde', 'noche'] } });
+    const them = buildThem({
+      availability: availabilityForRanges(10, [{ startMin: 720, endMin: 1440 }]),
+    });
     const flexibleMe = buildMe({
       specialties: [],
-      availability: { hoursPerWeek: 12, bands: ['noche', 'tarde'] },
+      availability: availabilityForRanges(12, [{ startMin: 720, endMin: 1440 }]),
     });
 
     expect(suggestIcebreakers(them, flexibleMe, 'par')[0]).toBe(
@@ -199,7 +204,9 @@ describe('franja horaria compartida', () => {
   });
 
   it('calla si no coinciden en ninguna franja', () => {
-    const them = buildThem({ availability: { hoursPerWeek: 10, bands: ['madrugada'] } });
+    const them = buildThem({
+      availability: availabilityForRanges(10, [{ startMin: 0, endMin: 360 }]),
+    });
     const suggestions = suggestIcebreakers(them, me, 'par');
 
     expect(suggestions.some((line) => line.startsWith('Los dos solemos estar'))).toBe(false);

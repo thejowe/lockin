@@ -7,6 +7,7 @@
  * saltan los cupos y cómo se pagina la lista de likes recibidos.
  */
 
+import { availabilityForRanges } from '../work-range';
 import { PremiumRequiredError, QuotaExceededError } from '../premium-errors';
 import { buildProfile } from '../test-fixtures';
 import {
@@ -50,7 +51,7 @@ describe('matchesPremiumFilters', () => {
     ambition: 'todo-o-nada',
     startingPoint: 'solo-ganas',
     timezone: 'Europe/Madrid',
-    availability: { hoursPerWeek: 20, bands: ['noche'] },
+    availability: availabilityForRanges(20, [{ startMin: 1200, endMin: 1440 }]),
   });
   const viewer = buildProfile({ timezone: 'Europe/Madrid' });
 

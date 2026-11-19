@@ -492,7 +492,7 @@ export function ProfileCard({
           <View style={styles.section} pointerEvents="none">
             <DayStrip
               hoursPerWeek={profile.availability.hoursPerWeek}
-              bands={profile.availability.bands}
+              ranges={profile.availability.ranges}
               timezone={profile.timezone}
               viewer={viewerSchedule}
             />

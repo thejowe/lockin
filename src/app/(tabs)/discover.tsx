@@ -79,7 +79,7 @@ export default function DiscoverScreen() {
   const viewerSpecialties = viewer?.specialties ?? EMPTY_SPECIALTIES;
   /** Igual: sin perfil propio, la jornada no marca coincidencias. */
   const viewerSchedule = viewer
-    ? { bands: viewer.availability.bands, timezone: viewer.timezone }
+    ? { ranges: viewer.availability.ranges, timezone: viewer.timezone }
     : undefined;
   const [chosenSection, setSection] = useState<DiscoverSection>('cofounder');
   const myGroups = useMyGroups();

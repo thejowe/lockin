@@ -39,6 +39,7 @@ function row(avatarUrl: string | null): ProfileRow {
     starting_point: 'solo-ganas',
     availability_hours_per_week: 10,
     availability_bands: ['tarde'],
+    work_ranges: [{ start_min: 720, end_min: 1200 }],
     ambition: 'equilibrado',
     link_github: null,
     github_handle: null,

@@ -10,6 +10,7 @@
  * Ojo: en RNTL 14 `render` es asíncrono.
  */
 
+import { availabilityForRanges } from '@/data/work-range';
 import { render, screen } from '@testing-library/react-native';
 
 import { buildProfile } from '@/data/test-fixtures';
@@ -32,7 +33,10 @@ function buildMatch(overrides: Partial<MatchWithProfile> = {}): MatchWithProfile
       location: 'Girona',
       avatar: { initials: 'NB', accent: 'teal' },
       specialties: ['diseno', 'producto'],
-      availability: { hoursPerWeek: 15, bands: ['manana', 'noche'] },
+      availability: availabilityForRanges(15, [
+        { startMin: 360, endMin: 720 },
+        { startMin: 1200, endMin: 1440 },
+      ]),
     }),
     ...overrides,
   };

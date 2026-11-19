@@ -82,7 +82,8 @@ alcance inventado:
 | `lookingFor` | `looking_for` | enum `mode_preference` |
 | `startingPoint` | `starting_point` | |
 | `availability.hoursPerWeek` | `availability_hours_per_week` | |
-| `availability.bands` | `availability_bands` | `time_band[]`, al menos una |
+| `availability.ranges` | `work_ranges` | Array JSONB con uno o dos tramos `{start_min, end_min}` en la zona del perfil, en orden cronológico. Fin exclusivo hasta 1440, pasos de 30 y mínimo de 60 minutos por tramo. Los extremos pueden tocarse |
+| `availability.bands` | `availability_bands` | Franjas que se solapan con al menos un tramo. El filtro Premium sigue leyendo este array. Al migrar, las franjas contiguas forman un tramo y las separadas conservan el hueco |
 | `ambition` | `ambition` | |
 | `links.github/portfolio/linkedin` | `link_github`, `link_portfolio`, `link_linkedin` | Aplanado: son tres columnas fijas, no un blob |
 | `prompts` | `prompts` | `jsonb`, máx. 2. jsonb y no tabla aparte porque el orden importa y siempre se leen con el perfil |

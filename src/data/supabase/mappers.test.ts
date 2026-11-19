@@ -42,6 +42,10 @@ function buildProfileRow(overrides: Partial<ProfileRow> = {}): ProfileRow {
     starting_point: 'idea-sin-empezar',
     availability_hours_per_week: 25,
     availability_bands: ['tarde', 'noche'],
+    work_ranges: [
+      { start_min: 810, end_min: 900 },
+      { start_min: 1230, end_min: 1350 },
+    ],
     ambition: 'todo-o-nada',
     link_github: 'https://github.com/example-nuria',
     github_handle: null,
@@ -154,8 +158,27 @@ describe('toProfile', () => {
   it('reconstruye availability y avatar desde columnas planas', () => {
     const profile = toProfile(buildProfileRow());
 
-    expect(profile.availability).toEqual({ hoursPerWeek: 25, bands: ['tarde', 'noche'] });
+    expect(profile.availability).toEqual({
+      hoursPerWeek: 25,
+      ranges: [
+        { startMin: 810, endMin: 900 },
+        { startMin: 1230, endMin: 1350 },
+      ],
+      bands: ['tarde', 'noche'],
+    });
     expect(profile.avatar).toEqual({ initials: 'NB', accent: 'teal' });
+  });
+
+  it('lee una fila antigua con franjas separadas en orden de selección', () => {
+    const row = buildProfileRow({ availability_bands: ['noche', 'manana'] });
+    expect(toProfile({ ...row, work_ranges: undefined }).availability).toEqual({
+      hoursPerWeek: 25,
+      ranges: [
+        { startMin: 360, endMin: 720 },
+        { startMin: 1200, endMin: 1440 },
+      ],
+      bands: ['manana', 'noche'],
+    });
   });
 
   it('omite los enlaces ausentes en vez de dejarlos en null', () => {
@@ -197,14 +220,25 @@ describe('toProfileInsert', () => {
     const row = toProfileInsert(
       ME,
       buildProfileInput({
-        availability: { hoursPerWeek: 12, bands: ['noche'] },
+        availability: {
+          hoursPerWeek: 12,
+          ranges: [
+            { startMin: 1230, endMin: 1350 },
+            { startMin: 330, endMin: 390 },
+          ],
+          bands: ['tarde'],
+        },
         links: { github: 'https://github.com/example' },
       }),
       null
     );
 
     expect(row.availability_hours_per_week).toBe(12);
-    expect(row.availability_bands).toEqual(['noche']);
+    expect(row.availability_bands).toEqual(['madrugada', 'manana', 'noche']);
+    expect(row.work_ranges).toEqual([
+      { start_min: 330, end_min: 390 },
+      { start_min: 1230, end_min: 1350 },
+    ]);
     expect(row.link_github).toBe('https://github.com/example');
     expect(row.link_portfolio).toBeNull();
     expect(row.link_linkedin).toBeNull();
