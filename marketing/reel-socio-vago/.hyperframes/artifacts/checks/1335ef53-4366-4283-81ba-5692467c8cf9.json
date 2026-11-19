@@ -1,0 +1,4080 @@
+{
+  "ok": false,
+  "strict": false,
+  "browserSkipped": false,
+  "lint": {
+    "ok": false,
+    "errorCount": 1,
+    "warningCount": 1,
+    "infoCount": 0,
+    "findings": [
+      {
+        "code": "composition_file_too_large",
+        "severity": "warning",
+        "message": "This HTML composition file has 634 lines. Smaller sub-compositions are easier to read, iterate on, and diff.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\Usuari\\Downloads\\lockin\\marketing\\reel-socio-vago\\compositions\\room.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Split this sub-composition further into smaller .html files, then mount them from the parent with data-composition-src so each file stays small enough to inspect, revise, and validate independently."
+      },
+      {
+        "code": "gsap_non_transform_motion",
+        "severity": "error",
+        "message": "GSAP tween on \"#sw-touch\" uses motion that snaps to integer device pixels: left, top. Layout and text-reflow properties snap during browser layout; roundProps rounds the tween value. Slow motion or an ease-out tail then stutters under the seek-by-frame capture engine. Animate transforms (x/y/scale/opacity) instead.",
+        "selector": "#sw-touch",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\Usuari\\Downloads\\lockin\\marketing\\reel-socio-vago\\compositions\\swipe.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "replace left/top with the transform equivalent (x, y), e.g. tl.fromTo(\"#sw-touch\", { x: -1300 }, { x: 0, ...yourAnimation }). Transforms interpolate sub-pixel and stay smooth at any speed."
+      }
+    ],
+    "filesScanned": 6
+  },
+  "runtime": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 1,
+    "infoCount": 0,
+    "findings": [
+      {
+        "code": "console_warning",
+        "severity": "warning",
+        "message": "THREE.WebGLShadowMap: PCFSoftShadowMap has been deprecated. Using PCFShadowMap instead.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {
+          "data-composition-id": "main",
+          "data-start": "0",
+          "data-duration": "18.5",
+          "data-width": "1080",
+          "data-height": "1920"
+        },
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 1920
+        },
+        "time": 0,
+        "url": "http://127.0.0.1:53829/lib/three.core.min.js",
+        "line": 5
+      }
+    ]
+  },
+  "layout": {
+    "ok": false,
+    "errorCount": 4,
+    "warningCount": 1,
+    "infoCount": 51,
+    "findings": [
+      {
+        "code": "content_overlap",
+        "severity": "error",
+        "time": 12.5,
+        "selector": "#sw-c2 > div:nth-of-type(2) > span:nth-of-type(1)",
+        "message": "Two text blocks overlap and may render unreadable.",
+        "rect": {
+          "left": 366.79,
+          "top": 1154.43,
+          "right": 459.58,
+          "bottom": 1180.81,
+          "width": 92.79,
+          "height": 26.38
+        },
+        "containerSelector": "#sw-c1 > div:nth-of-type(2) > div:nth-of-type(4) > b:nth-of-type(1)",
+        "text": "✓ Encajas",
+        "fixHint": "Give each block its own zone, or put data-layout-allow-overlap on the text or on a container inside the scene. A marker on the scene root does not apply. Decoration nobody needs to read can take data-layout-ignore.",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 366.79,
+          "y": 1154.43,
+          "width": 92.79,
+          "height": 26.38
+        },
+        "firstSeen": 12.5,
+        "lastSeen": 13.5,
+        "occurrences": 8,
+        "heldMs": 1000,
+        "times": [
+          12.5,
+          12.625,
+          12.75,
+          12.875,
+          13,
+          13.125,
+          13.375,
+          13.5
+        ]
+      },
+      {
+        "code": "content_overlap",
+        "severity": "error",
+        "time": 13.361,
+        "selector": "#sw-c3 > div:nth-of-type(1)",
+        "message": "Two text blocks overlap and may render unreadable.",
+        "rect": {
+          "left": 405.9,
+          "top": 623.3,
+          "right": 674.1,
+          "bottom": 916.7,
+          "width": 268.2,
+          "height": 293.4
+        },
+        "containerSelector": "#sw-c2 > div:nth-of-type(1)",
+        "text": "MO",
+        "fixHint": "Give each block its own zone, or put data-layout-allow-overlap on the text or on a container inside the scene. A marker on the scene root does not apply. Decoration nobody needs to read can take data-layout-ignore.",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 405.9,
+          "y": 623.3,
+          "width": 268.2,
+          "height": 293.4
+        },
+        "firstSeen": 12.5,
+        "lastSeen": 15.875,
+        "occurrences": 28,
+        "heldMs": 3375,
+        "times": [
+          12.5,
+          12.625,
+          12.75,
+          12.875,
+          13,
+          13.125,
+          13.25,
+          13.361,
+          13.375,
+          13.5,
+          13.625,
+          13.75,
+          13.875,
+          14,
+          14.125,
+          14.25,
+          14.375,
+          14.75,
+          14.875,
+          15,
+          15.125,
+          15.25,
+          15.375,
+          15.417,
+          15.5,
+          15.625,
+          15.75,
+          15.875
+        ]
+      },
+      {
+        "code": "content_overlap",
+        "severity": "error",
+        "time": 13.361,
+        "selector": "#sw-c2 > div:nth-of-type(1)",
+        "message": "Two text blocks overlap and may render unreadable.",
+        "rect": {
+          "left": 418.88,
+          "top": 558.15,
+          "right": 661.13,
+          "bottom": 867.85,
+          "width": 242.25,
+          "height": 309.7
+        },
+        "containerSelector": "#sw-c1 > div:nth-of-type(1)",
+        "text": "NB",
+        "fixHint": "Give each block its own zone, or put data-layout-allow-overlap on the text or on a container inside the scene. A marker on the scene root does not apply. Decoration nobody needs to read can take data-layout-ignore.",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 418.88,
+          "y": 558.15,
+          "width": 242.25,
+          "height": 309.7
+        },
+        "firstSeen": 12.5,
+        "lastSeen": 13.375,
+        "occurrences": 9,
+        "heldMs": 875,
+        "times": [
+          12.5,
+          12.625,
+          12.75,
+          12.875,
+          13,
+          13.125,
+          13.25,
+          13.361,
+          13.375
+        ]
+      },
+      {
+        "code": "content_overlap",
+        "severity": "error",
+        "time": 13.361,
+        "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(1)",
+        "message": "Two text blocks overlap and may render unreadable.",
+        "rect": {
+          "left": 341.45,
+          "top": 918.2,
+          "right": 621.7,
+          "bottom": 989.45,
+          "width": 280.25,
+          "height": 71.25
+        },
+        "containerSelector": "#sw-c1 > div:nth-of-type(2) > div:nth-of-type(1)",
+        "text": "Núria Bosch 28",
+        "fixHint": "Give each block its own zone, or put data-layout-allow-overlap on the text or on a container inside the scene. A marker on the scene root does not apply. Decoration nobody needs to read can take data-layout-ignore.",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 341.45,
+          "y": 918.2,
+          "width": 280.25,
+          "height": 71.25
+        },
+        "firstSeen": 12.5,
+        "lastSeen": 14.5,
+        "occurrences": 11,
+        "heldMs": 2000,
+        "times": [
+          12.5,
+          12.625,
+          12.75,
+          12.875,
+          13,
+          13.125,
+          13.25,
+          13.361,
+          13.375,
+          13.5,
+          14.5
+        ]
+      },
+      {
+        "code": "canvas_content_at_edge",
+        "severity": "warning",
+        "time": 1.028,
+        "selector": "#room-canvas",
+        "message": "Canvas content touches the frame edge (left).",
+        "rect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "containerSelector": "#root",
+        "fixHint": "Keep drawn text inside the visible part of the canvas, or mark intentional full-bleed art with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "dataAttributes": {
+          "data-engine": "three.js r184"
+        },
+        "sourceFile": "compositions/room.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 1920
+        },
+        "firstSeen": 1.028,
+        "lastSeen": 15.417,
+        "occurrences": 6,
+        "heldMs": 0,
+        "times": [
+          1.028,
+          3.083,
+          9.25,
+          11.306,
+          13.361,
+          15.417
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "info",
+        "time": 7.194,
+        "selector": "#chat-stage-a > div:nth-of-type(1)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 314,
+          "top": 1351,
+          "right": 574,
+          "bottom": 1411,
+          "width": 260,
+          "height": 60
+        },
+        "containerSelector": "#chat-dim",
+        "text": "Opciones de Álex",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "lifetime": {
+          "start": 6.6,
+          "end": 10
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/chat.html",
+        "bbox": {
+          "x": 314,
+          "y": 1351,
+          "width": 260,
+          "height": 60
+        },
+        "firstSeen": 7.194,
+        "lastSeen": 7.194,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          7.194
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "info",
+        "time": 7.194,
+        "selector": "#chat-btn-block",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 484,
+          "top": 1453.8,
+          "right": 596,
+          "bottom": 1484.8,
+          "width": 112,
+          "height": 31
+        },
+        "containerSelector": "#chat-dim",
+        "text": "Bloquear",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "lifetime": {
+          "start": 6.6,
+          "end": 10
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/chat.html",
+        "bbox": {
+          "x": 484,
+          "y": 1453.8,
+          "width": 112,
+          "height": 31
+        },
+        "firstSeen": 7.194,
+        "lastSeen": 7.194,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          7.194
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "info",
+        "time": 7.194,
+        "selector": "#chat-stage-a > div:nth-of-type(3)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 485.5,
+          "top": 1543.8,
+          "right": 594.5,
+          "bottom": 1574.8,
+          "width": 109,
+          "height": 31
+        },
+        "containerSelector": "#chat-dim",
+        "text": "Reportar",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "lifetime": {
+          "start": 6.6,
+          "end": 10
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/chat.html",
+        "bbox": {
+          "x": 485.5,
+          "y": 1543.8,
+          "width": 109,
+          "height": 31
+        },
+        "firstSeen": 7.194,
+        "lastSeen": 7.194,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          7.194
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "info",
+        "time": 7.194,
+        "selector": "#chat-stage-a > div:nth-of-type(4)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 500.5,
+          "top": 1633.8,
+          "right": 579.5,
+          "bottom": 1664.8,
+          "width": 79,
+          "height": 31
+        },
+        "containerSelector": "#chat-dim",
+        "text": "Cerrar",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "lifetime": {
+          "start": 6.6,
+          "end": 10
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/chat.html",
+        "bbox": {
+          "x": 500.5,
+          "y": 1633.8,
+          "width": 79,
+          "height": 31
+        },
+        "firstSeen": 7.194,
+        "lastSeen": 7.194,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          7.194
+        ]
+      },
+      {
+        "code": "container_overflow",
+        "severity": "info",
+        "time": 7.194,
+        "selector": "#chat-panel",
+        "message": "Element extends outside a clipping layout container.",
+        "rect": {
+          "left": 284,
+          "top": 1306,
+          "right": 796,
+          "bottom": 1776,
+          "width": 512,
+          "height": 470
+        },
+        "containerSelector": "#chat-screen",
+        "fixHint": "Resize/reposition the child or container, or mark intentional overflow with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 284,
+          "top": 214,
+          "right": 796,
+          "bottom": 1306,
+          "width": 512,
+          "height": 1092
+        },
+        "overflow": {
+          "bottom": 470
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/chat.html",
+        "bbox": {
+          "x": 284,
+          "y": 1306,
+          "width": 512,
+          "height": 470
+        },
+        "firstSeen": 7.194,
+        "lastSeen": 9.25,
+        "occurrences": 2,
+        "heldMs": 0,
+        "times": [
+          7.194,
+          9.25
+        ]
+      },
+      {
+        "code": "content_overlap",
+        "severity": "info",
+        "time": 8.375,
+        "selector": "#chat-stage-a > div:nth-of-type(1)",
+        "message": "Two text blocks overlap and may render unreadable.",
+        "rect": {
+          "left": 290.85,
+          "top": 881,
+          "right": 550.85,
+          "bottom": 941,
+          "width": 260,
+          "height": 60
+        },
+        "containerSelector": "#chat-stage-b > div:nth-of-type(1)",
+        "text": "Opciones de Álex",
+        "fixHint": "Give each block its own zone, or put data-layout-allow-overlap on the text or on a container inside the scene. A marker on the scene root does not apply. Decoration nobody needs to read can take data-layout-ignore.",
+        "dataAttributes": {},
+        "sourceFile": "compositions/chat.html",
+        "bbox": {
+          "x": 290.85,
+          "y": 881,
+          "width": 260,
+          "height": 60
+        },
+        "firstSeen": 8.375,
+        "lastSeen": 8.375,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          8.375
+        ]
+      },
+      {
+        "code": "content_overlap",
+        "severity": "info",
+        "time": 8.375,
+        "selector": "#chat-btn-block",
+        "message": "Two text blocks overlap and may render unreadable.",
+        "rect": {
+          "left": 460.85,
+          "top": 983.8,
+          "right": 572.85,
+          "bottom": 1014.8,
+          "width": 112,
+          "height": 31
+        },
+        "containerSelector": "div.p-body",
+        "text": "Bloquear",
+        "fixHint": "Give each block its own zone, or put data-layout-allow-overlap on the text or on a container inside the scene. A marker on the scene root does not apply. Decoration nobody needs to read can take data-layout-ignore.",
+        "dataAttributes": {},
+        "sourceFile": "compositions/chat.html",
+        "bbox": {
+          "x": 460.85,
+          "y": 983.8,
+          "width": 112,
+          "height": 31
+        },
+        "firstSeen": 8.375,
+        "lastSeen": 8.375,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          8.375
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "info",
+        "time": 9.25,
+        "selector": "#chat-composer",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 339,
+          "top": 1208.21,
+          "right": 433,
+          "bottom": 1237.21,
+          "width": 94,
+          "height": 29
+        },
+        "containerSelector": "#chat-panel",
+        "text": "Mensaje",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "lifetime": {
+          "start": 6.6,
+          "end": 10
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/chat.html",
+        "bbox": {
+          "x": 339,
+          "y": 1208.21,
+          "width": 94,
+          "height": 29
+        },
+        "firstSeen": 9.25,
+        "lastSeen": 9.25,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          9.25
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "info",
+        "time": 9.25,
+        "selector": "div.p-body",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 314,
+          "top": 1302.01,
+          "right": 764,
+          "bottom": 1388.38,
+          "width": 450,
+          "height": 86.38
+        },
+        "containerSelector": "#chat-dim",
+        "text": "Dejaréis de veros en Descubrir y Matches y no podréis enviaros mensajes. Esta persona no recibirá ningún aviso.",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 0.78,
+        "lifetime": {
+          "start": 6.6,
+          "end": 10
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/chat.html",
+        "bbox": {
+          "x": 314,
+          "y": 1302.01,
+          "width": 450,
+          "height": 86.38
+        },
+        "firstSeen": 9.25,
+        "lastSeen": 9.25,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          9.25
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "info",
+        "time": 9.25,
+        "selector": "#chat-btn-confirm",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 484,
+          "top": 1436.57,
+          "right": 596,
+          "bottom": 1467.57,
+          "width": 112,
+          "height": 31
+        },
+        "containerSelector": "#chat-dim",
+        "text": "Bloquear",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "lifetime": {
+          "start": 6.6,
+          "end": 10
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/chat.html",
+        "bbox": {
+          "x": 484,
+          "y": 1436.57,
+          "width": 112,
+          "height": 31
+        },
+        "firstSeen": 9.25,
+        "lastSeen": 9.25,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          9.25
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "info",
+        "time": 9.25,
+        "selector": "#chat-stage-b > div:nth-of-type(4)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 484.5,
+          "top": 1526.57,
+          "right": 595.5,
+          "bottom": 1557.57,
+          "width": 111,
+          "height": 31
+        },
+        "containerSelector": "#chat-dim",
+        "text": "Cancelar",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "lifetime": {
+          "start": 6.6,
+          "end": 10
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/chat.html",
+        "bbox": {
+          "x": 484.5,
+          "y": 1526.57,
+          "width": 111,
+          "height": 31
+        },
+        "firstSeen": 9.25,
+        "lastSeen": 9.25,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          9.25
+        ]
+      },
+      {
+        "code": "content_overlap",
+        "severity": "info",
+        "time": 9.25,
+        "selector": "#chat-composer",
+        "message": "Two text blocks overlap and may render unreadable.",
+        "rect": {
+          "left": 339,
+          "top": 1208.21,
+          "right": 433,
+          "bottom": 1237.21,
+          "width": 94,
+          "height": 29
+        },
+        "containerSelector": "#chat-stage-b > div:nth-of-type(1)",
+        "text": "Mensaje",
+        "fixHint": "Give each block its own zone, or put data-layout-allow-overlap on the text or on a container inside the scene. A marker on the scene root does not apply. Decoration nobody needs to read can take data-layout-ignore.",
+        "dataAttributes": {},
+        "sourceFile": "compositions/chat.html",
+        "bbox": {
+          "x": 339,
+          "y": 1208.21,
+          "width": 94,
+          "height": 29
+        },
+        "firstSeen": 9.25,
+        "lastSeen": 9.25,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          9.25
+        ]
+      },
+      {
+        "code": "escaped_container",
+        "severity": "info",
+        "time": 9.25,
+        "selector": "#chat-panel",
+        "message": "Positioned element renders far outside its offset parent — its coordinates were likely computed in a different frame (canvas/viewport pixels).",
+        "rect": {
+          "left": 284,
+          "top": 1175.71,
+          "right": 796,
+          "bottom": 1645.71,
+          "width": 512,
+          "height": 470
+        },
+        "containerSelector": "#chat-screen",
+        "text": "Opciones de Álex Bloquear Reportar Cerrar ¿Bloquear a Álex? Dejaréis de veros en Descubrir y Matches y no podréis enviaros mensajes. Esta persona no recibirá ningún aviso. Bloquear Cancelar",
+        "fixHint": "Compute left/top in the offset parent's frame (subtract its rect), or mark intentional placement with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 284,
+          "top": 214,
+          "right": 796,
+          "bottom": 1306,
+          "width": 512,
+          "height": 1092
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/chat.html",
+        "bbox": {
+          "x": 284,
+          "y": 1175.71,
+          "width": 512,
+          "height": 470
+        },
+        "firstSeen": 9.25,
+        "lastSeen": 9.25,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          9.25
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "info",
+        "time": 13.361,
+        "selector": "#sw-c3 > div:nth-of-type(1)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 405.9,
+          "top": 623.3,
+          "right": 674.1,
+          "bottom": 916.7,
+          "width": 268.2,
+          "height": 293.4
+        },
+        "containerSelector": "#sw-c1",
+        "text": "MO",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "lifetime": {
+          "start": 12.4,
+          "end": 16
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 405.9,
+          "y": 623.3,
+          "width": 268.2,
+          "height": 293.4
+        },
+        "firstSeen": 13.361,
+        "lastSeen": 15.417,
+        "occurrences": 2,
+        "heldMs": 0,
+        "times": [
+          13.361,
+          15.417
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "info",
+        "time": 13.361,
+        "selector": "#sw-c2 > div:nth-of-type(1)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 418.88,
+          "top": 558.15,
+          "right": 661.13,
+          "bottom": 867.85,
+          "width": 242.25,
+          "height": 309.7
+        },
+        "containerSelector": "#sw-c1",
+        "text": "NB",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "lifetime": {
+          "start": 12.4,
+          "end": 16
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 418.88,
+          "y": 558.15,
+          "width": 242.25,
+          "height": 309.7
+        },
+        "firstSeen": 13.361,
+        "lastSeen": 13.361,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          13.361
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "info",
+        "time": 13.361,
+        "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(1)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 341.45,
+          "top": 918.2,
+          "right": 621.7,
+          "bottom": 989.45,
+          "width": 280.25,
+          "height": 71.25
+        },
+        "containerSelector": "#sw-c1",
+        "text": "Núria Bosch 28",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "lifetime": {
+          "start": 12.4,
+          "end": 16
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 341.45,
+          "y": 918.2,
+          "width": 280.25,
+          "height": 71.25
+        },
+        "firstSeen": 13.361,
+        "lastSeen": 13.361,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          13.361
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "info",
+        "time": 13.361,
+        "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(2)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 341.45,
+          "top": 989.45,
+          "right": 437.4,
+          "bottom": 1015.1,
+          "width": 95.95,
+          "height": 25.65
+        },
+        "containerSelector": "#sw-c1",
+        "text": "Barcelona",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "lifetime": {
+          "start": 12.4,
+          "end": 16
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 341.45,
+          "y": 989.45,
+          "width": 95.95,
+          "height": 25.65
+        },
+        "firstSeen": 13.361,
+        "lastSeen": 13.361,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          13.361
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "info",
+        "time": 13.361,
+        "selector": "#sw-c2 > div:nth-of-type(2) > span:nth-of-type(1)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 358.55,
+          "top": 1045.5,
+          "right": 450.7,
+          "bottom": 1069.25,
+          "width": 92.15,
+          "height": 23.75
+        },
+        "containerSelector": "#sw-c1",
+        "text": "✓ Encajas",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "lifetime": {
+          "start": 12.4,
+          "end": 16
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 358.55,
+          "y": 1045.5,
+          "width": 92.15,
+          "height": 23.75
+        },
+        "firstSeen": 13.361,
+        "lastSeen": 13.361,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          13.361
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "info",
+        "time": 13.361,
+        "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(3) > b:nth-of-type(1)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 341.45,
+          "top": 1100.6,
+          "right": 407,
+          "bottom": 1122.45,
+          "width": 65.55,
+          "height": 21.85
+        },
+        "containerSelector": "#sw-c1",
+        "text": "Domina",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "lifetime": {
+          "start": 12.4,
+          "end": 16
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 341.45,
+          "y": 1100.6,
+          "width": 65.55,
+          "height": 21.85
+        },
+        "firstSeen": 13.361,
+        "lastSeen": 13.361,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          13.361
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "info",
+        "time": 13.361,
+        "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(3) > span:nth-of-type(1) > span:nth-of-type(1)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 451.65,
+          "top": 1098.7,
+          "right": 548.55,
+          "bottom": 1122.45,
+          "width": 96.9,
+          "height": 23.75
+        },
+        "containerSelector": "#sw-c1",
+        "text": "Desarrollo",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "lifetime": {
+          "start": 12.4,
+          "end": 16
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 451.65,
+          "y": 1098.7,
+          "width": 96.9,
+          "height": 23.75
+        },
+        "firstSeen": 13.361,
+        "lastSeen": 13.361,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          13.361
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "info",
+        "time": 13.361,
+        "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(3) > span:nth-of-type(1) > span:nth-of-type(2)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 588.45,
+          "top": 1098.7,
+          "right": 678.7,
+          "bottom": 1122.45,
+          "width": 90.25,
+          "height": 23.75
+        },
+        "containerSelector": "#sw-c1",
+        "text": "Producto",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "lifetime": {
+          "start": 12.4,
+          "end": 16
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 588.45,
+          "y": 1098.7,
+          "width": 90.25,
+          "height": 23.75
+        },
+        "firstSeen": 13.361,
+        "lastSeen": 13.361,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          13.361
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "info",
+        "time": 13.361,
+        "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(4) > b:nth-of-type(1)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 341.45,
+          "top": 1156.65,
+          "right": 390.85,
+          "bottom": 1178.5,
+          "width": 49.4,
+          "height": 21.85
+        },
+        "containerSelector": "#sw-c1",
+        "text": "Busca",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "lifetime": {
+          "start": 12.4,
+          "end": 16
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 341.45,
+          "y": 1156.65,
+          "width": 49.4,
+          "height": 21.85
+        },
+        "firstSeen": 13.361,
+        "lastSeen": 13.361,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          13.361
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "info",
+        "time": 13.361,
+        "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(4) > span:nth-of-type(1) > span:nth-of-type(1)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 451.65,
+          "top": 1154.75,
+          "right": 536.2,
+          "bottom": 1178.5,
+          "width": 84.55,
+          "height": 23.75
+        },
+        "containerSelector": "#sw-c1",
+        "text": "✓ Ventas",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "lifetime": {
+          "start": 12.4,
+          "end": 16
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 451.65,
+          "y": 1154.75,
+          "width": 84.55,
+          "height": 23.75
+        },
+        "firstSeen": 13.361,
+        "lastSeen": 13.361,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          13.361
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "info",
+        "time": 13.361,
+        "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(4) > span:nth-of-type(1) > span:nth-of-type(2)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 576.1,
+          "top": 1154.75,
+          "right": 692,
+          "bottom": 1178.5,
+          "width": 115.9,
+          "height": 23.75
+        },
+        "containerSelector": "#sw-c1",
+        "text": "✓ Marketing",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "lifetime": {
+          "start": 12.4,
+          "end": 16
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 576.1,
+          "y": 1154.75,
+          "width": 115.9,
+          "height": 23.75
+        },
+        "firstSeen": 13.361,
+        "lastSeen": 13.361,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          13.361
+        ]
+      },
+      {
+        "code": "container_overflow",
+        "severity": "info",
+        "time": 13.361,
+        "selector": "#sw-c3",
+        "message": "Element extends outside a clipping layout container.",
+        "rect": {
+          "left": 324,
+          "top": 521.6,
+          "right": 756,
+          "bottom": 1313.6,
+          "width": 432,
+          "height": 792
+        },
+        "containerSelector": "#sw-screen",
+        "fixHint": "Resize/reposition the child or container, or mark intentional overflow with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 284,
+          "top": 214,
+          "right": 796,
+          "bottom": 1306,
+          "width": 512,
+          "height": 1092
+        },
+        "overflow": {
+          "bottom": 7.6
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 324,
+          "y": 521.6,
+          "width": 432,
+          "height": 792
+        },
+        "firstSeen": 13.361,
+        "lastSeen": 13.361,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          13.361
+        ]
+      },
+      {
+        "code": "container_overflow",
+        "severity": "info",
+        "time": 13.361,
+        "selector": "#sw-c1",
+        "message": "Element extends outside a clipping layout container.",
+        "rect": {
+          "left": 261.42,
+          "top": 376.45,
+          "right": 754.84,
+          "bottom": 1263.7,
+          "width": 493.43,
+          "height": 887.25
+        },
+        "containerSelector": "#sw-screen",
+        "fixHint": "Resize/reposition the child or container, or mark intentional overflow with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 284,
+          "top": 214,
+          "right": 796,
+          "bottom": 1306,
+          "width": 512,
+          "height": 1092
+        },
+        "overflow": {
+          "left": 22.58
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 261.42,
+          "y": 376.45,
+          "width": 493.43,
+          "height": 887.25
+        },
+        "firstSeen": 13.361,
+        "lastSeen": 15.417,
+        "occurrences": 2,
+        "heldMs": 0,
+        "times": [
+          13.361,
+          15.417
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "info",
+        "time": 15.417,
+        "selector": "#sw-screen > div:nth-of-type(2)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 328.07,
+          "top": 231.18,
+          "right": 369.45,
+          "bottom": 260.45,
+          "width": 41.38,
+          "height": 29.27
+        },
+        "containerSelector": "#sw-match",
+        "text": "2:51",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "lifetime": {
+          "start": 12.4,
+          "end": 16
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 328.07,
+          "y": 231.18,
+          "width": 41.38,
+          "height": 29.27
+        },
+        "firstSeen": 15.417,
+        "lastSeen": 15.417,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          15.417
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "info",
+        "time": 15.417,
+        "selector": "span.on",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 331.1,
+          "top": 309.9,
+          "right": 464.31,
+          "bottom": 338.15,
+          "width": 133.21,
+          "height": 28.26
+        },
+        "containerSelector": "#sw-match",
+        "text": "Cofundador",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "lifetime": {
+          "start": 12.4,
+          "end": 16
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 331.1,
+          "y": 309.9,
+          "width": 133.21,
+          "height": 28.26
+        },
+        "firstSeen": 15.417,
+        "lastSeen": 15.417,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          15.417
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "info",
+        "time": 15.417,
+        "selector": "div.tabs > span:nth-of-type(2)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 508.71,
+          "top": 309.9,
+          "right": 589.45,
+          "bottom": 338.15,
+          "width": 80.74,
+          "height": 28.26
+        },
+        "containerSelector": "#sw-match",
+        "text": "Grupos",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "lifetime": {
+          "start": 12.4,
+          "end": 16
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 508.71,
+          "y": 309.9,
+          "width": 80.74,
+          "height": 28.26
+        },
+        "firstSeen": 15.417,
+        "lastSeen": 15.417,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          15.417
+        ]
+      },
+      {
+        "code": "text_occluded",
+        "severity": "info",
+        "time": 15.417,
+        "selector": "div.filters",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 698.44,
+          "top": 307.88,
+          "right": 768.08,
+          "bottom": 336.14,
+          "width": 69.63,
+          "height": 28.26
+        },
+        "containerSelector": "#sw-match",
+        "text": "Filtros",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 1,
+        "lifetime": {
+          "start": 12.4,
+          "end": 16
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 698.44,
+          "y": 307.88,
+          "width": 69.63,
+          "height": 28.26
+        },
+        "firstSeen": 15.417,
+        "lastSeen": 15.417,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          15.417
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 15.417,
+        "selector": "#sw-c2 > div:nth-of-type(1)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 1420.95,
+          "top": 511.64,
+          "right": 1782.8,
+          "bottom": 913.09,
+          "width": 361.85,
+          "height": 401.45
+        },
+        "containerSelector": "#root",
+        "text": "NB",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "right": 702.8
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 1420.95,
+          "y": 511.64,
+          "width": 361.85,
+          "height": 401.45
+        },
+        "firstSeen": 15.417,
+        "lastSeen": 15.417,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          15.417
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 15.417,
+        "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(1)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 1296.3,
+          "top": 835.46,
+          "right": 1600.69,
+          "bottom": 1017.17,
+          "width": 304.39,
+          "height": 181.71
+        },
+        "containerSelector": "#root",
+        "text": "Núria Bosch 28",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "right": 520.69
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 1296.3,
+          "y": 835.46,
+          "width": 304.39,
+          "height": 181.71
+        },
+        "firstSeen": 15.417,
+        "lastSeen": 15.417,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          15.417
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 15.417,
+        "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(2)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 1286.09,
+          "top": 905.64,
+          "right": 1390.8,
+          "bottom": 969.09,
+          "width": 104.71,
+          "height": 63.45
+        },
+        "containerSelector": "#root",
+        "text": "Barcelona",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "right": 310.8
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 1286.09,
+          "y": 905.64,
+          "width": 104.71,
+          "height": 63.45
+        },
+        "firstSeen": 15.417,
+        "lastSeen": 15.417,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          15.417
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 15.417,
+        "selector": "#sw-c2 > div:nth-of-type(2) > span:nth-of-type(1)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 1281.38,
+          "top": 967.65,
+          "right": 1381.6,
+          "bottom": 1027.72,
+          "width": 100.22,
+          "height": 60.07
+        },
+        "containerSelector": "#root",
+        "text": "✓ Encajas",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "right": 301.6
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 1281.38,
+          "y": 967.65,
+          "width": 100.22,
+          "height": 60.07
+        },
+        "firstSeen": 15.417,
+        "lastSeen": 15.417,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          15.417
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 15.417,
+        "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(3) > b:nth-of-type(1)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 1243.37,
+          "top": 1015.12,
+          "right": 1316.63,
+          "bottom": 1062.73,
+          "width": 73.26,
+          "height": 47.61
+        },
+        "containerSelector": "#root",
+        "text": "Domina",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "right": 236.63
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 1243.37,
+          "y": 1015.12,
+          "width": 73.26,
+          "height": 47.61
+        },
+        "firstSeen": 15.417,
+        "lastSeen": 15.417,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          15.417
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 15.417,
+        "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(3) > span:nth-of-type(1) > span:nth-of-type(1)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 1351.91,
+          "top": 1057.1,
+          "right": 1456.81,
+          "bottom": 1119.06,
+          "width": 104.9,
+          "height": 61.96
+        },
+        "containerSelector": "#root",
+        "text": "Desarrollo",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "right": 376.81
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 1351.91,
+          "y": 1057.1,
+          "width": 104.9,
+          "height": 61.96
+        },
+        "firstSeen": 15.417,
+        "lastSeen": 15.417,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          15.417
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 15.417,
+        "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(3) > span:nth-of-type(1) > span:nth-of-type(2)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 1486.65,
+          "top": 1111.54,
+          "right": 1585,
+          "bottom": 1170.85,
+          "width": 98.35,
+          "height": 59.31
+        },
+        "containerSelector": "#root",
+        "text": "Producto",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "right": 505
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 1486.65,
+          "y": 1111.54,
+          "width": 98.35,
+          "height": 59.31
+        },
+        "firstSeen": 15.417,
+        "lastSeen": 15.417,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          15.417
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 15.417,
+        "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(4) > b:nth-of-type(1)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 1221.06,
+          "top": 1070.33,
+          "right": 1278.42,
+          "bottom": 1111.51,
+          "width": 57.36,
+          "height": 41.18
+        },
+        "containerSelector": "#root",
+        "text": "Busca",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "right": 198.42
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 1221.06,
+          "y": 1070.33,
+          "width": 57.36,
+          "height": 41.18
+        },
+        "firstSeen": 15.417,
+        "lastSeen": 15.417,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          15.417
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 15.417,
+        "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(4) > span:nth-of-type(1) > span:nth-of-type(1)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 1329.61,
+          "top": 1112.31,
+          "right": 1422.34,
+          "bottom": 1169.35,
+          "width": 92.73,
+          "height": 57.04
+        },
+        "containerSelector": "#root",
+        "text": "✓ Ventas",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "right": 342.34
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 1329.61,
+          "y": 1112.31,
+          "width": 92.73,
+          "height": 57.04
+        },
+        "firstSeen": 15.417,
+        "lastSeen": 15.417,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          15.417
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 15.417,
+        "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(4) > span:nth-of-type(1) > span:nth-of-type(2)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 1452.18,
+          "top": 1161.84,
+          "right": 1575.79,
+          "bottom": 1231.35,
+          "width": 123.61,
+          "height": 69.51
+        },
+        "containerSelector": "#root",
+        "text": "✓ Marketing",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "right": 495.79
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 1452.18,
+          "y": 1161.84,
+          "width": 123.61,
+          "height": 69.51
+        },
+        "firstSeen": 15.417,
+        "lastSeen": 15.417,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          15.417
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 15.417,
+        "selector": "#sw-like",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 1489.63,
+          "top": 452.47,
+          "right": 1737.06,
+          "bottom": 585.32,
+          "width": 247.43,
+          "height": 132.85
+        },
+        "containerSelector": "#root",
+        "text": "ME INTERESA",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "right": 657.06
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 1489.63,
+          "y": 452.47,
+          "width": 247.43,
+          "height": 132.85
+        },
+        "firstSeen": 15.417,
+        "lastSeen": 15.417,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          15.417
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 15.417,
+        "selector": "#sw-c1 > div:nth-of-type(1)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": -693.44,
+          "top": 515.42,
+          "right": -350.3,
+          "bottom": 909.3,
+          "width": 343.14,
+          "height": 393.88
+        },
+        "containerSelector": "#root",
+        "text": "DS",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "left": 693.44
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": -693.44,
+          "y": 515.42,
+          "width": 343.14,
+          "height": 393.88
+        },
+        "firstSeen": 15.417,
+        "lastSeen": 15.417,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          15.417
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 15.417,
+        "selector": "#sw-c1 > div:nth-of-type(2) > div:nth-of-type(1)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": -635.78,
+          "top": 891.79,
+          "right": -355.72,
+          "bottom": 1063.67,
+          "width": 280.06,
+          "height": 171.88
+        },
+        "containerSelector": "#root",
+        "text": "Diego Salas 31",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "left": 635.78
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": -635.78,
+          "y": 891.79,
+          "width": 280.06,
+          "height": 171.88
+        },
+        "firstSeen": 15.417,
+        "lastSeen": 15.417,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          15.417
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 15.417,
+        "selector": "#sw-c1 > div:nth-of-type(2) > div:nth-of-type(2)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": -607.42,
+          "top": 1036.07,
+          "right": -528.91,
+          "bottom": 1088.93,
+          "width": 78.51,
+          "height": 52.86
+        },
+        "containerSelector": "#root",
+        "text": "Bogotá",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "left": 607.42
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": -607.42,
+          "y": 1036.07,
+          "width": 78.51,
+          "height": 52.86
+        },
+        "firstSeen": 15.417,
+        "lastSeen": 15.417,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          15.417
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 15.417,
+        "selector": "#sw-c1 > div:nth-of-type(2) > div:nth-of-type(3) > b:nth-of-type(1)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": -585.88,
+          "top": 1090.92,
+          "right": -512.62,
+          "bottom": 1138.53,
+          "width": 73.26,
+          "height": 47.61
+        },
+        "containerSelector": "#root",
+        "text": "Domina",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "left": 585.88
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": -585.88,
+          "y": 1090.92,
+          "width": 73.26,
+          "height": 47.61
+        },
+        "firstSeen": 15.417,
+        "lastSeen": 15.417,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          15.417
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 15.417,
+        "selector": "#sw-c1 > div:nth-of-type(2) > div:nth-of-type(3) > span:nth-of-type(1) > span:nth-of-type(1)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": -478.09,
+          "top": 1045.19,
+          "right": -404.07,
+          "bottom": 1094.67,
+          "width": 74.02,
+          "height": 49.48
+        },
+        "containerSelector": "#root",
+        "text": "Diseño",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "left": 478.09
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": -478.09,
+          "y": 1045.19,
+          "width": 74.02,
+          "height": 49.48
+        },
+        "firstSeen": 15.417,
+        "lastSeen": 15.417,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          15.417
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 15.417,
+        "selector": "#sw-c1 > div:nth-of-type(2) > div:nth-of-type(4) > b:nth-of-type(1)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": -565.08,
+          "top": 1148.81,
+          "right": -507.73,
+          "bottom": 1189.99,
+          "width": 57.35,
+          "height": 41.18
+        },
+        "containerSelector": "#root",
+        "text": "Busca",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "left": 565.08
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": -565.08,
+          "y": 1148.81,
+          "width": 57.35,
+          "height": 41.18
+        },
+        "firstSeen": 15.417,
+        "lastSeen": 15.417,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          15.417
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 15.417,
+        "selector": "#sw-c1 > div:nth-of-type(2) > div:nth-of-type(4) > span:nth-of-type(1) > span:nth-of-type(1)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": -457.3,
+          "top": 1096.66,
+          "right": -383.28,
+          "bottom": 1146.14,
+          "width": 74.02,
+          "height": 49.48
+        },
+        "containerSelector": "#root",
+        "text": "Diseño",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "left": 457.3
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": -457.3,
+          "y": 1096.66,
+          "width": 74.02,
+          "height": 49.48
+        },
+        "firstSeen": 15.417,
+        "lastSeen": 15.417,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          15.417
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 15.417,
+        "selector": "#sw-c1 > div:nth-of-type(2) > div:nth-of-type(4) > span:nth-of-type(1) > span:nth-of-type(2)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": -353.43,
+          "top": 1042.22,
+          "right": -248.54,
+          "bottom": 1104.17,
+          "width": 104.89,
+          "height": 61.95
+        },
+        "containerSelector": "#root",
+        "text": "Marketing",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "left": 353.43
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": -353.43,
+          "y": 1042.22,
+          "width": 104.89,
+          "height": 61.95
+        },
+        "firstSeen": 15.417,
+        "lastSeen": 15.417,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          15.417
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 15.417,
+        "selector": "#sw-pass",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": -520.18,
+          "top": 452.47,
+          "right": -409.63,
+          "bottom": 530.02,
+          "width": 110.55,
+          "height": 77.55
+        },
+        "containerSelector": "#root",
+        "text": "PASO",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "left": 520.18
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": -520.18,
+          "y": 452.47,
+          "width": 110.55,
+          "height": 77.55
+        },
+        "firstSeen": 15.417,
+        "lastSeen": 15.417,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          15.417
+        ]
+      },
+      {
+        "code": "container_overflow",
+        "severity": "info",
+        "time": 15.417,
+        "selector": "#sw-c2",
+        "message": "Element extends outside a clipping layout container.",
+        "rect": {
+          "left": 1148.96,
+          "top": 363.37,
+          "right": 1930.79,
+          "bottom": 1368.27,
+          "width": 781.83,
+          "height": 1004.89
+        },
+        "containerSelector": "#sw-screen",
+        "fixHint": "Resize/reposition the child or container, or mark intentional overflow with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 281.64,
+          "top": 208.98,
+          "right": 798.36,
+          "bottom": 1311.02,
+          "width": 516.71,
+          "height": 1102.05
+        },
+        "overflow": {
+          "right": 1132.43,
+          "bottom": 57.25
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 1148.96,
+          "y": 363.37,
+          "width": 781.83,
+          "height": 1004.89
+        },
+        "firstSeen": 15.417,
+        "lastSeen": 15.417,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          15.417
+        ]
+      }
+    ],
+    "duration": 18.5,
+    "samples": [
+      1.028,
+      3.083,
+      5.139,
+      7.194,
+      9.25,
+      11.306,
+      13.361,
+      15.417,
+      17.472
+    ],
+    "transitionSamples": [],
+    "transitionSamplesDropped": 0,
+    "tolerance": 2,
+    "totalIssueCount": 56,
+    "truncated": false
+  },
+  "motion": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": false,
+    "samples": 0
+  },
+  "contrast": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 1,
+    "infoCount": 0,
+    "findings": [
+      {
+        "code": "contrast_aa_failure",
+        "severity": "warning",
+        "message": "Contrast is 2.1:1; WCAG AA requires 3:1.",
+        "text": "PASO",
+        "fg": "rgb(255,154,128)",
+        "bg": "rgb(121,121,125)",
+        "ratio": 2.1,
+        "requiredRatio": 3,
+        "suggestedColor": "rgb(69,42,35)",
+        "large": true,
+        "selector": "#sw-pass",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 562.1441040039062,
+          "y": 437.9149169921875,
+          "width": 150.16546630859375,
+          "height": 68.27755737304688
+        },
+        "time": 13.361,
+        "times": [
+          13.361
+        ]
+      }
+    ],
+    "enabled": true,
+    "samples": [
+      1.028,
+      5.139,
+      9.25,
+      13.361,
+      17.472
+    ],
+    "checked": 48,
+    "passed": 47
+  },
+  "craft": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 21,
+    "infoCount": 0,
+    "findings": [
+      {
+        "code": "film_silent",
+        "severity": "warning",
+        "message": "This 19 s film has no sound source (no <audio>, no <video> with sound): add a music bed and sounds on the visible actions unless the person asked for silence; see references/sound.md.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"Mensaje\" (1 word) is on screen 0.10 s (±0.01 s), under its 0.40 s floor: hold it about 0.5 s + 0.3 s a word (0.80 s here) before it leaves or changes; see references/motion.md.",
+        "text": "Mensaje",
+        "selector": "#chat-composer",
+        "dataAttributes": {},
+        "sourceFile": "compositions/chat.html",
+        "bbox": {
+          "x": 329.19,
+          "y": 1290.04,
+          "width": 94.57,
+          "height": 30.8900000000001
+        },
+        "time": 6.703,
+        "words": 1,
+        "seconds": 0.102,
+        "floorSeconds": 0.4,
+        "measured": [
+          {
+            "time": 6.375,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 6.5,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 6.625,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 6.75,
+            "opacity": 0.71,
+            "heightPx": 31
+          },
+          {
+            "time": 6.875,
+            "opacity": 0.95,
+            "heightPx": 29
+          },
+          {
+            "time": 7,
+            "opacity": 1,
+            "heightPx": 29
+          },
+          {
+            "time": 7.125,
+            "opacity": 1,
+            "heightPx": 29
+          }
+        ]
+      },
+      {
+        "code": "text_below_floor",
+        "severity": "warning",
+        "message": "Type floor is 28 px (2.6% of the 1080 px short side, what a phone can read) and 18 text elements stay under it for 0.5 s or more, the smallest \"Hace 3 semanas\" at 19 px: set reading text to at least 28 px, or put data-layout-ignore on text that is texture rather than reading; see references/look.md.",
+        "text": "Hace 3 semanas",
+        "selector": "#chat-msgs > div:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/chat.html",
+        "bbox": {
+          "x": 475.25,
+          "y": 501.83,
+          "width": 142.44,
+          "height": 25.86
+        },
+        "time": 6.75,
+        "times": [
+          6.75,
+          6.75,
+          6.75,
+          6.75,
+          6.75,
+          6.75,
+          6.75,
+          6.75,
+          6.75,
+          6.75,
+          7,
+          7.5,
+          7.625,
+          7.625,
+          8.375,
+          8.375,
+          8.375,
+          9.375
+        ],
+        "fontPx": 19,
+        "floorPx": 28,
+        "seconds": 2.625,
+        "elements": [
+          {
+            "selector": "#chat-msgs > div:nth-of-type(1)",
+            "text": "Hace 3 semanas",
+            "fontPx": 19,
+            "time": 6.75,
+            "seconds": 2.625
+          },
+          {
+            "selector": "#chat-msgs > div:nth-of-type(4)",
+            "text": "Hoy",
+            "fontPx": 19,
+            "time": 6.75,
+            "seconds": 2.625
+          },
+          {
+            "selector": "div.who-sub",
+            "text": "Match de cofundador",
+            "fontPx": 20,
+            "time": 6.75,
+            "seconds": 3.25
+          },
+          {
+            "selector": "div.p-body",
+            "text": "Dejaréis de veros en Descubrir y Matches y no podréis enviaros mensajes. Esta persona no recibirá ningún aviso.",
+            "fontPx": 22,
+            "time": 8.375,
+            "seconds": 1
+          },
+          {
+            "selector": "#chat-screen > div:nth-of-type(2)",
+            "text": "2:47",
+            "fontPx": 24,
+            "time": 6.75,
+            "seconds": 3.25
+          },
+          {
+            "selector": "#chat-composer",
+            "text": "Mensaje",
+            "fontPx": 24,
+            "time": 6.75,
+            "seconds": 2.625
+          },
+          {
+            "selector": "#chat-gone",
+            "text": "Has bloqueado a Álex",
+            "fontPx": 24,
+            "time": 9.375,
+            "seconds": 0.625
+          },
+          {
+            "selector": "#chat-m5",
+            "text": "mañana lo miro",
+            "fontPx": 24.31,
+            "time": 7,
+            "seconds": 2.375
+          },
+          {
+            "selector": "div.avatar",
+            "text": "ÁR",
+            "fontPx": 25,
+            "time": 6.75,
+            "seconds": 3.25
+          },
+          {
+            "selector": "#chat-m1",
+            "text": "¿Miras hoy lo de la demo?",
+            "fontPx": 25,
+            "time": 6.75,
+            "seconds": 2.625
+          },
+          {
+            "selector": "#chat-m2",
+            "text": "mañana lo miro",
+            "fontPx": 25,
+            "time": 6.75,
+            "seconds": 2.625
+          },
+          {
+            "selector": "#chat-m3",
+            "text": "El pitch es el viernes",
+            "fontPx": 25,
+            "time": 6.75,
+            "seconds": 2.625
+          },
+          {
+            "selector": "#chat-m4",
+            "text": "jajaja tranqui",
+            "fontPx": 25,
+            "time": 6.75,
+            "seconds": 2.625
+          },
+          {
+            "selector": "#chat-btn-block",
+            "text": "Bloquear",
+            "fontPx": 26,
+            "time": 7.5,
+            "seconds": 0.875
+          },
+          {
+            "selector": "#chat-stage-a > div:nth-of-type(3)",
+            "text": "Reportar",
+            "fontPx": 26,
+            "time": 7.625,
+            "seconds": 0.75
+          },
+          {
+            "selector": "#chat-stage-a > div:nth-of-type(4)",
+            "text": "Cerrar",
+            "fontPx": 26,
+            "time": 7.625,
+            "seconds": 0.75
+          },
+          {
+            "selector": "#chat-btn-confirm",
+            "text": "Bloquear",
+            "fontPx": 26,
+            "time": 8.375,
+            "seconds": 0.875
+          },
+          {
+            "selector": "#chat-stage-b > div:nth-of-type(4)",
+            "text": "Cancelar",
+            "fontPx": 26,
+            "time": 8.375,
+            "seconds": 0.875
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"Opciones de Álex\" (3 words) is on screen 0.87 s (±0.01 s), under its 1.05 s floor: hold it about 0.5 s + 0.3 s a word (1.40 s here) before it leaves or changes; see references/motion.md.",
+        "text": "Opciones de Álex",
+        "selector": "#chat-stage-a > div:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/chat.html",
+        "bbox": {
+          "x": 314,
+          "y": 1165.88,
+          "width": 260,
+          "height": 60
+        },
+        "time": 7.5,
+        "words": 3,
+        "seconds": 0.867,
+        "floorSeconds": 1.05,
+        "measured": [
+          {
+            "time": 7.125,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 7.25,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 7.375,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 7.5,
+            "opacity": 1,
+            "heightPx": 60
+          },
+          {
+            "time": 7.625,
+            "opacity": 1,
+            "heightPx": 60
+          },
+          {
+            "time": 7.75,
+            "opacity": 1,
+            "heightPx": 60
+          },
+          {
+            "time": 7.875,
+            "opacity": 1,
+            "heightPx": 60
+          },
+          {
+            "time": 8,
+            "opacity": 1,
+            "heightPx": 60
+          },
+          {
+            "time": 8.125,
+            "opacity": 1,
+            "heightPx": 60
+          },
+          {
+            "time": 8.25,
+            "opacity": 1,
+            "heightPx": 60
+          },
+          {
+            "time": 8.375,
+            "opacity": 0.42,
+            "heightPx": 60
+          },
+          {
+            "time": 8.5,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 8.625,
+            "opacity": null,
+            "heightPx": null
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"¿Bloquear a Álex?\" (3 words) is on screen 0.91 s (±0.01 s), under its 1.05 s floor: hold it about 0.5 s + 0.3 s a word (1.40 s here) before it leaves or changes; see references/motion.md.",
+        "text": "¿Bloquear a Álex?",
+        "selector": "#chat-stage-b > div:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/chat.html",
+        "bbox": {
+          "x": 332.13,
+          "y": 881,
+          "width": 270,
+          "height": 60
+        },
+        "time": 8.367,
+        "words": 3,
+        "seconds": 0.906,
+        "floorSeconds": 1.05,
+        "measured": [
+          {
+            "time": 8,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 8.125,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 8.25,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 8.375,
+            "opacity": 0.55,
+            "heightPx": 60
+          },
+          {
+            "time": 8.5,
+            "opacity": 0.99,
+            "heightPx": 60
+          },
+          {
+            "time": 8.625,
+            "opacity": 1,
+            "heightPx": 60
+          },
+          {
+            "time": 8.75,
+            "opacity": 1,
+            "heightPx": 60
+          },
+          {
+            "time": 8.875,
+            "opacity": 1,
+            "heightPx": 60
+          },
+          {
+            "time": 9,
+            "opacity": 1,
+            "heightPx": 60
+          },
+          {
+            "time": 9.125,
+            "opacity": 1,
+            "heightPx": 60
+          },
+          {
+            "time": 9.25,
+            "opacity": 1,
+            "heightPx": 60
+          },
+          {
+            "time": 9.375,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 9.5,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 9.625,
+            "opacity": null,
+            "heightPx": null
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"Dejaréis de veros en Descubrir y Matches y no podréis env...\" (18 words) is on screen 0.87 s (±0.01 s), under its 4.42 s floor: hold it about 0.5 s + 0.3 s a word (5.90 s here) before it leaves or changes; see references/motion.md.",
+        "text": "Dejaréis de veros en Descubrir y Matches y no podréis enviaros mensajes. Esta persona no recibirá ningún aviso.",
+        "selector": "div.p-body",
+        "dataAttributes": {},
+        "sourceFile": "compositions/chat.html",
+        "bbox": {
+          "x": 332.13,
+          "y": 962.3,
+          "width": 450,
+          "height": 86.37000000000012
+        },
+        "time": 8.367,
+        "words": 18,
+        "seconds": 0.867,
+        "floorSeconds": 4.425,
+        "measured": [
+          {
+            "time": 8,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 8.125,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 8.25,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 8.375,
+            "opacity": 0.55,
+            "heightPx": 86
+          },
+          {
+            "time": 8.5,
+            "opacity": 0.99,
+            "heightPx": 86
+          },
+          {
+            "time": 8.625,
+            "opacity": 1,
+            "heightPx": 86
+          },
+          {
+            "time": 8.75,
+            "opacity": 1,
+            "heightPx": 86
+          },
+          {
+            "time": 8.875,
+            "opacity": 1,
+            "heightPx": 86
+          },
+          {
+            "time": 9,
+            "opacity": 1,
+            "heightPx": 86
+          },
+          {
+            "time": 9.125,
+            "opacity": 1,
+            "heightPx": 86
+          },
+          {
+            "time": 9.25,
+            "opacity": 1,
+            "heightPx": 4
+          },
+          {
+            "time": 9.375,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 9.5,
+            "opacity": null,
+            "heightPx": null
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"2:51\" (2 words) is on screen 0.04 s (±0.01 s), under its 0.40 s floor: hold it about 0.5 s + 0.3 s a word (1.10 s here) before it leaves or changes; see references/motion.md.",
+        "text": "2:51",
+        "selector": "#sw-screen > div:nth-of-type(2)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 315.1,
+          "y": 347.54,
+          "width": 41.81999999999999,
+          "height": 30.160000000000025
+        },
+        "time": 12.5,
+        "words": 2,
+        "seconds": 0.039,
+        "floorSeconds": 0.4,
+        "measured": [
+          {
+            "time": 12.125,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 12.25,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 12.375,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 12.5,
+            "opacity": 0.59,
+            "heightPx": 30
+          },
+          {
+            "time": 12.625,
+            "opacity": 0.87,
+            "heightPx": 29
+          },
+          {
+            "time": 12.75,
+            "opacity": 0.99,
+            "heightPx": 29
+          },
+          {
+            "time": 12.875,
+            "opacity": 1,
+            "heightPx": 29
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"Cofundador\" (1 word) is on screen 0.07 s (±0.01 s), under its 0.40 s floor: hold it about 0.5 s + 0.3 s a word (0.80 s here) before it leaves or changes; see references/motion.md.",
+        "text": "Cofundador",
+        "selector": "span.on",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 320.33,
+          "y": 422.82,
+          "width": 132.75,
+          "height": 31.769999999999982
+        },
+        "time": 12.5,
+        "words": 1,
+        "seconds": 0.07,
+        "floorSeconds": 0.4,
+        "measured": [
+          {
+            "time": 12.125,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 12.25,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 12.375,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 12.5,
+            "opacity": 0.59,
+            "heightPx": 32
+          },
+          {
+            "time": 12.625,
+            "opacity": 0.87,
+            "heightPx": 29
+          },
+          {
+            "time": 12.75,
+            "opacity": 0.99,
+            "heightPx": 28
+          },
+          {
+            "time": 12.875,
+            "opacity": 1,
+            "heightPx": 28
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"Grupos\" (1 word) is on screen 0.04 s (±0.01 s), under its 0.40 s floor: hold it about 0.5 s + 0.3 s a word (0.80 s here) before it leaves or changes; see references/motion.md.",
+        "text": "Grupos",
+        "selector": "div.tabs > span:nth-of-type(2)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 496.26,
+          "y": 419.28,
+          "width": 80.76999999999998,
+          "height": 30.269999999999982
+        },
+        "time": 12.5,
+        "words": 1,
+        "seconds": 0.039,
+        "floorSeconds": 0.4,
+        "measured": [
+          {
+            "time": 12.125,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 12.25,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 12.375,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 12.5,
+            "opacity": 0.59,
+            "heightPx": 30
+          },
+          {
+            "time": 12.625,
+            "opacity": 0.87,
+            "heightPx": 29
+          },
+          {
+            "time": 12.75,
+            "opacity": 0.99,
+            "heightPx": 28
+          },
+          {
+            "time": 12.875,
+            "opacity": 1,
+            "heightPx": 28
+          }
+        ]
+      },
+      {
+        "code": "text_below_floor",
+        "severity": "warning",
+        "message": "Type floor is 28 px (2.6% of the 1080 px short side, what a phone can read) and 21 text elements stay under it for 0.5 s or more, the smallest \"Domina\" at 18 px: set reading text to at least 28 px, or put data-layout-ignore on text that is texture rather than reading; see references/look.md.",
+        "text": "Domina",
+        "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(3) > b:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 351.27,
+          "y": 1210.76,
+          "width": 66.15,
+          "height": 23.71
+        },
+        "time": 12.5,
+        "times": [
+          12.5,
+          12.5,
+          12.5,
+          12.5,
+          12.5,
+          12.5,
+          12.5,
+          12.5,
+          12.5,
+          12.5,
+          12.5,
+          12.5,
+          12.5,
+          12.5,
+          12.5,
+          12.5,
+          12.5,
+          12.5,
+          15,
+          15.125,
+          15.125
+        ],
+        "fontPx": 18.05,
+        "floorPx": 28,
+        "seconds": 2.125,
+        "elements": [
+          {
+            "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(3) > b:nth-of-type(1)",
+            "text": "Domina",
+            "fontPx": 18.05,
+            "time": 12.5,
+            "seconds": 2.125
+          },
+          {
+            "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(4) > b:nth-of-type(1)",
+            "text": "Busca",
+            "fontPx": 18.05,
+            "time": 12.5,
+            "seconds": 2.125
+          },
+          {
+            "selector": "#sw-c1 > div:nth-of-type(2) > div:nth-of-type(3) > b:nth-of-type(1)",
+            "text": "Domina",
+            "fontPx": 19,
+            "time": 12.5,
+            "seconds": 1
+          },
+          {
+            "selector": "#sw-c1 > div:nth-of-type(2) > div:nth-of-type(4) > b:nth-of-type(1)",
+            "text": "Busca",
+            "fontPx": 19,
+            "time": 12.5,
+            "seconds": 1
+          },
+          {
+            "selector": "#sw-c2 > div:nth-of-type(2) > span:nth-of-type(1)",
+            "text": "✓ Encajas",
+            "fontPx": 19.95,
+            "time": 12.5,
+            "seconds": 2.125
+          },
+          {
+            "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(3) > span:nth-of-type(1) > span:nth-of-type(1)",
+            "text": "Desarrollo",
+            "fontPx": 19.95,
+            "time": 12.5,
+            "seconds": 2.125
+          },
+          {
+            "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(3) > span:nth-of-type(1) > span:nth-of-type(2)",
+            "text": "Producto",
+            "fontPx": 19.95,
+            "time": 12.5,
+            "seconds": 2
+          },
+          {
+            "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(4) > span:nth-of-type(1) > span:nth-of-type(1)",
+            "text": "✓ Ventas",
+            "fontPx": 19.95,
+            "time": 12.5,
+            "seconds": 2.125
+          },
+          {
+            "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(4) > span:nth-of-type(1) > span:nth-of-type(2)",
+            "text": "✓ Marketing",
+            "fontPx": 19.95,
+            "time": 12.5,
+            "seconds": 2
+          },
+          {
+            "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(2)",
+            "text": "Barcelona",
+            "fontPx": 20.9,
+            "time": 12.5,
+            "seconds": 2.125
+          },
+          {
+            "selector": "#sw-c1 > div:nth-of-type(2) > div:nth-of-type(3) > span:nth-of-type(1) > span:nth-of-type(1)",
+            "text": "Diseño",
+            "fontPx": 21,
+            "time": 12.5,
+            "seconds": 1.125
+          },
+          {
+            "selector": "#sw-c1 > div:nth-of-type(2) > div:nth-of-type(4) > span:nth-of-type(1) > span:nth-of-type(1)",
+            "text": "Diseño",
+            "fontPx": 21,
+            "time": 12.5,
+            "seconds": 1.125
+          },
+          {
+            "selector": "#sw-c1 > div:nth-of-type(2) > div:nth-of-type(4) > span:nth-of-type(1) > span:nth-of-type(2)",
+            "text": "Marketing",
+            "fontPx": 21,
+            "time": 12.5,
+            "seconds": 1.25
+          },
+          {
+            "selector": "#sw-c1 > div:nth-of-type(2) > div:nth-of-type(2)",
+            "text": "Bogotá",
+            "fontPx": 22,
+            "time": 12.5,
+            "seconds": 1
+          },
+          {
+            "selector": "span.on",
+            "text": "Cofundador",
+            "fontPx": 23,
+            "time": 12.5,
+            "seconds": 3.5
+          },
+          {
+            "selector": "div.tabs > span:nth-of-type(2)",
+            "text": "Grupos",
+            "fontPx": 23,
+            "time": 12.5,
+            "seconds": 3.5
+          },
+          {
+            "selector": "div.filters",
+            "text": "Filtros",
+            "fontPx": 23,
+            "time": 12.5,
+            "seconds": 3.5
+          },
+          {
+            "selector": "#sw-screen > div:nth-of-type(2)",
+            "text": "2:51",
+            "fontPx": 24,
+            "time": 12.5,
+            "seconds": 3.5
+          },
+          {
+            "selector": "#sw-mtext",
+            "text": "Núria ya te había dado like. Ahora os toca hablar.",
+            "fontPx": 26,
+            "time": 15,
+            "seconds": 1
+          },
+          {
+            "selector": "div.btn.primary",
+            "text": "Abrir chat",
+            "fontPx": 27,
+            "time": 15.125,
+            "seconds": 0.5
+          },
+          {
+            "selector": "#sw-mbtns > div:nth-of-type(2)",
+            "text": "Seguir descubriendo",
+            "fontPx": 27,
+            "time": 15.125,
+            "seconds": 0.5
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"DiseñoMarketing\" (1 word) is on screen 0.30 s (±0.01 s), under its 0.40 s floor: hold it about 0.5 s + 0.3 s a word (0.80 s here) before it leaves or changes; see references/motion.md.",
+        "text": "DiseñoMarketing",
+        "selector": "#sw-c1 > div:nth-of-type(2) > div:nth-of-type(4) > span:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 401.52,
+          "y": 1054.15,
+          "width": 213.55000000000007,
+          "height": 30.25
+        },
+        "time": 13.367,
+        "words": 1,
+        "seconds": 0.305,
+        "floorSeconds": 0.4,
+        "measured": [
+          {
+            "time": 13,
+            "opacity": 1,
+            "heightPx": 25
+          },
+          {
+            "time": 13.125,
+            "opacity": 1,
+            "heightPx": 25
+          },
+          {
+            "time": 13.25,
+            "opacity": 1,
+            "heightPx": 25
+          },
+          {
+            "time": 13.375,
+            "opacity": 1,
+            "heightPx": 30
+          },
+          {
+            "time": 13.5,
+            "opacity": 1,
+            "heightPx": 46
+          },
+          {
+            "time": 13.625,
+            "opacity": 1,
+            "heightPx": 41
+          },
+          {
+            "time": 13.75,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 13.875,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 14,
+            "opacity": null,
+            "heightPx": null
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"Diseño\" (1 word) is on screen 0.07 s (±0.01 s), under its 0.40 s floor: hold it about 0.5 s + 0.3 s a word (0.80 s here) before it leaves or changes; see references/motion.md.",
+        "text": "Diseño",
+        "selector": "#sw-c1 > div:nth-of-type(2) > div:nth-of-type(3) > span:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 284,
+          "y": 1006.49,
+          "width": 46.889999999999986,
+          "height": 31.690000000000055
+        },
+        "time": 13.469,
+        "words": 1,
+        "seconds": 0.07,
+        "floorSeconds": 0.4,
+        "measured": [
+          {
+            "time": 13.125,
+            "opacity": 1,
+            "heightPx": 25
+          },
+          {
+            "time": 13.25,
+            "opacity": 1,
+            "heightPx": 25
+          },
+          {
+            "time": 13.375,
+            "opacity": 1,
+            "heightPx": 27
+          },
+          {
+            "time": 13.5,
+            "opacity": 1,
+            "heightPx": 32
+          },
+          {
+            "time": 13.625,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 13.75,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 13.875,
+            "opacity": null,
+            "heightPx": null
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"DesarrolloProducto\" (1 word) is on screen 0.27 s (±0.01 s), under its 0.40 s floor: hold it about 0.5 s + 0.3 s a word (0.80 s here) before it leaves or changes; see references/motion.md.",
+        "text": "DesarrolloProducto",
+        "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(3) > span:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 602.44,
+          "y": 1055.42,
+          "width": 193.55999999999995,
+          "height": 45.32999999999993
+        },
+        "time": 14.273,
+        "words": 1,
+        "seconds": 0.266,
+        "floorSeconds": 0.4,
+        "measured": [
+          {
+            "time": 14,
+            "opacity": 1,
+            "heightPx": 25
+          },
+          {
+            "time": 14.125,
+            "opacity": 1,
+            "heightPx": 25
+          },
+          {
+            "time": 14.25,
+            "opacity": 1,
+            "heightPx": 29
+          },
+          {
+            "time": 14.375,
+            "opacity": 1,
+            "heightPx": 45
+          },
+          {
+            "time": 14.5,
+            "opacity": 1,
+            "heightPx": 42
+          },
+          {
+            "time": 14.625,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 14.75,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 14.875,
+            "opacity": null,
+            "heightPx": null
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"✓ Ventas✓ Marketing\" (2 words) is on screen 0.27 s (±0.01 s), under its 0.40 s floor: hold it about 0.5 s + 0.3 s a word (1.10 s here) before it leaves or changes; see references/motion.md.",
+        "text": "✓ Ventas✓ Marketing",
+        "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(4) > span:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 597.4,
+          "y": 1114.21,
+          "width": 198.60000000000002,
+          "height": 46.51999999999998
+        },
+        "time": 14.273,
+        "words": 2,
+        "seconds": 0.266,
+        "floorSeconds": 0.4,
+        "measured": [
+          {
+            "time": 14,
+            "opacity": 1,
+            "heightPx": 25
+          },
+          {
+            "time": 14.125,
+            "opacity": 1,
+            "heightPx": 25
+          },
+          {
+            "time": 14.25,
+            "opacity": 1,
+            "heightPx": 29
+          },
+          {
+            "time": 14.375,
+            "opacity": 1,
+            "heightPx": 47
+          },
+          {
+            "time": 14.5,
+            "opacity": 1,
+            "heightPx": 40
+          },
+          {
+            "time": 14.625,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 14.75,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 14.875,
+            "opacity": null,
+            "heightPx": null
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"Barcelona\" (1 word) is on screen 0.27 s (±0.01 s), under its 0.40 s floor: hold it about 0.5 s + 0.3 s a word (0.80 s here) before it leaves or changes; see references/motion.md.",
+        "text": "Barcelona",
+        "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(2)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 496.52,
+          "y": 930.93,
+          "width": 102.94000000000005,
+          "height": 35.52999999999997
+        },
+        "time": 14.305,
+        "words": 1,
+        "seconds": 0.266,
+        "floorSeconds": 0.4,
+        "measured": [
+          {
+            "time": 14,
+            "opacity": 1,
+            "heightPx": 27
+          },
+          {
+            "time": 14.125,
+            "opacity": 1,
+            "heightPx": 27
+          },
+          {
+            "time": 14.25,
+            "opacity": 1,
+            "heightPx": 29
+          },
+          {
+            "time": 14.375,
+            "opacity": 1,
+            "heightPx": 36
+          },
+          {
+            "time": 14.5,
+            "opacity": 1,
+            "heightPx": 44
+          },
+          {
+            "time": 14.625,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 14.75,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 14.875,
+            "opacity": null,
+            "heightPx": null
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"Núria Bosch 28 Barcelona ✓ Encajas Domina DesarrolloProdu...\" (10 words) is on screen 0.23 s (±0.01 s), under its 2.63 s floor: hold it about 0.5 s + 0.3 s a word (3.50 s here) before it leaves or changes; see references/motion.md.",
+        "text": "Núria Bosch 28 Barcelona ✓ Encajas Domina DesarrolloProducto Busca ✓ Ventas✓ Marketing",
+        "selector": "#sw-c2 > div:nth-of-type(2)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 509.58,
+          "y": 991.25,
+          "width": 98.78000000000003,
+          "height": 33.200000000000045
+        },
+        "time": 14.336,
+        "words": 10,
+        "seconds": 0.234,
+        "floorSeconds": 2.625,
+        "measured": [
+          {
+            "time": 14,
+            "opacity": 1,
+            "heightPx": 25
+          },
+          {
+            "time": 14.125,
+            "opacity": 1,
+            "heightPx": 25
+          },
+          {
+            "time": 14.25,
+            "opacity": 1,
+            "heightPx": 27
+          },
+          {
+            "time": 14.375,
+            "opacity": 1,
+            "heightPx": 33
+          },
+          {
+            "time": 14.5,
+            "opacity": 1,
+            "heightPx": 41
+          },
+          {
+            "time": 14.625,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 14.75,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 14.875,
+            "opacity": null,
+            "heightPx": null
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"Domina\" (1 word) is on screen 0.20 s (±0.01 s), under its 0.40 s floor: hold it about 0.5 s + 0.3 s a word (0.80 s here) before it leaves or changes; see references/motion.md.",
+        "text": "Domina",
+        "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(3) > b:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 656.66,
+          "y": 1033.82,
+          "width": 71.90999999999997,
+          "height": 34.430000000000064
+        },
+        "time": 14.406,
+        "words": 1,
+        "seconds": 0.195,
+        "floorSeconds": 0.4,
+        "measured": [
+          {
+            "time": 14.125,
+            "opacity": 1,
+            "heightPx": 23
+          },
+          {
+            "time": 14.25,
+            "opacity": 1,
+            "heightPx": 24
+          },
+          {
+            "time": 14.375,
+            "opacity": 1,
+            "heightPx": 29
+          },
+          {
+            "time": 14.5,
+            "opacity": 1,
+            "heightPx": 34
+          },
+          {
+            "time": 14.625,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 14.75,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 14.875,
+            "opacity": null,
+            "heightPx": null
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"Busca\" (1 word) is on screen 0.16 s (±0.01 s), under its 0.40 s floor: hold it about 0.5 s + 0.3 s a word (0.80 s here) before it leaves or changes; see references/motion.md.",
+        "text": "Busca",
+        "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(4) > b:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 646.61,
+          "y": 1091.96,
+          "width": 55.14999999999998,
+          "height": 31.529999999999973
+        },
+        "time": 14.438,
+        "words": 1,
+        "seconds": 0.164,
+        "floorSeconds": 0.4,
+        "measured": [
+          {
+            "time": 14.125,
+            "opacity": 1,
+            "heightPx": 23
+          },
+          {
+            "time": 14.25,
+            "opacity": 1,
+            "heightPx": 24
+          },
+          {
+            "time": 14.375,
+            "opacity": 1,
+            "heightPx": 27
+          },
+          {
+            "time": 14.5,
+            "opacity": 1,
+            "heightPx": 32
+          },
+          {
+            "time": 14.625,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 14.75,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 14.875,
+            "opacity": null,
+            "heightPx": null
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"Núria ya te había dado like. Ahora os toca hablar.\" (10 words) is on screen 1.06 s (±0.01 s), under its 2.63 s floor: hold it about 0.5 s + 0.3 s a word (3.50 s here) before it leaves or changes; see references/motion.md.",
+        "text": "Núria ya te había dado like. Ahora os toca hablar.",
+        "selector": "#sw-mtext",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 343,
+          "y": 808.07,
+          "width": 394,
+          "height": 66.10000000000002
+        },
+        "time": 14.938,
+        "words": 10,
+        "seconds": 1.063,
+        "floorSeconds": 2.625,
+        "measured": [
+          {
+            "time": 14.625,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 14.75,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 14.875,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 15,
+            "opacity": 0.87,
+            "heightPx": 66
+          },
+          {
+            "time": 15.125,
+            "opacity": 0.99,
+            "heightPx": 66
+          },
+          {
+            "time": 15.25,
+            "opacity": 1,
+            "heightPx": 66
+          },
+          {
+            "time": 15.375,
+            "opacity": 1,
+            "heightPx": 67
+          },
+          {
+            "time": 15.5,
+            "opacity": 1,
+            "heightPx": 67
+          },
+          {
+            "time": 15.625,
+            "opacity": 1,
+            "heightPx": 68
+          },
+          {
+            "time": 15.75,
+            "opacity": 1,
+            "heightPx": 68
+          },
+          {
+            "time": 15.875,
+            "opacity": 1,
+            "heightPx": 68
+          },
+          {
+            "time": 16,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 16.125,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 16.25,
+            "opacity": null,
+            "heightPx": null
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "The film's last line \"Encuentra con quién fundar\" (4 words) is on screen 1.90 s (±0.01 s), under the 2.00 s a closing line needs: hold it about 0.5 s + 0.3 s a word and at least 2 s before the film ends; see references/motion.md.",
+        "text": "Encuentra con quién fundar",
+        "selector": "#end-tag",
+        "dataAttributes": {},
+        "sourceFile": "compositions/endcard.html",
+        "bbox": {
+          "x": 246,
+          "y": 913.78,
+          "width": 588,
+          "height": 57
+        },
+        "time": 16.602,
+        "words": 4,
+        "seconds": 1.902,
+        "floorSeconds": 2,
+        "measured": [
+          {
+            "time": 16.25,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 16.375,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 16.5,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 16.625,
+            "opacity": 0.63,
+            "heightPx": 57
+          },
+          {
+            "time": 16.75,
+            "opacity": 0.95,
+            "heightPx": 57
+          },
+          {
+            "time": 16.875,
+            "opacity": 1,
+            "heightPx": 57
+          },
+          {
+            "time": 17,
+            "opacity": 1,
+            "heightPx": 57
+          },
+          {
+            "time": 18,
+            "opacity": 1,
+            "heightPx": 57
+          },
+          {
+            "time": 18.125,
+            "opacity": 1,
+            "heightPx": 57
+          },
+          {
+            "time": 18.25,
+            "opacity": 1,
+            "heightPx": 57
+          },
+          {
+            "time": 18.375,
+            "opacity": 1,
+            "heightPx": 57
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "The film's last line \"getcofounder.app\" (2 words) is on screen 1.67 s (±0.01 s), under the 2.00 s a closing line needs: hold it about 0.5 s + 0.3 s a word and at least 2 s before the film ends; see references/motion.md.",
+        "text": "getcofounder.app",
+        "selector": "#end-url",
+        "dataAttributes": {},
+        "sourceFile": "compositions/endcard.html",
+        "bbox": {
+          "x": 387.23,
+          "y": 1110,
+          "width": 305.53999999999996,
+          "height": 44
+        },
+        "time": 16.836,
+        "words": 2,
+        "seconds": 1.668,
+        "floorSeconds": 2,
+        "measured": [
+          {
+            "time": 16.5,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 16.625,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 16.75,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 16.875,
+            "opacity": 0.64,
+            "heightPx": 44
+          },
+          {
+            "time": 17,
+            "opacity": 0.95,
+            "heightPx": 44
+          },
+          {
+            "time": 17.125,
+            "opacity": 1,
+            "heightPx": 44
+          },
+          {
+            "time": 17.25,
+            "opacity": 1,
+            "heightPx": 44
+          },
+          {
+            "time": 18,
+            "opacity": 1,
+            "heightPx": 44
+          },
+          {
+            "time": 18.125,
+            "opacity": 1,
+            "heightPx": 44
+          },
+          {
+            "time": 18.25,
+            "opacity": 1,
+            "heightPx": 44
+          },
+          {
+            "time": 18.375,
+            "opacity": 1,
+            "heightPx": 44
+          }
+        ]
+      }
+    ],
+    "enabled": true,
+    "step": 0.125,
+    "samples": 148
+  },
+  "audio": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 1,
+    "findings": [
+      {
+        "code": "audio_none",
+        "severity": "info",
+        "message": "The film has no sound: no clip in it plays audio.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0
+      }
+    ]
+  },
+  "hdr": {
+    "autoPromotion": null,
+    "inspection": "available"
+  },
+  "snapshots": {
+    "enabled": false,
+    "files": [],
+    "times": [],
+    "findingFiles": []
+  }
+}

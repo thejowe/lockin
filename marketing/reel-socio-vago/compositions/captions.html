@@ -1,0 +1,87 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "Instrument Serif";
+      src: url("assets/fonts/InstrumentSerif_400Regular.ttf");
+      font-weight: 400;
+    }
+    @font-face {
+      font-family: "Instrument Serif";
+      src: url("assets/fonts/InstrumentSerif_400Regular_Italic.ttf");
+      font-style: italic;
+      font-weight: 400;
+    }
+    #root {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    #cap-scrim {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 860px;
+      height: 620px;
+      background: linear-gradient(180deg, rgba(12, 7, 14, 0) 0%, rgba(12, 7, 14, 0.5) 45%, rgba(12, 7, 14, 0.5) 70%, rgba(12, 7, 14, 0) 100%);
+    }
+    .cap {
+      position: absolute;
+      left: 140px;
+      width: 760px;
+      top: 1060px;
+      text-align: center;
+      font-family: "Instrument Serif", serif;
+      font-size: 86px;
+      line-height: 1.02;
+      letter-spacing: -0.01em;
+      color: #f5f5f7;
+      text-shadow:
+        0 4px 18px rgba(10, 6, 12, 0.75),
+        0 1px 3px rgba(10, 6, 12, 0.9);
+    }
+    .cap em {
+      font-style: italic;
+      color: #ffd9b8;
+    }
+    .cap .line {
+      display: block;
+    }
+  </style>
+  <div id="root" data-composition-id="captions" data-width="1080" data-height="1920">
+    <div id="cap-scrim" class="clip" data-start="0" data-duration="13" data-layout-ignore></div>
+    <div id="cap-1" class="cap clip" data-start="0" data-duration="3.4">
+      <span id="cap-1-a" class="line">Tú, a las 2</span>
+      <span id="cap-1-b" class="line">de la mañana.</span>
+    </div>
+    <div id="cap-2" class="cap clip" data-start="4.75" data-duration="1.85">
+      <span id="cap-2-a" class="line">Tu cofundador,</span>
+      <span id="cap-2-b" class="line"><em>mientras tanto.</em></span>
+    </div>
+    <div id="cap-3" class="cap clip" data-start="11.35" data-duration="1.65">
+      <span id="cap-3-a" class="line">Cuando tu cofundador</span>
+      <span id="cap-3-b" class="line"><em>no cofunda…</em></span>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    // velo oscuro solo mientras hay texto sobre la escena 3D
+    tl.fromTo("#cap-scrim", { opacity: 1 }, { opacity: 0, duration: 0.3, ease: "power1.inOut" }, 3.2);
+    tl.to("#cap-scrim", { opacity: 1, duration: 0.3, ease: "power1.inOut" }, 4.6);
+    tl.to("#cap-scrim", { opacity: 0, duration: 0.25, ease: "power1.inOut" }, 6.4);
+    tl.to("#cap-scrim", { opacity: 1, duration: 0.3, ease: "power1.inOut" }, 11.2);
+    tl.to("#cap-scrim", { opacity: 0, duration: 0.2, ease: "power1.inOut" }, 12.78);
+    // Frame 0 ya muestra el texto (gancho): solo un asentado mínimo.
+    tl.fromTo("#cap-1-a", { y: 10, opacity: 1 }, { y: 0, duration: 0.5, ease: "power3.out" }, 0);
+    tl.fromTo("#cap-1-b", { y: 10, opacity: 1 }, { y: 0, duration: 0.5, ease: "power3.out" }, 0.04);
+    tl.to("#cap-1-a, #cap-1-b", { opacity: 0, y: -8, duration: 0.2, ease: "power2.in" }, 3.12);
+
+    tl.fromTo("#cap-2-a", { y: 26, opacity: 0 }, { y: 0, opacity: 1, duration: 0.38, ease: "power3.out" }, 4.75);
+    tl.fromTo("#cap-2-b", { y: 26, opacity: 0 }, { y: 0, opacity: 1, duration: 0.38, ease: "power3.out" }, 5.05);
+    tl.to("#cap-2-a, #cap-2-b", { opacity: 0, duration: 0.18, ease: "power2.in" }, 6.38);
+
+    tl.fromTo("#cap-3-a", { y: 26, opacity: 0 }, { y: 0, opacity: 1, duration: 0.38, ease: "power3.out" }, 11.35);
+    tl.fromTo("#cap-3-b", { y: 26, opacity: 0 }, { y: 0, opacity: 1, duration: 0.38, ease: "power3.out" }, 11.85);
+    tl.to("#cap-3-a, #cap-3-b", { opacity: 0, duration: 0.18, ease: "power2.in" }, 12.77);
+    window.__timelines["captions"] = tl;
+  </script>
+</template>

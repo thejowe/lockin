@@ -1,0 +1,78 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "Instrument Serif";
+      src: url("assets/fonts/InstrumentSerif_400Regular.ttf");
+    }
+    @font-face {
+      font-family: "Instrument Sans";
+      src: url("assets/fonts/InstrumentSans_400Regular.ttf");
+      font-weight: 400;
+    }
+    #root {
+      position: absolute;
+      inset: 0;
+      color: #f5f5f7;
+    }
+    #end-bg {
+      position: absolute;
+      inset: 0;
+      background: #000;
+    }
+    #end-logo {
+      position: absolute;
+      left: 390px;
+      top: 470px;
+      width: 300px;
+      height: 200px;
+    }
+    #end-word {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 720px;
+      text-align: center;
+      font-family: "Instrument Serif", serif;
+      font-size: 150px;
+      line-height: 1;
+      letter-spacing: -0.01em;
+    }
+    #end-tag {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 905px;
+      text-align: center;
+      font-family: "Instrument Sans", sans-serif;
+      font-size: 46px;
+      color: #bebec4;
+    }
+    #end-url {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 1110px;
+      text-align: center;
+      font-family: "Instrument Sans", sans-serif;
+      font-size: 36px;
+      color: #a8a8ae;
+      letter-spacing: 0.02em;
+    }
+  </style>
+  <div id="root" data-composition-id="endcard" data-width="1080" data-height="1920">
+    <div id="end-bg" class="clip" data-start="0" data-duration="2.8"></div>
+    <img id="end-logo" class="clip" data-start="0" data-duration="2.8" src="assets/cofounder-symbol.svg" alt="cofounder" />
+    <div id="end-word" class="clip" data-start="0" data-duration="2.8">cofounder</div>
+    <div id="end-tag" class="clip" data-start="0" data-duration="2.8">Find who to build with</div>
+    <div id="end-url" class="clip" data-start="0" data-duration="2.8">getcofounder.app</div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#end-bg", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power1.out" }, 0);
+    tl.fromTo("#end-logo", { scale: 0.82, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.55, ease: "back.out(1.6)" }, 0.12);
+    tl.fromTo("#end-word", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 0.32);
+    tl.fromTo("#end-tag", { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 0.5);
+    tl.fromTo("#end-url", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, 0.66);
+    window.__timelines["endcard"] = tl;
+  </script>
+</template>

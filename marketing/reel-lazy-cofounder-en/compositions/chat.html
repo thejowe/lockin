@@ -1,0 +1,359 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "Instrument Serif";
+      src: url("assets/fonts/InstrumentSerif_400Regular.ttf");
+    }
+    @font-face {
+      font-family: "Instrument Sans";
+      src: url("assets/fonts/InstrumentSans_400Regular.ttf");
+      font-weight: 400;
+    }
+    @font-face {
+      font-family: "Instrument Sans";
+      src: url("assets/fonts/InstrumentSans_600SemiBold.ttf");
+      font-weight: 600;
+    }
+    #root {
+      position: absolute;
+      inset: 0;
+      font-family: "Instrument Sans", sans-serif;
+      color: #f5f5f7;
+    }
+    #chat-dim {
+      position: absolute;
+      inset: 0;
+      background: rgba(8, 5, 10, 0.86);
+    }
+    #chat-phone {
+      position: absolute;
+      left: 270px;
+      top: 200px;
+      width: 540px;
+      height: 1120px;
+      border-radius: 76px;
+      background: #26262b;
+      box-shadow:
+        0 40px 90px rgba(0, 0, 0, 0.6),
+        inset 0 0 0 3px #3a3a40;
+    }
+    #chat-screen {
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      right: 14px;
+      bottom: 14px;
+      border-radius: 64px;
+      background: #000;
+      overflow: hidden;
+    }
+    .island {
+      position: absolute;
+      left: 50%;
+      top: 18px;
+      width: 132px;
+      height: 38px;
+      margin-left: -66px;
+      border-radius: 20px;
+      background: #000;
+      box-shadow: 0 0 0 2px #111;
+      z-index: 9;
+    }
+    .status {
+      position: absolute;
+      left: 46px;
+      top: 22px;
+      font-weight: 600;
+      font-size: 24px;
+    }
+    .status-r {
+      position: absolute;
+      right: 40px;
+      top: 26px;
+      width: 52px;
+      height: 22px;
+      border-radius: 7px;
+      border: 2px solid #f5f5f7;
+    }
+    .status-r::after {
+      content: "";
+      position: absolute;
+      left: 3px;
+      top: 3px;
+      width: 24px;
+      height: 12px;
+      border-radius: 3px;
+      background: #f5f5f7;
+    }
+    .head {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 78px;
+      height: 104px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .back {
+      position: absolute;
+      left: 26px;
+      top: 26px;
+      font-size: 44px;
+      line-height: 1;
+      color: #bebec4;
+    }
+    .avatar {
+      position: absolute;
+      left: 70px;
+      top: 18px;
+      width: 66px;
+      height: 66px;
+      border-radius: 50%;
+      background: #7a6a5c;
+      font-weight: 600;
+      font-size: 25px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .who {
+      position: absolute;
+      left: 152px;
+      top: 18px;
+      font-weight: 600;
+      font-size: 30px;
+    }
+    .who-sub {
+      position: absolute;
+      left: 152px;
+      top: 56px;
+      font-size: 20px;
+      color: #a8a8ae;
+    }
+    #chat-dots {
+      position: absolute;
+      right: 26px;
+      top: 26px;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+    #chat-dots i {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #f5f5f7;
+    }
+    #chat-msgs {
+      position: absolute;
+      left: 26px;
+      right: 26px;
+      top: 214px;
+    }
+    .day {
+      text-align: center;
+      font-size: 19px;
+      color: #a8a8ae;
+      margin-bottom: 18px;
+    }
+    .b {
+      max-width: 360px;
+      padding: 16px 22px;
+      border-radius: 28px;
+      font-size: 30px;
+      line-height: 1.22;
+      margin-bottom: 14px;
+    }
+    .me {
+      margin-left: auto;
+      background: #f5f5f7;
+      color: #1a0a02;
+      border-bottom-right-radius: 10px;
+    }
+    .them {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-bottom-left-radius: 10px;
+    }
+    .composer {
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      bottom: 36px;
+      height: 74px;
+      border-radius: 37px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      font-size: 24px;
+      color: #a8a8ae;
+      padding: 22px 30px;
+    }
+    #chat-panel {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 470px;
+      background: #18181b;
+      border-top: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 40px 40px 0 0;
+      padding: 34px 30px 0;
+      z-index: 6;
+    }
+    .grab {
+      width: 70px;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.3);
+      margin: -16px auto 26px;
+    }
+    .p-title {
+      font-family: "Instrument Serif", serif;
+      font-size: 46px;
+      line-height: 1.05;
+      margin-bottom: 26px;
+    }
+    .btn {
+      height: 76px;
+      border-radius: 38px;
+      font-weight: 600;
+      font-size: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+    .btn.danger {
+      background: #ff9a80;
+      color: #1a0a02;
+      border: none;
+    }
+    .btn.ghost {
+      background: transparent;
+      border: none;
+      color: #bebec4;
+    }
+    .p-body {
+      font-size: 22px;
+      line-height: 1.35;
+      color: #bebec4;
+      margin-bottom: 24px;
+    }
+    #chat-stage-a,
+    #chat-stage-b {
+      position: absolute;
+      left: 30px;
+      right: 30px;
+      top: 50px;
+    }
+    .touch {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 84px;
+      height: 84px;
+      margin: -42px 0 0 -42px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.42);
+      border: 2px solid rgba(255, 255, 255, 0.7);
+      z-index: 10;
+    }
+    #chat-gone {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 470px;
+      text-align: center;
+      font-size: 24px;
+      color: #a8a8ae;
+    }
+  </style>
+  <div id="root" data-composition-id="chat" data-width="1080" data-height="1920">
+    <div id="chat-dim" class="clip" data-start="0" data-duration="4"></div>
+    <div id="chat-phone" class="clip" data-start="0" data-duration="4">
+      <div id="chat-screen">
+        <div class="island"></div>
+        <div class="status" data-layout-ignore>2:47</div>
+        <div class="status-r" data-layout-ignore></div>
+        <div class="head">
+          <div class="back" data-layout-ignore>‹</div>
+          <div class="avatar">ÁR</div>
+          <div class="who">Álex Ruiz</div>
+          <div class="who-sub" data-layout-ignore>Cofounder match</div>
+          <div id="chat-dots"><i></i><i></i><i></i></div>
+        </div>
+        <div id="chat-msgs">
+          <div class="day" data-layout-ignore>3 weeks ago</div>
+          <div id="chat-m1" class="b me">Can you look at the demo today?</div>
+          <div id="chat-m2" class="b them">i’ll do it tomorrow</div>
+          <div class="day" data-layout-ignore>Today</div>
+          <div id="chat-m3" class="b me">The pitch is on Friday</div>
+          <div id="chat-m4" class="b them">lol chill</div>
+          <div id="chat-m5" class="b them">i’ll do it tomorrow</div>
+        </div>
+        <div id="chat-gone">Profile blocked.</div>
+        <div id="chat-composer" class="composer" data-layout-ignore>Message</div>
+        <div id="chat-panel" data-layout-allow-occlusion data-layout-allow-overlap>
+          <div class="grab"></div>
+          <div id="chat-stage-a" data-layout-allow-overlap>
+            <div class="p-title">Options for Álex</div>
+            <div id="chat-btn-block" class="btn">Block</div>
+            <div class="btn">Report</div>
+            <div class="btn ghost">Close</div>
+          </div>
+          <div id="chat-stage-b" data-layout-allow-overlap>
+            <div class="p-title">Block Álex?</div>
+            <div class="p-body" data-layout-ignore>
+              You'll stop seeing each other in Discover and Matches and won't be able to message each other. This person won't be notified.
+            </div>
+            <div id="chat-btn-confirm" class="btn danger">Block</div>
+            <div class="btn ghost">Cancel</div>
+          </div>
+        </div>
+        <div id="chat-touch" class="touch"></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    // pantalla: 512 x 1092; el panel ocupa los últimos 470 px (top 622)
+    tl.fromTo("#chat-dim", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 0);
+    tl.fromTo("#chat-phone", { y: 260, opacity: 0, rotation: 4 }, { y: 0, opacity: 1, rotation: 0, duration: 0.5, ease: "power3.out" }, 0);
+    tl.fromTo("#chat-m5", { y: 20, opacity: 0, scale: 0.92 }, { y: 0, opacity: 1, scale: 1, duration: 0.3, ease: "back.out(2)" }, 0.35);
+    tl.fromTo("#chat-stage-b", { opacity: 0, x: 40 }, { opacity: 0, x: 40, duration: 0.01 }, 0);
+    tl.fromTo("#chat-panel", { yPercent: 100 }, { yPercent: 100, duration: 0.01 }, 0);
+    tl.fromTo("#chat-gone", { opacity: 0 }, { opacity: 0, duration: 0.01 }, 0);
+
+    // dedo: se coloca con x/y (transform), nunca left/top animados
+    tl.fromTo("#chat-touch", { x: 455, y: 130, opacity: 0 }, { x: 455, y: 130, opacity: 0, duration: 0.01 }, 0);
+    const tap = (x, y, at) => {
+      tl.set("#chat-touch", { x, y }, at - 0.18);
+      tl.fromTo("#chat-touch", { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 0.85, duration: 0.16, ease: "power2.out" }, at - 0.16);
+      tl.to("#chat-touch", { opacity: 0, scale: 1.1, duration: 0.18, ease: "power1.in" }, at + 0.06);
+    };
+    tap(455, 130, 0.85);
+    tl.fromTo("#chat-dots", { scale: 1 }, { scale: 0.88, duration: 0.08, yoyo: true, repeat: 1 }, 0.81);
+    tl.to("#chat-panel", { yPercent: 0, duration: 0.34, ease: "power3.out" }, 0.92);
+
+    // «Options for Álex» se lee ~1.4 s; luego Bloquear
+    tap(256, 784, 2.35);
+    tl.to("#chat-stage-a", { opacity: 0, x: -40, duration: 0.2, ease: "power2.in" }, 2.45);
+    tl.to("#chat-stage-b", { opacity: 1, x: 0, duration: 0.26, ease: "power3.out" }, 2.57);
+
+    // «Block Álex?» se lee ~1 s y se confirma
+    tap(256, 896, 3.35);
+    tl.to("#chat-panel", { yPercent: 100, duration: 0.24, ease: "power2.in" }, 3.45);
+    tl.to("#chat-msgs, #chat-composer", { opacity: 0, y: -30, duration: 0.24, ease: "power2.in" }, 3.45);
+    tl.to("#chat-gone", { opacity: 1, duration: 0.2, ease: "power2.out" }, 3.6);
+
+    tl.to("#chat-phone", { y: 220, opacity: 0, duration: 0.24, ease: "power2.in" }, 3.74);
+    tl.to("#chat-dim", { opacity: 0, duration: 0.24, ease: "power1.in" }, 3.74);
+    window.__timelines["chat"] = tl;
+  </script>
+</template>

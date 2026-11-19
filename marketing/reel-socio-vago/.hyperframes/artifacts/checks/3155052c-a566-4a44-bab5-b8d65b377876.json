@@ -1,0 +1,1798 @@
+{
+  "ok": true,
+  "strict": false,
+  "browserSkipped": false,
+  "lint": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 4,
+    "infoCount": 0,
+    "findings": [
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<div id=\"grain\"> is a timeline element that contains nested <div id=\"grain-tex\">. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#grain",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\Usuari\\Downloads\\lockin\\marketing\\reel-socio-vago\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <div id=\"grain\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      },
+      {
+        "code": "gsap_repeated_fromto_without_baseline",
+        "severity": "warning",
+        "message": "4 tl.fromTo() calls target \"#chat-touch\" with no stable baseline. The last-authored fromTo \"from\" values become the element's resting state for any seek before the first tween actually runs, because GSAP applies fromTo from-values at authoring time (immediateRender), not at tween position.",
+        "selector": "#chat-touch",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\Usuari\\Downloads\\lockin\\marketing\\reel-socio-vago\\compositions\\chat.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Add `immediateRender: false` to every fromTo except the earliest-positioned one (at 0s), so pre-first-tween seeks keep its \"from\" values. A hiding `tl.set(..., 0)` baseline trips gsap_timeline_set_initial_hide, and a `gsap.set` authored before the fromTo calls is overwritten by them."
+      },
+      {
+        "code": "composition_file_too_large",
+        "severity": "warning",
+        "message": "This HTML composition file has 647 lines. Smaller sub-compositions are easier to read, iterate on, and diff.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\Usuari\\Downloads\\lockin\\marketing\\reel-socio-vago\\compositions\\room.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Split this sub-composition further into smaller .html files, then mount them from the parent with data-composition-src so each file stays small enough to inspect, revise, and validate independently."
+      },
+      {
+        "code": "gsap_repeated_fromto_without_baseline",
+        "severity": "warning",
+        "message": "4 tl.fromTo() calls target \"#sw-touch\" with no stable baseline. The last-authored fromTo \"from\" values become the element's resting state for any seek before the first tween actually runs, because GSAP applies fromTo from-values at authoring time (immediateRender), not at tween position.",
+        "selector": "#sw-touch",
+        "dataAttributes": {},
+        "sourceFile": "C:\\Users\\Usuari\\Downloads\\lockin\\marketing\\reel-socio-vago\\compositions\\swipe.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Add `immediateRender: false` to every fromTo except the earliest-positioned one (at 0s), so pre-first-tween seeks keep its \"from\" values. A hiding `tl.set(..., 0)` baseline trips gsap_timeline_set_initial_hide, and a `gsap.set` authored before the fromTo calls is overwritten by them."
+      }
+    ],
+    "filesScanned": 6
+  },
+  "runtime": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": []
+  },
+  "layout": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 17,
+    "infoCount": 15,
+    "findings": [
+      {
+        "code": "canvas_content_at_edge",
+        "severity": "warning",
+        "time": 1.167,
+        "selector": "#room-canvas",
+        "message": "Canvas content touches the frame edge (right, top).",
+        "rect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "containerSelector": "#root",
+        "fixHint": "Keep drawn text inside the visible part of the canvas, or mark intentional full-bleed art with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "dataAttributes": {
+          "data-engine": "three.js r184"
+        },
+        "sourceFile": "compositions/room.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 1920
+        },
+        "firstSeen": 1.167,
+        "lastSeen": 17.5,
+        "occurrences": 8,
+        "heldMs": 0,
+        "times": [
+          1.167,
+          3.5,
+          5.833,
+          8.167,
+          10.5,
+          12.833,
+          15.167,
+          17.5
+        ]
+      },
+      {
+        "selector": "#chat-stage-b > div:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/chat.html",
+        "bbox": {
+          "x": 314,
+          "y": 1416.19,
+          "width": 270,
+          "height": 60
+        },
+        "time": 10.5,
+        "rect": {
+          "left": 314,
+          "top": 1416.19,
+          "right": 584,
+          "bottom": 1476.19,
+          "width": 270,
+          "height": 60
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "¿Bloquear a Álex?",
+        "message": "<div> \"¿Bloquear a Álex?\" is outside the safe area: TikTok (bottom edge), Instagram Reels (bottom edge), YouTube Shorts (bottom edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 10.5,
+        "lastSeen": 10.5,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          10.5
+        ]
+      },
+      {
+        "selector": "#chat-btn-confirm",
+        "dataAttributes": {},
+        "sourceFile": "compositions/chat.html",
+        "bbox": {
+          "x": 476,
+          "y": 1629.04,
+          "width": 128,
+          "height": 37
+        },
+        "time": 10.5,
+        "rect": {
+          "left": 476,
+          "top": 1629.04,
+          "right": 604,
+          "bottom": 1666.04,
+          "width": 128,
+          "height": 37
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "Bloquear",
+        "message": "<div> \"Bloquear\" is outside the safe area: TikTok (bottom edge), Instagram Reels (bottom edge), YouTube Shorts (bottom edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 10.5,
+        "lastSeen": 10.5,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          10.5
+        ]
+      },
+      {
+        "selector": "#chat-stage-b > div:nth-of-type(4)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/chat.html",
+        "bbox": {
+          "x": 476.5,
+          "y": 1719.04,
+          "width": 127,
+          "height": 37
+        },
+        "time": 10.5,
+        "rect": {
+          "left": 476.5,
+          "top": 1719.04,
+          "right": 603.5,
+          "bottom": 1756.04,
+          "width": 127,
+          "height": 37
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "Cancelar",
+        "message": "<div> \"Cancelar\" is outside the safe area: TikTok (bottom edge), Instagram Reels (bottom edge), YouTube Shorts (bottom edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 10.5,
+        "lastSeen": 10.5,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          10.5
+        ]
+      },
+      {
+        "selector": "#captions",
+        "dataAttributes": {
+          "data-composition-file": "compositions/captions.html",
+          "data-composition-id": "captions",
+          "data-start": "0",
+          "data-track-index": "1",
+          "data-track-kind": "captions",
+          "data-width": "1080",
+          "data-height": "1920",
+          "data-hf-authored-duration": "13"
+        },
+        "sourceFile": "compositions/captions.html",
+        "bbox": {
+          "x": 200.59,
+          "y": 1047,
+          "width": 638.82,
+          "height": 199.72
+        },
+        "time": 12.833,
+        "rect": {
+          "left": 200.59,
+          "top": 1047,
+          "right": 839.41,
+          "bottom": 1246.72,
+          "width": 638.82,
+          "height": 199.72
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "Cuando tu cofundador no cofunda…",
+        "message": "<div> \"Cuando tu cofundador no cofunda…\" is outside the safe area: TikTok (right edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 12.833,
+        "lastSeen": 12.833,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          12.833
+        ]
+      },
+      {
+        "selector": "#sw-cm > div:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": -525.58,
+          "y": 494.84,
+          "width": 386.56,
+          "height": 404.15
+        },
+        "time": 15.167,
+        "rect": {
+          "left": -525.58,
+          "top": 494.84,
+          "right": -139.02,
+          "bottom": 898.99,
+          "width": 386.56,
+          "height": 404.15
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "MO",
+        "message": "<div> \"MO\" is outside the safe area: TikTok (left edge), Instagram Reels (left edge), YouTube Shorts (left edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 15.167,
+        "lastSeen": 17.5,
+        "occurrences": 2,
+        "heldMs": 0,
+        "times": [
+          15.167,
+          17.5
+        ]
+      },
+      {
+        "selector": "#sw-cm > div:nth-of-type(2) > div:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": -461.3,
+          "y": 878.57,
+          "width": 290.23,
+          "height": 160.88
+        },
+        "time": 15.167,
+        "rect": {
+          "left": -461.3,
+          "top": 878.57,
+          "right": -171.07,
+          "bottom": 1039.45,
+          "width": 290.23,
+          "height": 160.88
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "Marta Ortiz 26",
+        "message": "<div> \"Marta Ortiz 26\" is outside the safe area: TikTok (left edge), Instagram Reels (left edge), YouTube Shorts (left edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 15.167,
+        "lastSeen": 17.5,
+        "occurrences": 2,
+        "heldMs": 0,
+        "times": [
+          15.167,
+          17.5
+        ]
+      },
+      {
+        "selector": "#sw-pass2",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": -317.75,
+          "y": 445.43,
+          "width": 109.29,
+          "height": 72.14
+        },
+        "time": 15.167,
+        "rect": {
+          "left": -317.75,
+          "top": 445.43,
+          "right": -208.46,
+          "bottom": 517.57,
+          "width": 109.29,
+          "height": 72.14
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "PASO",
+        "message": "<div> \"PASO\" is outside the safe area: TikTok (left edge), Instagram Reels (left edge), YouTube Shorts (left edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 15.167,
+        "lastSeen": 17.5,
+        "occurrences": 2,
+        "heldMs": 0,
+        "times": [
+          15.167,
+          17.5
+        ]
+      },
+      {
+        "selector": "#sw-c1 > div:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": -682.2,
+          "y": 517.65,
+          "width": 340.01,
+          "height": 390.29
+        },
+        "time": 15.167,
+        "rect": {
+          "left": -682.2,
+          "top": 517.65,
+          "right": -342.19,
+          "bottom": 907.94,
+          "width": 340.01,
+          "height": 390.29
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "DS",
+        "message": "<div> \"DS\" is outside the safe area: TikTok (left edge), Instagram Reels (left edge), YouTube Shorts (left edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 15.167,
+        "lastSeen": 17.5,
+        "occurrences": 2,
+        "heldMs": 0,
+        "times": [
+          15.167,
+          17.5
+        ]
+      },
+      {
+        "selector": "#sw-c1 > div:nth-of-type(2) > div:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": -625.06,
+          "y": 890.59,
+          "width": 277.51,
+          "height": 170.31
+        },
+        "time": 15.167,
+        "rect": {
+          "left": -625.06,
+          "top": 890.59,
+          "right": -347.55,
+          "bottom": 1060.9,
+          "width": 277.51,
+          "height": 170.31
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "Diego Salas 31",
+        "message": "<div> \"Diego Salas 31\" is outside the safe area: TikTok (left edge), Instagram Reels (left edge), YouTube Shorts (left edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 15.167,
+        "lastSeen": 17.5,
+        "occurrences": 2,
+        "heldMs": 0,
+        "times": [
+          15.167,
+          17.5
+        ]
+      },
+      {
+        "selector": "#sw-pass",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": -510.51,
+          "y": 455.28,
+          "width": 109.53,
+          "height": 76.84
+        },
+        "time": 15.167,
+        "rect": {
+          "left": -510.51,
+          "top": 455.28,
+          "right": -400.98,
+          "bottom": 532.12,
+          "width": 109.53,
+          "height": 76.84
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "PASO",
+        "message": "<div> \"PASO\" is outside the safe area: TikTok (left edge), Instagram Reels (left edge), YouTube Shorts (left edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 15.167,
+        "lastSeen": 17.5,
+        "occurrences": 2,
+        "heldMs": 0,
+        "times": [
+          15.167,
+          17.5
+        ]
+      },
+      {
+        "selector": "#sw-c2 > div:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 1431.42,
+          "y": 508.69,
+          "width": 366.16,
+          "height": 406.22
+        },
+        "time": 17.5,
+        "rect": {
+          "left": 1431.42,
+          "top": 508.69,
+          "right": 1797.58,
+          "bottom": 914.91,
+          "width": 366.16,
+          "height": 406.22
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "NB",
+        "message": "<div> \"NB\" is outside the safe area: TikTok (right edge), Instagram Reels (right edge), YouTube Shorts (right edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 17.5,
+        "lastSeen": 17.5,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          17.5
+        ]
+      },
+      {
+        "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 1305.29,
+          "y": 836.36,
+          "width": 308.01,
+          "height": 183.87
+        },
+        "time": 17.5,
+        "rect": {
+          "left": 1305.29,
+          "top": 836.36,
+          "right": 1613.3,
+          "bottom": 1020.23,
+          "width": 308.01,
+          "height": 183.87
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "Núria Bosch 28",
+        "message": "<div> \"Núria Bosch 28\" is outside the safe area: TikTok (right edge), Instagram Reels (right edge), YouTube Shorts (right edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 17.5,
+        "lastSeen": 17.5,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          17.5
+        ]
+      },
+      {
+        "selector": "#sw-c2 > div:nth-of-type(2)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 1290.2,
+          "y": 970.12,
+          "width": 101.4,
+          "height": 60.78
+        },
+        "time": 17.5,
+        "rect": {
+          "left": 1290.2,
+          "top": 970.12,
+          "right": 1391.6,
+          "bottom": 1030.9,
+          "width": 101.4,
+          "height": 60.78
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "✓ Encajas",
+        "message": "<div> \"✓ Encajas\" is outside the safe area: TikTok (right edge), Instagram Reels (right edge), YouTube Shorts (right edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 17.5,
+        "lastSeen": 17.5,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          17.5
+        ]
+      },
+      {
+        "selector": "#sw-like",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 1500.92,
+          "y": 448.82,
+          "width": 250.37,
+          "height": 134.43
+        },
+        "time": 17.5,
+        "rect": {
+          "left": 1500.92,
+          "top": 448.82,
+          "right": 1751.29,
+          "bottom": 583.25,
+          "width": 250.37,
+          "height": 134.43
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "ME INTERESA",
+        "message": "<div> \"ME INTERESA\" is outside the safe area: TikTok (right edge), Instagram Reels (right edge), YouTube Shorts (right edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 17.5,
+        "lastSeen": 17.5,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          17.5
+        ]
+      },
+      {
+        "selector": "#end-word",
+        "dataAttributes": {
+          "data-start": "0",
+          "data-duration": "2.8"
+        },
+        "sourceFile": "compositions/endcard.html",
+        "bbox": {
+          "x": 286.25,
+          "y": 697,
+          "width": 507.5,
+          "height": 196
+        },
+        "time": 19.833,
+        "rect": {
+          "left": 286.25,
+          "top": 697,
+          "right": 793.75,
+          "bottom": 893,
+          "width": 507.5,
+          "height": 196
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "cofounder",
+        "message": "<div> \"cofounder\" is outside the safe area: TikTok (right edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 19.833,
+        "lastSeen": 19.833,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          19.833
+        ]
+      },
+      {
+        "selector": "#end-tag",
+        "dataAttributes": {
+          "data-start": "0",
+          "data-duration": "2.8"
+        },
+        "sourceFile": "compositions/endcard.html",
+        "bbox": {
+          "x": 246,
+          "y": 905,
+          "width": 588,
+          "height": 57
+        },
+        "time": 19.833,
+        "rect": {
+          "left": 246,
+          "top": 905,
+          "right": 834,
+          "bottom": 962,
+          "width": 588,
+          "height": 57
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "Encuentra con quién fundar",
+        "message": "<div> \"Encuentra con quién fundar\" is outside the safe area: TikTok (right edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 19.833,
+        "lastSeen": 19.833,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          19.833
+        ]
+      },
+      {
+        "code": "container_overflow",
+        "severity": "info",
+        "time": 10.5,
+        "selector": "#chat-panel",
+        "message": "Element extends outside a clipping layout container.",
+        "rect": {
+          "left": 284,
+          "top": 1371.19,
+          "right": 796,
+          "bottom": 1841.19,
+          "width": 512,
+          "height": 470
+        },
+        "containerSelector": "#chat-screen",
+        "fixHint": "Resize/reposition the child or container, or mark intentional overflow with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 284,
+          "top": 279.19,
+          "right": 796,
+          "bottom": 1371.19,
+          "width": 512,
+          "height": 1092
+        },
+        "overflow": {
+          "bottom": 470
+        },
+        "dataAttributes": {
+          "data-layout-allow-occlusion": "",
+          "data-layout-allow-overlap": ""
+        },
+        "sourceFile": "compositions/chat.html",
+        "bbox": {
+          "x": 284,
+          "y": 1371.19,
+          "width": 512,
+          "height": 470
+        },
+        "firstSeen": 10.5,
+        "lastSeen": 10.5,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          10.5
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 15.167,
+        "selector": "#sw-cm > div:nth-of-type(1)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": -525.58,
+          "top": 494.84,
+          "right": -139.02,
+          "bottom": 898.99,
+          "width": 386.56,
+          "height": 404.15
+        },
+        "containerSelector": "#root",
+        "text": "MO",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "left": 525.58
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": -525.58,
+          "y": 494.84,
+          "width": 386.56,
+          "height": 404.15
+        },
+        "firstSeen": 15.167,
+        "lastSeen": 17.5,
+        "occurrences": 2,
+        "heldMs": 0,
+        "times": [
+          15.167,
+          17.5
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 15.167,
+        "selector": "#sw-cm > div:nth-of-type(2) > div:nth-of-type(1)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": -461.3,
+          "top": 878.57,
+          "right": -171.07,
+          "bottom": 1039.45,
+          "width": 290.23,
+          "height": 160.88
+        },
+        "containerSelector": "#root",
+        "text": "Marta Ortiz 26",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "left": 461.3
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": -461.3,
+          "y": 878.57,
+          "width": 290.23,
+          "height": 160.88
+        },
+        "firstSeen": 15.167,
+        "lastSeen": 17.5,
+        "occurrences": 2,
+        "heldMs": 0,
+        "times": [
+          15.167,
+          17.5
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 15.167,
+        "selector": "#sw-pass2",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": -317.75,
+          "top": 445.43,
+          "right": -208.46,
+          "bottom": 517.57,
+          "width": 109.29,
+          "height": 72.14
+        },
+        "containerSelector": "#root",
+        "text": "PASO",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "left": 317.75
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": -317.75,
+          "y": 445.43,
+          "width": 109.29,
+          "height": 72.14
+        },
+        "firstSeen": 15.167,
+        "lastSeen": 17.5,
+        "occurrences": 2,
+        "heldMs": 0,
+        "times": [
+          15.167,
+          17.5
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 15.167,
+        "selector": "#sw-c1 > div:nth-of-type(1)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": -682.2,
+          "top": 517.65,
+          "right": -342.19,
+          "bottom": 907.94,
+          "width": 340.01,
+          "height": 390.29
+        },
+        "containerSelector": "#root",
+        "text": "DS",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "left": 682.2
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": -682.2,
+          "y": 517.65,
+          "width": 340.01,
+          "height": 390.29
+        },
+        "firstSeen": 15.167,
+        "lastSeen": 17.5,
+        "occurrences": 2,
+        "heldMs": 0,
+        "times": [
+          15.167,
+          17.5
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 15.167,
+        "selector": "#sw-c1 > div:nth-of-type(2) > div:nth-of-type(1)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": -625.06,
+          "top": 890.59,
+          "right": -347.55,
+          "bottom": 1060.9,
+          "width": 277.51,
+          "height": 170.31
+        },
+        "containerSelector": "#root",
+        "text": "Diego Salas 31",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "left": 625.06
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": -625.06,
+          "y": 890.59,
+          "width": 277.51,
+          "height": 170.31
+        },
+        "firstSeen": 15.167,
+        "lastSeen": 17.5,
+        "occurrences": 2,
+        "heldMs": 0,
+        "times": [
+          15.167,
+          17.5
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 15.167,
+        "selector": "#sw-pass",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": -510.51,
+          "top": 455.28,
+          "right": -400.98,
+          "bottom": 532.12,
+          "width": 109.53,
+          "height": 76.84
+        },
+        "containerSelector": "#root",
+        "text": "PASO",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "left": 510.51
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": -510.51,
+          "y": 455.28,
+          "width": 109.53,
+          "height": 76.84
+        },
+        "firstSeen": 15.167,
+        "lastSeen": 17.5,
+        "occurrences": 2,
+        "heldMs": 0,
+        "times": [
+          15.167,
+          17.5
+        ]
+      },
+      {
+        "code": "container_overflow",
+        "severity": "info",
+        "time": 15.167,
+        "selector": "#sw-cm",
+        "message": "Element extends outside a clipping layout container.",
+        "rect": {
+          "left": -647.93,
+          "top": 358.68,
+          "right": 88.16,
+          "bottom": 1345.94,
+          "width": 736.08,
+          "height": 987.26
+        },
+        "containerSelector": "#sw-screen",
+        "fixHint": "Resize/reposition the child or container, or mark intentional overflow with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 284,
+          "top": 214,
+          "right": 796,
+          "bottom": 1306,
+          "width": 512,
+          "height": 1092
+        },
+        "overflow": {
+          "left": 931.93,
+          "bottom": 39.94
+        },
+        "dataAttributes": {
+          "data-layout-allow-overlap": "",
+          "data-layout-allow-occlusion": ""
+        },
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": -647.93,
+          "y": 358.68,
+          "width": 736.08,
+          "height": 987.26
+        },
+        "firstSeen": 15.167,
+        "lastSeen": 17.5,
+        "occurrences": 2,
+        "heldMs": 0,
+        "times": [
+          15.167,
+          17.5
+        ]
+      },
+      {
+        "code": "container_overflow",
+        "severity": "info",
+        "time": 15.167,
+        "selector": "#sw-c1",
+        "message": "Element extends outside a clipping layout container.",
+        "rect": {
+          "left": -838.11,
+          "top": 366.99,
+          "right": -63.41,
+          "bottom": 1362.72,
+          "width": 774.7,
+          "height": 995.73
+        },
+        "containerSelector": "#sw-screen",
+        "fixHint": "Resize/reposition the child or container, or mark intentional overflow with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 284,
+          "top": 214,
+          "right": 796,
+          "bottom": 1306,
+          "width": 512,
+          "height": 1092
+        },
+        "overflow": {
+          "left": 1122.11,
+          "bottom": 56.72
+        },
+        "dataAttributes": {
+          "data-layout-allow-overlap": "",
+          "data-layout-allow-occlusion": ""
+        },
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": -838.11,
+          "y": 366.99,
+          "width": 774.7,
+          "height": 995.73
+        },
+        "firstSeen": 15.167,
+        "lastSeen": 17.5,
+        "occurrences": 2,
+        "heldMs": 0,
+        "times": [
+          15.167,
+          17.5
+        ]
+      },
+      {
+        "code": "panel_out_of_canvas",
+        "severity": "info",
+        "time": 15.167,
+        "selector": "#sw-cm",
+        "message": "Painted panel extends outside the composition canvas.",
+        "rect": {
+          "left": -647.93,
+          "top": 358.68,
+          "right": 88.16,
+          "bottom": 1345.94,
+          "width": 736.08,
+          "height": 987.26
+        },
+        "containerSelector": "#root",
+        "text": "MO Marta Ortiz 26 Valencia Domina Ventas Busca V",
+        "fixHint": "Move the panel inward, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "left": 647.93
+        },
+        "dataAttributes": {
+          "data-layout-allow-overlap": "",
+          "data-layout-allow-occlusion": ""
+        },
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": -647.93,
+          "y": 358.68,
+          "width": 736.08,
+          "height": 987.26
+        },
+        "firstSeen": 15.167,
+        "lastSeen": 15.167,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          15.167
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 17.5,
+        "selector": "#sw-c2 > div:nth-of-type(1)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 1431.42,
+          "top": 508.69,
+          "right": 1797.58,
+          "bottom": 914.91,
+          "width": 366.16,
+          "height": 406.22
+        },
+        "containerSelector": "#root",
+        "text": "NB",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "right": 717.58
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 1431.42,
+          "y": 508.69,
+          "width": 366.16,
+          "height": 406.22
+        },
+        "firstSeen": 17.5,
+        "lastSeen": 17.5,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          17.5
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 17.5,
+        "selector": "#sw-c2 > div:nth-of-type(2) > div:nth-of-type(1)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 1305.29,
+          "top": 836.36,
+          "right": 1613.3,
+          "bottom": 1020.23,
+          "width": 308.01,
+          "height": 183.87
+        },
+        "containerSelector": "#root",
+        "text": "Núria Bosch 28",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "right": 533.3
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 1305.29,
+          "y": 836.36,
+          "width": 308.01,
+          "height": 183.87
+        },
+        "firstSeen": 17.5,
+        "lastSeen": 17.5,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          17.5
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 17.5,
+        "selector": "#sw-c2 > div:nth-of-type(2) > span:nth-of-type(1)",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 1290.2,
+          "top": 970.12,
+          "right": 1391.6,
+          "bottom": 1030.9,
+          "width": 101.4,
+          "height": 60.78
+        },
+        "containerSelector": "#root",
+        "text": "✓ Encajas",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "right": 311.6
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 1290.2,
+          "y": 970.12,
+          "width": 101.4,
+          "height": 60.78
+        },
+        "firstSeen": 17.5,
+        "lastSeen": 17.5,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          17.5
+        ]
+      },
+      {
+        "code": "canvas_overflow",
+        "severity": "info",
+        "time": 17.5,
+        "selector": "#sw-like",
+        "message": "Text extends outside the composition canvas.",
+        "rect": {
+          "left": 1500.92,
+          "top": 448.82,
+          "right": 1751.29,
+          "bottom": 583.25,
+          "width": 250.37,
+          "height": 134.43
+        },
+        "containerSelector": "#root",
+        "text": "ME INTERESA",
+        "fixHint": "Move the text inward, reduce its size, or mark intentional off-canvas animation with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1080,
+          "bottom": 1920,
+          "width": 1080,
+          "height": 1920
+        },
+        "overflow": {
+          "right": 671.29
+        },
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 1500.92,
+          "y": 448.82,
+          "width": 250.37,
+          "height": 134.43
+        },
+        "firstSeen": 17.5,
+        "lastSeen": 17.5,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          17.5
+        ]
+      },
+      {
+        "code": "container_overflow",
+        "severity": "info",
+        "time": 17.5,
+        "selector": "#sw-c2",
+        "message": "Element extends outside a clipping layout container.",
+        "rect": {
+          "left": 1156.2,
+          "top": 358.66,
+          "right": 1947.32,
+          "bottom": 1375.5,
+          "width": 791.13,
+          "height": 1016.84
+        },
+        "containerSelector": "#sw-screen",
+        "fixHint": "Resize/reposition the child or container, or mark intentional overflow with data-layout-allow-overflow.",
+        "containerRect": {
+          "left": 278.57,
+          "top": 202.42,
+          "right": 801.43,
+          "bottom": 1317.58,
+          "width": 522.85,
+          "height": 1115.15
+        },
+        "overflow": {
+          "right": 1145.89,
+          "bottom": 57.92
+        },
+        "dataAttributes": {
+          "data-layout-allow-overlap": "",
+          "data-layout-allow-occlusion": ""
+        },
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 1156.2,
+          "y": 358.66,
+          "width": 791.13,
+          "height": 1016.84
+        },
+        "firstSeen": 17.5,
+        "lastSeen": 17.5,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          17.5
+        ]
+      }
+    ],
+    "duration": 21,
+    "samples": [
+      1.167,
+      3.5,
+      5.833,
+      8.167,
+      10.5,
+      12.833,
+      15.167,
+      17.5,
+      19.833
+    ],
+    "transitionSamples": [],
+    "transitionSamplesDropped": 0,
+    "tolerance": 2,
+    "totalIssueCount": 32,
+    "truncated": false
+  },
+  "motion": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": false,
+    "samples": 0
+  },
+  "contrast": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": true,
+    "samples": [
+      1.167,
+      5.833,
+      10.5,
+      15.167,
+      19.833
+    ],
+    "checked": 10,
+    "passed": 10
+  },
+  "craft": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 6,
+    "infoCount": 0,
+    "findings": [
+      {
+        "code": "text_below_floor",
+        "severity": "warning",
+        "message": "Type floor is 28 px (2.6% of the 1080 px short side, what a phone can read) and \"ÁR\" renders at 25 px for 3.88 s: set reading text to at least 28 px, or put data-layout-ignore on text that is texture rather than reading; see references/look.md.",
+        "text": "ÁR",
+        "selector": "div.avatar",
+        "dataAttributes": {},
+        "sourceFile": "compositions/chat.html",
+        "bbox": {
+          "x": 377.65,
+          "y": 399.84,
+          "width": 35.6,
+          "height": 30.7
+        },
+        "time": 6.75,
+        "times": [
+          6.75
+        ],
+        "fontPx": 25,
+        "floorPx": 28,
+        "seconds": 3.875,
+        "elements": [
+          {
+            "selector": "div.avatar",
+            "text": "ÁR",
+            "fontPx": 25,
+            "time": 6.75,
+            "seconds": 3.875
+          }
+        ]
+      },
+      {
+        "code": "text_below_floor",
+        "severity": "warning",
+        "message": "Type floor is 28 px (2.6% of the 1080 px short side, what a phone can read) and 4 text elements stay under it for 0.5 s or more, the smallest \"✓ Encajas\" at 19 px: set reading text to at least 28 px, or put data-layout-ignore on text that is texture rather than reading; see references/look.md.",
+        "text": "✓ Encajas",
+        "selector": "#sw-c2 > div:nth-of-type(2) > span:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 377.46,
+          "y": 1193.78,
+          "width": 87.91,
+          "height": 24.99
+        },
+        "time": 13.125,
+        "times": [
+          13.125,
+          16.625,
+          16.75,
+          16.75
+        ],
+        "fontPx": 18.9,
+        "floorPx": 28,
+        "seconds": 3.125,
+        "elements": [
+          {
+            "selector": "#sw-c2 > div:nth-of-type(2) > span:nth-of-type(1)",
+            "text": "✓ Encajas",
+            "fontPx": 18.9,
+            "time": 13.125,
+            "seconds": 3.125
+          },
+          {
+            "selector": "#sw-mtext",
+            "text": "Núria ya te había dado like. Ahora os toca hablar.",
+            "fontPx": 26,
+            "time": 16.625,
+            "seconds": 1.625
+          },
+          {
+            "selector": "div.btn.primary",
+            "text": "Abrir chat",
+            "fontPx": 27,
+            "time": 16.75,
+            "seconds": 0.75
+          },
+          {
+            "selector": "#sw-mbtns > div:nth-of-type(2)",
+            "text": "Seguir descubriendo",
+            "fontPx": 27,
+            "time": 16.75,
+            "seconds": 0.75
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"PASO\" (1 word) is on screen 0.30 s (±0.01 s), under its 0.40 s floor: hold it about 0.5 s + 0.3 s a word (0.80 s here) before it leaves or changes; see references/motion.md.",
+        "text": "PASO",
+        "selector": "#sw-pass2",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 609.59,
+          "y": 451.94,
+          "width": 101.40999999999997,
+          "height": 42.589999999999975
+        },
+        "time": 14.734,
+        "words": 1,
+        "seconds": 0.305,
+        "floorSeconds": 0.4,
+        "measured": [
+          {
+            "time": 14.375,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 14.5,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 14.625,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 14.75,
+            "opacity": 0.65,
+            "heightPx": 43
+          },
+          {
+            "time": 14.875,
+            "opacity": 1,
+            "heightPx": 48
+          },
+          {
+            "time": 15,
+            "opacity": 1,
+            "heightPx": 58
+          },
+          {
+            "time": 15.125,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 15.25,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 15.375,
+            "opacity": null,
+            "heightPx": null
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"ME INTERESA\" (2 words) is on screen 0.34 s (±0.01 s), under its 0.40 s floor: hold it about 0.5 s + 0.3 s a word (1.10 s here) before it leaves or changes; see references/motion.md.",
+        "text": "ME INTERESA",
+        "selector": "#sw-like",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 387.57,
+          "y": 450.59,
+          "width": 247.99999999999994,
+          "height": 45.339999999999975
+        },
+        "time": 15.836,
+        "words": 2,
+        "seconds": 0.336,
+        "floorSeconds": 0.4,
+        "measured": [
+          {
+            "time": 15.5,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 15.625,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 15.75,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 15.875,
+            "opacity": 0.83,
+            "heightPx": 45
+          },
+          {
+            "time": 16,
+            "opacity": 1,
+            "heightPx": 60
+          },
+          {
+            "time": 16.125,
+            "opacity": 1,
+            "heightPx": 80
+          },
+          {
+            "time": 16.25,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 16.375,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 16.5,
+            "opacity": null,
+            "heightPx": null
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"Núria Bosch 28 Barcelona ✓ Encajas Domina DesarrolloProdu...\" (10 words) is on screen 0.23 s (±0.01 s), under its 2.63 s floor: hold it about 0.5 s + 0.3 s a word (3.50 s here) before it leaves or changes; see references/motion.md.",
+        "text": "Núria Bosch 28 Barcelona ✓ Encajas Domina DesarrolloProducto Busca ✓ Ventas✓ Marketing",
+        "selector": "#sw-c2 > div:nth-of-type(2)",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 486.16,
+          "y": 993.2,
+          "width": 98.57,
+          "height": 32.01999999999998
+        },
+        "time": 16,
+        "words": 10,
+        "seconds": 0.234,
+        "floorSeconds": 2.625,
+        "measured": [
+          {
+            "time": 15.625,
+            "opacity": 1,
+            "heightPx": 25
+          },
+          {
+            "time": 15.75,
+            "opacity": 1,
+            "heightPx": 25
+          },
+          {
+            "time": 15.875,
+            "opacity": 1,
+            "heightPx": 26
+          },
+          {
+            "time": 16,
+            "opacity": 1,
+            "heightPx": 32
+          },
+          {
+            "time": 16.125,
+            "opacity": 1,
+            "heightPx": 40
+          },
+          {
+            "time": 16.25,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 16.375,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 16.5,
+            "opacity": null,
+            "heightPx": null
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"Núria ya te había dado like. Ahora os toca hablar.\" (10 words) is on screen 1.60 s (±0.01 s), under its 2.63 s floor: hold it about 0.5 s + 0.3 s a word (3.50 s here) before it leaves or changes; see references/motion.md.",
+        "text": "Núria ya te había dado like. Ahora os toca hablar.",
+        "selector": "#sw-mtext",
+        "dataAttributes": {},
+        "sourceFile": "compositions/swipe.html",
+        "bbox": {
+          "x": 343,
+          "y": 811.53,
+          "width": 394,
+          "height": 66.09000000000003
+        },
+        "time": 16.602,
+        "words": 10,
+        "seconds": 1.602,
+        "floorSeconds": 2.625,
+        "measured": [
+          {
+            "time": 16.25,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 16.375,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 16.5,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 16.625,
+            "opacity": 0.65,
+            "heightPx": 66
+          },
+          {
+            "time": 16.75,
+            "opacity": 0.99,
+            "heightPx": 66
+          },
+          {
+            "time": 16.875,
+            "opacity": 1,
+            "heightPx": 66
+          },
+          {
+            "time": 17,
+            "opacity": 1,
+            "heightPx": 66
+          },
+          {
+            "time": 17.75,
+            "opacity": 1,
+            "heightPx": 68
+          },
+          {
+            "time": 17.875,
+            "opacity": 1,
+            "heightPx": 68
+          },
+          {
+            "time": 18,
+            "opacity": 1,
+            "heightPx": 68
+          },
+          {
+            "time": 18.125,
+            "opacity": 1,
+            "heightPx": 68
+          },
+          {
+            "time": 18.25,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 18.375,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 18.5,
+            "opacity": null,
+            "heightPx": null
+          }
+        ]
+      }
+    ],
+    "enabled": true,
+    "step": 0.125,
+    "samples": 168
+  },
+  "audio": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": []
+  },
+  "hdr": {
+    "autoPromotion": null,
+    "inspection": "available"
+  },
+  "snapshots": {
+    "enabled": false,
+    "files": [],
+    "times": [],
+    "findingFiles": []
+  }
+}

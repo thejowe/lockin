@@ -1,0 +1,374 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "Instrument Serif";
+      src: url("assets/fonts/InstrumentSerif_400Regular.ttf");
+    }
+    @font-face {
+      font-family: "Instrument Sans";
+      src: url("assets/fonts/InstrumentSans_400Regular.ttf");
+      font-weight: 400;
+    }
+    @font-face {
+      font-family: "Instrument Sans";
+      src: url("assets/fonts/InstrumentSans_600SemiBold.ttf");
+      font-weight: 600;
+    }
+    #root {
+      position: absolute;
+      inset: 0;
+      font-family: "Instrument Sans", sans-serif;
+      color: #f5f5f7;
+    }
+    #sw-dim {
+      position: absolute;
+      inset: 0;
+      background: rgba(8, 5, 10, 0.86);
+    }
+    #sw-phone {
+      position: absolute;
+      left: 270px;
+      top: 200px;
+      width: 540px;
+      height: 1120px;
+      border-radius: 76px;
+      background: #26262b;
+      box-shadow:
+        0 40px 90px rgba(0, 0, 0, 0.6),
+        inset 0 0 0 3px #3a3a40;
+    }
+    #sw-screen {
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      right: 14px;
+      bottom: 14px;
+      border-radius: 64px;
+      background: #000;
+      overflow: hidden;
+    }
+    .island {
+      position: absolute;
+      left: 50%;
+      top: 18px;
+      width: 132px;
+      height: 38px;
+      margin-left: -66px;
+      border-radius: 20px;
+      background: #000;
+      box-shadow: 0 0 0 2px #111;
+      z-index: 9;
+    }
+    .status {
+      position: absolute;
+      left: 46px;
+      top: 22px;
+      font-weight: 600;
+      font-size: 24px;
+    }
+    .tabs {
+      position: absolute;
+      left: 22px;
+      top: 80px;
+      height: 64px;
+      padding: 6px;
+      border-radius: 32px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      display: flex;
+      gap: 4px;
+      font-weight: 600;
+      font-size: 23px;
+    }
+    .tabs span {
+      padding: 13px 20px;
+      border-radius: 26px;
+      color: #bebec4;
+    }
+    .tabs .on {
+      background: rgba(255, 255, 255, 0.16);
+      color: #f5f5f7;
+    }
+    .filters {
+      position: absolute;
+      right: 30px;
+      top: 98px;
+      font-weight: 600;
+      font-size: 23px;
+    }
+    .card {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      top: 166px;
+      height: 880px;
+      border-radius: 46px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      overflow: hidden;
+      transform-origin: 50% 120%;
+    }
+    .card .ini {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 150px;
+      text-align: center;
+      font-family: "Instrument Serif", serif;
+      font-size: 250px;
+      line-height: 1;
+      color: #ececf0;
+    }
+    .card .info {
+      position: absolute;
+      left: 30px;
+      right: 24px;
+      top: 500px;
+    }
+    .card .name {
+      font-family: "Instrument Serif", serif;
+      font-size: 58px;
+      line-height: 1;
+    }
+    .card .city {
+      font-size: 22px;
+      color: #bebec4;
+      margin: 8px 0 18px;
+    }
+    .chip {
+      display: inline-block;
+      padding: 10px 18px;
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.12);
+      font-weight: 600;
+      font-size: 21px;
+      margin: 0 6px 10px 0;
+    }
+    .row {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+    }
+    .row b {
+      width: 118px;
+      font-weight: 400;
+      font-size: 19px;
+      color: #a8a8ae;
+    }
+    #sw-c1 {
+      background: linear-gradient(180deg, #8a8a90 0%, #3b3b40 45%, #141416 100%);
+      z-index: 3;
+    }
+    #sw-cm {
+      background: linear-gradient(180deg, #7a6a5c 0%, #3a312a 45%, #141210 100%);
+      z-index: 2;
+    }
+    #sw-c2 {
+      background: linear-gradient(180deg, #5f8a7c 0%, #2c4640 45%, #121514 100%);
+      z-index: 1;
+    }
+    .stamp {
+      position: absolute;
+      top: 60px;
+      padding: 8px 20px;
+      border-radius: 14px;
+      border: 4px solid;
+      font-weight: 600;
+      font-size: 34px;
+      letter-spacing: 0.06em;
+      background: rgba(0, 0, 0, 0.55);
+    }
+    .touch {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 84px;
+      height: 84px;
+      margin: -42px 0 0 -42px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.42);
+      border: 2px solid rgba(255, 255, 255, 0.7);
+      z-index: 10;
+    }
+    #sw-match {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.94);
+      z-index: 8;
+    }
+    .pair {
+      position: absolute;
+      top: 250px;
+      left: 0;
+      right: 0;
+      height: 150px;
+    }
+    .pair div {
+      position: absolute;
+      top: 0;
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      border: 4px solid #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: "Instrument Serif", serif;
+      font-size: 64px;
+    }
+    #sw-av1 {
+      left: 118px;
+      background: #8a8a90;
+    }
+    #sw-av2 {
+      left: 238px;
+      background: #5f8a7c;
+    }
+    #sw-mtitle {
+      position: absolute;
+      top: 440px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-family: "Instrument Serif", serif;
+      font-size: 86px;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    #sw-mtext {
+      position: absolute;
+      top: 590px;
+      left: 50px;
+      right: 50px;
+      text-align: center;
+      font-size: 26px;
+      line-height: 1.35;
+      color: #bebec4;
+    }
+    #sw-mbtns {
+      position: absolute;
+      left: 34px;
+      right: 34px;
+      top: 780px;
+    }
+    .btn {
+      height: 80px;
+      border-radius: 40px;
+      font-weight: 600;
+      font-size: 27px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+    }
+    .btn.primary {
+      background: #f5f5f7;
+      color: #1a0a02;
+    }
+    .btn.ghost {
+      color: #bebec4;
+    }
+  </style>
+  <div id="root" data-composition-id="swipe" data-width="1080" data-height="1920">
+    <div id="sw-dim" class="clip" data-start="0" data-duration="5.2"></div>
+    <div id="sw-phone" class="clip" data-start="0" data-duration="5.2">
+      <div id="sw-screen">
+        <div class="island"></div>
+        <div class="status" data-layout-ignore>2:51</div>
+        <div class="tabs" data-layout-ignore><span class="on">Cofounder</span><span>Groups</span></div>
+        <div class="filters" data-layout-ignore>Filters</div>
+
+        <div id="sw-c2" class="card" data-layout-allow-overlap data-layout-allow-occlusion>
+          <div class="ini">NB</div>
+          <div class="info">
+            <div class="name">Núria Bosch 28</div>
+            <div class="city" data-layout-ignore>Barcelona</div>
+            <span class="chip">✓ You fit</span>
+            <div class="row" data-layout-ignore><b>Good at</b><span><span class="chip">Development</span><span class="chip">Product</span></span></div>
+            <div class="row" data-layout-ignore><b>Looking for</b><span><span class="chip">✓ Sales</span><span class="chip">✓ Marketing</span></span></div>
+          </div>
+          <div id="sw-like" class="stamp" style="left: 30px; color: #7fc3b0; border-color: #7fc3b0">LIKE</div>
+        </div>
+        <div id="sw-cm" class="card" data-layout-allow-overlap data-layout-allow-occlusion>
+          <div class="ini">MO</div>
+          <div class="info">
+            <div class="name">Marta Ortiz 26</div>
+            <div class="city" data-layout-ignore>Valencia</div>
+            <div class="row" data-layout-ignore><b>Good at</b><span><span class="chip">Sales</span></span></div>
+            <div class="row" data-layout-ignore><b>Looking for</b><span><span class="chip">Sales</span><span class="chip">Finance</span></span></div>
+          </div>
+          <div id="sw-pass2" class="stamp" style="right: 30px; color: #ff9a80; border-color: #ff9a80">PASS</div>
+        </div>
+        <div id="sw-c1" class="card" data-layout-allow-overlap data-layout-allow-occlusion>
+          <div class="ini">DS</div>
+          <div class="info">
+            <div class="name">Diego Salas 31</div>
+            <div class="city" data-layout-ignore>Bogotá</div>
+            <div class="row" data-layout-ignore><b>Good at</b><span><span class="chip">Design</span></span></div>
+            <div class="row" data-layout-ignore><b>Looking for</b><span><span class="chip">Design</span><span class="chip">Marketing</span></span></div>
+          </div>
+          <div id="sw-pass" class="stamp" style="right: 30px; color: #ff9a80; border-color: #ff9a80">PASS</div>
+        </div>
+
+        <div id="sw-match" data-layout-allow-occlusion data-layout-allow-overlap>
+          <div class="pair"><div id="sw-av1">You</div><div id="sw-av2">NB</div></div>
+          <div id="sw-mtitle">It’s a match!</div>
+          <div id="sw-mtext">Núria had already liked you. Now it’s time to talk.</div>
+          <div id="sw-mbtns">
+            <div class="btn primary">Open chat</div>
+            <div class="btn ghost">Keep discovering</div>
+          </div>
+        </div>
+        <div id="sw-touch" class="touch"></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#sw-dim", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 0);
+    tl.fromTo("#sw-phone", { y: 260, opacity: 0, rotation: -4 }, { y: 0, opacity: 1, rotation: 0, duration: 0.5, ease: "power3.out" }, 0);
+    tl.fromTo("#sw-match", { opacity: 0 }, { opacity: 0, duration: 0.01 }, 0);
+    tl.fromTo("#sw-pass, #sw-pass2, #sw-like", { opacity: 0 }, { opacity: 0, duration: 0.01 }, 0);
+    tl.fromTo("#sw-cm", { scale: 0.95, y: 18 }, { scale: 0.95, y: 18, duration: 0.01 }, 0);
+    tl.fromTo("#sw-c2", { scale: 0.9, y: 36 }, { scale: 0.9, y: 36, duration: 0.01 }, 0);
+    tl.fromTo("#sw-touch", { x: 256, y: 640, opacity: 0 }, { x: 256, y: 640, opacity: 0, duration: 0.01 }, 0);
+
+    // 1) Diego: no encaja (busca lo mismo que domina) → a la izquierda
+    tl.fromTo("#sw-touch", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 0.9, duration: 0.14 }, 0.6);
+    tl.to("#sw-touch", { x: 40, y: 690, duration: 0.42, ease: "power2.in" }, 0.74);
+    tl.to("#sw-c1", { x: -230, rotation: -9, duration: 0.42, ease: "power2.in" }, 0.74);
+    tl.to("#sw-pass", { opacity: 1, duration: 0.2 }, 0.8);
+    tl.to("#sw-touch", { opacity: 0, duration: 0.1 }, 1.12);
+    tl.to("#sw-c1", { x: -760, rotation: -22, duration: 0.26, ease: "power1.in" }, 1.16);
+    tl.to("#sw-cm", { scale: 1, y: 0, duration: 0.34, ease: "power3.out" }, 1.16);
+    tl.to("#sw-c2", { scale: 0.95, y: 18, duration: 0.34, ease: "power3.out" }, 1.16);
+
+    // 2) Marta: tampoco → a la izquierda, más rápido (ya le ha cogido el ritmo)
+    tl.set("#sw-touch", { x: 256, y: 640 }, 1.5);
+    tl.fromTo("#sw-touch", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 0.9, duration: 0.12 }, 1.5);
+    tl.to("#sw-touch", { x: 50, y: 680, duration: 0.34, ease: "power2.in" }, 1.62);
+    tl.to("#sw-cm", { x: -230, rotation: -9, duration: 0.34, ease: "power2.in" }, 1.62);
+    tl.to("#sw-pass2", { opacity: 1, duration: 0.18 }, 1.66);
+    tl.to("#sw-touch", { opacity: 0, duration: 0.1 }, 1.92);
+    tl.to("#sw-cm", { x: -760, rotation: -22, duration: 0.24, ease: "power1.in" }, 1.96);
+    tl.to("#sw-c2", { scale: 1, y: 0, duration: 0.34, ease: "power3.out" }, 1.96);
+
+    // 3) Núria: encaja → pausa para leer, y a la derecha
+    tl.set("#sw-touch", { x: 256, y: 640 }, 2.55);
+    tl.fromTo("#sw-touch", { opacity: 0, scale: 1.2 }, { opacity: 1, scale: 0.9, duration: 0.14 }, 2.55);
+    tl.to("#sw-touch", { x: 470, y: 600, duration: 0.4, ease: "power2.in" }, 2.69);
+    tl.to("#sw-c2", { x: 230, rotation: 9, duration: 0.4, ease: "power2.in" }, 2.69);
+    tl.to("#sw-like", { opacity: 1, duration: 0.2 }, 2.75);
+    tl.to("#sw-touch", { opacity: 0, duration: 0.1 }, 3.05);
+    tl.to("#sw-c2", { x: 760, rotation: 22, duration: 0.24, ease: "power1.in" }, 3.09);
+
+    // 4) ¡Match!
+    tl.to("#sw-match", { opacity: 1, duration: 0.22, ease: "power2.out" }, 3.17);
+    tl.fromTo("#sw-av1", { x: -120, opacity: 0 }, { x: 0, opacity: 1, duration: 0.42, ease: "back.out(1.8)" }, 3.23);
+    tl.fromTo("#sw-av2", { x: 120, opacity: 0 }, { x: 0, opacity: 1, duration: 0.42, ease: "back.out(1.8)" }, 3.23);
+    tl.fromTo("#sw-mtitle", { scale: 0.7, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(2.2)" }, 3.35);
+    tl.fromTo("#sw-mtext", { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.3, ease: "power3.out" }, 3.53);
+    tl.fromTo("#sw-mbtns", { y: 22, opacity: 0 }, { y: 0, opacity: 1, duration: 0.3, ease: "power3.out" }, 3.63);
+    tl.to("#sw-phone", { scale: 1.03, duration: 1.2, ease: "power1.out" }, 3.95);
+    window.__timelines["swipe"] = tl;
+  </script>
+</template>
