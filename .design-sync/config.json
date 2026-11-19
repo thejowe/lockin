@@ -1,0 +1,45 @@
+{
+  "projectId": "fd5378fc-e1da-4b1c-ab34-4bea446d2c9b",
+  "shape": "package",
+  "pkg": "cofounder",
+  "globalName": "Cofounder",
+  "buildCmd": "node .design-sync/build-web.mjs",
+  "entry": ".design-sync/.cache/web-pkg/dist/index.mjs",
+  "srcDir": "../../../src",
+  "extraFonts": [
+    "../../fonts.css"
+  ],
+  "cssEntry": "dist/styles.css",
+  "componentSrcMap": {
+    "Colors": null,
+    "Curves": null,
+    "Elevation": null,
+    "HitSlop": null,
+    "MaxContentWidth": null,
+    "PressScale": null,
+    "ScrimAlpha": null,
+    "Springs": null,
+    "Stagger": null,
+    "ThemeOverride": null,
+    "Typography": null,
+    "AmbientBackground": null
+  },
+  "docsDir": "docs",
+  "dtsPropsFor": {
+    "Frosted": "/** Radio de esquina; por defecto Radii.pill (999). */ radius?: number; /** Intensidad del desenfoque (escala expo-blur 0-100); por defecto BlurIntensity.bar (40). */ intensity?: number; /** Sombra de elemento flotante; por defecto true. */ floating?: boolean; style?: StyleProp<ViewStyle>; children?: React.ReactNode;",
+    "Icon": "/** Nombre del icono de trazo. */ name: \"discover\" | \"chat\" | \"person\" | \"pair\" | \"focus\" | \"both\" | \"heart\" | \"close\" | \"expand\" | \"check\" | \"flame\" | \"lock\" | \"sparkle\" | \"send\" | \"document\" | \"chevrons\" | \"back\" | \"camera\" | \"pencil\" | \"menu\" | \"diamond\" | \"eye\" | \"eye-off\" | \"sliders\"; /** Lado en px; por defecto 22. */ size?: number; /** Color del trazo: usa un token de Colors.dark (p. ej. Colors.dark.text). */ color: string; /** Grosor del trazo; por defecto 1.8. */ strokeWidth?: number; /** Relleno de las formas cerradas (el corazón lleno del Like). Por defecto, solo trazo. */ fill?: string;",
+    "Glass": "/** Cristal activo o más elevado (backgroundSelected en vez de backgroundElement). */ elevated?: boolean; /** Sombra de elemento flotante. */ floating?: boolean; /** Radio de esquina; por defecto Radii.card (22). */ radius?: number; style?: StyleProp<ViewStyle>; children?: React.ReactNode;",
+    "Screen": "/** Compatibilidad: ya no pinta nada (fondo negro liso). */ ambient?: \"ember\" | \"teal\" | \"plum\"; /** Por defecto flex: 1 con fondo Colors.dark.background (#000). */ style?: StyleProp<ViewStyle>; children?: React.ReactNode;",
+    "ScalePressable": "/** Forma visual: se aplica al contenedor animado interior. */ style?: StyleProp<ViewStyle>; /** Se suma mientras el dedo está encima. */ pressedStyle?: StyleProp<ViewStyle>; onPress?: () => void; disabled?: boolean; accessibilityRole?: string; accessibilityLabel?: string; children: React.ReactNode;"
+  },
+  "runtimeFontPrefixes": [
+    "SF Pro"
+  ],
+  "guidelinesGlob": [],
+  "overrides": {
+    "Icon": {
+      "cardMode": "column"
+    }
+  },
+  "readmeHeader": ".design-sync/conventions.md"
+}

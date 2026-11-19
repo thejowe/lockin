@@ -72,3 +72,10 @@ expo-tunnel.log
 
 # Configuración de Firebase (en EAS: variable de archivo GOOGLE_SERVICES_JSON)
 google-services.json
+
+# design-sync (sync del sistema «cristal» a Claude Design)
+.ds-sync/
+ds-bundle/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules
