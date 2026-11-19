@@ -5,7 +5,7 @@
 - [x] Alta y edición comparten un editor de hasta dos tramos locales en pasos de media hora. El alta propone 09:00–14:00. Cada tramo dura al menos una hora y el otro marca el límite al arrastrar.
 - [x] El perfil y la tarjeta muestran los tramos en la zona de quien mira, incluido el solape y el cruce de medianoche al convertir.
 - [x] Mock y Supabase conservan las franjas antiguas para Premium. La migración `20261119215204_profile_work_range.sql` rellena `work_ranges` con un tramo por cada grupo de franjas consecutivas y conserva los huecos.
-- [ ] Revisar la migración y autorizar su despliegue antes de distribuir el cliente que escribe los minutos.
+- [x] Revisada y aplicada en producción el 2026-11-19 (remota `20261119233538`); relleno comprobado en los 15 perfiles.
 
 ## Proyectos · 18 de noviembre de 2026
 
