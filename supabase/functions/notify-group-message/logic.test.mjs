@@ -159,6 +159,60 @@ test('los tokens que Expo da por muertos se olvidan', async () => {
   assert.deepEqual(deadTokens([], null), []);
 });
 
+test('las novedades del proyecto y sus recordatorios se localizan y abren el chat correcto', async () => {
+  for (const [locale, question, due] of [
+    ['es', '¿Publicar en vuestros perfiles?', 'Se acerca la fecha límite de una tarea'],
+    ['en', 'Publish on both profiles?', 'A task is due soon'],
+    ['ca', 'Voleu publicar-lo als vostres perfils?', "S'acosta la data límit d'una tasca"],
+  ]) {
+    const base = { token: 'token', match_id: MESSAGE, source_id: GROUP, locale };
+    for (const kind of ['created', 'proposed', 'deleted', 'task', 'meeting']) {
+      const scheduled = kind === 'task' || kind === 'meeting';
+      const message = buildMessages(
+        [{ ...base, event_kind: kind, item_title: 'Boceto' }],
+        scheduled ? 'project-reminders' : 'project-event'
+      )[0];
+      assert.deepEqual(message.data, { url: `/chat/${MESSAGE}`, matchId: MESSAGE });
+      assert.equal(message.channelId, scheduled ? 'reminders' : 'messages');
+      assert.equal(message.sound, scheduled ? undefined : 'default');
+      if (kind === 'proposed') assert.equal(message.title, question);
+      if (kind === 'task') assert.equal(message.title, due);
+      if (scheduled) assert.equal(message.body, 'Boceto');
+    }
+  }
+  const d = deps([]);
+  const completed = [];
+  const types = [];
+  d.targets = async (id, type) => {
+    types.push([id, type]);
+    return [
+      {
+        token: 'token',
+        match_id: MESSAGE,
+        source_id: GROUP,
+        event_kind: 'created',
+        notice_id: GROUP,
+      },
+    ];
+  };
+  d.completeNotices = async (ids, type) => completed.push([ids, type]);
+  for (const body of [{ type: 'project-event', event_id: GROUP }, { type: 'project-reminders' }]) {
+    assert.equal(
+      (await handlePushRequest({ config: CONFIG, secretHeader: CONFIG.secret, body, deps: d })).body
+        .sent,
+      1
+    );
+  }
+  assert.deepEqual(types, [
+    [GROUP, 'project-event'],
+    [null, 'project-reminders'],
+  ]);
+  assert.deepEqual(completed, [
+    [[GROUP], 'project-event'],
+    [[GROUP], 'project-reminders'],
+  ]);
+});
+
 test('la vista previa junta espacios y corta los mensajes largos', () => {
   assert.equal(preview('  hola\n\n  equipo  '), 'hola equipo');
   assert.equal(preview(undefined), '');

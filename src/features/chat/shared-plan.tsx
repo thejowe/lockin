@@ -11,47 +11,71 @@ import { useQuery, useRepositories } from '@/data';
 import type { ChatScope, PlanItem } from '@/data/chat-plan';
 import { useTheme } from '@/hooks/use-theme';
 import { getIntlLocale, t } from '@/i18n';
+import { ProjectTasks, type TaskMembers } from './project-tasks';
 import { PlanForm, type PlanKind } from './plan-form';
 
 export function ChatTabs({ scope, children }: { scope: ChatScope; children: ReactNode }) {
   const [plan, setPlan] = useState(false);
-  const theme = useTheme();
   return (
     <>
-      <View accessibilityRole="tablist" style={[styles.tabs, { borderColor: theme.border }]}>
-        {[false, true].map((showPlan) => {
-          const selected = showPlan === plan;
-          return (
-            <Pressable
-              key={String(showPlan)}
-              accessibilityRole="tab"
-              accessibilityState={{ selected }}
-              onPress={() => {
-                Keyboard.dismiss();
-                setPlan(showPlan);
-              }}
-              style={[
-                styles.tab,
-                { backgroundColor: selected ? theme.backgroundSelected : 'transparent' },
-              ]}>
-              <Icon
-                name={showPlan ? 'document' : 'chat'}
-                color={selected ? theme.text : theme.textMuted}
-                size={18}
-              />
-              <ThemedText type="smallBold" themeColor={selected ? 'text' : 'textMuted'}>
-                {showPlan ? t('Plan compartido') : t('Mensajes')}
-              </ThemedText>
-            </Pressable>
-          );
-        })}
-      </View>
+      <ChatTabBar plan={plan} onSelect={setPlan} />
       {plan ? <SharedPlan scope={scope} /> : children}
     </>
   );
 }
+export function ChatTabBar({
+  plan,
+  project,
+  onSelect,
+}: {
+  plan: boolean;
+  project?: boolean;
+  onSelect: (value: boolean) => void;
+}) {
+  const theme = useTheme();
+  return (
+    <View accessibilityRole="tablist" style={[styles.tabs, { borderColor: theme.border }]}>
+      {[false, true].map((showPlan) => {
+        const selected = showPlan === plan;
+        return (
+          <Pressable
+            key={String(showPlan)}
+            accessibilityRole="tab"
+            accessibilityState={{ selected }}
+            onPress={() => {
+              Keyboard.dismiss();
+              onSelect(showPlan);
+            }}
+            style={[
+              styles.tab,
+              { backgroundColor: selected ? theme.backgroundSelected : 'transparent' },
+            ]}>
+            <Icon
+              name={showPlan ? 'document' : 'chat'}
+              color={selected ? theme.text : theme.textMuted}
+              size={18}
+            />
+            <ThemedText type="smallBold" themeColor={selected ? 'text' : 'textMuted'}>
+              {showPlan ? (project ? t('Proyecto') : t('Plan compartido')) : t('Mensajes')}
+            </ThemedText>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
 
-function SharedPlan({ scope }: { scope: ChatScope }) {
+export function SharedPlan({
+  scope,
+  members,
+  header,
+  footer,
+}: {
+  scope: ChatScope;
+  members?: TaskMembers;
+  header?: ReactNode;
+  footer?: ReactNode;
+}) {
   const repo = useRepositories().chatPlan;
   const { data, refresh, error, loading } = useQuery(
     `chat-plan:${scope.kind}:${scope.id}`,
@@ -137,54 +161,80 @@ function SharedPlan({ scope }: { scope: ChatScope }) {
     });
   return (
     <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+      {header}
       {actionError ? (
         <ThemedText accessibilityRole="alert" themeColor="danger">
           {actionError}
         </ThemedText>
       ) : null}
-      <View style={styles.section}>
-        <ThemedText type="subtitle">{t('Tareas')}</ThemedText>
-        {tasks.length === 0 ? (
-          <ThemedText themeColor="textSecondary">
-            {t('¿Cuál es vuestro siguiente paso?')}
-          </ThemedText>
-        ) : null}
-        {tasks.map((item) => (
-          <Pressable
-            key={item.id}
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked: item.closed, disabled: saving }}
-            accessibilityLabel={item.title}
-            onPress={() => toggle(item)}
-            disabled={saving}
-            style={[styles.task, { borderColor: theme.border }]}>
-            <View
-              style={[
-                styles.check,
-                {
-                  borderColor: item.closed ? theme.brass : theme.textMuted,
-                  backgroundColor: item.closed ? theme.brass : 'transparent',
-                },
-              ]}>
-              {item.closed && <Icon name="check" size={16} color={theme.onAccent} />}
-            </View>
-            <ThemedText
-              style={{ flex: 1, textDecorationLine: item.closed ? 'line-through' : 'none' }}
-              themeColor={item.closed ? 'textMuted' : 'text'}>
-              {item.title}
-            </ThemedText>
-          </Pressable>
-        ))}
-        <Button
-          compact
-          variant="secondary"
-          label={t('Añadir tarea')}
-          onPress={() => {
-            setActionError('');
-            setForm('task');
+      {members ? (
+        <ProjectTasks
+          members={members}
+          tasks={tasks}
+          add={async (draft) => {
+            await repo.add(scope, draft);
+            refresh();
+          }}
+          update={async (id, details) => {
+            await repo.updateTask(scope, id, details);
+            refresh();
           }}
         />
-      </View>
+      ) : (
+        <View style={styles.section}>
+          <ThemedText type="subtitle">{t('Tareas')}</ThemedText>
+          {tasks.length === 0 ? (
+            <ThemedText themeColor="textSecondary">
+              {t('¿Cuál es vuestro siguiente paso?')}
+            </ThemedText>
+          ) : null}
+          {tasks.map((item) => (
+            <Pressable
+              key={item.id}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: item.closed, disabled: saving }}
+              accessibilityLabel={item.title}
+              onPress={() => toggle(item)}
+              disabled={saving}
+              style={[styles.task, { borderColor: theme.border }]}>
+              <View
+                style={[
+                  styles.check,
+                  {
+                    borderColor: item.closed ? theme.brass : theme.textMuted,
+                    backgroundColor: item.closed ? theme.brass : 'transparent',
+                  },
+                ]}>
+                {item.closed && <Icon name="check" size={16} color={theme.onAccent} />}
+              </View>
+              <ThemedText
+                style={{ flex: 1, textDecorationLine: item.closed ? 'line-through' : 'none' }}
+                themeColor={item.closed ? 'textMuted' : 'text'}>
+                {item.title}
+              </ThemedText>
+            </Pressable>
+          ))}
+          <Button
+            compact
+            variant="secondary"
+            label={t('Añadir tarea')}
+            onPress={() => {
+              setActionError('');
+              setForm('task');
+            }}
+          />
+        </View>
+      )}
+      {members && (
+        <View style={styles.section}>
+          <ThemedText type="subtitle">{t('Recordatorios')}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            {t(
+              'Avisaremos a los responsables un día antes de cada fecha límite y a los dos 15 minutos antes de cada reunión, según vuestras preferencias.'
+            )}
+          </ThemedText>
+        </View>
+      )}
       <View style={styles.section}>
         <ThemedText type="subtitle">{t('Reuniones')}</ThemedText>
         {meetings.length === 0 ? (
@@ -259,6 +309,7 @@ function SharedPlan({ scope }: { scope: ChatScope }) {
           }}
         />
       </View>
+      {footer}
     </ScrollView>
   );
 }

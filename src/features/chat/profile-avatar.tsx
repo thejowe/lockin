@@ -11,15 +11,17 @@ import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Radii, Stroke } from '@/constants/theme';
+import { useReduceMotion } from '@/hooks/use-reduce-motion';
 import { useTheme } from '@/hooks/use-theme';
 
 import type { Avatar } from '@/data';
 
 /** Alfa del tinte: deja leer las iniciales claras encima (≥ 4.5:1). */
-const TINT_ALPHA = '8C';
+const TINT_ALPHA = '33';
 
 export function ProfileAvatar({ avatar, size = 48 }: { avatar: Avatar; size?: number }) {
   const theme = useTheme();
+  const reduced = useReduceMotion();
   const accent = avatar.accent === 'teal' ? theme.teal : theme.brass;
 
   return (
@@ -43,7 +45,7 @@ export function ProfileAvatar({ avatar, size = 48 }: { avatar: Avatar; size?: nu
           testID="avatar-photo"
           source={{ uri: avatar.imageUrl }}
           contentFit="cover"
-          transition={120}
+          transition={reduced ? 0 : 120}
           style={StyleSheet.absoluteFill}
         />
       ) : (

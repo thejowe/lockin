@@ -2,15 +2,26 @@ import {
   ProjectPhotoError,
   validateProject,
   type ProjectPhoto,
+  type JointWorkspace,
   type ProjectRepository,
 } from '../projects';
 import type { LockInSupabaseClient } from './client';
+import type { Database, ProfileRow } from './database.types';
+import { toProfile } from './mappers';
+import type { AvatarSigner } from './avatar-urls';
+
 import { readLocalImage } from './avatar-file';
 import { t } from '@/i18n';
 
+type ProjectRow = Database['public']['Tables']['profile_projects']['Row'] & {
+  project_authors: { profiles: ProfileRow | null }[];
+};
+const fields = '*,project_authors(profiles(*))' as const;
+
 export function supabaseProjects(
   getClient: () => LockInSupabaseClient,
-  userId: () => Promise<string>
+  userId: () => Promise<string>,
+  signProfiles?: AvatarSigner['signProfiles']
 ): ProjectRepository {
   async function mutate(body: Record<string, unknown>) {
     const { data, error } = await getClient().functions.invoke('moderate-project', { body });
@@ -23,47 +34,150 @@ export function supabaseProjects(
       throw new Error(t('El proyecto ha cambiado. Vuelve a abrirlo.'));
     throw new Error(t('No se ha podido guardar.'));
   }
+  async function hydrate(rows: ProjectRow[]) {
+    const client = getClient();
+    const paths = rows.flatMap((p) => [...(p.cover_path ? [p.cover_path] : []), ...p.photo_paths]);
+    const personal = paths.filter((path) => !path.startsWith('shared/'));
+    const bucket = client.storage.from('board');
+    const images = new Map<string, ProjectPhoto>();
+    if (personal.length) {
+      const { data, error } = await bucket.createSignedUrls(personal, 3600);
+      if (error) throw error;
+      for (const item of data)
+        if (item.path && item.signedUrl)
+          images.set(item.path, { path: item.path, uri: item.signedUrl });
+    }
+    if (paths.length > personal.length) {
+      const { data, error } = await client.auth.getSession();
+      if (error || !data.session) throw new Error(t('No se ha podido cargar la foto.'));
+      const apiKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+      const headers = {
+        ...(apiKey ? { apikey: apiKey } : {}),
+        Authorization: 'Bearer ' + data.session.access_token,
+      };
+      for (const path of paths.filter((p) => p.startsWith('shared/'))) {
+        // Build the authenticated object route on the injected client's own Storage origin.
+        const url = new URL(bucket.getPublicUrl(path).data.publicUrl);
+        url.pathname = url.pathname.replace('/object/public/', '/object/authenticated/');
+        images.set(path, { path, uri: url.toString(), headers });
+      }
+    }
+    function photo(path: string) {
+      const result = images.get(path);
+      if (!result) throw new Error(t('No se ha podido cargar la foto.'));
+      return result;
+    }
+    const profiles = rows.flatMap((p) =>
+      p.project_authors.flatMap((a) => (a.profiles ? [toProfile(a.profiles)] : []))
+    );
+    const signed = new Map(
+      (signProfiles ? await signProfiles(profiles) : profiles).map((p) => [
+        p.id,
+        { id: p.id, name: p.name, avatar: p.avatar },
+      ])
+    );
+    return rows.map((p) => ({
+      id: p.id,
+      ownerId: p.owner_id,
+      revision: p.revision,
+      name: p.name,
+      tagline: p.tagline,
+      description: p.description,
+      link: p.link,
+      cover: p.cover_path ? photo(p.cover_path) : null,
+      photos: p.photo_paths.map(photo),
+      authors: p.project_authors.flatMap((a) => (a.profiles ? [signed.get(a.profiles.id)!] : [])),
+    }));
+  }
+  function mutationError(code: string) {
+    return new Error(
+      code === 'PJ003'
+        ? t('Uno de los perfiles ya tiene tres proyectos.')
+        : code === 'PJ409'
+          ? t('El proyecto ha cambiado. Vuelve a abrirlo.')
+          : t('No se ha podido guardar.')
+    );
+  }
+  async function readWorkspace(matchId: string, retry: boolean): Promise<JointWorkspace | null> {
+    await userId();
+    const client = getClient();
+    const workspace = await client.rpc('project_workspace', { p_match_id: matchId }).maybeSingle();
+    if (workspace.error) throw workspace.error;
+    const w = workspace.data;
+    if (!w) return null;
+    const { data, error } = await client
+      .from('profile_projects')
+      .select(fields)
+      .eq('id', w.project_id)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data || data.revision !== w.project_revision) {
+      // Consent must apply to the exact card revision displayed to the reader.
+      if (retry) return readWorkspace(matchId, false);
+      throw mutationError('PJ409');
+    }
+    const [project] = await hydrate([data]);
+    return {
+      project,
+      published: w.published,
+      proposedBy: w.proposed_by,
+      hasCapacity: w.has_capacity,
+      notes: w.notes,
+      notesBy: w.notes_by,
+      notesRevision: w.notes_revision,
+    };
+  }
   return {
     async list(ownerId) {
       await userId();
-      const client = getClient();
-      const { data, error } = await client
+      // The second embedding filters membership without removing the other author's face.
+      const { data, error } = await getClient()
         .from('profile_projects')
-        .select('*')
-        .eq('owner_id', ownerId)
+        .select('*,project_authors(profiles(*)),listed:project_authors!inner()')
+        .eq('listed.user_id', ownerId)
+        .eq('published', true)
         .order('promoted_at', { ascending: false, nullsFirst: false })
         .order('created_at')
         .order('id');
       if (error) throw error;
-      const paths = data.flatMap((p) => [
-        ...(p.cover_path ? [p.cover_path] : []),
-        ...p.photo_paths,
-      ]);
-      const urls = new Map<string, string>();
-      if (paths.length) {
-        const signed = await client.storage.from('board').createSignedUrls(paths, 3600);
-        if (signed.error) throw signed.error;
-        for (const item of signed.data)
-          if (item.path && item.signedUrl) urls.set(item.path, item.signedUrl);
-      }
-      function photo(path: string) {
-        const uri = urls.get(path);
-        if (!uri) throw new Error(t('No se ha podido cargar la foto.'));
-        return { path, uri };
-      }
-      return data.map((p) => ({
-        id: p.id,
-        ownerId: p.owner_id,
-        revision: p.revision,
-        name: p.name,
-        tagline: p.tagline,
-        description: p.description,
-        link: p.link,
-        cover: p.cover_path ? photo(p.cover_path) : null,
-        photos: p.photo_paths.map(photo),
-      }));
+      return hydrate(data);
     },
-    async save(input, previous, draftId) {
+    async workspace(matchId) {
+      return readWorkspace(matchId, true);
+    },
+    async lastDeletion(matchId) {
+      await userId();
+      const { data, error } = await getClient()
+        .from('project_events')
+        .select('id,actor_id')
+        .eq('match_id', matchId)
+        .eq('kind', 'deleted')
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data && { id: data.id, actorId: data.actor_id };
+    },
+    async publication(version, action) {
+      await userId();
+      const { error } = await getClient().rpc('set_project_publication', {
+        p_project_id: version.id,
+        p_revision: version.revision,
+        p_action: action,
+      });
+      if (error) throw mutationError(error.code);
+    },
+    async saveNotes(id, text, revision) {
+      await userId();
+      const { error } = await getClient().rpc('save_project_notes', {
+        p_project_id: id,
+        p_text: text,
+        p_revision: revision,
+      });
+      if (error) throw mutationError(error.code);
+    },
+    async save(input, previous, draftId, matchId) {
       validateProject(input);
       const owner = await userId();
       const client = getClient();
@@ -89,6 +203,7 @@ export function supabaseProjects(
         const { name, tagline, description, link } = input;
         await mutate({
           action: 'save',
+          matchId,
           draftId,
           previous: previous && { id: previous.id, revision: previous.revision },
           name,

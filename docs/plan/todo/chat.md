@@ -1,5 +1,14 @@
 # TODO — chat
 
+## Proyecto conjunto · 19 de noviembre de 2026
+
+- [x] La tarjeta compacta con portada, nombre y lápiz abre una hoja con la ficha, los autores, la edición y la publicación. Debajo quedan tareas, recordatorios, reuniones y notas.
+- [x] Ambos participantes pueden editar o borrar el proyecto. El plan conserva los identificadores de las tareas y reuniones al crear y eliminar la ficha.
+- [x] La publicación comprueba el consentimiento y el cupo de ambos perfiles. Las notas y el historial de propuestas solo se leen dentro del espacio privado. Un bloqueo, una baja o la salida del match retiran la publicación y la autoría de quien sale.
+- [x] Aviso de creación, propuesta y eliminación con la preferencia de mensajes. Los recordatorios respetan la preferencia de recordatorios. La tarea vence a las 23:59 de la fecha local elegida. Se avisa a los responsables 24 horas antes y a ambos participantes 15 minutos antes de una reunión.
+- [x] Android 16 con el backend mock. Se comprobaron las dos entradas de creación y se creó «Atlas nuevo» desde el editor. La tarjeta abrió la ficha privada con las iniciales de ambos autores y el interruptor apagado. Al cerrar la ficha se recuperaron las cuatro secciones del espacio de trabajo. Capturas, jerarquías y registro del recorrido en `e2e/artifacts/local/2026-11-19-proyecto-conjunto/segunda/`.
+- [ ] Revisión de Claude Code y aprobación del despliegue. La rama incluye las migraciones locales `20261119224029_joint_projects.sql` y `20261119224135_project_tasks_and_notifications.sql` y cambios en `moderate-project` y `notify-group-message`. Las fotos compartidas usan lecturas autenticadas de Storage. La política exige `storage.allow_only_operation(text)`.
+
 ## Texto libre en los chats · 17 de noviembre de 2026
 
 - [x] Los chats individuales y de grupo envían y muestran el texto original, incluidas las palabras que antes impedían el envío. Esto también se aplica a los títulos de tareas y a los temas, lugares y enlaces de reuniones.

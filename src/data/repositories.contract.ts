@@ -2632,6 +2632,119 @@ function describeSafetyContract(backend: ContractBackend): void {
       return match!.id;
     }
 
+    describe('proyecto conjunto', () => {
+      const draft = {
+        name: 'Atlas',
+        tagline: 'Rutas de barrio',
+        description: '',
+        link: '',
+        cover: null,
+        photos: [],
+      };
+      const task = {
+        id: '53bb140c-bbe4-4b36-8846-1319d778fa62',
+        title: 'Entrevista',
+        startsAt: null,
+        place: null,
+      };
+
+      async function create() {
+        const matchId = await matchPair();
+        const scope = { kind: 'match' as const, id: matchId };
+        await a.chatPlan.add(scope, task);
+        await b.chatPlan.setClosed(scope, task.id, true);
+        await a.projects.save(draft, undefined, undefined, matchId);
+        return { matchId, scope, workspace: (await a.projects.workspace(matchId))! };
+      }
+
+      it('mantiene el plan anterior y protege la ficha y las notas incluso al publicar', async () => {
+        const { matchId, scope, workspace } = await create();
+        expect(workspace.published).toBe(false);
+        expect(workspace.project.authors?.map((p) => p.id).sort()).toEqual([aId, bId].sort());
+        expect((await b.chatPlan.list(scope))[0]).toMatchObject({ id: task.id, closed: true });
+        await expect(b.projects.save(draft, undefined, undefined, matchId)).rejects.toThrow();
+        await expect(c.projects.save(draft, undefined, undefined, matchId)).rejects.toThrow();
+        expect(await a.projects.list(aId)).toEqual([]);
+        expect(await c.projects.workspace(matchId)).toBeNull();
+        await b.projects.saveNotes(
+          workspace.project.id,
+          'Probar en dos barrios',
+          workspace.notesRevision
+        );
+        await expect(
+          a.projects.saveNotes(workspace.project.id, 'antiguo', workspace.notesRevision)
+        ).rejects.toThrow();
+        await b.chatPlan.updateTask(scope, task.id, {
+          status: 'in_progress',
+          assigneeId: aId,
+          dueAt: null,
+        });
+        expect(await a.chatPlan.list(scope)).toEqual([
+          expect.objectContaining({ status: 'in_progress', assigneeId: aId, closed: false }),
+        ]);
+        await expect(
+          a.chatPlan.updateTask(scope, task.id, { status: 'pending', assigneeId: cId, dueAt: null })
+        ).rejects.toBeDefined();
+        await b.projects.save({ ...draft, name: 'Atlas de los dos' }, workspace.project);
+        const edited = (await a.projects.workspace(matchId))!;
+        expect(edited).toMatchObject({
+          notes: 'Probar en dos barrios',
+          notesBy: bId,
+          project: { name: 'Atlas de los dos' },
+        });
+        await a.projects.publication(edited.project, 'propose');
+        const proposal = (await b.projects.workspace(matchId))!;
+        expect(proposal.proposedBy).toBe(aId);
+        await expect(a.projects.publication(proposal.project, 'accept')).rejects.toThrow();
+        await expect(c.projects.publication(proposal.project, 'accept')).rejects.toThrow();
+        expect(await c.projects.list(bId)).toEqual([]);
+        await b.projects.publication(proposal.project, 'accept');
+        for (const id of [aId, bId]) {
+          const cards = await c.projects.list(id);
+          expect(cards).toHaveLength(1);
+          expect(cards[0].authors?.map((p) => p.id).sort()).toEqual([aId, bId].sort());
+          expect(cards[0]).not.toHaveProperty('notes');
+        }
+        expect(await c.projects.workspace(matchId)).toBeNull();
+        const published = (await b.projects.workspace(matchId))!;
+        await b.projects.publication(published.project, 'private');
+        expect(await c.projects.list(aId)).toEqual([]);
+        await b.projects.remove((await b.projects.workspace(matchId))!.project);
+        expect(await a.projects.workspace(matchId)).toBeNull();
+        expect(await a.projects.lastDeletion(matchId)).toMatchObject({ actorId: bId });
+        expect(await c.projects.lastDeletion(matchId)).toBeNull();
+        expect((await a.chatPlan.list(scope))[0].id).toBe(task.id);
+      });
+
+      it('comprueba ambos cupos al aceptar y permite rechazar una propuesta', async () => {
+        const { workspace, matchId } = await create();
+        await b.projects.publication(workspace.project, 'propose');
+        for (let n = 0; n < 3; n++) await a.projects.save({ ...draft, name: String(n) });
+        const pending = (await a.projects.workspace(matchId))!;
+        expect(pending.hasCapacity).toBe(false);
+        await expect(a.projects.publication(pending.project, 'accept')).rejects.toThrow();
+        expect(await c.projects.list(bId)).toEqual([]);
+        await a.projects.publication(pending.project, 'reject');
+        expect((await b.projects.workspace(matchId))?.proposedBy).toBeNull();
+      });
+
+      it.each(['block', 'delete', 'unmatch'] as const)(
+        'retira la publicación y al autor que sale por %s',
+        async (reason) => {
+          const { matchId, workspace } = await create();
+          await a.projects.publication(workspace.project, 'propose');
+          await b.projects.publication((await b.projects.workspace(matchId))!.project, 'accept');
+          const before = (await a.projects.workspace(matchId))!;
+          if (reason === 'block') await a.profiles.block(bId);
+          if (reason === 'delete') await a.session.deleteMyAccount();
+          if (reason === 'unmatch') await a.matches.unmatch(matchId);
+          expect(await c.projects.list(bId)).toEqual([]);
+          expect(await b.projects.workspace(matchId)).toBeNull();
+          await expect(a.projects.remove(before.project)).rejects.toThrow();
+        }
+      );
+    });
+
     describe('grupos', () => {
       // A administra; B y C dominan desarrollo y buscan grupo. Los grupos de
       // otras pasadas (o, en Supabase, de gente real) pueden salir en los

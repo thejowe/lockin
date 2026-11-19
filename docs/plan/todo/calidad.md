@@ -1,5 +1,11 @@
 # TODO — calidad
 
+## Proyecto conjunto · 19 de noviembre de 2026
+
+- [x] TypeScript y ESLint terminan con código 0. ESLint conserva cinco avisos anteriores. Jest pasa 2.296 pruebas en 175 suites; se omiten 233 pruebas, entre ellas el contrato optativo contra Supabase.
+- [x] Pasan las 313 pruebas de esquema y las 122 pruebas de funciones. La batería comprueba permisos de tablas y Storage, revisiones, cupos y avisos por destinatario. Los tests de UI recorren la tarjeta, la hoja inferior, la coedición, los dos consentimientos y el bloqueo.
+- [ ] Quedan para un entorno de integración el contrato con una instancia completa de Supabase y la recepción de un push real en un teléfono. [Seguimiento del chat](chat.md).
+
 ## Proyectos · 18 de noviembre de 2026
 
 - [x] Jest cubre ambos extremos de la tarjeta, cero, uno y tres proyectos, subpuntos activos, contraste sobre blanco y edición desde el alta y Perfil.

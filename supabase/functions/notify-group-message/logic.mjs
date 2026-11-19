@@ -43,6 +43,20 @@ export function preview(body) {
 
 /** Un mensaje de Expo por token. Abrirlo lleva al chat del grupo. */
 export function buildMessages(rows, type = 'group-message') {
+  if (type === 'project-event' || type === 'project-reminders') {
+    return rows.map((row) => {
+      const reminder = row.event_kind === 'task' || row.event_kind === 'meeting';
+      return {
+        to: row.token,
+        ...notificationCopy(row, type),
+        channelId: reminder ? 'reminders' : 'messages',
+        ...(reminder ? {} : { sound: 'default' }),
+        threadId: `match:${row.match_id}`,
+        collapseId: `project:${row.source_id}`,
+        data: { url: `/chat/${row.match_id}`, matchId: row.match_id },
+      };
+    });
+  }
   if (type !== 'group-message')
     return rows.map((row) => {
       const direct = type === 'direct-message';
@@ -125,6 +139,8 @@ export async function handlePushRequest({ secretHeader, body, config, deps }) {
     'like-digest',
     'reengagement',
     'premium-expiry',
+    'project-event',
+    'project-reminders',
   ];
   if (body && Object.hasOwn(body, 'type') && !allowedTypes.includes(body.type))
     return { status: 400, body: { error: 'type' } };
@@ -134,8 +150,11 @@ export async function handlePushRequest({ secretHeader, body, config, deps }) {
     'direct-message': 'message_id',
     match: 'match_id',
     'group-activity': 'event_id',
+    'project-event': 'event_id',
   }[type];
-  const scheduled = ['like-digest', 'reengagement', 'premium-expiry'].includes(type);
+  const scheduled = ['like-digest', 'reengagement', 'premium-expiry', 'project-reminders'].includes(
+    type
+  );
   if ((!idKey && !scheduled) || !body || Array.isArray(body) || typeof body !== 'object') {
     return { status: 400, body: { error: 'type' } };
   }
@@ -172,7 +191,7 @@ export async function handlePushRequest({ secretHeader, body, config, deps }) {
     });
     dead.push(...deadTokens(batch, response.body));
   }
-  if (completed.size > 0) await deps.completeNotices([...completed]);
+  if (completed.size > 0) await deps.completeNotices([...completed], type);
   if (dead.length > 0) await deps.forgetTokens(dead);
   return { status: 200, body: { sent, forgotten: dead.length } };
 }

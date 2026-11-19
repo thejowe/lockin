@@ -269,6 +269,13 @@ describe('ProfileCard', () => {
       const rows = Array.from({ length: count }, (_, i) => ({
         id: 'p' + i,
         name: 'Demo ' + i,
+        authors:
+          i === 1
+            ? [
+                { id: 'a', name: 'Ada', avatar: profile.avatar },
+                { id: 'b', name: 'Pau', avatar: profile.avatar },
+              ]
+            : undefined,
         tagline: 'Frase ' + i,
         description: 'Solo en perfil',
         link: '',
@@ -300,6 +307,7 @@ describe('ProfileCard', () => {
         for (let i = 0; i < count; i++) {
           await press('right');
           expect(screen.getByText(rows[i].name)).toBeTruthy();
+          if (i === 1) expect(screen.getByLabelText('Autores: Ada y Pau', HIDDEN)).toBeTruthy();
           const panel = StyleSheet.flatten(screen.getByTestId('deck-project-panel').props.style);
           expect(
             contrastRatio(Colors.dark.text, '#FFFFFF', panel.backgroundColor)

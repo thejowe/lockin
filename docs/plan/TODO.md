@@ -1,5 +1,9 @@
 # TODO maestro — LockIn MVP
 
+## Proyecto conjunto en el chat · 19 de noviembre de 2026
+
+Rama local `chat/proyecto-conjunto`. El proyecto privado se crea desde el match y conserva el plan existente. La publicación en ambos perfiles requiere dos consentimientos. [Implementación y verificación local](todo/chat.md).
+
 ## Proyectos · 18 de noviembre de 2026
 
 Seguimiento por bloque en [datos](todo/datos.md), [perfil](todo/perfil.md), [descubrir](todo/descubrir.md), [visual](todo/visual.md) y [calidad](todo/calidad.md).
