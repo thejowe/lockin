@@ -16,6 +16,8 @@ module.exports = defineConfig([
       'e2e/.runtime/**',
       'e2e/artifacts/**',
       '.review-*/**',
+      // Proyectos de vídeo (HyperFrames): HTML, librerías minificadas y cachés, no la app.
+      'marketing/**',
       // Deno, no la app: sus imports `jsr:` no los resuelve este lint.
       'supabase/functions/**/index.ts',
     ],

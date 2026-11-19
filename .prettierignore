@@ -26,3 +26,6 @@ supabase/templates/
 
 # Copias temporales de `codex review` (git archive de un commit)
 .review-*/
+
+# Proyectos de vídeo (HyperFrames): los genera la herramienta, no la app.
+marketing/
