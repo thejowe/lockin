@@ -8,7 +8,7 @@
   match. Deshacer un swipe reciclado restaura la fecha del rechazo anterior.
 - [x] SQL y mock aplican los filtros, bloqueos, bajas, suspensiones y matches
   también a los reciclados. La recarga del deck respeta el orden del repositorio.
-- [ ] Pendiente de revisión y despliegue de `20261119214427_recycle_discovery_passes.sql`.
+- [x] Revisada y aplicada en producción el 2026-11-19 (remota `20261119233443`).
 
 ## Proyectos · 18 de noviembre de 2026
 

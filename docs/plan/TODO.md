@@ -9,7 +9,11 @@ Fusionadas `deck/rechazados-vuelven` y `perfil/barra-horas` en la rama principal
 - [x] Calidad tras la fusión: tsc, ESLint y Prettier en lo tocado, Jest 2.321 (las 3 suites con timeout por carga pasan en serie), SQL 295, funciones 119, guardias E2E 99.
 - [x] E2E de Maestro del alta (`full-journey.yaml`, `projects.yaml`) y `verify.mjs`: acepta 09:00–14:00, añade 15:00–16:00 y comprueba `work_ranges` y `['manana', 'tarde']`.
 - [ ] Comprobación en el emulador: la hace el usuario a mano.
-- [ ] Aplicar en producción `20261119214427_recycle_discovery_passes.sql` y `20261119215204_profile_work_range.sql`, solo con el ok del usuario y antes de distribuir un cliente que escriba `work_ranges`.
+- [x] Aplicadas en producción con el ok del usuario (2026-11-19) como `20261119233443_recycle_discovery_passes` y `20261119233538_profile_work_range`. Relleno verificado en los 15 perfiles (`updated_at` intacto) y md5 de las seis funciones iguales al repo.
+
+## Proyecto conjunto en el chat · 19 de noviembre de 2026
+
+Rama local `chat/proyecto-conjunto`. El proyecto privado se crea desde el match y conserva el plan existente. La publicación en ambos perfiles requiere dos consentimientos. [Implementación y verificación local](todo/chat.md).
 
 ## Proyectos · 18 de noviembre de 2026
 
