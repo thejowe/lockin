@@ -71,7 +71,7 @@ name: Alta, perfil, deck, match, mensaje y persistencia
 - extendedWaitUntil:
     visible: '¿Qué dominas?'
     timeout: 30000
-- tapOn: 'Desarrollo'
+- tapOn: 'Programación'
 # Marketing no es decorado: es lo que hace aparecer el ✓ en la primera tarjeta
 # del deck, porque Núria busca marketing y ventas.
 - tapOn: 'Marketing'
@@ -246,7 +246,7 @@ name: Alta, perfil, deck, match, mensaje y persistencia
     timeout: 30000
 # `seekingSpecialties` propia, declarada en el formulario y releída de Postgres
 # después del reinicio. "Diseño" solo puede venir de ahí: lo que domino en este
-# recorrido es Desarrollo y Marketing.
+# recorrido es Programación y Marketing.
 - scrollUntilVisible:
     element: '(?i)lo que busca'
     direction: DOWN

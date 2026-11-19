@@ -26,7 +26,7 @@ import type { Ambition, ModePreference, Specialty, StartingPoint, TimeBand } fro
 describe('etiquetas', () => {
   it('traduce cada código a su texto', () => {
     expect(modeLabel('lockin')).toBe('Compañero de Lock-In');
-    expect(specialtyLabel('dev')).toBe('Desarrollo');
+    expect(specialtyLabel('dev')).toBe('Programación');
     expect(startingPointLabel('algo-empezado')).toBe('Algo empezado');
     expect(ambitionLabel('todo-o-nada')).toBe('Apostarlo todo');
     expect(timeBandLabel('manana')).toBe('Mañana');

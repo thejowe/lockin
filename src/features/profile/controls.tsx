@@ -154,7 +154,7 @@ export function Chip({
   multiple?: boolean;
   /**
    * Cómo se anuncia el chip, si la etiqueta visible no basta. Hace falta cuando
-   * dos grupos comparten opciones —«Desarrollo» como algo que dominas y como
+   * dos grupos comparten opciones —«Programación» como algo que dominas y como
    * algo que buscas—: sin esto, quien navega a ciegas oye dos veces lo mismo.
    */
   accessibilityLabel?: string;

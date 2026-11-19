@@ -204,7 +204,7 @@ describe('DiscoverScreen', () => {
       await renderDiscover();
 
       await fireEvent.press(screen.getByLabelText('Filtros'));
-      await fireEvent.press(screen.getByLabelText('Desarrollo'));
+      await fireEvent.press(screen.getByLabelText('Programación'));
 
       await waitFor(() =>
         expect(getDeck).toHaveBeenLastCalledWith({ mode: 'par', specialties: ['dev'] })
@@ -245,7 +245,7 @@ describe('DiscoverScreen', () => {
       // Premium caduca con el filtro avanzado aún puesto; el siguiente cambio lo recarga.
       setMockPremium(false);
       const getDeck = jest.spyOn(repositories.discovery, 'getDeck');
-      await fireEvent.press(screen.getByLabelText('Desarrollo'));
+      await fireEvent.press(screen.getByLabelText('Programación'));
 
       await waitFor(() =>
         expect(screen.getByText('Tus filtros Premium se han quitado')).toBeTruthy()

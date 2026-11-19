@@ -68,7 +68,7 @@ export const SPECIALTY_OPTIONS: Option<Specialty>[] = [
   {
     value: 'dev',
     get label() {
-      return t('Desarrollo');
+      return t('Programación');
     },
   },
   {

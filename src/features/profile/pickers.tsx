@@ -74,7 +74,7 @@ export function SeekingSpecialtyPicker({
         <Chip
           key={option.value}
           label={option.label}
-          // Sin esto, «Desarrollo» nombraría dos chips distintos: el que domino
+          // Sin esto, «Programación» nombraría dos chips distintos: el que domino
           // y el que busco.
           accessibilityLabel={t('Busco {label}', { label: option.label })}
           multiple

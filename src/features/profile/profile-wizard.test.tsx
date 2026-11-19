@@ -37,7 +37,7 @@ async function toSpecialties() {
 /** Avanza hasta el paso de las horas con lo mínimo obligatorio. */
 async function toHours() {
   await toSpecialties();
-  await fireEvent.press(screen.getByRole('checkbox', { name: 'Desarrollo' }));
+  await fireEvent.press(screen.getByRole('checkbox', { name: 'Programación' }));
   await next();
   await skip(); // lo que busco
   await fireEvent.press(screen.getByRole('checkbox', { name: 'Español' }));
@@ -135,7 +135,7 @@ describe('ProfileWizard', () => {
   it('lo que busco es opcional: «Omitir» sigue y la flecha vuelve', async () => {
     await render(<ProfileWizard seed={SEED} submitLabel="Crear perfil" onSubmit={jest.fn()} />);
     await toSpecialties();
-    await fireEvent.press(screen.getByRole('checkbox', { name: 'Desarrollo' }));
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Programación' }));
     await next();
 
     expect(screen.getByText('¿Qué le pides a tu cofundador?')).toBeTruthy();
@@ -253,7 +253,7 @@ describe('ProfileWizard', () => {
   it('el idioma es obligatorio; los que busco, opcionales', async () => {
     await render(<ProfileWizard seed={SEED} submitLabel="Crear perfil" onSubmit={jest.fn()} />);
     await toSpecialties();
-    await fireEvent.press(screen.getByRole('checkbox', { name: 'Desarrollo' }));
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Programación' }));
     await next();
     await skip();
 
@@ -318,7 +318,7 @@ describe('ProfileWizard', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'España' }));
     await fireEvent.changeText(screen.getByLabelText('Ciudad'), 'Vigo');
     await next();
-    await fireEvent.press(screen.getByRole('checkbox', { name: 'Desarrollo' }));
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Programación' }));
     await next();
     await skip(); // lo que busco
     await fireEvent.press(screen.getByRole('checkbox', { name: 'Español' }));
