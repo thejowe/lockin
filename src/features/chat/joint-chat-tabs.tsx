@@ -20,6 +20,7 @@ import {
   PublicationControls,
 } from './joint-project-sheet';
 import { ChatTabBar, SharedPlan } from './shared-plan';
+import { useLastGood } from './use-last-good';
 
 export function JointChatTabs({
   match,
@@ -33,10 +34,13 @@ export function JointChatTabs({
   const [sheet, setSheet] = useState<'preview' | 'new' | Project | null>(null);
   const { id: matchId, counterpart } = match;
   const me = match.profileIds[0] === counterpart.id ? match.profileIds[1] : match.profileIds[0];
-  const { data, refresh, error } = useQuery('joint-workspace:' + matchId, async () => {
+  const query = useQuery('joint-workspace:' + matchId, async () => {
     const workspace = await projects.workspace(matchId);
     return { workspace, deletion: workspace ? null : await projects.lastDeletion(matchId) };
   });
+  const { refresh, error } = query;
+  // Un sondeo fallido no desmonta el editor ni las notas: se pierde lo escrito.
+  const data = useLastGood(query.data, error);
   const refreshMatch = useRefreshQuery('match:' + matchId);
   const refreshProjects = useRefreshQueryPrefix('projects');
   useFocusEffect(

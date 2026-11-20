@@ -17,6 +17,8 @@ import {
   type Profile,
 } from '@/data';
 
+import { useLastGood } from './use-last-good';
+
 export interface Conversation {
   match: MatchWithProfile | null;
   messages: Message[];
@@ -84,9 +86,13 @@ export function useConversation(matchId: string): Conversation {
   // montar con el teclado abierto, Android lo cerraba al perder el `TextInput`,
   // y el recorrido E2E se salía del chat en el `hideKeyboard` siguiente. Se vio
   // en el run 34160309273; ver `docs/plan/todo/chat.md`.
+  // Un corte de red en una relectura (el chat sondea cada 15 s) no tira la
+  // conversación ni lo que se está escribiendo; un match que ya no existe, sí.
+  const match = useLastGood(matchQuery.data, matchQuery.error);
+  const messages = useLastGood(messagesQuery.data, messagesQuery.error);
   return {
-    match: matchQuery.data,
-    messages: messagesQuery.data ?? [],
+    match,
+    messages: messages ?? [],
     me: meQuery.data,
     loading: matchQuery.loading || messagesQuery.loading,
     error: matchQuery.error ?? messagesQuery.error,

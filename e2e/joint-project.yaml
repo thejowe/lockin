@@ -1,0 +1,83 @@
+# Proyecto conjunto desde un chat 1:1. Flujo manual, como `projects.yaml`: no lo lanza run.mjs.
+# Requisitos: dos cuentas confirmadas con perfil completo, ya emparejadas entre sí
+# (A_NAME y B_NAME son sus nombres de perfil) y con una tarea en «Plan compartido»
+# llamada ${OLD_TASK}, creada antes del proyecto. Ninguna de las dos tiene tres
+# proyectos publicados.
+appId: app.cofounder.android
+name: Crear un proyecto conjunto, publicarlo con dos consentimientos y volver a privado
+---
+- assertTrue: ${A_EMAIL && A_PASSWORD && B_EMAIL && B_PASSWORD && A_NAME && B_NAME && PROJECT_NAME && OLD_TASK}
+- runFlow:
+    file: steps/sign-in-projects.yaml
+    env:
+      EMAIL: ${A_EMAIL}
+      PASSWORD: ${A_PASSWORD}
+- extendedWaitUntil:
+    visible: 'Matches'
+    timeout: 60000
+- tapOn: 'Matches'
+- tapOn: ${B_NAME}
+- tapOn: 'Plan compartido'
+- assertVisible: ${OLD_TASK}
+# Crear el proyecto: mismo editor y misma moderación que los proyectos de perfil.
+- tapOn: 'Crear proyecto juntos'
+- tapOn:
+    id: 'project-name'
+- inputText: ${PROJECT_NAME}
+- hideKeyboard
+- tapOn:
+    id: 'project-tagline'
+- inputText: 'Un mapa para compartir talleres'
+- hideKeyboard
+- tapOn: 'Guardar proyecto'
+- extendedWaitUntil:
+    visible: 'Ver ficha de ${PROJECT_NAME}'
+    timeout: 30000
+# La pestaña pasa a llamarse «Proyecto» y la tarea anterior sigue dentro.
+- assertVisible: 'Proyecto'
+- assertNotVisible: 'Plan compartido'
+- assertVisible: ${OLD_TASK}
+- takeScreenshot: proyecto-conjunto-creado
+# Asignar la tarea antigua a la otra persona.
+- tapOn: ${OLD_TASK}
+- tapOn: ${B_NAME}
+- tapOn: 'Guardar'
+- tapOn: 'Filtrar por responsable'
+- assertVisible: ${OLD_TASK}
+# Tarjeta compacta → hoja con la ficha pública. Privado por defecto.
+- tapOn: 'Ver ficha de ${PROJECT_NAME}'
+- assertVisible: 'Ficha del proyecto'
+- assertVisible: 'Solo vosotros podéis ver esta ficha.'
+- takeScreenshot: proyecto-conjunto-hoja
+- tapOn: 'Publicar en los perfiles'
+- extendedWaitUntil:
+    visible: 'Pendiente de la otra persona.'
+    timeout: 30000
+- tapOn: 'Cerrar'
+# La otra cuenta acepta.
+- runFlow:
+    file: steps/sign-in-projects.yaml
+    env:
+      EMAIL: ${B_EMAIL}
+      PASSWORD: ${B_PASSWORD}
+- extendedWaitUntil:
+    visible: 'Matches'
+    timeout: 60000
+- tapOn: 'Matches'
+- tapOn: ${A_NAME}
+- tapOn: 'Proyecto'
+- extendedWaitUntil:
+    visible: '¿Publicar en vuestros perfiles?'
+    timeout: 30000
+- tapOn: 'Aceptar publicación'
+- tapOn: 'Ver ficha de ${PROJECT_NAME}'
+- extendedWaitUntil:
+    visible: 'La ficha aparece en ambos perfiles.'
+    timeout: 30000
+- takeScreenshot: proyecto-conjunto-publicado
+# Volver a privado lo puede hacer cualquiera de los dos, sin pedir permiso.
+- tapOn: 'Publicar en los perfiles'
+- extendedWaitUntil:
+    visible: 'Solo vosotros podéis ver esta ficha.'
+    timeout: 30000
+- tapOn: 'Cerrar'
