@@ -1,5 +1,10 @@
 # TODO — calidad
 
+## Formato y cobertura para TestFlight · 20 de noviembre de 2026
+
+- [x] Prettier pasa en Linux tras formatear los 29 archivos que señalaba Actions. [Trabajo de Formato](https://github.com/thejowe/lockin/actions/runs/44727837278/job/136259826425)
+- [x] Jest pasa sobre `23422ee` con 2.435 pruebas en 189 suites. La cobertura alcanza el 95,45 % de sentencias, 89,76 % de ramas, 94,69 % de funciones y 96,87 % de líneas. Los casos añadidos ejercitan la revisión de las fichas y sus permisos, galería, notas, lecturas de chat, recuperación de cuenta y navegación. La suite optativa de contrato se ejecuta en su propio trabajo. [Trabajo de Tests](https://github.com/thejowe/lockin/actions/runs/44727837278/job/136259826496)
+
 ## Proyecto conjunto · 19 de noviembre de 2026
 
 - [x] TypeScript y ESLint terminan con código 0. ESLint conserva cinco avisos anteriores. Jest pasa 2.296 pruebas en 175 suites; se omiten 233 pruebas, entre ellas el contrato optativo contra Supabase.
