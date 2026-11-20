@@ -69,9 +69,12 @@ export function mockProjects(
   const detached = (p: Project) => store.state.jointProjects.get(p.id)?.detached ?? false;
   const hasPhotos = (p: Pick<Project, 'cover' | 'photos'>) => !!p.cover || p.photos.length > 0;
   // Espejo de `require_public_media`: sin el interruptor, nada compartido con fotos se publica.
-  function requirePublicMedia(p: Pick<Project, 'cover' | 'photos'>) {
+  function requirePublicMedia(
+    p: Pick<Project, 'cover' | 'photos'>,
+    kind: 'save' | 'publish' = 'publish'
+  ) {
     if (hasPhotos(p) && !store.state.appConfig.sharedProjectPhotos)
-      throw new Error(sharedPhotosLockedMessage());
+      throw new Error(sharedPhotosLockedMessage(kind));
   }
   // Espejo de `media_public`: quien no es autor no ve una ficha compartida con fotos sin el interruptor.
   const mediaPublic = (p: Project) =>
@@ -130,8 +133,9 @@ export function mockProjects(
         throw new Error(t('Puedes tener hasta tres proyectos.'));
       const group = old && store.state.groups.find((g) => g.projectId === old.id);
       if (group && group.adminId !== actor) throw conflict();
-      if (old && store.state.jointProjects.has(old.id) && (group || published(old)))
-        requirePublicMedia(input);
+      // Sin el interruptor, un proyecto compartido no lleva fotos ni en privado.
+      if ((old && store.state.jointProjects.has(old.id)) || (!old && match))
+        requirePublicMedia(input, 'save');
       const next = projectRecord(
         input,
         old?.id ?? draftId ?? store.createId('project'),

@@ -77,13 +77,23 @@ export function newProjectId(): string {
   );
 }
 
-/** El servidor no publica fotos compartidas mientras su interruptor esté apagado. */
-export function sharedPhotosLockedMessage(group = false): string {
-  return group
-    ? t('Por ahora los grupos de proyecto no pueden llevar fotos. Quita las fotos para crearlo.')
-    : t(
-        'Por ahora los proyectos compartidos con fotos no se pueden publicar. Quita las fotos o mantenlo privado.'
-      );
+/**
+ * Mientras el interruptor `app_config.shared_project_photos` esté apagado, un
+ * proyecto conjunto o de grupo no lleva fotos (`save`), ni se publica con ellas
+ * si las tenía de antes (`publish`).
+ */
+export function sharedPhotosLockedMessage(kind: 'group' | 'save' | 'publish' = 'publish'): string {
+  if (kind === 'group')
+    return t(
+      'Por ahora los grupos de proyecto no pueden llevar fotos. Quita las fotos para crearlo.'
+    );
+  if (kind === 'save')
+    return t(
+      'Por ahora los proyectos compartidos no pueden llevar fotos. Quítalas para guardarlo.'
+    );
+  return t(
+    'Por ahora los proyectos compartidos con fotos no se pueden publicar. Quita las fotos o mantenlo privado.'
+  );
 }
 
 export function validateProject(input: ProjectInput) {

@@ -1,8 +1,8 @@
 import { createMockRepositories, createMockStore } from '@/data/mock';
 
 // Espejo del interruptor `app_config.shared_project_photos` de
-// 20261120100000_shared_projects_followups.sql: con él apagado, una ficha
-// compartida con fotos funciona en privado pero no se publica.
+// 20261120100000_shared_projects_followups.sql: con él apagado, un proyecto
+// compartido no lleva fotos (ni en privado) ni se publica con las que ya tenía.
 describe('interruptor de fotos compartidas — mock', () => {
   const draft = {
     name: 'Atlas',
@@ -19,21 +19,26 @@ describe('interruptor de fotos compartidas — mock', () => {
     const b = createMockRepositories(store, { actorId: 'seed-nuria' });
     await b.discovery.recordDecision('seed-marc', 'like');
     const { match } = await a.discovery.recordDecision('seed-nuria', 'like');
-    await a.projects.save(draft, undefined, undefined, match!.id);
     return { store, a, b, matchId: match!.id };
   }
 
-  it('apagado: la ficha con portada existe en privado y proponer publicarla se rechaza', async () => {
-    const { a, b, matchId } = await setup();
-    const workspace = (await b.projects.workspace(matchId))!;
-    expect(workspace.project.cover).toBeTruthy();
-    await expect(a.projects.publication(workspace.project, 'propose')).rejects.toThrow(
-      'Por ahora los proyectos compartidos con fotos no se pueden publicar.'
+  it('apagado: un proyecto conjunto con portada no se guarda; sin fotos, sí', async () => {
+    const { a, matchId } = await setup();
+    await expect(a.projects.save(draft, undefined, undefined, matchId)).rejects.toThrow(
+      'Por ahora los proyectos compartidos no pueden llevar fotos.'
     );
+    await a.projects.save({ ...draft, cover: null }, undefined, undefined, matchId);
+    expect(await a.projects.workspace(matchId)).not.toBeNull();
   });
 
-  it('encendido: se propone y se acepta como siempre', async () => {
+  it('las fotos de cuando estaba encendido no se publican si se apaga', async () => {
     const { store, a, b, matchId } = await setup();
+    store.state.appConfig.sharedProjectPhotos = true;
+    await a.projects.save(draft, undefined, undefined, matchId);
+    store.state.appConfig.sharedProjectPhotos = false;
+    await expect(
+      a.projects.publication((await a.projects.workspace(matchId))!.project, 'propose')
+    ).rejects.toThrow('Por ahora los proyectos compartidos con fotos no se pueden publicar.');
     store.state.appConfig.sharedProjectPhotos = true;
     await a.projects.publication((await a.projects.workspace(matchId))!.project, 'propose');
     await b.projects.publication((await b.projects.workspace(matchId))!.project, 'accept');

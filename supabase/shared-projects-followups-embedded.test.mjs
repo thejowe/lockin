@@ -127,23 +127,13 @@ test('seguimiento de proyectos compartidos antes de producción', async (t) => {
       });
     });
 
-    await t.test('con el interruptor apagado no se publica nada compartido con fotos', () =>
+    await t.test('con el interruptor apagado un proyecto compartido no lleva fotos', () =>
       isolated(async () => {
         const match = await newMatch();
-        const project = await create(match);
-        // En privado funciona: los dos autores la ven.
-        await as(b);
-        assert.equal((await rows('select id from public.profile_projects')).length, 1);
-        await fails(() => publication(a, project, 'propose'), 'PJ423');
-        // Sin fotos sí se puede proponer y aceptar.
-        const plain = await create(
-          await (async () => {
-            await admin();
-            await db.query('delete from public.project_workspaces where project_id=$1', [project]);
-            return match;
-          })(),
-          false
-        );
+        // Ni siquiera en privado: el coautor con la versión de las tiendas no podría firmarlas.
+        await fails(() => create(match), 'PJ423');
+        // Sin fotos sí se crea, se propone y se acepta.
+        const plain = await create(match, false);
         await publication(a, plain, 'propose');
         await publication(b, plain, 'accept');
         await as(reader);
@@ -151,7 +141,7 @@ test('seguimiento de proyectos compartidos antes de producción', async (t) => {
           (await rows('select id from public.profile_projects where id=$1', [plain])).length,
           1
         );
-        // Añadir una foto a una ficha publicada se rechaza.
+        // Añadir una foto se rechaza.
         const revision = await revisionOf(plain);
         await service();
         await fails(
@@ -165,7 +155,7 @@ test('seguimiento de proyectos compartidos antes de producción', async (t) => {
             ]),
           'PJ423'
         );
-        // Si se apaga después de publicar con fotos, quien no es autor deja de verla.
+        // Si se apaga cuando ya tenía fotos, quien no es autor deja de verla.
         await admin();
         await db.exec('update public.app_config set shared_project_photos=true');
         await service();

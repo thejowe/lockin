@@ -1,8 +1,8 @@
 -- Follow-ups to joint and group projects before their first production rollout.
 --
--- 1. Server configuration: a switch that keeps shared project photos out of
---    public surfaces (the store build signs every listed photo and its project
---    list fails on a shared/ path), and the minimum app version.
+-- 1. Server configuration: a switch that keeps photos out of shared projects
+--    (the store build signs every listed photo and its project list fails on a
+--    shared/ path), and the minimum app version per storefront.
 -- 2. A detached joint project becomes a private personal project of the
 --    remaining author, listed in their own profile.
 -- 3. An unmatched pair is closed for good: no replayed like recreates the match
@@ -222,10 +222,19 @@ begin
     end if;
     return;
   end if;
-  if p_action = 'save' and p_revision is not null then
-    select * into card from public.profile_projects where id=p_id;
-    if found and card.joint and (card.published or team.id is not null) then
-      perform project_private.require_public_media(photos);
+  -- With the switch off a shared project carries no photos at all, even while
+  -- private: a co-author on the store build lists the creator's projects and
+  -- cannot sign a shared/ path. Personal projects are unaffected.
+  if p_action = 'save' then
+    if p_revision is null then
+      if p_match_id is not null then
+        perform project_private.require_public_media(photos);
+      end if;
+    else
+      select * into card from public.profile_projects where id=p_id;
+      if found and card.joint then
+        perform project_private.require_public_media(photos);
+      end if;
     end if;
   end if;
   perform project_private.commit_moderated_project(p_actor,p_id,p_revision,p_match_id,p_action,p_values);

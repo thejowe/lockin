@@ -1314,5 +1314,6 @@
   "Hay una versión nueva de cofounder": "There’s a new version of cofounder",
   "Actualiza la app para seguir usándola. Esta versión ya no es compatible.": "Update the app to keep using it. This version is no longer supported.",
   "No se ha podido abrir la tienda.": "Couldn’t open the store.",
-  "Actualizar": "Update"
+  "Actualizar": "Update",
+  "Por ahora los proyectos compartidos no pueden llevar fotos. Quítalas para guardarlo.": "For now, shared projects can’t include photos. Remove them to save it."
 }

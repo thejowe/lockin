@@ -48,10 +48,11 @@ export async function handleProject(user, body, deps) {
     )
       return failure(422, 'invalid');
 
-    // A group project is public from the start: with the photo switch off, refuse
-    // before downloading or moderating anything. SQL checks again at commit.
+    // With the photo switch off a shared project (group, or joint from a match)
+    // carries no photos: refuse before downloading or moderating anything.
+    // SQL checks again at commit.
     if (
-      body.group != null &&
+      (body.group != null || body.matchId != null || old?.joint === true) &&
       images.some((image) => image?.pending || image?.keep) &&
       deps.sharedPhotosEnabled &&
       !(await deps.sharedPhotosEnabled())

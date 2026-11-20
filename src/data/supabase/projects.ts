@@ -45,7 +45,7 @@ export function supabaseProjects(
     if (code === 'LQ005') throw toPremiumError({ code, message: code });
     if (details?.error === 'full') throw new Error(t('Puedes tener hasta tres proyectos.'));
     if (details?.error === 'photos-locked')
-      throw new Error(sharedPhotosLockedMessage(body.group != null));
+      throw new Error(sharedPhotosLockedMessage(body.group != null ? 'group' : 'save'));
     if (details?.error === 'conflict')
       throw new Error(t('El proyecto ha cambiado. Vuelve a abrirlo.'));
     throw new Error(t('No se ha podido guardar.'));

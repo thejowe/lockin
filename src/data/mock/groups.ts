@@ -273,7 +273,7 @@ export function createMockGroupRepository(
           (input.project.cover || input.project.photos.length) &&
           !state.appConfig.sharedProjectPhotos
         )
-          throw new Error(sharedPhotosLockedMessage(true));
+          throw new Error(sharedPhotosLockedMessage('group'));
         const existing = state.groups.find((entry) => entry.projectId === input.projectDraftId);
         if (existing?.adminId === actorId) {
           // Reintento tras perder la respuesta: con nadie más dentro, guarda el borrador actual.

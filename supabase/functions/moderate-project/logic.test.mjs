@@ -198,3 +198,12 @@ test('a group with photos is refused before any moderation while the switch is o
   assert.equal(reply.body.error, 'photos-locked');
   assert.equal(moderated, 0);
 });
+
+test('a joint project from a match is refused with photos while the switch is off', async () => {
+  const { deps, body } = fixture();
+  deps.sharedPhotosEnabled = async () => false;
+  const reply = await handleProject('me', { ...body, matchId: 'match' }, deps);
+  assert.equal(reply.body.error, 'photos-locked');
+  deps.sharedPhotosEnabled = async () => true;
+  assert.equal((await handleProject('me', { ...body, matchId: 'match' }, deps)).status, 200);
+});
