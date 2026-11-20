@@ -83,20 +83,12 @@ describe('full-journey declara lo que busca la persona', () => {
     // control negativo tiene que llegar al `stopApp` para significar algo.
     const gate = journey.lastIndexOf("true: ${DECK_FIXTURE == 'postgres'}");
     assert(gate >= 0, 'El bloque del deck ya no está condicionado al backend real');
-    // Solo dos `runFlow` en todo el recorrido, ambos con la misma condición: el
-    // primero vuelve a la página «Busca» de la tarjeta de Núria (el tour la deja
-    // en otra) y el segundo lleva las cuatro aserciones. Nadie ha colado más
-    // pasos fuera de la variante que decide el color, la que lleva credenciales.
-    assert.equal(
-      journey.split('- runFlow:').length - 1,
-      2,
-      'Hay más de dos bloques condicionales: el recorrido ha dejado de ser el mismo en las dos variantes'
-    );
-    assert.equal(
-      journey.split("true: ${DECK_FIXTURE == 'postgres'}").length - 1,
-      2,
-      'Los dos bloques condicionales deben depender solo del backend real'
-    );
+    // El tour y la navegación de vuelta se prueban también con el mock.
+    assert.equal(journey.split('- runFlow:').length - 1, 1);
+    const right = at("id: 'deck-tap-right'");
+    const tour = at("visible: 'Siguiente explicación'");
+    const left = at("id: 'deck-tap-left'");
+    assert(right >= 0 && right < tour && tour < left && left < gate);
     // Se lee el bloque entero, no solo su presencia: lo condicionado tiene que
     // ser EXACTAMENTE esas cuatro líneas. Si algo más se cuela aquí dentro deja
     // de correr con el mock, y el control negativo se vacía sin que se note.

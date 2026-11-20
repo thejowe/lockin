@@ -10,9 +10,11 @@ appId: app.cofounder.android
 name: Alta, perfil, deck, match, mensaje y persistencia
 ---
 - assertTrue: ${PROFILE_NAME && MESSAGE && (DECK_FIXTURE == 'postgres' || DECK_FIXTURE == 'memoria')}
-# Registro actual: Auth anónimo automático; no existe pantalla de login.
+# En el backend local el alta abre automáticamente la cuenta de dispositivo.
 - launchApp:
     clearState: true
+    permissions:
+      all: allow
 # Bienvenida (desde el 2026-10-17): logo y dos salidas. Desde el 2026-10-12 no
 # se elige modo, todo perfil es de cofundador. Sin la puerta del registro (mock,
 # o `REQUIRE_ACCOUNT=false` en la variante supabase) «Registrarse» va directo al
@@ -187,24 +189,22 @@ name: Alta, perfil, deck, match, mensaje y persistencia
 # `stopApp`. Se saltan SOLO en esa variante; el resto del recorrido, reinicio y
 # persistencia incluidos, es idéntico en las dos. Quien lo pone verde es la
 # variante con credenciales, y ahí se ejecutan siempre.
-# El tour de botones (Deshacer, Super Like, Boost, Filtros) tapa el deck en la primera
-# visita y cada toque solo lo avanza: se pasa antes de dar like.
+# La primera navegación de la tarjeta retira la mano y abre el tour de botones.
+# Al terminar volvemos a la primera página, que contiene la fila «Busca».
+- tapOn:
+    id: 'deck-tap-right'
+- extendedWaitUntil:
+    visible: 'Siguiente explicación'
+    timeout: 10000
 - repeat:
+    times: 4
     while:
       visible: 'Siguiente explicación'
     commands:
       - tapOn: 'Siguiente explicación'
-- runFlow:
-    when:
-      true: ${DECK_FIXTURE == 'postgres'}
-    commands:
-      - repeat:
-          times: 4
-          while:
-            notVisible: '(?i)busca'
-          commands:
-            - tapOn:
-                id: 'deck-tap-right'
+- assertNotVisible: 'Siguiente explicación'
+- tapOn:
+    id: 'deck-tap-left'
 - runFlow:
     when:
       true: ${DECK_FIXTURE == 'postgres'}

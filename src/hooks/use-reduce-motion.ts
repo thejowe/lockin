@@ -27,9 +27,8 @@ export function useReduceMotion(initialValue = false): boolean {
   useEffect(() => {
     let mounted = true;
 
-    // La consulta inicial es asíncrona: hasta que responda se anima, que es el
-    // comportamiento de siempre. Si el usuario lo tiene puesto, el primer swipe
-    // ya llega con el valor bueno — la respuesta tarda mucho menos que él.
+    // Cada vista decide si debe animar antes de recibir el ajuste. Los formularios
+    // se muestran completos hasta saber que el sistema permite sus entradas.
     void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
       if (mounted) setReduceMotion(enabled);
     });

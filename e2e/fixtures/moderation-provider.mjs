@@ -4,6 +4,8 @@
  * Only the external classifier is replaced. It accepts our solid-color fixture,
  * including Android Gallery's JPEG re-encoding after cropping it.
  */
+/* global Deno */
+// eslint-disable-next-line import/no-unresolved -- npm: is resolved by the local Deno worker.
 import jpeg from 'npm:jpeg-js@0.4.4';
 
 const backend = new URL(Deno.env.get('SUPABASE_URL'));
@@ -32,4 +34,5 @@ globalThis.fetch = async (resource, options) => {
 };
 
 Deno.env.set('OPENAI_API_KEY', 'local-e2e-provider');
+// eslint-disable-next-line import/no-unresolved -- run.mjs copies this from the shipped function.
 await import('./server.ts');

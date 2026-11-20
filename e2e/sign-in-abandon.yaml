@@ -3,7 +3,7 @@
 # `src/features/profile/sign-in-form.tsx` y sus dos salidas.
 #
 # Solo en la variante `supabase`, encadenado por run.mjs DESPUÉS de
-# agreement.yaml y SIN borrar el estado: hereda la cuenta anónima y el perfil
+# agreement.yaml y SIN borrar el estado: hereda la cuenta de dispositivo y el perfil
 # `${ANON_PROFILE_NAME}` que creó full-journey.yaml. Es la única forma de que
 # `abandonsUnrecoverableProfile()` responda que sí; `sign-in.yaml` arranca con
 # `clearState: true` y ahí no hay perfil que perder. La variante `registro` no

@@ -13,13 +13,17 @@ nadie.
 
 ## Qué demuestra
 
-Alta anónima automática → selección de modo → formulario completo → deck → like
+Alta automática → formulario completo → avatar → deck → like
 → modal de match → chat → envío → **parada del proceso y relanzamiento sin
 borrar almacenamiento** → perfil y conversación recuperados desde la UI.
 
 **La puerta de registro va apagada en `supabase`.** `buildEnv()` compila ese
-APK con `EXPO_PUBLIC_REQUIRE_ACCOUNT=false` para recorrer el producto desde
-el alta anónima. La variante `registro` tiene la puerta encendida y recorre
+APK con `EXPO_PUBLIC_REQUIRE_ACCOUNT=false`. GoTrue local usa la cuenta de dispositivo
+confirmada que crea la app. Puede publicar un avatar y sigue siendo irrecuperable
+desde otro teléfono. Se selecciona y recorta `fixtures/avatar.png` en Android.
+La Edge Function real valida la sesión y publica en Storage. El único servicio
+simulado es el proveedor externo de clasificación, que acepta los píxeles de esa
+imagen de prueba. La variante `registro` tiene la puerta encendida y recorre
 el email, el correo de Mailpit, el callback y la contraseña, seguidos de la
 entrada y la recuperación de cuenta descritas más abajo. Una build de usuario
 no lleva esa variable.
@@ -40,7 +44,7 @@ se guarda en AsyncStorage; los datos de producto se recuperan de Postgres.
 No sustituir la parada por background/foreground ni quitar las aserciones posteriores.
 
 El runner verifica además, mediante lecturas administrativas locales, que hay
-usuario anónimo, perfil con los valores escritos, modo, decisión propia, match
+cuenta de dispositivo, avatar descargable, perfil con los valores escritos, modo, decisión propia, match
 con su contraparte y mensaje exacto enlazados. La clave administrativa nunca se
 pasa al build ni a Maestro. No se precrea el perfil/match/mensaje bajo prueba.
 

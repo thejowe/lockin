@@ -54,6 +54,19 @@ describe('useReduceMotion', () => {
     expect(view.result.current).toBe(true);
   });
 
+  it('permite mostrar el formulario completo mientras se consulta el ajuste', async () => {
+    let reply!: (enabled: boolean) => void;
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockReturnValue(
+      new Promise<boolean>((resolve) => {
+        reply = resolve;
+      })
+    );
+    const view = await renderHook(() => useReduceMotion(true));
+    expect(view.result.current).toBe(true);
+    await act(async () => reply(false));
+    expect(view.result.current).toBe(false);
+  });
+
   it('con el ajuste activado en el sistema, deja de animarse', async () => {
     jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
 
