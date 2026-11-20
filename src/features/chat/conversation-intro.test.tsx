@@ -62,7 +62,7 @@ describe('ConversationIntro', () => {
     match.counterpart.specialties = ['dev'];
     await render(<ConversationIntro match={match} />);
 
-    expect(screen.getByText('desarrollo · Girona')).toBeTruthy();
+    expect(screen.getByText('programación · Girona')).toBeTruthy();
   });
 
   it('escribe la disponibilidad en horas y franjas legibles', async () => {

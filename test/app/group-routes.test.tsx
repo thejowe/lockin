@@ -101,8 +101,8 @@ describe('textos', () => {
 
   it('el cargo de cada miembro', () => {
     expect(memberRoleLabel({ specialty: null, isAdmin: true })).toBe('Admin');
-    expect(memberRoleLabel({ specialty: 'dev', isAdmin: true })).toBe('Admin · Desarrollo');
-    expect(memberRoleLabel({ specialty: 'dev', isAdmin: false })).toBe('Desarrollo');
+    expect(memberRoleLabel({ specialty: 'dev', isAdmin: true })).toBe('Admin · Programación');
+    expect(memberRoleLabel({ specialty: 'dev', isAdmin: false })).toBe('Programación');
     expect(memberRoleLabel({ specialty: null, isAdmin: false })).toBe('Miembro');
   });
 });
@@ -133,7 +133,7 @@ describe('/group/new', () => {
     await withProfile();
     await renderRoute(<NewGroupRoute />);
 
-    await fireEvent.press(screen.getByRole('checkbox', { name: 'Perfil: Desarrollo' }));
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Perfil: Programación' }));
     expect(screen.getByText('1 persona')).toBeTruthy();
     for (let i = 0; i < 3; i += 1) {
       await fireEvent.press(screen.getByRole('button', { name: 'Sumar' }));
@@ -156,7 +156,7 @@ describe('/group/new', () => {
     await withProfile();
     await renderRoute(<NewGroupRoute />);
     await fill();
-    await fireEvent.press(screen.getByRole('checkbox', { name: 'Perfil: Desarrollo' }));
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Perfil: Programación' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Sumar' }));
 
     await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
@@ -176,7 +176,7 @@ describe('/group/new', () => {
       .mockRejectedValueOnce(new GroupError('already-admin', 'ya'));
     await renderRoute(<NewGroupRoute />);
     await fill();
-    await fireEvent.press(screen.getByRole('checkbox', { name: 'Perfil: Desarrollo' }));
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Perfil: Programación' }));
 
     await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
     await waitFor(() => expect(screen.getByText(/Ya administras un grupo/)).toBeTruthy());
@@ -209,11 +209,11 @@ describe('/group/edit', () => {
     );
     expect(screen.getByText('Ya hay 1 persona.')).toBeTruthy();
 
-    // Desarrollo tiene a Inés: el chip no se deselecciona y lo explica.
-    await fireEvent.press(screen.getByRole('checkbox', { name: 'Perfil: Desarrollo' }));
-    expect(screen.getByText(/En Desarrollo ya hay gente/)).toBeTruthy();
+    // Programación tiene a Inés: el chip no se deselecciona y lo explica.
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Perfil: Programación' }));
+    expect(screen.getByText(/En Programación ya hay gente/)).toBeTruthy();
     expect(
-      screen.getByRole('checkbox', { name: 'Perfil: Desarrollo' }).props.accessibilityState
+      screen.getByRole('checkbox', { name: 'Perfil: Programación' }).props.accessibilityState
     ).toMatchObject({
       checked: true,
     });
@@ -297,7 +297,7 @@ describe('/group/info', () => {
 
     await waitFor(() => expect(screen.getByText('Inés Aranda')).toBeTruthy());
     expect(screen.getByText('2 de 6 miembros')).toBeTruthy();
-    expect(screen.getByText('Desarrollo · 1 de 2 libres')).toBeTruthy();
+    expect(screen.getByText('Programación · 1 de 2 libres')).toBeTruthy();
     expect(screen.getByText('Admin')).toBeTruthy();
 
     await fireEvent.press(screen.getByRole('button', { name: 'Ver el perfil de Inés Aranda' }));
@@ -318,7 +318,7 @@ describe('/group/info', () => {
 
     await waitFor(() => expect(screen.getByText('1 de 6 miembros')).toBeTruthy());
     expect(screen.queryByText('Inés Aranda')).toBeNull();
-    expect(screen.getByText('Desarrollo · 2 de 2 libres')).toBeTruthy();
+    expect(screen.getByText('Programación · 2 de 2 libres')).toBeTruthy();
     expect((await as('seed-ines').groups.listMine())[0] ?? null).toBeNull();
   });
 

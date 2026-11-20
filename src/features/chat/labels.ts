@@ -15,7 +15,7 @@ export const SPECIALTY_LABELS: Record<Specialty, string> = {
     return t('diseño');
   },
   get dev() {
-    return t('desarrollo');
+    return t('programación');
   },
   get marketing() {
     return t('marketing');

@@ -29,7 +29,7 @@ describe('DeckFilters', () => {
     const { ui, onChange, onLocked } = setup();
     await render(ui);
 
-    await fireEvent.press(screen.getByLabelText('Desarrollo'));
+    await fireEvent.press(screen.getByLabelText('Programación'));
 
     expect(onChange).toHaveBeenCalledWith({ specialties: ['dev'] });
     expect(onLocked).not.toHaveBeenCalled();
@@ -39,7 +39,7 @@ describe('DeckFilters', () => {
     const { ui, onChange } = setup({ specialties: ['dev'] });
     await render(ui);
 
-    await fireEvent.press(screen.getByLabelText('Desarrollo'));
+    await fireEvent.press(screen.getByLabelText('Programación'));
 
     expect(onChange).toHaveBeenCalledWith({});
   });

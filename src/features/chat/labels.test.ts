@@ -26,7 +26,7 @@ describe('etiquetas de dominio', () => {
 
   it('traduce las especialidades al castellano', () => {
     expect(SPECIALTY_LABELS.diseno).toBe('diseño');
-    expect(SPECIALTY_LABELS.dev).toBe('desarrollo');
+    expect(SPECIALTY_LABELS.dev).toBe('programación');
   });
 
   it('enumera con «y» y sin coma de Oxford', () => {

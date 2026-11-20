@@ -6,7 +6,7 @@
  * enganchan en Descubrir (el selector) y en Matches (una fila por grupo).
  *
  * El mock nace con dos grupos semilla; «Taller Abierto» ya le ha dado like a la
- * cuenta propia para su puesto de desarrollo.
+ * cuenta propia para su puesto de programación.
  *
  * Ojo: en RNTL 14 `render` y `fireEvent` son asíncronos.
  */
@@ -56,7 +56,7 @@ async function renderSection(
 /** El nombre de un grupo sale más de una vez en su tarjeta: basta con el primero. */
 const groupName = (name: string) => screen.getAllByText(name)[0];
 
-/** `seed-alba` y `seed-ines` crean un grupo con un puesto de desarrollo y meten a la cuenta propia. */
+/** `seed-alba` y `seed-ines` crean un grupo con un puesto de programación y meten a la cuenta propia. */
 async function joinSeedGroups(admins: string[]) {
   for (const admin of admins) {
     const view = await as(admin).groups.create({ ...INPUT, name: `De ${admin}` });
@@ -79,8 +79,8 @@ describe('quien busca grupo', () => {
     expect(groupName('Taller Abierto')).toBeTruthy();
     expect(screen.getByText('2 de 6 miembros')).toBeTruthy();
     expect(screen.getByText('Encajas como')).toBeTruthy();
-    expect(screen.getByText('✓ Desarrollo')).toBeTruthy();
-    expect(screen.getByText('Desarrollo · 2 de 2 libres')).toBeTruthy();
+    expect(screen.getByText('✓ Programación')).toBeTruthy();
+    expect(screen.getByText('Programación · 2 de 2 libres')).toBeTruthy();
     expect(screen.getByText('Marketing · completo')).toBeTruthy();
     expect(onDeckActive).toHaveBeenLastCalledWith(true);
 
@@ -299,7 +299,7 @@ describe('quien administra un grupo', () => {
 
     expect(screen.getByText('Buscando gente para Mi Equipo')).toBeTruthy();
     expect(
-      screen.getAllByText('Cubriría: Desarrollo', { includeHiddenElements: true }).length
+      screen.getAllByText('Cubriría: Programación', { includeHiddenElements: true }).length
     ).toBe(2);
     expect(onDeckActive).toHaveBeenLastCalledWith(true);
 

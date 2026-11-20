@@ -57,7 +57,7 @@ name: Crear un proyecto en el alta y descubrirlo desde otra cuenta
 - extendedWaitUntil:
     visible: '¿Qué dominas?'
     timeout: 30000
-- tapOn: 'Desarrollo'
+- tapOn: 'Programación'
 - tapOn: 'Marketing'
 - tapOn: 'Continuar'
 - extendedWaitUntil:

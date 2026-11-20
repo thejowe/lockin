@@ -121,7 +121,7 @@ describe('ProfileCard', () => {
 
     expect(screen.getByText('Domina')).toBeTruthy();
     expect(screen.getByText('Busca')).toBeTruthy();
-    expect(screen.getByText('Desarrollo')).toBeTruthy();
+    expect(screen.getByText('Programación')).toBeTruthy();
     expect(screen.getByText('Marketing')).toBeTruthy();
   });
 

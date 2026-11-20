@@ -17,8 +17,9 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react-nativ
 import { ScrollView } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
-
+import { createMockRepositories, createMockStore } from '@/data/mock';
 import { buildProfile } from '@/data/test-fixtures';
+import { setLocalePreference } from '@/i18n';
 
 import { ProfileForm } from './profile-form';
 
@@ -31,7 +32,7 @@ async function fillValidForm() {
   await fireEvent.changeText(screen.getByLabelText('País'), 'espa');
   await fireEvent.press(screen.getByRole('button', { name: 'España' }));
   await fireEvent.changeText(screen.getByLabelText('Ciudad'), 'Barcelona');
-  await fireEvent.press(screen.getByLabelText('Desarrollo'));
+  await fireEvent.press(screen.getByLabelText('Programación'));
   await fireEvent.press(screen.getByLabelText('Español'));
   await fireEvent.press(screen.getByLabelText('Idea sin empezar'));
   await fireEvent(
@@ -191,7 +192,7 @@ describe('ProfileForm', () => {
     await render(<ProfileForm submitLabel="Guardar" onSubmit={jest.fn()} />);
     await fillValidForm();
     // Se desmarca la especialidad que `fillValidForm` eligió: es lo único que falta.
-    await fireEvent.press(screen.getByLabelText('Desarrollo'));
+    await fireEvent.press(screen.getByLabelText('Programación'));
 
     // Sin layout real en jest, cada campo declara dónde cae; el contenedor es el
     // padre de su etiqueta.
@@ -323,11 +324,46 @@ describe('ProfileForm', () => {
   });
 
   describe('lo que debe dominar quien busco', () => {
+    describe('programación en un perfil existente', () => {
+      afterEach(async () => {
+        await setLocalePreference('auto');
+      });
+
+      it.each([
+        ['es', 'Programación', 'Busco Programación'],
+        ['ca', 'Programació', 'Busco Programació'],
+        ['en', 'Development', 'Looking for Development'],
+      ] as const)('en %s lee y guarda dev en ambas listas', async (locale, label, seekingLabel) => {
+        await setLocalePreference(locale);
+        const { profiles } = createMockRepositories(createMockStore());
+        const initial = buildProfile({ specialties: ['dev'], seekingSpecialties: [] });
+        await render(
+          <ProfileForm
+            initial={initial}
+            section="specialties"
+            submitLabel="OK"
+            onSubmit={async (input) => {
+              await profiles.saveCurrent(input);
+            }}
+          />
+        );
+
+        expect(screen.getByRole('checkbox', { name: label })).toBeSelected();
+        await fireEvent.press(screen.getByRole('checkbox', { name: seekingLabel }));
+        await fireEvent.press(screen.getByRole('button', { name: 'OK' }));
+
+        await expect(profiles.getCurrent()).resolves.toMatchObject({
+          specialties: ['dev'],
+          seekingSpecialties: ['dev'],
+        });
+      });
+    });
+
     it('se pregunta siempre: todo el mundo busca cofundador', async () => {
       await render(<ProfileForm submitLabel="Guardar" onSubmit={jest.fn()} />);
 
       expect(screen.getByText('Lo que debe dominar quien busco')).toBeTruthy();
-      expect(screen.getByLabelText('Busco Desarrollo')).toBeTruthy();
+      expect(screen.getByLabelText('Busco Programación')).toBeTruthy();
       // Ya no se pregunta qué se busca: no hay modo que elegir.
       expect(screen.queryByText('Qué busco')).toBeNull();
       expect(screen.queryByLabelText('Compañero de Lock-In')).toBeNull();
@@ -391,7 +427,7 @@ describe('ProfileForm', () => {
       );
 
       expect(screen.getByLabelText('Busco Diseño')).toBeSelected();
-      expect(screen.getByLabelText('Busco Desarrollo')).not.toBeSelected();
+      expect(screen.getByLabelText('Busco Programación')).not.toBeSelected();
     });
   });
 

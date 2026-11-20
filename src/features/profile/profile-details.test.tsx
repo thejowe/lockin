@@ -97,7 +97,7 @@ describe('ProfileDetails', () => {
 
     expect(screen.getByText('Lo que domina')).toBeTruthy();
     expect(screen.getByText('Lo que busca')).toBeTruthy();
-    expect(screen.getByText('Desarrollo')).toBeTruthy();
+    expect(screen.getByText('Programación')).toBeTruthy();
     expect(screen.getByText('Marketing')).toBeTruthy();
   });
 

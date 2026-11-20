@@ -16,7 +16,7 @@ export function memberRoleLabel(member: Pick<GroupMemberView, 'specialty' | 'isA
   return member.isAdmin ? t('Admin') : t('Miembro');
 }
 
-/** «Desarrollo · 1 de 2 plazas libres». */
+/** «Programación · 1 de 2 plazas libres». */
 export function roleSlotsLabel(role: GroupRole): string {
   const free = Math.max(role.slots - role.filled, 0);
   return free === 0
