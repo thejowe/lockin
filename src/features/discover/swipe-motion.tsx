@@ -111,12 +111,7 @@ export function SwipeOverlay({ offset }: { offset: SharedValue<number> }) {
   });
 
   const veilStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(
-      Math.abs(offset.get()),
-      [0, SWIPE_THRESHOLD],
-      [0, 1],
-      Extrapolation.CLAMP
-    ),
+    opacity: interpolate(Math.abs(offset.get()), [0, SWIPE_THRESHOLD], [0, 1], Extrapolation.CLAMP),
   }));
 
   const passStyle = useAnimatedStyle(() => {

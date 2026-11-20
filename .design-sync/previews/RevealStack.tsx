@@ -7,15 +7,21 @@ export function Cascade() {
         <ThemedText type="subtitle">Tus matches</ThemedText>
         <Glass style={{ padding: Spacing.three }}>
           <ThemedText type="heading">Marta Ríos</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">Producto · Barcelona</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            Producto · Barcelona
+          </ThemedText>
         </Glass>
         <Glass style={{ padding: Spacing.three }}>
           <ThemedText type="heading">Joan Puig</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">Técnico · Girona</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            Técnico · Girona
+          </ThemedText>
         </Glass>
         <Glass style={{ padding: Spacing.three }}>
           <ThemedText type="heading">Lucía Martín</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">Negocio · Madrid</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            Negocio · Madrid
+          </ThemedText>
         </Glass>
       </RevealStack>
     </Screen>

@@ -4,11 +4,11 @@
  * Ojo: en RNTL 14 `render` es asíncrono.
  */
 
-import { screen, waitFor } from '@testing-library/react-native';
+import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { buildProfileInput } from '@/data/test-fixtures';
 
-import { renderRoute, repositories, resetRepositories, resetRouter } from '../routes';
+import { renderRoute, repositories, resetRepositories, resetRouter, router } from '../routes';
 
 jest.mock('expo-router', () => {
   const mock = require('../routes').expoRouterMock();
@@ -55,3 +55,17 @@ it('con un bloqueo de por medio no enseña la ficha', async () => {
   expect(await screen.findByText('Este perfil ya no está disponible')).toBeTruthy();
   expect(screen.queryByText(someone.name)).toBeNull();
 });
+
+it.each([true, false])(
+  'reintenta la lectura y permite cerrar una ficha que dejó de existir (historial %s)',
+  async (history) => {
+    mockId.value = 'retirada';
+    jest.spyOn(repositories.profiles, 'getById').mockRejectedValueOnce(new Error('Temporal'));
+    await renderRoute(<PersonRoute />);
+    await fireEvent.press(await screen.findByRole('button', { name: 'Reintentar' }));
+    router.canGoBack.mockReturnValue(history);
+    await fireEvent.press(await screen.findByRole('button', { name: 'Cerrar' }));
+    if (history) expect(router.back).toHaveBeenCalledTimes(1);
+    else expect(router.replace).toHaveBeenCalledWith('/');
+  }
+);

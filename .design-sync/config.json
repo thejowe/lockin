@@ -6,9 +6,7 @@
   "buildCmd": "node .design-sync/build-web.mjs",
   "entry": ".design-sync/.cache/web-pkg/dist/index.mjs",
   "srcDir": "../../../src",
-  "extraFonts": [
-    "../../fonts.css"
-  ],
+  "extraFonts": ["../../fonts.css"],
   "cssEntry": "dist/styles.css",
   "componentSrcMap": {
     "Colors": null,
@@ -32,9 +30,7 @@
     "Screen": "/** Compatibilidad: ya no pinta nada (fondo negro liso). */ ambient?: \"ember\" | \"teal\" | \"plum\"; /** Por defecto flex: 1 con fondo Colors.dark.background (#000). */ style?: StyleProp<ViewStyle>; children?: React.ReactNode;",
     "ScalePressable": "/** Forma visual: se aplica al contenedor animado interior. */ style?: StyleProp<ViewStyle>; /** Se suma mientras el dedo está encima. */ pressedStyle?: StyleProp<ViewStyle>; onPress?: () => void; disabled?: boolean; accessibilityRole?: string; accessibilityLabel?: string; children: React.ReactNode;"
   },
-  "runtimeFontPrefixes": [
-    "SF Pro"
-  ],
+  "runtimeFontPrefixes": ["SF Pro"],
   "guidelinesGlob": [],
   "overrides": {
     "Icon": {

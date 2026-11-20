@@ -51,6 +51,34 @@ it('añade una foto con su pie y la enseña en el tablón', async () => {
   expect(await repositories.profiles.listBoard(me.id)).toHaveLength(1);
 });
 
+it('informa de permisos y conserva el borrador de una foto si la subida falla', async () => {
+  const { pickAvatarPhoto } = jest.requireMock('./avatar-photo');
+  pickAvatarPhoto.mockResolvedValueOnce({ status: 'denied' });
+  await renderBoard();
+  const add = screen.getByRole('button', { name: 'Añadir una foto a Sobre mí' });
+  await fireEvent.press(add);
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'Sin permiso para tus fotos no podemos subir ninguna.'
+  );
+  await fireEvent.press(add);
+  jest.spyOn(repositories.profiles, 'addBoardPost').mockRejectedValueOnce(new Error('Temporal'));
+  await fireEvent.press(screen.getByRole('button', { name: 'Publicar en Sobre mí' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Temporal');
+  await fireEvent.press(screen.getByRole('button', { name: 'Cancelar' }));
+  expect(screen.queryByLabelText('Texto de la foto')).toBeNull();
+});
+
+it('una foto sin pie tiene etiqueta y sigue en el visor cuando falla el borrado', async () => {
+  await repositories.profiles.addBoardPost('file:///a.jpg', '');
+  await renderBoard();
+  await fireEvent.press(screen.getByRole('imagebutton', { name: 'Foto personal de Ana' }));
+  jest.spyOn(repositories.profiles, 'removeBoardPost').mockRejectedValueOnce(null);
+  await fireEvent.press(screen.getByRole('button', { name: 'Quitar esta foto' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('No se ha podido quitar la foto.');
+  await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
+  expect(await repositories.profiles.listBoard(me.id)).toHaveLength(1);
+});
+
 it('al tocar una foto se ve en grande y se puede quitar', async () => {
   await repositories.profiles.addBoardPost('file:///a.jpg', 'Taller');
   await renderBoard();

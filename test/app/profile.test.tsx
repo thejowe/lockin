@@ -85,6 +85,40 @@ async function withProfile(name = 'Perfil Prueba') {
   return repositories.profiles.saveCurrent(buildProfileInput({ name }));
 }
 
+it.each([
+  ['Editar lo que dominas, lo que buscas e idiomas', 'Lo que dominas y lo que buscas'],
+  ['Editar cómo trabajas', 'Cómo trabajas'],
+  ['Editar tus respuestas', 'Tus respuestas'],
+])('el lápiz «%s» abre su sección y permite cancelar', async (button, title) => {
+  await withProfile();
+  await renderRoute(<ProfileScreen />);
+  await fireEvent.press(await screen.findByRole('button', { name: button }));
+  expect(screen.getByText(title)).toBeOnTheScreen();
+  await fireEvent.press(screen.getByRole('button', { name: 'Cancelar' }));
+  expect(screen.queryByRole('button', { name: 'Guardar' })).toBeNull();
+});
+
+it('editar y quitar el enlace de Instagram conserva la ubicación y el resto del perfil', async () => {
+  const saved = await withProfile();
+  await renderRoute(<ProfileScreen />);
+  await fireEvent.press(await screen.findByRole('button', { name: 'Añadir Instagram' }));
+  await fireEvent.changeText(
+    screen.getByLabelText('Enlace de Instagram'),
+    'https://www.instagram.com/atlas/'
+  );
+  await fireEvent.press(screen.getByRole('button', { name: 'Guardar' }));
+  await fireEvent.press(
+    await screen.findByRole('button', { name: 'Instagram añadido, editar enlace' })
+  );
+  await fireEvent.press(screen.getByRole('button', { name: 'Quitar enlace' }));
+  expect(await screen.findByRole('button', { name: 'Añadir Instagram' })).toBeOnTheScreen();
+  expect(await repositories.profiles.getCurrent()).toMatchObject({
+    id: saved.id,
+    timezone: saved.timezone,
+    location: saved.location,
+  });
+});
+
 beforeEach(() => {
   resetRepositories();
   resetRouter();

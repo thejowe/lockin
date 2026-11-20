@@ -1,4 +1,13 @@
-import { Colors, glassStyle, Icon, Radii, ScalePressable, Screen, Spacing, ThemedText } from 'cofounder';
+import {
+  Colors,
+  glassStyle,
+  Icon,
+  Radii,
+  ScalePressable,
+  Screen,
+  Spacing,
+  ThemedText,
+} from 'cofounder';
 
 function Frame({ children }: { children: React.ReactNode }) {
   return <Screen style={{ flex: 0, padding: Spacing.four, gap: Spacing.three }}>{children}</Screen>;
@@ -37,7 +46,8 @@ export function Chip() {
               borderRadius: Radii.pill,
               borderWidth: 1,
               borderColor: Colors.dark.border,
-              backgroundColor: i === 0 ? Colors.dark.backgroundSelected : Colors.dark.backgroundElement,
+              backgroundColor:
+                i === 0 ? Colors.dark.backgroundSelected : Colors.dark.backgroundElement,
             }}>
             <ThemedText type="label">{label}</ThemedText>
           </ScalePressable>

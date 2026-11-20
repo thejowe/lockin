@@ -18,7 +18,12 @@ function Backdrop({ children }: { children: React.ReactNode }) {
 export function TabBar() {
   return (
     <Backdrop>
-      <Frosted style={{ flexDirection: 'row', justifyContent: 'space-around', paddingVertical: Spacing.three }}>
+      <Frosted
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-around',
+          paddingVertical: Spacing.three,
+        }}>
         {/* Cada pestaña en su propio contenedor posicionado: los hijos sueltos (un SVG) quedan bajo el desenfoque. */}
         {(['discover', 'chat', 'person'] as const).map((name, i) => (
           <div key={name} style={{ position: 'relative', padding: Spacing.one }}>

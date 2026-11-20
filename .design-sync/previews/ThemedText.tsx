@@ -18,7 +18,9 @@ export function SansRoles() {
   return (
     <Frame>
       <ThemedText type="heading">Acuerdo de socios</ThemedText>
-      <ThemedText type="body">Crea tu perfil para que la gente pueda encontrarte en el deck.</ThemedText>
+      <ThemedText type="body">
+        Crea tu perfil para que la gente pueda encontrarte en el deck.
+      </ThemedText>
       <ThemedText type="bodyStrong">Reparto de equity y dedicación</ThemedText>
       <ThemedText type="small">Ha fallado la carga. Inténtalo otra vez en un momento.</ThemedText>
       <ThemedText type="caption">Última actividad hace 2 h</ThemedText>
@@ -37,8 +39,12 @@ export function InkLevels() {
       <ThemedText type="body" themeColor="textMuted">
         Tinta apagada: metadatos y ayudas.
       </ThemedText>
-      <ThemedText type="small" themeColor="teal">Conectado ahora</ThemedText>
-      <ThemedText type="small" themeColor="danger">No se ha podido enviar</ThemedText>
+      <ThemedText type="small" themeColor="teal">
+        Conectado ahora
+      </ThemedText>
+      <ThemedText type="small" themeColor="danger">
+        No se ha podido enviar
+      </ThemedText>
     </Frame>
   );
 }
@@ -47,7 +53,9 @@ export function Numbers() {
   return (
     <Frame>
       <ThemedText type="timer">24:59</ThemedText>
-      <ThemedText type="mono" themeColor="textSecondary">40 % · 60 % · 4 años de vesting</ThemedText>
+      <ThemedText type="mono" themeColor="textSecondary">
+        40 % · 60 % · 4 años de vesting
+      </ThemedText>
     </Frame>
   );
 }

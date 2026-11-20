@@ -60,14 +60,22 @@ export function WelcomeSplash({ ready, onEnter }: { ready: boolean; onEnter: () 
         <SafeAreaView style={styles.center} edges={['top', 'bottom']}>
           <CofounderLogo width={Math.min(width * 0.56, 260)} />
           {/* Una palabra por línea, en grande, subiendo en escalera tras el logo. */}
-          <View accessible accessibilityRole="header" accessibilityLabel={motto} style={styles.motto}>
+          <View
+            accessible
+            accessibilityRole="header"
+            accessibilityLabel={motto}
+            style={styles.motto}>
             {words.map((word, index) => (
               <Animated.View
                 key={`${word}-${index}`}
                 entering={FadeInDown.duration(Duration.slow * 1.5)
                   .easing(easeOut)
                   .delay(MOTTO_DELAY_MS + index * MOTTO_STAGGER_MS)}>
-                <ThemedText type="display" style={styles.mottoWord} numberOfLines={1} adjustsFontSizeToFit>
+                <ThemedText
+                  type="display"
+                  style={styles.mottoWord}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit>
                   {word}
                 </ThemedText>
               </Animated.View>

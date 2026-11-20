@@ -65,3 +65,24 @@ it('un reintento solo se acepta si el id ya está en ese chat y es del autor', a
   reply(200, []);
   await expect(repo.add(scope, draft)).rejects.toMatchObject({ code: '23505' });
 });
+
+it('la edición de tareas exige la revisión leída y comunica el conflicto si no queda ninguna fila', async () => {
+  const { repo, fetch, reply } = setup();
+  const scope = { kind: 'match' as const, id: 'm' };
+  const details = { assigneeId: null, dueAt: null, status: 'done' as const };
+  reply(200, []);
+  await expect(repo.updateTask(scope, 'item', details, 'r1')).rejects.toThrow();
+  expect(new URL(String(fetch.mock.calls[0][0])).searchParams.get('revision')).toBe('eq.r1');
+  reply(200, [{ id: 'item' }]);
+  await repo.updateTask(scope, 'item', details);
+  expect(new URL(String(fetch.mock.calls[1][0])).searchParams.has('revision')).toBe(false);
+  expect(JSON.parse(String(fetch.mock.calls[1][1]?.body))).toEqual({
+    assignee_id: null,
+    due_at: null,
+    status: 'done',
+  });
+  reply(403, { code: '42501' });
+  await expect(repo.updateTask(scope, 'item', details, 'r2')).rejects.toMatchObject({
+    code: '42501',
+  });
+});

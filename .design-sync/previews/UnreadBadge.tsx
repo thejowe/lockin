@@ -31,10 +31,18 @@ export function OnTabIcon() {
 export function InRow() {
   return (
     <Frame>
-      <Glass style={{ padding: Spacing.three, flexDirection: 'row', alignItems: 'center', gap: Spacing.three }}>
+      <Glass
+        style={{
+          padding: Spacing.three,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: Spacing.three,
+        }}>
         <div style={{ flex: 1, display: 'grid', gap: 2 }}>
           <ThemedText type="heading">Marta Ríos</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">¿Te va bien una llamada el jueves?</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            ¿Te va bien una llamada el jueves?
+          </ThemedText>
         </div>
         <UnreadBadge count={2} />
       </Glass>

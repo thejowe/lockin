@@ -2,7 +2,15 @@ import { Colors, Screen, Spacing, ThinkingLogo } from 'cofounder';
 
 function Frame({ children }: { children: React.ReactNode }) {
   return (
-    <Screen style={{ flex: 0, padding: Spacing.five, flexDirection: 'row', gap: Spacing.five, alignItems: 'center', justifyContent: 'center' }}>
+    <Screen
+      style={{
+        flex: 0,
+        padding: Spacing.five,
+        flexDirection: 'row',
+        gap: Spacing.five,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
       {children}
     </Screen>
   );

@@ -12,7 +12,7 @@ const sizes = [
 
 async function exportScreenshots() {
   const requested = process.argv.slice(2);
-  const unknown = requested.find(frame => !frames.includes(frame));
+  const unknown = requested.find((frame) => !frames.includes(frame));
   if (unknown) throw new Error('Unknown frame: ' + unknown);
   const browser = await chromium.launch({
     ...(process.platform === 'win32' && { channel: 'msedge' }),
@@ -33,7 +33,7 @@ async function exportScreenshots() {
           document.querySelector('main').style.transform = 'scale(' + width / 440 + ')';
           await document.fonts.ready;
           const current = document.querySelector('article:not([hidden])');
-          await Promise.all(Array.from(current.querySelectorAll('img'), image => image.decode()));
+          await Promise.all(Array.from(current.querySelectorAll('img'), (image) => image.decode()));
         }, width);
         const fileName = String(index + 1).padStart(2, '0') + '-' + frame + '.png';
         await page.screenshot({ path: path.join(dest, fileName) });
@@ -45,7 +45,7 @@ async function exportScreenshots() {
   }
 }
 
-exportScreenshots().catch(error => {
+exportScreenshots().catch((error) => {
   console.error(error.message);
   process.exitCode = 1;
 });

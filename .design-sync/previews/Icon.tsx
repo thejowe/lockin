@@ -1,9 +1,30 @@
 import { Colors, Icon, Screen, Spacing, ThemedText } from 'cofounder';
 
 const NAMES = [
-  'discover', 'chat', 'person', 'pair', 'focus', 'both', 'heart', 'close',
-  'expand', 'check', 'flame', 'lock', 'sparkle', 'send', 'document', 'chevrons',
-  'back', 'camera', 'pencil', 'menu', 'diamond', 'eye', 'eye-off', 'sliders',
+  'discover',
+  'chat',
+  'person',
+  'pair',
+  'focus',
+  'both',
+  'heart',
+  'close',
+  'expand',
+  'check',
+  'flame',
+  'lock',
+  'sparkle',
+  'send',
+  'document',
+  'chevrons',
+  'back',
+  'camera',
+  'pencil',
+  'menu',
+  'diamond',
+  'eye',
+  'eye-off',
+  'sliders',
 ] as const;
 
 function Frame({ children }: { children: React.ReactNode }) {
@@ -17,7 +38,9 @@ export function Set() {
         {NAMES.map((n) => (
           <div key={n} style={{ display: 'grid', justifyItems: 'center', gap: Spacing.one }}>
             <Icon name={n} color={Colors.dark.text} />
-            <ThemedText type="caption" themeColor="textMuted">{n}</ThemedText>
+            <ThemedText type="caption" themeColor="textMuted">
+              {n}
+            </ThemedText>
           </div>
         ))}
       </div>

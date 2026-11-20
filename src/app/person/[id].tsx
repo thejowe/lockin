@@ -89,7 +89,7 @@ function Person() {
           style={{ backgroundColor: theme.background }}
           contentContainerStyle={[styles.content, { paddingBottom: Spacing.six + insets.bottom }]}>
           <ProfileDetails profile={profile} />
-          <PublicProjects ownerId={profile.id}/>
+          <PublicProjects ownerId={profile.id} />
           <Board ownerId={profile.id} ownerName={profile.name} />
         </ScrollView>
       )}

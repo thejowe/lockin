@@ -2,7 +2,14 @@ import { CofounderLogo, Colors, Screen, Spacing } from 'cofounder';
 
 function Frame({ children }: { children: React.ReactNode }) {
   return (
-    <Screen style={{ flex: 0, padding: Spacing.five, flexDirection: 'row', gap: Spacing.five, alignItems: 'center' }}>
+    <Screen
+      style={{
+        flex: 0,
+        padding: Spacing.five,
+        flexDirection: 'row',
+        gap: Spacing.five,
+        alignItems: 'center',
+      }}>
       {children}
     </Screen>
   );

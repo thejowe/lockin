@@ -9,7 +9,7 @@ import { fireEvent, screen } from '@testing-library/react-native';
 
 import { openPaywall } from '@/features/premium';
 
-import { renderRoute, resetRepositories, resetRouter, router } from '../routes';
+import { renderRoute, resetRepositories, resetRouter, router, setSearchParams } from '../routes';
 
 import PremiumRoute from '../../src/app/premium';
 
@@ -18,6 +18,7 @@ jest.mock('expo-router', () => require('../routes').expoRouterMock());
 beforeEach(() => {
   resetRepositories();
   resetRouter();
+  setSearchParams({});
 });
 
 describe('PremiumRoute', () => {
@@ -55,5 +56,20 @@ describe('openPaywall', () => {
     openPaywall();
 
     expect(router.push).toHaveBeenCalledWith('/premium');
+  });
+});
+
+it('abre los planes desde la posición del diamante y permite consultar la privacidad', async () => {
+  const origin = { x: 150, y: 300, size: 42 };
+  openPaywall({ origin });
+  const params = { ox: '150', oy: '300', os: '42' };
+  expect(router.push).toHaveBeenCalledWith({ pathname: '/premium', params });
+  setSearchParams(params);
+  await renderRoute(<PremiumRoute />);
+  await screen.findByText('Likes sin límite');
+  await fireEvent.press(screen.getByText('Política de privacidad'));
+  expect(router.push).toHaveBeenLastCalledWith({
+    pathname: '/legal/[doc]',
+    params: { doc: 'privacy' },
   });
 });

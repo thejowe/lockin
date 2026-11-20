@@ -103,6 +103,19 @@ const deps = (client: LockInSupabaseClient) => ({
 
 const flush = () => new Promise((resolve) => setImmediate(resolve));
 
+it('solo pide distintivos para una lista con perfiles y respeta las respuestas vacías y los fallos', async () => {
+  const { client, rpc } = fakeClient();
+  const repo = createSupabasePremiumRepository(deps(client));
+  await expect(repo.listBadges([])).resolves.toEqual([]);
+  expect(rpc).not.toHaveBeenCalled();
+  rpc.mockResolvedValueOnce({ data: ['p'], error: null });
+  await expect(repo.listBadges(['p', 'q'])).resolves.toEqual(['p']);
+  expect(rpc).toHaveBeenCalledWith('premium_badges', { p_ids: ['p', 'q'] });
+  await expect(repo.listBadges(['p'])).resolves.toEqual([]);
+  rpc.mockResolvedValueOnce({ data: null, error: { code: '42501', message: 'denied' } });
+  await expect(repo.listBadges(['p'])).rejects.toMatchObject({ code: '42501' });
+});
+
 describe('toPremiumError', () => {
   it.each([
     ['LQ001', 'likes'],

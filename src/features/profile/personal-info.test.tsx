@@ -82,7 +82,12 @@ describe('PersonalInfo', () => {
   });
 
   it('sin teléfono no ofrece quitarlo', async () => {
-    mockState.account = { kind: 'email', email: 'ana@example.com', pendingEmail: null, phone: null };
+    mockState.account = {
+      kind: 'email',
+      email: 'ana@example.com',
+      pendingEmail: null,
+      phone: null,
+    };
     await render(<PersonalInfo />);
 
     await fireEvent.press(screen.getByRole('button', { name: 'Añadir teléfono' }));

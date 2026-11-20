@@ -15,7 +15,10 @@ export function Default() {
 export function WithDetail() {
   return (
     <Frame>
-      <LoadingState label="Preparando el acuerdo" detail="Estamos generando el borrador del acuerdo de socios." />
+      <LoadingState
+        label="Preparando el acuerdo"
+        detail="Estamos generando el borrador del acuerdo de socios."
+      />
     </Frame>
   );
 }
