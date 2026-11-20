@@ -80,8 +80,10 @@ name: Crear un proyecto conjunto, publicarlo con dos consentimientos y volver a 
       - tapOn: 'Omitir'
 - tapOn: 'Matches'
 - tapOn: ${A_NAME}
-- extendedWaitUntil:
-    visible: '¿Publicar en vuestros perfiles?'
+# En un chat sin mensajes la petición queda bajo los icebreakers.
+- scrollUntilVisible:
+    element: 'Aceptar publicación'
+    direction: DOWN
     timeout: 30000
 - tapOn: 'Aceptar publicación'
 - tapOn: 'Proyecto'

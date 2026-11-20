@@ -76,6 +76,11 @@ export function ChatTabBar({
   );
 }
 
+/** Se mira al pulsar, no con el `asOf` del último sondeo bueno. */
+function hasStarted(item: PlanItem): boolean {
+  return !!item.startsAt && Date.parse(item.startsAt) <= Date.now();
+}
+
 export function SharedPlan({
   scope,
   members,
@@ -121,6 +126,12 @@ export function SharedPlan({
 
   async function toggle(item: PlanItem) {
     if (lock.current) return;
+    // Con un sondeo fallido el plan conservado puede tener una hora vieja: una
+    // reunión que ya ha empezado no se cancela ni se restablece.
+    if (hasStarted(item)) {
+      refresh();
+      return;
+    }
     lock.current = true;
     setSaving(true);
     setActionError('');
