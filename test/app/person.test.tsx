@@ -12,6 +12,8 @@ import { renderRoute, repositories, resetRepositories, resetRouter, router } fro
 
 jest.mock('expo-router', () => {
   const mock = require('../routes').expoRouterMock();
+  mock.Stack.Screen = ({ options }: { options: { headerRight?: () => React.ReactNode } }) =>
+    options.headerRight?.() ?? null;
   return { ...mock, useLocalSearchParams: () => ({ id: mockId.value }) };
 });
 

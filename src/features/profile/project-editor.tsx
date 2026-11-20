@@ -17,7 +17,12 @@ import {
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
 import { pickAvatarPhoto } from './avatar-photo';
-import { Field, PrimaryButton, CompactSecondaryButton as SecondaryButton, TextField } from './controls';
+import {
+  Field,
+  PrimaryButton,
+  CompactSecondaryButton as SecondaryButton,
+  TextField,
+} from './controls';
 
 const empty: ProjectInput = {
   name: '',

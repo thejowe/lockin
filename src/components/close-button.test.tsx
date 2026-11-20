@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { Alert, StyleSheet } from 'react-native';
+import { Alert, Platform, StyleSheet } from 'react-native';
 
 import { CloseButton, requestClose } from './close-button';
 import { setLocalePreference } from '@/i18n';
@@ -40,4 +40,22 @@ it('cierra directamente el formulario intacto y conserva el borrador hasta elegi
   expect(close).toHaveBeenCalledTimes(1);
   alert.mock.lastCall?.[2]?.[1].onPress?.();
   expect(close).toHaveBeenCalledTimes(2);
+});
+
+it('en web se puede conservar el borrador o confirmar el descarte', () => {
+  jest.replaceProperty(Platform, 'OS', 'web');
+  const previous = Object.getOwnPropertyDescriptor(window, 'confirm');
+  const confirm = jest.fn().mockReturnValueOnce(false).mockReturnValueOnce(true);
+  Object.defineProperty(window, 'confirm', { value: confirm, configurable: true });
+  try {
+    const close = jest.fn();
+    requestClose(true, close);
+    expect(close).not.toHaveBeenCalled();
+    requestClose(true, close);
+    expect(close).toHaveBeenCalledTimes(1);
+    expect(confirm).toHaveBeenCalledWith('¿Descartar los cambios?');
+  } finally {
+    if (previous) Object.defineProperty(window, 'confirm', previous);
+    else Reflect.deleteProperty(window, 'confirm');
+  }
 });

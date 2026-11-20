@@ -42,13 +42,16 @@ export function CloseHeader({ children, ...props }: Props & { children?: ReactNo
   return (
     <View style={styles.header}>
       <View style={styles.title}>{children}</View>
-      <CloseButton {...props} />
+      <View style={styles.closeInHeader}>
+        <CloseButton {...props} />
+      </View>
     </View>
   );
 }
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   title: { flex: 1 },
+  closeInHeader: { alignSelf: 'flex-start' },
   target: {
     alignItems: 'center',
     justifyContent: 'center',

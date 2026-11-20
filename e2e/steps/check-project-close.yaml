@@ -1,0 +1,15 @@
+appId: app.cofounder.android
+---
+- assertVisible: '(?i)Lo que se ve en la tarjeta'
+- assertNotVisible: '(?i)Cancelar'
+- tapOn:
+    id: 'project-name'
+- inputText: 'Borrador'
+- assertVisible: 'Guardar proyecto'
+- takeScreenshot: editor-con-teclado
+- tapOn: 'Cerrar'
+- assertVisible: '(?i).*descartar los cambios.*'
+- tapOn: '(?i)Cancelar'
+- assertVisible: 'Borrador'
+- tapOn: 'Cerrar'
+- tapOn: '(?i)Descartar'

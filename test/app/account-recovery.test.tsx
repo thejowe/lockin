@@ -63,7 +63,7 @@ it('una URL de desbloqueo ambigua deja el correo vacío y cancelar un enlace dir
   router.canGoBack.mockReturnValue(false);
   await renderRoute(<UnblockScreen />);
   expect(screen.getByLabelText('Correo de la cuenta eliminada')).toHaveDisplayValue('');
-  await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Cancelar' }));
   expect(router.replace).toHaveBeenCalledWith('/');
 });
 

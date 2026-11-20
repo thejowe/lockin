@@ -52,8 +52,8 @@ export function ReportForm({
   onCancel: () => void;
   onSubmitted: () => void;
   /**
-   * Saca «Enviar reporte» y «Cancelar» del scroll: los campos se desplazan en
-   * su propia zona y las acciones quedan fijas al pie. Hace falta cuando el
+   * En la tarjeta del deck, los campos se desplazan en
+   * su propia zona entre la cabecera y «Enviar reporte». Hace falta cuando el
    * formulario vive en un contenedor de alto acotado (la tarjeta del deck, que
    * termina sobre la barra de tabs flotante) y el padre NO lo envuelve en un
    * `ScrollView`: el formulario ocupa todo el alto disponible (`flex: 1`).

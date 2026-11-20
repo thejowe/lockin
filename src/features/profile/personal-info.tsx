@@ -126,7 +126,7 @@ export function PersonalInfo() {
         </View>
       )}
 
-      {notice ? (
+      {notice && !editing ? (
         <ThemedText type="body" themeColor={notice.tone}>
           {notice.text}
         </ThemedText>

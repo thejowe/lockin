@@ -50,3 +50,32 @@ it('la X, el arrastre y Atrás pasan por la confirmación y conservan el texto a
   );
   expect(close).toHaveBeenCalledTimes(1);
 });
+
+it('un gesto corto se cancela y una operación en curso bloquea los cierres', async () => {
+  const pan = jest.spyOn(PanResponder, 'create');
+  const close = jest.fn();
+  const sheet = (disabled: boolean) => (
+    <FormSheet
+      testID="busy-sheet"
+      header={<Text>Proyecto</Text>}
+      disabled={disabled}
+      onClose={close}>
+      <Text>Atlas</Text>
+    </FormSheet>
+  );
+  const { rerender } = await render(sheet(false));
+  const touch = {} as GestureResponderEvent;
+  const state = { dx: 0, dy: 18, vy: 0.1 } as PanResponderGestureState;
+  const handler = pan.mock.lastCall![0];
+  await act(() => handler.onPanResponderRelease?.(touch, state));
+  expect(close).not.toHaveBeenCalled();
+  await act(() => handler.onPanResponderRelease?.(touch, { ...state, vy: 1 }));
+  expect(close).toHaveBeenCalledTimes(1);
+  await rerender(sheet(true));
+  const busy = pan.mock.lastCall![0];
+  expect(busy.onMoveShouldSetPanResponderCapture?.(touch, state)).toBe(false);
+  await act(() => busy.onPanResponderRelease?.(touch, { ...state, dy: 100 }));
+  await fireEvent(screen.getByTestId('busy-sheet'), 'requestClose');
+  await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
+  expect(close).toHaveBeenCalledTimes(1);
+});

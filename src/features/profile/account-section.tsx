@@ -515,7 +515,7 @@ export function AccountSection({
           />
         )}
 
-        {notice ? (
+        {notice && panel !== 'change' && panel !== 'recovery' ? (
           <ThemedText type="body" themeColor={notice.tone}>
             {notice.text}
           </ThemedText>

@@ -116,6 +116,12 @@ export function Board({
     }
   }
 
+  const feedback = notice ? (
+    <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
+      {notice}
+    </ThemedText>
+  ) : null;
+
   const full = list.length >= BOARD_MAX_POSTS;
 
   return (
@@ -153,11 +159,7 @@ export function Board({
               onPress={() => void remove(open)}
             />
           ) : null}
-          {notice ? (
-            <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
-              {notice}
-            </ThemedText>
-          ) : null}
+          {feedback}
         </FormSheet>
       ) : null}
 
@@ -190,11 +192,7 @@ export function Board({
             />
           </Field>
 
-          {notice ? (
-            <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
-              {notice}
-            </ThemedText>
-          ) : null}
+          {feedback}
         </FormSheet>
       ) : null}
 
@@ -228,11 +226,7 @@ export function Board({
         ) : null}
       </View>
 
-      {!open && !draft && notice ? (
-        <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
-          {notice}
-        </ThemedText>
-      ) : null}
+      {!open && !draft && feedback}
     </View>
   );
 }

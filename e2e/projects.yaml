@@ -131,7 +131,7 @@ name: Crear un proyecto en el alta y descubrirlo desde otra cuenta
     timeout: 60000
 - tapOn: 'Omitir'
 - tapOn: 'Crear proyecto'
-- assertVisible: 'Lo que se ve en la tarjeta'
+- assertVisible: '(?i)Lo que se ve en la tarjeta'
 - assertNotVisible: 'Cancelar'
 - takeScreenshot: editor-proyecto-perfil
 - tapOn: 'Cerrar'

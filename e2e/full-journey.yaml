@@ -175,6 +175,8 @@ name: Alta, perfil, deck, match, mensaje y persistencia
 - extendedWaitUntil:
     visible: 'Tus proyectos'
     timeout: 10000
+- tapOn: 'Crear proyecto'
+- runFlow: steps/check-project-close.yaml
 - tapOn: 'Crear perfil'
 # La entrada animada del logo: tocarla entra sin esperar a que acabe.
 - extendedWaitUntil:
