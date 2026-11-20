@@ -85,6 +85,7 @@ it('lee la ficha por un coautor y carga las imágenes compartidas con una petici
                   avatar_initials: 'A',
                   avatar_accent: 'brass',
                   prompts: [],
+                  work_ranges: [{ start_min: 540, end_min: 840 }],
                 },
               },
               {
@@ -94,6 +95,7 @@ it('lee la ficha por un coautor y carga las imágenes compartidas con una petici
                   avatar_initials: 'P',
                   avatar_accent: 'teal',
                   prompts: [],
+                  work_ranges: [{ start_min: 540, end_min: 840 }],
                 },
               },
             ],
