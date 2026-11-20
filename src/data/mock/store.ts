@@ -187,6 +187,25 @@ export function removeMockGroupMember(state: MockState, userId: string, groupId:
       swipe.dismissal = 'membership';
     }
   }
+  // Espejo de `remove_group_member`: el admin fundador entró sin swipe, así que
+  // su salida también queda anotada y el grupo heredado no le vuelve al deck.
+  if (
+    !state.groupSwipes.some(
+      (swipe) =>
+        swipe.groupId === groupId && swipe.userId === userId && swipe.direction === 'user_to_group'
+    )
+  ) {
+    state.groupSwipes.push({
+      groupId,
+      userId,
+      direction: 'user_to_group',
+      decision: 'pass',
+      atMs: Date.now(),
+      dismissal: 'membership',
+      roleId: null,
+      actorId: userId,
+    });
+  }
 
   const group = state.groups.find((candidate) => candidate.id === groupId);
   const joint = group?.projectId && state.jointProjects.get(group.projectId);

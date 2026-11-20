@@ -267,6 +267,57 @@ test('los dos decks de grupos reciclan únicamente los pass explícitos', async 
           assert.ok(!(await recruitDeck(admin)).includes(buyer));
         })
     );
+    await t.test('un like reenviado sobre un pass descartado no hace entrar a nadie', () =>
+      isolated(async () => {
+        const g = await group(admin);
+        await recruitSwipe(admin, buyer, g.role, 'like');
+        await db.exec('reset role');
+        await db.query(
+          `insert into public.group_swipes(group_id,user_id,direction,decision,actor_id,dismissal)
+           values($1,$2,'user_to_group','pass',$2,'membership')`,
+          [g.id, buyer]
+        );
+        await as(buyer);
+        const [{ swipe_group: joined }] = await rows("select public.swipe_group($1,'like')", [
+          g.id,
+        ]);
+        assert.equal(joined, false);
+        await db.exec('reset role');
+        assert.deepEqual(
+          await rows('select 1 from public.group_members where group_id=$1 and user_id=$2', [
+            g.id,
+            buyer,
+          ]),
+          []
+        );
+        await recruitSwipe(admin, buyer, g.role, 'like');
+        await db.exec('reset role');
+        assert.deepEqual(
+          await rows('select 1 from public.group_members where group_id=$1 and user_id=$2', [
+            g.id,
+            buyer,
+          ]),
+          []
+        );
+      })
+    );
+
+    await t.test('el admin fundador que se va no vuelve a ver el grupo heredado', () =>
+      isolated(async () => {
+        const g = await group(dev, 3);
+        await personSwipe(buyer, g.id, 'like');
+        await recruitSwipe(dev, buyer, g.role, 'like');
+        await as(dev);
+        await db.query('select public.leave_group($1)', [g.id]);
+        await db.exec('reset role');
+        const [{ admin_id: heir }] = await rows('select admin_id from public.groups where id=$1', [
+          g.id,
+        ]);
+        assert.equal(heir, buyer);
+        await setAge(g.id, dev, 'user_to_group', '30 days');
+        assert.ok(!(await personDeck(dev)).includes(g.id));
+      })
+    );
   } finally {
     await db.close();
   }

@@ -4,10 +4,17 @@ alter table public.group_swipes add column dismissal text
   check (dismissal in ('block', 'membership'));
 
 -- Legacy block_group recorded a pass and a profile block in one transaction.
+-- A retried block_group refreshed the pass timestamp but kept the original
+-- block, so a pass toward a group whose current admin this person blocked is
+-- also treated as a permanent block (conservative: it never expires).
 update public.group_swipes s set dismissal = 'block'
 where s.direction = 'user_to_group' and s.decision = 'pass'
-  and exists (select 1 from public.user_blocks b
-              where b.blocker_id = s.user_id and b.created_at = s.created_at);
+  and (
+    exists (select 1 from public.user_blocks b
+            where b.blocker_id = s.user_id and b.created_at = s.created_at)
+    or exists (select 1 from public.user_blocks b join public.groups g on g.id = s.group_id
+               where b.blocker_id = s.user_id and b.blocked_id = g.admin_id)
+  );
 
 -- remove_group_member changed BOTH likes to passes without updating their
 -- timestamps. Push history is short-lived. If it has been pruned, preserve
@@ -112,6 +119,11 @@ begin
   update public.group_swipes
      set decision = 'pass', dismissal = 'membership'
    where group_id = p_group_id and user_id = p_user_id;
+  -- The founding admin joined without a swipe: record the departure too, so
+  -- the group never comes back to their deck after someone inherits it.
+  insert into public.group_swipes (group_id, user_id, direction, decision, actor_id, dismissal)
+  values (p_group_id, p_user_id, 'user_to_group', 'pass', p_user_id, 'membership')
+  on conflict (group_id, user_id, direction) do nothing;
 
   select g.admin_id into v_admin from public.groups g where g.id = p_group_id;
 
@@ -203,14 +215,20 @@ begin
   where previous.decision = 'pass' and previous.dismissal is null
     and (excluded.decision = 'like' or previous.created_at <= now() - public.pass_cooldown());
 
-  if p_decision <> 'like' then
+  -- Join only on two persisted, active likes: the guarded upsert above may have
+  -- left a dismissed or still-cooling pass in place.
+  if p_decision <> 'like' or not exists (
+    select 1 from public.group_swipes s
+    where s.group_id = p_group_id and s.user_id = v_uid and s.direction = 'user_to_group'
+      and s.decision = 'like' and s.dismissal is null
+  ) then
     return false;
   end if;
 
   select s.role_id into v_role
     from public.group_swipes s
    where s.group_id = p_group_id and s.user_id = v_uid
-     and s.direction = 'group_to_user' and s.decision = 'like';
+     and s.direction = 'group_to_user' and s.decision = 'like' and s.dismissal is null;
   if not found then
     return false;
   end if;
@@ -260,10 +278,15 @@ begin
   where previous.decision = 'pass' and previous.dismissal is null
     and (excluded.decision = 'like' or previous.created_at <= now() - public.pass_cooldown());
 
+  -- Join only on two persisted, active likes (see swipe_group).
   if p_decision <> 'like' or not exists (
     select 1 from public.group_swipes s
+    where s.group_id = v_group and s.user_id = p_user_id and s.direction = 'group_to_user'
+      and s.decision = 'like' and s.role_id = p_role_id and s.dismissal is null
+  ) or not exists (
+    select 1 from public.group_swipes s
     where s.group_id = v_group and s.user_id = p_user_id
-      and s.direction = 'user_to_group' and s.decision = 'like'
+      and s.direction = 'user_to_group' and s.decision = 'like' and s.dismissal is null
   ) then
     return false;
   end if;
