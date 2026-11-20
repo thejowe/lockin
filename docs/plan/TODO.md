@@ -7,7 +7,9 @@ Fusionadas en la rama principal, por este orden, `perfil/programacion`, `chat/pr
 - [x] Revisión del encargo y `codex review` de las tres ramas. Arreglados: fixture sin `work_ranges`, test de grupos con «Desarrollo», entrada a un grupo con un like descartado, bloqueos antiguos reintentados, salida del admin fundador y pérdida de borradores al fallar el sondeo del chat.
 - [x] Calidad sobre el árbol fusionado: tsc, ESLint (0 errores), Prettier en lo tocado, Jest 2.366, esquema 334, funciones 124, guardias E2E 99. La suite de contrato contra Supabase corre en Actions.
 - [x] E2E de Maestro: `e2e/joint-project.yaml` (manual, dos cuentas emparejadas).
-- [ ] Comprobación con dos cuentas reales: espera a las migraciones en producción. Con el mock la hace el `comprobador`.
+- [x] `comprobador` en Android 16 con el mock (8f81bc1): «Programación» en alta y tarjeta, «Crear proyecto juntos» sobre los icebreakers, pestaña «Proyecto» con la tarea y la reunión antiguas, responsable/fecha/estado y filtro, tarjeta compacta y hoja, propuesta pendiente, notas, bloqueo, grupo de proyecto (botón «Crear grupo» desaparece, difuminado suave) y hoja sin deslizar con «reducir movimiento». Capturas en `e2e/artifacts/local/2026-11-19-integracion/`.
+- [ ] Con dos cuentas reales (aceptar la publicación, verlo en ambos perfiles y en el deck, despublicar al bloquear, tarjeta del propio grupo vista desde otra cuenta): espera a las migraciones en producción. Flujo: `e2e/joint-project.yaml`.
+- [ ] CI: «Tests» (umbral de cobertura), «Formato» y «E2E Android» ya estaban en rojo antes de la fusión (`365c1bc`); el E2E cae en el alta y el login, antes de lo integrado. Schema drift rojo hasta aplicar las migraciones.
 - [ ] Producción con el ok del usuario: migraciones `joint_projects`, `project_tasks_and_notifications`, `group_projects` y `group_deck_passes`; desplegar `moderate-project` y `notify-group-message`.
 - [ ] Decisiones abiertas del usuario: ver [chat](todo/chat.md#decisiones-abiertas).
 
