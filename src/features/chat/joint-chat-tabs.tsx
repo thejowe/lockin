@@ -40,7 +40,7 @@ export function JointChatTabs({
   });
   const { refresh, error } = query;
   // Un sondeo fallido no desmonta el editor ni las notas: se pierde lo escrito.
-  const data = useLastGood(query.data, error);
+  const { data } = useLastGood(query, 'joint-workspace:' + matchId);
   const refreshMatch = useRefreshQuery('match:' + matchId);
   const refreshProjects = useRefreshQueryPrefix('projects');
   useFocusEffect(

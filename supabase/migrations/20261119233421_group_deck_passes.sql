@@ -13,7 +13,8 @@ where s.direction = 'user_to_group' and s.decision = 'pass'
     exists (select 1 from public.user_blocks b
             where b.blocker_id = s.user_id and b.created_at = s.created_at)
     or exists (select 1 from public.user_blocks b join public.groups g on g.id = s.group_id
-               where b.blocker_id = s.user_id and b.blocked_id = g.admin_id)
+               where b.blocker_id = s.user_id and b.blocked_id = g.admin_id
+                 and b.created_at <= s.created_at)
   );
 
 -- remove_group_member changed BOTH likes to passes without updating their
@@ -250,6 +251,7 @@ as $fn$
 declare
   v_uid uuid := (select auth.uid());
   v_group uuid;
+  v_role uuid;
 begin
   if v_uid is null then
     raise exception 'No hay sesión autenticada.' using errcode = '28000';
@@ -278,12 +280,16 @@ begin
   where previous.decision = 'pass' and previous.dismissal is null
     and (excluded.decision = 'like' or previous.created_at <= now() - public.pass_cooldown());
 
-  -- Join only on two persisted, active likes (see swipe_group).
-  if p_decision <> 'like' or not exists (
-    select 1 from public.group_swipes s
-    where s.group_id = v_group and s.user_id = p_user_id and s.direction = 'group_to_user'
-      and s.decision = 'like' and s.role_id = p_role_id and s.dismissal is null
-  ) or not exists (
+  -- Join only on two persisted, active likes (see swipe_group). The stored
+  -- like keeps its original role; join_group_if_possible falls back to any
+  -- open matching role, as in swipe_group.
+  if p_decision <> 'like' then
+    return false;
+  end if;
+  select s.role_id into v_role from public.group_swipes s
+   where s.group_id = v_group and s.user_id = p_user_id and s.direction = 'group_to_user'
+     and s.decision = 'like' and s.dismissal is null;
+  if not found or not exists (
     select 1 from public.group_swipes s
     where s.group_id = v_group and s.user_id = p_user_id
       and s.direction = 'user_to_group' and s.decision = 'like' and s.dismissal is null
@@ -291,7 +297,7 @@ begin
     return false;
   end if;
 
-  return public.join_group_if_possible(v_group, p_user_id, p_role_id);
+  return public.join_group_if_possible(v_group, p_user_id, v_role);
 end;
 $fn$;
 

@@ -12,9 +12,15 @@ name: Crear un proyecto conjunto, publicarlo con dos consentimientos y volver a 
     env:
       EMAIL: ${A_EMAIL}
       PASSWORD: ${A_PASSWORD}
+# `clearState` borra la marca local del mini tutorial: se omite si aparece.
 - extendedWaitUntil:
-    visible: 'Matches'
+    visible: 'Matches|Encuentra a tu cofundador.*'
     timeout: 60000
+- runFlow:
+    when:
+      visible: 'Encuentra a tu cofundador.*'
+    commands:
+      - tapOn: 'Omitir'
 - tapOn: 'Matches'
 - tapOn: ${B_NAME}
 - tapOn: 'Plan compartido'
@@ -38,45 +44,55 @@ name: Crear un proyecto conjunto, publicarlo con dos consentimientos y volver a 
 - assertNotVisible: 'Plan compartido'
 - assertVisible: ${OLD_TASK}
 - takeScreenshot: proyecto-conjunto-creado
-# Asignar la tarea antigua a la otra persona.
+# Asignar la tarea antigua a la otra persona y comprobarlo con el filtro.
 - tapOn: ${OLD_TASK}
 - tapOn: ${B_NAME}
 - tapOn: 'Guardar'
-- tapOn: 'Filtrar por responsable'
+- tapOn: 'Yo'
+- assertNotVisible: ${OLD_TASK}
+- tapOn: ${B_NAME}
 - assertVisible: ${OLD_TASK}
+- tapOn: 'Todas'
 # Tarjeta compacta → hoja con la ficha pública. Privado por defecto.
 - tapOn: 'Ver ficha de ${PROJECT_NAME}'
 - assertVisible: 'Ficha del proyecto'
 - assertVisible: 'Solo vosotros podéis ver esta ficha.'
 - takeScreenshot: proyecto-conjunto-hoja
-- tapOn: 'Publicar en los perfiles'
+- tapOn:
+    id: 'project-publish-switch'
 - extendedWaitUntil:
     visible: 'Pendiente de la otra persona.'
     timeout: 30000
 - tapOn: 'Cerrar'
-# La otra cuenta acepta.
+# La otra cuenta acepta. La petición se muestra en Mensajes y en la ficha.
 - runFlow:
     file: steps/sign-in-projects.yaml
     env:
       EMAIL: ${B_EMAIL}
       PASSWORD: ${B_PASSWORD}
 - extendedWaitUntil:
-    visible: 'Matches'
+    visible: 'Matches|Encuentra a tu cofundador.*'
     timeout: 60000
+- runFlow:
+    when:
+      visible: 'Encuentra a tu cofundador.*'
+    commands:
+      - tapOn: 'Omitir'
 - tapOn: 'Matches'
 - tapOn: ${A_NAME}
-- tapOn: 'Proyecto'
 - extendedWaitUntil:
     visible: '¿Publicar en vuestros perfiles?'
     timeout: 30000
 - tapOn: 'Aceptar publicación'
+- tapOn: 'Proyecto'
 - tapOn: 'Ver ficha de ${PROJECT_NAME}'
 - extendedWaitUntil:
     visible: 'La ficha aparece en ambos perfiles.'
     timeout: 30000
 - takeScreenshot: proyecto-conjunto-publicado
 # Volver a privado lo puede hacer cualquiera de los dos, sin pedir permiso.
-- tapOn: 'Publicar en los perfiles'
+- tapOn:
+    id: 'project-publish-switch'
 - extendedWaitUntil:
     visible: 'Solo vosotros podéis ver esta ficha.'
     timeout: 30000

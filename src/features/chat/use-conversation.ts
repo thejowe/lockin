@@ -88,13 +88,13 @@ export function useConversation(matchId: string): Conversation {
   // en el run 34160309273; ver `docs/plan/todo/chat.md`.
   // Un corte de red en una relectura (el chat sondea cada 15 s) no tira la
   // conversación ni lo que se está escribiendo; un match que ya no existe, sí.
-  const match = useLastGood(matchQuery.data, matchQuery.error);
-  const messages = useLastGood(messagesQuery.data, messagesQuery.error);
+  const match = useLastGood(matchQuery, `match:${matchId}`);
+  const messages = useLastGood(messagesQuery, `messages:${matchId}`);
   return {
-    match,
-    messages: messages ?? [],
+    match: match.data,
+    messages: messages.data ?? [],
     me: meQuery.data,
-    loading: matchQuery.loading || messagesQuery.loading,
+    loading: match.loading || messages.loading,
     error: matchQuery.error ?? messagesQuery.error,
     sendError,
     sending,

@@ -136,6 +136,7 @@ export function PublicationControls({
             {t('Publicar en los perfiles')}
           </ThemedText>
           <Switch
+            testID="project-publish-switch"
             accessibilityLabel={t('Publicar en los perfiles')}
             value={published}
             accessibilityState={{ disabled: switchDisabled, checked: published }}

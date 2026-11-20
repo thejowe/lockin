@@ -416,8 +416,17 @@ export function createMockGroupRepository(
       }
 
       writeSwipe(groupId, actorId, 'user_to_group', decision, null);
+      // Espejo de swipe_group: cuentan los dos likes guardados y vigentes, no el pedido.
+      const mine = swipeOf(groupId, actorId, 'user_to_group');
       const theirs = swipeOf(groupId, actorId, 'group_to_user');
-      if (decision !== 'like' || theirs?.decision !== 'like') return { decision, joined: false };
+      if (
+        decision !== 'like' ||
+        mine?.decision !== 'like' ||
+        mine.dismissal ||
+        theirs?.decision !== 'like' ||
+        theirs.dismissal
+      )
+        return { decision, joined: false };
       return { decision, joined: joinIfPossible(group, actorId, theirs.roleId) };
     },
 
@@ -432,10 +441,19 @@ export function createMockGroupRepository(
       }
 
       writeSwipe(group.id, userId, 'group_to_user', decision, roleId);
-      if (decision !== 'like' || swipeOf(group.id, userId, 'user_to_group')?.decision !== 'like') {
+      // Espejo de swipe_group_candidate: likes guardados y vigentes, con el puesto guardado.
+      const ours = swipeOf(group.id, userId, 'group_to_user');
+      const theirs = swipeOf(group.id, userId, 'user_to_group');
+      if (
+        decision !== 'like' ||
+        ours?.decision !== 'like' ||
+        ours.dismissal ||
+        theirs?.decision !== 'like' ||
+        theirs.dismissal
+      ) {
         return { decision, joined: false };
       }
-      const joined = joinIfPossible(group, userId, roleId);
+      const joined = joinIfPossible(group, userId, ours.roleId);
       if (joined) store.notify(groupsTopic(userId));
       return { decision, joined };
     },

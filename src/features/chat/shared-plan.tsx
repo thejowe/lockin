@@ -13,6 +13,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { getIntlLocale, t } from '@/i18n';
 import { ProjectTasks, type TaskMembers } from './project-tasks';
 import { PlanForm, type PlanKind } from './plan-form';
+import { useLastGood } from './use-last-good';
 
 export function ChatTabs({
   scope,
@@ -87,13 +88,15 @@ export function SharedPlan({
   footer?: ReactNode;
 }) {
   const repo = useRepositories().chatPlan;
-  const { data, refresh, error, loading } = useQuery(
-    `chat-plan:${scope.kind}:${scope.id}`,
-    async () => ({
-      items: await repo.list(scope),
-      asOf: Date.now(),
-    })
-  );
+  const planKey = `chat-plan:${scope.kind}:${scope.id}`;
+  const query = useQuery(planKey, async () => ({
+    items: await repo.list(scope),
+    asOf: Date.now(),
+  }));
+  const { refresh } = query;
+  // Un sondeo fallido deja el plan y las notas montados, con el aviso arriba:
+  // la pantalla de error es solo para una primera carga sin datos.
+  const { data, error, loading } = useLastGood(query, planKey);
   const [form, setForm] = useState<PlanKind | null>(null);
   const [actionError, setActionError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -146,7 +149,7 @@ export function SharedPlan({
       </ScrollView>
     );
   if (loading) return <LoadingState label={t('Cargando el plan…')} />;
-  if (error)
+  if (error && !data)
     return (
       <MessageState title={t('No se ha podido cargar el plan')}>
         <Button label={t('Reintentar')} onPress={refresh} />
@@ -172,6 +175,14 @@ export function SharedPlan({
   return (
     <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
       {header}
+      {error ? (
+        <View style={styles.section}>
+          <ThemedText accessibilityRole="alert" themeColor="danger">
+            {t('No se ha podido cargar el plan')}
+          </ThemedText>
+          <Button variant="secondary" compact label={t('Reintentar')} onPress={refresh} />
+        </View>
+      ) : null}
       {actionError ? (
         <ThemedText accessibilityRole="alert" themeColor="danger">
           {actionError}

@@ -302,6 +302,31 @@ test('los dos decks de grupos reciclan únicamente los pass explícitos', async 
       })
     );
 
+    await t.test('un like del admin reenviado sobre su pass descartado no admite a nadie', () =>
+      isolated(async () => {
+        const g = await group(admin);
+        await personSwipe(buyer, g.id, 'like');
+        await db.exec('reset role');
+        await db.query(
+          `insert into public.group_swipes(group_id,user_id,direction,decision,role_id,actor_id,dismissal)
+           values($1,$2,'group_to_user','pass',$3,$4,'membership')`,
+          [g.id, buyer, g.role, admin]
+        );
+        const [{ swipe_group_candidate: joined }] = (
+          await recruitSwipe(admin, buyer, g.role, 'like')
+        ).rows;
+        assert.equal(joined, false);
+        await db.exec('reset role');
+        assert.deepEqual(
+          await rows('select 1 from public.group_members where group_id=$1 and user_id=$2', [
+            g.id,
+            buyer,
+          ]),
+          []
+        );
+      })
+    );
+
     await t.test('el admin fundador que se va no vuelve a ver el grupo heredado', () =>
       isolated(async () => {
         const g = await group(dev, 3);
