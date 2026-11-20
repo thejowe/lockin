@@ -703,6 +703,41 @@ if (command === 'test') {
       '-r',
       join(app, 'android/app/build/outputs/apk/release/app-release.apk'),
     ]);
+    if (!registration) {
+      // El selector de Android 16 consulta MediaStore, no la carpeta Pictures.
+      // Abrirlo justo tras copiar el PNG puede dejar la cuadrícula vacía.
+      const name = 'cofounder-e2e-avatar.png';
+      const path = '/sdcard/Pictures/' + name;
+      run('adb', ['push', join(root, 'e2e/fixtures/avatar.png'), path]);
+      run('adb', [
+        'shell',
+        'am',
+        'broadcast',
+        '-a',
+        'android.intent.action.MEDIA_SCANNER_SCAN_FILE',
+        '-d',
+        'file://' + path,
+      ]);
+      const deadline = Date.now() + 30000;
+      while (true) {
+        const photos = run(
+          'adb',
+          [
+            'shell',
+            'content',
+            'query',
+            '--uri',
+            'content://media/external/images/media',
+            '--projection',
+            '_display_name',
+          ],
+          { stdio: ['ignore', 'pipe', 'inherit'] }
+        );
+        if (photos.includes('_display_name=' + name)) break;
+        assert(Date.now() < deadline, 'MediaStore no ha indexado el avatar de prueba');
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+    }
   } catch (error) {
     const state = deviceState();
     const crashed = state !== 'device';
