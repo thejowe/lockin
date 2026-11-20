@@ -182,12 +182,29 @@ describe('ProfileScreen', () => {
 
       await renderRoute(<ProfileScreen />);
       await waitFor(() => expect(screen.getByText('Perfil')).toBeTruthy());
-      // Sin aceptar no hay lápices: la ficha solo ofrece revisar y aceptar.
-      expect(screen.queryByRole('button', { name: 'Editar nombre, edad y ubicación' })).toBeNull();
-      await fireEvent.press(screen.getByRole('button', { name: 'Revisar y aceptar' }));
+      // Las cuentas de antes de esta versión también ven los lápices: tocarlos
+      // pide aceptar primero, y no abre el formulario hasta entonces.
+      await fireEvent.press(
+        screen.getByRole('button', { name: 'Editar nombre, edad y ubicación' })
+      );
 
       expect(screen.getByText('Términos y Normas')).toBeTruthy();
       expect(screen.queryByRole('button', { name: 'Guardar' })).toBeNull();
+    });
+
+    it('tras aceptar, abre el bloque cuyo lápiz se tocó', async () => {
+      await repositories.profiles.saveCurrent(buildProfileInput({ name: 'Perfil Prueba' }));
+
+      await renderRoute(<ProfileScreen />);
+      await waitFor(() => expect(screen.getByText('Perfil')).toBeTruthy());
+      await fireEvent.press(
+        screen.getByRole('button', { name: 'Editar nombre, edad y ubicación' })
+      );
+      await fireEvent.press(screen.getByRole('checkbox'));
+      await fireEvent.press(screen.getByRole('button', { name: 'Aceptar y continuar' }));
+
+      expect(await screen.findByRole('button', { name: 'Guardar' })).toBeTruthy();
+      expect(screen.getByText('Nombre, edad y ubicación')).toBeTruthy();
     });
 
     it('descartar vuelve a lectura sin tocar los datos', async () => {

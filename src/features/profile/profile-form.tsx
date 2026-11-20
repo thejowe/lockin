@@ -236,15 +236,22 @@ export function validate(draft: Draft): Errors {
   return errors;
 }
 
-/** Convierte el borrador validado en lo que espera el repositorio. */
-export function toInput(draft: Draft): ProfileInput {
+/**
+ * Convierte el borrador validado en lo que espera el repositorio.
+ *
+ * Con `keepLocation` (la ficha guardada, al editar otro bloque) la ubicación y
+ * la zona viajan tal cual estaban: el borrador las vacía si el país no sale de
+ * la lista, y un perfil antiguo con solo «Lleida» no puede perderlas por
+ * cambiar sus respuestas.
+ */
+export function toInput(draft: Draft, keepLocation: Profile | null = null): ProfileInput {
   const link = (value: string) => (value.trim().length > 0 ? value.trim() : undefined);
 
   return {
     name: draft.name.trim(),
     age: Number(draft.age),
-    location: formatLocation(draft.city, draft.country),
-    timezone: draft.timezone,
+    location: keepLocation?.location ?? formatLocation(draft.city, draft.country),
+    timezone: keepLocation?.timezone ?? draft.timezone,
     specialties: draft.specialties,
     otherSpecialty: draft.otherSpecialty?.trim() || null,
     seekingSpecialties: draft.seekingSpecialties,
@@ -303,48 +310,6 @@ const SECTION_FIELDS: Record<ProfileSection, (keyof Draft)[]> = {
   links: ['github'],
 };
 
-/** Cómo se llama cada bloque en el aviso de «falta algo en otra parte». */
-const SECTION_NAMES: Record<ProfileSection, string> = {
-  get basics() {
-    return t('Nombre, edad y ubicación');
-  },
-  get specialties() {
-    return t('Lo que dominas');
-  },
-  get work() {
-    return t('Cómo trabajas');
-  },
-  get prompts() {
-    return t('Tus respuestas');
-  },
-  get links() {
-    return t('Enlaces y redes');
-  },
-};
-
-/**
- * Qué falta fuera del bloque que se edita y en qué lápiz se arregla.
- *
- * Los idiomas llevan su propio texto: los perfiles anteriores al 2026-11-02 no
- * los tienen, y sin explicarlo parecería que la ficha se ha roto sola.
- */
-export function elsewhereMessage(field: keyof Draft, error: string): string {
-  const owner = (Object.keys(SECTION_FIELDS) as ProfileSection[]).find((part) =>
-    SECTION_FIELDS[part].includes(field)
-  );
-  const where = owner ? `«${SECTION_NAMES[owner]}»` : t('otra parte de tu ficha');
-  if (field === 'languages') {
-    return t(
-      'Ahora los perfiles muestran los idiomas y aún no has elegido los tuyos. Añádelos desde el lápiz de {where} y podrás guardar esto.',
-      { where }
-    );
-  }
-  return t('Falta algo en {where}: {error} Corrígelo desde su lápiz y podrás guardar esto.', {
-    where,
-    error,
-  });
-}
-
 export function ProfileForm({
   initial = null,
   seed = null,
@@ -391,17 +356,15 @@ export function ProfileForm({
   }
 
   async function handleSubmit() {
-    const found = validate(draft);
+    const all = validate(draft);
+    // Editando un solo bloque solo cuenta lo de ese bloque. El resto no se toca
+    // aquí, así que lo que le falte viene de antes: los perfiles creados antes
+    // de que existieran los idiomas o el país (2026-11-20) no podían guardar
+    // nada, ni siquiera el bloque que les falta, porque otro les bloqueaba.
+    const found: Errors = section
+      ? Object.fromEntries(SECTION_FIELDS[section].map((key) => [key, all[key]]))
+      : all;
     setErrors(found);
-    // Editando un solo bloque, un fallo en otro no se puede corregir aquí:
-    // se dice, en vez de dejar el botón sin hacer nada.
-    const elsewhere = section
-      ? FIELD_ORDER.find((key) => found[key] && !SECTION_FIELDS[section].includes(key))
-      : undefined;
-    if (elsewhere) {
-      setSaveError(elsewhereMessage(elsewhere, found[elsewhere] ?? ''));
-      return;
-    }
     if (Object.values(found).some(Boolean)) {
       // En un formulario largo el error puede quedar fuera de pantalla: sin
       // esto el botón «no hace nada» y hay que buscar qué falta a mano.
@@ -416,7 +379,7 @@ export function ProfileForm({
     setSaving(true);
     setSaveError(null);
     try {
-      await onSubmit(toInput(draft));
+      await onSubmit(toInput(draft, section && section !== 'basics' ? initial : null));
     } catch (cause) {
       setSaveError(cause instanceof Error ? cause.message : t('No se ha podido guardar.'));
     } finally {

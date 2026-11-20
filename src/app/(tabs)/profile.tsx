@@ -47,6 +47,11 @@ export default function ProfileScreen() {
   const [photoOpen, setPhotoOpen] = useState(false);
   /** El bloque que se edita en su hoja, desde el lápiz de ese bloque. */
   const [editSection, setEditSection] = useState<ProfileSection | null>(null);
+  /**
+   * Lo que se tocó antes de aceptar los términos vigentes: tras aceptarlos se
+   * abre eso mismo, sin tener que volver a buscar el lápiz.
+   */
+  const [pending, setPending] = useState<ProfileSection | 'photo' | null>(null);
   const scrollRef = useRef<ScrollViewInstance>(null);
   const theme = useTheme();
   const entering = useTabEntering();
@@ -114,6 +119,15 @@ export default function ProfileScreen() {
     refresh();
   }
 
+  /** Abre un bloque (o la foto); sin los términos vigentes, primero su aceptación. */
+  function open(target: ProfileSection | 'photo') {
+    if (terms.gate === 'required') {
+      setPending(target);
+      setEditing(true);
+    } else if (target === 'photo') setPhotoOpen(true);
+    else setEditSection(target);
+  }
+
   if (loading) {
     return (
       <Screen ambient="plum">
@@ -152,8 +166,19 @@ export default function ProfileScreen() {
             onAccepted={() => {
               terms.refresh();
               setEditing(false);
+              if (pending === 'photo') setPhotoOpen(true);
+              else if (pending) setEditSection(pending);
+              setPending(null);
             }}
-            footer={<SecondaryButton label={t('Volver')} onPress={() => setEditing(false)} />}
+            footer={
+              <SecondaryButton
+                label={t('Volver')}
+                onPress={() => {
+                  setPending(null);
+                  setEditing(false);
+                }}
+              />
+            }
           />
         </SafeAreaView>
       </Screen>
@@ -212,8 +237,12 @@ export default function ProfileScreen() {
             <ProfileDetails
               profile={profile}
               premium={!!quotas?.isPremium}
-              onAvatarPress={terms.gate === 'accepted' ? () => setPhotoOpen(true) : undefined}
-              onEdit={terms.gate === 'accepted' ? setEditSection : undefined}
+              // Los lápices se ven siempre que se sepa el estado de los términos:
+              // a las cuentas de antes de esta versión, tocarlos les pide
+              // aceptar y luego abre ese bloque (sin lápices creían que su
+              // perfil no se podía editar).
+              onAvatarPress={terms.gate === 'checking' ? undefined : () => open('photo')}
+              onEdit={terms.gate === 'checking' ? undefined : open}
               onSaveLink={terms.gate === 'accepted' ? handleSaveLink : undefined}
               // Atajo a los planes, bajo el menú; con Premium activo (o sin saberlo aún) no se ofrece.
               trailing={quotas && !quotas.isPremium ? <PremiumGemButton /> : undefined}

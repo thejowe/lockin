@@ -560,8 +560,8 @@ describe('ProfileForm', () => {
   });
 
   describe('editando un bloque con algo pendiente en otro', () => {
-    it('a un perfil antiguo sin idiomas le dice qué falta y en qué lápiz', async () => {
-      const onSubmit = jest.fn();
+    it('un perfil antiguo sin idiomas guarda sus respuestas igualmente', async () => {
+      const onSubmit = jest.fn<Promise<void>, [ProfileInput]>().mockResolvedValue(undefined);
       await render(
         <ProfileForm
           initial={buildProfile({ languages: [] })}
@@ -572,30 +572,43 @@ describe('ProfileForm', () => {
       );
       await fireEvent.press(screen.getByText('Guardar'));
 
-      expect(
-        await screen.findByText(
-          'Ahora los perfiles muestran los idiomas y aún no has elegido los tuyos. Añádelos desde el lápiz de «Lo que dominas» y podrás guardar esto.'
-        )
-      ).toBeTruthy();
-      expect(onSubmit).not.toHaveBeenCalled();
+      await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+      expect(onSubmit.mock.calls[0][0].languages).toEqual([]);
     });
 
-    it('con cualquier otro fallo nombra el bloque y el error', async () => {
+    it('sin país reconocible conserva la ubicación y la zona guardadas', async () => {
+      const onSubmit = jest.fn<Promise<void>, [ProfileInput]>().mockResolvedValue(undefined);
       await render(
         <ProfileForm
-          initial={buildProfile({ timezone: ' ' })}
+          initial={buildProfile({ location: 'Lleida', timezone: 'Etc/Unknown' })}
           section="prompts"
           submitLabel="Guardar"
-          onSubmit={jest.fn()}
+          onSubmit={onSubmit}
         />
       );
       await fireEvent.press(screen.getByText('Guardar'));
 
-      expect(
-        await screen.findByText(
-          'Falta algo en «Nombre, edad y ubicación»: Elige tu país de la lista. Corrígelo desde su lápiz y podrás guardar esto.'
-        )
-      ).toBeTruthy();
+      await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+      expect(onSubmit.mock.calls[0][0]).toMatchObject({
+        location: 'Lleida',
+        timezone: 'Etc/Unknown',
+      });
+    });
+
+    it('el bloque de idiomas sigue exigiendo al menos uno', async () => {
+      const onSubmit = jest.fn();
+      await render(
+        <ProfileForm
+          initial={buildProfile({ languages: [] })}
+          section="specialties"
+          submitLabel="Guardar"
+          onSubmit={onSubmit}
+        />
+      );
+      await fireEvent.press(screen.getByText('Guardar'));
+
+      expect(await screen.findByText('Elige al menos un idioma.')).toBeTruthy();
+      expect(onSubmit).not.toHaveBeenCalled();
     });
   });
 
