@@ -1,8 +1,19 @@
 # TODO maestro — LockIn MVP
 
+## Integración de los prompts 3, 1 y 2 · 19 de noviembre de 2026
+
+Fusionadas en la rama principal, por este orden, `perfil/programacion`, `chat/proyecto-conjunto` y `grupos/grupo-proyecto`. Detalle en [chat](todo/chat.md#proyecto-conjunto--19-de-noviembre-de-2026), [grupos](todo/grupos.md#grupos-de-proyecto) y [perfil](todo/perfil.md).
+
+- [x] Revisión del encargo y `codex review` de las tres ramas. Arreglados: fixture sin `work_ranges`, test de grupos con «Desarrollo», entrada a un grupo con un like descartado, bloqueos antiguos reintentados, salida del admin fundador y pérdida de borradores al fallar el sondeo del chat.
+- [x] Calidad sobre el árbol fusionado: tsc, ESLint (0 errores), Prettier en lo tocado, Jest 2.366, esquema 334, funciones 124, guardias E2E 99. La suite de contrato contra Supabase corre en Actions.
+- [x] E2E de Maestro: `e2e/joint-project.yaml` (manual, dos cuentas emparejadas).
+- [ ] Comprobación con dos cuentas reales: espera a las migraciones en producción. Con el mock la hace el `comprobador`.
+- [ ] Producción con el ok del usuario: migraciones `joint_projects`, `project_tasks_and_notifications`, `group_projects` y `group_deck_passes`; desplegar `moderate-project` y `notify-group-message`.
+- [ ] Decisiones abiertas del usuario: ver [chat](todo/chat.md#decisiones-abiertas).
+
 ## Grupos de proyecto
 
-En la rama `grupos/grupo-proyecto`, Descubrir permite crear equipos abiertos o equipos con un proyecto moderado. Ambos decks de grupos recuperan los pases a las 48 horas. [Implementación, verificación y migraciones pendientes](todo/grupos.md#grupos-de-proyecto).
+Fusionada en la principal. Descubrir permite crear equipos abiertos o equipos con un proyecto moderado. Ambos decks de grupos recuperan los pases a las 48 horas. [Implementación, verificación y migraciones pendientes](todo/grupos.md#grupos-de-proyecto).
 
 ## Rechazados que vuelven y barra de horas · 19 de noviembre de 2026
 
@@ -21,7 +32,7 @@ Fusionadas `deck/rechazados-vuelven` y `perfil/barra-horas` en la rama principal
 
 ## Proyecto conjunto en el chat · 19 de noviembre de 2026
 
-Rama local `chat/proyecto-conjunto`. El proyecto privado se crea desde el match y conserva el plan existente. La publicación en ambos perfiles requiere dos consentimientos. [Implementación y verificación local](todo/chat.md).
+Fusionada en la principal. El proyecto privado se crea desde el match y conserva el plan existente. La publicación en ambos perfiles requiere dos consentimientos. [Implementación y verificación local](todo/chat.md).
 
 ## Proyectos · 18 de noviembre de 2026
 

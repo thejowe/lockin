@@ -7,7 +7,20 @@
 - [x] La publicación comprueba el consentimiento y el cupo de ambos perfiles. Las notas y el historial de propuestas solo se leen dentro del espacio privado. Un bloqueo, una baja o la salida del match retiran la publicación y la autoría de quien sale.
 - [x] Aviso de creación, propuesta y eliminación con la preferencia de mensajes. Los recordatorios respetan la preferencia de recordatorios. La tarea vence a las 23:59 de la fecha local elegida. Se avisa a los responsables 24 horas antes y a ambos participantes 15 minutos antes de una reunión.
 - [x] Android 16 con el backend mock. Se comprobaron las dos entradas de creación y se creó «Atlas nuevo» desde el editor. La tarjeta abrió la ficha privada con las iniciales de ambos autores y el interruptor apagado. Al cerrar la ficha se recuperaron las cuatro secciones del espacio de trabajo. Capturas, jerarquías y registro del recorrido en `e2e/artifacts/local/2026-11-19-proyecto-conjunto/segunda/`.
-- [ ] Revisión de Claude Code y aprobación del despliegue. La rama incluye las migraciones locales `20261119224029_joint_projects.sql` y `20261119224135_project_tasks_and_notifications.sql` y cambios en `moderate-project` y `notify-group-message`. Las fotos compartidas usan lecturas autenticadas de Storage. La política exige `storage.allow_only_operation(text)`.
+- [x] Revisión de Claude Code (2026-11-19) y fusión en la principal. Arreglado: un sondeo fallido ya no desmonta el chat ni el editor (`use-last-good.ts`).
+- [ ] Aprobación del despliegue: migraciones `20261119224029_joint_projects.sql` y `20261119224135_project_tasks_and_notifications.sql`, `moderate-project` y `notify-group-message`. Las fotos compartidas usan lecturas autenticadas de Storage (`storage.allow_only_operation(text)` existe en producción).
+
+### Decisiones abiertas
+
+Hallazgos de `codex review` que no se arreglan sin una decisión de producto:
+
+- [ ] **Clientes antiguos** (P1): una ficha conjunta publicada con foto hace fallar la lista de proyectos del perfil en la versión de la app que ya está en las tiendas, porque intenta firmar la ruta `shared/` y la política lo niega. Opciones: sacar la nueva versión antes de permitir publicar, o filtrar en servidor las filas conjuntas para clientes viejos.
+- [ ] **Quien se queda tras un bloqueo, baja o unmatch** conserva el proyecto privado pero no tiene ninguna pantalla para abrirlo, exportarlo o borrarlo.
+- [ ] «Mover al principio» cambia el orden en los perfiles de los dos autores (`promoted_at` es único por ficha).
+- [ ] Dos ediciones simultáneas de la misma tarea: la segunda puede deshacer el estado de la primera.
+- [ ] Tras un unmatch, la otra persona sigue viendo el chat en Matches hasta refrescar.
+- [ ] Un like antiguo reenviado tras salir del match puede recrearlo.
+- [ ] Si falla Storage al borrar el último autor, las fotos `shared/` quedan huérfanas sin barrido.
 
 ## Texto libre en los chats · 17 de noviembre de 2026
 
