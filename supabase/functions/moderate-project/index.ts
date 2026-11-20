@@ -1,6 +1,7 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { moderateBoardImage } from '../_shared/moderate-board-image.ts';
 import { isObjectionable } from '../_shared/profile-content.ts';
+import { cleanRetiredProjectMedia } from '../_shared/retired-project-media.mjs';
 import { handleProject } from './logic.mjs';
 
 const admin = createClient(
@@ -26,18 +27,6 @@ async function removeFiles(paths: string[]) {
   if (!paths.length) return;
   const { error } = await bucket.remove(paths);
   if (error) throw error;
-}
-
-// Deleting a group in SQL revokes reads immediately. Drain its durable cleanup
-// queue through the Storage API, including after a transient Storage outage.
-async function cleanRetiredGroupMedia() {
-  const { data, error } = await admin.rpc('retired_group_project_media', {});
-  if (error) throw error;
-  const paths = data.map((row: { path: string }) => row.path);
-  if (!paths.length) return;
-  await removeFiles(paths);
-  const ack = await admin.rpc('retired_group_project_media', { p_removed: paths });
-  if (ack.error) throw ack.error;
 }
 
 Deno.serve(async (request) => {
@@ -190,6 +179,6 @@ Deno.serve(async (request) => {
       }
     },
   });
-  await cleanRetiredGroupMedia().catch(() => {});
+  await cleanRetiredProjectMedia(admin).catch(() => {});
   return response(result.status, result.body);
 });

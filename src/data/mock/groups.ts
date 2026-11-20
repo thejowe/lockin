@@ -277,9 +277,13 @@ export function createMockGroupRepository(
         const existing = state.groups.find((entry) => entry.projectId === input.projectDraftId);
         if (existing?.adminId === actorId) {
           // Reintento tras perder la respuesta: con nadie más dentro, guarda el borrador actual.
-          if (membersOf(existing.id).some((member) => member.userId !== actorId))
+          if (
+            (input.draftGeneration ?? 0) <= (existing.draftGeneration ?? 0) ||
+            membersOf(existing.id).some((member) => member.userId !== actorId)
+          )
             return toView(existing);
           Object.assign(existing, {
+            draftGeneration: input.draftGeneration,
             name: input.name.trim(),
             description: input.description.trim(),
             maxMembers: input.maxMembers ?? 6,
@@ -320,6 +324,7 @@ export function createMockGroupRepository(
       const group: StoredGroup = {
         id: store.createId('group'),
         projectId: input.projectDraftId,
+        draftGeneration: input.draftGeneration,
         name: input.name.trim(),
         description: input.description.trim(),
         adminId: actorId,
@@ -414,9 +419,15 @@ export function createMockGroupRepository(
           const roles = rolesOf(group.id);
           const myRole = firstOpenRoleFor(roles, viewer.specialties);
           if (!myRole) return [];
+          const visibleGroup = toGroup(group);
+          if (
+            !state.appConfig.sharedProjectPhotos &&
+            (visibleGroup.project?.cover || visibleGroup.project?.photos.length)
+          )
+            return [];
           return [
             {
-              group: toGroup(group),
+              group: visibleGroup,
               roles: roles.map((role) => ({ ...role })),
               members: memberViews(group),
               myRole: { ...myRole },

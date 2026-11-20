@@ -131,6 +131,9 @@ export async function handlePushRequest({ secretHeader, body, config, deps }) {
   if (!(await secretMatches(secretHeader, config.secret))) {
     return { status: 401, body: { error: 'secret' } };
   }
+  if (body?.type === 'project-media-cleanup' && Object.keys(body).length === 1) {
+    return { status: 200, body: { removed: await deps.cleanRetiredMedia() } };
+  }
   const allowedTypes = [
     'group-message',
     'direct-message',

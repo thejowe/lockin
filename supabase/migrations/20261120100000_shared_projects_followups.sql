@@ -287,11 +287,15 @@ end;
 $fn$;
 revoke all on function project_private.check_group_draft(jsonb) from public, anon, authenticated;
 
+alter table public.groups add column draft_generation integer not null default 0
+  check (draft_generation >= 0);
+
 create or replace function public.create_moderated_group_project(
   p_actor uuid, p_id uuid, p_group jsonb, p_values jsonb
 ) returns boolean language plpgsql security definer set search_path = '' as $$
 declare
   team public.groups;
+  generation integer := coalesce((p_group->>'draftGeneration')::integer, 0);
   kept text[] := array_remove(array[p_values->>'cover_path'], null)
     || array(select jsonb_array_elements_text(p_values->'photo_paths'));
 begin
@@ -303,12 +307,14 @@ begin
   perform pg_advisory_xact_lock(hashtextextended('group_member:' || p_actor::text, 0));
   select * into team from public.groups where project_id=p_id and admin_id=p_actor for update;
   if found then
-    if exists (select 1 from public.group_members m where m.group_id=team.id and m.user_id<>p_actor)
+    if generation <= team.draft_generation or exists (
+      select 1 from public.group_members m where m.group_id=team.id and m.user_id<>p_actor)
     then
       return false;
     end if;
     perform project_private.check_group_draft(p_group);
     update public.groups set
+      draft_generation=generation,
       name=btrim(p_group->>'name'), description=btrim(p_group->>'description'),
       max_members=coalesce((p_group->>'maxMembers')::integer, 6), updated_at=clock_timestamp()
       where id=team.id;
@@ -346,13 +352,93 @@ begin
     p_values->>'description', p_values->>'link', p_values->>'cover_path',
     array(select jsonb_array_elements_text(p_values->'photo_paths')));
   -- project_first_author has already registered the group's founding admin.
-  update public.groups set project_id=p_id where id=team.id;
+  update public.groups set project_id=p_id, draft_generation=generation where id=team.id;
   return true;
 end;
 $$;
 revoke all on function public.create_moderated_group_project(uuid,uuid,jsonb,jsonb)
   from public, anon, authenticated;
 grant execute on function public.create_moderated_group_project(uuid,uuid,jsonb,jsonb) to service_role;
+
+-- Filter hidden project cards before the page limit.
+create or replace function public.group_deck(p_limit integer default 30)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $fn$
+declare
+  v_uid uuid := (select auth.uid());
+  v_specialties public.specialty[];
+  v_cards jsonb;
+begin
+  if v_uid is null then
+    raise exception 'No hay sesión autenticada.' using errcode = '28000';
+  end if;
+
+  select p.specialties into v_specialties from public.profiles p where p.id = v_uid;
+  if v_specialties is null
+     or (select count(*) from public.group_members m where m.user_id = v_uid)
+        >= public.group_max_memberships() then
+    return '[]'::jsonb;
+  end if;
+
+  select coalesce(jsonb_agg(c.card order by c.passed_at nulls first, c.liked desc, c.id), '[]'::jsonb) into v_cards
+  from (
+    select
+      g.id,
+      swipe.passed_at, swipe.liked,
+      jsonb_build_object(
+        'id', g.id,
+        'name', g.name,
+        'description', g.description,
+        'project_id', g.project_id,
+        'admin_id', g.admin_id,
+        'max_members', g.max_members,
+        'created_at', g.created_at,
+        'my_role_id', pick.id,
+        'roles', (
+          select jsonb_agg(
+            jsonb_build_object(
+              'id', r.id, 'group_id', r.group_id, 'specialty', r.specialty,
+              'slots', r.slots, 'filled', r.filled
+            ) order by r.specialty, r.id
+          )
+          from public.group_roles r where r.group_id = g.id
+        ),
+        'members', (
+          select jsonb_agg(
+            jsonb_build_object(
+              'group_id', m.group_id, 'user_id', m.user_id,
+              'role_id', m.role_id, 'joined_at', m.joined_at
+            ) order by m.joined_at, m.user_id
+          )
+          from public.group_members m where m.group_id = g.id
+        )
+      ) as card
+    from public.groups g
+    cross join lateral public.group_deck_swipe_rank(g.id, v_uid, 'user_to_group') swipe
+    cross join lateral (
+      select r.id
+      from public.group_roles r
+      where r.group_id = g.id and r.filled < r.slots and r.specialty = any(v_specialties)
+      order by r.specialty, r.id
+      limit 1
+    ) pick
+    where (select count(*) from public.group_members m where m.group_id = g.id) < g.max_members
+      and not exists (
+        select 1 from public.group_members m where m.group_id = g.id and m.user_id = v_uid
+      )
+      and not public.group_has_block_with(g.id, v_uid)
+      and (g.project_id is null or project_private.media_public(g.project_id))
+    order by swipe.passed_at nulls first, swipe.liked desc, g.id
+    limit greatest(coalesce(p_limit, 30), 1)
+  ) c;
+
+  return v_cards;
+end;
+$fn$;
 
 -- 3. Closed pairs ---------------------------------------------------------------
 
@@ -768,12 +854,36 @@ begin
 end;
 $fn$;
 
+-- Staged shared objects use unique keys. A full day is longer than an in-flight
+-- moderation; an old unreferenced key cannot be reattached by the client.
+create function project_private.enqueue_orphan_media() returns void
+language plpgsql security definer set search_path = '' as $$
+begin
+  if to_regclass('storage.objects') is null then return; end if;
+  insert into project_private.retired_group_media(path)
+    select o.name from storage.objects o
+    where o.bucket_id='board'
+      and o.name ~ '^shared/[0-9a-f-]{36}/project-[0-9a-f-]{36}[.]jpg$'
+      and o.created_at < now() - interval '24 hours'
+      and not exists (select 1 from public.profile_projects p
+                      where p.cover_path=o.name or o.name=any(p.photo_paths))
+      and not exists (select 1 from project_private.retired_group_media m where m.path=o.name)
+    order by o.created_at, o.name limit 100
+    on conflict do nothing;
+  if exists(select 1 from project_private.retired_group_media) then
+    perform public.enqueue_push('{"type":"project-media-cleanup"}'::jsonb);
+  end if;
+end;
+$$;
+revoke all on function project_private.enqueue_orphan_media() from public, anon, authenticated;
+
 -- Reminders every five minutes, also where 20261119224135 already ran with the
 -- one-minute schedule (cron.schedule with an existing name updates it).
 do $cron$
 begin
   if exists (select 1 from pg_catalog.pg_extension where extname = 'pg_cron') then
     perform cron.schedule('lockin-project-reminders', '*/5 * * * *', 'select public.enqueue_project_reminders();');
+    perform cron.schedule('lockin-project-media-cleanup', '37 * * * *', 'select project_private.enqueue_orphan_media();');
   end if;
 end;
 $cron$;

@@ -119,13 +119,21 @@ test('moderated group project and author lifecycle', async (t) => {
       await service();
       assert.deepEqual(await create(), [{ created: true }]);
       // Un reintento con el borrador cambiado guarda el actual, no el primero.
-      assert.deepEqual(await create(founder, group, { ...card, name: 'Atlas cambiado' }), [
-        { created: true },
-      ]);
+      assert.deepEqual(
+        await create(
+          founder,
+          { ...group, draftGeneration: 2 },
+          { ...card, name: 'Atlas cambiado' }
+        ),
+        [{ created: true }]
+      );
       await as(founder);
       assert.equal((await read())[0].name, 'Atlas cambiado');
       await service();
-      assert.deepEqual(await create(), [{ created: true }]);
+      assert.deepEqual(await create(), [{ created: false }]);
+      assert.deepEqual(await create(founder, { ...group, draftGeneration: 1 }), [
+        { created: false },
+      ]);
       await db.exec('reset role');
       assert.deepEqual(await rows('select path from project_private.retired_group_media'), []);
       await service();
@@ -153,7 +161,7 @@ test('moderated group project and author lifecycle', async (t) => {
       'candidate can read the card and authenticated media with the same eligibility as the deck',
       async () => {
         await as(seeker);
-        assert.equal((await read())[0].name, card.name);
+        assert.equal((await read())[0].name, 'Atlas cambiado');
         assert.deepEqual(await authors(), [founder]);
         assert.deepEqual(await files(), [cover, gallery].sort());
         assert.deepEqual(await files('object.sign'), []);

@@ -28,6 +28,7 @@ import {
   GROUP_MAX_MEMBERS,
   GroupError,
   PremiumRequiredError,
+  newProjectId,
   useRefreshQuery,
   useRepositories,
   validateGroupInput,
@@ -77,6 +78,9 @@ function GroupForm({
     initial ? (initial.group.project ? 'project' : 'people') : null
   );
   const [projectEditor, setProjectEditor] = useState<'new' | Project | null>(null);
+  const [projectDraftId] = useState(newProjectId);
+  const draftGeneration = useRef(0);
+  const [projectDraft, setProjectDraft] = useState<ProjectInput>();
   const [name, setName] = useState(initial?.group.name ?? '');
   const [description, setDescription] = useState(initial?.group.description ?? '');
   const [roles, setRoles] = useState<GroupRoleInput[]>(
@@ -168,7 +172,7 @@ function GroupForm({
     }
   }
 
-  async function createWithProject(project: ProjectInput, projectDraftId: string) {
+  async function createWithProject(project: ProjectInput) {
     try {
       const view = await repositories.groups.create({
         name,
@@ -176,6 +180,7 @@ function GroupForm({
         roles,
         project,
         projectDraftId,
+        draftGeneration: ++draftGeneration.current,
       });
       refreshMine();
       onSaved(view);
@@ -368,7 +373,11 @@ function GroupForm({
           groupProject
           canPromote={false}
           createWithGroup={editing ? undefined : createWithProject}
-          onClose={() => setProjectEditor(null)}
+          initialDraft={projectDraft}
+          onClose={(draft) => {
+            if (!editing) setProjectDraft(draft);
+            setProjectEditor(null);
+          }}
           onSaved={() => {
             setProjectEditor(null);
             if (editing) refreshMine();

@@ -14,6 +14,22 @@ const MESSAGE = '6eab25bc-8198-41cc-8699-11a8e14e1f22';
 const GROUP = 'acce2d3f-6877-4f80-9060-fb47b465ee21';
 const CONFIG = { secret: 'secreto-compartido' };
 
+test('la limpieza programada solo acepta el trabajo autenticado sin rutas del solicitante', async () => {
+  let runs = 0;
+  const invoke = (secretHeader, body) =>
+    handlePushRequest({
+      secretHeader,
+      body,
+      config: CONFIG,
+      deps: { cleanRetiredMedia: async () => ++runs },
+    });
+  const body = { type: 'project-media-cleanup' };
+  assert.equal((await invoke('otro', body)).status, 401);
+  assert.equal((await invoke(CONFIG.secret, { ...body, paths: [] })).status, 400);
+  assert.equal(runs, 0);
+  assert.deepEqual(await invoke(CONFIG.secret, body), { status: 200, body: { removed: 1 } });
+});
+
 const row = (n, over = {}) => ({
   token: `ExponentPushToken[tok${n}]`,
   group_id: GROUP,

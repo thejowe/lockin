@@ -214,6 +214,9 @@ describe('/group/new', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
     expect(await screen.findByText(/Ya estás en 3 grupos/)).toBeTruthy();
     expect(await repositories.groups.listMine()).toHaveLength(0);
+    await fireEvent.press(screen.getByRole('button', { name: 'Cancelar' }));
+    await fireEvent.changeText(screen.getByLabelText('Nombre del grupo'), 'Laboratorio nuevo');
+    await fireEvent.press(screen.getByRole('button', { name: 'Continuar al proyecto' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
     await waitFor(() => expect(router.back).toHaveBeenCalled());
     const [{ group }] = await repositories.groups.listMine();
@@ -223,6 +226,8 @@ describe('/group/new', () => {
       link: 'https://example.org',
     });
     expect(create.mock.calls[0][0].projectDraftId).toEqual(create.mock.calls[1][0].projectDraftId);
+    expect(create.mock.calls.map(([input]) => input.draftGeneration)).toEqual([1, 2]);
+    expect(group.name).toBe('Laboratorio nuevo');
   });
 });
 

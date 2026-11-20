@@ -18,6 +18,7 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 import { EXPO_PUSH_URL, handlePushRequest, readConfig } from './logic.mjs';
+import { cleanRetiredProjectMedia } from '../_shared/retired-project-media.mjs';
 
 const admin = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -42,6 +43,7 @@ Deno.serve(async (request) => {
       body,
       config: readConfig(Deno.env.toObject()),
       deps: {
+        cleanRetiredMedia: () => cleanRetiredProjectMedia(admin),
         async targets(id: string | null, type: string) {
           const dispatch: Record<string, [string, Record<string, string | null>]> = {
             'group-message': ['group_message_push_targets', { p_message_id: id! }],

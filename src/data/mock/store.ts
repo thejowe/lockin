@@ -41,7 +41,7 @@ export const CURRENT_USER_ID = 'me';
 /** Espejo de public.pass_cooldown() para los tres decks. */
 export const PASS_COOLDOWN_MS = 48 * 60 * 60 * 1000;
 
-export type StoredGroup = Omit<Group, 'project'> & { projectId?: string };
+export type StoredGroup = Omit<Group, 'project'> & { projectId?: string; draftGeneration?: number };
 
 export interface DecisionMeta {
   atMs: number;

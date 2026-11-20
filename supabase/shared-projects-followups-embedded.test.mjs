@@ -11,7 +11,7 @@ import { SUPABASE_FIXTURE_SQL } from './embedded-bootstrap.mjs';
 const migrations = new URL('./migrations/', import.meta.url);
 const [a, b, reader] = [1, 2, 3].map((n) => `00000000-0000-4000-8000-00000000000${n}`);
 const storageFixture = `create schema storage;
-  create table storage.objects(bucket_id text,name text);
+  create table storage.objects(bucket_id text,name text,created_at timestamptz default now());
   alter table storage.objects enable row level security;
   grant usage on schema storage to authenticated;
   grant select on storage.objects to authenticated;
@@ -184,6 +184,75 @@ test('seguimiento de proyectos compartidos antes de producción', async (t) => {
           1
         );
       })
+    );
+
+    await t.test('el límite del deck se aplica después del interruptor de fotos', () =>
+      isolated(async () => {
+        await admin();
+        await db.exec('update public.app_config set shared_project_photos=true');
+        await service();
+        const group = {
+          name: 'Taller',
+          description: 'Un taller en común',
+          roles: [{ specialty: 'dev', slots: 1 }],
+        };
+        for (const actor of [a, b]) {
+          const id = randomUUID();
+          await rows('select public.create_moderated_group_project($1,$2,$3,$4)', [
+            actor,
+            id,
+            group,
+            card(id, false),
+          ]);
+        }
+        await as(reader);
+        const deck = async () => (await rows('select public.group_deck(1) as cards'))[0].cards;
+        const [first] = await deck();
+        await admin();
+        await db.query('update public.profile_projects set cover_path=$1 where id=$2', [
+          `shared/${first.project_id}/project-${randomUUID()}.jpg`,
+          first.project_id,
+        ]);
+        await db.exec('update public.app_config set shared_project_photos=false');
+        await as(reader);
+        const page = await deck();
+        assert.equal(page.length, 1);
+        assert.notEqual(page[0].id, first.id);
+      })
+    );
+
+    await t.test(
+      'el barrido conserva fotos en uso y en moderación, y reintenta las huérfanas',
+      () =>
+        isolated(async () => {
+          const match = await newMatch();
+          const id = await create(match, false);
+          const path = () => `shared/${id}/project-${randomUUID()}.jpg`;
+          const [used, orphan, fresh] = [path(), path(), path()];
+          await admin();
+          await db.query('update public.profile_projects set cover_path=$1 where id=$2', [
+            used,
+            id,
+          ]);
+          await db.query(
+            `insert into storage.objects values
+          ('board',$1,now()-interval '2 days'),('board',$2,now()-interval '2 days'),
+          ('board',$3,now()),('avatars',$4,now()-interval '2 days')`,
+            [used, orphan, fresh, path()]
+          );
+          await db.exec('select project_private.enqueue_orphan_media()');
+          await service();
+          assert.deepEqual(await rows('select * from public.retired_group_project_media()'), [
+            { path: orphan },
+          ]);
+          assert.deepEqual(await rows('select * from public.retired_group_project_media()'), [
+            { path: orphan },
+          ]);
+          assert.deepEqual(
+            await rows('select * from public.retired_group_project_media($1::text[])', [[orphan]]),
+            []
+          );
+        })
     );
 
     await t.test('un grupo de proyecto con fotos no se crea con el interruptor apagado', () =>

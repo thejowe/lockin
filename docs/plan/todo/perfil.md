@@ -20,7 +20,7 @@
 - [x] Campos: nombre, edad, ubicación/zona horaria
 - [x] Especialidades (selección múltiple de tags)
 - [x] El catálogo muestra «Programación» (es), «Programació» (ca) y «Development» (en). Tanto las especialidades propias como las buscadas se guardan con el código `dev`.
-- [ ] Renovar las seis capturas de Descubrir, Grupos y Perfil en español y catalán de `assets/images/tour/` que todavía muestran «Desarrollo» o «Desenvolupament».
+- [x] Renovadas las seis capturas de Descubrir, Grupos y Perfil en español y catalán. La revisión visual de las imágenes de 600 × 954 confirma «Programación» y «Programació». Evidencia local en `e2e/artifacts/local/2026-11-19-release/tour-review.jpg`.
 - [x] Qué busco (Cofundador / Compañero de lock-in / Ambos)
 - [x] Qué debe dominar quien busco (mismos tags; solo en Cofundador / Ambos)
 - [x] Punto de partida (las 3 opciones de `docs/plan/CONCEPTO.md`)

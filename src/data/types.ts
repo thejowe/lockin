@@ -669,7 +669,10 @@ export interface GroupSettings {
 }
 
 export type GroupInput = GroupSettings &
-  ({ project?: never; projectDraftId?: never } | { project: ProjectInput; projectDraftId: string });
+  (
+    | { project?: never; projectDraftId?: never; draftGeneration?: never }
+    | { project: ProjectInput; projectDraftId: string; draftGeneration?: number }
+  );
 
 /**
  * Datos para editar un grupo que ya existe. `roles` es el conjunto completo

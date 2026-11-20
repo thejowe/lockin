@@ -8,7 +8,7 @@
 - [x] Aviso de creación, propuesta y eliminación con la preferencia de mensajes. Los recordatorios respetan la preferencia de recordatorios. La tarea vence a las 23:59 de la fecha local elegida. Se avisa a los responsables 24 horas antes y a ambos participantes 15 minutos antes de una reunión.
 - [x] Android 16 con el backend mock. Se comprobaron las dos entradas de creación y se creó «Atlas nuevo» desde el editor. La tarjeta abrió la ficha privada con las iniciales de ambos autores y el interruptor apagado. Al cerrar la ficha se recuperaron las cuatro secciones del espacio de trabajo. Capturas, jerarquías y registro del recorrido en `e2e/artifacts/local/2026-11-19-proyecto-conjunto/segunda/`.
 - [x] Revisión de Claude Code (2026-11-19) y fusión en la principal. Arreglado: un sondeo fallido ya no desmonta el chat ni el editor (`use-last-good.ts`).
-- [ ] Aprobación del despliegue: migraciones `20261119224029_joint_projects.sql` y `20261119224135_project_tasks_and_notifications.sql`, `moderate-project` y `notify-group-message`. Las fotos compartidas usan lecturas autenticadas de Storage (`storage.allow_only_operation(text)` existe en producción).
+- [x] Migraciones de proyectos conjuntos y recordatorios aplicadas en producción. `moderate-project` v2 y `notify-group-message` v6 activas. El cron de recordatorios corre cada cinco minutos.
 
 ### Decisiones del usuario (2026-11-20) — migración `20261120100000_shared_projects_followups.sql`
 
@@ -21,7 +21,7 @@
 - [x] **«Mover al principio»** por autor: `project_authors.promoted_at`.
 - [x] **Tareas**: `chat_plan_items.revision` (trigger `bump_plan_item_revision`); una edición con versión vieja da `PlanConflictError`, la app avisa y recarga.
 - [x] Recordatorios: `lockin-project-reminders` cada 5 minutos.
-- [ ] Más adelante: barrido de fotos `shared/` huérfanas si falla Storage al borrar el último autor.
+- [x] Barrido horario de fotos huérfanas de `board/shared/`. Las claves sin referencias con más de 24 horas entran en una cola persistente. La función confirma el lote después de borrarlo por la API de Storage. Probada la recuperación tras fallo de Storage y comprobado HTTP 200 en producción con la cola vacía.
 
 ## Texto libre en los chats · 17 de noviembre de 2026
 

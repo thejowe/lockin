@@ -68,6 +68,7 @@ export function ProjectEditor({
   matchId,
   groupProject = false,
   createWithGroup,
+  initialDraft,
   header,
   onClose,
   onSaved,
@@ -77,15 +78,16 @@ export function ProjectEditor({
   matchId?: string;
   groupProject?: boolean;
   /** El grupo y su proyecto se guardan juntos tras moderar todas las fotos. */
-  createWithGroup?: (draft: ProjectInput, draftId: string) => Promise<void>;
+  createWithGroup?: (draft: ProjectInput) => Promise<void>;
+  initialDraft?: ProjectInput;
   /** Controles propios de quien abre el editor, encima del formulario. */
   header?: ReactNode;
-  onClose: () => void;
+  onClose: (draft: ProjectInput) => void;
   onSaved: () => void;
 }) {
   const { projects } = useRepositories();
   const isJoint = !!matchId || (project?.authors?.length ?? 0) > 1;
-  const [draft, setDraft] = useState<ProjectInput>(project ?? empty);
+  const [draft, setDraft] = useState<ProjectInput>(project ?? initialDraft ?? empty);
   const [details, setDetails] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -165,7 +167,7 @@ export function ProjectEditor({
   return (
     <ProjectBottomSheet
       onClose={() => {
-        if (!busy) onClose();
+        if (!busy) onClose(draft);
       }}>
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.form}>
         <ThemedText type="title">
@@ -257,7 +259,7 @@ export function ProjectEditor({
             void run(async () => {
               setReview(true);
               if (draft.photos.some((photo) => !photo.path)) setDetails(true);
-              if (createWithGroup) await createWithGroup(draft, draftId);
+              if (createWithGroup) await createWithGroup(draft);
               else if (!project && matchId) await projects.save(draft, undefined, draftId, matchId);
               else await projects.save(draft, project, project ? undefined : draftId);
             }, true)
@@ -302,7 +304,7 @@ export function ProjectEditor({
             />
           )
         ) : null}
-        <SecondaryButton label={t('Cancelar')} disabled={busy} onPress={onClose} />
+        <SecondaryButton label={t('Cancelar')} disabled={busy} onPress={() => onClose(draft)} />
       </ScrollView>
     </ProjectBottomSheet>
   );

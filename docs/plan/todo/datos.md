@@ -8,7 +8,7 @@
 ## Proyectos · 18 de noviembre de 2026
 
 - [x] Contrato, semillas, límite concurrente, RLS, URLs firmadas y publicación atómica del proyecto tras moderar sus imágenes.
-- [ ] Aplicar la migración y desplegar `moderate-project` en el entorno de destino tras la revisión.
+- [x] `profile_projects` figura en el historial de producción como `20261118160427`. Las cinco migraciones de ampliación y las versiones de las funciones desplegadas figuran en el TODO maestro.
 
 ## Plan compartido de los chats · 17 de noviembre de 2026
 
