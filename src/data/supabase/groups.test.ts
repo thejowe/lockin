@@ -329,7 +329,7 @@ describe('escrituras', () => {
         },
       ]),
     });
-    const draft = { ...settings, projectDraftId: 'p', project };
+    const draft = { ...settings, projectDraftId: 'p', draftGeneration: 3, project };
     const view = await repository.create(draft);
     expect(invoke).toHaveBeenCalledTimes(1);
     expect(invoke).toHaveBeenCalledWith('moderate-project', {
@@ -337,7 +337,7 @@ describe('escrituras', () => {
         action: 'save',
         name: 'Atlas',
         draftId: 'p',
-        group: settings,
+        group: { ...settings, draftGeneration: 3 },
         images: [null],
       }),
     });

@@ -2996,6 +2996,7 @@ function describeSafetyContract(backend: ContractBackend): void {
           description: DESCRIPTION,
           roles: [{ specialty: 'dev' as const, slots: 2 }],
           projectDraftId: '891d64a4-0e28-486c-82c0-4484f9418499',
+          draftGeneration: 1,
           project: {
             name: 'Atlas',
             tagline: 'Rutas de barrio',
@@ -3015,6 +3016,9 @@ function describeSafetyContract(backend: ContractBackend): void {
         expect(initial).toMatchObject({ id: settings.projectDraftId, ...settings.project });
         expect(initial.authors?.map((p) => p.id)).toEqual([aId]);
         expect((await a.groups.create(settings)).group.id).toBe(id);
+        const revised = { ...settings, draftGeneration: 2, name: 'Equipo Atlas actualizado' };
+        expect((await a.groups.create(revised)).group.name).toBe(revised.name);
+        expect((await a.groups.create(settings)).group.name).toBe(revised.name);
         expect(
           (await b.groups.getDeck()).find((card) => card.group.id === id)?.group.project
         ).toMatchObject({ id: initial.id });
