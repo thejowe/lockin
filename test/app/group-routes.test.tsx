@@ -202,7 +202,7 @@ describe('/group/new', () => {
       screen.getByLabelText('Descripción del grupo'),
       'Construimos herramientas para viajar.'
     );
-    await fireEvent.press(screen.getByRole('checkbox', { name: 'Perfil: Desarrollo' }));
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Perfil: Programación' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Continuar al proyecto' }));
     expect(create).not.toHaveBeenCalled();
     await fireEvent.changeText(screen.getByLabelText('Nombre del proyecto'), 'Atlas');
