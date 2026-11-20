@@ -119,7 +119,7 @@ name: Crear un proyecto en el alta y descubrirlo desde otra cuenta
     - ../assets/images/icon.png
 - tapOn: 'Elegir de la galería'
 - tapOn:
-    id: '.*:id/icon_thumbnail'
+    text: 'Photo taken on .+|Foto (tomada|hecha|feta) .+'
     index: 0
 - tapOn:
     id: '.*:id/crop_image_menu_crop'

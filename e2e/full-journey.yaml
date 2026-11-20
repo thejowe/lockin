@@ -146,7 +146,7 @@ name: Alta, perfil, deck, match, mensaje y persistencia
     - fixtures/avatar.png
 - tapOn: 'Elegir de la galería'
 - tapOn:
-    id: '.*:id/icon_thumbnail'
+    text: 'Photo taken on .+|Foto (tomada|hecha|feta) .+'
     index: 0
 - tapOn:
     id: '.*:id/crop_image_menu_crop'
