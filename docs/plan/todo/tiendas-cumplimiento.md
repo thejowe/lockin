@@ -1,5 +1,10 @@
 # Bloque `tiendas-cumplimiento` — envío a App Store y Google Play
 
+## TestFlight 1.0.1 · 20 de noviembre de 2026
+
+- [x] Subida la compilación 72 de `app.cofounder.mobile` desde el commit `23422ee` con el perfil de producción y Xcode 27. [Build y envío](https://github.com/thejowe/lockin/actions/runs/44729551069) · [EAS Submit](https://expo.dev/accounts/thejowe/projects/lockin/submissions/1139f0ca-a9a2-40cd-ac63-c20f2136ad13)
+- [x] App Store Connect devolvió `VALID` e `IN_BETA_TESTING` para la build `37f218ea-ada0-4f2d-b341-8af05f37e274`. [Abrir la compilación en TestFlight](https://appstoreconnect.apple.com/apps/6828604279/testflight/ios/37f218ea-ada0-4f2d-b341-8af05f37e274)
+
 ## TestFlight 1.0.1 · 17 de noviembre de 2026
 
 - [x] Subir los planes compartidos, el texto libre y el contador de mensajes sin leer. TypeScript y 112 pruebas de chat, seguridad y navegación pasaron tras integrar las ramas.

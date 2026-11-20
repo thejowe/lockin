@@ -1,5 +1,9 @@
 # TODO maestro — LockIn MVP
 
+## TestFlight 1.0.1 (72) · 20 de noviembre de 2026
+
+- [x] Compilada desde `23422ee` y disponible para pruebas internas. Apple confirmó `VALID` e `IN_BETA_TESTING`. [TestFlight](https://appstoreconnect.apple.com/apps/6828604279/testflight/ios/37f218ea-ada0-4f2d-b341-8af05f37e274)
+
 ## Integración de los prompts 3, 1 y 2 · 19 de noviembre de 2026
 
 Fusionadas en la rama principal, por este orden, `perfil/programacion`, `chat/proyecto-conjunto` y `grupos/grupo-proyecto`. Detalle en [chat](todo/chat.md#proyecto-conjunto--19-de-noviembre-de-2026), [grupos](todo/grupos.md#grupos-de-proyecto) y [perfil](todo/perfil.md).
@@ -11,7 +15,7 @@ Fusionadas en la rama principal, por este orden, `perfil/programacion`, `chat/pr
 - [x] Prueba de API en Supabase de producción con dos cuentas anónimas autenticadas y una tercera de lectura. La lectora vio ambos perfiles en el deck y la ficha en los dos perfiles tras el segundo consentimiento. El otro participante vio la tarjeta del grupo. El bloqueo retiró la publicación. Verificada la baja de todos los usuarios, perfiles y proyectos temporales. Evidencia local en `e2e/artifacts/local/2026-11-19-release/projects-7e107582-4f09-4b30-ab14-01cc572d223e.json`.
 - [ ] El usuario se encarga del recorrido del cliente con dos cuentas de correo confirmadas. Flujo en `e2e/joint-project.yaml`.
 - [x] En `23422ee` pasaron los nueve trabajos de CI, incluidos Formato, Jest y el contrato con Supabase. La comparación del esquema con producción también pasó. [CI](https://github.com/thejowe/lockin/actions/runs/44727837278) · [Esquema](https://github.com/thejowe/lockin/actions/runs/44727837238)
-- [ ] E2E Android. Corregidos el selector de fotos de Android 16, el tutorial posterior a la recuperación de contraseña y la preparación del usuario de prueba para Hermes. [Detalle y ejecución que reprodujo los fallos](todo/calidad.md)
+- [ ] E2E Android. Corregidos el selector de fotos de Android 16, el tutorial posterior a la recuperación de contraseña y la preparación del usuario de prueba para Hermes. En el siguiente run, la variante Supabase falló antes de arrancar el APK: Gradle no pudo resolver las dependencias de Kotlin. [Ejecución](https://github.com/thejowe/lockin/actions/runs/44730105996)
 - [x] Decisiones del usuario (2026-11-20) aplicadas en `20261120100000_shared_projects_followups.sql`: interruptor de fotos compartidas apagado, versión mínima, proyecto de quien se queda, match deshecho cerrado y por Realtime, reintento de grupo, orden por autor, versión de tareas y recordatorios cada 5 minutos. [Detalle](todo/chat.md#decisiones-del-usuario-2026-11-20--migración-20261120100000_shared_projects_followupssql)
 - [x] Las cinco migraciones están en el historial de producción como `20261120111317`, `20261120111319`, `20261120111320`, `20261120111321` y `20261120111323`. `moderate-project` v2 y `notify-group-message` v6 están activas. Fotos compartidas apagadas y versiones mínimas en 0.0.0.
 
