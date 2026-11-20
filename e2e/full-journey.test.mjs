@@ -85,7 +85,12 @@ describe('full-journey declara lo que busca la persona', () => {
     assert(gate >= 0, 'El bloque del deck ya no está condicionado al backend real');
     // El tour y la navegación de vuelta se prueban también con el mock.
     const afterLogin = journey.slice(at("- tapOn: 'Registrarse'"));
-    assert.equal(afterLogin.split('- runFlow:').length - 1, 1);
+    // El subflujo del editor es obligatorio en ambos backends. Solo el bloque
+    // que viene después lleva una condición.
+    assert.deepEqual(afterLogin.match(/^- runFlow:.*$/gm), [
+      '- runFlow: steps/check-project-close.yaml',
+      '- runFlow:',
+    ]);
     const right = at("id: 'deck-tap-right'");
     const tour = at("visible: 'Siguiente explicación'");
     const left = at("id: 'deck-tap-left'");
