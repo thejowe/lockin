@@ -248,7 +248,7 @@ describe('bloquear y reportar un grupo', () => {
     // Con el panel abierto no hay botones de decidir.
     expect(screen.queryByRole('button', { name: 'Quiero entrar' })).toBeNull();
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar opciones' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
     expect(screen.getByRole('button', { name: 'Quiero entrar' })).toBeTruthy();
   });
 
@@ -258,7 +258,7 @@ describe('bloquear y reportar un grupo', () => {
     expect(screen.getByText('¿Bloquear el grupo Taller Abierto?')).toBeTruthy();
 
     // Cancelar vuelve al menú.
-    await fireEvent.press(screen.getByRole('button', { name: 'Cancelar bloqueo' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Bloquear el grupo Taller Abierto' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Confirmar bloqueo' }));
 
@@ -293,14 +293,14 @@ describe('bloquear y reportar un grupo', () => {
       reason: 'spam',
       details: '',
     });
-    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar opciones' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
     expect(groupName('Taller Abierto')).toBeTruthy();
   });
 
   it('del formulario de reporte se vuelve al menú', async () => {
     await openMenu();
     await fireEvent.press(screen.getByRole('button', { name: 'Reportar el grupo Taller Abierto' }));
-    await fireEvent.press(screen.getByRole('button', { name: 'Cancelar reporte' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
     expect(screen.getByRole('button', { name: 'Bloquear el grupo Taller Abierto' })).toBeTruthy();
   });
 });

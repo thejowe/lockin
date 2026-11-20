@@ -169,7 +169,6 @@ export default function ProfileScreen() {
             submitLabel={t('Guardar cambios')}
             onSubmit={handleSubmit}
             onCancel={() => setEditing(false)}
-            cancelLabel={t('Descartar cambios')}
             header={
               <View style={styles.header}>
                 <ThemedText type="label" themeColor="textSecondary">

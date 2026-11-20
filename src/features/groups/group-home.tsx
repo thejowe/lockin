@@ -7,6 +7,7 @@
  * que lleva más tiempo dentro (o se borra si no queda nadie).
  */
 
+import { CloseHeader } from '@/components/close-button';
 import { useRouter, type Href } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -68,11 +69,18 @@ export function GroupHome({
     const name = leaving ? '' : (confirm.member.profile?.name ?? t('esta persona'));
     return (
       <ScrollView contentContainerStyle={styles.content}>
-        <ThemedText type="subtitle">
-          {leaving
-            ? t('¿Salir de {name}?', { name: group.name })
-            : t('¿Expulsar a {name}?', { name })}
-        </ThemedText>
+        <CloseHeader
+          onPress={() => {
+            setError(null);
+            setConfirm(null);
+          }}
+          disabled={busy}>
+          <ThemedText type="subtitle">
+            {leaving
+              ? t('¿Salir de {name}?', { name: group.name })
+              : t('¿Expulsar a {name}?', { name })}
+          </ThemedText>
+        </CloseHeader>
         <ThemedText type="body" themeColor="textSecondary">
           {leaving
             ? isAdmin
@@ -101,15 +109,6 @@ export function GroupHome({
               ? run(() => repositories.groups.leave(group.id), onLeft)
               : run(() => repositories.groups.kick(confirm.member.member.userId)))
           }
-        />
-        <Button
-          label={t('Cancelar')}
-          variant="secondary"
-          disabled={busy}
-          onPress={() => {
-            setError(null);
-            setConfirm(null);
-          }}
         />
       </ScrollView>
     );

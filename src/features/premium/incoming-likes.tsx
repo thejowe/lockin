@@ -11,9 +11,10 @@
  * `MatchModal`, igual que al swipear.
  */
 
+import { FormSheet } from '@/components/form-sheet';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { FlatList, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
 import { LoadingState } from '@/components/state-view';
@@ -23,7 +24,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ActionButton } from '@/features/discover/action-button';
 import { MatchModal } from '@/features/discover/match-modal';
 import { OutOfLikesSheet } from '@/features/discover/out-of-likes-sheet';
-import { MaxContentWidth, Radii, ScrimAlpha, Spacing, Stroke } from '@/constants/theme';
+import { Radii, Spacing, Stroke } from '@/constants/theme';
 import {
   PremiumRequiredError,
   QuotaExceededError,
@@ -116,7 +117,6 @@ interface MorePages {
 }
 
 export function IncomingLikes({ onOpenChat }: { onOpenChat: (matchId: string) => void }) {
-  const theme = useTheme();
   const repositories = useRepositories();
   useFocusEffect(
     useCallback(() => {
@@ -263,44 +263,25 @@ export function IncomingLikes({ onOpenChat }: { onOpenChat: (matchId: string) =>
     <View style={styles.root}>
       {body}
 
-      <Modal
-        visible={selected !== null}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setSelected(null)}>
-        {selected ? (
-          <View style={[styles.backdrop, { backgroundColor: theme.background + ScrimAlpha }]}>
-            <View
-              accessibilityViewIsModal
-              style={[
-                styles.sheet,
-                { backgroundColor: theme.surfaceOpaque, borderColor: theme.border },
-              ]}>
-              <ProfileAvatar avatar={selected.profile.avatar} size="large" />
-              <ThemedText type="subtitle" style={styles.centered}>
-                {selected.profile.name}
-              </ThemedText>
-              <ThemedText type="small" themeColor="textSecondary" style={styles.centered}>
-                {selected.isSuper ? t('Te ha dado un Super Like · ') : ''}
-                {selected.profile.location}
-              </ThemedText>
-              <View style={styles.actions}>
-                <ActionButton
-                  label={t('Pasar')}
-                  variant="secondary"
-                  onPress={() => void decide(selected, 'pass')}
-                />
-                <ActionButton label={t('Me gusta')} onPress={() => void decide(selected, 'like')} />
-              </View>
-              <ActionButton
-                label={t('Cerrar')}
-                variant="secondary"
-                onPress={() => setSelected(null)}
-              />
-            </View>
+      {selected && (
+        <FormSheet
+          onClose={() => setSelected(null)}
+          header={<ThemedText type="subtitle">{selected.profile.name}</ThemedText>}>
+          <ProfileAvatar avatar={selected.profile.avatar} size="large" />
+          <ThemedText type="small" themeColor="textSecondary" style={styles.centered}>
+            {selected.isSuper ? t('Te ha dado un Super Like · ') : ''}
+            {selected.profile.location}
+          </ThemedText>
+          <View style={styles.actions}>
+            <ActionButton
+              label={t('Pasar')}
+              variant="secondary"
+              onPress={() => void decide(selected, 'pass')}
+            />
+            <ActionButton label={t('Me gusta')} onPress={() => void decide(selected, 'like')} />
           </View>
-        ) : null}
-      </Modal>
+        </FormSheet>
+      )}
 
       <OutOfLikesSheet
         blocked={blocked}
@@ -385,21 +366,6 @@ const styles = StyleSheet.create({
   nameText: {
     flexShrink: 1,
     textAlign: 'center',
-  },
-  backdrop: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    padding: Spacing.three,
-  },
-  sheet: {
-    width: '100%',
-    maxWidth: MaxContentWidth,
-    alignItems: 'center',
-    gap: Spacing.three,
-    padding: Spacing.four,
-    borderRadius: Radii.sheet,
-    borderWidth: Stroke.hairline,
   },
   actions: {
     alignSelf: 'stretch',

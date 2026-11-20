@@ -18,6 +18,7 @@
  * un aviso. Con «reducir movimiento» la tarjeta aparece sin recorrido.
  */
 
+import { CloseHeader } from '@/components/close-button';
 import { Modal, StyleSheet, View } from 'react-native';
 import { BlurView } from 'expo-blur';
 import Animated, { ZoomIn, withSpring, withTiming } from 'react-native-reanimated';
@@ -105,9 +106,11 @@ export function MatchModal({
               },
             ]}>
             <Animated.View entering={reduceMotion ? undefined : enterUp(2)}>
-              <ThemedText type="display" style={styles.blurb}>
-                {t('¡Match!')}
-              </ThemedText>
+              <CloseHeader onPress={onDismiss}>
+                <ThemedText type="display" style={styles.blurb}>
+                  {t('¡Match!')}
+                </ThemedText>
+              </CloseHeader>
             </Animated.View>
 
             <View style={styles.identity}>
@@ -136,11 +139,6 @@ export function MatchModal({
 
             <View style={styles.actions}>
               <ActionButton label={t('Abrir chat')} onPress={() => onOpenChat(event.match.id)} />
-              <ActionButton
-                label={t('Seguir descubriendo')}
-                variant="secondary"
-                onPress={onDismiss}
-              />
             </View>
           </Animated.View>
         </View>

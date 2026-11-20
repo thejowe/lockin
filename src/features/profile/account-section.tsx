@@ -35,6 +35,8 @@
  * pantalla no puede quedarse con una copia desfasada de ella.
  */
 
+import { FormSheet } from '@/components/form-sheet';
+import { CloseHeader, requestClose } from '@/components/close-button';
 import { useState } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
 
@@ -243,22 +245,33 @@ export function AccountSection({
 
         {account.recoverable && panel === 'menu' ? (
           <View style={[styles.panel, { borderColor: theme.border }]}>
-            <ThemedText type="bodyStrong">{t('Gestionar contraseña')}</ThemedText>
+            <CloseHeader onPress={closePanel} disabled={busy !== null}>
+              <ThemedText type="bodyStrong">{t('Gestionar contraseña')}</ThemedText>
+            </CloseHeader>
             <PrimaryButton label={t('Cambiar contraseña')} onPress={() => setPanel('change')} />
             <SecondaryButton
               label={busy === 'recuperar' ? t('Mandando…') : t('He olvidado mi contraseña')}
               onPress={handlePasswordReset}
             />
-            <SecondaryButton label={t('Cancelar')} onPress={closePanel} />
           </View>
         ) : null}
 
         {account.recoverable && (panel === 'change' || panel === 'recovery') ? (
-          <View style={[styles.panel, { borderColor: theme.border }]}>
-            <ThemedText type="bodyStrong">
-              {panel === 'recovery' ? t('Elige tu nueva contraseña') : t('Cambiar contraseña')}
-            </ThemedText>
-
+          <FormSheet
+            header={
+              <ThemedText type="subtitle">
+                {panel === 'recovery' ? t('Elige tu nueva contraseña') : t('Cambiar contraseña')}
+              </ThemedText>
+            }
+            disabled={busy !== null}
+            onClose={() => requestClose(!!current || !!next || !!repeat, closePanel)}
+            footer={
+              <PrimaryButton
+                label={busy === 'contrasena' ? t('Guardando…') : t('Guardar contraseña')}
+                disabled={busy !== null}
+                onPress={handleSavePassword}
+              />
+            }>
             {panel === 'change' ? (
               <Field label={t('Contraseña actual')}>
                 <TextField
@@ -305,15 +318,12 @@ export function AccountSection({
               />
             </Field>
 
-            <View style={styles.actions}>
-              <PrimaryButton
-                label={busy === 'contrasena' ? t('Guardando…') : t('Guardar contraseña')}
-                disabled={busy !== null}
-                onPress={handleSavePassword}
-              />
-              <SecondaryButton label={t('Cancelar')} onPress={closePanel} />
-            </View>
-          </View>
+            {notice && (
+              <ThemedText accessibilityRole="alert" themeColor={notice.tone}>
+                {notice.text}
+              </ThemedText>
+            )}
+          </FormSheet>
         ) : null}
       </View>
 
@@ -524,11 +534,6 @@ const styles = StyleSheet.create({
   },
   passwordRow: {
     gap: Spacing.one,
-  },
-  actions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
   },
   panel: {
     gap: Spacing.two,

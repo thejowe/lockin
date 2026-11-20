@@ -1,9 +1,9 @@
+import { Icon } from '@/components/icon';
+import { FormSheet } from '@/components/form-sheet';
+import { requestClose } from '@/components/close-button';
 import { Image } from 'expo-image';
 import { useRef, useState, type ReactNode } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
-import { Frosted } from '@/components/glass';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Radii, Spacing } from '@/constants/theme';
 import {
@@ -14,45 +14,10 @@ import {
   type ProjectInput,
   type ProjectPhoto,
 } from '@/data';
-import { useReduceMotion } from '@/hooks/use-reduce-motion';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
 import { pickAvatarPhoto } from './avatar-photo';
-import { Field, PrimaryButton, SecondaryButton, TextField } from './controls';
-
-export function ProjectBottomSheet({
-  onClose,
-  children,
-}: {
-  onClose: () => void;
-  children: ReactNode;
-}) {
-  const theme = useTheme();
-  const reduced = useReduceMotion();
-  return (
-    <Modal visible transparent animationType={reduced ? 'none' : 'slide'} onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        behavior="padding"
-        style={[styles.backdrop, { backgroundColor: theme.background + '99' }]}>
-        <Pressable
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
-          accessible={false}
-          onPress={onClose}
-          style={StyleSheet.absoluteFill}
-        />
-        <Frosted
-          accessibilityViewIsModal
-          radius={Radii.sheet}
-          style={[styles.sheet, { backgroundColor: theme.surfaceOpaque }]}>
-          <SafeAreaView edges={['bottom']} style={{ flexShrink: 1 }}>
-            {children}
-          </SafeAreaView>
-        </Frosted>
-      </KeyboardAvoidingView>
-    </Modal>
-  );
-}
+import { Field, PrimaryButton, CompactSecondaryButton as SecondaryButton, TextField } from './controls';
 
 const empty: ProjectInput = {
   name: '',
@@ -68,7 +33,6 @@ export function ProjectEditor({
   matchId,
   groupProject = false,
   createWithGroup,
-  initialDraft,
   header,
   onClose,
   onSaved,
@@ -79,15 +43,16 @@ export function ProjectEditor({
   groupProject?: boolean;
   /** El grupo y su proyecto se guardan juntos tras moderar todas las fotos. */
   createWithGroup?: (draft: ProjectInput) => Promise<void>;
-  initialDraft?: ProjectInput;
   /** Controles propios de quien abre el editor, encima del formulario. */
   header?: ReactNode;
-  onClose: (draft: ProjectInput) => void;
+  onClose: () => void;
   onSaved: () => void;
 }) {
   const { projects } = useRepositories();
   const isJoint = !!matchId || (project?.authors?.length ?? 0) > 1;
-  const [draft, setDraft] = useState<ProjectInput>(project ?? initialDraft ?? empty);
+  const theme = useTheme();
+  const [original] = useState<ProjectInput>(project ?? empty);
+  const [draft, setDraft] = useState(original);
   const [details, setDetails] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -134,7 +99,7 @@ export function ProjectEditor({
     });
   }
   function photoItem(photo: ProjectPhoto, slot: number) {
-    const label = slot === 0 ? t('Portada') : t('Foto {n}', { n: slot });
+    const label = t('Foto {n}', { n: slot });
     return (
       <View key={slot} style={styles.photoRow}>
         <Image
@@ -152,24 +117,17 @@ export function ProjectEditor({
           <SecondaryButton
             label={t('Quitar esta foto')}
             disabled={busy}
-            onPress={() =>
-              change(
-                slot === 0
-                  ? { cover: null }
-                  : { photos: draft.photos.filter((_, i) => i !== slot - 1) }
-              )
-            }
+            onPress={() => change({ photos: draft.photos.filter((_, i) => i !== slot - 1) })}
           />
         </View>
       </View>
     );
   }
   return (
-    <ProjectBottomSheet
-      onClose={() => {
-        if (!busy) onClose(draft);
-      }}>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.form}>
+    <FormSheet
+      disabled={busy}
+      onClose={() => requestClose(JSON.stringify(draft) !== JSON.stringify(original), onClose)}
+      header={
         <ThemedText type="title">
           {project
             ? t('Editar proyecto')
@@ -177,83 +135,10 @@ export function ProjectEditor({
               ? t('Crear proyecto juntos')
               : t('Crear proyecto')}
         </ThemedText>
-        {header}
-        <ThemedText type="subtitle">
-          {isJoint || groupProject ? t('Ficha del proyecto') : t('Lo que se ve en la tarjeta')}
-        </ThemedText>
-        <Field label={t('Nombre del proyecto')}>
-          <TextField
-            testID="project-name"
-            accessibilityLabel={t('Nombre del proyecto')}
-            editable={!busy}
-            value={draft.name}
-            maxLength={100}
-            onChangeText={(name) => change({ name })}
-          />
-        </Field>
-        <Field label={t('Frase corta')}>
-          <TextField
-            testID="project-tagline"
-            accessibilityLabel={t('Frase corta')}
-            editable={!busy}
-            value={draft.tagline}
-            maxLength={100}
-            showCount
-            onChangeText={(tagline) => change({ tagline })}
-          />
-        </Field>
-        {draft.cover ? (
-          photoItem(draft.cover, 0)
-        ) : (
-          <SecondaryButton label={t('Añadir portada')} disabled={busy} onPress={() => pick(true)} />
-        )}
-        <SecondaryButton
-          label={details ? t('Ocultar detalles') : t('Más detalles')}
-          disabled={busy}
-          onPress={() => setDetails(!details)}
-        />
-        {details ? (
-          <>
-            <Field label={t('Descripción')}>
-              <TextField
-                accessibilityLabel={t('Descripción')}
-                multiline
-                maxLength={5000}
-                editable={!busy}
-                value={draft.description}
-                onChangeText={(description) => change({ description })}
-              />
-            </Field>
-            {draft.photos.map((photo, i) => photoItem(photo, i + 1))}
-            {draft.photos.length < 5 ? (
-              <SecondaryButton
-                label={t('Añadir foto ({n}/5)', { n: draft.photos.length })}
-                disabled={busy}
-                onPress={() => pick(false)}
-              />
-            ) : null}
-            <Field label={t('Enlace del proyecto')}>
-              <TextField
-                accessibilityLabel={t('Enlace del proyecto')}
-                inputMode="url"
-                autoCorrect={false}
-                autoCapitalize="none"
-                editable={!busy}
-                value={draft.link}
-                onChangeText={(link) => change({ link })}
-              />
-            </Field>
-          </>
-        ) : null}
-        {error ? (
-          <ThemedText accessibilityRole="alert" themeColor="danger">
-            {error}
-          </ThemedText>
-        ) : null}
+      }
+      footer={
         <PrimaryButton
-          label={
-            busy ? t('Guardando…') : createWithGroup ? t('Crear grupo') : t('Guardar proyecto')
-          }
+          label={busy ? t('Guardando…') : t('Guardar proyecto')}
           disabled={busy || !draft.name.trim() || !draft.tagline.trim()}
           onPress={() =>
             void run(async () => {
@@ -265,58 +150,174 @@ export function ProjectEditor({
             }, true)
           }
         />
-        {project && canPromote ? (
-          <SecondaryButton
-            label={t('Mover al principio')}
-            disabled={busy}
-            onPress={() => void run(() => projects.promote(project), true)}
+      }>
+      {header}
+      <ThemedText type="label" themeColor="textSecondary">
+        {t('Lo que se ve en la tarjeta')}
+      </ThemedText>
+      <Field label={t('Nombre del proyecto')}>
+        <TextField
+          testID="project-name"
+          accessibilityLabel={t('Nombre del proyecto')}
+          editable={!busy}
+          value={draft.name}
+          maxLength={100}
+          onChangeText={(name) => change({ name })}
+        />
+      </Field>
+      <Field label={t('Frase corta')}>
+        <TextField
+          testID="project-tagline"
+          accessibilityLabel={t('Frase corta')}
+          editable={!busy}
+          value={draft.tagline}
+          maxLength={100}
+          showCount
+          onChangeText={(tagline) => change({ tagline })}
+        />
+      </Field>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={draft.cover ? t('Portada') : t('Añadir portada')}
+        disabled={busy}
+        onPress={() => pick(true)}
+        style={[
+          styles.cover,
+          { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+        ]}>
+        {draft.cover ? (
+          <Image
+            accessibilityLabel={t('Portada')}
+            source={{ uri: draft.cover.uri, headers: draft.cover.headers }}
+            cachePolicy={draft.cover.headers ? 'none' : undefined}
+            contentFit="cover"
+            style={StyleSheet.absoluteFill}
           />
-        ) : null}
-        {project && !groupProject ? (
-          confirm ? (
-            <View style={styles.form}>
-              <ThemedText>{t('¿Eliminar este proyecto?')}</ThemedText>
-              {isJoint && (
-                <ThemedText themeColor="textSecondary">
-                  {t(
-                    'Avisaremos a la otra persona. Las tareas y las reuniones seguirán en el plan compartido.'
-                  )}
-                </ThemedText>
-              )}
-              <SecondaryButton
-                tone="danger"
-                disabled={busy}
-                label={t('Confirmar eliminación')}
-                onPress={() => void run(() => projects.remove(project), true)}
-              />
-              <SecondaryButton
-                label={t('Conservar proyecto')}
-                disabled={busy}
-                onPress={() => setConfirm(false)}
-              />
-            </View>
-          ) : (
+        ) : (
+          <>
+            <Icon name="camera" size={26} color={theme.textSecondary} />
+            <ThemedText type="smallBold">{t('Añadir portada')}</ThemedText>
+          </>
+        )}
+      </Pressable>
+      {draft.cover && (
+        <SecondaryButton
+          label={t('Quitar esta foto')}
+          disabled={busy}
+          onPress={() => change({ cover: null })}
+        />
+      )}
+      {review && draft.cover && !draft.cover.path && (
+        <ThemedText accessibilityLiveRegion="polite">{t('En revisión…')}</ThemedText>
+      )}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: details }}
+        onPress={() => setDetails(!details)}
+        style={styles.disclosure}>
+        <ThemedText type="bodyStrong">{t('Más detalles')}</ThemedText>
+        <View style={{ transform: [{ rotate: details ? '90deg' : '-90deg' }] }}>
+          <Icon name="back" size={16} color={theme.textSecondary} />
+        </View>
+      </Pressable>
+      {details ? (
+        <>
+          <Field label={t('Descripción')}>
+            <TextField
+              accessibilityLabel={t('Descripción')}
+              multiline
+              maxLength={5000}
+              editable={!busy}
+              value={draft.description}
+              onChangeText={(description) => change({ description })}
+            />
+          </Field>
+          {draft.photos.map((photo, i) => photoItem(photo, i + 1))}
+          {draft.photos.length < 5 ? (
             <SecondaryButton
-              label={t('Eliminar proyecto')}
+              label={t('Añadir foto ({n}/5)', { n: draft.photos.length })}
+              disabled={busy}
+              onPress={() => pick(false)}
+            />
+          ) : null}
+          <Field label={t('Enlace del proyecto')}>
+            <TextField
+              accessibilityLabel={t('Enlace del proyecto')}
+              inputMode="url"
+              autoCorrect={false}
+              autoCapitalize="none"
+              editable={!busy}
+              value={draft.link}
+              onChangeText={(link) => change({ link })}
+            />
+          </Field>
+        </>
+      ) : null}
+      {error ? (
+        <ThemedText accessibilityRole="alert" themeColor="danger">
+          {error}
+        </ThemedText>
+      ) : null}
+      {project && canPromote ? (
+        <SecondaryButton
+          label={t('Mover al principio')}
+          disabled={busy}
+          onPress={() => void run(() => projects.promote(project), true)}
+        />
+      ) : null}
+      {project && !groupProject ? (
+        confirm ? (
+          <View style={styles.form}>
+            <ThemedText>{t('¿Eliminar este proyecto?')}</ThemedText>
+            {isJoint && (
+              <ThemedText themeColor="textSecondary">
+                {t(
+                  'Avisaremos a la otra persona. Las tareas y las reuniones seguirán en el plan compartido.'
+                )}
+              </ThemedText>
+            )}
+            <SecondaryButton
               tone="danger"
               disabled={busy}
-              onPress={() => setConfirm(true)}
+              label={t('Confirmar eliminación')}
+              onPress={() => void run(() => projects.remove(project), true)}
             />
-          )
-        ) : null}
-        <SecondaryButton label={t('Cancelar')} disabled={busy} onPress={() => onClose(draft)} />
-      </ScrollView>
-    </ProjectBottomSheet>
+            <SecondaryButton
+              label={t('Conservar proyecto')}
+              disabled={busy}
+              onPress={() => setConfirm(false)}
+            />
+          </View>
+        ) : (
+          <SecondaryButton
+            label={t('Eliminar proyecto')}
+            tone="danger"
+            disabled={busy}
+            onPress={() => setConfirm(true)}
+          />
+        )
+      ) : null}
+    </FormSheet>
   );
 }
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, justifyContent: 'flex-end' },
-  sheet: {
-    maxHeight: '94%',
+  cover: {
     width: '100%',
-    borderBottomRightRadius: 0,
-    borderBottomLeftRadius: 0,
+    maxWidth: 230,
+    aspectRatio: 4 / 5,
+    borderRadius: Radii.medium,
+    borderWidth: 1,
+    alignSelf: 'center',
     overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.two,
+  },
+  disclosure: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    minHeight: 44,
   },
   form: { padding: Spacing.four, gap: Spacing.three },
   photoRow: { flexDirection: 'row', gap: Spacing.three, alignItems: 'center' },

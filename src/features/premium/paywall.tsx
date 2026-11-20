@@ -25,6 +25,7 @@
  * ha tapado la pantalla).
  */
 
+import { CloseButton } from '@/components/close-button';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useId, useState } from 'react';
 import {
@@ -305,21 +306,7 @@ export function Paywall({
         showsVerticalScrollIndicator={false}>
         <View style={styles.inner}>
           <View style={styles.topBar}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('Ahora no')}
-              hitSlop={8}
-              onPress={onClose}
-              style={({ pressed }) => [
-                styles.close,
-                {
-                  backgroundColor: theme.backgroundElement,
-                  borderColor: theme.border,
-                  opacity: pressed ? Opacity.pressed : 1,
-                },
-              ]}>
-              <Icon name="close" size={18} color={theme.text} strokeWidth={2} />
-            </Pressable>
+            <CloseButton onPress={onClose} />
           </View>
 
           <Animated.View entering={FadeIn.duration(Duration.slow).delay(entranceDelay)}>
@@ -773,14 +760,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     // El héroe va justo debajo: el hueco del `gap` lo descuenta `heroCenter`.
     marginBottom: -Spacing.four,
-  },
-  close: {
-    width: 36,
-    height: 36,
-    borderRadius: Radii.pill,
-    borderWidth: Stroke.hairline,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   header: {
     alignItems: 'center',

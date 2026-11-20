@@ -12,15 +12,10 @@
  * y el Boost (que ya es de Premium) se cierran con «Entendido».
  */
 
-import { Modal, StyleSheet, View } from 'react-native';
-import Animated from 'react-native-reanimated';
+import { FormSheet } from '@/components/form-sheet';
 
-import { enterUp } from '@/components/motion';
 import { ThemedText } from '@/components/themed-text';
-import { Elevation, MaxContentWidth, Radii, ScrimAlpha, Spacing, Stroke } from '@/constants/theme';
 import { FREE_LIKES_PER_DAY, PREMIUM_SUPERS_PER_WEEK } from '@/data';
-import { useReduceMotion } from '@/hooks/use-reduce-motion';
-import { useTheme, useThemeName } from '@/hooks/use-theme';
 
 import { ActionButton } from './action-button';
 import { clockOf, untilLabel } from './reset-time';
@@ -112,82 +107,17 @@ export function OutOfLikesSheet({
   /** Con Premium ya activo, ofrecerlo no arregla nada. */
   isPremium?: boolean;
 }) {
-  const theme = useTheme();
-  const elevation = Elevation[useThemeName()];
-  const reduceMotion = useReduceMotion();
   const copy = blocked ? copyFor(blocked) : null;
   const upgrade = copy?.upgrade === true && !isPremium;
 
+  if (!copy) return null;
   return (
-    <Modal
+    <FormSheet
       testID="out-of-likes-modal"
-      visible={blocked !== null}
-      transparent
-      animationType="fade"
-      // Android: el botón atrás cierra la hoja, no la pantalla de debajo.
-      onRequestClose={onClose}>
-      {copy ? (
-        <View style={[styles.backdrop, { backgroundColor: theme.background + ScrimAlpha }]}>
-          <Animated.View
-            accessibilityViewIsModal
-            entering={reduceMotion ? undefined : enterUp(0)}
-            style={[
-              styles.sheet,
-              {
-                backgroundColor: theme.surfaceOpaque,
-                borderColor: theme.border,
-                boxShadow: `inset 0px 1px 0px ${theme.glassHighlight}, ${elevation.overlay}`,
-              },
-            ]}>
-            <View style={styles.text}>
-              <ThemedText type="subtitle" style={styles.centered}>
-                {copy.title}
-              </ThemedText>
-              <ThemedText type="body" themeColor="textSecondary" style={styles.centered}>
-                {copy.body}
-              </ThemedText>
-            </View>
-
-            <View style={styles.actions}>
-              {upgrade ? (
-                <>
-                  <ActionButton label={t('Hazte Premium')} onPress={onUpgrade} />
-                  <ActionButton label={t('Ahora no')} variant="secondary" onPress={onClose} />
-                </>
-              ) : (
-                <ActionButton label={t('Entendido')} onPress={onClose} />
-              )}
-            </View>
-          </Animated.View>
-        </View>
-      ) : null}
-    </Modal>
+      onClose={onClose}
+      header={<ThemedText type="subtitle">{copy.title}</ThemedText>}
+      footer={upgrade && <ActionButton label={t('Hazte Premium')} onPress={onUpgrade} />}>
+      <ThemedText themeColor="textSecondary">{copy.body}</ThemedText>
+    </FormSheet>
   );
 }
-
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    padding: Spacing.three,
-  },
-  sheet: {
-    width: '100%',
-    maxWidth: MaxContentWidth,
-    gap: Spacing.four,
-    padding: Spacing.four,
-    borderRadius: Radii.sheet,
-    borderWidth: Stroke.hairline,
-    overflow: 'hidden',
-  },
-  text: {
-    gap: Spacing.two,
-  },
-  centered: {
-    textAlign: 'center',
-  },
-  actions: {
-    gap: Spacing.two,
-  },
-});

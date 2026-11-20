@@ -7,6 +7,8 @@
  * hook `useBoardPosts` lo comparte la tarjeta para saber si añade esta página.
  */
 
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { CloseButton } from '@/components/close-button';
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
@@ -71,11 +73,15 @@ export function BoardPins({ posts, ownerName }: { posts: BoardPost[]; ownerName:
         transparent
         animationType="fade"
         onRequestClose={() => setOpenId(null)}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('Cerrar')}
-          onPress={() => setOpenId(null)}
-          style={styles.backdrop}>
+        <SafeAreaView style={styles.backdrop}>
+          <Pressable
+            accessible={false}
+            style={StyleSheet.absoluteFill}
+            onPress={() => setOpenId(null)}
+          />
+          <View style={styles.top}>
+            <CloseButton onPress={() => setOpenId(null)} />
+          </View>
           {open ? (
             <View style={styles.viewer}>
               <Image
@@ -93,13 +99,14 @@ export function BoardPins({ posts, ownerName }: { posts: BoardPost[]; ownerName:
               ) : null}
             </View>
           ) : null}
-        </Pressable>
+        </SafeAreaView>
       </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  top: { alignSelf: 'stretch', paddingHorizontal: Spacing.two },
   cork: {
     flexDirection: 'row',
     flexWrap: 'wrap',

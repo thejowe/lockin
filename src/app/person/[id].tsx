@@ -1,11 +1,11 @@
+import { CloseButton } from '@/components/close-button';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { LoadingState, MessageState } from '@/components/state-view';
-import { ThemedText } from '@/components/themed-text';
-import { HitSlop, MaxContentWidth, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useQuery, useRepositories } from '@/data';
 import { PublicProjects } from '@/features/profile/projects';
 import { Board, ProfileDetails, RequireVerifiedEmail } from '@/features/profile';
@@ -55,18 +55,7 @@ function Person() {
       <Stack.Screen
         options={{
           title: t('Perfil'),
-          headerRight: () => (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('Cerrar')}
-              hitSlop={HitSlop.inline}
-              onPress={close}
-              style={({ pressed }) => [styles.close, pressed && styles.pressed]}>
-              <ThemedText type="bodyStrong" style={{ color: theme.text }}>
-                {t('Cerrar')}
-              </ThemedText>
-            </Pressable>
-          ),
+          headerRight: () => <CloseButton onPress={close} />,
         }}
       />
       {loading ? (
@@ -81,9 +70,8 @@ function Person() {
       ) : !profile ? (
         <MessageState
           title={t('Este perfil ya no está disponible')}
-          body={t('Puede que la persona haya borrado su cuenta.')}>
-          <Button label={t('Cerrar')} variant="secondary" onPress={close} />
-        </MessageState>
+          body={t('Puede que la persona haya borrado su cuenta.')}
+        />
       ) : (
         <ScrollView
           style={{ backgroundColor: theme.background }}
@@ -105,11 +93,5 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
-  },
-  close: {
-    paddingHorizontal: 4,
-  },
-  pressed: {
-    opacity: 0.6,
   },
 });

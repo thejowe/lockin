@@ -63,13 +63,13 @@ it('una URL de desbloqueo ambigua deja el correo vacío y cancelar un enlace dir
   router.canGoBack.mockReturnValue(false);
   await renderRoute(<UnblockScreen />);
   expect(screen.getByLabelText('Correo de la cuenta eliminada')).toHaveDisplayValue('');
-  await fireEvent.press(screen.getByRole('button', { name: 'Cancelar' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
   expect(router.replace).toHaveBeenCalledWith('/');
 });
 
 it('cerrar la recuperación de contraseña vuelve a la puerta de acceso', async () => {
   await renderRoute(<ResetPasswordRoute />);
-  await fireEvent.press(await screen.findByRole('button', { name: 'Ahora no' }));
+  await fireEvent.press(await screen.findByRole('button', { name: 'Cerrar' }));
   expect(router.replace).toHaveBeenCalledWith('/');
 });
 

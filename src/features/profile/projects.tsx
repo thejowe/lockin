@@ -1,3 +1,4 @@
+import { CloseButton } from '@/components/close-button';
 import type { ScrollViewInstance } from 'react-native';
 import { Image } from 'expo-image';
 import { useRef, useState } from 'react';
@@ -189,6 +190,7 @@ function Gallery({ photos }: { photos: ProjectPhoto[] }) {
       {start !== null ? (
         <Modal onRequestClose={() => setStart(null)}>
           <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+            <CloseButton onPress={() => setStart(null)} />
             <ScrollView
               key={start}
               horizontal
@@ -209,7 +211,6 @@ function Gallery({ photos }: { photos: ProjectPhoto[] }) {
                 />
               ))}
             </ScrollView>
-            <SecondaryButton label={t('Cerrar')} onPress={() => setStart(null)} />
           </SafeAreaView>
         </Modal>
       ) : null}

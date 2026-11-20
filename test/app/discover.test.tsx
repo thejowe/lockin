@@ -192,7 +192,7 @@ describe('DiscoverScreen', () => {
     });
     await waitFor(() => expect(screen.getByText('¡Match!')).toBeTruthy());
 
-    await fireEvent.press(screen.getByText('Seguir descubriendo'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
 
     expect(screen.queryByText('¡Match!')).toBeNull();
     expect(router.push).not.toHaveBeenCalled();

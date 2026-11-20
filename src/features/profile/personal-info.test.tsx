@@ -115,7 +115,7 @@ describe('PersonalInfo', () => {
     await render(<PersonalInfo />);
 
     await fireEvent.press(screen.getByRole('button', { name: 'Cambiar teléfono' }));
-    await fireEvent.press(screen.getByText('Cancelar'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
 
     expect(mockSavePhone).not.toHaveBeenCalled();
     expect(screen.queryByLabelText('Teléfono de tu cuenta')).toBeNull();

@@ -66,7 +66,7 @@ jest.mock('@/features/profile/profile-form', () => {
           <Text>{props.submitLabel}</Text>
         </Pressable>
         <Pressable accessibilityRole="button" onPress={props.onCancel}>
-          <Text>{props.cancelLabel ?? 'Cancelar'}</Text>
+          <Text>Cerrar</Text>
         </Pressable>
       </>
     ),
@@ -94,7 +94,7 @@ it.each([
   await renderRoute(<ProfileScreen />);
   await fireEvent.press(await screen.findByRole('button', { name: button }));
   expect(screen.getByText(title)).toBeOnTheScreen();
-  await fireEvent.press(screen.getByRole('button', { name: 'Cancelar' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
   expect(screen.queryByRole('button', { name: 'Guardar' })).toBeNull();
 });
 
@@ -196,7 +196,7 @@ describe('ProfileScreen', () => {
       await renderRoute(<ProfileScreen />);
       await openBasicsSheet();
 
-      await fireEvent.press(screen.getByRole('button', { name: 'Cancelar' }));
+      await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
 
       expect(screen.queryByText('Guardar')).toBeNull();
       await expect(repositories.profiles.getCurrent()).resolves.toMatchObject({

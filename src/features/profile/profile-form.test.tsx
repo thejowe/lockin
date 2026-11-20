@@ -449,7 +449,7 @@ describe('ProfileForm', () => {
     expect(screen.queryByText('Cancelar')).toBeNull();
 
     await rerender(<ProfileForm submitLabel="Guardar" onSubmit={jest.fn()} onCancel={onCancel} />);
-    await fireEvent.press(screen.getByText('Cancelar'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
 
     expect(onCancel).toHaveBeenCalled();
   });

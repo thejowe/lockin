@@ -1,3 +1,5 @@
+import { act } from '@testing-library/react-native';
+import { Alert } from 'react-native';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Linking } from 'react-native';
 import { DataProvider, ProjectPhotoError } from '@/data';
@@ -135,7 +137,13 @@ it('después de guardar dos fichas permite ordenar, quitar fotos de la galería 
   expect(screen.queryByText('Foto 1')).toBeNull();
   await fireEvent.press(screen.getByRole('button', { name: 'Eliminar proyecto' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Conservar proyecto' }));
-  await fireEvent.press(screen.getByRole('button', { name: 'Cancelar' }));
+  const alert = jest.spyOn(Alert, 'alert');
+  await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
+  expect(alert).toHaveBeenCalledWith('¿Descartar los cambios?', undefined, expect.any(Array));
+  await act(() =>
+    alert.mock.lastCall?.[2]?.find((choice) => choice.style === 'destructive')?.onPress?.()
+  );
+  alert.mockRestore();
   const [saved] = await repo.projects.list(me.id);
   expect(saved.cover).toBeTruthy();
   expect(saved.photos).toHaveLength(1);

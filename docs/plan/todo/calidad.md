@@ -1,5 +1,11 @@
 # TODO — calidad
 
+## Cierre de hojas y formularios · 20 de noviembre de 2026
+
+- [x] X accesible compartida, confirmación de descarte, pie fijo en las hojas de edición y editor de proyectos común a perfil, chat y grupos. Rama `ui/cerrar-con-x`.
+- [ ] Verificar la rama en CI y la compilación en TestFlight.
+
+
 ## Formato y cobertura para TestFlight · 20 de noviembre de 2026
 
 - [x] Prettier pasa en Linux tras formatear los 29 archivos que señalaba Actions. [Trabajo de Formato](https://github.com/thejowe/lockin/actions/runs/44727837278/job/136259826425)

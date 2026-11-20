@@ -35,7 +35,7 @@ describe('opciones de seguridad', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Bloquear a Núria' }));
     expect(screen.getByText('¿Bloquear a Núria?')).toBeTruthy();
     expect(block).not.toHaveBeenCalled();
-    await fireEvent.press(screen.getByRole('button', { name: 'Cancelar bloqueo' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
     expect(onBlocked).not.toHaveBeenCalled();
     expect(block).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Reportar a Núria' })).toBeTruthy();

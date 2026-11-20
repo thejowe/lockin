@@ -1,3 +1,5 @@
+import { FormSheet } from '@/components/form-sheet';
+import { CloseHeader, requestClose } from '@/components/close-button';
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import {
   Pressable,
@@ -85,9 +87,12 @@ export function ReportForm({
     }
   }
 
+  const close = () => requestClose(reason !== null || !!details, onCancel);
+  const heading = (
+    <ThemedText type="subtitle">{title ?? t('Reportar a {name}', { name })}</ThemedText>
+  );
   const fields = (
     <>
-      <ThemedText type="subtitle">{title ?? t('Reportar a {name}', { name })}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">
         {t('El reporte es privado. Esta persona no recibirá ningún aviso.')}
       </ThemedText>
@@ -162,28 +167,28 @@ export function ReportForm({
         disabled={!valid || busy}
         onPress={() => void submit()}
       />
-      <Button
-        label={t('Cancelar')}
-        accessibilityLabel={t('Cancelar reporte')}
-        variant="secondary"
-        disabled={busy}
-        onPress={onCancel}
-      />
     </>
   );
 
   if (anchorActions)
     return (
-      <AnchoredLayout scrollRef={scrollRef} detailsFocused={detailsFocused} actions={actions}>
+      <AnchoredLayout
+        header={
+          <CloseHeader onPress={close} disabled={busy}>
+            {heading}
+          </CloseHeader>
+        }
+        scrollRef={scrollRef}
+        detailsFocused={detailsFocused}
+        actions={actions}>
         {fields}
       </AnchoredLayout>
     );
 
   return (
-    <View style={styles.root}>
+    <FormSheet header={heading} disabled={busy} onClose={close} footer={actions}>
       {fields}
-      {actions}
-    </View>
+    </FormSheet>
   );
 }
 
@@ -193,11 +198,13 @@ export function ReportForm({
  * encoge y las acciones quedan por encima del teclado.
  */
 function AnchoredLayout({
+  header,
   scrollRef,
   detailsFocused,
   actions,
   children,
 }: {
+  header: ReactNode;
   scrollRef: RefObject<ScrollViewInstance | null>;
   detailsFocused: RefObject<boolean>;
   actions: ReactNode;
@@ -213,6 +220,7 @@ function AnchoredLayout({
   return (
     <View ref={ref} onLayout={onLayout} collapsable={false} style={styles.anchoredOuter}>
       <View testID="report-anchored" style={[styles.anchoredRoot, { paddingBottom: lift }]}>
+        {header}
         <ScrollView
           ref={scrollRef}
           testID="report-fields"

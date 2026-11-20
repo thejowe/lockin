@@ -24,9 +24,10 @@
  * `features/discover/complement.ts`).
  */
 
+import { FormSheet } from '@/components/form-sheet';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, type ComponentRef } from 'react';
-import { Modal, ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AmbientBackground } from '@/components/ambient-background';
@@ -34,7 +35,7 @@ import { DeckToolbarButton } from '@/features/discover/deck-toolbar-button';
 import { LoadingState, MessageState } from '@/components/state-view';
 import { useLockTabSwipe } from '@/components/swipe-between-tabs';
 import { ThemedText } from '@/components/themed-text';
-import { BottomTabInset, MaxContentWidth, Radii, ScrimAlpha, Spacing } from '@/constants/theme';
+import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useQuery, useRepositories } from '@/data';
 import {
   ActionButton,
@@ -243,34 +244,22 @@ export default function DiscoverScreen() {
 
       {tourStep === FILTERS_STEP ? <FiltersSpotlight anchorRef={filtersButton} /> : null}
 
-      <Modal
-        testID="deck-filters-modal"
-        visible={filtersOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setFiltersOpen(false)}>
-        <View style={[styles.backdrop, { backgroundColor: theme.background + ScrimAlpha }]}>
-          <View
-            accessibilityViewIsModal
-            style={[
-              styles.sheet,
-              { backgroundColor: theme.surfaceOpaque, borderColor: theme.border },
-            ]}>
-            <ScrollView contentContainerStyle={styles.sheetContent}>
-              <DeckFilters
-                value={filter}
-                isPremium={quotas?.isPremium ?? false}
-                onChange={changeFilter}
-                onLocked={() => {
-                  setFiltersOpen(false);
-                  openPaywall();
-                }}
-              />
-            </ScrollView>
-            <ActionButton label={t('Listo')} onPress={() => setFiltersOpen(false)} />
-          </View>
-        </View>
-      </Modal>
+      {filtersOpen && (
+        <FormSheet
+          testID="deck-filters-modal"
+          header={<ThemedText type="subtitle">{t('Filtros')}</ThemedText>}
+          onClose={() => setFiltersOpen(false)}>
+          <DeckFilters
+            value={filter}
+            isPremium={quotas?.isPremium ?? false}
+            onChange={changeFilter}
+            onLocked={() => {
+              setFiltersOpen(false);
+              openPaywall();
+            }}
+          />
+        </FormSheet>
+      )}
 
       <OutOfLikesSheet
         blocked={blocked}
@@ -322,23 +311,5 @@ const styles = StyleSheet.create({
   // El deck de cofundador sigue montado bajo Grupos, sin ocupar sitio ni recibir toques.
   hidden: {
     display: 'none',
-  },
-  backdrop: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    maxHeight: '85%',
-    width: '100%',
-    maxWidth: MaxContentWidth,
-    alignSelf: 'center',
-    gap: Spacing.three,
-    padding: Spacing.three,
-    borderTopLeftRadius: Radii.sheet,
-    borderTopRightRadius: Radii.sheet,
-    borderWidth: 1,
-  },
-  sheetContent: {
-    paddingBottom: Spacing.two,
   },
 });

@@ -5,6 +5,7 @@
  * Ojo: en RNTL 14 `render` y `fireEvent` son asíncronos.
  */
 
+import { Alert } from 'react-native';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
 import { BOARD_MAX_POSTS, DataProvider } from '@/data';
@@ -64,7 +65,13 @@ it('informa de permisos y conserva el borrador de una foto si la subida falla', 
   jest.spyOn(repositories.profiles, 'addBoardPost').mockRejectedValueOnce(new Error('Temporal'));
   await fireEvent.press(screen.getByRole('button', { name: 'Publicar en Sobre mí' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('Temporal');
-  await fireEvent.press(screen.getByRole('button', { name: 'Cancelar' }));
+  const alert = jest.spyOn(Alert, 'alert');
+  await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
+  expect(alert).toHaveBeenCalledWith('¿Descartar los cambios?', undefined, expect.any(Array));
+  await act(() =>
+    alert.mock.lastCall?.[2]?.find((choice) => choice.style === 'destructive')?.onPress?.()
+  );
+  alert.mockRestore();
   expect(screen.queryByLabelText('Texto de la foto')).toBeNull();
 });
 

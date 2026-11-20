@@ -47,7 +47,7 @@ describe('reportar un mensaje desde el chat', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Enviar reporte' }));
     expect(report).toHaveBeenCalledWith({ messageId: sent.id, reason: 'acoso', details: '' });
     expect(await screen.findByText('Reporte enviado.')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar reporte' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
     expect(screen.getByRole('button', { name: 'Enviar mensaje' })).toBeTruthy();
   });
 

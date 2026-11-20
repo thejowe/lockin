@@ -1,3 +1,5 @@
+import { FormSheet } from '@/components/form-sheet';
+import { requestClose } from '@/components/close-button';
 import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { uuid } from 'expo';
@@ -94,10 +96,20 @@ function TaskEditor({
     }
   }
   return (
-    <View style={styles.section}>
-      {item ? (
-        <ThemedText type="heading">{title}</ThemedText>
-      ) : (
+    <FormSheet
+      header={<ThemedText type="subtitle">{item ? title : t('Añadir tarea')}</ThemedText>}
+      disabled={busy}
+      onClose={() =>
+        requestClose(
+          title !== (item?.title ?? '') ||
+            assignee !== (item?.assigneeId ?? null) ||
+            date !== originalDate ||
+            status !== (item?.status ?? (item?.closed ? 'done' : 'pending')),
+          onClose
+        )
+      }
+      footer={<Button label={t('Guardar')} onPress={submit} disabled={!title.trim() || busy} />}>
+      {!item && (
         <Field label={t('Nombre de la tarea')}>
           <TextField
             accessibilityLabel={t('Nombre de la tarea')}
@@ -158,9 +170,7 @@ function TaskEditor({
           {error}
         </ThemedText>
       ) : null}
-      <Button label={t('Guardar')} onPress={submit} disabled={!title.trim() || busy} />
-      <Button variant="secondary" label={t('Cancelar')} onPress={onClose} disabled={busy} />
-    </View>
+    </FormSheet>
   );
 }
 

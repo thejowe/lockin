@@ -80,7 +80,6 @@ function GroupForm({
   const [projectEditor, setProjectEditor] = useState<'new' | Project | null>(null);
   const [projectDraftId] = useState(newProjectId);
   const draftGeneration = useRef(0);
-  const [projectDraft, setProjectDraft] = useState<ProjectInput>();
   const [name, setName] = useState(initial?.group.name ?? '');
   const [description, setDescription] = useState(initial?.group.description ?? '');
   const [roles, setRoles] = useState<GroupRoleInput[]>(
@@ -373,11 +372,7 @@ function GroupForm({
           groupProject
           canPromote={false}
           createWithGroup={editing ? undefined : createWithProject}
-          initialDraft={projectDraft}
-          onClose={(draft) => {
-            if (!editing) setProjectDraft(draft);
-            setProjectEditor(null);
-          }}
+          onClose={() => setProjectEditor(null)}
           onSaved={() => {
             setProjectEditor(null);
             if (editing) refreshMine();

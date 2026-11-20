@@ -1,5 +1,11 @@
 # TODO maestro — LockIn MVP
 
+## Cierre de hojas y formularios · 20 de noviembre de 2026
+
+- [x] X accesible compartida, confirmación de descarte, pie fijo en las hojas de edición y editor de proyectos común a perfil, chat y grupos. Rama `ui/cerrar-con-x`.
+- [ ] Verificar la rama en CI y la compilación en TestFlight.
+
+
 ## TestFlight 1.0.1 (72) · 20 de noviembre de 2026
 
 - [x] Compilada desde `23422ee` y disponible para pruebas internas. Apple confirmó `VALID` e `IN_BETA_TESTING`. [TestFlight](https://appstoreconnect.apple.com/apps/6828604279/testflight/ios/37f218ea-ada0-4f2d-b341-8af05f37e274)

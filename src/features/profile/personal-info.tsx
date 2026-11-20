@@ -7,6 +7,8 @@
  * como el resto de cosas editables, y es obligatorio desde el alta.
  */
 
+import { FormSheet } from '@/components/form-sheet';
+import { requestClose } from '@/components/close-button';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -58,7 +60,22 @@ export function PersonalInfo() {
       </View>
 
       {editing ? (
-        <>
+        <FormSheet
+          header={<ThemedText type="subtitle">{t('Teléfono')}</ThemedText>}
+          disabled={busy !== null}
+          onClose={() => requestClose(draft !== (account.phone ?? ''), () => setEditing(false))}
+          footer={
+            <PrimaryButton
+              label={busy === 'telefono' ? t('Guardando…') : t('Guardar teléfono')}
+              disabled={busy !== null}
+              onPress={() =>
+                savePhone(draft, () => {
+                  setEditing(false);
+                  setNotice({ text: t('Teléfono guardado.'), tone: 'textSecondary' });
+                })
+              }
+            />
+          }>
           <Field label={t('Teléfono')} hint={t('Es privado: no sale en tu perfil.')}>
             <TextField
               value={draft}
@@ -72,19 +89,6 @@ export function PersonalInfo() {
               autoCorrect={false}
             />
           </Field>
-          <View style={styles.actions}>
-            <PrimaryButton
-              label={busy === 'telefono' ? t('Guardando…') : t('Guardar teléfono')}
-              disabled={busy !== null}
-              onPress={() =>
-                savePhone(draft, () => {
-                  setEditing(false);
-                  setNotice({ text: t('Teléfono guardado.'), tone: 'textSecondary' });
-                })
-              }
-            />
-            <SecondaryButton label={t('Cancelar')} onPress={() => setEditing(false)} />
-          </View>
           {account.phone ? (
             <SecondaryButton
               label={t('Quitar teléfono')}
@@ -97,7 +101,12 @@ export function PersonalInfo() {
               }
             />
           ) : null}
-        </>
+          {notice && (
+            <ThemedText accessibilityRole="alert" themeColor={notice.tone}>
+              {notice.text}
+            </ThemedText>
+          )}
+        </FormSheet>
       ) : (
         <View style={styles.row}>
           <ThemedText type="body" themeColor="textSecondary">
@@ -137,10 +146,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three,
-  },
-  actions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
   },
 });

@@ -99,7 +99,7 @@ describe('Paywall', () => {
     await setup();
     await screen.findByText('7,77 € al mes');
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Ahora no' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
 
     expect(onClose).toHaveBeenCalledTimes(1);
   });

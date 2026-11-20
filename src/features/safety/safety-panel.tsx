@@ -1,3 +1,4 @@
+import { CloseHeader } from '@/components/close-button';
 import { useRef, useState, type ReactElement } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
@@ -98,25 +99,28 @@ export function SafetyPanel({
   if (stage === 'reported')
     return scrollable(
       <View style={styles.panel}>
-        <ThemedText type="subtitle" accessibilityRole="alert">
-          {t('Reporte enviado.')}
-        </ThemedText>
+        <CloseHeader onPress={onClose}>
+          <ThemedText type="subtitle" accessibilityRole="alert">
+            {t('Reporte enviado.')}
+          </ThemedText>
+        </CloseHeader>
         <ThemedText type="small" themeColor="textSecondary">
           {t('El reporte es privado.')}
         </ThemedText>
-        <Button
-          label={t('Cerrar')}
-          accessibilityLabel={t('Cerrar opciones')}
-          variant="secondary"
-          onPress={onClose}
-        />
       </View>
     );
 
   if (stage === 'block')
     return scrollable(
       <View style={styles.panel}>
-        <ThemedText type="subtitle">{t('¿Bloquear a {name}?', { name })}</ThemedText>
+        <CloseHeader
+          onPress={() => {
+            setError(false);
+            setStage('menu');
+          }}
+          disabled={busy}>
+          <ThemedText type="subtitle">{t('¿Bloquear a {name}?', { name })}</ThemedText>
+        </CloseHeader>
         <ThemedText type="small" themeColor="textSecondary">
           {t(
             'Dejaréis de veros en Descubrir y Matches y no podréis enviaros mensajes. Esta persona no recibirá ningún aviso.'
@@ -134,22 +138,14 @@ export function SafetyPanel({
           disabled={busy}
           onPress={() => void block()}
         />
-        <Button
-          label={t('Cancelar')}
-          accessibilityLabel={t('Cancelar bloqueo')}
-          variant="secondary"
-          disabled={busy}
-          onPress={() => {
-            setError(false);
-            setStage('menu');
-          }}
-        />
       </View>
     );
 
   return scrollable(
     <View style={styles.panel}>
-      <ThemedText type="subtitle">{t('Opciones de {name}', { name })}</ThemedText>
+      <CloseHeader onPress={onClose}>
+        <ThemedText type="subtitle">{t('Opciones de {name}', { name })}</ThemedText>
+      </CloseHeader>
       <Button
         label={t('Bloquear')}
         accessibilityLabel={t('Bloquear a {name}', { name })}
@@ -161,12 +157,6 @@ export function SafetyPanel({
         accessibilityLabel={t('Reportar a {name}', { name })}
         variant="secondary"
         onPress={() => setStage('report')}
-      />
-      <Button
-        label={t('Cerrar')}
-        accessibilityLabel={t('Cerrar opciones')}
-        variant="secondary"
-        onPress={onClose}
       />
     </View>
   );

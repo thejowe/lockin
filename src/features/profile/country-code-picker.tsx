@@ -6,6 +6,7 @@
  * +34…). Elegir uno cierra la hoja.
  */
 
+import { CloseButton } from '@/components/close-button';
 import { useState } from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -70,14 +71,7 @@ export function CountryCodePicker({
             style={[styles.sheet, { backgroundColor: theme.background }]}>
             <View style={styles.header}>
               <ThemedText type="subtitle">{t('Prefijo del país')}</ThemedText>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t('Cerrar')}
-                onPress={close}>
-                <ThemedText type="body" themeColor="textSecondary">
-                  {t('Cerrar')}
-                </ThemedText>
-              </Pressable>
+              <CloseButton onPress={close} />
             </View>
 
             <TextField
