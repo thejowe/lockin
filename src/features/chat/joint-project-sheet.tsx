@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { ProjectBottomSheet } from '@/features/profile/project-editor';
 
@@ -40,7 +40,15 @@ function Photo({
   );
 }
 
-export function ProjectCard({ project, onPress }: { project?: Project; onPress: () => void }) {
+export function ProjectCard({
+  project,
+  onPress,
+  readOnly = false,
+}: {
+  project?: Project;
+  onPress: () => void;
+  readOnly?: boolean;
+}) {
   const theme = useTheme();
   return (
     <Pressable
@@ -72,7 +80,11 @@ export function ProjectCard({ project, onPress }: { project?: Project; onPress: 
           </ThemedText>
         )}
       </View>
-      <Icon name={project ? 'pencil' : 'chevrons'} size={18} color={theme.textSecondary} />
+      <Icon
+        name={project && !readOnly ? 'pencil' : 'chevrons'}
+        size={18}
+        color={theme.textSecondary}
+      />
     </Pressable>
   );
 }
@@ -198,7 +210,24 @@ export function ProjectSheet({
   onClose: () => void;
   onEdit: () => void;
 }) {
-  const { project } = workspace;
+  return (
+    <ProjectDetailsSheet project={workspace.project} onClose={onClose} onEdit={onEdit}>
+      <PublicationControls workspace={workspace} me={me} onChange={onChange} inSheet />
+    </ProjectDetailsSheet>
+  );
+}
+
+export function ProjectDetailsSheet({
+  project,
+  children,
+  onClose,
+  onEdit,
+}: {
+  project: Project;
+  children?: ReactNode;
+  onClose: () => void;
+  onEdit?: () => void;
+}) {
   const [linkError, setLinkError] = useState(false);
   return (
     <ProjectBottomSheet onClose={onClose}>
@@ -234,8 +263,8 @@ export function ProjectSheet({
         {linkError && (
           <ThemedText accessibilityRole="alert">{t('No se ha podido abrir el enlace.')}</ThemedText>
         )}
-        <Button variant="secondary" label={t('Editar proyecto')} onPress={onEdit} />
-        <PublicationControls workspace={workspace} me={me} onChange={onChange} inSheet />
+        {onEdit && <Button variant="secondary" label={t('Editar proyecto')} onPress={onEdit} />}
+        {children}
       </ScrollView>
     </ProjectBottomSheet>
   );

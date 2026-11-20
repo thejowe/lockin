@@ -15,20 +15,29 @@
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { ThemedText } from '@/components/themed-text';
-import { FontFamily, Radii, ScrimAlpha, Spacing, Stroke } from '@/constants/theme';
+import {
+  Duration,
+  FontFamily,
+  GroupHeaderAlpha,
+  Radii,
+  ScrimAlpha,
+  Spacing,
+  Stroke,
+} from '@/constants/theme';
 import { Chip, ProfileCard } from '@/features/discover';
+import { CardTextShade } from '@/features/discover/card-text-shade';
 import { specialtyLabel } from '@/features/profile';
 import { SafetyMenuButton } from '@/features/safety/safety-panel';
+import { useReduceMotion } from '@/hooks/use-reduce-motion';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
 
 import { GroupSafetyPanel } from './group-safety-panel';
 import { memberRoleLabel, roleSlotsLabel } from './labels';
 
-import type { GroupDeckCard, GroupMemberView } from '@/data';
+import type { GroupDeckCard, GroupMemberView, Project } from '@/data';
 
 /** Pestaña elegida: el id de un integrante, o el proyecto. */
 type Tab = string;
@@ -114,54 +123,59 @@ export function GroupCard({
   return (
     <View
       style={[styles.card, { backgroundColor: theme.surfaceOpaque, borderColor: theme.border }]}>
-      {onProject ? <MemberMosaic groupId={group.id} members={members} /> : null}
-      <View
-        style={[styles.projectTop, { backgroundColor: `${theme.background}${ScrimAlpha}` }]}>
+      {onProject ? <GroupBackdrop members={members} project={group.project} /> : null}
+      <View style={styles.projectTop}>
+        <CardTextShade
+          testID="group-card-top-scrim"
+          id={`group-top-${group.id}`}
+          alpha={GroupHeaderAlpha}
+        />
         <View style={styles.projectTabs}>{tabs}</View>
         {onSafetyOpenChange ? (
           <SafetyMenuButton name={group.name} onPress={() => onSafetyOpenChange(true)} />
         ) : null}
       </View>
       <ScrollView
-        contentContainerStyle={[
-          styles.content,
-          onProject && styles.contentBottom,
-          { paddingBottom: Spacing.four + bottomInset },
-        ]}
+        contentContainerStyle={onProject && styles.contentBottom}
         showsVerticalScrollIndicator={false}>
-        {selected !== null ? (
-          // Un integrante cuyo perfil no se puede leer (hay un bloqueo de por medio).
-          <ThemedText type="body" themeColor="textSecondary">
-            {t('No puedes ver el perfil de este integrante.')}
-          </ThemedText>
-        ) : null}
-
-        <ThemedText type="label" themeColor="textSecondary">
-          {t('{count} de {max} miembros', { count: members.length, max: group.maxMembers })}
-        </ThemedText>
-        <ThemedText type="title">{group.name}</ThemedText>
-        <ThemedText type="body" themeColor="textSecondary">
-          {group.description}
-        </ThemedText>
-
-        <View style={styles.block}>
-          <ThemedText type="label" themeColor="textSecondary">
-            {t('Encajas como')}
-          </ThemedText>
-          <View style={styles.chips}>
-            <Chip label={`✓ ${specialtyLabel(myRole.specialty)}`} tone="match" />
-          </View>
-        </View>
-
-        <View style={styles.block}>
-          <ThemedText type="label" themeColor="textSecondary">
-            {t('Perfiles que buscamos')}
-          </ThemedText>
-          {roles.map((role) => (
-            <ThemedText key={role.id} type="small">
-              {roleSlotsLabel(role)}
+        <View style={[styles.content, { paddingBottom: Spacing.four + bottomInset }]}>
+          {onProject && (
+            <CardTextShade id={`group-body-${group.id}`} alpha={ScrimAlpha} edge="top" />
+          )}
+          {selected !== null ? (
+            // Un integrante cuyo perfil no se puede leer (hay un bloqueo de por medio).
+            <ThemedText type="body" themeColor="textSecondary">
+              {t('No puedes ver el perfil de este integrante.')}
             </ThemedText>
-          ))}
+          ) : null}
+
+          <ThemedText type="label" themeColor="textSecondary">
+            {t('{count} de {max} miembros', { count: members.length, max: group.maxMembers })}
+          </ThemedText>
+          <ThemedText type="title">{group.project?.name ?? group.name}</ThemedText>
+          <ThemedText type="body" themeColor="textSecondary">
+            {group.project ? group.project.description || group.project.tagline : group.description}
+          </ThemedText>
+
+          <View style={styles.block}>
+            <ThemedText type="label" themeColor="textSecondary">
+              {t('Encajas como')}
+            </ThemedText>
+            <View style={styles.chips}>
+              <Chip label={`✓ ${specialtyLabel(myRole.specialty)}`} tone="match" />
+            </View>
+          </View>
+
+          <View style={styles.block}>
+            <ThemedText type="label" themeColor="textSecondary">
+              {t('Perfiles que buscamos')}
+            </ThemedText>
+            {roles.map((role) => (
+              <ThemedText key={role.id} type="small">
+                {roleSlotsLabel(role)}
+              </ThemedText>
+            ))}
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -169,17 +183,21 @@ export function GroupCard({
 }
 
 /**
- * Las fotos de todos los integrantes repartidas por la tarjeta: hasta 3 en
- * columnas; con 4 o más, en dos filas. Sin foto, su color y sus iniciales.
- * Un fundido abajo deja leer el texto del proyecto. Es decorado.
+ * En un grupo de proyecto se usa su portada. En los demás se reparten las
+ * fotos de los integrantes en una o dos filas, con iniciales si falta alguna.
  */
-function MemberMosaic({ groupId, members }: { groupId: string; members: GroupMemberView[] }) {
+function GroupBackdrop({
+  members,
+  project,
+}: {
+  members: GroupMemberView[];
+  project: Project | null;
+}) {
   const theme = useTheme();
+  const reduced = useReduceMotion();
   const profiles = members.flatMap((entry) => (entry.profile ? [entry.profile] : []));
   const perRow = profiles.length <= 3 ? profiles.length : Math.ceil(profiles.length / 2);
   const rows = [profiles.slice(0, perRow), profiles.slice(perRow)].filter((row) => row.length);
-  // Id único por tarjeta: en web los `<defs>` de varias tarjetas comparten documento.
-  const fadeId = `group-fade-${groupId}`;
 
   return (
     <View
@@ -187,40 +205,40 @@ function MemberMosaic({ groupId, members }: { groupId: string; members: GroupMem
       pointerEvents="none"
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants">
-      {rows.map((row, index) => (
-        <View key={index} style={styles.mosaicRow}>
-          {row.map((profile) => {
-            const accent = profile.avatar.accent === 'teal' ? theme.teal : theme.brass;
-            return (
-              <View
-                key={profile.id}
-                testID="group-member-photo"
-                style={[styles.tile, { backgroundColor: `${accent}55` }]}>
-                {profile.avatar.imageUrl ? (
-                  <Image
-                    source={{ uri: profile.avatar.imageUrl }}
-                    contentFit="cover"
-                    transition={150}
-                    style={StyleSheet.absoluteFill}
-                  />
-                ) : (
-                  <ThemedText style={styles.tileInitials}>{profile.avatar.initials}</ThemedText>
-                )}
-              </View>
-            );
-          })}
-        </View>
-      ))}
-      <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
-        <Defs>
-          <LinearGradient id={fadeId} x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0.3" stopColor={theme.background} stopOpacity={0} />
-            <Stop offset="0.55" stopColor={theme.background} stopOpacity={0.7} />
-            <Stop offset="0.75" stopColor={theme.background} stopOpacity={0.94} />
-          </LinearGradient>
-        </Defs>
-        <Rect width="100%" height="100%" fill={`url(#${fadeId})`} />
-      </Svg>
+      {project
+        ? project.cover && (
+            <Image
+              testID="group-project-cover"
+              source={{ uri: project.cover.uri, headers: project.cover.headers }}
+              cachePolicy={project.cover.headers ? 'none' : undefined}
+              contentFit="cover"
+              style={StyleSheet.absoluteFill}
+            />
+          )
+        : rows.map((row, index) => (
+            <View key={index} style={styles.mosaicRow}>
+              {row.map((profile) => {
+                const accent = profile.avatar.accent === 'teal' ? theme.teal : theme.brass;
+                return (
+                  <View
+                    key={profile.id}
+                    testID="group-member-photo"
+                    style={[styles.tile, { backgroundColor: `${accent}55` }]}>
+                    {profile.avatar.imageUrl ? (
+                      <Image
+                        source={{ uri: profile.avatar.imageUrl }}
+                        contentFit="cover"
+                        transition={reduced ? 0 : Duration.fast}
+                        style={StyleSheet.absoluteFill}
+                      />
+                    ) : (
+                      <ThemedText style={styles.tileInitials}>{profile.avatar.initials}</ThemedText>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          ))}
     </View>
   );
 }
@@ -276,7 +294,9 @@ function MemberTabs({
                   backgroundColor: active ? theme.text : theme.backgroundSelected,
                   borderColor: active ? theme.text : theme.border,
                 },
-                pressed && styles.pressed,
+                pressed && {
+                  backgroundColor: active ? theme.textSecondary : theme.backgroundElement,
+                },
               ]}>
               <ThemedText
                 type="smallBold"
@@ -301,6 +321,7 @@ const styles = StyleSheet.create({
   },
   panel: { padding: Spacing.three, borderWidth: 0 },
   projectTop: {
+    zIndex: 1,
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: Spacing.two,
@@ -331,5 +352,4 @@ const styles = StyleSheet.create({
     borderRadius: Radii.pill,
     borderWidth: Stroke.thin,
   },
-  pressed: { opacity: 0.6 },
 });

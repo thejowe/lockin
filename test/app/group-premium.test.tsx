@@ -52,7 +52,8 @@ describe('crear grupo de pago', () => {
     await asPremium(true);
     await renderRoute(<NewGroupRoute />);
 
-    await waitFor(() => expect(screen.getByLabelText('Nombre del grupo')).toBeTruthy());
+    await fireEvent.press(await screen.findByRole('button', { name: 'Buscar gente' }));
+    expect(screen.getByLabelText('Nombre del grupo')).toBeTruthy();
     expect(router.push).not.toHaveBeenCalledWith('/premium');
   });
 
@@ -70,7 +71,8 @@ describe('crear grupo de pago', () => {
       </GestureHandlerRootView>
     );
 
-    await fireEvent.press(await screen.findByRole('button', { name: 'Crear grupo' }));
+    const [headerButton] = await screen.findAllByRole('button', { name: 'Crear grupo' });
+    await fireEvent.press(headerButton);
 
     await waitFor(() => expect(router.push).toHaveBeenCalledWith(to));
     expect(router.push).not.toHaveBeenCalledWith(never);

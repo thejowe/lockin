@@ -88,7 +88,15 @@ export function JointChatTabs({
       {plan ? (
         <SharedPlan
           scope={{ kind: 'match', id: matchId }}
-          members={workspace ? { me, peer: counterpart.id, peerName: counterpart.name } : undefined}
+          members={
+            workspace
+              ? [
+                  { id: me, label: t('Yo') },
+                  { id: counterpart.id, label: counterpart.name },
+                  { id: null, label: t('Los dos') },
+                ]
+              : undefined
+          }
           header={
             <>
               {deleted}

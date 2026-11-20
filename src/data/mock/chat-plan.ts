@@ -24,9 +24,10 @@ export function createMockChatPlan(store: MockStore, actorId: string): ChatPlanR
   }
 
   function validateDetails(scope: ChatScope, details: Partial<TaskDetails>, meeting: boolean) {
-    const joint = [...store.state.jointProjects.values()].find((p) => p.matchId === scope.id);
+    const joint = [...store.state.jointProjects.values()].find((project) =>
+      scope.kind === 'group' ? project.groupId === scope.id : project.matchId === scope.id
+    );
     if (
-      scope.kind !== 'match' ||
       meeting ||
       !joint?.authorIds.includes(actorId) ||
       (details.assigneeId != null && !joint.authorIds.includes(details.assigneeId)) ||

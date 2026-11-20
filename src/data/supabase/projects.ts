@@ -2,13 +2,18 @@ import {
   ProjectPhotoError,
   validateProject,
   type ProjectPhoto,
+  type ProjectInput,
+  type ProjectVersion,
+  type Project,
   type JointWorkspace,
   type ProjectRepository,
 } from '../projects';
+import { GROUP_ERROR_CODES, GroupError } from '../groups';
+import { toPremiumError } from './premium';
+import type { GroupSettings, Profile } from '../types';
 import type { LockInSupabaseClient } from './client';
 import type { Database, ProfileRow } from './database.types';
 import { toProfile } from './mappers';
-import type { AvatarSigner } from './avatar-urls';
 
 import { readLocalImage } from './avatar-file';
 import { t } from '@/i18n';
@@ -18,17 +23,25 @@ type ProjectRow = Database['public']['Tables']['profile_projects']['Row'] & {
 };
 const fields = '*,project_authors(profiles(*))' as const;
 
+interface SupabaseProjects extends ProjectRepository {
+  forGroups(ids: string[]): Promise<Project[]>;
+  createForGroup(input: ProjectInput, draftId: string, group: GroupSettings): Promise<void>;
+}
+
 export function supabaseProjects(
   getClient: () => LockInSupabaseClient,
   userId: () => Promise<string>,
-  signProfiles?: AvatarSigner['signProfiles']
-): ProjectRepository {
+  signProfiles?: (profiles: Profile[]) => Promise<Profile[]>
+): SupabaseProjects {
   async function mutate(body: Record<string, unknown>) {
     const { data, error } = await getClient().functions.invoke('moderate-project', { body });
     if (!error && data?.saved === true) return;
     const details = await error?.context?.json?.().catch(() => null);
     if (Number.isInteger(details?.slot))
       throw new ProjectPhotoError(details.slot, details.error === 'flagged');
+    const code = details?.error;
+    if (GROUP_ERROR_CODES[code]) throw new GroupError(GROUP_ERROR_CODES[code], code);
+    if (code === 'LQ005') throw toPremiumError({ code, message: code });
     if (details?.error === 'full') throw new Error(t('Puedes tener hasta tres proyectos.'));
     if (details?.error === 'conflict')
       throw new Error(t('El proyecto ha cambiado. Vuelve a abrirlo.'));
@@ -127,7 +140,67 @@ export function supabaseProjects(
       notesRevision: w.notes_revision,
     };
   }
+  async function save(
+    input: ProjectInput,
+    previous?: ProjectVersion,
+    draftId?: string,
+    matchId?: string,
+    group?: GroupSettings
+  ) {
+    validateProject(input);
+    const owner = await userId();
+    const client = getClient();
+    const uploaded: string[] = [];
+    async function stage(image: ProjectPhoto | null) {
+      if (!image) return null;
+      if (image.path) return { keep: image.path };
+      const { bytes, contentType } = await readLocalImage(image.uri);
+      const nonce =
+        globalThis.crypto?.randomUUID?.() ??
+        Date.now().toString(36) + Math.random().toString(36).slice(2);
+      const path = owner + '/' + nonce + '.jpg';
+      const { error } = await client.storage
+        .from('avatar-uploads')
+        .upload(path, bytes, { contentType });
+      if (error) throw new Error(t('No se ha podido subir la foto.'));
+      uploaded.push(path);
+      return { pending: path };
+    }
+    try {
+      const images = [];
+      for (const photo of [input.cover, ...input.photos]) images.push(await stage(photo));
+      const { name, tagline, description, link } = input;
+      await mutate({
+        action: 'save',
+        matchId,
+        ...(group && { group }),
+        draftId,
+        previous: previous && { id: previous.id, revision: previous.revision },
+        name,
+        tagline,
+        description,
+        link,
+        images,
+      });
+    } finally {
+      if (uploaded.length)
+        await client.storage
+          .from('avatar-uploads')
+          .remove(uploaded)
+          .catch(() => undefined);
+    }
+  }
   return {
+    createForGroup: (input, draftId, group) => save(input, undefined, draftId, undefined, group),
+    async forGroups(ids) {
+      if (!ids.length) return [];
+      const { data, error } = await getClient()
+        .from('profile_projects')
+        .select(fields)
+        .in('id', ids);
+      if (error) throw error;
+      return hydrate(data);
+    },
     async list(ownerId) {
       await userId();
       // The second embedding filters membership without removing the other author's face.
@@ -177,49 +250,7 @@ export function supabaseProjects(
       });
       if (error) throw mutationError(error.code);
     },
-    async save(input, previous, draftId, matchId) {
-      validateProject(input);
-      const owner = await userId();
-      const client = getClient();
-      const uploaded: string[] = [];
-      async function stage(image: ProjectPhoto | null) {
-        if (!image) return null;
-        if (image.path) return { keep: image.path };
-        const { bytes, contentType } = await readLocalImage(image.uri);
-        const nonce =
-          globalThis.crypto?.randomUUID?.() ??
-          Date.now().toString(36) + Math.random().toString(36).slice(2);
-        const path = owner + '/' + nonce + '.jpg';
-        const { error } = await client.storage
-          .from('avatar-uploads')
-          .upload(path, bytes, { contentType });
-        if (error) throw new Error(t('No se ha podido subir la foto.'));
-        uploaded.push(path);
-        return { pending: path };
-      }
-      try {
-        const images = [];
-        for (const photo of [input.cover, ...input.photos]) images.push(await stage(photo));
-        const { name, tagline, description, link } = input;
-        await mutate({
-          action: 'save',
-          matchId,
-          draftId,
-          previous: previous && { id: previous.id, revision: previous.revision },
-          name,
-          tagline,
-          description,
-          link,
-          images,
-        });
-      } finally {
-        if (uploaded.length)
-          await client.storage
-            .from('avatar-uploads')
-            .remove(uploaded)
-            .catch(() => undefined);
-      }
-    },
+    save,
     remove: ({ id, revision }) => mutate({ action: 'remove', previous: { id, revision } }),
     promote: ({ id, revision }) => mutate({ action: 'promote', previous: { id, revision } }),
   };

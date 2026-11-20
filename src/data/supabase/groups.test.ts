@@ -31,6 +31,7 @@ const timestamp = '2026-11-09T12:00:00+00:00';
 
 const group: GroupRow = {
   id: 'g1',
+  project_id: null,
   name: 'Equipo',
   description: 'Un proyecto',
   admin_id: 'me',
@@ -109,6 +110,7 @@ function fakeClient(overrides: Record<string, Result> = {}) {
   const inserts: unknown[] = [];
   const channels: FakeChannel[] = [];
   const removeChannel = jest.fn();
+  const invoke = jest.fn().mockResolvedValue({ data: { saved: true }, error: null });
 
   function from(table: string) {
     let key = table;
@@ -139,6 +141,8 @@ function fakeClient(overrides: Record<string, Result> = {}) {
   }
 
   const client = {
+    functions: { invoke },
+    storage: { from: jest.fn() },
     from,
     rpc: (name: string, args?: unknown) => {
       rpcCalls.push([name, args]);
@@ -168,6 +172,7 @@ function fakeClient(overrides: Record<string, Result> = {}) {
     inserts,
     channels,
     removeChannel,
+    invoke,
   };
 }
 
@@ -188,6 +193,7 @@ describe('mapeadores', () => {
   it('traducen filas a dominio', () => {
     expect(toGroup(group)).toEqual({
       id: 'g1',
+      project: null,
       name: 'Equipo',
       description: 'Un proyecto',
       adminId: 'me',
@@ -295,6 +301,54 @@ describe('listMine', () => {
 });
 
 describe('escrituras', () => {
+  it('crea grupo y proyecto en una sola solicitud moderada y relee sus autores', async () => {
+    const settings = {
+      name: 'Equipo',
+      description: 'Un proyecto',
+      roles: [{ specialty: 'dev' as const, slots: 2 }],
+    };
+    const project = {
+      name: 'Atlas',
+      description: 'Mapa',
+      tagline: 'Talleres',
+      link: '',
+      cover: null,
+      photos: [],
+    };
+    const { repository, invoke, rpcCalls } = setup({
+      groups: ok([{ ...group, project_id: 'p' }]),
+      profile_projects: ok([
+        {
+          id: 'p',
+          owner_id: 'me',
+          revision: 'v',
+          ...project,
+          cover_path: null,
+          photo_paths: [],
+          project_authors: [{ profiles: profile('me') }],
+        },
+      ]),
+    });
+    const draft = { ...settings, projectDraftId: 'p', project };
+    const view = await repository.create(draft);
+    expect(invoke).toHaveBeenCalledTimes(1);
+    expect(invoke).toHaveBeenCalledWith('moderate-project', {
+      body: expect.objectContaining({
+        action: 'save',
+        name: 'Atlas',
+        draftId: 'p',
+        group: settings,
+        images: [null],
+      }),
+    });
+    expect(rpcCalls).toEqual([]);
+    expect(view.group.project).toMatchObject({ name: 'Atlas', authors: [{ id: 'me' }] });
+    invoke.mockResolvedValueOnce({
+      error: { context: { json: async () => ({ error: 'LG006' }) } },
+    });
+    await expect(repository.create(draft)).rejects.toMatchObject({ reason: 'already-admin' });
+  });
+
   it('create llama al RPC, avisa y devuelve el grupo', async () => {
     const { repository, rpcCalls } = setup();
     const listener = jest.fn();
@@ -470,6 +524,14 @@ describe('decks', () => {
     await expect(setup({ group_deck: fail('LG003') }).repository.getDeck()).rejects.toMatchObject({
       reason: 'unavailable',
     });
+  });
+
+  it('omite una tarjeta cuyo proyecto ha dejado de ser visible durante la carga', async () => {
+    const { repository } = setup({
+      group_deck: ok([deckRow, { ...deckRow, id: 'g2', project_id: 'revocado' }]),
+      profile_projects: ok([]),
+    });
+    expect((await repository.getDeck()).map((card) => card.group.id)).toEqual(['g1']);
   });
 
   it('getRecruitDeck une cada persona con el puesto de tu grupo', async () => {

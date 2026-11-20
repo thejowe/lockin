@@ -19,6 +19,7 @@ import * as locations from '@/features/profile/locations';
 import * as projectQuery from '@/features/profile/use-projects';
 import * as Haptics from 'expo-haptics';
 import { ProfileCard } from './profile-card';
+import { CardTextShade } from './card-text-shade';
 
 /** Contraste WCAG del color que llega al ojo, incluyendo el alfa del velo. */
 function contrastRatio(ink: string, background: string, scrim?: string, opacity = 1): number {
@@ -42,6 +43,28 @@ function contrastRatio(ink: string, background: string, scrim?: string, opacity 
 }
 
 const HIDDEN = { includeHiddenElements: true };
+
+it.each(['top', 'bottom'] as const)(
+  'dibuja el velo %s con una sola superficie sin costura',
+  async (edge) => {
+    await render(<CardTextShade id="fade" alpha="AD" edge={edge} testID="shade" />);
+    const shade = screen.getByTestId('shade', HIDDEN);
+    const style = StyleSheet.flatten(shade.props.style);
+    expect(style.backgroundColor).toBeUndefined();
+    expect(style).toMatchObject(
+      edge === 'top'
+        ? { top: -48, bottom: 0 }
+        : { top: 0, bottom: -48, transform: [{ scaleY: -1 }] }
+    );
+    const rects = shade.queryAll((node) => node.type === 'RNSVGRect');
+    expect(rects).toHaveLength(1);
+    expect(rects[0].props).toMatchObject({ width: '100%', height: '100%' });
+    const [gradient] = shade.queryAll((node) => node.type === 'RNSVGLinearGradient');
+    expect(gradient.props).toMatchObject({ gradientUnits: 1, y1: 0, y2: 48 });
+    expect(gradient.props.gradient[1] >>> 24).toBe(0);
+    expect(gradient.props.gradient.at(-1) >>> 24).toBe(0xad);
+  }
+);
 
 describe('ProfileCard', () => {
   describe('logos de cuentas vinculadas junto al nombre', () => {
@@ -438,11 +461,13 @@ describe('ProfileCard: foto de fondo', () => {
     await render(<ProfileCard profile={profile} />);
 
     const scrim = screen.getByTestId('profile-card-top-scrim', HIDDEN);
-    expect(scrim).toHaveStyle(StyleSheet.absoluteFill);
+    expect(scrim).toHaveStyle({ position: 'absolute', left: 0, right: 0, top: 0, bottom: -48 });
     expect(scrim.props.pointerEvents).toBe('none');
     expect(scrim.props.accessibilityElementsHidden).toBe(true);
     expect(scrim.props.importantForAccessibility).toBe('no-hide-descendants');
-    const veil = StyleSheet.flatten(scrim.props.style).backgroundColor;
+    const [gradient] = scrim.queryAll((node) => node.type === 'RNSVGLinearGradient');
+    const alpha = gradient.props.gradient.at(-1) >>> 24;
+    const veil = Colors.dark.background + alpha.toString(16).padStart(2, '0');
     const menu = StyleSheet.flatten(screen.getByText('⋯', HIDDEN).props.style);
 
     expect(contrastRatio(menu.color, background, veil, menu.opacity)).toBeGreaterThanOrEqual(3);

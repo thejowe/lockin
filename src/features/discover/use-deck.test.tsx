@@ -192,6 +192,10 @@ describe('useDeck', () => {
     await act(async () => result.current.refresh());
     expect(result.current.cards!.map((p) => p.id)).not.toContain(target.id);
     advanceMockClock(48 * 3_600_000);
+    // El reloj del mock ya avanzó 48 h. La lectura también debe ser posterior
+    // a la confirmación para el reloj monotónico que usa la pantalla.
+    const afterConfirmation = performance.now();
+    await waitFor(() => expect(performance.now()).toBeGreaterThan(afterConfirmation));
     await act(async () => result.current.refresh());
     await waitFor(() => expect(result.current.cards!.slice(-1)[0].id).toBe(target.id));
   });

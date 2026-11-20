@@ -10,15 +10,7 @@ import { Chip, ChipRow, Field, TextField } from '@/features/profile/controls';
 import { useTheme } from '@/hooks/use-theme';
 import { getIntlLocale, t } from '@/i18n';
 
-export type TaskMembers = { me: string; peer: string; peerName: string };
-
-function assignees(members: TaskMembers) {
-  return [
-    { id: members.me, label: t('Yo') },
-    { id: members.peer, label: members.peerName },
-    { id: null, label: t('Los dos') },
-  ];
-}
+export type TaskMembers = { id: string | null; label: string }[];
 
 function statuses() {
   return { pending: t('Pendiente'), in_progress: t('En curso'), done: t('Hecha') };
@@ -106,7 +98,7 @@ function TaskEditor({
       )}
       <Field label={t('Responsable')}>
         <ChipRow>
-          {assignees(members).map(({ id: target, label }) => (
+          {members.map(({ id: target, label }) => (
             <Chip
               key={target ?? 'both'}
               label={label}
@@ -174,7 +166,6 @@ export function ProjectTasks({
   const [editing, setEditing] = useState<PlanItem | 'new' | null>(null);
   const [filter, setFilter] = useState<string | null | 'all'>('all');
   const theme = useTheme();
-  const options = assignees(members);
   const visible = tasks.filter((item) => filter === 'all' || (item.assigneeId ?? null) === filter);
   return (
     <View style={styles.section}>
@@ -199,7 +190,7 @@ export function ProjectTasks({
           {tasks.length > 0 && (
             <Field label={t('Filtrar por responsable')}>
               <ChipRow>
-                {[{ id: 'all', label: t('Todas') }, ...options].map(({ id, label }) => (
+                {[{ id: 'all', label: t('Todas') }, ...members].map(({ id, label }) => (
                   <Chip
                     key={id ?? 'both'}
                     label={label}
@@ -212,7 +203,7 @@ export function ProjectTasks({
           )}
           {visible.map((item) => {
             const status = item.status ?? (item.closed ? 'done' : 'pending');
-            const person = options.find((person) => person.id === (item.assigneeId ?? null))?.label;
+            const person = members.find((person) => person.id === (item.assigneeId ?? null))?.label;
             return (
               <Pressable
                 key={item.id}

@@ -41,6 +41,7 @@ async function freshDatabase(PGlite) {
       id uuid primary key, instance_id uuid, aud text, role text, email text,
       encrypted_password text, email_confirmed_at timestamptz,
       created_at timestamptz not null default now(), updated_at timestamptz,
+      banned_until timestamptz, deleted_at timestamptz,
       last_sign_in_at timestamptz, raw_app_meta_data jsonb, raw_user_meta_data jsonb,
       is_anonymous boolean not null default false,
       confirmation_token text, recovery_token text, email_change text,

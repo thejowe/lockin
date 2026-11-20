@@ -6,7 +6,7 @@
  * entró en otro grupo) no vuelve: no hay nada que decidir sobre ella.
  */
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { GroupError, useQuery, type Decision, type GroupSwipeResult } from '@/data';
 
@@ -30,28 +30,41 @@ export function useSwipeQueue<T>(
   keyOf: (item: T) => string,
   send: (item: T, decision: Decision) => Promise<GroupSwipeResult>
 ): SwipeQueue<T> {
-  const query = useQuery(queryKey, load);
-  const [gone, setGone] = useState<ReadonlySet<string>>(new Set());
+  // Cada lectura incluye solo los swipes ya confirmados cuando empezó. En
+  // lecturas posteriores manda el servidor, también cuando caduca un pase.
+  const committed = useRef(0);
+  const query = useQuery(queryKey, async () => {
+    const version = committed.current;
+    return { version, items: await load() };
+  });
+  const [gone, setGone] = useState<ReadonlyMap<string, number>>(new Map());
   const [saveFailed, setSaveFailed] = useState(false);
 
-  const cards = useMemo(
-    () => (query.data ? query.data.filter((item) => !gone.has(keyOf(item))) : null),
-    // `keyOf` es estable por contrato: una función de módulo o memorizada.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [query.data, gone]
-  );
+  const cards = useMemo(() => {
+    const snapshot = query.data;
+    return snapshot
+      ? snapshot.items.filter((item) => (gone.get(keyOf(item)) ?? 0) <= snapshot.version)
+      : null;
+  }, [query.data, gone, keyOf]);
 
   const decide = useCallback(
     async (item: T, decision: Decision) => {
       const key = keyOf(item);
-      setGone((current) => new Set(current).add(key));
+      setGone((current) => new Map(current).set(key, Infinity));
       setSaveFailed(false);
       try {
-        return await send(item, decision);
+        const result = await send(item, decision);
+        const version = ++committed.current;
+        setGone((current) => new Map(current).set(key, version));
+        return result;
       } catch (cause: unknown) {
-        if (cause instanceof GroupError && GONE_REASONS.has(cause.reason)) return null;
+        if (cause instanceof GroupError && GONE_REASONS.has(cause.reason)) {
+          const version = ++committed.current;
+          setGone((current) => new Map(current).set(key, version));
+          return null;
+        }
         setGone((current) => {
-          const next = new Set(current);
+          const next = new Map(current);
           next.delete(key);
           return next;
         });
@@ -59,8 +72,7 @@ export function useSwipeQueue<T>(
         return null;
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [send]
+    [send, keyOf]
   );
 
   return {

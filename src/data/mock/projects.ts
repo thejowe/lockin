@@ -2,11 +2,46 @@ import {
   validateProject,
   type Project,
   type ProjectRepository,
+  type ProjectInput,
   type ProjectVersion,
 } from '../projects';
-import type { MockStore } from './store';
+import { isBlockedPair, type MockStore } from './store';
 import { observeProjectNotifications, recordProjectActivity } from './project-notifications';
 import { t } from '@/i18n';
+
+export function projectRecord(
+  input: ProjectInput,
+  id: string,
+  ownerId: string,
+  revision: string
+): Project {
+  return {
+    name: input.name.trim(),
+    tagline: input.tagline.trim(),
+    description: input.description.trim(),
+    link: input.link,
+    photos: input.photos.map((p) => ({ ...p })),
+    cover: input.cover && { ...input.cover },
+    id,
+    ownerId,
+    revision,
+  };
+}
+
+export function mockProjectView(store: MockStore, project: Project, actor: string): Project {
+  const ids = store.state.jointProjects.get(project.id)?.authorIds ?? [project.ownerId];
+  return {
+    ...project,
+    photos: project.photos.map((photo) => ({ ...photo })),
+    cover: project.cover && { ...project.cover },
+    authors: ids
+      .filter((id) => !isBlockedPair(store.state, id, actor))
+      .flatMap((id) => {
+        const profile = store.state.profiles.get(id);
+        return profile ? [{ id, name: profile.name, avatar: { ...profile.avatar } }] : [];
+      }),
+  };
+}
 
 export function mockProjects(
   store: MockStore,
@@ -15,6 +50,7 @@ export function mockProjects(
 ): ProjectRepository {
   observeProjectNotifications(store);
   const conflict = () => new Error(t('El proyecto ha cambiado. Vuelve a abrirlo.'));
+  const view = (project: Project) => mockProjectView(store, project, actor);
   function authors(project: Project) {
     return store.state.jointProjects.get(project.id)?.authorIds ?? [project.ownerId];
   }
@@ -32,17 +68,6 @@ export function mockProjects(
     return store.state.projects.filter(
       (p) => authors(p).includes(id) && (store.state.jointProjects.get(p.id)?.published ?? true)
     );
-  }
-  function view(project: Project): Project {
-    return {
-      ...project,
-      photos: project.photos.map((photo) => ({ ...photo })),
-      cover: project.cover && { ...project.cover },
-      authors: authors(project).flatMap((id) => {
-        const profile = store.state.profiles.get(id);
-        return profile ? [{ id, name: profile.name, avatar: { ...profile.avatar } }] : [];
-      }),
-    };
   }
   function jointForMatch(id: string) {
     return [...store.state.jointProjects.entries()].find(([, row]) => row.matchId === id);
@@ -85,21 +110,21 @@ export function mockProjects(
       if (!old && draftId && rows.some((p) => p.id === draftId)) throw conflict();
       if (!old && !match && listing(actor).length >= 3)
         throw new Error(t('Puedes tener hasta tres proyectos.'));
-      const next: Project = {
-        name: input.name.trim(),
-        tagline: input.tagline.trim(),
-        description: input.description.trim(),
-        link: input.link,
-        photos: input.photos.map((p) => ({ ...p })),
-        cover: input.cover && { ...input.cover },
-        id: old?.id ?? draftId ?? store.createId('project'),
-        ownerId: old?.ownerId ?? actor,
-        revision: store.createId('revision'),
-      };
+      const group = old && store.state.groups.find((g) => g.projectId === old.id);
+      if (group && group.adminId !== actor) throw conflict();
+      const next = projectRecord(
+        input,
+        old?.id ?? draftId ?? store.createId('project'),
+        old?.ownerId ?? actor,
+        store.createId('revision')
+      );
       if (old) {
         rows[rows.indexOf(old)] = next;
         const joint = store.state.jointProjects.get(old.id);
         if (joint) joint.proposedBy = null;
+        if (joint?.groupId) {
+          for (const member of joint.authorIds) store.notify('groups:' + member);
+        }
       } else {
         rows.push(next);
         if (match) {
@@ -141,6 +166,7 @@ export function mockProjects(
       const joint = store.state.jointProjects.get(id);
       if (
         !joint ||
+        !!joint.groupId ||
         joint.notesRevision !== revision ||
         !joint.authorIds.includes(actor) ||
         text.length > 10000
@@ -153,6 +179,7 @@ export function mockProjects(
     async remove(previous) {
       const row = owned(previous);
       const joint = store.state.jointProjects.get(row.id);
+      if (joint?.groupId) throw conflict();
       store.state.jointProjects.delete(row.id);
       store.state.projects = store.state.projects.filter((p) => p !== row);
       if (joint?.matchId)
@@ -163,6 +190,7 @@ export function mockProjects(
     },
     async promote(previous) {
       const row = owned(previous);
+      if (store.state.jointProjects.get(row.id)?.groupId) throw conflict();
       store.state.projects = [row, ...store.state.projects.filter((p) => p !== row)];
     },
   };

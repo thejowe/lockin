@@ -37,9 +37,11 @@ import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { ThemedText } from '@/components/themed-text';
+import { CardTextShade } from './card-text-shade';
 import {
   Control,
   FontFamily,
+  GroupHeaderAlpha,
   HitSlop,
   Radii,
   ScrimAlpha,
@@ -302,29 +304,11 @@ export function ProfileCard({
         {/* El velo cubre toda la zona de controles; solo se desvanece debajo.
             Sobre blanco, la tinta activa y ⋯ superan 3:1 (también las inactivas).
             Es decorado y deja pasar los toques a las mismas zonas de siempre. */}
-        <View
+        <CardTextShade
           testID="profile-card-top-scrim"
-          pointerEvents="none"
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
-          style={[
-            StyleSheet.absoluteFill,
-            { backgroundColor: `${theme.background}${ScrimAlpha}` },
-          ]}>
-          <Svg width="100%" height={Spacing.six} style={styles.topFade}>
-            <Defs>
-              <LinearGradient id={`top-fade-${profile.id}`} x1="0" y1="0" x2="0" y2="1">
-                <Stop
-                  offset="0"
-                  stopColor={theme.background}
-                  stopOpacity={parseInt(ScrimAlpha, 16) / 255}
-                />
-                <Stop offset="1" stopColor={theme.background} stopOpacity={0} />
-              </LinearGradient>
-            </Defs>
-            <Rect width="100%" height="100%" fill={`url(#top-fade-${profile.id})`} />
-          </Svg>
-        </View>
+          id={`top-fade-${profile.id}`}
+          alpha={topSlot ? GroupHeaderAlpha : ScrimAlpha}
+        />
         <View style={styles.topRow} pointerEvents="box-none">
           {topSlot ? (
             <View style={styles.topSlot} pointerEvents="box-none">
@@ -807,12 +791,6 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.two,
     paddingHorizontal: Spacing.two,
     gap: Spacing.one,
-  },
-  topFade: {
-    position: 'absolute',
-    top: '100%',
-    right: 0,
-    left: 0,
   },
   projectPanel: { padding: Spacing.three, gap: Spacing.one, marginBottom: Spacing.two },
   halves: { flexDirection: 'row' },

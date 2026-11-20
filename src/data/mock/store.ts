@@ -38,6 +38,11 @@ import type {
 /** Id del perfil propio dentro del mock. Estable para que los matches lo referencien. */
 export const CURRENT_USER_ID = 'me';
 
+/** Espejo de public.pass_cooldown() para los tres decks. */
+export const PASS_COOLDOWN_MS = 48 * 60 * 60 * 1000;
+
+export type StoredGroup = Omit<Group, 'project'> & { projectId?: string };
+
 export interface DecisionMeta {
   atMs: number;
   seq: number;
@@ -99,6 +104,7 @@ export interface MockState {
     string,
     {
       matchId: string | null;
+      groupId?: string;
       authorIds: string[];
       published: boolean;
       proposedBy: string | null;
@@ -109,7 +115,7 @@ export interface MockState {
   >;
   projectDeletions: Map<string, { id: string; actorId: string }>;
   /** Grupos, sus puestos y sus miembros (espejo de `20261109130000_groups.sql`). */
-  groups: Group[];
+  groups: StoredGroup[];
   groupRoles: GroupRole[];
   groupMembers: GroupMember[];
   /** Likes y pases entre personas y grupos. `userId` es siempre la persona candidata. */
@@ -152,6 +158,8 @@ export interface MockGroupSwipe {
   userId: string;
   direction: 'user_to_group' | 'group_to_user';
   decision: Decision;
+  atMs: number;
+  dismissal?: 'block' | 'membership';
   /** En `group_to_user`, el puesto que cubriría. */
   roleId: string | null;
   actorId: string | null;
@@ -174,10 +182,21 @@ export function removeMockGroupMember(state: MockState, userId: string, groupId:
   const role = state.groupRoles.find((candidate) => candidate.id === roleId);
   if (role) role.filled = Math.max(role.filled - 1, 0);
   for (const swipe of state.groupSwipes) {
-    if (swipe.groupId === groupId && swipe.userId === userId) swipe.decision = 'pass';
+    if (swipe.groupId === groupId && swipe.userId === userId) {
+      swipe.decision = 'pass';
+      swipe.dismissal = 'membership';
+    }
   }
 
   const group = state.groups.find((candidate) => candidate.id === groupId);
+  const joint = group?.projectId && state.jointProjects.get(group.projectId);
+  if (joint) {
+    joint.authorIds = joint.authorIds.filter((author) => author !== userId);
+    for (const item of state.chatPlan) {
+      if (item.scope.kind === 'group' && item.scope.id === groupId && item.assigneeId === userId)
+        item.assigneeId = null;
+    }
+  }
   if (group && group.adminId === userId) {
     const adminsElsewhere = new Set(
       state.groups.filter((other) => other.id !== groupId).map((other) => other.adminId)
@@ -191,7 +210,16 @@ export function removeMockGroupMember(state: MockState, userId: string, groupId:
       );
     if (next) {
       group.adminId = next.userId;
+      const project = state.projects.find((row) => row.id === group.projectId);
+      if (project) {
+        project.ownerId = next.userId;
+        project.revision += '-transferred';
+      }
     } else {
+      if (group.projectId) {
+        state.projects = state.projects.filter((row) => row.id !== group.projectId);
+        state.jointProjects.delete(group.projectId);
+      }
       state.groups = state.groups.filter((candidate) => candidate.id !== groupId);
       state.groupRoles = state.groupRoles.filter((candidate) => candidate.groupId !== groupId);
       state.groupMembers = state.groupMembers.filter((member) => member.groupId !== groupId);
@@ -291,6 +319,7 @@ function seedGroups(): Pick<MockState, 'groups' | 'groupRoles' | 'groupMembers' 
         decision: 'like',
         roleId: 'seed-role-taller-dev',
         actorId: 'seed-marc',
+        atMs: Date.parse(createdAt),
       },
     ],
   };
@@ -395,6 +424,8 @@ export function isBlockedPair(state: MockState, a: string, b: string): boolean {
 
 export function detachProjectAuthor(state: MockState, userId: string, matchId?: string) {
   for (const [id, joint] of state.jointProjects) {
+    // El grupo decide la sucesión y la disolución al retirar su membresía.
+    if (joint.groupId) continue;
     if (!joint.authorIds.includes(userId) || (matchId && joint.matchId !== matchId)) continue;
     joint.published = false;
     joint.proposedBy = null;
@@ -488,7 +519,9 @@ export function createMockStore(): MockStore {
       }
       state.profiles.delete(userId);
       state.bannedUntil.delete(userId);
-      state.projects = state.projects.filter((p) => p.ownerId !== userId);
+      state.projects = state.projects.filter(
+        (p) => p.ownerId !== userId || state.jointProjects.get(p.id)?.groupId
+      );
       state.boardPosts = state.boardPosts.filter((post) => post.ownerId !== userId);
       for (const key of [...state.chatReads.keys()]) {
         if (key.startsWith(`${userId}:`)) state.chatReads.delete(key);

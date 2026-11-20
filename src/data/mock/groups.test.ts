@@ -149,7 +149,7 @@ describe('decks', () => {
     expect(await reason(dev1.groups.getRecruitDeck())).toBe('admin-only');
   });
 
-  it('quien ya dio like sale primero, y lo decidido no vuelve', async () => {
+  it('quien ya dio like sale primero, y un pass reciente queda fuera', async () => {
     const { group } = await admin.groups.create(INPUT);
     await dev3.groups.swipeGroup(group.id, 'like');
     await dev2.groups.swipeGroup(group.id, 'pass');
@@ -193,6 +193,34 @@ describe('decks', () => {
     expect(await reason(admin.groups.swipeCandidate('dev1', role.id, 'like'))).toBe(
       'candidate-unavailable'
     );
+  });
+
+  it('bloquear un grupo lo esconde después del plazo aunque cambie de admin', async () => {
+    const { group } = await admin.groups.create(INPUT);
+    await admit(admin, designer, 'designer', 'diseno');
+    await dev1.groups.block(group.id);
+    await admin.groups.leave(group.id);
+    store.advanceClock(72 * 3_600_000);
+    expect(await dev1.groups.getDeck()).toEqual([]);
+    expect((await designer.groups.getRecruitDeck()).map((card) => card.profile.id)).not.toContain(
+      'dev1'
+    );
+    expect(await reason(dev1.groups.swipeGroup(group.id, 'like'))).toBe('unavailable');
+  });
+
+  it('suspensiones y expulsiones siguen excluidas aunque las decisiones sean antiguas', async () => {
+    const { group, roles } = await admin.groups.create(INPUT);
+    await admit(admin, dev1, 'dev1', 'dev');
+    await admin.groups.kick('dev1');
+    await admin.groups.swipeCandidate('dev2', roles[1].id, 'pass');
+    store.advanceClock(72 * 3_600_000);
+    expect((await dev1.groups.swipeGroup(group.id, 'like')).joined).toBe(false);
+    expect((await admin.groups.swipeCandidate('dev1', roles[1].id, 'like')).joined).toBe(false);
+    store.state.bannedUntil.set('dev2', store.nowMs() + 3_600_000);
+    const ids = (await admin.groups.getRecruitDeck()).map((card) => card.profile.id);
+    expect(ids).not.toContain('dev2');
+    expect(ids).not.toContain('dev1');
+    expect((await dev1.groups.getDeck()).map((card) => card.group.id)).not.toContain(group.id);
   });
 });
 

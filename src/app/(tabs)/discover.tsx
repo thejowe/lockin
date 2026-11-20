@@ -26,24 +26,15 @@
 
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, type ComponentRef } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Modal, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AmbientBackground } from '@/components/ambient-background';
-import { Icon } from '@/components/icon';
+import { DeckToolbarButton } from '@/features/discover/deck-toolbar-button';
 import { LoadingState, MessageState } from '@/components/state-view';
 import { useLockTabSwipe } from '@/components/swipe-between-tabs';
 import { ThemedText } from '@/components/themed-text';
-import {
-  BottomTabInset,
-  HitSlop,
-  MaxContentWidth,
-  Opacity,
-  Radii,
-  ScrimAlpha,
-  Spacing,
-  Stroke,
-} from '@/constants/theme';
+import { BottomTabInset, MaxContentWidth, Radii, ScrimAlpha, Spacing } from '@/constants/theme';
 import { useQuery, useRepositories } from '@/data';
 import {
   ActionButton,
@@ -172,10 +163,10 @@ export default function DiscoverScreen() {
           <View style={styles.toolbar}>
             <SectionSwitch value={section} onChange={setSection} myGroupName={adminGroupName} />
             {inGroups ? null : (
-              <Pressable
-                ref={filtersButton}
-                collapsable={false}
-                accessibilityRole="button"
+              <DeckToolbarButton
+                buttonRef={filtersButton}
+                icon="sliders"
+                label={activeFilters > 0 ? `${t('Filtros')} (${activeFilters})` : t('Filtros')}
                 accessibilityLabel={
                   activeFilters > 0
                     ? t('Filtros, {activeFilters} activos', { activeFilters })
@@ -184,20 +175,7 @@ export default function DiscoverScreen() {
                 // Mientras se explican los botones, un toque en pantalla es «siguiente».
                 disabled={tourStep !== null}
                 onPress={() => setFiltersOpen(true)}
-                hitSlop={HitSlop.chip}
-                style={({ pressed }) => [
-                  styles.filtersPill,
-                  {
-                    backgroundColor: theme.backgroundElement,
-                    borderColor: theme.border,
-                    opacity: pressed ? Opacity.pressed : 1,
-                  },
-                ]}>
-                <Icon name="sliders" size={18} color={theme.text} />
-                <ThemedText type="smallBold">
-                  {activeFilters > 0 ? `${t('Filtros')} (${activeFilters})` : t('Filtros')}
-                </ThemedText>
-              </Pressable>
+              />
             )}
           </View>
 
@@ -340,16 +318,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     minHeight: 44,
     paddingHorizontal: Spacing.two,
-  },
-  // Misma píldora que el selector de secciones, para que la barra se lea como una.
-  filtersPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-    minHeight: 44,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Radii.pill,
-    borderWidth: Stroke.hairline,
   },
   // El deck de cofundador sigue montado bajo Grupos, sin ocupar sitio ni recibir toques.
   hidden: {

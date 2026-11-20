@@ -18,14 +18,18 @@ import {
   validateGroupUpdate,
 } from '../groups';
 import { REPORT_MAX_LENGTH, REPORT_REASONS } from '../types';
+import { validateProject } from '../projects';
+import { mockProjectView, projectRecord } from './projects';
+import { t } from '@/i18n';
 import {
   defaultMockStore,
   detachProjectAuthor,
   isBlockedPair,
   removeMockGroupMember,
+  PASS_COOLDOWN_MS,
 } from './store';
 
-import type { MockState, MockStore } from './store';
+import type { MockGroupSwipe, MockState, MockStore, StoredGroup } from './store';
 import type { GroupRepository } from '../repositories';
 import type {
   Decision,
@@ -68,6 +72,21 @@ const SPECIALTY_ORDER: Specialty[] = [
   'inversion',
 ];
 
+interface Ranked<T extends { id: string }> {
+  item: T;
+  passedAt: number | null;
+  liked: boolean;
+}
+
+function bySwipeRank<T extends { id: string }>(a: Ranked<T>, b: Ranked<T>) {
+  if (a.passedAt !== b.passedAt) {
+    if (a.passedAt === null) return -1;
+    if (b.passedAt === null) return 1;
+    return a.passedAt - b.passedAt;
+  }
+  return Number(b.liked) - Number(a.liked) || byId(a.item.id, b.item.id);
+}
+
 const byId = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
 export function createMockGroupRepository(
@@ -106,8 +125,18 @@ export function createMockGroupRepository(
     membershipsOf(userId).length >= GROUP_MAX_MEMBERSHIPS;
 
   /** Espejo de `group_has_block_with`. */
-  const hasBlockWith = (groupId: string, userId: string): boolean =>
-    membersOf(groupId).some((member) => isBlockedPair(getState(), member.userId, userId));
+  const hasBlockWith = (groupId: string, userId: string): boolean => {
+    const state = getState();
+    const now = store.nowMs();
+    const banned = (id: string) => (state.bannedUntil.get(id) ?? 0) > now;
+    return (
+      banned(userId) ||
+      swipeOf(groupId, userId, 'user_to_group')?.dismissal === 'block' ||
+      membersOf(groupId).some(
+        (member) => banned(member.userId) || isBlockedPair(state, member.userId, userId)
+      )
+    );
+  };
 
   const swipeOf = (groupId: string, userId: string, direction: 'user_to_group' | 'group_to_user') =>
     getState().groupSwipes.find(
@@ -115,20 +144,46 @@ export function createMockGroupRepository(
         swipe.groupId === groupId && swipe.userId === userId && swipe.direction === direction
     );
 
+  function ranked<T extends { id: string }>(
+    item: T,
+    groupId: string,
+    userId: string,
+    direction: MockGroupSwipe['direction'],
+    cutoff: number
+  ): Ranked<T>[] {
+    const mine = swipeOf(groupId, userId, direction);
+    const peer = swipeOf(
+      groupId,
+      userId,
+      direction === 'user_to_group' ? 'group_to_user' : 'user_to_group'
+    );
+    if (mine?.dismissal || peer?.dismissal || mine?.decision === 'like') return [];
+    if ((mine && mine.atMs > cutoff) || (peer?.decision === 'pass' && peer.atMs > cutoff))
+      return [];
+    return [{ item, passedAt: mine?.atMs ?? null, liked: peer?.decision === 'like' }];
+  }
+
   function writeSwipe(
     groupId: string,
     userId: string,
     direction: 'user_to_group' | 'group_to_user',
     decision: Decision,
-    roleId: string | null
+    roleId: string | null,
+    dismissal?: 'block'
   ): void {
     const existing = swipeOf(groupId, userId, direction);
-    if (existing) Object.assign(existing, { decision, roleId, actorId });
-    else getState().groupSwipes.push({ groupId, userId, direction, decision, roleId, actorId });
+    const atMs = store.nowMs();
+    if (existing && !dismissal) {
+      if (existing.decision === 'like' || existing.dismissal) return;
+      if (decision === 'pass' && existing.atMs > atMs - PASS_COOLDOWN_MS) return;
+    }
+    const swipe = { groupId, userId, direction, decision, roleId, actorId, atMs, dismissal };
+    if (existing) Object.assign(existing, swipe);
+    else getState().groupSwipes.push(swipe);
   }
 
   /** Lo que ve cada quien de un miembro: su perfil no se entrega con un bloqueo de por medio. */
-  const memberViews = (group: Group): GroupMemberView[] =>
+  const memberViews = (group: StoredGroup): GroupMemberView[] =>
     membersOf(group.id).map((member) => ({
       member: { ...member },
       specialty: getState().groupRoles.find((role) => role.id === member.roleId)?.specialty ?? null,
@@ -139,14 +194,19 @@ export function createMockGroupRepository(
           : (getState().profiles.get(member.userId) ?? null),
     }));
 
-  const toView = (group: Group): GroupView => ({
-    group: { ...group },
+  function toGroup({ projectId, ...group }: StoredGroup): Group {
+    const project = projectId && getState().projects.find((row) => row.id === projectId);
+    return { ...group, project: project ? mockProjectView(store, project, actorId) : null };
+  }
+
+  const toView = (group: StoredGroup): GroupView => ({
+    group: toGroup(group),
     roles: rolesOf(group.id).map((role) => ({ ...role })),
     members: memberViews(group),
     isAdmin: group.adminId === actorId,
   });
 
-  const adminGroup = (): Group => {
+  const adminGroup = (): StoredGroup => {
     const group = getState().groups.find((candidate) => candidate.adminId === actorId);
     if (!group) throw new GroupError('admin-only', 'No administras ningún grupo');
     return group;
@@ -160,7 +220,7 @@ export function createMockGroupRepository(
   };
 
   /** Espejo de `join_group_if_possible`. */
-  function joinIfPossible(group: Group, userId: string, roleId: string | null): boolean {
+  function joinIfPossible(group: StoredGroup, userId: string, roleId: string | null): boolean {
     const state = getState();
     if (isMember(group.id, userId) || atLimit(userId)) return false;
     if (membersOf(group.id).length >= group.maxMembers) return false;
@@ -173,6 +233,7 @@ export function createMockGroupRepository(
     if (!role) return false;
 
     state.groupMembers.push({ groupId: group.id, userId, roleId: role.id, joinedAt: iso() });
+    if (group.projectId) state.jointProjects.get(group.projectId)?.authorIds.push(userId);
     role.filled += 1;
     changed(group.id);
     return true;
@@ -204,19 +265,42 @@ export function createMockGroupRepository(
       }
       const invalid = validateGroupInput(input);
       if (invalid) throw invalid;
+      if (input.project) {
+        validateProject(input.project);
+        const existing = state.groups.find((entry) => entry.projectId === input.projectDraftId);
+        if (existing?.adminId === actorId) return toView(existing);
+        if (state.projects.some((entry) => entry.id === input.projectDraftId))
+          throw new Error(t('El proyecto ha cambiado. Vuelve a abrirlo.'));
+      }
       if (state.groups.some((candidate) => candidate.adminId === actorId)) {
         throw new GroupError('already-admin', 'Ya administras un grupo');
       }
       if (atLimit(actorId)) throw new GroupError('group-limit', 'Ya estás en el máximo de grupos');
 
-      const group: Group = {
+      const group: StoredGroup = {
         id: store.createId('group'),
+        projectId: input.projectDraftId,
         name: input.name.trim(),
         description: input.description.trim(),
         adminId: actorId,
         maxMembers: input.maxMembers ?? 6,
         createdAt: iso(),
       };
+      if (input.project) {
+        state.projects.push(
+          projectRecord(input.project, input.projectDraftId, actorId, store.createId('revision'))
+        );
+        state.jointProjects.set(input.projectDraftId, {
+          groupId: group.id,
+          matchId: null,
+          authorIds: [actorId],
+          published: false,
+          proposedBy: null,
+          notes: '',
+          notesBy: null,
+          notesRevision: store.createId('notes'),
+        });
+      }
       state.groups.push(group);
       state.groupRoles.push(
         ...input.roles.map((role): GroupRole => ({
@@ -278,23 +362,21 @@ export function createMockGroupRepository(
       const viewer = state.profiles.get(actorId);
       if (!viewer || atLimit(actorId)) return [];
 
-      const likedMe = (groupId: string) =>
-        swipeOf(groupId, actorId, 'group_to_user')?.decision === 'like';
+      const cutoff = store.nowMs() - PASS_COOLDOWN_MS;
 
       return state.groups
         .filter((group) => membersOf(group.id).length < group.maxMembers)
         .filter((group) => !isMember(group.id, actorId))
         .filter((group) => !hasBlockWith(group.id, actorId))
-        .filter((group) => !swipeOf(group.id, actorId, 'user_to_group'))
-        .filter((group) => swipeOf(group.id, actorId, 'group_to_user')?.decision !== 'pass')
-        .sort((a, b) => Number(likedMe(b.id)) - Number(likedMe(a.id)) || byId(a.id, b.id))
-        .flatMap((group): GroupDeckCard[] => {
+        .flatMap((group) => ranked(group, group.id, actorId, 'user_to_group', cutoff))
+        .sort(bySwipeRank)
+        .flatMap(({ item: group }): GroupDeckCard[] => {
           const roles = rolesOf(group.id);
           const myRole = firstOpenRoleFor(roles, viewer.specialties);
           if (!myRole) return [];
           return [
             {
-              group: { ...group },
+              group: toGroup(group),
               roles: roles.map((role) => ({ ...role })),
               members: memberViews(group),
               myRole: { ...myRole },
@@ -308,17 +390,15 @@ export function createMockGroupRepository(
       const group = adminGroup();
       if (membersOf(group.id).length >= group.maxMembers) return [];
       const roles = rolesOf(group.id);
-      const likedUs = (userId: string) =>
-        swipeOf(group.id, userId, 'user_to_group')?.decision === 'like';
+      const cutoff = store.nowMs() - PASS_COOLDOWN_MS;
 
       return [...state.profiles.values()]
         .filter((profile) => profile.id !== actorId && profile.lookingFor !== 'lockin')
         .filter((profile) => !isMember(group.id, profile.id) && !atLimit(profile.id))
         .filter((profile) => !hasBlockWith(group.id, profile.id))
-        .filter((profile) => !swipeOf(group.id, profile.id, 'group_to_user'))
-        .filter((profile) => swipeOf(group.id, profile.id, 'user_to_group')?.decision !== 'pass')
-        .sort((a, b) => Number(likedUs(b.id)) - Number(likedUs(a.id)) || byId(a.id, b.id))
-        .flatMap((profile) => {
+        .flatMap((profile) => ranked(profile, group.id, profile.id, 'group_to_user', cutoff))
+        .sort(bySwipeRank)
+        .flatMap(({ item: profile }) => {
           const role = firstOpenRoleFor(roles, profile.specialties);
           return role ? [{ profile, role: { ...role } }] : [];
         });
@@ -404,7 +484,7 @@ export function createMockGroupRepository(
       if (isMember(groupId, actorId)) {
         throw new GroupError('invalid', 'Sal del grupo antes de bloquearlo');
       }
-      writeSwipe(groupId, actorId, 'user_to_group', 'pass', null);
+      writeSwipe(groupId, actorId, 'user_to_group', 'pass', null, 'block');
       const blocks = state.userBlocks.get(actorId) ?? new Set<string>();
       blocks.add(group.adminId);
       state.userBlocks.set(actorId, blocks);

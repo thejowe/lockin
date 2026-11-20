@@ -14,12 +14,22 @@ import { getIntlLocale, t } from '@/i18n';
 import { ProjectTasks, type TaskMembers } from './project-tasks';
 import { PlanForm, type PlanKind } from './plan-form';
 
-export function ChatTabs({ scope, children }: { scope: ChatScope; children: ReactNode }) {
+export function ChatTabs({
+  scope,
+  children,
+  projectHeader,
+  members,
+}: {
+  scope: ChatScope;
+  children: ReactNode;
+  projectHeader?: ReactNode;
+  members?: TaskMembers;
+}) {
   const [plan, setPlan] = useState(false);
   return (
     <>
-      <ChatTabBar plan={plan} onSelect={setPlan} />
-      {plan ? <SharedPlan scope={scope} /> : children}
+      <ChatTabBar plan={plan} project={!!projectHeader} onSelect={setPlan} />
+      {plan ? <SharedPlan scope={scope} header={projectHeader} members={members} /> : children}
     </>
   );
 }
@@ -225,7 +235,7 @@ export function SharedPlan({
           />
         </View>
       )}
-      {members && (
+      {members && scope.kind === 'match' && (
         <View style={styles.section}>
           <ThemedText type="subtitle">{t('Recordatorios')}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">

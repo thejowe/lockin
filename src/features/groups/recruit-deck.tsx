@@ -15,6 +15,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Radii, Spacing } from '@/constants/theme';
 import { useRepositories, type Decision, type GroupView, type RecruitCandidate } from '@/data';
 import { ProfileCard } from '@/features/discover';
+import { DeckToolbarButton } from '@/features/discover/deck-toolbar-button';
 import { specialtyLabel } from '@/features/profile';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
@@ -81,10 +82,8 @@ export function RecruitDeck({
         <ThemedText type="small" themeColor="textSecondary" style={styles.hint} numberOfLines={1}>
           {t('Buscando gente para {name}', { name: view.group.name })}
         </ThemedText>
-        <Button
+        <DeckToolbarButton
           label={t('Tu grupo')}
-          variant="secondary"
-          compact
           onPress={() => router.push(`/group/info?id=${view.group.id}` as Href)}
         />
       </View>

@@ -11,7 +11,7 @@
  * Ojo: en RNTL 14 `render` y `fireEvent` son asíncronos.
  */
 
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { GroupError } from '@/data';
@@ -26,7 +26,7 @@ import MatchesScreen from '../../src/app/(tabs)/matches';
 
 import type { GroupInput, Specialty } from '@/data';
 
-jest.mock('expo-router', () => require('../routes').expoRouterMock());
+jest.mock('expo-router', () => jest.requireActual('../routes').expoRouterMock());
 
 const INPUT: GroupInput = {
   name: 'Mi Equipo',
@@ -122,6 +122,21 @@ describe('quien busca grupo', () => {
     expect(groupName('Ruta Verde')).toBeTruthy();
   });
 
+  it('al refrescar el deck montado, el servidor puede devolver los pases caducados', async () => {
+    await withProfile();
+    await renderSection();
+    await fireEvent.press(screen.getByRole('button', { name: 'Pasar' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Pasar' }));
+    await screen.findByText('Ningún grupo busca ahora lo que dominas');
+    defaultMockStore.advanceClock(48 * 60 * 60 * 1000);
+    await fireEvent.press(screen.getByRole('button', { name: 'Volver a comprobar' }));
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole('tab', { name: 'Ver el proyecto del grupo' }).length
+      ).toBeGreaterThan(0)
+    );
+  });
+
   it('sin grupos que encajen ofrece crear uno y volver a comprobar', async () => {
     await withProfile(['legal']);
     const getDeck = jest.spyOn(repositories.groups, 'getDeck');
@@ -130,8 +145,11 @@ describe('quien busca grupo', () => {
 
     expect(screen.getByText('Ningún grupo busca ahora lo que dominas')).toBeTruthy();
     expect(onDeckActive).toHaveBeenLastCalledWith(false);
-    await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
-    expect(router.push).toHaveBeenCalledWith('/group/new');
+    const create = screen.getAllByRole('button', { name: 'Crear grupo' });
+    expect(create).toHaveLength(2);
+    for (const button of create) await fireEvent.press(button);
+    expect(router.push).toHaveBeenCalledTimes(2);
+    expect(router.push).toHaveBeenLastCalledWith('/group/new');
 
     await fireEvent.press(screen.getByRole('button', { name: 'Volver a comprobar' }));
     await waitFor(() => expect(getDeck).toHaveBeenCalledTimes(2));
@@ -140,6 +158,7 @@ describe('quien busca grupo', () => {
   it('con cartas también se puede crear un grupo', async () => {
     await withProfile();
     await renderSection();
+    expect(screen.getByText('+')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
     expect(router.push).toHaveBeenCalledWith('/group/new');
   });
@@ -398,6 +417,22 @@ describe('la sección entera', () => {
 });
 
 describe('Descubrir', () => {
+  it('al crear desde Grupos aparece la pestaña propia y desaparece el botón de creación', async () => {
+    await withProfile();
+    await renderRoute(
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <DiscoverScreen />
+      </GestureHandlerRootView>
+    );
+    await fireEvent.press(await screen.findByRole('tab', { name: 'Grupos' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Crear grupo' }));
+    expect(router.push).toHaveBeenCalledWith('/group/new');
+    await act(async () => {
+      await repositories.groups.create(INPUT);
+    });
+    expect(await screen.findByRole('tab', { name: 'Reclutar para Mi Equipo' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Crear grupo' })).toBeNull();
+  });
   it('tiene dos secciones: Cofundador, como siempre, y Grupos', async () => {
     await withProfile();
     await renderRoute(

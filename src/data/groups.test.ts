@@ -10,9 +10,9 @@ import {
   validateGroupUpdate,
 } from './groups';
 
-import type { GroupInput } from './types';
+import type { GroupSettings } from './types';
 
-const input = (overrides: Partial<GroupInput> = {}): GroupInput => ({
+const input = (overrides: Partial<GroupSettings> = {}): GroupSettings => ({
   name: 'Taller Abierto',
   description: 'Un marketplace para talleres pequeños.',
   roles: [{ specialty: 'dev', slots: 2 }],
@@ -40,7 +40,7 @@ describe('reglas de los grupos', () => {
     ).toBeNull();
   });
 
-  it.each<[string, Partial<GroupInput>]>([
+  it.each<[string, Partial<GroupSettings>]>([
     ['nombre corto', { name: ' a ' }],
     ['nombre largo', { name: 'x'.repeat(61) }],
     ['descripción corta', { description: 'poco' }],

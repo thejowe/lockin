@@ -66,12 +66,17 @@ export function ProjectEditor({
   project,
   canPromote,
   matchId,
+  groupProject = false,
+  createWithGroup,
   onClose,
   onSaved,
 }: {
   project?: Project;
   canPromote: boolean;
   matchId?: string;
+  groupProject?: boolean;
+  /** El grupo y su proyecto se guardan juntos tras moderar todas las fotos. */
+  createWithGroup?: (draft: ProjectInput, draftId: string) => Promise<void>;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -168,7 +173,7 @@ export function ProjectEditor({
               : t('Crear proyecto')}
         </ThemedText>
         <ThemedText type="subtitle">
-          {isJoint ? t('Ficha del proyecto') : t('Lo que se ve en la tarjeta')}
+          {isJoint || groupProject ? t('Ficha del proyecto') : t('Lo que se ve en la tarjeta')}
         </ThemedText>
         <Field label={t('Nombre del proyecto')}>
           <TextField
@@ -240,13 +245,16 @@ export function ProjectEditor({
           </ThemedText>
         ) : null}
         <PrimaryButton
-          label={busy ? t('Guardando…') : t('Guardar proyecto')}
+          label={
+            busy ? t('Guardando…') : createWithGroup ? t('Crear grupo') : t('Guardar proyecto')
+          }
           disabled={busy || !draft.name.trim() || !draft.tagline.trim()}
           onPress={() =>
             void run(async () => {
               setReview(true);
               if (draft.photos.some((photo) => !photo.path)) setDetails(true);
-              if (!project && matchId) await projects.save(draft, undefined, draftId, matchId);
+              if (createWithGroup) await createWithGroup(draft, draftId);
+              else if (!project && matchId) await projects.save(draft, undefined, draftId, matchId);
               else await projects.save(draft, project, project ? undefined : draftId);
             }, true)
           }
@@ -258,7 +266,7 @@ export function ProjectEditor({
             onPress={() => void run(() => projects.promote(project), true)}
           />
         ) : null}
-        {project ? (
+        {project && !groupProject ? (
           confirm ? (
             <View style={styles.form}>
               <ThemedText>{t('¿Eliminar este proyecto?')}</ThemedText>

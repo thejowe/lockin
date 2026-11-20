@@ -49,6 +49,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
 import { setActivePushRoute } from '@/lib/push';
 import { ChatTabs } from '@/features/chat/shared-plan';
+import { GroupProjectHeader } from '@/features/groups/group-project-header';
 
 function GroupChatContent() {
   const theme = useTheme();
@@ -173,7 +174,31 @@ function GroupChatContent() {
           </ScrollView>
         ) : (
           <View style={styles.content}>
-            <ChatTabs key={groupId} scope={{ kind: 'group', id: groupId }}>
+            <ChatTabs
+              key={groupId}
+              scope={{ kind: 'group', id: groupId }}
+              members={
+                view.group.project
+                  ? [
+                      ...view.members.flatMap(({ profile }) =>
+                        profile
+                          ? [
+                              {
+                                id: profile.id,
+                                label: profile.id === me?.id ? t('Yo') : profile.name,
+                              },
+                            ]
+                          : []
+                      ),
+                      { id: null, label: t('Todo el grupo') },
+                    ]
+                  : undefined
+              }
+              projectHeader={
+                view.group.project && (
+                  <GroupProjectHeader project={view.group.project} isAdmin={view.isAdmin} />
+                )
+              }>
               <ScrollView
                 ref={scrollRef}
                 contentContainerStyle={styles.thread}
