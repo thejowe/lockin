@@ -84,7 +84,8 @@ describe('full-journey declara lo que busca la persona', () => {
     const gate = journey.lastIndexOf("true: ${DECK_FIXTURE == 'postgres'}");
     assert(gate >= 0, 'El bloque del deck ya no está condicionado al backend real');
     // El tour y la navegación de vuelta se prueban también con el mock.
-    assert.equal(journey.split('- runFlow:').length - 1, 1);
+    const afterLogin = journey.slice(at("- tapOn: 'Registrarse'"));
+    assert.equal(afterLogin.split('- runFlow:').length - 1, 1);
     const right = at("id: 'deck-tap-right'");
     const tour = at("visible: 'Siguiente explicación'");
     const left = at("id: 'deck-tap-left'");

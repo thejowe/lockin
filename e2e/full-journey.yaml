@@ -10,7 +10,7 @@ appId: app.cofounder.android
 name: Alta, perfil, deck, match, mensaje y persistencia
 ---
 - assertTrue: ${PROFILE_NAME && MESSAGE && (DECK_FIXTURE == 'postgres' || DECK_FIXTURE == 'memoria')}
-# En el backend local el alta abre automáticamente la cuenta de dispositivo.
+# Se empieza con una instalación limpia en ambas variantes.
 - launchApp:
     clearState: true
     permissions:
@@ -22,6 +22,21 @@ name: Alta, perfil, deck, match, mensaje y persistencia
 - extendedWaitUntil:
     visible: 'Registrarse'
     timeout: 60000
+# La cuenta de la fixture no tiene perfil. El login real vuelve a la bienvenida
+# con el registro opcional y permite ejercitar también el avatar y el abandono.
+- runFlow:
+    when:
+      true: ${DECK_FIXTURE == 'postgres'}
+    commands:
+      - tapOn: 'Iniciar sesión'
+      - runFlow:
+          file: steps/enter-credentials.yaml
+          env:
+            EMAIL: ${DEVICE_EMAIL}
+            PASSWORD: ${DEVICE_PASSWORD}
+      - extendedWaitUntil:
+          visible: 'Registrarse'
+          timeout: 60000
 - tapOn: 'Registrarse'
 # Términos y Normas: sin aceptarlos no se publica perfil (gate de profile-form).
 - extendedWaitUntil:

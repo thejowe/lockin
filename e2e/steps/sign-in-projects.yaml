@@ -8,10 +8,4 @@ appId: app.cofounder.android
     visible: 'Iniciar sesión'
     timeout: 60000
 - tapOn: 'Iniciar sesión'
-- tapOn: 'Email de tu cuenta|tu@email.com'
-- inputText: ${EMAIL}
-- hideKeyboard
-- tapOn: 'Contraseña de tu cuenta|Tu contraseña'
-- inputText: ${PASSWORD}
-- hideKeyboard
-- tapOn: 'Entrar'
+- runFlow: enter-credentials.yaml

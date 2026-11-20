@@ -488,7 +488,7 @@ if (command === 'prepare') {
   );
   config = config
     .replace(/^project_id = .*$/m, 'project_id = "lockin-e2e"')
-    .replace('enable_anonymous_sign_ins = false', 'enable_anonymous_sign_ins = ' + registration);
+    .replace('enable_anonymous_sign_ins = false', 'enable_anonymous_sign_ins = true');
   // El Auth del proyecto real tal y como lo dejó el usuario el 2026-09-20
   // (`supabase/README.md` → «Configuración de Auth en el dashboard»), que es lo
   // que el registro necesita y los valores por defecto de la CLI contradicen.
@@ -723,6 +723,23 @@ if (command === 'test') {
     const runId = randomUUID();
     const profileName = 'E2E-' + runId;
     const message = 'Mensaje E2E ' + runId;
+    const deviceEmail = 'device-' + runId.replaceAll('-', '') + '@lockin.app';
+    const devicePassword = 'E2e-' + randomUUID();
+    let deviceUserId;
+    if (!negative) {
+      // Cuenta irrecuperable para el aviso de abandono; la app entra por UI.
+      // Sólo preparamos Auth: no creamos perfil, modo, avatar ni decisiones.
+      const setup = createClient(status.API_URL, status.SERVICE_ROLE_KEY, {
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+      const account = await setup.auth.admin.createUser({
+        email: deviceEmail,
+        password: devicePassword,
+        email_confirm: true,
+      });
+      assert.ifError(account.error);
+      deviceUserId = account.data.user.id;
+    }
     const maestro = [
       'test',
       '--format',
@@ -738,6 +755,10 @@ if (command === 'test') {
       'PROFILE_NAME=' + profileName,
       '-e',
       'MESSAGE=' + message,
+      '-e',
+      'DEVICE_EMAIL=' + deviceEmail,
+      '-e',
+      'DEVICE_PASSWORD=' + devicePassword,
       // Qué fija el orden del deck en esta variante. Con `postgres` corren las
       // aserciones que nombran a la persona que `incoming-likes.sql` pone
       // arriba; con `memoria` no, porque esa fila no existe. El `.yaml` rechaza
@@ -808,7 +829,7 @@ if (command === 'test') {
         );
         return { outcome: 'pass', why: 'el mock falló después del reinicio y no escribió nada' };
       }
-      await verifyPersistence(status, profileName, message);
+      await verifyPersistence(status, profileName, message, deviceUserId);
 
       // Sesión, valoración y racha son Lock-In: desde el 2026-10-12 la app es
       // solo cofundador y esas pantallas ya no se pintan, así que sus flujos no

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createClient } from '@supabase/supabase-js';
 
 // Read-only oracle AFTER the UI flow. The privileged client never enters the APK.
-export async function verifyPersistence(status, profileName, message) {
+export async function verifyPersistence(status, profileName, message, deviceUserId) {
   assert.equal(status.API_URL, 'http://127.0.0.1:54321');
   const client = createClient(status.API_URL, status.SERVICE_ROLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -37,6 +37,7 @@ export async function verifyPersistence(status, profileName, message) {
   assert.equal(profile.prompts[0].answer, 'Una herramienta para construir en equipo');
   const { data: auth, error } = await client.auth.admin.getUserById(profile.id);
   assert.ifError(error);
+  assert.equal(auth.user.id, deviceUserId, 'El perfil debe ser el de la cuenta que entró por UI');
   assert.equal(auth.user.is_anonymous, false);
   assert.match(auth.user.email, /^device-[a-f0-9]+@lockin[.]app$/);
   assert.ok(auth.user.email_confirmed_at);

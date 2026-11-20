@@ -18,8 +18,8 @@ Alta automática → formulario completo → avatar → deck → like
 borrar almacenamiento** → perfil y conversación recuperados desde la UI.
 
 **La puerta de registro va apagada en `supabase`.** `buildEnv()` compila ese
-APK con `EXPO_PUBLIC_REQUIRE_ACCOUNT=false`. GoTrue local usa la cuenta de dispositivo
-confirmada que crea la app. Puede publicar un avatar y sigue siendo irrecuperable
+APK con `EXPO_PUBLIC_REQUIRE_ACCOUNT=false`. El runner prepara en GoTrue local una cuenta de dispositivo
+confirmada y sin perfil. Se entra en esa cuenta por el formulario real. Puede publicar un avatar y sigue siendo irrecuperable
 desde otro teléfono. Se selecciona y recorta `fixtures/avatar.png` en Android.
 La Edge Function real valida la sesión y publica en Storage. El único servicio
 simulado es el proveedor externo de clasificación, que acepta los píxeles de esa

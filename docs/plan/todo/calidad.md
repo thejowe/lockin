@@ -5,6 +5,13 @@
 - [x] Prettier pasa en Linux tras formatear los 29 archivos que señalaba Actions. [Trabajo de Formato](https://github.com/thejowe/lockin/actions/runs/44727837278/job/136259826425)
 - [x] Jest pasa sobre `23422ee` con 2.435 pruebas en 189 suites. La cobertura alcanza el 95,45 % de sentencias, 89,76 % de ramas, 94,69 % de funciones y 96,87 % de líneas. Los casos añadidos ejercitan la revisión de las fichas y sus permisos, galería, notas, lecturas de chat, recuperación de cuenta y navegación. La suite optativa de contrato se ejecuta en su propio trabajo. [Trabajo de Tests](https://github.com/thejowe/lockin/actions/runs/44727837278/job/136259826496)
 
+## Android · 20 de noviembre de 2026
+
+- El mock alcanzó el selector de fotos tras completar el formulario con movimiento reducido. El selector de Android 16 expuso la miniatura por su descripción «Photo taken on …». El recorrido apunta a esa etiqueta.
+- Registro guardó la nueva contraseña y abrió el tutorial. El flujo de recuperación ahora lo omite antes de comprobar las pestañas y el nombre del perfil.
+- El APK de Hermes carecía de `crypto.getRandomValues` para el alta automática de dispositivo. El runner desechable prepara su usuario confirmado y abre sesión por la interfaz. El oráculo comprueba la identidad de esa cuenta y descarga el avatar desde Storage.
+- La ejecución que documentó los tres fallos quedó roja. Falta un resultado de dispositivo que incluya las correcciones anteriores. [Run 44726334868](https://github.com/thejowe/lockin/actions/runs/44726334868)
+
 ## Proyecto conjunto · 19 de noviembre de 2026
 
 - [x] TypeScript y ESLint terminan con código 0. ESLint conserva cinco avisos anteriores. Jest pasa 2.296 pruebas en 175 suites; se omiten 233 pruebas, entre ellas el contrato optativo contra Supabase.
