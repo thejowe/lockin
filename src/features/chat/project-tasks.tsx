@@ -5,7 +5,12 @@ import { uuid } from 'expo';
 import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themed-text';
 import { Control, Opacity, Spacing, Stroke } from '@/constants/theme';
-import type { PlanDraft, PlanItem, TaskDetails } from '@/data/chat-plan';
+import {
+  PlanConflictError,
+  type PlanDraft,
+  type PlanItem,
+  type TaskDetails,
+} from '@/data/chat-plan';
 import { Chip, ChipRow, Field, TextField } from '@/features/profile/controls';
 import { useTheme } from '@/hooks/use-theme';
 import { getIntlLocale, t } from '@/i18n';
@@ -36,11 +41,14 @@ function TaskEditor({
   members,
   save,
   onClose,
+  onConflict,
 }: {
   item: PlanItem | null;
   members: TaskMembers;
   save: (draft: PlanDraft & TaskDetails) => Promise<void>;
   onClose: () => void;
+  /** La otra persona la cambió mientras tanto: se cierra y se recarga en vez de pisarla. */
+  onConflict: () => void;
 }) {
   const [id] = useState(() => item?.id ?? uuid.v4());
   const [title, setTitle] = useState(item?.title ?? '');
@@ -74,7 +82,11 @@ function TaskEditor({
         place: null,
       });
       onClose();
-    } catch {
+    } catch (cause) {
+      if (cause instanceof PlanConflictError) {
+        onConflict();
+        return;
+      }
       setError(t('No se ha podido guardar. Vuelve a intentarlo.'));
     } finally {
       lock.current = false;
@@ -157,13 +169,16 @@ export function ProjectTasks({
   members,
   add,
   update,
+  reload,
 }: {
   tasks: PlanItem[];
   members: TaskMembers;
   add: (draft: PlanDraft & TaskDetails) => Promise<void>;
-  update: (id: string, details: TaskDetails) => Promise<void>;
+  update: (id: string, details: TaskDetails, revision?: string) => Promise<void>;
+  reload: () => void;
 }) {
   const [editing, setEditing] = useState<PlanItem | 'new' | null>(null);
+  const [conflict, setConflict] = useState(false);
   const [filter, setFilter] = useState<string | null | 'all'>('all');
   const theme = useTheme();
   const visible = tasks.filter((item) => filter === 'all' || (item.assigneeId ?? null) === filter);
@@ -175,18 +190,31 @@ export function ProjectTasks({
           members={members}
           item={editing === 'new' ? null : editing}
           onClose={() => setEditing(null)}
+          onConflict={() => {
+            setEditing(null);
+            setConflict(true);
+            reload();
+          }}
           save={async (draft) => {
+            setConflict(false);
             if (editing === 'new') await add(draft);
             else
-              await update(draft.id, {
-                assigneeId: draft.assigneeId,
-                dueAt: draft.dueAt,
-                status: draft.status,
-              });
+              await update(
+                draft.id,
+                { assigneeId: draft.assigneeId, dueAt: draft.dueAt, status: draft.status },
+                editing.revision
+              );
           }}
         />
       ) : (
         <>
+          {conflict ? (
+            <ThemedText accessibilityRole="alert" themeColor="danger">
+              {t(
+                'La otra persona ha cambiado esta tarea. Te mostramos su versión: revísala y vuelve a editarla.'
+              )}
+            </ThemedText>
+          ) : null}
           {tasks.length > 0 && (
             <Field label={t('Filtrar por responsable')}>
               <ChipRow>

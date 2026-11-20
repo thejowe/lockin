@@ -21,6 +21,7 @@
 import { createSupabaseAgreementRepository } from './agreement';
 import { createSupabaseChatPlan } from './chat-plan';
 import { createAvatarSigner } from './avatar-urls';
+import { Platform } from 'react-native';
 import {
   deleteMyAccount,
   ensureUserId,
@@ -839,7 +840,7 @@ export function createSupabaseRepositories({
             // INSERT y UPDATE, y no '*': Realtime NO aplica RLS a los DELETE, y
             // con '*' cada suscriptor recibía el borrado de cualquier match de
             // cualquiera (caso «un tercero suscrito a sus matches…» del
-            // contrato). El otro participante relee al volver al chat o a sus matches.
+            // contrato). El cierre llega por `match_closures`, abajo.
             .on(
               'postgres_changes',
               { event: 'INSERT', schema: 'public', table: 'matches' },
@@ -856,6 +857,18 @@ export function createSupabaseRepositories({
               { event: 'INSERT', schema: 'public', table: 'messages' },
               () => {
                 notify(MATCHES_TOPIC);
+              }
+            )
+            // Deshacer un match no llega como DELETE (Realtime no aplica RLS a los
+            // borrados): llega como fila de `match_closures`, que sí la lleva y solo
+            // ven los dos participantes. Así la otra persona deja de verlo al momento.
+            .on(
+              'postgres_changes',
+              { event: 'INSERT', schema: 'public', table: 'match_closures' },
+              (payload) => {
+                const row = payload.new as { match_id?: string } | undefined;
+                notify(MATCHES_TOPIC);
+                if (row?.match_id) notify(messagesTopic(row.match_id));
               }
             ),
           () => notify(MATCHES_TOPIC)
@@ -927,6 +940,20 @@ export function createSupabaseRepositories({
                 if (wasEmittedLocally(row?.id)) return;
                 notify(topic);
               }
+            )
+            // Con el chat abierto, el cierre del match lo relee y la pantalla lo da por perdido.
+            .on(
+              'postgres_changes',
+              {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'match_closures',
+                filter: `match_id=eq.${matchId}`,
+              },
+              () => {
+                notify(topic);
+                notify(MATCHES_TOPIC);
+              }
             ),
           () => notify(topic)
         )
@@ -965,5 +992,17 @@ export function createSupabaseRepositories({
     }),
     push: createSupabasePushRepository({ getClient, getUserId }),
     unread: createSupabaseUnreadRepository({ getClient, getUserId }),
+    appConfig: {
+      async minAppVersion() {
+        // Se lee sin sesión. Si falla (red, o un servidor sin la tabla), no se bloquea a nadie.
+        if (Platform.OS !== 'ios' && Platform.OS !== 'android') return null;
+        const { data, error } = await getClient()
+          .from('app_config')
+          .select('min_ios_version,min_android_version')
+          .maybeSingle();
+        if (error || !data) return null;
+        return Platform.OS === 'ios' ? data.min_ios_version : data.min_android_version;
+      },
+    },
   };
 }

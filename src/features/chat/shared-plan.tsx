@@ -207,10 +207,11 @@ export function SharedPlan({
             await repo.add(scope, draft);
             refresh();
           }}
-          update={async (id, details) => {
-            await repo.updateTask(scope, id, details);
+          update={async (id, details, revision) => {
+            await repo.updateTask(scope, id, details, revision);
             refresh();
           }}
+          reload={refresh}
         />
       ) : (
         <View style={styles.section}>

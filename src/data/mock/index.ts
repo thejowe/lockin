@@ -17,6 +17,7 @@ import {
   detachProjectAuthor,
   initialsFrom,
   isBlockedPair,
+  isClosedPair,
   matchesMode,
   nowIso,
   PASS_COOLDOWN_MS,
@@ -532,7 +533,10 @@ export function createMockRepositories(
       return candidates
         .filter(
           ({ id }) =>
-            !matched.has(id) && !isBlocked(actorId, id) && (state.bannedUntil.get(id) ?? 0) <= nowMs
+            !matched.has(id) &&
+            !isBlocked(actorId, id) &&
+            !isClosedPair(state, actorId, id) &&
+            (state.bannedUntil.get(id) ?? 0) <= nowMs
         )
         .filter((candidate) => matchesPremiumFilters(candidate, viewer, filter, nowMs))
         .flatMap((candidate) => {
@@ -569,6 +573,9 @@ export function createMockRepositories(
       options?: { super?: boolean }
     ): Promise<DecisionResult> {
       const state = getState();
+      // Espejo de `record_decision`: un like a una pareja cerrada no escribe ni gasta cupo.
+      if (decision === 'like' && isClosedPair(state, actorId, profileId))
+        return { decision, match: null };
       const isSuper = decision === 'like' && options?.super === true;
       const meta = state.decisionMeta.get(actorId) ?? new Map<string, DecisionMeta>();
       state.decisionMeta.set(actorId, meta);
@@ -595,7 +602,8 @@ export function createMockRepositories(
         (reverse?.get(actorId) === 'like' ||
           (actorId === CURRENT_USER_ID && state.incomingLikes.has(profileId)));
       if (!other || !isReciprocal) return { decision, match: null };
-      if (isBlocked(actorId, profileId)) return { decision, match: null };
+      if (isBlocked(actorId, profileId) || isClosedPair(state, actorId, profileId))
+        return { decision, match: null };
       const existing = state.matches.find(
         (match) => match.profileIds.includes(actorId) && match.profileIds.includes(profileId)
       );
@@ -637,6 +645,7 @@ export function createMockRepositories(
         state.incomingSupers.delete(actorId);
       }
       detachProjectAuthor(state, actorId, matchId);
+      state.closedPairs.add([actorId, peer].sort().join(':'));
       state.matches = state.matches.filter((row) => row.id !== matchId);
       state.chatPlan = state.chatPlan.filter(
         (row) => row.scope.kind !== 'match' || row.scope.id !== matchId
@@ -762,5 +771,8 @@ export function createMockRepositories(
     chatPlan: createMockChatPlan(store, actorId),
     push: createMockPushRepository(actorId, store),
     unread: createMockUnreadRepository(actorId, store),
+    appConfig: {
+      minAppVersion: async () => store.state.appConfig.minAppVersion,
+    },
   };
 }

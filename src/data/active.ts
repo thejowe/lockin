@@ -164,6 +164,9 @@ export function activeBackend(): Backend {
  * notan la diferencia, y `npx expo export` puede cargar el módulo sin entorno.
  */
 export const repositories: Repositories = {
+  get appConfig() {
+    return resolveActive().repositories.appConfig;
+  },
   get projects() {
     return resolveActive().repositories.projects;
   },

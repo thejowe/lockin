@@ -14,6 +14,7 @@ import { PushBridge } from '@/components/push-bridge';
 import { BrandFonts } from '@/constants/fonts';
 import { Colors, FontFamily } from '@/constants/theme';
 import { DataProvider } from '@/data';
+import { UpdateGate } from '@/features/update/update-gate';
 import { useThemeName } from '@/hooks/use-theme';
 import { loadLocalePreference, refreshDeviceLocale, useLocale } from '@/i18n';
 import { t } from '@/i18n';
@@ -171,6 +172,8 @@ export default function RootLayout() {
               {/* El enlace del correo de recuperación abre aquí la nueva contraseña. */}
               <Stack.Screen name="reset-password" options={{ presentation: 'modal' }} />
             </Stack>
+            {/* Versión mínima del servidor: por debajo, solo se puede ir a la tienda. */}
+            <UpdateGate />
           </DataProvider>
         </ThemeProvider>
       </KeyboardProvider>

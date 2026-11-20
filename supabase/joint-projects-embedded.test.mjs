@@ -98,6 +98,8 @@ test('joint project membership, moderation, consent, visibility and lifecycle', 
       }
       await db.exec(readFileSync(new URL(file, migrations), 'utf8'));
     }
+    // Estas pruebas cubren el ciclo con fotos; el interruptor apagado tiene las suyas.
+    await db.exec('update public.app_config set shared_project_photos = true');
     await db.exec(
       "create or replace function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('test.actor',true),'')::uuid$$"
     );

@@ -79,6 +79,8 @@ test('moderated group project and author lifecycle', async (t) => {
       }
       await db.exec(readFileSync(new URL(file, migrations), 'utf8'));
     }
+    // Estas pruebas cubren el ciclo con fotos; el interruptor apagado tiene las suyas.
+    await db.exec('update public.app_config set shared_project_photos = true');
     await db.exec(
       "create or replace function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('test.actor',true),'')::uuid$$"
     );
@@ -116,7 +118,17 @@ test('moderated group project and author lifecycle', async (t) => {
       assert.deepEqual(await rows('select * from public.groups'), []);
       await service();
       assert.deepEqual(await create(), [{ created: true }]);
-      assert.deepEqual(await create(), [{ created: false }]);
+      // Un reintento con el borrador cambiado guarda el actual, no el primero.
+      assert.deepEqual(await create(founder, group, { ...card, name: 'Atlas cambiado' }), [
+        { created: true },
+      ]);
+      await as(founder);
+      assert.equal((await read())[0].name, 'Atlas cambiado');
+      await service();
+      assert.deepEqual(await create(), [{ created: true }]);
+      await db.exec('reset role');
+      assert.deepEqual(await rows('select path from project_private.retired_group_media'), []);
+      await service();
       await assert.rejects(
         create(founder, group, { ...card, cover_path: null, photo_paths: [] }, randomUUID()),
         { code: 'LG006' }

@@ -10,17 +10,18 @@
 - [x] Revisión de Claude Code (2026-11-19) y fusión en la principal. Arreglado: un sondeo fallido ya no desmonta el chat ni el editor (`use-last-good.ts`).
 - [ ] Aprobación del despliegue: migraciones `20261119224029_joint_projects.sql` y `20261119224135_project_tasks_and_notifications.sql`, `moderate-project` y `notify-group-message`. Las fotos compartidas usan lecturas autenticadas de Storage (`storage.allow_only_operation(text)` existe en producción).
 
-### Decisiones abiertas
+### Decisiones del usuario (2026-11-20) — migración `20261120100000_shared_projects_followups.sql`
 
-Hallazgos de `codex review` que no se arreglan sin una decisión de producto:
-
-- [ ] **Clientes antiguos** (P1): una ficha conjunta publicada con foto hace fallar la lista de proyectos del perfil en la versión de la app que ya está en las tiendas, porque intenta firmar la ruta `shared/` y la política lo niega. Opciones: sacar la nueva versión antes de permitir publicar, o filtrar en servidor las filas conjuntas para clientes viejos.
-- [ ] **Quien se queda tras un bloqueo, baja o unmatch** conserva el proyecto privado pero no tiene ninguna pantalla para abrirlo, exportarlo o borrarlo.
-- [ ] «Mover al principio» cambia el orden en los perfiles de los dos autores (`promoted_at` es único por ficha).
-- [ ] Dos ediciones simultáneas de la misma tarea: la segunda puede deshacer el estado de la primera.
-- [ ] Tras un unmatch, la otra persona sigue viendo el chat en Matches hasta refrescar.
-- [ ] Un like antiguo reenviado tras salir del match puede recrearlo.
-- [ ] Si falla Storage al borrar el último autor, las fotos `shared/` quedan huérfanas sin barrido.
+- [x] **Versión de las tiendas.** `app_config.shared_project_photos` (apagado por defecto): con él apagado no se propone, acepta ni publica una ficha compartida con fotos (PJ423), no se añaden fotos a una publicada, un grupo de proyecto no se crea ni edita con fotos, y quien no es autor deja de ver una ficha compartida con fotos (`media_public`, también en la política de Descubrir de grupos). La app nueva muestra «Por ahora los proyectos compartidos con fotos no se pueden publicar…». Comprobado: el deck de grupos de la versión de las tiendas no se rompe por `project_id`, pero su tarjeta lista los proyectos del admin y una ficha de grupo con foto los hacía desaparecer; el interruptor lo cubre.
+- [x] **Versión mínima.** `app_config.min_ios_version` y `min_android_version` (cada tienda numera distinto; en web no aplica) y `UpdateGate`, que vuelve a mirar al volver a la app: por debajo, pantalla «Hay una versión nueva de cofounder» con botón a la tienda. Solo actúa desde esta versión en adelante.
+- [ ] Riesgo que queda con el interruptor apagado: un proyecto conjunto **privado** con fotos, si el otro autor usa la versión de las tiendas y abre el perfil de quien lo creó, ve el error de «Volver a cargar proyectos» en esa lista. Solo afecta a los dos autores. Opción si se quiere cerrar: que el interruptor apagado impida también fotos en proyectos conjuntos privados.
+- [x] **Quien se queda** tras bloqueo, baja o deshacer el match: el proyecto pasa a `detached`, privado y suyo. Sale en «Tus proyectos» con la etiqueta «Privado» y desde el editor lo publica (`set_project_publication(…, publish)`, sin consentimiento y con el máximo de 3), lo edita o lo borra.
+- [x] **Match deshecho**: `match_closures` + `pair_closed()` en `record_decision` y `discovery_deck`: un like repetido no lo recrea y la pareja no vuelve al deck, tampoco a las 48 h. La otra persona lo recibe por Realtime (INSERT en `match_closures`, con RLS) en Matches y en el chat abierto.
+- [x] **Reintento de grupo con el borrador cambiado** guarda el borrador actual en el mismo grupo (mismos puestos si no cambian); las fotos que deja de usar van a la cola de borrado.
+- [x] **«Mover al principio»** por autor: `project_authors.promoted_at`.
+- [x] **Tareas**: `chat_plan_items.revision` (trigger `bump_plan_item_revision`); una edición con versión vieja da `PlanConflictError`, la app avisa y recarga.
+- [x] Recordatorios: `lockin-project-reminders` cada 5 minutos.
+- [ ] Más adelante: barrido de fotos `shared/` huérfanas si falla Storage al borrar el último autor.
 
 ## Texto libre en los chats · 17 de noviembre de 2026
 

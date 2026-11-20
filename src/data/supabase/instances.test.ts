@@ -108,7 +108,29 @@ describe('dos juegos de repositorios de Supabase', () => {
       { event: 'INSERT', schema: 'public', table: 'matches' },
       { event: 'UPDATE', schema: 'public', table: 'matches' },
       { event: 'INSERT', schema: 'public', table: 'messages' },
+      { event: 'INSERT', schema: 'public', table: 'match_closures' },
     ]);
+  });
+
+  it('deshacer el match llega por match_closures y avisa a Matches y al chat abierto', () => {
+    const { client, channels } = fakeClient();
+    asMock.mockReturnValue(client);
+    const repositories = createSupabaseRepositories();
+    const onMatches = jest.fn();
+    const onChat = jest.fn();
+    repositories.matches.subscribe(onMatches);
+    repositories.messages.subscribe('match-1', onChat);
+    // El canal del chat escucha solo el cierre de su match, con filtro (RLS aparte).
+    expect(channels[1].filters).toContainEqual({
+      event: 'INSERT',
+      schema: 'public',
+      table: 'match_closures',
+      filter: 'match_id=eq.match-1',
+    });
+    const closure = channels[0].handlers[3];
+    closure({ new: { match_id: 'match-1' } as Partial<MatchRow> });
+    expect(onMatches).toHaveBeenCalled();
+    expect(onChat).toHaveBeenCalled();
   });
 
   it('los canales de matches y de mensajes son privados', () => {

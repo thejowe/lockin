@@ -1,4 +1,4 @@
-import type { ChatPlanRepository, ChatScope } from '../chat-plan';
+import { PlanConflictError, type ChatPlanRepository, type ChatScope } from '../chat-plan';
 import type { LockInSupabaseClient } from './client';
 import { fetchAllPages } from './pagination';
 
@@ -14,22 +14,25 @@ export function createSupabaseChatPlan(
       await getUserId();
       const rows = await fetchAllPages((from, to) =>
         items()
-          .select('id,title,starts_at,place,closed,assignee_id,due_at,status')
+          .select('id,title,starts_at,place,closed,assignee_id,due_at,status,revision')
           .eq(column(scope), scope.id)
           .order('created_at')
           .order('id')
           .range(from, to)
       );
-      return rows.map(({ id, title, starts_at, place, closed, assignee_id, due_at, status }) => ({
-        id,
-        title,
-        startsAt: starts_at,
-        place,
-        closed,
-        assigneeId: assignee_id,
-        dueAt: due_at,
-        status,
-      }));
+      return rows.map(
+        ({ id, title, starts_at, place, closed, assignee_id, due_at, status, revision }) => ({
+          id,
+          title,
+          startsAt: starts_at,
+          place,
+          closed,
+          assigneeId: assignee_id,
+          dueAt: due_at,
+          status,
+          revision,
+        })
+      );
     },
     async add(scope, draft) {
       const userId = await getUserId();
@@ -57,15 +60,17 @@ export function createSupabaseChatPlan(
       }
       throw error;
     },
-    async updateTask(scope, id, details) {
+    async updateTask(scope, id, details, revision) {
       await getUserId();
-      const { error } = await items()
+      let query = items()
         .update({ assignee_id: details.assigneeId, due_at: details.dueAt, status: details.status })
         .eq(column(scope), scope.id)
-        .eq('id', id)
-        .select('id')
-        .single();
+        .eq('id', id);
+      // Edición optimista: cada update cambia `revision` (trigger `bump_plan_item_revision`).
+      if (revision) query = query.eq('revision', revision);
+      const { data, error } = await query.select('id');
       if (error) throw error;
+      if (!data.length) throw new PlanConflictError();
     },
     async setClosed(scope, id, closed) {
       await getUserId();

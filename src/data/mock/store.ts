@@ -111,8 +111,16 @@ export interface MockState {
       notes: string;
       notesBy: string | null;
       notesRevision: string;
+      /** Se quedó una sola persona: proyecto de perfil suyo, privado hasta publicarlo. */
+      detached?: boolean;
     }
   >;
+  /** Espejo de `app_config`: el interruptor de fotos compartidas nace apagado. */
+  appConfig: { sharedProjectPhotos: boolean; minAppVersion: string };
+  /** «Mover al principio» por autor: `${autor}:${proyecto}` → instante. */
+  projectPromotions: Map<string, number>;
+  /** Espejo de `match_closures`: parejas que deshicieron su match (`a:b`, ordenadas). */
+  closedPairs: Set<string>;
   projectDeletions: Map<string, { id: string; actorId: string }>;
   /** Grupos, sus puestos y sus miembros (espejo de `20261109130000_groups.sql`). */
   groups: StoredGroup[];
@@ -377,6 +385,9 @@ function initialState(): MockState {
     termsAcceptances: new Map(),
     boardPosts: [],
     jointProjects: new Map(),
+    appConfig: { sharedProjectPhotos: false, minAppVersion: '0.0.0' },
+    projectPromotions: new Map(),
+    closedPairs: new Set(),
     projectDeletions: new Map(),
     projects: [
       ['seed-lucia', 'Atlas del barrio', 'Un mapa colaborativo de talleres locales.'],
@@ -437,6 +448,11 @@ export interface MockStore {
  * `has_profile_block`: lo comparten el deck, los matches, los mensajes, las
  * sesiones, las salas y el acuerdo del mock.
  */
+/** ¿Deshicieron su match? Espejo de `pair_closed()`: no vuelven ni al deck ni a un match. */
+export function isClosedPair(state: MockState, a: string, b: string): boolean {
+  return state.closedPairs.has([a, b].sort().join(':'));
+}
+
 export function isBlockedPair(state: MockState, a: string, b: string): boolean {
   return Boolean(state.userBlocks.get(a)?.has(b) || state.userBlocks.get(b)?.has(a));
 }
@@ -450,6 +466,7 @@ export function detachProjectAuthor(state: MockState, userId: string, matchId?: 
     joint.proposedBy = null;
     joint.authorIds = joint.authorIds.filter((author) => author !== userId);
     joint.matchId = null;
+    joint.detached = joint.authorIds.length > 0;
     const project = state.projects.find((row) => row.id === id);
     if (!joint.authorIds.length) {
       state.projects = state.projects.filter((row) => row.id !== id);

@@ -418,9 +418,29 @@ describe('/group/info', () => {
 });
 
 describe('/group/[groupId]', () => {
+  it('con el interruptor de fotos apagado no crea un grupo de proyecto con portada', async () => {
+    await withProfile();
+    await repositories.session.acceptTerms(TERMS_VERSION);
+    await expect(
+      repositories.groups.create({
+        ...INPUT,
+        projectDraftId: '79b4a1d2-5c3e-4f6a-8b7c-9d0e1f2a3b4c',
+        project: {
+          name: 'Atlas',
+          description: '',
+          tagline: 'Explorar',
+          photos: [],
+          cover: { uri: 'file:///atlas.jpg' },
+          link: '',
+        },
+      })
+    ).rejects.toThrow('Por ahora los grupos de proyecto no pueden llevar fotos.');
+  });
+
   it('muestra el proyecto y su plan, permite asignar tareas y reserva la edición al admin', async () => {
     await withProfile();
     await repositories.session.acceptTerms(TERMS_VERSION);
+    defaultMockStore.state.appConfig.sharedProjectPhotos = true;
     const group = await repositories.groups.create({
       ...INPUT,
       projectDraftId: '68033fc2-ea42-4870-8afb-d733c4d1dfaf',

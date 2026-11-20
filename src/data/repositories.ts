@@ -525,7 +525,17 @@ export interface UnreadRepository {
  * Punto único de acceso a datos. Cualquier implementación (mock, Supabase)
  * debe devolver un objeto con esta forma exacta.
  */
+/** Configuración que el servidor puede cambiar sin publicar una versión nueva. */
+export interface AppConfigRepository {
+  /**
+   * Versión mínima admitida en esta plataforma (`app_config.min_ios_version` o
+   * `min_android_version`), o `null` en web o si no se puede leer.
+   */
+  minAppVersion(): Promise<string | null>;
+}
+
 export interface Repositories {
+  appConfig: AppConfigRepository;
   projects: import('./projects').ProjectRepository;
   chatPlan: ChatPlanRepository;
   session: SessionRepository;

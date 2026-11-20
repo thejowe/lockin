@@ -1302,5 +1302,17 @@
   "Fotos tuyas, tus aficiones, tu día a día. Las fotos se revisan antes de publicarse.": "Photos of you, your hobbies and your everyday life. Photos are reviewed before publication.",
   "Vincula GitHub o LinkedIn y comparte tus proyectos.": "Connect GitHub or LinkedIn and share your projects.",
   "Sobre mí recoge tus fotos personales": "About me shows your personal photos",
-  "Esa foto no está en Sobre mí.": "That photo isn’t in About me."
+  "Esa foto no está en Sobre mí.": "That photo isn’t in About me.",
+  "Por ahora los grupos de proyecto no pueden llevar fotos. Quita las fotos para crearlo.": "For now, project groups can’t include photos. Remove the photos to create it.",
+  "Por ahora los proyectos compartidos con fotos no se pueden publicar. Quita las fotos o mantenlo privado.": "For now, shared projects with photos can’t be published. Remove the photos or keep it private.",
+  "Editar {name}, privado": "Edit {name}, private",
+  "Privado": "Private",
+  "Publicar en tu perfil": "Show on your profile",
+  "Se ve en tu perfil.": "It’s on your profile.",
+  "Ahora es solo tuyo y privado: nadie más lo ve hasta que lo publiques.": "It’s now yours alone and private: nobody else sees it until you publish it.",
+  "La otra persona ha cambiado esta tarea. Te mostramos su versión: revísala y vuelve a editarla.": "The other person changed this task. Here’s their version: review it and edit it again.",
+  "Hay una versión nueva de cofounder": "There’s a new version of cofounder",
+  "Actualiza la app para seguir usándola. Esta versión ya no es compatible.": "Update the app to keep using it. This version is no longer supported.",
+  "No se ha podido abrir la tienda.": "Couldn’t open the store.",
+  "Actualizar": "Update"
 }

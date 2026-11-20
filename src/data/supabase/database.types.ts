@@ -339,6 +339,8 @@ export type ChatPlanRow = {
   place: string | null;
   closed: boolean;
   created_at: string;
+  /** Cambia en cada edición: la base de la edición optimista de tareas. */
+  revision: string;
 };
 
 /**
@@ -364,6 +366,30 @@ export type Database = {
         Update: Partial<Pick<ChatPlanRow, 'closed' | 'due_at' | 'assignee_id' | 'status'>>;
         Relationships: [];
       };
+      app_config: {
+        Row: {
+          id: boolean;
+          shared_project_photos: boolean;
+          min_ios_version: string;
+          min_android_version: string;
+          updated_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      match_closures: {
+        Row: {
+          match_id: string;
+          profile_a: string;
+          profile_b: string;
+          closed_by: string | null;
+          created_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       project_events: {
         Row: {
           id: string;
@@ -378,7 +404,7 @@ export type Database = {
         Relationships: [];
       };
       project_authors: {
-        Row: { project_id: string; user_id: string };
+        Row: { project_id: string; user_id: string; promoted_at: string | null };
         Insert: never;
         Update: never;
         Relationships: [
@@ -413,6 +439,7 @@ export type Database = {
           photo_paths: string[];
           created_at: string;
           promoted_at: string | null;
+          detached: boolean;
         };
         Insert: Record<string, never>;
         Update: Record<string, never>;
@@ -629,6 +656,7 @@ export type Database = {
         Returns: { path: string }[];
       };
       leave_project_match: { Args: { p_match_id: string }; Returns: undefined };
+      pair_closed: { Args: { p_other: string }; Returns: boolean };
       project_workspace: { Args: { p_match_id: string }; Returns: WorkspaceRow[] };
       set_project_publication: {
         Args: { p_project_id: string; p_revision: string; p_action: string };

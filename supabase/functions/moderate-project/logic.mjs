@@ -48,6 +48,15 @@ export async function handleProject(user, body, deps) {
     )
       return failure(422, 'invalid');
 
+    // A group project is public from the start: with the photo switch off, refuse
+    // before downloading or moderating anything. SQL checks again at commit.
+    if (
+      body.group != null &&
+      images.some((image) => image?.pending || image?.keep) &&
+      deps.sharedPhotosEnabled &&
+      !(await deps.sharedPhotosEnabled())
+    )
+      return failure(409, 'photos-locked');
     const paths = [];
     for (const [slot, image] of images.entries()) {
       if (slot === 0 && image === null) {
@@ -91,6 +100,7 @@ export async function handleProject(user, body, deps) {
     if (typeof outcome === 'string' && /^(LG00[1-6]|LQ005)$/.test(outcome))
       return failure(409, outcome);
     if (outcome === 'full') return failure(409, 'full');
+    if (outcome === 'photos-locked') return failure(409, 'photos-locked');
     if (outcome !== 'saved') return conflict;
     published.length = 0;
     await deps.discard(existing.filter((path) => !paths.includes(path))).catch(() => {});

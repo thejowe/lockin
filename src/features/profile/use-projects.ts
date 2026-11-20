@@ -2,9 +2,12 @@ import { useEffect } from 'react';
 import { AppState } from 'react-native';
 import { useQuery, useRepositories } from '@/data';
 
-export function useProjects(ownerId: string) {
+/** `includePrivate` solo vale para el propio perfil: «Tus proyectos». */
+export function useProjects(ownerId: string, includePrivate = false) {
   const { projects } = useRepositories();
-  const query = useQuery('projects:' + ownerId, () => projects.list(ownerId));
+  const query = useQuery('projects:' + ownerId + (includePrivate ? ':mine' : ''), () =>
+    projects.list(ownerId, includePrivate ? { includePrivate } : undefined)
+  );
   const { refresh } = query;
   useEffect(() => {
     // Public membership can change while a profile or deck card is mounted.

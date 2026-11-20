@@ -7,6 +7,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   View,
   useWindowDimensions,
 } from 'react-native';
@@ -15,7 +16,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Icon } from '@/components/icon';
 import { glassStyle } from '@/components/glass';
 import { Radii, Spacing } from '@/constants/theme';
-import type { Project, ProjectPhoto } from '@/data';
+import { useRepositories, type Project, type ProjectPhoto } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
 import { SecondaryButton } from './controls';
@@ -25,9 +26,11 @@ import { useProjects } from './use-projects';
 
 export function MyProjects({ ownerId, wizard = false }: { ownerId: string; wizard?: boolean }) {
   const theme = useTheme();
-  const { data, refresh, loading, error } = useProjects(ownerId);
+  const { data, refresh, loading, error } = useProjects(ownerId, true);
   const [edit, setEdit] = useState<Project | 'new' | null>(null);
   const list = data ?? [];
+  // Los privados no cuentan en el máximo de tres del perfil.
+  const publishedCount = list.filter((p) => p.published !== false).length;
   return (
     <View style={styles.section}>
       {wizard ? null : (
@@ -36,12 +39,17 @@ export function MyProjects({ ownerId, wizard = false }: { ownerId: string; wizar
         </ThemedText>
       )}
       {error ? <SecondaryButton label={t('Reintentar')} onPress={refresh} /> : null}
-      <View style={styles.row}>
+      {/* Con privados puede haber más de tres: varias filas, nunca fuera de la pantalla. */}
+      <View style={styles.grid}>
         {list.map((p) => (
           <Pressable
             key={p.id}
             accessibilityRole="button"
-            accessibilityLabel={t('Editar {name}', { name: p.name })}
+            accessibilityLabel={
+              p.published === false
+                ? t('Editar {name}, privado', { name: p.name })
+                : t('Editar {name}', { name: p.name })
+            }
             onPress={() => setEdit(p)}
             style={[glassStyle(theme), styles.tile]}>
             {p.cover ? (
@@ -54,6 +62,13 @@ export function MyProjects({ ownerId, wizard = false }: { ownerId: string; wizar
             <View style={styles.pencil}>
               <Icon name="pencil" size={16} color="#fff" />
             </View>
+            {p.published === false ? (
+              <View style={styles.privateBadge}>
+                <ThemedText type="smallBold" style={styles.white}>
+                  {t('Privado')}
+                </ThemedText>
+              </View>
+            ) : null}
             <View style={styles.caption}>
               <ProjectAuthorFaces project={p} compact />
               <ThemedText type="smallBold" style={styles.white} numberOfLines={2}>
@@ -62,7 +77,7 @@ export function MyProjects({ ownerId, wizard = false }: { ownerId: string; wizar
             </View>
           </Pressable>
         ))}
-        {!loading && !error && list.length < 3 ? (
+        {!loading && !error && publishedCount < 3 ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('Crear proyecto')}
@@ -76,7 +91,18 @@ export function MyProjects({ ownerId, wizard = false }: { ownerId: string; wizar
       {edit ? (
         <ProjectEditor
           project={edit === 'new' ? undefined : edit}
-          canPromote={edit !== 'new' && list[0]?.id !== edit.id}
+          canPromote={edit !== 'new' && edit.published !== false && list[0]?.id !== edit.id}
+          header={
+            edit !== 'new' && edit.detached ? (
+              <DetachedPublication
+                project={edit}
+                onChanged={() => {
+                  refresh();
+                  setEdit(null);
+                }}
+              />
+            ) : undefined
+          }
           onClose={() => {
             refresh();
             setEdit(null);
@@ -86,6 +112,57 @@ export function MyProjects({ ownerId, wizard = false }: { ownerId: string; wizar
             setEdit(null);
           }}
         />
+      ) : null}
+    </View>
+  );
+}
+
+/**
+ * Un proyecto conjunto que se quedó una sola persona es suyo: lo publica en su
+ * perfil o lo deja privado sin pedir permiso a nadie.
+ */
+function DetachedPublication({ project, onChanged }: { project: Project; onChanged: () => void }) {
+  const { projects } = useRepositories();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const published = project.published !== false;
+  async function change(show: boolean) {
+    if (busy) return;
+    setBusy(true);
+    setError('');
+    try {
+      await projects.publication(project, show ? 'publish' : 'private');
+      onChanged();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : t('No se ha podido guardar.'));
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <View style={styles.publication}>
+      <View style={styles.switchRow}>
+        <ThemedText type="bodyStrong" style={styles.grow}>
+          {t('Publicar en tu perfil')}
+        </ThemedText>
+        <Switch
+          testID="detached-publish-switch"
+          accessibilityLabel={t('Publicar en tu perfil')}
+          accessibilityState={{ disabled: busy, checked: published }}
+          value={published}
+          disabled={busy}
+          onValueChange={(show) => void change(show)}
+        />
+      </View>
+      <ThemedText type="small" themeColor="textSecondary">
+        {published
+          ? t('Se ve en tu perfil.')
+          : t('Ahora es solo tuyo y privado: nadie más lo ve hasta que lo publiques.')}
+      </ThemedText>
+      {error ? (
+        <ThemedText accessibilityRole="alert" themeColor="danger">
+          {error}
+        </ThemedText>
       ) : null}
     </View>
   );
@@ -184,6 +261,7 @@ export function PublicProjects({ ownerId }: { ownerId: string }) {
 const styles = StyleSheet.create({
   section: { gap: Spacing.three },
   row: { flexDirection: 'row', gap: Spacing.two },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   tile: {
     width: '30%',
     maxWidth: 110,
@@ -201,6 +279,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#181818',
   },
   caption: { backgroundColor: 'rgba(16,16,16,0.88)', padding: 5 },
+  privateBadge: {
+    position: 'absolute',
+    left: 4,
+    top: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 12,
+    backgroundColor: '#181818',
+  },
+  publication: { gap: Spacing.one },
+  switchRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  grow: { flex: 1 },
   white: { color: '#fff' },
   thumb: { width: 100, height: 100, borderRadius: Radii.small },
   cover: { width: '100%', aspectRatio: 1.6, borderRadius: Radii.card },

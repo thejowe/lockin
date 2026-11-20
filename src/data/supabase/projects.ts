@@ -7,6 +7,7 @@ import {
   type Project,
   type JointWorkspace,
   type ProjectRepository,
+  sharedPhotosLockedMessage,
 } from '../projects';
 import { GROUP_ERROR_CODES, GroupError } from '../groups';
 import { toPremiumError } from './premium';
@@ -43,6 +44,8 @@ export function supabaseProjects(
     if (GROUP_ERROR_CODES[code]) throw new GroupError(GROUP_ERROR_CODES[code], code);
     if (code === 'LQ005') throw toPremiumError({ code, message: code });
     if (details?.error === 'full') throw new Error(t('Puedes tener hasta tres proyectos.'));
+    if (details?.error === 'photos-locked')
+      throw new Error(sharedPhotosLockedMessage(body.group != null));
     if (details?.error === 'conflict')
       throw new Error(t('El proyecto ha cambiado. Vuelve a abrirlo.'));
     throw new Error(t('No se ha podido guardar.'));
@@ -99,16 +102,20 @@ export function supabaseProjects(
       link: p.link,
       cover: p.cover_path ? photo(p.cover_path) : null,
       photos: p.photo_paths.map(photo),
+      published: p.published,
+      detached: p.detached,
       authors: p.project_authors.flatMap((a) => (a.profiles ? [signed.get(a.profiles.id)!] : [])),
     }));
   }
   function mutationError(code: string) {
     return new Error(
-      code === 'PJ003'
-        ? t('Uno de los perfiles ya tiene tres proyectos.')
-        : code === 'PJ409'
-          ? t('El proyecto ha cambiado. Vuelve a abrirlo.')
-          : t('No se ha podido guardar.')
+      code === 'PJ423'
+        ? sharedPhotosLockedMessage()
+        : code === 'PJ003'
+          ? t('Uno de los perfiles ya tiene tres proyectos.')
+          : code === 'PJ409'
+            ? t('El proyecto ha cambiado. Vuelve a abrirlo.')
+            : t('No se ha podido guardar.')
     );
   }
   async function readWorkspace(matchId: string, retry: boolean): Promise<JointWorkspace | null> {
@@ -201,19 +208,26 @@ export function supabaseProjects(
       if (error) throw error;
       return hydrate(data);
     },
-    async list(ownerId) {
+    async list(ownerId, options) {
       await userId();
-      // The second embedding filters membership without removing the other author's face.
-      const { data, error } = await getClient()
+      // The second embedding filters membership without removing the other author's face,
+      // and carries this author's own «Mover al principio».
+      const query = getClient()
         .from('profile_projects')
-        .select('*,project_authors(profiles(*)),listed:project_authors!inner()')
-        .eq('listed.user_id', ownerId)
-        .eq('published', true)
-        .order('promoted_at', { ascending: false, nullsFirst: false })
+        .select('*,project_authors(profiles(*)),listed:project_authors!inner(promoted_at)')
+        .eq('listed.user_id', ownerId);
+      const { data, error } = await (
+        options?.includePrivate
+          ? query.or('published.eq.true,detached.eq.true')
+          : query.eq('published', true)
+      )
         .order('created_at')
         .order('id');
       if (error) throw error;
-      return hydrate(data);
+      const promoted = (row: { listed: { promoted_at: string | null }[] }) =>
+        Date.parse(row.listed[0]?.promoted_at ?? '') || 0;
+      // Stable sort: the newest promotion first, then creation order.
+      return hydrate([...data].sort((a, b) => promoted(b) - promoted(a)));
     },
     async workspace(matchId) {
       return readWorkspace(matchId, true);

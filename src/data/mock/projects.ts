@@ -1,4 +1,5 @@
 import {
+  sharedPhotosLockedMessage,
   validateProject,
   type Project,
   type ProjectRepository,
@@ -64,20 +65,37 @@ export function mockProjects(
       throw conflict();
     return row;
   }
-  function listing(id: string) {
-    return store.state.projects.filter(
-      (p) => authors(p).includes(id) && (store.state.jointProjects.get(p.id)?.published ?? true)
-    );
+  const published = (p: Project) => store.state.jointProjects.get(p.id)?.published ?? true;
+  const detached = (p: Project) => store.state.jointProjects.get(p.id)?.detached ?? false;
+  const hasPhotos = (p: Pick<Project, 'cover' | 'photos'>) => !!p.cover || p.photos.length > 0;
+  // Espejo de `require_public_media`: sin el interruptor, nada compartido con fotos se publica.
+  function requirePublicMedia(p: Pick<Project, 'cover' | 'photos'>) {
+    if (hasPhotos(p) && !store.state.appConfig.sharedProjectPhotos)
+      throw new Error(sharedPhotosLockedMessage());
   }
+  // Espejo de `media_public`: quien no es autor no ve una ficha compartida con fotos sin el interruptor.
+  const mediaPublic = (p: Project) =>
+    !store.state.jointProjects.has(p.id) ||
+    store.state.appConfig.sharedProjectPhotos ||
+    !hasPhotos(p);
+  function listing(id: string, includePrivate = false) {
+    const promoted = (p: Project) => store.state.projectPromotions.get(id + ':' + p.id) ?? 0;
+    return store.state.projects
+      .filter((p) => authors(p).includes(id) && (published(p) || (includePrivate && detached(p))))
+      .sort((a, b) => promoted(b) - promoted(a));
+  }
+  const publishedCount = (id: string) => listing(id).length;
   function jointForMatch(id: string) {
     return [...store.state.jointProjects.entries()].find(([, row]) => row.matchId === id);
   }
   return {
-    async list(ownerId) {
+    async list(ownerId, options) {
       if (!store.state.profiles.has(ownerId) || blocked(actor, ownerId)) return [];
-      return listing(ownerId)
+      const mine = ownerId === actor;
+      return listing(ownerId, mine && options?.includePrivate)
         .filter((p) => authors(p).every((id) => !blocked(actor, id)))
-        .map(view);
+        .filter((p) => authors(p).includes(actor) || mediaPublic(p))
+        .map((p) => ({ ...view(p), published: published(p), detached: detached(p) }));
     },
     async workspace(matchId) {
       if (!availableMatch(matchId)) return null;
@@ -90,7 +108,7 @@ export function mockProjects(
         project: view(row),
         published: joint.published,
         proposedBy: joint.proposedBy,
-        hasCapacity: joint.published || joint.authorIds.every((user) => listing(user).length < 3),
+        hasCapacity: joint.published || joint.authorIds.every((user) => publishedCount(user) < 3),
         notes: joint.notes,
         notesBy: joint.notesBy,
         notesRevision: joint.notesRevision,
@@ -108,10 +126,12 @@ export function mockProjects(
       const match = matchId && availableMatch(matchId);
       if (matchId && (!match || old || jointForMatch(matchId))) throw conflict();
       if (!old && draftId && rows.some((p) => p.id === draftId)) throw conflict();
-      if (!old && !match && listing(actor).length >= 3)
+      if (!old && !match && publishedCount(actor) >= 3)
         throw new Error(t('Puedes tener hasta tres proyectos.'));
       const group = old && store.state.groups.find((g) => g.projectId === old.id);
       if (group && group.adminId !== actor) throw conflict();
+      if (old && store.state.jointProjects.has(old.id) && (group || published(old)))
+        requirePublicMedia(input);
       const next = projectRecord(
         input,
         old?.id ?? draftId ?? store.createId('project'),
@@ -144,10 +164,24 @@ export function mockProjects(
     async publication(version, action) {
       const row = owned(version);
       const joint = store.state.jointProjects.get(row.id);
+      if (joint?.detached) {
+        // Proyecto de perfil de quien se quedó: lo publica o lo oculta sin pedir permiso.
+        if (action === 'publish') {
+          requirePublicMedia(row);
+          if (!joint.published && publishedCount(actor) >= 3)
+            throw new Error(t('Uno de los perfiles ya tiene tres proyectos.'));
+          joint.published = true;
+        } else if (action === 'private') joint.published = false;
+        else throw conflict();
+        row.revision = store.createId('revision');
+        return;
+      }
+      if (action === 'publish') throw conflict();
       if (!joint?.matchId || !availableMatch(joint.matchId) || joint.authorIds.length !== 2)
         throw conflict();
       if (action === 'propose') {
         if (joint.published || joint.proposedBy) throw conflict();
+        requirePublicMedia(row);
         joint.proposedBy = actor;
         recordProjectActivity(store, 'proposed', joint.matchId, row.id, actor);
       } else if (action === 'private') {
@@ -155,7 +189,8 @@ export function mockProjects(
         joint.proposedBy = null;
       } else {
         if (!joint.proposedBy || joint.proposedBy === actor) throw conflict();
-        if (action === 'accept' && joint.authorIds.some((id) => listing(id).length >= 3))
+        if (action === 'accept') requirePublicMedia(row);
+        if (action === 'accept' && joint.authorIds.some((id) => publishedCount(id) >= 3))
           throw new Error(t('Uno de los perfiles ya tiene tres proyectos.'));
         joint.published = action === 'accept';
         joint.proposedBy = null;
@@ -191,7 +226,11 @@ export function mockProjects(
     async promote(previous) {
       const row = owned(previous);
       if (store.state.jointProjects.get(row.id)?.groupId) throw conflict();
-      store.state.projects = [row, ...store.state.projects.filter((p) => p !== row)];
+      // Solo en el perfil de quien lo pide (`project_authors.promoted_at`).
+      if (published(row)) {
+        const order = Math.max(0, ...store.state.projectPromotions.values()) + 1;
+        store.state.projectPromotions.set(actor + ':' + row.id, order);
+      }
     },
   };
 }

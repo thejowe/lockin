@@ -1,4 +1,9 @@
-import type { ChatPlanRepository, ChatScope, TaskDetails } from '../chat-plan';
+import {
+  PlanConflictError,
+  type ChatPlanRepository,
+  type ChatScope,
+  type TaskDetails,
+} from '../chat-plan';
 import { isBlockedPair, type MockStore } from './store';
 
 export function createMockChatPlan(store: MockStore, actorId: string): ChatPlanRepository {
@@ -39,7 +44,7 @@ export function createMockChatPlan(store: MockStore, actorId: string): ChatPlanR
   return {
     async list(scope) {
       return visible(scope).map(
-        ({ id, title, startsAt, place, closed, assigneeId, dueAt, status }) => ({
+        ({ id, title, startsAt, place, closed, assigneeId, dueAt, status, revision }) => ({
           id,
           title,
           startsAt,
@@ -48,6 +53,7 @@ export function createMockChatPlan(store: MockStore, actorId: string): ChatPlanR
           assigneeId: assigneeId ?? null,
           dueAt: dueAt ?? null,
           status: status ?? (closed && !startsAt ? 'done' : 'pending'),
+          revision,
         })
       );
     },
@@ -77,20 +83,26 @@ export function createMockChatPlan(store: MockStore, actorId: string): ChatPlanR
         scope,
         authorId: actorId,
         closed: draft.status === 'done',
+        revision: store.createId('plan-revision'),
       });
       store.notify('project-notifications');
     },
-    async updateTask(scope, id, details) {
+    async updateTask(scope, id, details, revision) {
       const item = visible(scope).find((row) => row.id === id);
       if (!item) throw new Error('Plan item unavailable');
+      if (revision && item.revision !== revision) throw new PlanConflictError();
       validateDetails(scope, details, item.startsAt !== null);
-      Object.assign(item, details, { closed: details.status === 'done' });
+      Object.assign(item, details, {
+        closed: details.status === 'done',
+        revision: store.createId('plan-revision'),
+      });
       store.notify('project-notifications');
     },
     async setClosed(scope, id, closed) {
       const item = visible(scope).find((item) => item.id === id);
       if (!item) throw new Error('Plan item unavailable');
       item.closed = closed;
+      item.revision = store.createId('plan-revision');
       if (!item.startsAt) item.status = closed ? 'done' : 'pending';
       store.notify('project-notifications');
     },

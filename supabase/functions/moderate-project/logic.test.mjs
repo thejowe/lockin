@@ -171,3 +171,30 @@ test('group creation is exclusive to a new, stable project draft', async () => {
     assert.deepEqual(stored, []);
   }
 });
+
+test('with the photo switch off the save is refused and its new uploads are discarded', async () => {
+  const { deps, body, discarded } = fixture();
+  deps.save = async () => 'photos-locked';
+  const reply = await handleProject('me', body, deps);
+  assert.equal(reply.status, 409);
+  assert.equal(reply.body.error, 'photos-locked');
+  assert.deepEqual(discarded, ['me/project-1.jpg', 'me/project-2.jpg']);
+});
+
+test('a group with photos is refused before any moderation while the switch is off', async () => {
+  const { deps, body } = fixture();
+  let moderated = 0;
+  deps.moderate = async () => {
+    moderated++;
+    return clean;
+  };
+  deps.sharedPhotosEnabled = async () => false;
+  const reply = await handleProject(
+    'me',
+    { ...body, draftId: 'draft', group: { name: 'Equipo' } },
+    deps
+  );
+  assert.equal(reply.status, 409);
+  assert.equal(reply.body.error, 'photos-locked');
+  assert.equal(moderated, 0);
+});

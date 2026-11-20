@@ -1302,5 +1302,17 @@
   "Fotos tuyas, tus aficiones, tu día a día. Las fotos se revisan antes de publicarse.": "Fotos teves, les teves aficions, el teu dia a dia. Les fotos es revisen abans de publicar-se.",
   "Vincula GitHub o LinkedIn y comparte tus proyectos.": "Vincula GitHub o LinkedIn i comparteix els teus projectes.",
   "Sobre mí recoge tus fotos personales": "Sobre mi recull les teves fotos personals",
-  "Esa foto no está en Sobre mí.": "Aquesta foto no és a Sobre mi."
+  "Esa foto no está en Sobre mí.": "Aquesta foto no és a Sobre mi.",
+  "Por ahora los grupos de proyecto no pueden llevar fotos. Quita las fotos para crearlo.": "De moment, els grups de projecte no poden portar fotos. Treu les fotos per crear-lo.",
+  "Por ahora los proyectos compartidos con fotos no se pueden publicar. Quita las fotos o mantenlo privado.": "De moment, els projectes compartits amb fotos no es poden publicar. Treu les fotos o mantén-lo privat.",
+  "Editar {name}, privado": "Editar {name}, privat",
+  "Privado": "Privat",
+  "Publicar en tu perfil": "Publicar al teu perfil",
+  "Se ve en tu perfil.": "Es veu al teu perfil.",
+  "Ahora es solo tuyo y privado: nadie más lo ve hasta que lo publiques.": "Ara és només teu i privat: ningú més el veu fins que el publiquis.",
+  "La otra persona ha cambiado esta tarea. Te mostramos su versión: revísala y vuelve a editarla.": "L’altra persona ha canviat aquesta tasca. Et mostrem la seva versió: revisa-la i torna-la a editar.",
+  "Hay una versión nueva de cofounder": "Hi ha una versió nova de cofounder",
+  "Actualiza la app para seguir usándola. Esta versión ya no es compatible.": "Actualitza l’app per continuar fent-la servir. Aquesta versió ja no és compatible.",
+  "No se ha podido abrir la tienda.": "No s’ha pogut obrir la botiga.",
+  "Actualizar": "Actualitza"
 }

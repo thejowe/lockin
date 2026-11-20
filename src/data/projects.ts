@@ -23,6 +23,13 @@ export interface Project extends ProjectInput {
   ownerId: string;
   authors?: Pick<Profile, 'id' | 'name' | 'avatar'>[];
   revision: string;
+  /** Falso en un proyecto privado: solo lo ven sus autores. */
+  published?: boolean;
+  /**
+   * Proyecto conjunto que se quedó una sola persona tras un bloqueo, una baja o
+   * deshacer el match: es un proyecto de perfil suyo, privado hasta que lo publique.
+   */
+  detached?: boolean;
 }
 export type ProjectVersion = Pick<Project, 'id' | 'revision'>;
 
@@ -35,10 +42,16 @@ export interface JointWorkspace {
   notesBy: string | null;
   notesRevision: string;
 }
-export type PublicationAction = 'propose' | 'accept' | 'reject' | 'private';
+/** `publish` y `private` sobre un proyecto desvinculado no piden consentimiento a nadie. */
+export type PublicationAction = 'propose' | 'accept' | 'reject' | 'private' | 'publish';
+
+export interface ListOptions {
+  /** Incluye los proyectos privados de quien mira su propio perfil («Tus proyectos»). */
+  includePrivate?: boolean;
+}
 
 export interface ProjectRepository {
-  list(ownerId: string): Promise<Project[]>;
+  list(ownerId: string, options?: ListOptions): Promise<Project[]>;
   save(
     input: ProjectInput,
     previous?: ProjectVersion,
@@ -62,6 +75,15 @@ export function newProjectId(): string {
       return (key === 'x' ? nibble : (nibble & 3) | 8).toString(16);
     })
   );
+}
+
+/** El servidor no publica fotos compartidas mientras su interruptor esté apagado. */
+export function sharedPhotosLockedMessage(group = false): string {
+  return group
+    ? t('Por ahora los grupos de proyecto no pueden llevar fotos. Quita las fotos para crearlo.')
+    : t(
+        'Por ahora los proyectos compartidos con fotos no se pueden publicar. Quita las fotos o mantenlo privado.'
+      );
 }
 
 export function validateProject(input: ProjectInput) {

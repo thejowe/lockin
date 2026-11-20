@@ -3403,6 +3403,7 @@ test('PostgreSQL embebido: migraciones, huella, rol lector, mutaciones y retirad
         'groups',
         'lockin_rooms',
         'lockin_sessions',
+        'match_closures',
         'matches',
         'messages',
         'session_attendance',

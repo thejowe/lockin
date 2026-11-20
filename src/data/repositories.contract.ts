@@ -35,6 +35,7 @@
  * ha dado like" —, así que la pide el fixture y no cada test.
  */
 
+import { PlanConflictError } from './chat-plan';
 import { AgreementForbiddenError, AgreementInvalidError, AgreementModeError } from './agreement';
 import {
   SessionConflictError,
@@ -2891,6 +2892,73 @@ function describeSafetyContract(backend: ContractBackend): void {
           await expect(a.projects.remove(before.project)).rejects.toThrow();
         }
       );
+
+      it('deshacer el match cierra la pareja: ni un like repetido ni el deck la devuelven', async () => {
+        const matchId = await matchPair();
+        await a.matches.unmatch(matchId);
+        expect((await a.discovery.recordDecision(bId, 'like')).match).toBeNull();
+        expect((await b.discovery.recordDecision(aId, 'like')).match).toBeNull();
+        expect(await b.matches.getById(matchId)).toBeNull();
+        expect((await a.discovery.getDeck()).some((p) => p.id === bId)).toBe(false);
+        expect((await b.discovery.getDeck()).some((p) => p.id === aId)).toBe(false);
+      });
+
+      it('quien se queda tras deshacer el match lo tiene en «Tus proyectos», privado, y lo publica', async () => {
+        const { matchId, workspace } = await create();
+        await a.matches.unmatch(matchId);
+        const mine = await b.projects.list(bId, { includePrivate: true });
+        expect(mine).toEqual([
+          expect.objectContaining({ id: workspace.project.id, published: false, detached: true }),
+        ]);
+        expect(await b.projects.list(bId)).toEqual([]);
+        expect(await c.projects.list(bId)).toEqual([]);
+        await expect(a.projects.publication(mine[0], 'publish')).rejects.toThrow();
+        await b.projects.publication(mine[0], 'publish');
+        expect((await c.projects.list(bId)).map((p) => p.id)).toEqual([workspace.project.id]);
+        const published = (await b.projects.list(bId, { includePrivate: true }))[0];
+        await b.projects.save({ ...draft, name: 'Atlas mío' }, published);
+        const edited = (await b.projects.list(bId))[0];
+        expect(edited.name).toBe('Atlas mío');
+        await b.projects.remove(edited);
+        expect(await b.projects.list(bId, { includePrivate: true })).toEqual([]);
+      });
+
+      it('«Mover al principio» solo reordena el perfil de quien lo pide', async () => {
+        await a.projects.save({ ...draft, name: 'Personal A' });
+        await b.projects.save({ ...draft, name: 'Personal B' });
+        const { matchId, workspace } = await create();
+        await a.projects.publication(workspace.project, 'propose');
+        await b.projects.publication((await b.projects.workspace(matchId))!.project, 'accept');
+        const joint = (await a.projects.workspace(matchId))!.project;
+        await a.projects.promote(joint);
+        expect((await c.projects.list(aId)).map((p) => p.name)).toEqual(['Atlas', 'Personal A']);
+        expect((await c.projects.list(bId)).map((p) => p.name)).toEqual(['Personal B', 'Atlas']);
+      });
+
+      it('dos ediciones a la vez de la misma tarea: la segunda choca en vez de pisar', async () => {
+        const { scope } = await create();
+        const [seenByA] = await a.chatPlan.list(scope);
+        const [seenByB] = await b.chatPlan.list(scope);
+        expect(seenByA.revision).toBeTruthy();
+        await a.chatPlan.updateTask(
+          scope,
+          task.id,
+          { status: 'done', assigneeId: null, dueAt: null },
+          seenByA.revision
+        );
+        await expect(
+          b.chatPlan.updateTask(
+            scope,
+            task.id,
+            { status: 'pending', assigneeId: aId, dueAt: null },
+            seenByB.revision
+          )
+        ).rejects.toBeInstanceOf(PlanConflictError);
+        expect((await b.chatPlan.list(scope))[0]).toMatchObject({
+          status: 'done',
+          assigneeId: null,
+        });
+      });
     });
 
     describe('grupos', () => {

@@ -163,7 +163,7 @@ grant execute on function public.project_push_targets(uuid), public.complete_pro
 do $cron$
 begin
   if exists (select 1 from pg_catalog.pg_extension where extname = 'pg_cron') then
-    perform cron.schedule('lockin-project-reminders', '* * * * *', 'select public.enqueue_project_reminders();');
+    perform cron.schedule('lockin-project-reminders', '*/5 * * * *', 'select public.enqueue_project_reminders();');
   end if;
 end;
 $cron$;

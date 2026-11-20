@@ -82,6 +82,7 @@ test('ve las constraints de `alter table … add constraint`', () => {
   assert.deepEqual(names, [
     'chat_plan_items.group_task_assignee_member foreign',
     'lockin_rooms.lockin_rooms_host_id_fkey foreign',
+    'profile_projects.detached_projects_are_joint check',
     'profiles.profiles_avatar_url_check check',
     'profiles.profiles_github_link_matches_handle check',
     'profiles.profiles_github_verification_complete check',

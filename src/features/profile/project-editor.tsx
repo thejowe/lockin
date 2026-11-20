@@ -68,6 +68,7 @@ export function ProjectEditor({
   matchId,
   groupProject = false,
   createWithGroup,
+  header,
   onClose,
   onSaved,
 }: {
@@ -77,6 +78,8 @@ export function ProjectEditor({
   groupProject?: boolean;
   /** El grupo y su proyecto se guardan juntos tras moderar todas las fotos. */
   createWithGroup?: (draft: ProjectInput, draftId: string) => Promise<void>;
+  /** Controles propios de quien abre el editor, encima del formulario. */
+  header?: ReactNode;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -172,6 +175,7 @@ export function ProjectEditor({
               ? t('Crear proyecto juntos')
               : t('Crear proyecto')}
         </ThemedText>
+        {header}
         <ThemedText type="subtitle">
           {isJoint || groupProject ? t('Ficha del proyecto') : t('Lo que se ve en la tarjeta')}
         </ThemedText>

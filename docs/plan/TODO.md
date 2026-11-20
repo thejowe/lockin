@@ -10,8 +10,8 @@ Fusionadas en la rama principal, por este orden, `perfil/programacion`, `chat/pr
 - [x] `comprobador` en Android 16 con el mock (8f81bc1): «Programación» en alta y tarjeta, «Crear proyecto juntos» sobre los icebreakers, pestaña «Proyecto» con la tarea y la reunión antiguas, responsable/fecha/estado y filtro, tarjeta compacta y hoja, propuesta pendiente, notas, bloqueo, grupo de proyecto (botón «Crear grupo» desaparece, difuminado suave) y hoja sin deslizar con «reducir movimiento». Capturas en `e2e/artifacts/local/2026-11-19-integracion/`.
 - [ ] Con dos cuentas reales (aceptar la publicación, verlo en ambos perfiles y en el deck, despublicar al bloquear, tarjeta del propio grupo vista desde otra cuenta): espera a las migraciones en producción. Flujo: `e2e/joint-project.yaml`.
 - [ ] CI: «Tests» (umbral de cobertura), «Formato» y «E2E Android» ya estaban en rojo antes de la fusión (`365c1bc`); el E2E cae en el alta y el login, antes de lo integrado. Schema drift rojo hasta aplicar las migraciones.
-- [ ] Producción con el ok del usuario: migraciones `joint_projects`, `project_tasks_and_notifications`, `group_projects` y `group_deck_passes`; desplegar `moderate-project` y `notify-group-message`.
-- [ ] Decisiones abiertas del usuario: ver [chat](todo/chat.md#decisiones-abiertas).
+- [x] Decisiones del usuario (2026-11-20) aplicadas en `20261120100000_shared_projects_followups.sql`: interruptor de fotos compartidas apagado, versión mínima, proyecto de quien se queda, match deshecho cerrado y por Realtime, reintento de grupo, orden por autor, versión de tareas y recordatorios cada 5 minutos. [Detalle](todo/chat.md#decisiones-del-usuario-2026-11-20--migración-20261120100000_shared_projects_followupssql)
+- [ ] Producción con el ok del usuario: migraciones `joint_projects`, `project_tasks_and_notifications`, `group_projects`, `group_deck_passes` y `shared_projects_followups`; desplegar `moderate-project` y `notify-group-message`.
 
 ## Grupos de proyecto
 

@@ -18,7 +18,7 @@ import {
   validateGroupUpdate,
 } from '../groups';
 import { REPORT_MAX_LENGTH, REPORT_REASONS } from '../types';
-import { validateProject } from '../projects';
+import { sharedPhotosLockedMessage, validateProject } from '../projects';
 import { mockProjectView, projectRecord } from './projects';
 import { t } from '@/i18n';
 import {
@@ -267,8 +267,48 @@ export function createMockGroupRepository(
       if (invalid) throw invalid;
       if (input.project) {
         validateProject(input.project);
+        // Espejo de `create_moderated_group_project`: un grupo de proyecto se ve en
+        // Descubrir nada más crearse, así que el interruptor de fotos también lo cubre.
+        if (
+          (input.project.cover || input.project.photos.length) &&
+          !state.appConfig.sharedProjectPhotos
+        )
+          throw new Error(sharedPhotosLockedMessage(true));
         const existing = state.groups.find((entry) => entry.projectId === input.projectDraftId);
-        if (existing?.adminId === actorId) return toView(existing);
+        if (existing?.adminId === actorId) {
+          // Reintento tras perder la respuesta: con nadie más dentro, guarda el borrador actual.
+          if (membersOf(existing.id).some((member) => member.userId !== actorId))
+            return toView(existing);
+          Object.assign(existing, {
+            name: input.name.trim(),
+            description: input.description.trim(),
+            maxMembers: input.maxMembers ?? 6,
+          });
+          // Puestos por especialidad, como `update_group`: el que sigue conserva su id.
+          const wanted = new Map(input.roles.map((role) => [role.specialty, role.slots]));
+          state.groupRoles = state.groupRoles.filter(
+            (role) => role.groupId !== existing.id || wanted.has(role.specialty)
+          );
+          for (const role of rolesOf(existing.id)) role.slots = wanted.get(role.specialty)!;
+          for (const role of input.roles) {
+            if (rolesOf(existing.id).some((current) => current.specialty === role.specialty))
+              continue;
+            state.groupRoles.push({
+              id: store.createId('group-role'),
+              groupId: existing.id,
+              specialty: role.specialty,
+              slots: role.slots,
+              filled: 0,
+            });
+          }
+          state.projects = state.projects.map((entry) =>
+            entry.id === input.projectDraftId
+              ? projectRecord(input.project!, entry.id, actorId, store.createId('revision'))
+              : entry
+          );
+          changed(existing.id);
+          return toView(existing);
+        }
         if (state.projects.some((entry) => entry.id === input.projectDraftId))
           throw new Error(t('El proyecto ha cambiado. Vuelve a abrirlo.'));
       }

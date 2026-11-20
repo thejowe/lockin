@@ -83,6 +83,8 @@ Deno.serve(async (request) => {
     const { error } = result;
     if (error && /^(LG00[1-6]|LQ005)$/.test(error.code)) return error.code;
     if (error?.code === 'PJ003') return 'full';
+    // The server switch keeps shared photos out of public surfaces (app_config).
+    if (error?.code === 'PJ423') return 'photos-locked';
     if (['23505', '42501', 'PJ409'].includes(error?.code ?? '')) return 'conflict';
     if (error) throw error;
     return result.data === false ? 'replayed' : 'saved';
@@ -90,6 +92,14 @@ Deno.serve(async (request) => {
 
   const result = await handleProject(actor, body, {
     objectionable: isObjectionable,
+    async sharedPhotosEnabled() {
+      const { data, error } = await admin
+        .from('app_config')
+        .select('shared_project_photos')
+        .maybeSingle();
+      if (error) throw error;
+      return data?.shared_project_photos === true;
+    },
     moderate: moderateBoardImage,
     async find(user: string, id: string) {
       const { data, error } = await projects()
