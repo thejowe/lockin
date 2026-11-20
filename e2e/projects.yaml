@@ -88,7 +88,7 @@ name: Crear un proyecto en el alta y descubrirlo desde otra cuenta
     timeout: 10000
 # Jornada: la barra propone 09:00–14:00; se añade un segundo tramo (15:00–16:00).
 - assertVisible: 'De 09:00 a 14:00'
-- tapOn: '+ Añadir otro tramo'
+- tapOn: '\+ Añadir otro tramo'
 - extendedWaitUntil:
     visible: 'De 15:00 a 16:00'
     timeout: 5000

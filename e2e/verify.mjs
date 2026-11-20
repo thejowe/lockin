@@ -37,7 +37,12 @@ export async function verifyPersistence(status, profileName, message) {
   assert.equal(profile.prompts[0].answer, 'Una herramienta para construir en equipo');
   const { data: auth, error } = await client.auth.admin.getUserById(profile.id);
   assert.ifError(error);
-  assert.equal(auth.user.is_anonymous, true, 'El alta debe crear la sesión anónima real');
+  assert.equal(auth.user.is_anonymous, false);
+  assert.match(auth.user.email, /^device-[a-f0-9]+@lockin[.]app$/);
+  assert.ok(auth.user.email_confirmed_at);
+  assert.ok(profile.avatar_url?.startsWith(profile.id + '/'));
+  const avatar = await rows(client.storage.from('avatars').download(profile.avatar_url));
+  assert.ok(avatar.size > 0, 'El avatar moderado debe existir en Storage');
   const settings = await rows(
     client.from('user_settings').select('*').eq('user_id', profile.id).single()
   );

@@ -24,6 +24,7 @@ import {
 import type { StyleProp, ViewStyle } from 'react-native';
 import Animated from 'react-native-reanimated';
 
+import { useReduceMotion } from '@/hooks/use-reduce-motion';
 import { enterUp } from '@/components/motion';
 
 /** Retraso entre un bloque y el siguiente, algo más lento que `Stagger` de las listas. */
@@ -56,6 +57,7 @@ export function RevealStack({
   startIndex?: number;
   style?: StyleProp<ViewStyle>;
 }) {
+  const reduced = useReduceMotion(true);
   const items = flatten(children);
 
   return (
@@ -63,7 +65,11 @@ export function RevealStack({
       {items.map((child, i) => (
         <Animated.View
           key={isValidElement(child) && child.key != null ? child.key : i}
-          entering={enterUp(Math.min(startIndex + i, REVEAL_MAX_INDEX) * (REVEAL_STEP_MS / 40))}>
+          entering={
+            reduced
+              ? undefined
+              : enterUp(Math.min(startIndex + i, REVEAL_MAX_INDEX) * (REVEAL_STEP_MS / 40))
+          }>
           {child}
         </Animated.View>
       ))}

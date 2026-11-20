@@ -29,6 +29,7 @@ import {
   Radii,
   Spacing,
 } from '@/constants/theme';
+import { useReduceMotion } from '@/hooks/use-reduce-motion';
 import { useTheme } from '@/hooks/use-theme';
 
 import { PrimaryButton } from './controls';
@@ -90,6 +91,7 @@ export function WizardScreen({
   below?: React.ReactNode;
   children: React.ReactNode;
 }) {
+  const reduced = useReduceMotion(true);
   return (
     <View style={styles.root}>
       <View style={styles.topBar}>
@@ -124,7 +126,10 @@ export function WizardScreen({
           apaga la entrada solo.
         */}
         <View style={styles.body}>
-          <Animated.View key={`header-${step}`} entering={enterRise(0)} style={styles.header}>
+          <Animated.View
+            key={`header-${step}`}
+            entering={reduced ? undefined : enterRise(0)}
+            style={styles.header}>
             <ThemedText type="title">{title}</ThemedText>
             {subtitle ? (
               <ThemedText type="body" themeColor="textSecondary">
@@ -132,12 +137,18 @@ export function WizardScreen({
               </ThemedText>
             ) : null}
           </Animated.View>
-          <Animated.View key={`fields-${step}`} entering={enterRise(1)} style={styles.fields}>
+          <Animated.View
+            key={`fields-${step}`}
+            entering={reduced ? undefined : enterRise(1)}
+            style={styles.fields}>
             {children}
           </Animated.View>
         </View>
 
-        <Animated.View key={`actions-${step}`} entering={enterRise(2)} style={styles.actions}>
+        <Animated.View
+          key={`actions-${step}`}
+          entering={reduced ? undefined : enterRise(2)}
+          style={styles.actions}>
           <PrimaryButton label={primaryLabel} disabled={busy} onPress={onPrimary} />
           {error ? (
             <ThemedText type="small" themeColor="danger" accessibilityRole="alert">

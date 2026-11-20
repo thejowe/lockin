@@ -488,7 +488,7 @@ if (command === 'prepare') {
   );
   config = config
     .replace(/^project_id = .*$/m, 'project_id = "lockin-e2e"')
-    .replace('enable_anonymous_sign_ins = false', 'enable_anonymous_sign_ins = true');
+    .replace('enable_anonymous_sign_ins = false', 'enable_anonymous_sign_ins = ' + registration);
   // El Auth del proyecto real tal y como lo dejó el usuario el 2026-09-20
   // (`supabase/README.md` → «Configuración de Auth en el dashboard»), que es lo
   // que el registro necesita y los valores por defecto de la CLI contradicen.
@@ -536,8 +536,20 @@ if (command === 'prepare') {
     mkdirSync(join(runtime, 'supabase/.temp'), { recursive: true });
     writeFileSync(join(runtime, 'supabase/.temp/rest-version'), postgrestVersion);
   }
-  // Auth, Postgres, REST and Realtime remain real. Omit unrelated services.
-  supabase(['start', '-x', 'studio,imgproxy,edge-runtime,logflare,vector,supavisor']);
+  // El recinto desechable usa la cuenta de dispositivo para la foto y el
+  // aviso de abandono. Registro comprueba el ascenso de un anónimo real.
+  const needsAvatar = !registration && !negative;
+  const excluded = ['studio', 'imgproxy', 'logflare', 'vector', 'supavisor'];
+  if (needsAvatar) {
+    const fn = join(runtime, 'supabase/functions/moderate-avatar');
+    mkdirSync(fn, { recursive: true });
+    cpSync(join(root, 'supabase/functions/moderate-avatar/index.ts'), join(fn, 'server.ts'));
+    cpSync(join(root, 'supabase/functions/moderate-avatar/logic.mjs'), join(fn, 'logic.mjs'));
+    cpSync(join(root, 'e2e/fixtures/moderation-provider.mjs'), join(fn, 'index.ts'));
+  } else {
+    excluded.push('edge-runtime');
+  }
+  supabase(['start', '-x', excluded.join(',')]);
   const restImage = run('docker', ['inspect', '-f', '{{.Config.Image}}', restContainer], {
     stdio: ['ignore', 'pipe', 'inherit'],
   });

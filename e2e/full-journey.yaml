@@ -109,7 +109,7 @@ name: Alta, perfil, deck, match, mensaje y persistencia
     timeout: 10000
 # Jornada: la barra propone 09:00–14:00; se añade un segundo tramo (15:00–16:00).
 - assertVisible: 'De 09:00 a 14:00'
-- tapOn: '+ Añadir otro tramo'
+- tapOn: '\+ Añadir otro tramo'
 - extendedWaitUntil:
     visible: 'De 15:00 a 16:00'
     timeout: 5000
@@ -132,11 +132,33 @@ name: Alta, perfil, deck, match, mensaje y persistencia
     element: 'Continuar'
     direction: DOWN
 - tapOn: 'Continuar'
-# Enlaces: opcional y último paso; omitir lo termina.
+# Enlaces opcionales. Después se elige el avatar y se completan los pasos de medios.
 - extendedWaitUntil:
     visible: '¿Dónde te encuentran?'
     timeout: 10000
 - tapOn: 'Omitir'
+- extendedWaitUntil:
+    visible: 'Pon tu foto de perfil'
+    timeout: 10000
+- addMedia:
+    - fixtures/avatar.png
+- tapOn: 'Elegir de la galería'
+- tapOn:
+    id: '.*:id/icon_thumbnail'
+    index: 0
+- tapOn:
+    id: '.*:id/crop_image_menu_crop'
+- assertVisible:
+    id: 'wizard-photo'
+- tapOn: 'Continuar'
+- extendedWaitUntil:
+    visible: 'Sobre mí'
+    timeout: 60000
+- tapOn: 'Omitir'
+- extendedWaitUntil:
+    visible: 'Tus proyectos'
+    timeout: 10000
+- tapOn: 'Crear perfil'
 # La entrada animada del logo: tocarla entra sin esperar a que acabe.
 - extendedWaitUntil:
     visible: 'Entrar a cofounder'
@@ -181,7 +203,8 @@ name: Alta, perfil, deck, match, mensaje y persistencia
           while:
             notVisible: '(?i)busca'
           commands:
-            - tapOn: 'Núria Bosch'
+            - tapOn:
+                id: 'deck-tap-right'
 - runFlow:
     when:
       true: ${DECK_FIXTURE == 'postgres'}

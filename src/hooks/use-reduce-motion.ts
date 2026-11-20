@@ -21,8 +21,8 @@ import { useEffect, useState } from 'react';
 import { AccessibilityInfo } from 'react-native';
 
 /** `true` si el sistema pide reducir movimiento. Se actualiza si cambia en caliente. */
-export function useReduceMotion(): boolean {
-  const [reduceMotion, setReduceMotion] = useState(false);
+export function useReduceMotion(initialValue = false): boolean {
+  const [reduceMotion, setReduceMotion] = useState(initialValue);
 
   useEffect(() => {
     let mounted = true;
