@@ -15,6 +15,10 @@ Fusionadas `deck/rechazados-vuelven` y `perfil/barra-horas` en la rama principal
 
 - [x] La especialidad `dev` se muestra como «Programación», «Programació» y «Development». [Detalle y capturas del tutorial](todo/perfil.md#formulario-de-perfil)
 
+## Proyecto conjunto en el chat · 19 de noviembre de 2026
+
+Rama local `chat/proyecto-conjunto`. El proyecto privado se crea desde el match y conserva el plan existente. La publicación en ambos perfiles requiere dos consentimientos. [Implementación y verificación local](todo/chat.md).
+
 ## Proyectos · 18 de noviembre de 2026
 
 Seguimiento por bloque en [datos](todo/datos.md), [perfil](todo/perfil.md), [descubrir](todo/descubrir.md), [visual](todo/visual.md) y [calidad](todo/calidad.md).

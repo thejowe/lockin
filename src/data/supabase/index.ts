@@ -779,6 +779,13 @@ export function createSupabaseRepositories({
   };
 
   const matches: MatchRepository = {
+    async unmatch(matchId) {
+      await getUserId();
+      const { error } = await getClient().rpc('leave_project_match', { p_match_id: matchId });
+      if (error) throw error;
+      notify(MATCHES_TOPIC);
+      notify(messagesTopic(matchId));
+    },
     async list() {
       const client = getClient();
       const userId = await getUserId();
@@ -832,12 +839,7 @@ export function createSupabaseRepositories({
             // INSERT y UPDATE, y no '*': Realtime NO aplica RLS a los DELETE, y
             // con '*' cada suscriptor recibía el borrado de cualquier match de
             // cualquiera (caso «un tercero suscrito a sus matches…» del
-            // contrato). La app no borra matches —no hay deshacer match, y
-            // `cancel`/`leave` son UPDATE—: solo los borran
-            // `dev_reset_current_user()` (desarrollo), la limpieza de
-            // `supabase/cleanup/` y la cascada de una cuenta borrada. Un match
-            // así sigue en la lista de la otra persona hasta su siguiente
-            // lectura. Si algún día se deshacen matches, que sea un UPDATE.
+            // contrato). El otro participante relee al volver al chat o a sus matches.
             .on(
               'postgres_changes',
               { event: 'INSERT', schema: 'public', table: 'matches' },
@@ -941,7 +943,7 @@ export function createSupabaseRepositories({
     premium,
     sessions: createSupabaseSessionRepository({ getClient, getUserId }),
     agreement: createSupabaseAgreementRepository({ getClient, getUserId }),
-    projects: supabaseProjects(getClient, getUserId),
+    projects: supabaseProjects(getClient, getUserId, signer.signProfiles),
     chatPlan: createSupabaseChatPlan(getClient, getUserId),
     rooms: createSupabaseRoomRepository({
       getClient,

@@ -43,11 +43,13 @@ Deno.serve(async (request) => {
       config: readConfig(Deno.env.toObject()),
       deps: {
         async targets(id: string | null, type: string) {
-          const dispatch: Record<string, [string, Record<string, string>]> = {
+          const dispatch: Record<string, [string, Record<string, string | null>]> = {
             'group-message': ['group_message_push_targets', { p_message_id: id! }],
             'direct-message': ['direct_message_push_targets', { p_message_id: id! }],
             match: ['match_push_targets', { p_match_id: id! }],
             'group-activity': ['group_activity_push_targets', { p_event_id: id! }],
+            'project-event': ['project_push_targets', { p_event_id: id! }],
+            'project-reminders': ['project_push_targets', { p_event_id: null }],
             'like-digest': ['like_digest_push_targets', {}],
             reengagement: ['reengagement_push_targets', {}],
             'premium-expiry': ['premium_expiry_push_targets', {}],
@@ -70,8 +72,12 @@ Deno.serve(async (request) => {
           const { error } = await admin.rpc('forget_push_tokens', { p_tokens: tokens });
           if (error) throw error;
         },
-        async completeNotices(ids: string[]) {
-          const { error } = await admin.rpc('complete_push_notices', { p_notice_ids: ids });
+        async completeNotices(ids: string[], type: string) {
+          const rpc =
+            type === 'project-event' || type === 'project-reminders'
+              ? 'complete_project_push'
+              : 'complete_push_notices';
+          const { error } = await admin.rpc(rpc, { p_notice_ids: ids });
           if (error) throw error;
         },
         log: (...args: unknown[]) => console.warn('[notify-group-message]', ...args),

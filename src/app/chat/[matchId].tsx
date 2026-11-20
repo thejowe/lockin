@@ -60,10 +60,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { t } from '@/i18n';
 import { setActivePushRoute } from '@/lib/push';
-import { ChatTabs } from '@/features/chat/shared-plan';
+import { JointChatTabs } from '@/features/chat/joint-chat-tabs';
+import { useReduceMotion } from '@/hooks/use-reduce-motion';
 
 function ChatScreenContent() {
   const theme = useTheme();
+  const reducedMotion = useReduceMotion();
   const router = useRouter();
   const params = useLocalSearchParams<{ matchId: string }>();
   const matchId = Array.isArray(params.matchId) ? params.matchId[0] : (params.matchId ?? '');
@@ -220,63 +222,72 @@ function ChatScreenContent() {
           </ScrollView>
         ) : (
           <View style={styles.content}>
-            <ChatTabs key={matchId} scope={{ kind: 'match', id: matchId }}>
-              {/*
+            <JointChatTabs key={matchId} match={match}>
+              {(createCard, notice) => (
+                <>
+                  {/*
               Sin la tarjeta del acuerdo de socios desde el 2026-10-30 (decisión
               del usuario): `src/features/agreement` sigue en el repo por si vuelve.
             */}
-              <ScrollView
-                ref={scrollRef}
-                contentContainerStyle={styles.thread}
-                keyboardDismissMode="interactive"
-                onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}>
-                <ConversationIntro match={match} />
+                  <ScrollView
+                    ref={scrollRef}
+                    contentContainerStyle={styles.thread}
+                    keyboardDismissMode="interactive"
+                    onContentSizeChange={() => {
+                      if (messages.length)
+                        scrollRef.current?.scrollToEnd({ animated: !reducedMotion });
+                    }}>
+                    <ConversationIntro match={match} />
 
-                {messages.length === 0 ? (
-                  <IcebreakerSuggestions suggestions={icebreakers} onPick={pickIcebreaker} />
-                ) : (
-                  messages.map((message, index) => {
-                    const previous = messages[index - 1];
-                    // El primer mensaje solo lleva separador si se escribió otro
-                    // día que el match: la cabecera ya dice cuándo fue.
-                    const startsDay = !isSameDayIso(
-                      previous?.sentAt ?? match.createdAt,
-                      message.sentAt
-                    );
+                    {messages.length === 0 && createCard}
+                    {messages.length === 0 ? (
+                      <IcebreakerSuggestions suggestions={icebreakers} onPick={pickIcebreaker} />
+                    ) : (
+                      messages.map((message, index) => {
+                        const previous = messages[index - 1];
+                        // El primer mensaje solo lleva separador si se escribió otro
+                        // día que el match: la cabecera ya dice cuándo fue.
+                        const startsDay = !isSameDayIso(
+                          previous?.sentAt ?? match.createdAt,
+                          message.sentAt
+                        );
 
-                    return (
-                      <Fragment key={message.id}>
-                        {startsDay && <DayDivider label={formatDayHeading(message.sentAt)} />}
-                        <MessageBubble
-                          message={message}
-                          // El emisor se compara con el otro lado del match, no con
-                          // un id propio cableado: así vale también con backend real.
-                          isMine={message.senderId !== match.counterpart.id}
-                          onReport={() => setReportingMessageId(message.id)}
-                        />
-                      </Fragment>
-                    );
-                  })
-                )}
-              </ScrollView>
+                        return (
+                          <Fragment key={message.id}>
+                            {startsDay && <DayDivider label={formatDayHeading(message.sentAt)} />}
+                            <MessageBubble
+                              message={message}
+                              // El emisor se compara con el otro lado del match, no con
+                              // un id propio cableado: así vale también con backend real.
+                              isMine={message.senderId !== match.counterpart.id}
+                              onReport={() => setReportingMessageId(message.id)}
+                            />
+                          </Fragment>
+                        );
+                      })
+                    )}
+                    {notice}
+                  </ScrollView>
 
-              {sendError && (
-                <Animated.View entering={appear()} exiting={disappear()} layout={layoutShift()}>
-                  <ThemedText type="small" themeColor="danger" style={styles.sendError}>
-                    {t('No se ha podido enviar. Inténtalo otra vez.')}
-                  </ThemedText>
-                </Animated.View>
+                  {sendError && (
+                    <Animated.View entering={appear()} exiting={disappear()} layout={layoutShift()}>
+                      <ThemedText type="small" themeColor="danger" style={styles.sendError}>
+                        {t('No se ha podido enviar. Inténtalo otra vez.')}
+                      </ThemedText>
+                    </Animated.View>
+                  )}
+
+                  <MessageComposer
+                    ref={inputRef}
+                    value={draft}
+                    onChangeText={setDraft}
+                    onSend={handleSend}
+                    sending={sending}
+                    placeholder={t('Escribe a {v}', { v: match.counterpart.name.split(' ')[0] })}
+                  />
+                </>
               )}
-
-              <MessageComposer
-                ref={inputRef}
-                value={draft}
-                onChangeText={setDraft}
-                onSend={handleSend}
-                sending={sending}
-                placeholder={t('Escribe a {v}', { v: match.counterpart.name.split(' ')[0] })}
-              />
-            </ChatTabs>
+            </JointChatTabs>
           </View>
         )}
       </KeyboardAvoidingView>

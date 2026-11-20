@@ -22,6 +22,7 @@
 
 import * as Haptics from 'expo-haptics';
 import { Glass } from '@/components/glass';
+import { ProjectAuthorFaces } from '@/features/profile/project-author-faces';
 import { useProjects } from '@/features/profile/use-projects';
 import { Image } from 'expo-image';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
@@ -266,7 +267,7 @@ export function ProfileCard({
 
   return (
     <View style={[styles.card, { backgroundColor: theme.surfaceOpaque }]}>
-      <Portrait profile={profile} cover={project?.cover?.uri} />
+      <Portrait profile={profile} cover={project?.cover} />
       {project && !project.cover ? (
         <View
           pointerEvents="none"
@@ -429,6 +430,7 @@ export function ProfileCard({
             <ThemedText type="label">{t('Proyectos')}</ThemedText>
             <ThemedText type="subtitle">{project.name}</ThemedText>
             <ThemedText type="body">{project.tagline}</ThemedText>
+            <ProjectAuthorFaces project={project} />
           </Glass>
         ) : null}
         {page === 'about' ? (
@@ -641,14 +643,14 @@ const DOT_GROWTH = 0.6;
  * iniciales en grande. En los dos casos, un fundido a negro abajo para que el
  * texto se lea encima. Es decorado: el nombre ya se lee en el texto.
  */
-function Portrait({ profile, cover }: { profile: Profile; cover?: string }) {
+function Portrait({ profile, cover }: { profile: Profile; cover?: Project['cover'] }) {
   const theme = useTheme();
   const accent = profile.avatar.accent === 'teal' ? theme.teal : theme.brass;
   // Ids únicos por tarjeta: en web los `<defs>` de varias tarjetas comparten documento.
   const tintId = `portrait-tint-${profile.id}`;
   const fadeId = `portrait-fade-${profile.id}`;
   const reduced = useReduceMotion();
-  const imageUrl = cover ?? profile.avatar.imageUrl;
+  const imageUrl = cover?.uri ?? profile.avatar.imageUrl;
   // Una foto puede ser clara: el fundido arranca antes y pesa más que sobre el
   // color liso, para que el texto de abajo siga leyéndose (≥ 4,5:1).
   const fade = imageUrl
@@ -664,7 +666,8 @@ function Portrait({ profile, cover }: { profile: Profile; cover?: string }) {
       {imageUrl ? (
         <Image
           testID="portrait-photo"
-          source={{ uri: imageUrl }}
+          source={cover ?? { uri: imageUrl }}
+          cachePolicy={cover?.headers ? 'none' : undefined}
           contentFit="cover"
           transition={reduced ? 0 : 150}
           style={StyleSheet.absoluteFill}

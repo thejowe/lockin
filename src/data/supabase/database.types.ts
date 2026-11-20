@@ -314,7 +314,21 @@ export type MatchAgreementRow = {
   theirs_updated_at: string | null;
 };
 
+export type WorkspaceRow = {
+  project_revision: string;
+  project_id: string;
+  published: boolean;
+  proposed_by: string | null;
+  has_capacity: boolean;
+  notes: string;
+  notes_by: string | null;
+  notes_revision: string;
+};
+
 export type ChatPlanRow = {
+  assignee_id: string | null;
+  due_at: string | null;
+  status: import('../chat-plan').TaskDetails['status'];
   id: string;
   title: string;
   match_id: string | null;
@@ -341,14 +355,54 @@ export type Database = {
     Tables: {
       chat_plan_items: {
         Row: ChatPlanRow;
-        Insert: Pick<ChatPlanRow, 'id' | 'title' | 'match_id' | 'group_id' | 'starts_at' | 'place'>;
-        Update: Pick<ChatPlanRow, 'closed'>;
+        Insert: Pick<
+          ChatPlanRow,
+          'id' | 'title' | 'match_id' | 'group_id' | 'starts_at' | 'place'
+        > &
+          Partial<Pick<ChatPlanRow, 'due_at' | 'assignee_id' | 'status'>>;
+        Update: Partial<Pick<ChatPlanRow, 'closed' | 'due_at' | 'assignee_id' | 'status'>>;
         Relationships: [];
+      };
+      project_events: {
+        Row: {
+          id: string;
+          match_id: string;
+          project_id: string;
+          actor_id: string;
+          kind: string;
+          created_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      project_authors: {
+        Row: { project_id: string; user_id: string };
+        Insert: never;
+        Update: never;
+        Relationships: [
+          {
+            foreignKeyName: 'project_authors_project_id_fkey';
+            columns: ['project_id'];
+            isOneToOne: false;
+            referencedRelation: 'profile_projects';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'project_authors_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       profile_projects: {
         Row: {
           id: string;
           owner_id: string;
+          published: boolean;
+          joint: boolean;
           name: string;
           tagline: string;
           description: string;
@@ -551,6 +605,16 @@ export type Database = {
     };
     Views: Record<never, never>;
     Functions: {
+      leave_project_match: { Args: { p_match_id: string }; Returns: undefined };
+      project_workspace: { Args: { p_match_id: string }; Returns: WorkspaceRow[] };
+      set_project_publication: {
+        Args: { p_project_id: string; p_revision: string; p_action: string };
+        Returns: undefined;
+      };
+      save_project_notes: {
+        Args: { p_project_id: string; p_text: string; p_revision: string };
+        Returns: undefined;
+      };
       block_profile: { Args: { p_profile_id: string }; Returns: undefined };
       report_profile: {
         Args: { p_profile_id: string; p_reason: string; p_details?: string | null };

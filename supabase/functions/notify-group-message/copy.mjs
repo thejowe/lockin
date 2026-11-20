@@ -2,6 +2,14 @@
 // identidad en likes gratis: el RPC devuelve first_name/first_super nulos.
 const copy = {
   es: {
+    created: 'Nuevo proyecto conjunto',
+    createdBody: 'Ya podéis trabajar en vuestro proyecto desde el chat.',
+    proposed: '¿Publicar en vuestros perfiles?',
+    proposedBody: 'Abre el chat para responder a la propuesta.',
+    deleted: 'Se ha eliminado vuestro proyecto',
+    deletedBody: 'Las tareas y las reuniones siguen en el plan compartido.',
+    task: 'Se acerca la fecha límite de una tarea',
+    meeting: 'Vuestra reunión empieza pronto',
     one: '¡Tienes un like nuevo! 🔥',
     many: '¡{n} personas te han dado like! 🔥',
     anonymousOne: '¡Alguien quiere conocerte! Entra a descubrir quién 👀',
@@ -26,6 +34,14 @@ const copy = {
     'group-likeBody': '¡Entra a ver su candidatura! 👀',
   },
   en: {
+    created: 'New shared project',
+    createdBody: 'You can now work on your project together in the chat.',
+    proposed: 'Publish on both profiles?',
+    proposedBody: 'Open the chat to respond to the proposal.',
+    deleted: 'Your shared project was deleted',
+    deletedBody: 'Your tasks and meetings are still in the shared plan.',
+    task: 'A task is due soon',
+    meeting: 'Your meeting starts soon',
     one: 'You have a new like! 🔥',
     many: '{n} people liked you! 🔥',
     anonymousOne: 'Someone wants to meet you! Tap to find out who 👀',
@@ -50,6 +66,14 @@ const copy = {
     'group-likeBody': 'Tap to see their application! 👀',
   },
   ca: {
+    created: 'Nou projecte conjunt',
+    createdBody: 'Ja podeu treballar en el vostre projecte des del xat.',
+    proposed: 'Voleu publicar-lo als vostres perfils?',
+    proposedBody: 'Obre el xat per respondre a la proposta.',
+    deleted: "S'ha eliminat el vostre projecte",
+    deletedBody: 'Les tasques i les reunions continuen al pla compartit.',
+    task: "S'acosta la data límit d'una tasca",
+    meeting: 'La vostra reunió comença aviat',
     one: 'Tens un like nou! 🔥',
     many: "{n} persones t'han donat like! 🔥",
     anonymousOne: 'Algú et vol conèixer! Entra a descobrir qui 👀',
@@ -85,6 +109,13 @@ export function notificationCopy(row, type) {
     group: row.group_name,
   };
   const text = (key) => dict[key].replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''));
+  if (type === 'project-event' || type === 'project-reminders') {
+    const key = row.event_kind;
+    return {
+      title: text(key),
+      body: key === 'task' || key === 'meeting' ? row.item_title : text(`${key}Body`),
+    };
+  }
   if (type === 'like-digest' || (type === 'reengagement' && row.like_count > 0)) {
     const one = row.like_count === 1;
     // Para 2 en inglés: "1 other", no "1 others".
