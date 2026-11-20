@@ -5,7 +5,9 @@
 - [x] X accesible compartida, confirmación de descarte, pie fijo en las hojas de edición y editor de proyectos común a perfil, chat y grupos. Rama `ui/cerrar-con-x`.
 - [x] TypeScript, ESLint, Prettier y las 2.443 pruebas de Jest pasaron sobre el código de la compilación 73. [CI](https://github.com/thejowe/lockin/actions/runs/44738616689)
 - [x] Apple validó la versión 1.0.1 (73) de `f169fbd` y la habilitó para pruebas internas. [TestFlight](https://appstoreconnect.apple.com/apps/6828604279/testflight/ios)
-- [x] Revisadas 47 parejas de capturas en React Native Web móvil con datos de prueba. Maestro verificó el descarte y el botón «Guardar proyecto» con el teclado abierto en Android. [Descargar la comparativa y la captura nativa](../auditoria/cerrar-con-x.zip) · [Prueba nativa del editor](https://github.com/thejowe/lockin/actions/runs/44738615944) · [Maestro con la foto de prueba indexada](https://github.com/thejowe/lockin/actions/runs/44743212718)
+- [x] Revisadas 47 parejas de capturas en React Native Web móvil con datos de prueba. Maestro verificó el descarte y el botón «Guardar proyecto» con el teclado abierto en Android. [Descargar la comparativa y la captura nativa](../auditoria/cerrar-con-x.zip) · [Prueba nativa del editor](https://github.com/thejowe/lockin/actions/runs/44738615944)
+- [x] En el emulador Android pasaron registro y el recorrido con datos de prueba, incluidos el cierre y el descarte del editor. [Resultados de Maestro](https://github.com/thejowe/lockin/actions/runs/44743212718)
+- [ ] El recorrido con Supabase local se detuvo en el alta. El selector de fotos completó el recorte, pero la función de moderación del avatar devolvió HTTP 500 antes de llegar al editor. [Registro del fallo](https://github.com/thejowe/lockin/actions/runs/44743212718/job/136311828186)
 
 ## TestFlight 1.0.1 (72) · 20 de noviembre de 2026
 
