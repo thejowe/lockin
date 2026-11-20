@@ -113,3 +113,61 @@ test('a lost edit race discards only newly staged shared files', async () => {
   assert.equal(reply.status, 409);
   assert.deepEqual(discarded, ['me/project-1.jpg']);
 });
+
+test('the whole group waits for moderation, uses shared keys, and cleans a replayed upload', async () => {
+  const group = {
+    name: 'Taller',
+    description: 'Un grupo de prueba',
+    roles: [{ specialty: 'dev', slots: 1 }],
+  };
+  for (const mode of ['saved', 'replayed', 'flagged', 'LG006']) {
+    const { deps, body, discarded } = fixture();
+    const scopes = [];
+    let commits = 0;
+    deps.upload = async (_, __, shared) => {
+      scopes.push(shared);
+      return 'shared/draft/project-new.jpg';
+    };
+    deps.moderate = async () => (mode === 'flagged' ? { ...clean, flagged: true } : clean);
+    deps.save = async () => {
+      commits++;
+      return mode;
+    };
+    const reply = await handleProject(
+      'me',
+      {
+        ...body,
+        group,
+        draftId: 'draft',
+        images: [{ pending: 'me/cover.jpg' }],
+      },
+      deps
+    );
+    assert.equal(commits, mode === 'flagged' ? 0 : 1);
+    assert.deepEqual(scopes, mode === 'flagged' ? [] : [true]);
+    assert.equal(reply.status, mode === 'flagged' ? 422 : mode === 'LG006' ? 409 : 200);
+    if (mode === 'LG006') assert.equal(reply.body.error, 'LG006');
+    assert.deepEqual(
+      discarded,
+      mode === 'replayed' || mode === 'LG006' ? ['shared/draft/project-new.jpg'] : []
+    );
+  }
+});
+
+test('group creation is exclusive to a new, stable project draft', async () => {
+  for (const change of [
+    { previous: { id: 'foreign' } },
+    { matchId: 'match' },
+    { action: 'remove-all' },
+    { draftId: null },
+  ]) {
+    const { deps, body, stored } = fixture();
+    const reply = await handleProject(
+      'me',
+      { ...body, group: {}, draftId: 'draft', ...change },
+      deps
+    );
+    assert.equal(reply.status, 400);
+    assert.deepEqual(stored, []);
+  }
+});

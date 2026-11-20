@@ -8,6 +8,8 @@ import { ensureUserId } from './auth';
 import { getSupabaseClient } from './client';
 import { toMessageReportArgs, toProfile, toSafetyError } from './mappers';
 import { toPremiumError } from './premium';
+import { supabaseProjects } from './projects';
+import type { Project } from '../projects';
 import { PRIVATE_CHANNEL, subscribeResyncingOnRejoin } from './realtime';
 
 import type { LockInSupabaseClient } from './client';
@@ -33,9 +35,10 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 
 const toIso = (value: string) => new Date(value).toISOString();
 
-export function toGroup(row: Omit<GroupRow, 'updated_at'>): Group {
+export function toGroup(row: Omit<GroupRow, 'updated_at'>, project: Project | null = null): Group {
   return {
     id: row.id,
+    project,
     name: row.name,
     description: row.description,
     adminId: row.admin_id,
@@ -97,6 +100,7 @@ const messagesTopic = (groupId: string) => `lockin:group-messages:${groupId}`;
 export function createSupabaseGroupRepository(
   deps: GroupRepositoryDeps = defaultDeps
 ): GroupRepository {
+  const projects = supabaseProjects(deps.getClient, deps.getUserId, deps.signProfiles);
   const listeners = new Set<() => void>();
   let channel: RealtimeChannel | undefined;
   const notify = () => listeners.forEach((listener) => listener());
@@ -138,6 +142,21 @@ export function createSupabaseGroupRepository(
       }));
   }
 
+  /** Un único lote de proyectos por deck. Si la RLS ha retirado uno entre las
+   * lecturas (p. ej. un bloqueo), su tarjeta también desaparece. */
+  async function groupsById(rows: Omit<GroupRow, 'updated_at'>[]): Promise<Map<string, Group>> {
+    const found = await projects.forGroups(
+      rows.flatMap((row) => (row.project_id ? [row.project_id] : []))
+    );
+    const byProject = new Map(found.map((project) => [project.id, project]));
+    const groups = new Map<string, Group>();
+    for (const row of rows) {
+      const project = row.project_id ? byProject.get(row.project_id) : null;
+      if (project !== undefined) groups.set(row.id, toGroup(row, project));
+    }
+    return groups;
+  }
+
   /** El grupo que administra el usuario, recién leído (tras crear o editar). */
   async function adminView(): Promise<GroupView> {
     const view = (await repository.listMine()).find((candidate) => candidate.isAdmin);
@@ -170,13 +189,13 @@ export function createSupabaseGroupRepository(
 
       const mappedRoles = roles.data.map(toGroupRole);
       const mappedMembers = members.data.map(toGroupMember);
-      const profiles = await profilesById([
-        ...new Set(mappedMembers.map((member) => member.userId)),
+      const [profiles, mappedGroups] = await Promise.all([
+        profilesById([...new Set(mappedMembers.map((member) => member.userId))]),
+        groupsById(groups.data),
       ]);
-      const groupsById = new Map(groups.data.map((row) => [row.id, toGroup(row)]));
 
       const views = ids.flatMap((groupId): GroupView[] => {
-        const group = groupsById.get(groupId);
+        const group = mappedGroups.get(groupId);
         if (!group) return [];
         const groupRoles = mappedRoles.filter((role) => role.groupId === groupId);
         const groupMembers = mappedMembers.filter((member) => member.groupId === groupId);
@@ -195,13 +214,18 @@ export function createSupabaseGroupRepository(
 
     async create(input) {
       await deps.getUserId();
-      const { error } = await deps.getClient().rpc('create_group', {
-        p_name: input.name,
-        p_description: input.description,
-        p_roles: input.roles.map((role) => ({ specialty: role.specialty, slots: role.slots })),
-        p_max_members: input.maxMembers ?? GROUP_MAX_MEMBERS,
-      });
-      if (error) throw toGroupError(error);
+      if (input.project) {
+        const { project, projectDraftId, ...settings } = input;
+        await projects.createForGroup(project, projectDraftId, settings);
+      } else {
+        const { error } = await deps.getClient().rpc('create_group', {
+          p_name: input.name,
+          p_description: input.description,
+          p_roles: input.roles.map((role) => ({ specialty: role.specialty, slots: role.slots })),
+          p_max_members: input.maxMembers ?? GROUP_MAX_MEMBERS,
+        });
+        if (error) throw toGroupError(error);
+      }
       notify();
       return adminView();
     },
@@ -224,11 +248,15 @@ export function createSupabaseGroupRepository(
       if (error) throw toGroupError(error);
       const rows = (data ?? []) as GroupDeckRow[];
 
-      const profiles = await profilesById([
-        ...new Set(rows.flatMap((row) => row.members.map((member) => member.user_id))),
+      const [profiles, mappedGroups] = await Promise.all([
+        profilesById([
+          ...new Set(rows.flatMap((row) => row.members.map((member) => member.user_id))),
+        ]),
+        groupsById(rows),
       ]);
       return rows.flatMap((row) => {
-        const group = toGroup(row);
+        const group = mappedGroups.get(row.id);
+        if (!group) return [];
         const roles = row.roles.map(toGroupRole);
         const myRole = roles.find((role) => role.id === row.my_role_id);
         if (!myRole) return [];

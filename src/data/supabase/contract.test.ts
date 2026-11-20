@@ -631,6 +631,14 @@ const supabaseBackend: ContractBackend = {
       aId: actors[0].id,
       bId: actors[1].id,
       cId: actors[2].id,
+      async ageGroupPasses(groupId, minutes) {
+        for (const { client } of actors) {
+          await callDev(client, 'dev_age_group_passes', {
+            p_group_id: groupId,
+            p_minutes: minutes,
+          });
+        }
+      },
       async expectReportsPrivate() {
         // Sin política SELECT: 42501 (permiso denegado) o, como mucho, vacío.
         for (const { client } of actors) {

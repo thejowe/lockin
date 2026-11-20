@@ -218,6 +218,7 @@ export type RoomMemberRow = {
 /** Fila de `public.groups`. Solo la leen sus miembros; se escribe por RPC. */
 export type GroupRow = {
   id: string;
+  project_id: string | null;
   name: string;
   description: string;
   admin_id: string;
@@ -560,7 +561,15 @@ export type Database = {
         Row: GroupRow;
         Insert: Record<string, never>;
         Update: Record<string, never>;
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'groups_project_id_fkey';
+            columns: ['project_id'];
+            isOneToOne: true;
+            referencedRelation: 'profile_projects';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       group_roles: {
         Row: GroupRoleRow;
@@ -605,6 +614,20 @@ export type Database = {
     };
     Views: Record<never, never>;
     Functions: {
+      /** Reservados al backend de moderación. */
+      create_moderated_group_project: {
+        Args: {
+          p_actor: string;
+          p_id: string;
+          p_group: import('../types').GroupSettings;
+          p_values: Record<string, unknown>;
+        };
+        Returns: boolean;
+      };
+      retired_group_project_media: {
+        Args: { p_removed?: string[] };
+        Returns: { path: string }[];
+      };
       leave_project_match: { Args: { p_match_id: string }; Returns: undefined };
       project_workspace: { Args: { p_match_id: string }; Returns: WorkspaceRow[] };
       set_project_publication: {

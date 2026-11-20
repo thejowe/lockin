@@ -130,6 +130,12 @@ const mockBackend: ContractBackend = {
       aId: CURRENT_USER_ID,
       bId,
       cId,
+      async ageGroupPasses(groupId, minutes) {
+        for (const swipe of store.state.groupSwipes) {
+          if (swipe.groupId === groupId && swipe.decision === 'pass')
+            swipe.atMs -= minutes * 60_000;
+        }
+      },
       async expectReportsPrivate(expected) {
         expect(store.state.userReports).toEqual([expect.objectContaining(expected)]);
         // El cliente solo expone block/report, nunca el almacén privado.

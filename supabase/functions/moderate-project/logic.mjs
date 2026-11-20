@@ -11,6 +11,16 @@ export async function handleProject(user, body, deps) {
   try {
     if (!['save', 'remove', 'promote', 'remove-all'].includes(body?.action))
       return failure(400, 'invalid');
+    if (
+      body.group != null &&
+      (body.action !== 'save' ||
+        body.previous ||
+        body.matchId != null ||
+        !body.draftId ||
+        typeof body.group !== 'object' ||
+        Array.isArray(body.group))
+    )
+      return failure(400, 'invalid');
     if (body.action === 'remove-all') {
       await deps.clearOwnerFiles(user);
       return success;
@@ -57,7 +67,11 @@ export async function handleProject(user, body, deps) {
       if (!isComplete(result)) return failure(503, 'unavailable', slot);
       if (!boardVerdict(result)) return failure(422, 'flagged', slot);
       // Private and unreadable until the complete row commits.
-      const path = await deps.upload(user, bytes, old ? old.joint : body.matchId != null);
+      const path = await deps.upload(
+        user,
+        bytes,
+        old ? old.joint : body.matchId != null || body.group != null
+      );
       published.push(path);
       paths.push(path);
     }
@@ -71,6 +85,11 @@ export async function handleProject(user, body, deps) {
     };
     if (!old && body.draftId !== undefined) values.id = body.draftId;
     const outcome = await deps.save(user, old, values);
+    // The original group is already committed. Discard the retry's newly
+    // reviewed objects in finally, keeping the first request's immutable keys.
+    if (outcome === 'replayed') return success;
+    if (typeof outcome === 'string' && /^(LG00[1-6]|LQ005)$/.test(outcome))
+      return failure(409, outcome);
     if (outcome === 'full') return failure(409, 'full');
     if (outcome !== 'saved') return conflict;
     published.length = 0;

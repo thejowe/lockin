@@ -28,6 +28,18 @@ async function removeFiles(paths: string[]) {
   if (error) throw error;
 }
 
+// Deleting a group in SQL revokes reads immediately. Drain its durable cleanup
+// queue through the Storage API, including after a transient Storage outage.
+async function cleanRetiredGroupMedia() {
+  const { data, error } = await admin.rpc('retired_group_project_media', {});
+  if (error) throw error;
+  const paths = data.map((row: { path: string }) => row.path);
+  if (!paths.length) return;
+  await removeFiles(paths);
+  const ack = await admin.rpc('retired_group_project_media', { p_removed: paths });
+  if (ack.error) throw ack.error;
+}
+
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers });
   if (request.method !== 'POST') return response(405, {});
@@ -52,18 +64,28 @@ Deno.serve(async (request) => {
     return response(403, {});
 
   async function commit(old: Version | null, action: string, values: Record<string, unknown> = {}) {
-    const { error } = await admin.rpc('commit_moderated_project', {
-      p_actor: actor,
-      p_id: projectId,
-      p_revision: old?.revision ?? null,
-      p_match_id: old ? null : (body.matchId ?? null),
-      p_action: action,
-      p_values: values,
-    });
+    const result =
+      body.group != null
+        ? await admin.rpc('create_moderated_group_project', {
+            p_actor: actor,
+            p_id: projectId,
+            p_group: body.group,
+            p_values: values,
+          })
+        : await admin.rpc('commit_moderated_project', {
+            p_actor: actor,
+            p_id: projectId,
+            p_revision: old?.revision ?? null,
+            p_match_id: old ? null : (body.matchId ?? null),
+            p_action: action,
+            p_values: values,
+          });
+    const { error } = result;
+    if (error && /^(LG00[1-6]|LQ005)$/.test(error.code)) return error.code;
     if (error?.code === 'PJ003') return 'full';
     if (['23505', '42501', 'PJ409'].includes(error?.code ?? '')) return 'conflict';
     if (error) throw error;
-    return 'saved';
+    return result.data === false ? 'replayed' : 'saved';
   }
 
   const result = await handleProject(actor, body, {
@@ -71,11 +93,15 @@ Deno.serve(async (request) => {
     moderate: moderateBoardImage,
     async find(user: string, id: string) {
       const { data, error } = await projects()
-        .select('*,project_authors!inner(user_id)')
+        .select('*,project_authors!inner(user_id),groups!groups_project_id_fkey(admin_id)')
         .eq('project_authors.user_id', user)
         .eq('id', id)
         .maybeSingle();
       if (error) throw error;
+      // Reverse one-to-one embeddings are objects. The SQL commit rechecks
+      // admin ownership after moderation under the group's row lock.
+      const group = Array.isArray(data?.groups) ? data.groups[0] : data?.groups;
+      if (group && group.admin_id !== user) return null;
       return data;
     },
     async change(_user: string, old: Version, action: string) {
@@ -117,9 +143,12 @@ Deno.serve(async (request) => {
       // Shared files use their own namespace and survive deletion of either account.
       // If this account is the last remaining author, remove the detached gallery too.
       const { data: joint, error: lookup } = await projects()
-        .select('id,revision,cover_path,photo_paths,project_authors(user_id)')
+        .select(
+          'id,revision,cover_path,photo_paths,project_authors(user_id),groups!groups_project_id_fkey()'
+        )
         .eq('owner_id', user)
-        .eq('joint', true);
+        .eq('joint', true)
+        .is('groups', null);
       if (lookup) throw lookup;
       for (const project of joint) {
         if (project.project_authors.length !== 1 || project.project_authors[0].user_id !== user)
@@ -151,5 +180,6 @@ Deno.serve(async (request) => {
       }
     },
   });
+  await cleanRetiredGroupMedia().catch(() => {});
   return response(result.status, result.body);
 });

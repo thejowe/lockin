@@ -33,6 +33,7 @@ const CARD: GroupDeckCard = {
     adminId: 'ana',
     maxMembers: 6,
     createdAt: '',
+    project: null,
   },
   roles: [{ id: 'r-dev', groupId: 'g1', specialty: 'dev', slots: 1, filled: 0 }],
   // El admin llega segundo a propósito: la tarjeta tiene que empezar por él igual.
@@ -47,7 +48,9 @@ it('pone a quien administra delante', () => {
 it('empieza en el proyecto, con la foto de cada integrante', async () => {
   await render(<GroupCard card={CARD} />);
   expect(screen.getByText('Una app para talleres')).toBeTruthy();
-  expect(screen.getAllByTestId('group-member-photo', { includeHiddenElements: true })).toHaveLength(2);
+  expect(screen.getAllByTestId('group-member-photo', { includeHiddenElements: true })).toHaveLength(
+    2
+  );
 });
 
 it('ordena las pestañas: Proyecto, admin y el resto', async () => {
@@ -56,6 +59,37 @@ it('ordena las pestañas: Proyecto, admin y el resto', async () => {
   expect(names[0]).toBe('Ver el proyecto del grupo');
   expect(names[1]).toMatch(/Ana/);
   expect(names[2]).toMatch(/Leo/);
+});
+
+it('usa la portada autenticada y el texto del proyecto en la primera página y las fotos personales en las demás', async () => {
+  const cover = {
+    uri: 'https://example.test/atlas.jpg',
+    headers: { Authorization: 'Bearer test' },
+  };
+  const project = {
+    id: 'p',
+    revision: 'r',
+    ownerId: 'ana',
+    name: 'Atlas',
+    tagline: 'Moverse mejor',
+    description: 'Un mapa de rutas accesibles',
+    photos: [],
+    link: '',
+    cover,
+  };
+  await render(<GroupCard card={{ ...CARD, group: { ...CARD.group, project } }} />);
+  const hidden = { includeHiddenElements: true };
+  const image = screen.getByTestId('group-project-cover', hidden);
+  expect(image.props.source[0]).toMatchObject(cover);
+  expect(screen.queryByTestId('group-member-photo', hidden)).toBeNull();
+  expect(screen.getByText('Atlas')).toBeTruthy();
+  expect(screen.getByText(project.description)).toBeTruthy();
+  expect(screen.getByText('Perfiles que buscamos')).toBeTruthy();
+  await fireEvent.press(screen.getByRole('tab', { name: /Ana/ }));
+  expect(screen.getByText('Ana')).toBeTruthy();
+  expect(screen.queryByTestId('group-project-cover', hidden)).toBeNull();
+  await fireEvent.press(screen.getByRole('tab', { name: 'Ver el proyecto del grupo' }));
+  expect(screen.getByText('Atlas')).toBeTruthy();
 });
 
 it('cambia de persona con las pestañas', async () => {

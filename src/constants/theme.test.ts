@@ -13,7 +13,14 @@
  * válidas.
  */
 
-import { AmbientPeak, Colors, OnPremium, PremiumTones } from './theme';
+import {
+  AmbientPeak,
+  Colors,
+  GroupHeaderAlpha,
+  OnPremium,
+  PremiumTones,
+  ScrimAlpha,
+} from './theme';
 
 import type { ThemeColor, ThemeName } from './theme';
 
@@ -179,6 +186,19 @@ const BACKDROPS = { fondo: 'background', 'luz ambiental': 'peak' } as const;
 
 describe.each(THEMES)('contraste del tema %s', (theme) => {
   const palette = Colors[theme];
+
+  it('mantiene AA en el nombre del grupo y las pestañas sobre una foto blanca', () => {
+    const header = composite(palette.background + GroupHeaderAlpha, '#FFFFFF');
+    const inactive = composite(palette.backgroundSelected, header);
+    expect(contrastRatio(palette.text, header)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(palette.text, inactive)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(palette.background, palette.text)).toBeGreaterThanOrEqual(4.5);
+    const body = composite(palette.background + ScrimAlpha, '#FFFFFF');
+    expect(contrastRatio(palette.textSecondary, body)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(palette.brass, composite(palette.brassSoft, body))).toBeGreaterThanOrEqual(
+      4.5
+    );
+  });
 
   /** La superficie `token` tal como se ve sobre `backdrop`, ya opaca. */
   function surface(token: ThemeColor, backdrop: 'background' | 'peak'): string {

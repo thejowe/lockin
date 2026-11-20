@@ -348,6 +348,8 @@ export const Elevation = {
 
 /** Alfa en hex que se añade a `background` para el velo detrás de un modal. */
 export const ScrimAlpha = 'B8';
+/** Deja ver la foto bajo las pestañas blancas del grupo incluso sobre una portada blanca. */
+export const GroupHeaderAlpha = 'AD';
 
 /**
  * Intensidad de `BlurView` (expo-blur) para el cristal que flota sobre

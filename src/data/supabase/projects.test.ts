@@ -81,6 +81,8 @@ it('lee la ficha por un coautor y carga las imágenes compartidas con una petici
               {
                 profiles: {
                   id: 'first',
+                  availability_bands: ['tarde'],
+                  work_ranges: [{ start_min: 720, end_min: 1200 }],
                   name: 'Ana',
                   avatar_initials: 'A',
                   avatar_accent: 'brass',
@@ -91,6 +93,8 @@ it('lee la ficha por un coautor y carga las imágenes compartidas con una petici
               {
                 profiles: {
                   id: 'second',
+                  availability_bands: ['tarde'],
+                  work_ranges: [{ start_min: 720, end_min: 1200 }],
                   name: 'Pau',
                   avatar_initials: 'P',
                   avatar_accent: 'teal',

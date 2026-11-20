@@ -1,5 +1,9 @@
 # TODO maestro — LockIn MVP
 
+## Grupos de proyecto
+
+En la rama `grupos/grupo-proyecto`, Descubrir permite crear equipos abiertos o equipos con un proyecto moderado. Ambos decks de grupos recuperan los pases a las 48 horas. [Implementación, verificación y migraciones pendientes](todo/grupos.md#grupos-de-proyecto).
+
 ## Rechazados que vuelven y barra de horas · 19 de noviembre de 2026
 
 Fusionadas `deck/rechazados-vuelven` y `perfil/barra-horas` en la rama principal. Detalle en [descubrir](todo/descubrir.md) y [perfil](todo/perfil.md).

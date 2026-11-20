@@ -458,6 +458,15 @@ $fn$;
 revoke execute on function public.dev_age_last_decision(integer) from public, anon;
 grant execute on function public.dev_age_last_decision(integer) to authenticated;
 
+-- Solo en la base de contrato: cada actor puede envejecer sus propios pases.
+create or replace function public.dev_age_group_passes(p_group_id uuid, p_minutes integer)
+returns void language sql security definer set search_path = '' as $fn$
+  update public.group_swipes s set created_at = s.created_at - make_interval(mins => p_minutes)
+  where s.actor_id = (select auth.uid()) and s.group_id = p_group_id and s.decision = 'pass';
+$fn$;
+revoke execute on function public.dev_age_group_passes(uuid, integer) from public, anon;
+grant execute on function public.dev_age_group_passes(uuid, integer) to authenticated;
+
 create or replace function public.dev_add_boost(p_age_days integer)
 returns void
 language plpgsql

@@ -206,6 +206,7 @@ export interface ContractBackend {
  * usuarios depende del backend: lo monta cada arnés, no el contrato.
  */
 export interface SafetyPair {
+  ageGroupPasses(groupId: string, minutes: number): Promise<void>;
   a: Repositories;
   b: Repositories;
   /** Tercera persona: hace falta para convocar una sala (2-4 invitadas). */
@@ -2920,6 +2921,121 @@ function describeSafetyContract(backend: ContractBackend): void {
         });
         return { groupId: view.group.id, roleId: view.roles[0].id };
       }
+
+      it('mantiene una única ficha moderada con los autores y permisos del grupo', async () => {
+        const settings = {
+          name: 'Equipo Atlas',
+          description: DESCRIPTION,
+          roles: [{ specialty: 'dev' as const, slots: 2 }],
+          projectDraftId: '891d64a4-0e28-486c-82c0-4484f9418499',
+          project: {
+            name: 'Atlas',
+            tagline: 'Rutas de barrio',
+            description: 'Un mapa colaborativo.',
+            link: 'https://example.org',
+            cover: null,
+            photos: [],
+          },
+        };
+        await expect(
+          a.groups.create({ ...settings, project: { ...settings.project, tagline: '' } })
+        ).rejects.toThrow();
+        expect(await mineOf(a)).toBeNull();
+        const view = await a.groups.create(settings);
+        const id = view.group.id;
+        const initial = view.group.project!;
+        expect(initial).toMatchObject({ id: settings.projectDraftId, ...settings.project });
+        expect(initial.authors?.map((p) => p.id)).toEqual([aId]);
+        expect((await a.groups.create(settings)).group.id).toBe(id);
+        expect(
+          (await b.groups.getDeck()).find((card) => card.group.id === id)?.group.project
+        ).toMatchObject({ id: initial.id });
+        // El grupo se descubre en su deck sin ocupar plazas en los perfiles.
+        expect((await c.projects.list(aId)).map((p) => p.id)).not.toContain(initial.id);
+        await b.groups.swipeGroup(id, 'like');
+        expect((await a.groups.swipeCandidate(bId, view.roles[0].id, 'like')).joined).toBe(true);
+        const joined = (await mineOf(b))!.group.project!;
+        expect(joined.authors?.map((p) => p.id).sort()).toEqual([aId, bId].sort());
+        await expect(b.projects.save(settings.project, joined)).rejects.toThrow();
+        await expect(b.projects.remove(joined)).rejects.toThrow();
+        await expect(a.projects.remove(joined)).rejects.toThrow();
+        await a.projects.save({ ...settings.project, name: 'Atlas 2' }, joined);
+        expect((await mineOf(b))!.group.project?.name).toBe('Atlas 2');
+        const scope = { kind: 'group' as const, id };
+        const task = {
+          id: '9a30adc2-ee90-4183-881d-82ecc2db0364',
+          title: 'Entrevistar al primer taller',
+          startsAt: null,
+          place: null,
+          assigneeId: aId,
+          status: 'in_progress' as const,
+          dueAt: null,
+        };
+        await b.chatPlan.add(scope, task);
+        expect((await a.chatPlan.list(scope))[0]).toMatchObject(task);
+        await expect(
+          b.chatPlan.updateTask(scope, task.id, { ...task, assigneeId: cId })
+        ).rejects.toBeDefined();
+        await a.groups.leave(id);
+        const next = (await mineOf(b))!;
+        expect(next.isAdmin).toBe(true);
+        expect(next.group.project?.authors?.map((p) => p.id)).toEqual([bId]);
+        expect((await b.chatPlan.list(scope))[0]).toMatchObject({
+          assigneeId: null,
+          status: 'in_progress',
+        });
+        await expect(a.projects.save(settings.project, next.group.project!)).rejects.toThrow();
+        await b.projects.save(settings.project, next.group.project!);
+        await b.groups.leave(id);
+        expect(await mineOf(b)).toBeNull();
+        await expect(b.projects.save(settings.project, next.group.project!)).rejects.toThrow();
+      });
+
+      it('buscar grupo: cada pass espera 48 horas detrás de los grupos nuevos', async () => {
+        const { groupId, roleId } = await createGroup();
+        const other = await c.groups.create({
+          name: 'Otro grupo',
+          description: DESCRIPTION,
+          roles: ROLES,
+        });
+        const deck = async () =>
+          (await b.groups.getDeck())
+            .map((card) => card.group.id)
+            .filter((id) => id === groupId || id === other.group.id);
+        // Incluso con un like entrante el pass reciclado va después de los nuevos.
+        await a.groups.swipeCandidate(bId, roleId, 'like');
+        for (let round = 0; round < 2; round++) {
+          await b.groups.swipeGroup(groupId, 'pass');
+          await pair.ageGroupPasses(groupId, 48 * 60 - 1);
+          expect(await deck()).toEqual([other.group.id]);
+          await b.groups.swipeGroup(groupId, 'pass'); // reintento de una petición
+          await pair.ageGroupPasses(groupId, 1);
+          expect(await deck()).toEqual([other.group.id, groupId]);
+        }
+        expect((await b.groups.swipeGroup(groupId, 'like')).joined).toBe(true);
+        await pair.ageGroupPasses(groupId, 72 * 60);
+        expect(await deck()).toEqual([other.group.id]);
+      });
+
+      it('reclutar: nuevas antes de pass caducados, un like pendiente permanece fuera', async () => {
+        const { groupId, roleId } = await createGroup(2);
+        const deck = async () =>
+          (await a.groups.getRecruitDeck())
+            .map((card) => card.profile.id)
+            .filter((id) => id === bId || id === cId);
+        for (let round = 0; round < 2; round++) {
+          await a.groups.swipeCandidate(bId, roleId, 'pass');
+          await pair.ageGroupPasses(groupId, 48 * 60 - 1);
+          expect(await deck()).toEqual([cId]);
+          await a.groups.swipeCandidate(bId, roleId, 'pass');
+          await pair.ageGroupPasses(groupId, 1);
+          expect(await deck()).toEqual([cId, bId]);
+        }
+        expect((await a.groups.swipeCandidate(bId, roleId, 'like')).joined).toBe(false);
+        await a.groups.swipeCandidate(bId, roleId, 'pass'); // respuesta tardía de otra pantalla
+        await pair.ageGroupPasses(groupId, 72 * 60);
+        expect(await deck()).toEqual([cId]);
+      });
 
       it('like recíproco en los dos órdenes: la persona entra en ese perfil', async () => {
         const { groupId, roleId } = await createGroup(2);

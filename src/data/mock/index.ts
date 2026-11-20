@@ -19,6 +19,7 @@ import {
   isBlockedPair,
   matchesMode,
   nowIso,
+  PASS_COOLDOWN_MS,
   resolveMatchMode,
 } from './store';
 import { SEED_RECIPROCAL_IDS } from './seed';
@@ -110,8 +111,6 @@ export interface MockRepositoriesOptions {
 }
 
 const MATCHES_TOPIC = 'matches';
-// Espejo de public.pass_cooldown().
-const PASS_COOLDOWN_MS = 48 * 60 * 60 * 1000;
 
 function recycledPassAt(
   decision: Decision | undefined,

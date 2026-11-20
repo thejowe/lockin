@@ -10,6 +10,20 @@ Quien administra recluta; quien no tiene grupo ve los grupos que buscan lo que d
 puestos y plazas por decisión expresa del usuario. Se mantiene lo esencial: la entrada exige like
 de los dos lados y dentro no hay jerarquía más allá de administrar (expulsar, y heredar al salir).
 
+## Grupos de proyecto
+
+- [x] El grupo conserva su nombre, descripción y plazas. Una referencia opcional al proyecto distingue los dos tipos y clasifica los grupos anteriores como «Buscar gente».
+- [x] Descubrir ofrece «Crear grupo» bajo el selector y en el estado vacío. La pestaña de reclutamiento aparece al crear el grupo. La tarjeta del proyecto usa su portada y mantiene una pestaña por integrante.
+- [x] La función `moderate-project` revisa el proyecto y crea grupo, ficha y autoría en una sola transacción. Un reintento del mismo borrador devuelve el grupo creado. Los cambios de miembros y de admin sincronizan autores y permisos. El proyecto se ve dentro del grupo y en las tarjetas elegibles de Descubrir. La publicación en perfiles personales sigue su propio flujo.
+- [x] La pestaña Proyecto reutiliza las tareas y reuniones del chat. Las tareas admiten estado, responsable y fecha límite. Al salir la persona responsable queda libre la asignación.
+- Al disolver el grupo, la RLS retira el acceso a las fotos en la misma transacción. Las claves quedan en una cola persistente y `moderate-project` las elimina de Storage por lotes al recibir nuevas solicitudes autenticadas.
+- [x] Los dos decks de grupos ordenan primero tarjetas nuevas y después pases caducados, con `pass_cooldown()`. Los likes, bloqueos, grupos llenos y membresías quedan fuera.
+- [x] Contraste sobre una portada blanca en el tema oscuro. El nombre de la cabecera da 7,18:1, la píldora inactiva 4,68:1 y la descripción 5,02:1. La cabecera compartida con Cofundador conserva el fundido por debajo de los controles. El selector respeta «reducir movimiento».
+- [x] Verificación local de la rama. TypeScript pasa. ESLint termina con cero errores y cinco avisos preexistentes. Jest en serie, con un límite de 30 segundos por prueba, pasa 2.360 pruebas en 177 suites. Hay 243 pruebas omitidas por la configuración, incluida la suite de contrato HTTP optativa contra una instancia Supabase. El contrato compartido se ejecutó contra el mock. Pasan las 331 pruebas de esquema/RLS en PGlite y las 124 de funciones.
+- [x] En Android 36 con el mock se comprobaron el botón de cristal, la tarjeta del deck vacío, el cambio de píldora a un miembro y el alta de ambos tipos de grupo. «Buscar gente» se creó con el movimiento reducido. En el grupo de proyecto se abrió el deck de reclutamiento y se editó la portada desde el chat sobre tareas y reuniones. La comparación de píxeles confirmó que desapareció la línea de un píxel en las cabeceras del grupo y del miembro. La tarjeta de Cofundador también pasó la comprobación. Las capturas y `comprobacion-degradado.json` están en `e2e/artifacts/local/2026-11-19-grupo-proyecto/`.
+- La migración distingue los bloqueos y las salidas históricos con los registros que dejó el esquema anterior. Cuando ambas direcciones tenían un pase y ya no hay membresía, conserva la exclusión para evitar reintroducir una expulsión. Esto también conserva fuera dos pases simultáneos de clientes antiguos. Si un bloqueo histórico perdió tanto el vínculo con el admin anterior como su registro de bloqueo, ya no se puede reconstruir. El esquema nuevo guarda el motivo explícitamente.
+- [ ] Producción, pendiente de revisión y autorización. Esta rama integra el Prompt 1. Una vez presentes sus dos migraciones y `pass_cooldown()`, aplicar por orden `20261119233232_group_projects.sql` y `20261119233421_group_deck_passes.sql`, después desplegar `moderate-project` y distribuir el cliente.
+
 ## Estado
 
 - [x] Migraciones `20261109130000_groups.sql`, `20261109140000_groups_edit.sql` y

@@ -9,6 +9,7 @@
  * equity ofrecido ni rol vacante — eso es Modo Talento (Fase 4), fuera del MVP.
  */
 
+import type { Project, ProjectInput } from './projects';
 import type { WorkRange } from './work-range';
 
 /** Los dos modos del MVP. El Modo Talento es Fase 4 y no existe aquí a propósito. */
@@ -587,6 +588,8 @@ export interface RoomInput {
  */
 export interface Group {
   id: string;
+  /** Null para «Buscar gente», también en grupos creados antes de esta opción. */
+  project: Project | null;
   name: string;
   /** El proyecto: qué se quiere construir. */
   description: string;
@@ -656,7 +659,7 @@ export interface GroupRoleInput {
 }
 
 /** Datos para crear un grupo. El repositorio pone id, admin y fechas. */
-export interface GroupInput {
+export interface GroupSettings {
   name: string;
   description: string;
   /** Al menos un puesto, sin repetir especialidad. */
@@ -664,6 +667,9 @@ export interface GroupInput {
   /** Por defecto, y como mucho, 6. */
   maxMembers?: number;
 }
+
+export type GroupInput = GroupSettings &
+  ({ project?: never; projectDraftId?: never } | { project: ProjectInput; projectDraftId: string });
 
 /**
  * Datos para editar un grupo que ya existe. `roles` es el conjunto completo

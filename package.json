@@ -71,7 +71,7 @@
     "test:coverage": "jest --coverage",
     "test:e2e": "node --test \"e2e/*.test.mjs\"",
     "test:functions": "node --test \"supabase/functions/**/*.test.mjs\"",
-    "test:schema": "node --test --test-concurrency=1 supabase/schema-compare.test.mjs supabase/drift-check.test.mjs supabase/schema-embedded.test.mjs supabase/premium-embedded.test.mjs supabase/cleanup.test.mjs supabase/blocked-emails-embedded.test.mjs supabase/groups-embedded.test.mjs supabase/push-embedded.test.mjs supabase/unread-embedded.test.mjs supabase/project-storage-embedded.test.mjs supabase/joint-projects-embedded.test.mjs supabase/project-reminders-embedded.test.mjs supabase/profile-work-range-embedded.test.mjs"
+    "test:schema": "node --test --test-concurrency=1 supabase/schema-compare.test.mjs supabase/drift-check.test.mjs supabase/schema-embedded.test.mjs supabase/premium-embedded.test.mjs supabase/cleanup.test.mjs supabase/blocked-emails-embedded.test.mjs supabase/groups-embedded.test.mjs supabase/push-embedded.test.mjs supabase/unread-embedded.test.mjs supabase/project-storage-embedded.test.mjs supabase/joint-projects-embedded.test.mjs supabase/project-reminders-embedded.test.mjs supabase/profile-work-range-embedded.test.mjs supabase/group-projects-embedded.test.mjs supabase/group-deck-passes-embedded.test.mjs"
   },
   "private": true
 }

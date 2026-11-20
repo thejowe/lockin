@@ -108,6 +108,11 @@ describe('textos', () => {
 });
 
 describe('/group/new', () => {
+  async function choosePeople() {
+    await renderRoute(<NewGroupRoute />);
+    expect(screen.queryByLabelText('Nombre del grupo')).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: 'Buscar gente' }));
+  }
   async function fill() {
     await fireEvent.changeText(screen.getByLabelText('Nombre del grupo'), 'Mi Equipo');
     await fireEvent.changeText(
@@ -119,7 +124,7 @@ describe('/group/new', () => {
   it('no crea nada hasta que los datos valen, y dice qué falta', async () => {
     await withProfile();
     const create = jest.spyOn(repositories.groups, 'create');
-    await renderRoute(<NewGroupRoute />);
+    await choosePeople();
 
     await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
 
@@ -131,7 +136,7 @@ describe('/group/new', () => {
 
   it('se eligen puestos y plazas, sin pasar de cinco entre todos', async () => {
     await withProfile();
-    await renderRoute(<NewGroupRoute />);
+    await choosePeople();
 
     await fireEvent.press(screen.getByRole('checkbox', { name: 'Perfil: Programación' }));
     expect(screen.getByText('1 persona')).toBeTruthy();
@@ -154,7 +159,7 @@ describe('/group/new', () => {
 
   it('crea el grupo y vuelve: quien lo crea lo administra', async () => {
     await withProfile();
-    await renderRoute(<NewGroupRoute />);
+    await choosePeople();
     await fill();
     await fireEvent.press(screen.getByRole('checkbox', { name: 'Perfil: Programación' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Sumar' }));
@@ -164,6 +169,7 @@ describe('/group/new', () => {
     await waitFor(() => expect(router.back).toHaveBeenCalled());
     const view = ((await repositories.groups.listMine())[0] ?? null)!;
     expect(view.isAdmin).toBe(true);
+    expect(view.group.project).toBeNull();
     expect(view.group.name).toBe('Mi Equipo');
     expect(view.roles.map((role) => [role.specialty, role.slots])).toEqual([['dev', 2]]);
   });
@@ -174,7 +180,7 @@ describe('/group/new', () => {
     jest
       .spyOn(repositories.groups, 'create')
       .mockRejectedValueOnce(new GroupError('already-admin', 'ya'));
-    await renderRoute(<NewGroupRoute />);
+    await choosePeople();
     await fill();
     await fireEvent.press(screen.getByRole('checkbox', { name: 'Perfil: Programación' }));
 
@@ -184,6 +190,39 @@ describe('/group/new', () => {
 
     await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/discover'));
+  });
+
+  it('crea un grupo de proyecto después de completar el mismo editor moderado', async () => {
+    await withProfile();
+    const create = jest.spyOn(repositories.groups, 'create');
+    await renderRoute(<NewGroupRoute />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Grupo de proyecto' }));
+    await fireEvent.changeText(screen.getByLabelText('Nombre del grupo'), 'Laboratorio');
+    await fireEvent.changeText(
+      screen.getByLabelText('Descripción del grupo'),
+      'Construimos herramientas para viajar.'
+    );
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Perfil: Desarrollo' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Continuar al proyecto' }));
+    expect(create).not.toHaveBeenCalled();
+    await fireEvent.changeText(screen.getByLabelText('Nombre del proyecto'), 'Atlas');
+    await fireEvent.changeText(screen.getByLabelText('Frase corta'), 'Viajar sin barreras');
+    await fireEvent.press(screen.getByRole('button', { name: 'Más detalles' }));
+    await fireEvent.changeText(screen.getByLabelText('Descripción'), 'Rutas accesibles para todos');
+    await fireEvent.changeText(screen.getByLabelText('Enlace del proyecto'), 'https://example.org');
+    create.mockRejectedValueOnce(new GroupError('group-limit', ''));
+    await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
+    expect(await screen.findByText(/Ya estás en 3 grupos/)).toBeTruthy();
+    expect(await repositories.groups.listMine()).toHaveLength(0);
+    await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
+    await waitFor(() => expect(router.back).toHaveBeenCalled());
+    const [{ group }] = await repositories.groups.listMine();
+    expect(group.project).toMatchObject({
+      name: 'Atlas',
+      description: 'Rutas accesibles para todos',
+      link: 'https://example.org',
+    });
+    expect(create.mock.calls[0][0].projectDraftId).toEqual(create.mock.calls[1][0].projectDraftId);
   });
 });
 
@@ -379,6 +418,66 @@ describe('/group/info', () => {
 });
 
 describe('/group/[groupId]', () => {
+  it('muestra el proyecto y su plan, permite asignar tareas y reserva la edición al admin', async () => {
+    await withProfile();
+    await repositories.session.acceptTerms(TERMS_VERSION);
+    const group = await repositories.groups.create({
+      ...INPUT,
+      projectDraftId: '68033fc2-ea42-4870-8afb-d733c4d1dfaf',
+      project: {
+        name: 'Atlas',
+        description: 'Un mapa abierto',
+        tagline: 'Explorar sin barreras',
+        photos: [],
+        cover: { uri: 'file:///atlas.jpg' },
+        link: '',
+      },
+    });
+    const peer = as('seed-ines');
+    await peer.groups.swipeGroup(group.group.id, 'like');
+    await repositories.groups.swipeCandidate('seed-ines', group.roles[0].id, 'like');
+    const scope = { kind: 'group' as const, id: group.group.id };
+    await repositories.chatPlan.add(scope, {
+      id: 'meeting',
+      title: 'Revisar el mapa',
+      startsAt: '2099-02-12T12:00:00Z',
+      place: 'Biblioteca',
+    });
+    setSearchParams({ groupId: scope.id });
+    const mounted = await renderRoute(<GroupChatScreen />);
+    await fireEvent.press(await screen.findByRole('tab', { name: 'Proyecto' }));
+    expect(await screen.findByText('Revisar el mapa')).toBeTruthy();
+    expect(screen.queryByText('Recordatorios')).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: 'Ver ficha de Atlas' }));
+    expect(screen.getByText('Un mapa abierto')).toBeTruthy();
+    expect(screen.queryByText('Publicar en los perfiles')).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: 'Editar proyecto' }));
+    expect(screen.queryByText('Eliminar proyecto')).toBeNull();
+    await fireEvent.changeText(screen.getByLabelText('Nombre del proyecto'), 'Atlas libre');
+    await fireEvent.press(screen.getByRole('button', { name: 'Guardar proyecto' }));
+    expect(await screen.findByRole('button', { name: 'Ver ficha de Atlas libre' })).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Añadir tarea' }));
+    expect(
+      screen.getByRole('radio', { name: 'Todo el grupo' }).props.accessibilityState.checked
+    ).toBe(true);
+    await fireEvent.changeText(screen.getByLabelText('Nombre de la tarea'), 'Publicar el mapa');
+    await fireEvent.press(screen.getByRole('radio', { name: 'Inés Aranda' }));
+    await fireEvent.press(screen.getByRole('radio', { name: 'En curso' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Guardar' }));
+    expect(await screen.findByText('En curso · Inés Aranda')).toBeTruthy();
+    await mounted.unmount();
+
+    await peer.session.acceptTerms(TERMS_VERSION);
+    await renderRoute(
+      <DataProvider value={peer}>
+        <GroupChatScreen />
+      </DataProvider>
+    );
+    await fireEvent.press(await screen.findByRole('tab', { name: 'Proyecto' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Ver ficha de Atlas libre' }));
+    expect(screen.getByText('Un mapa abierto')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Editar proyecto' })).toBeNull();
+  });
   async function inTaller() {
     await repositories.session.acceptTerms(TERMS_VERSION);
     await withProfile();

@@ -7,12 +7,13 @@
 
 import { useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
+import { glassStyle } from '@/components/glass';
 import { LoadingState, MessageState } from '@/components/state-view';
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { Opacity, Radii, Spacing } from '@/constants/theme';
 import {
   GROUP_CREATION_REQUIRES_PREMIUM,
   GroupError,
@@ -21,6 +22,8 @@ import {
   type GroupDeckCard,
 } from '@/data';
 import { openPaywall, usePremium } from '@/features/premium';
+import { DeckToolbarButton } from '@/features/discover/deck-toolbar-button';
+import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
 
 import { DECISION_ACTIONS_SPACE, DecisionDeck } from './decision-deck';
@@ -45,6 +48,7 @@ export function SeekerDeck({
   onDeckActive?: (active: boolean) => void;
 }) {
   const router = useRouter();
+  const theme = useTheme();
   const repositories = useRepositories();
   const { quotas } = usePremium();
   const [safetyOpen, setSafetyOpen] = useState(false);
@@ -92,42 +96,6 @@ export function SeekerDeck({
     }
   }
 
-  if (loading) return <LoadingState label={t('Buscando grupos…')} />;
-  if (error && !hasCards) {
-    return (
-      <MessageState
-        title={t('No hemos podido cargar los grupos')}
-        body={t('Inténtalo otra vez en un momento.')}>
-        <Button label={t('Reintentar')} onPress={refresh} />
-      </MessageState>
-    );
-  }
-  if (!hasCards) {
-    return (
-      <MessageState
-        title={t('Ningún grupo busca ahora lo que dominas')}
-        body={
-          canCreate
-            ? t(
-                'Cuando un grupo busque un perfil como el tuyo, saldrá aquí. También puedes crear el tuyo.'
-              )
-            : t('Cuando un grupo busque un perfil como el tuyo, saldrá aquí.')
-        }>
-        {notice ? (
-          <ThemedText type="small" themeColor="teal" accessibilityLiveRegion="polite">
-            {notice}
-          </ThemedText>
-        ) : null}
-        {canCreate ? <Button label={t('Crear grupo')} onPress={createGroup} /> : null}
-        <Button
-          label={t('Volver a comprobar')}
-          variant={canCreate ? 'secondary' : undefined}
-          onPress={refresh}
-        />
-      </MessageState>
-    );
-  }
-
   return (
     <View style={styles.root}>
       <View style={styles.toolbar}>
@@ -135,7 +103,7 @@ export function SeekerDeck({
           {t('Grupos que buscan lo que dominas')}
         </ThemedText>
         {canCreate ? (
-          <Button label={t('Crear grupo')} variant="secondary" compact onPress={createGroup} />
+          <DeckToolbarButton label={t('Crear grupo')} icon="plus" onPress={createGroup} />
         ) : null}
       </View>
 
@@ -151,27 +119,59 @@ export function SeekerDeck({
         </ThemedText>
       ) : null}
 
-      <DecisionDeck
-        items={cards}
-        keyOf={keyOf}
-        disabled={safetyOpen}
-        likeLabel={t('Quiero entrar')}
-        passLabel={t('Pasar')}
-        onDecide={(card, decision) => void onDecide(card, decision)}
-        renderCard={(card, top) => (
-          <GroupCard
-            card={card}
-            bottomInset={DECISION_ACTIONS_SPACE}
-            safetyOpen={top && safetyOpen}
-            onSafetyOpenChange={top ? setSafetyOpen : undefined}
-            // Bloqueado: el servidor ya lo ha sacado del deck; se relee sin él.
-            onBlocked={refresh}
-            onOpenMember={
-              top ? (id) => router.push({ pathname: '/person/[id]', params: { id } }) : undefined
-            }
-          />
-        )}
-      />
+      {loading ? (
+        <LoadingState label={t('Buscando grupos…')} />
+      ) : error && !hasCards ? (
+        <MessageState
+          title={t('No hemos podido cargar los grupos')}
+          body={t('Inténtalo otra vez en un momento.')}>
+          <Button label={t('Reintentar')} onPress={refresh} />
+        </MessageState>
+      ) : !cards?.length ? (
+        <MessageState
+          title={t('Ningún grupo busca ahora lo que dominas')}
+          body={t('Cuando un grupo busque un perfil como el tuyo, saldrá aquí.')}>
+          {canCreate && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('Crear grupo')}
+              onPress={createGroup}
+              style={({ pressed }) => [
+                glassStyle(theme, { radius: Radii.card }),
+                styles.createCard,
+                pressed && { opacity: Opacity.pressed },
+              ]}>
+              <ThemedText type="title" accessible={false}>
+                +
+              </ThemedText>
+              <ThemedText type="heading">{t('Crear grupo')}</ThemedText>
+            </Pressable>
+          )}
+          <Button label={t('Volver a comprobar')} variant="secondary" onPress={refresh} />
+        </MessageState>
+      ) : (
+        <DecisionDeck
+          items={cards}
+          keyOf={keyOf}
+          disabled={safetyOpen}
+          likeLabel={t('Quiero entrar')}
+          passLabel={t('Pasar')}
+          onDecide={(card, decision) => void onDecide(card, decision)}
+          renderCard={(card, top) => (
+            <GroupCard
+              card={card}
+              bottomInset={DECISION_ACTIONS_SPACE}
+              safetyOpen={top && safetyOpen}
+              onSafetyOpenChange={top ? setSafetyOpen : undefined}
+              // Bloqueado: el servidor ya lo ha sacado del deck; se relee sin él.
+              onBlocked={refresh}
+              onOpenMember={
+                top ? (id) => router.push({ pathname: '/person/[id]', params: { id } }) : undefined
+              }
+            />
+          )}
+        />
+      )}
     </View>
   );
 }
@@ -186,4 +186,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.two,
   },
   hint: { flex: 1 },
+  createCard: {
+    padding: Spacing.four,
+    gap: Spacing.one,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 136,
+  },
 });
