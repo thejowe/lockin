@@ -104,7 +104,7 @@ describe('MatchModal', () => {
       const { onOpenChat, onDismiss, ui } = setup(buildEvent());
       await render(ui);
 
-      await fireEvent.press(screen.getByText('Seguir descubriendo'));
+      await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
 
       expect(onDismiss).toHaveBeenCalledTimes(1);
       expect(onOpenChat).not.toHaveBeenCalled();

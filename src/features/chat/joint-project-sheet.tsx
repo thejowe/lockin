@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { useRef, useState, type ReactNode } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
-import { ProjectBottomSheet } from '@/features/profile/project-editor';
+import { FormSheet } from '@/components/form-sheet';
 
 import { Button } from '@/components/button';
 import { glassStyle } from '@/components/glass';
@@ -231,43 +231,37 @@ export function ProjectDetailsSheet({
 }) {
   const [linkError, setLinkError] = useState(false);
   return (
-    <ProjectBottomSheet onClose={onClose}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.switchRow}>
-          <ThemedText type="smallBold" themeColor="textSecondary">
-            {t('Ficha del proyecto')}
-          </ThemedText>
-          <Button compact variant="secondary" label={t('Cerrar')} onPress={onClose} />
-        </View>
-        {project.cover && <Photo photo={project.cover} size="cover" label={t('Portada')} />}
-        <View style={styles.section}>
-          <ThemedText type="title">{project.name}</ThemedText>
-          <ThemedText type="bodyStrong">{project.tagline}</ThemedText>
-          <ProjectAuthorFaces project={project} />
-        </View>
-        {!!project.description && <ThemedText selectable>{project.description}</ThemedText>}
-        {project.photos.length > 0 && (
-          <ScrollView horizontal contentContainerStyle={styles.actions}>
-            {project.photos.map((photo, i) => (
-              <Photo key={i} photo={photo} size="extra" label={t('Foto {n}', { n: i + 1 })} />
-            ))}
-          </ScrollView>
-        )}
-        {!!project.link && (
-          <ThemedText
-            type="link"
-            accessibilityRole="link"
-            onPress={() => void Linking.openURL(project.link).catch(() => setLinkError(true))}>
-            {project.link}
-          </ThemedText>
-        )}
-        {linkError && (
-          <ThemedText accessibilityRole="alert">{t('No se ha podido abrir el enlace.')}</ThemedText>
-        )}
-        {onEdit && <Button variant="secondary" label={t('Editar proyecto')} onPress={onEdit} />}
-        {children}
-      </ScrollView>
-    </ProjectBottomSheet>
+    <FormSheet
+      onClose={onClose}
+      header={<ThemedText type="subtitle">{t('Ficha del proyecto')}</ThemedText>}
+      footer={onEdit && <Button label={t('Editar proyecto')} onPress={onEdit} />}>
+      {project.cover && <Photo photo={project.cover} size="cover" label={t('Portada')} />}
+      <View style={styles.section}>
+        <ThemedText type="title">{project.name}</ThemedText>
+        <ThemedText type="bodyStrong">{project.tagline}</ThemedText>
+        <ProjectAuthorFaces project={project} />
+      </View>
+      {!!project.description && <ThemedText selectable>{project.description}</ThemedText>}
+      {project.photos.length > 0 && (
+        <ScrollView horizontal contentContainerStyle={styles.actions}>
+          {project.photos.map((photo, i) => (
+            <Photo key={i} photo={photo} size="extra" label={t('Foto {n}', { n: i + 1 })} />
+          ))}
+        </ScrollView>
+      )}
+      {!!project.link && (
+        <ThemedText
+          type="link"
+          accessibilityRole="link"
+          onPress={() => void Linking.openURL(project.link).catch(() => setLinkError(true))}>
+          {project.link}
+        </ThemedText>
+      )}
+      {linkError && (
+        <ThemedText accessibilityRole="alert">{t('No se ha podido abrir el enlace.')}</ThemedText>
+      )}
+      {children}
+    </FormSheet>
   );
 }
 

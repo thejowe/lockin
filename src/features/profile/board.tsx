@@ -9,6 +9,8 @@
  * ya escrito (`BoardRejectedError`).
  */
 
+import { FormSheet } from '@/components/form-sheet';
+import { requestClose } from '@/components/close-button';
 import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -114,6 +116,12 @@ export function Board({
     }
   }
 
+  const feedback = notice ? (
+    <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
+      {notice}
+    </ThemedText>
+  ) : null;
+
   const full = list.length >= BOARD_MAX_POSTS;
 
   return (
@@ -130,7 +138,10 @@ export function Board({
       ) : null}
 
       {open ? (
-        <View style={[styles.viewer, { borderColor: theme.border }]}>
+        <FormSheet
+          header={<ThemedText type="subtitle">{t('Sobre mí')}</ThemedText>}
+          disabled={busy !== null}
+          onClose={() => setOpen(null)}>
           {open.imageUrl ? (
             <Image
               source={{ uri: open.imageUrl }}
@@ -148,12 +159,22 @@ export function Board({
               onPress={() => void remove(open)}
             />
           ) : null}
-          <SecondaryButton label={t('Cerrar')} onPress={() => setOpen(null)} />
-        </View>
+          {feedback}
+        </FormSheet>
       ) : null}
 
       {draft ? (
-        <View style={[styles.viewer, { borderColor: theme.border }]}>
+        <FormSheet
+          header={<ThemedText type="subtitle">{t('Sobre mí')}</ThemedText>}
+          disabled={busy !== null}
+          onClose={() => requestClose(true, () => setDraft(null))}
+          footer={
+            <PrimaryButton
+              label={busy === 'subir' ? t('Revisando y subiendo…') : t('Publicar en Sobre mí')}
+              disabled={busy !== null}
+              onPress={() => void publish()}
+            />
+          }>
           <Image source={{ uri: draft.uri }} style={styles.large} contentFit="cover" />
           <Field
             label={t('Texto (opcional)')}
@@ -170,13 +191,9 @@ export function Board({
               accessibilityLabel={t('Texto de la foto')}
             />
           </Field>
-          <PrimaryButton
-            label={busy === 'subir' ? t('Revisando y subiendo…') : t('Publicar en Sobre mí')}
-            disabled={busy !== null}
-            onPress={() => void publish()}
-          />
-          <SecondaryButton label={t('Cancelar')} onPress={() => setDraft(null)} />
-        </View>
+
+          {feedback}
+        </FormSheet>
       ) : null}
 
       <View style={styles.grid}>
@@ -209,11 +226,7 @@ export function Board({
         ) : null}
       </View>
 
-      {notice ? (
-        <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
-          {notice}
-        </ThemedText>
-      ) : null}
+      {!open && !draft && feedback}
     </View>
   );
 }
@@ -244,12 +257,6 @@ const styles = StyleSheet.create({
   fill: {
     width: '100%',
     height: '100%',
-  },
-  viewer: {
-    gap: Spacing.two,
-    padding: Spacing.three,
-    borderRadius: Radii.card,
-    borderWidth: Stroke.hairline,
   },
   large: {
     width: '100%',

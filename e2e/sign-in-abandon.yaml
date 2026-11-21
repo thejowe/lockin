@@ -38,9 +38,9 @@ name: Entrar en otra cuenta abandonando el perfil anónimo
     visible: 'Entrar aquí deja atrás el perfil de este teléfono'
     timeout: 30000
 - assertVisible: 'Entrar y dejar este perfil'
-# «Mejor no»: el aviso se va y el formulario sigue igual, sin sesión nueva
+# Cerrar el aviso: el aviso se va y el formulario sigue igual, sin sesión nueva
 # (el login de verdad solo lo lanza «Entrar y dejar este perfil»).
-- tapOn: 'Mejor no'
+- tapOn: 'Cerrar'
 - extendedWaitUntil:
     notVisible: 'Entrar aquí deja atrás el perfil de este teléfono'
     timeout: 10000

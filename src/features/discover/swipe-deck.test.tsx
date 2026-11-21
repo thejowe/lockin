@@ -341,7 +341,7 @@ describe('SwipeDeck con el panel de seguridad abierto', () => {
     expect(screen.queryByLabelText('Pasar')).toBeNull();
     expect(onDecide).not.toHaveBeenCalled();
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar opciones' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
 
     expect(screen.getByLabelText('Like')).not.toBeDisabled();
     await fireEvent.press(screen.getByLabelText('Like'));

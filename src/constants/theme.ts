@@ -350,6 +350,10 @@ export const Elevation = {
 export const ScrimAlpha = 'B8';
 /** Deja ver la foto bajo las pestañas blancas del grupo incluso sobre una portada blanca. */
 export const GroupHeaderAlpha = 'AD';
+/** Canto de los campos sobre el cristal opaco del editor de proyectos. */
+export const ProjectFieldEdgeAlpha = 'B3';
+/** Fondo del nombre que se superpone a la foto en la tarjeta de un proyecto. */
+export const ProjectCaptionBackground = '#101010E0';
 
 /**
  * Intensidad de `BlurView` (expo-blur) para el cristal que flota sobre

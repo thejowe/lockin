@@ -212,13 +212,13 @@ describe('SignInForm', () => {
       expect(onSignedIn).toHaveBeenCalledTimes(1);
     });
 
-    it('«Mejor no» cierra el aviso y no entra', async () => {
+    it('La X cierra el aviso y no entra', async () => {
       await withProfile();
       await renderForm();
 
       await fill('ana@example.com', 'secreta-123');
       await press('Entrar');
-      await press('Mejor no');
+      await press('Cerrar');
 
       expect(screen.queryByText('Entrar aquí deja atrás el perfil de este teléfono')).toBeNull();
       expect(screen.getByRole('button', { name: 'Entrar' })).toBeTruthy();

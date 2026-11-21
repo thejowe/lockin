@@ -88,7 +88,7 @@ describe('NewPasswordForm', () => {
     const onDone = jest.fn();
     await render(<NewPasswordForm onDone={onDone} />);
 
-    await fireEvent.press(screen.getByText('Ahora no'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
 
     expect(onDone).toHaveBeenCalledTimes(1);
     expect(mockSaveRecoveredPassword).not.toHaveBeenCalled();

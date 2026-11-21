@@ -54,6 +54,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { Button } from '@/components/button';
+import { CloseHeader } from '@/components/close-button';
 import { Icon, type IconName } from '@/components/icon';
 import { LoadingState, MessageState } from '@/components/state-view';
 import { ThemedText } from '@/components/themed-text';
@@ -299,43 +300,26 @@ export function Paywall({
     <View style={styles.root}>
       <PremiumHalo />
 
+      <View
+        style={{ paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }}>
+        <View style={styles.topBar}>
+          <CloseHeader onPress={onClose}>
+            <ThemedText type="heading" accessibilityRole="header">
+              {t('Premium')}
+            </ThemedText>
+          </CloseHeader>
+        </View>
+      </View>
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingTop: insets.top }]}
+        contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <View style={styles.inner}>
-          <View style={styles.topBar}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('Ahora no')}
-              hitSlop={8}
-              onPress={onClose}
-              style={({ pressed }) => [
-                styles.close,
-                {
-                  backgroundColor: theme.backgroundElement,
-                  borderColor: theme.border,
-                  opacity: pressed ? Opacity.pressed : 1,
-                },
-              ]}>
-              <Icon name="close" size={18} color={theme.text} strokeWidth={2} />
-            </Pressable>
-          </View>
-
           <Animated.View entering={FadeIn.duration(Duration.slow).delay(entranceDelay)}>
             <HeroGem />
           </Animated.View>
 
           <Animated.View entering={rise(0)} style={styles.header}>
-            <View
-              style={[
-                styles.eyebrow,
-                { borderColor: `${PremiumTones.gemMid}66`, backgroundColor: theme.brassSoft },
-              ]}>
-              <ThemedText type="label" style={{ color: PremiumTones.gemLight }}>
-                {t('Premium')}
-              </ThemedText>
-            </View>
             <ThemedText type="display" style={styles.centered}>
               {t('Encuentra cofundador sin frenos')}
             </ThemedText>
@@ -767,31 +751,15 @@ const styles = StyleSheet.create({
     gap: Spacing.four,
   },
   topBar: {
-    height: Control.minTouch,
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    // El héroe va justo debajo: el hueco del `gap` lo descuenta `heroCenter`.
-    marginBottom: -Spacing.four,
-  },
-  close: {
-    width: 36,
-    height: 36,
-    borderRadius: Radii.pill,
-    borderWidth: Stroke.hairline,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: '100%',
+    maxWidth: MaxContentWidth + Spacing.four * 2,
+    paddingHorizontal: Spacing.four,
+    alignSelf: 'center',
   },
   header: {
     alignItems: 'center',
     gap: Spacing.two,
     marginTop: -Spacing.three,
-  },
-  eyebrow: {
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.half,
-    borderRadius: Radii.pill,
-    borderWidth: Stroke.thin,
   },
   benefits: {
     gap: Spacing.three,

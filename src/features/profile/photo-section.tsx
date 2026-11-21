@@ -16,14 +16,13 @@
  * primero se explica, el segundo no hace nada.
  */
 
+import { FormSheet } from '@/components/form-sheet';
 import { useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { MaxContentWidth, Radii, ScrimAlpha, Spacing, Stroke } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 import { useRepositories } from '@/data';
-import { useTheme } from '@/hooks/use-theme';
 
 import { pickAvatarPhoto } from './avatar-photo';
 import { SecondaryButton } from './controls';
@@ -57,8 +56,6 @@ export function PhotoSection({
   onClose: () => void;
 }) {
   const repositories = useRepositories();
-  const theme = useTheme();
-  const insets = useSafeAreaInsets();
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -119,104 +116,60 @@ export function PhotoSection({
     }
   }
 
+  if (!visible) return null;
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      // Android: el botón atrás cierra la hoja, no la pantalla de debajo.
-      onRequestClose={close}>
-      <View style={styles.backdrop}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('Cerrar')}
-          onPress={close}
-          style={[StyleSheet.absoluteFill, { backgroundColor: theme.background + ScrimAlpha }]}
-        />
-        <View
-          accessibilityViewIsModal
-          style={[
-            styles.sheet,
-            {
-              backgroundColor: theme.surfaceOpaque,
-              borderColor: theme.border,
-              paddingBottom: Spacing.four + insets.bottom,
-            },
-          ]}>
-          <View style={[styles.grabber, { backgroundColor: theme.border }]} />
-
-          <View style={styles.header}>
-            <ProfileAvatar avatar={profile.avatar} size="xlarge" />
-            <ThemedText type="heading">{t('Foto de perfil')}</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
-              {hasPhoto ? t('Es lo que ve la gente en tu tarjeta.') : t('Aún no tienes foto')}
-            </ThemedText>
-          </View>
-
-          {busy ? (
-            <ThemedText
-              type="small"
-              themeColor="textSecondary"
-              accessibilityLiveRegion="polite"
-              style={styles.center}>
-              {t('Subiendo…')}
-            </ThemedText>
-          ) : null}
-
-          {error ? (
-            <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
-              {error}
-            </ThemedText>
-          ) : null}
-
-          <View style={styles.actions}>
-            <SecondaryButton
-              label={t('Hacer una foto')}
-              disabled={busy}
-              onPress={() => choose('camera')}
-            />
-            <SecondaryButton
-              label={t('Elegir de la galería')}
-              disabled={busy}
-              onPress={() => choose('library')}
-            />
-            {hasPhoto ? (
-              <SecondaryButton
-                label={t('Eliminar foto')}
-                tone="danger"
-                disabled={busy}
-                onPress={remove}
-              />
-            ) : null}
-          </View>
-        </View>
+    <FormSheet
+      header={<ThemedText type="heading">{t('Foto de perfil')}</ThemedText>}
+      onClose={close}
+      disabled={busy}>
+      <View style={styles.header}>
+        <ProfileAvatar avatar={profile.avatar} size="xlarge" />
+        <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
+          {hasPhoto ? t('Es lo que ve la gente en tu tarjeta.') : t('Aún no tienes foto')}
+        </ThemedText>
       </View>
-    </Modal>
+
+      {busy ? (
+        <ThemedText
+          type="small"
+          themeColor="textSecondary"
+          accessibilityLiveRegion="polite"
+          style={styles.center}>
+          {t('Subiendo…')}
+        </ThemedText>
+      ) : null}
+
+      {error ? (
+        <ThemedText type="small" themeColor="danger" accessibilityRole="alert">
+          {error}
+        </ThemedText>
+      ) : null}
+
+      <View style={styles.actions}>
+        <SecondaryButton
+          label={t('Hacer una foto')}
+          disabled={busy}
+          onPress={() => choose('camera')}
+        />
+        <SecondaryButton
+          label={t('Elegir de la galería')}
+          disabled={busy}
+          onPress={() => choose('library')}
+        />
+        {hasPhoto ? (
+          <SecondaryButton
+            label={t('Eliminar foto')}
+            tone="danger"
+            disabled={busy}
+            onPress={remove}
+          />
+        ) : null}
+      </View>
+    </FormSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    gap: Spacing.three,
-    paddingTop: Spacing.two,
-    paddingHorizontal: Spacing.four,
-    borderTopLeftRadius: Radii.large,
-    borderTopRightRadius: Radii.large,
-    borderWidth: Stroke.hairline,
-    width: '100%',
-    maxWidth: MaxContentWidth,
-    alignSelf: 'center',
-  },
-  grabber: {
-    alignSelf: 'center',
-    width: 36,
-    height: 5,
-    borderRadius: Radii.pill,
-  },
   header: {
     alignItems: 'center',
     gap: Spacing.two,

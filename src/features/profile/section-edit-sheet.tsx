@@ -7,12 +7,10 @@
  * guardado son los de siempre, y el resto de la ficha viaja intacto.
  */
 
-import { Modal, Platform, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
 
 import { ProfileForm, type ProfileSection } from './profile-form';
 
@@ -50,54 +48,31 @@ export function SectionEditSheet({
   onSave: (input: ProfileInput) => Promise<void>;
   onClose: () => void;
 }) {
-  const theme = useTheme();
-
+  if (!section) return null;
   return (
-    <Modal
-      visible={section !== null}
-      animationType="slide"
-      // iOS: la hoja de página del sistema, que se cierra deslizando hacia abajo.
-      presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'}
-      onRequestClose={onClose}>
-      <View style={[styles.root, { backgroundColor: theme.background }]}>
-        <SafeAreaView
-          style={styles.root}
-          edges={Platform.OS === 'ios' ? ['bottom'] : ['top', 'bottom']}>
-          {section ? (
-            // `key`: cada bloque arranca de la ficha guardada, no de lo que se
-            // tecleó y descartó en otro.
-            <ProfileForm
-              key={section}
-              initial={profile}
-              section={section}
-              submitLabel={t('Guardar')}
-              onSubmit={async (input) => {
-                await onSave(input);
-                onClose();
-              }}
-              onCancel={onClose}
-              header={
-                <View style={styles.header}>
-                  <ThemedText type="label" themeColor="textSecondary">
-                    {t('Editar')}
-                  </ThemedText>
-                  <ThemedText type="title">{SECTION_TITLES[section]}</ThemedText>
-                </View>
-              }
-            />
-          ) : null}
-        </SafeAreaView>
-      </View>
-    </Modal>
+    <ProfileForm
+      key={section}
+      initial={profile}
+      section={section}
+      submitLabel={t('Guardar')}
+      onSubmit={async (input) => {
+        await onSave(input);
+        onClose();
+      }}
+      onCancel={onClose}
+      header={
+        <View style={styles.header}>
+          <ThemedText type="label" themeColor="textSecondary">
+            {t('Editar')}
+          </ThemedText>
+          <ThemedText type="title">{SECTION_TITLES[section]}</ThemedText>
+        </View>
+      }
+    />
   );
 }
-
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
   header: {
     gap: Spacing.two,
-    paddingTop: Spacing.four,
   },
 });

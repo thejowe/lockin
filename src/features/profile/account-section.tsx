@@ -35,6 +35,8 @@
  * pantalla no puede quedarse con una copia desfasada de ella.
  */
 
+import { FormSheet } from '@/components/form-sheet';
+import { CloseHeader, requestClose } from '@/components/close-button';
 import { useState } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
 
@@ -58,6 +60,8 @@ import {
   CompactPrimaryButton as PrimaryButton,
   CompactSecondaryButton as SecondaryButton,
   Field,
+  SecondaryButton as SheetDangerButton,
+  PrimaryButton as SheetPrimaryButton,
   TextField,
 } from './controls';
 import { PASSWORD_MIN_LENGTH } from './register-form';
@@ -77,13 +81,6 @@ export interface AccountSectionProps {
   onDeleted?: () => void;
   /** Corre cuando la sesión ya está cerrada: la pantalla vuelve al arranque. */
   onSignedOut?: () => void;
-  /**
-   * Corre cuando una confirmación (cerrar sesión sin acceso, eliminar cuenta)
-   * ya está pintada. Las confirmaciones crecen hacia abajo, justo bajo la barra
-   * de tabs flotante: la pantalla que aloja la sección usa esto para desplazarse
-   * hasta el final y que sus botones queden a la vista, no por debajo de la barra.
-   */
-  onConfirmationShown?: () => void;
 }
 
 /** Qué falta para poder guardar una contraseña nueva, o `null` si nada. */
@@ -112,7 +109,6 @@ export function AccountSection({
   children,
   onDeleted,
   onSignedOut,
-  onConfirmationShown,
 }: AccountSectionProps = {}) {
   const theme = useTheme();
   const {
@@ -243,22 +239,33 @@ export function AccountSection({
 
         {account.recoverable && panel === 'menu' ? (
           <View style={[styles.panel, { borderColor: theme.border }]}>
-            <ThemedText type="bodyStrong">{t('Gestionar contraseña')}</ThemedText>
+            <CloseHeader onPress={closePanel} disabled={busy !== null}>
+              <ThemedText type="bodyStrong">{t('Gestionar contraseña')}</ThemedText>
+            </CloseHeader>
             <PrimaryButton label={t('Cambiar contraseña')} onPress={() => setPanel('change')} />
             <SecondaryButton
               label={busy === 'recuperar' ? t('Mandando…') : t('He olvidado mi contraseña')}
               onPress={handlePasswordReset}
             />
-            <SecondaryButton label={t('Cancelar')} onPress={closePanel} />
           </View>
         ) : null}
 
         {account.recoverable && (panel === 'change' || panel === 'recovery') ? (
-          <View style={[styles.panel, { borderColor: theme.border }]}>
-            <ThemedText type="bodyStrong">
-              {panel === 'recovery' ? t('Elige tu nueva contraseña') : t('Cambiar contraseña')}
-            </ThemedText>
-
+          <FormSheet
+            header={
+              <ThemedText type="subtitle">
+                {panel === 'recovery' ? t('Elige tu nueva contraseña') : t('Cambiar contraseña')}
+              </ThemedText>
+            }
+            disabled={busy !== null}
+            onClose={() => requestClose(!!current || !!next || !!repeat, closePanel)}
+            footer={
+              <SheetPrimaryButton
+                label={busy === 'contrasena' ? t('Guardando…') : t('Guardar contraseña')}
+                disabled={busy !== null}
+                onPress={handleSavePassword}
+              />
+            }>
             {panel === 'change' ? (
               <Field label={t('Contraseña actual')}>
                 <TextField
@@ -305,15 +312,12 @@ export function AccountSection({
               />
             </Field>
 
-            <View style={styles.actions}>
-              <PrimaryButton
-                label={busy === 'contrasena' ? t('Guardando…') : t('Guardar contraseña')}
-                disabled={busy !== null}
-                onPress={handleSavePassword}
-              />
-              <SecondaryButton label={t('Cancelar')} onPress={closePanel} />
-            </View>
-          </View>
+            {notice && (
+              <ThemedText accessibilityRole="alert" themeColor={notice.tone}>
+                {notice.text}
+              </ThemedText>
+            )}
+          </FormSheet>
         ) : null}
       </View>
 
@@ -398,17 +402,33 @@ export function AccountSection({
         {children}
 
         {confirmingLeave ? (
-          // En la propia pantalla y no en un diálogo del sistema, igual que el
-          // panel de verificación: un modal bloqueante deja la app sin responder.
-          <View
-            onLayout={onConfirmationShown}
-            style={[
-              styles.confirm,
-              { backgroundColor: theme.dangerSoft, borderColor: theme.danger },
-            ]}>
-            <ThemedText type="bodyStrong" themeColor="danger">
-              {t('Cerrar sesión aquí te deja sin acceso a tu cuenta')}
-            </ThemedText>
+          <FormSheet
+            header={
+              <ThemedText type="bodyStrong" themeColor="danger">
+                {t('Cerrar sesión aquí te deja sin acceso a tu cuenta')}
+              </ThemedText>
+            }
+            disabled={busy !== null}
+            onClose={() => setConfirmingLeave(false)}
+            footer={
+              <SheetDangerButton
+                label={
+                  busy === 'salir' ? t('Cerrando sesión…') : t('Cerrar sesión y perder el acceso')
+                }
+                tone="danger"
+                disabled={busy !== null}
+                onPress={() =>
+                  void run(
+                    'salir',
+                    () => signOut({ acceptDataLoss: true }),
+                    () => {
+                      setConfirmingLeave(false);
+                      onSignedOut?.();
+                    }
+                  )
+                }
+              />
+            }>
             <ThemedText type="body" themeColor="textSecondary">
               {t(
                 'Esta cuenta solo existe en este teléfono. Si cierras sesión, perderás el acceso a tu perfil, tus matches y tus conversaciones desde este dispositivo y no podrás recuperarlo.'
@@ -419,25 +439,12 @@ export function AccountSection({
                 'Cerrar sesión no borra tus datos del servidor; para eso está «Eliminar mi cuenta». Si no quieres perder el acceso, asegura antes la cuenta con un email.'
               )}
             </ThemedText>
-
-            <SecondaryButton
-              label={
-                busy === 'salir' ? t('Cerrando sesión…') : t('Cerrar sesión y perder el acceso')
-              }
-              tone="danger"
-              onPress={() =>
-                void run(
-                  'salir',
-                  () => signOut({ acceptDataLoss: true }),
-                  () => {
-                    setConfirmingLeave(false);
-                    onSignedOut?.();
-                  }
-                )
-              }
-            />
-            <SecondaryButton label={t('Mejor no')} onPress={() => setConfirmingLeave(false)} />
-          </View>
+            {notice && (
+              <ThemedText accessibilityRole="alert" themeColor={notice.tone}>
+                {notice.text}
+              </ThemedText>
+            )}
+          </FormSheet>
         ) : (
           <SecondaryButton
             label={busy === 'salir' ? t('Cerrando sesión…') : t('Cerrar sesión')}
@@ -446,15 +453,31 @@ export function AccountSection({
         )}
 
         {confirmingDelete ? (
-          <View
-            onLayout={onConfirmationShown}
-            style={[
-              styles.confirm,
-              { backgroundColor: theme.dangerSoft, borderColor: theme.danger },
-            ]}>
-            <ThemedText type="bodyStrong" themeColor="danger">
-              {t('Eliminar tu cuenta es para siempre')}
-            </ThemedText>
+          <FormSheet
+            header={
+              <ThemedText type="bodyStrong" themeColor="danger">
+                {t('Eliminar tu cuenta es para siempre')}
+              </ThemedText>
+            }
+            disabled={busy !== null}
+            onClose={() => setConfirmingDelete(false)}
+            footer={
+              <SheetDangerButton
+                label={busy === 'borrar' ? t('Eliminando…') : t('Eliminar mi cuenta para siempre')}
+                tone="danger"
+                disabled={busy !== null}
+                onPress={() =>
+                  void run(
+                    'borrar',
+                    () => deleteMyAccount(),
+                    () => {
+                      setConfirmingDelete(false);
+                      onDeleted?.();
+                    }
+                  )
+                }
+              />
+            }>
             <ThemedText type="body" themeColor="textSecondary">
               {t(
                 'Se borran tu perfil, tus fotos, tus matches y tus conversaciones (también para quienes hablaban contigo) y sales de tus grupos. No se puede deshacer ni recuperar.'
@@ -477,35 +500,29 @@ export function AccountSection({
                 />
               </>
             ) : null}
-
-            <SecondaryButton
-              label={busy === 'borrar' ? t('Eliminando…') : t('Eliminar mi cuenta para siempre')}
-              tone="danger"
-              onPress={() =>
-                void run(
-                  'borrar',
-                  () => deleteMyAccount(),
-                  () => {
-                    setConfirmingDelete(false);
-                    onDeleted?.();
-                  }
-                )
-              }
-            />
-            <SecondaryButton label={t('Mejor no')} onPress={() => setConfirmingDelete(false)} />
-          </View>
+            {notice && (
+              <ThemedText accessibilityRole="alert" themeColor={notice.tone}>
+                {notice.text}
+              </ThemedText>
+            )}
+          </FormSheet>
         ) : (
           <SecondaryButton
             label={t('Eliminar mi cuenta')}
             tone="danger"
             onPress={() => {
+              setNotice(null);
               setConfirmingLeave(false);
               setConfirmingDelete(true);
             }}
           />
         )}
 
-        {notice ? (
+        {notice &&
+        !confirmingLeave &&
+        !confirmingDelete &&
+        panel !== 'change' &&
+        panel !== 'recovery' ? (
           <ThemedText type="body" themeColor={notice.tone}>
             {notice.text}
           </ThemedText>
@@ -525,18 +542,7 @@ const styles = StyleSheet.create({
   passwordRow: {
     gap: Spacing.one,
   },
-  actions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
   panel: {
-    gap: Spacing.two,
-    padding: Spacing.three,
-    borderRadius: Radii.medium,
-    borderWidth: Stroke.hairline,
-  },
-  confirm: {
     gap: Spacing.two,
     padding: Spacing.three,
     borderRadius: Radii.medium,

@@ -12,14 +12,14 @@
  * ofreciendo lo mismo mientras dure la recuperación.
  */
 
+import { FormSheet } from '@/components/form-sheet';
+import { requestClose } from '@/components/close-button';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
 
 import { newPasswordProblem } from './account-section';
-import { Field, PrimaryButton, SecondaryButton, TextField } from './controls';
+import { Field, PrimaryButton, TextField } from './controls';
 import { PASSWORD_MIN_LENGTH } from './register-form';
 import { useAccountActions } from './use-account-actions';
 import { t } from '@/i18n';
@@ -54,17 +54,28 @@ export function NewPasswordForm({
   }
 
   return (
-    <View style={styles.root}>
-      <View style={styles.header}>
-        <ThemedText type="title">{t('Elige tu nueva contraseña')}</ThemedText>
-        {account?.email ? (
-          <ThemedText
-            type="mono"
-            accessibilityLabel={t('Email de tu cuenta: {email}', { email: account.email })}>
-            {account.email}
-          </ThemedText>
-        ) : null}
-      </View>
+    <FormSheet
+      header={<ThemedText type="title">{t('Elige tu nueva contraseña')}</ThemedText>}
+      onClose={() => requestClose(!!next || !!repeat, onDone)}
+      disabled={busy !== null}
+      footer={
+        saved ? (
+          <PrimaryButton label={t('Seguir')} onPress={onDone} />
+        ) : (
+          <PrimaryButton
+            label={busy === 'contrasena' ? t('Guardando…') : t('Guardar contraseña')}
+            disabled={busy !== null}
+            onPress={handleSave}
+          />
+        )
+      }>
+      {account?.email ? (
+        <ThemedText
+          type="mono"
+          accessibilityLabel={t('Email de tu cuenta: {email}', { email: account.email })}>
+          {account.email}
+        </ThemedText>
+      ) : null}
 
       {saved ? null : (
         <>
@@ -97,12 +108,6 @@ export function NewPasswordForm({
               autoCorrect={false}
             />
           </Field>
-
-          <PrimaryButton
-            label={busy === 'contrasena' ? t('Guardando…') : t('Guardar contraseña')}
-            disabled={busy !== null}
-            onPress={handleSave}
-          />
         </>
       )}
 
@@ -111,21 +116,6 @@ export function NewPasswordForm({
           {notice.text}
         </ThemedText>
       ) : null}
-
-      {saved ? (
-        <PrimaryButton label={t('Seguir')} onPress={onDone} />
-      ) : (
-        <SecondaryButton label={t('Ahora no')} disabled={busy !== null} onPress={onDone} />
-      )}
-    </View>
+    </FormSheet>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    gap: Spacing.three,
-  },
-  header: {
-    gap: Spacing.two,
-  },
-});

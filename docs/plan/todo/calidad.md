@@ -1,5 +1,14 @@
 # TODO — calidad
 
+## Cierre de hojas y formularios · 20 de noviembre de 2026
+
+- [x] El test de cierre recorre los componentes de producto. Los tests de interacción ejercitan la X en los tres idiomas, el arrastre, Atrás, las dos respuestas al aviso de descarte y la conservación de los campos.
+- [x] Maestro toca la X por su etiqueta accesible y desliza hacia abajo desde el título del editor. El recorrido compartido abre el teclado, comprueba que «Guardar proyecto» sigue visible, conserva un borrador y después lo descarta.
+- [x] En el emulador Android se comprobaron la X y el arrastre con Gboard abierto y cerrado. Cancelar conservó el borrador y, tras confirmar el descarte, el editor volvió a abrirse vacío.
+- [x] El editor comparte la vista previa con la tarjeta de perfil. Los tests de tema miden los límites de los campos, el icono de la portada y el nombre sobre una fotografía clara.
+- [x] En la rama local pasaron TypeScript, el lint de Expo (tres avisos previos) y 2.447 pruebas de Jest en 192 suites. El contrato optativo de Supabase aporta los 247 casos omitidos. Pasaron además las 24 comprobaciones estáticas de los recorridos Maestro modificados de acceso y edición.
+- La galería reúne 51 parejas de capturas, indica sus plataformas y revisiones e incluye las comprobaciones con el teclado de Android y el registro de gestos táctiles en Edge móvil. [Abrir la galería comprimida](../../auditoria/cerrar-con-x.zip)
+
 ## Formato y cobertura para TestFlight · 20 de noviembre de 2026
 
 - [x] Prettier pasa en Linux tras formatear los 29 archivos que señalaba Actions. [Trabajo de Formato](https://github.com/thejowe/lockin/actions/runs/44727837278/job/136259826425)

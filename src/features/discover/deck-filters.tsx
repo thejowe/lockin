@@ -103,7 +103,6 @@ export function DeckFilters({
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <ThemedText type="subtitle">{t('Filtros')}</ThemedText>
         {clearable ? (
           <Pressable accessibilityRole="button" hitSlop={HitSlop.chip} onPress={() => onChange({})}>
             <ThemedText type="smallBold" themeColor="brass">

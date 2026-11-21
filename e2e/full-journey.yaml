@@ -157,8 +157,7 @@ name: Alta, perfil, deck, match, mensaje y persistencia
 - extendedWaitUntil:
     visible: 'Pon tu foto de perfil'
     timeout: 10000
-- addMedia:
-    - fixtures/avatar.png
+# run.mjs ya ha comprobado que MediaStore devuelve la foto de prueba.
 - tapOn: 'Elegir de la galería'
 - tapOn:
     text: 'Photo taken on .+|Foto (tomada|hecha|feta) .+'
@@ -175,6 +174,8 @@ name: Alta, perfil, deck, match, mensaje y persistencia
 - extendedWaitUntil:
     visible: 'Tus proyectos'
     timeout: 10000
+- tapOn: 'Crear proyecto'
+- runFlow: steps/check-project-close.yaml
 - tapOn: 'Crear perfil'
 # La entrada animada del logo: tocarla entra sin esperar a que acabe.
 - extendedWaitUntil:

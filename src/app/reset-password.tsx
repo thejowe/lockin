@@ -1,10 +1,5 @@
 import { Redirect, useRouter } from 'expo-router';
-import { StyleSheet } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Screen } from '@/components/ambient-background';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { NewPasswordForm } from '@/features/profile';
 import { accountsAvailable } from '@/features/profile/account-gateway';
 
@@ -18,32 +13,5 @@ export default function ResetPasswordRoute() {
 
   if (!accountsAvailable) return <Redirect href="/" />;
 
-  return (
-    <Screen ambient="plum">
-      <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
-        {/* El campo enfocado sube por encima del teclado: ver `profile-form.tsx`. */}
-        <KeyboardAwareScrollView
-          bottomOffset={Spacing.five}
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled">
-          <NewPasswordForm onDone={() => router.replace('/')} />
-        </KeyboardAwareScrollView>
-      </SafeAreaView>
-    </Screen>
-  );
+  return <NewPasswordForm onDone={() => router.replace('/')} />;
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-  content: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.five,
-    width: '100%',
-    maxWidth: MaxContentWidth,
-    alignSelf: 'center',
-  },
-});

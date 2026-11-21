@@ -25,7 +25,10 @@ name: Crear un proyecto conjunto, publicarlo con dos consentimientos y volver a 
 - tapOn: ${B_NAME}
 - tapOn: 'Plan compartido'
 - assertVisible: ${OLD_TASK}
-# Crear el proyecto: mismo editor y misma moderación que los proyectos de perfil.
+# El editor conserva el borrador si se cancela la confirmación y lo descarta solo al confirmar.
+- tapOn: 'Crear proyecto juntos'
+- runFlow: steps/check-project-close.yaml
+# Crear el proyecto con el mismo editor de perfil y grupo.
 - tapOn: 'Crear proyecto juntos'
 - tapOn:
     id: 'project-name'

@@ -41,13 +41,13 @@
  */
 
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 
 import { RevealStack } from '@/components/reveal-stack';
+import { FormSheet } from '@/components/form-sheet';
 import { ThemedText } from '@/components/themed-text';
-import { Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
+import { Opacity, Spacing } from '@/constants/theme';
 import { useRepositories } from '@/data';
-import { useTheme } from '@/hooks/use-theme';
 
 import { describeAccountError } from './account-copy';
 import {
@@ -88,7 +88,6 @@ export function SignInForm({
   forgot?: boolean;
   onForgotChange?: (next: boolean) => void;
 }) {
-  const theme = useTheme();
   const repositories = useRepositories();
 
   const [email, setEmail] = useState('');
@@ -291,33 +290,30 @@ export function SignInForm({
       </Field>
 
       {confirmingLeave ? (
-        // En la propia pantalla y no en un diálogo del sistema, como el aviso
-        // de cerrar sesión: un modal bloqueante deja la app sin responder.
-        <View
-          style={[
-            styles.confirm,
-            { backgroundColor: theme.dangerSoft, borderColor: theme.danger },
-          ]}>
-          <ThemedText type="bodyStrong" themeColor="danger">
-            {t('Entrar aquí deja atrás el perfil de este teléfono')}
-          </ThemedText>
+        <FormSheet
+          header={
+            <ThemedText type="bodyStrong" themeColor="danger">
+              {t('Entrar aquí deja atrás el perfil de este teléfono')}
+            </ThemedText>
+          }
+          onClose={() => setConfirmingLeave(false)}
+          footer={
+            <SecondaryButton
+              label={busy === 'entrar' ? t('Entrando…') : t('Entrar y dejar este perfil')}
+              tone="danger"
+              onPress={() => {
+                if (busy) return;
+                setConfirmingLeave(false);
+                void enter(email.trim());
+              }}
+            />
+          }>
           <ThemedText type="small" themeColor="textSecondary">
             {t(
               'La cuenta de este teléfono no tiene email, así que tu perfil, tus matches y tus conversaciones de ahora solo existen aquí. Si entras en la otra cuenta, no hay forma de volver a ellos.'
             )}
           </ThemedText>
-
-          <SecondaryButton
-            label={busy === 'entrar' ? t('Entrando…') : t('Entrar y dejar este perfil')}
-            tone="danger"
-            onPress={() => {
-              if (busy) return;
-              setConfirmingLeave(false);
-              void enter(email.trim());
-            }}
-          />
-          <SecondaryButton label={t('Mejor no')} onPress={() => setConfirmingLeave(false)} />
-        </View>
+        </FormSheet>
       ) : (
         <>
           <PrimaryButton
@@ -362,11 +358,5 @@ const styles = StyleSheet.create({
   },
   header: {
     gap: Spacing.two,
-  },
-  confirm: {
-    gap: Spacing.two,
-    padding: Spacing.three,
-    borderRadius: Radii.medium,
-    borderWidth: Stroke.hairline,
   },
 });

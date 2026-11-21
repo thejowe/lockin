@@ -63,7 +63,7 @@ describe('seguridad desde la cabecera del chat', () => {
     expect(screen.getByRole('button', { name: 'Bloquear a Núria Bosch' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Reportar a Núria Bosch' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Enviar mensaje' })).toBeNull();
-    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar opciones' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
     expect(screen.getByRole('button', { name: 'Enviar mensaje' })).toBeTruthy();
   });
 
@@ -91,7 +91,7 @@ describe('seguridad desde la cabecera del chat', () => {
       details: '',
     });
     expect(screen.getByText('Reporte enviado.')).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar opciones' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
     expect(await repositories.matches.list()).toHaveLength(1);
     expect(screen.getByRole('button', { name: 'Enviar mensaje' })).toBeTruthy();
   });

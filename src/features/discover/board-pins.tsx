@@ -7,6 +7,8 @@
  * hook `useBoardPosts` lo comparte la tarjeta para saber si añade esta página.
  */
 
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { CloseButton } from '@/components/close-button';
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
@@ -71,13 +73,17 @@ export function BoardPins({ posts, ownerName }: { posts: BoardPost[]; ownerName:
         transparent
         animationType="fade"
         onRequestClose={() => setOpenId(null)}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('Cerrar')}
-          onPress={() => setOpenId(null)}
-          style={styles.backdrop}>
+        <SafeAreaView style={styles.backdrop}>
+          <Pressable
+            accessible={false}
+            style={StyleSheet.absoluteFill}
+            onPress={() => setOpenId(null)}
+          />
+          <View style={styles.top}>
+            <CloseButton onPress={() => setOpenId(null)} />
+          </View>
           {open ? (
-            <View style={styles.viewer}>
+            <View pointerEvents="none" style={styles.viewer}>
               <Image
                 source={{ uri: open.imageUrl ?? undefined }}
                 style={styles.large}
@@ -93,13 +99,14 @@ export function BoardPins({ posts, ownerName }: { posts: BoardPost[]; ownerName:
               ) : null}
             </View>
           ) : null}
-        </Pressable>
+        </SafeAreaView>
       </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  top: { alignSelf: 'stretch', paddingHorizontal: Spacing.two },
   cork: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -128,18 +135,19 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
     padding: Spacing.three,
     backgroundColor: 'rgba(0,0,0,0.92)',
   },
   viewer: {
+    flex: 1,
+    justifyContent: 'center',
     width: '100%',
     gap: Spacing.three,
   },
   large: {
     width: '100%',
     aspectRatio: 1,
+    flexShrink: 1,
   },
   caption: {
     color: '#FFFFFF',

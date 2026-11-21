@@ -11,6 +11,7 @@
  * ofrece volver. Mismas puertas que el chat 1:1: correo confirmado y Términos.
  */
 
+import { CloseHeader } from '@/components/close-button';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { Fragment, useCallback, useMemo, useRef, useState } from 'react';
 import {
@@ -145,20 +146,18 @@ function GroupChatContent() {
           <ScrollView contentContainerStyle={styles.safety} keyboardShouldPersistTaps="handled">
             {reported ? (
               <View style={styles.reported}>
-                <ThemedText type="subtitle" accessibilityRole="alert">
-                  {t('Reporte enviado.')}
-                </ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">
-                  {t('El reporte es privado.')}
-                </ThemedText>
-                <Button
-                  label={t('Cerrar')}
-                  variant="secondary"
+                <CloseHeader
                   onPress={() => {
                     setReported(false);
                     setReportingId(null);
-                  }}
-                />
+                  }}>
+                  <ThemedText type="subtitle" accessibilityRole="alert">
+                    {t('Reporte enviado.')}
+                  </ThemedText>
+                </CloseHeader>
+                <ThemedText type="small" themeColor="textSecondary">
+                  {t('El reporte es privado.')}
+                </ThemedText>
               </View>
             ) : (
               <ReportForm

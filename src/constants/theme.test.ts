@@ -19,6 +19,8 @@ import {
   GroupHeaderAlpha,
   OnPremium,
   PremiumTones,
+  ProjectCaptionBackground,
+  ProjectFieldEdgeAlpha,
   ScrimAlpha,
 } from './theme';
 
@@ -186,6 +188,19 @@ const BACKDROPS = { fondo: 'background', 'luz ambiental': 'peak' } as const;
 
 describe.each(THEMES)('contraste del tema %s', (theme) => {
   const palette = Colors[theme];
+
+  it('mantiene AA en los campos de proyecto y en el nombre sobre una portada blanca', () => {
+    const sheet = palette.surfaceOpaque;
+    const field = composite(palette.backgroundElement, sheet);
+    const edge = palette.textMuted + ProjectFieldEdgeAlpha;
+    expect(contrastRatio(composite(edge, field), field)).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(composite(edge, sheet), sheet)).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(palette.textMuted, field)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(palette.textSecondary, field)).toBeGreaterThanOrEqual(4.5);
+    expect(
+      contrastRatio('#FFFFFF', composite(ProjectCaptionBackground, '#FFFFFF'))
+    ).toBeGreaterThanOrEqual(4.5);
+  });
 
   it('mantiene AA en el nombre del grupo y las pestañas sobre una foto blanca', () => {
     const header = composite(palette.background + GroupHeaderAlpha, '#FFFFFF');

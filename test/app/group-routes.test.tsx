@@ -6,6 +6,8 @@
  * Ojo: en RNTL 14 `render` y `fireEvent` son asíncronos.
  */
 
+import { act } from '@testing-library/react-native';
+import { Alert } from 'react-native';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { ScrollView } from 'react-native';
 import * as Notifications from 'expo-notifications';
@@ -211,13 +213,24 @@ describe('/group/new', () => {
     await fireEvent.changeText(screen.getByLabelText('Descripción'), 'Rutas accesibles para todos');
     await fireEvent.changeText(screen.getByLabelText('Enlace del proyecto'), 'https://example.org');
     create.mockRejectedValueOnce(new GroupError('group-limit', ''));
-    await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Guardar proyecto' }));
     expect(await screen.findByText(/Ya estás en 3 grupos/)).toBeTruthy();
     expect(await repositories.groups.listMine()).toHaveLength(0);
-    await fireEvent.press(screen.getByRole('button', { name: 'Cancelar' }));
+    const alert = jest.spyOn(Alert, 'alert');
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
+    await act(() =>
+      alert.mock.lastCall?.[2]?.find((choice) => choice.style === 'destructive')?.onPress?.()
+    );
+    alert.mockRestore();
     await fireEvent.changeText(screen.getByLabelText('Nombre del grupo'), 'Laboratorio nuevo');
     await fireEvent.press(screen.getByRole('button', { name: 'Continuar al proyecto' }));
-    await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
+    expect(screen.getByLabelText('Nombre del proyecto').props.value).toBe('');
+    await fireEvent.changeText(screen.getByLabelText('Nombre del proyecto'), 'Atlas');
+    await fireEvent.changeText(screen.getByLabelText('Frase corta'), 'Viajar sin barreras');
+    await fireEvent.press(screen.getByRole('button', { name: 'Más detalles' }));
+    await fireEvent.changeText(screen.getByLabelText('Descripción'), 'Rutas accesibles para todos');
+    await fireEvent.changeText(screen.getByLabelText('Enlace del proyecto'), 'https://example.org');
+    await fireEvent.press(screen.getByRole('button', { name: 'Guardar proyecto' }));
     await waitFor(() => expect(router.back).toHaveBeenCalled());
     const [{ group }] = await repositories.groups.listMine();
     expect(group.project).toMatchObject({
@@ -356,7 +369,7 @@ describe('/group/info', () => {
       screen.getByText(/Le avisaremos si tiene activadas las notificaciones de actividad de grupos/)
     ).toBeTruthy();
     // Cancelar no expulsa.
-    await fireEvent.press(screen.getByRole('button', { name: 'Cancelar' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Expulsar a Inés Aranda' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Confirmar expulsión' }));
 
@@ -603,7 +616,7 @@ describe('/group/[groupId]', () => {
 
     await fireEvent.press(screen.getByRole('button', { name: 'Reportar mensaje' }));
     // Cancelar vuelve al hilo.
-    await fireEvent.press(screen.getByRole('button', { name: 'Cancelar reporte' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Reportar mensaje' }));
     await fireEvent.press(screen.getByRole('radio', { name: 'Acoso' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Enviar reporte' }));

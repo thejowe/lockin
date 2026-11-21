@@ -13,8 +13,8 @@
  * "`render` function has not been called".
  */
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { ScrollView } from 'react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { Alert, ScrollView } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
 import { createMockRepositories, createMockStore } from '@/data/mock';
@@ -443,15 +443,46 @@ describe('ProfileForm', () => {
     expect(screen.getByLabelText('Ciudad').props.value).toBe('Valencia');
   });
 
-  it('solo pinta el botón de cancelar cuando hay algo que cancelar', async () => {
+  it('muestra la X únicamente en la edición de una ficha', async () => {
     const onCancel = jest.fn();
     const { rerender } = await render(<ProfileForm submitLabel="Guardar" onSubmit={jest.fn()} />);
     expect(screen.queryByText('Cancelar')).toBeNull();
 
     await rerender(<ProfileForm submitLabel="Guardar" onSubmit={jest.fn()} onCancel={onCancel} />);
-    await fireEvent.press(screen.getByText('Cancelar'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
 
     expect(onCancel).toHaveBeenCalled();
+  });
+
+  it('cancelar el descarte de un nombre modificado conserva el borrador de la sección', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    try {
+      const onClose = jest.fn();
+      const profile = buildProfile({ name: 'Alba Ferrer' });
+      await render(
+        <ProfileForm
+          initial={profile}
+          section="basics"
+          submitLabel="Guardar"
+          onSubmit={jest.fn()}
+          onCancel={onClose}
+        />
+      );
+      await fireEvent.changeText(screen.getByLabelText('Nombre'), 'Alba Vidal');
+      await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
+      expect(alert).toHaveBeenCalledWith('¿Descartar los cambios?', undefined, expect.any(Array));
+      await act(() =>
+        alert.mock.lastCall?.[2]?.find((option) => option.style === 'cancel')?.onPress?.()
+      );
+      expect(screen.getByLabelText('Nombre')).toHaveDisplayValue('Alba Vidal');
+      expect(onClose).not.toHaveBeenCalled();
+      await fireEvent.changeText(screen.getByLabelText('Nombre'), 'Alba Ferrer');
+      await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
+      expect(onClose).toHaveBeenCalledTimes(1);
+      expect(alert).toHaveBeenCalledTimes(1);
+    } finally {
+      alert.mockRestore();
+    }
   });
 
   describe('país y zona horaria', () => {

@@ -64,11 +64,12 @@ describe('formulario de reporte', () => {
       const scroll = within(screen.getByTestId('report-fields'));
       expect(scroll.getAllByRole('radio')).toHaveLength(5);
       expect(scroll.queryByRole('button', { name: 'Enviar reporte' })).toBeNull();
-      expect(scroll.queryByRole('button', { name: 'Cancelar reporte' })).toBeNull();
+      expect(scroll.queryByRole('button', { name: 'Cerrar' })).toBeNull();
 
       const actions = within(screen.getByTestId('report-actions'));
       expect(actions.getByRole('button', { name: 'Enviar reporte' })).toBeTruthy();
-      expect(actions.getByRole('button', { name: 'Cancelar reporte' })).toBeTruthy();
+      expect(actions.queryByRole('button', { name: 'Cerrar' })).toBeNull();
+      expect(screen.getByRole('button', { name: 'Cerrar' })).toBeTruthy();
     });
 
     it('el formulario anclado sigue enviando el reporte', async () => {
@@ -127,7 +128,8 @@ describe('formulario de reporte', () => {
         // Las acciones siguen fuera del scroll, accesibles y pulsables.
         const actions = within(screen.getByTestId('report-actions'));
         expect(actions.getByRole('button', { name: 'Enviar reporte' })).toBeTruthy();
-        expect(actions.getByRole('button', { name: 'Cancelar reporte' })).toBeTruthy();
+        expect(actions.queryByRole('button', { name: 'Cerrar' })).toBeNull();
+        expect(screen.getByRole('button', { name: 'Cerrar' })).toBeTruthy();
       });
 
       it('con el teclado cerrado no cambia nada', async () => {

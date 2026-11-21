@@ -18,6 +18,7 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
+import { FormSheet } from '@/components/form-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { Opacity, Radii, Spacing, Stroke } from '@/constants/theme';
 import {
@@ -138,8 +139,6 @@ export function LinkAccounts({
       return;
     }
     if (account === 'github' && handwrittenGithub) {
-      // En la propia pantalla, no en un diálogo del sistema: un modal
-      // bloqueante deja la app sin responder a nada más.
       setConfirmingGithub(true);
       return;
     }
@@ -221,12 +220,16 @@ export function LinkAccounts({
       </ThemedText>
 
       {confirmingGithub && handwrittenGithub ? (
-        <View
-          style={[
-            styles.panel,
-            { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-          ]}>
-          <ThemedText type="bodyStrong">{t('Vas a sustituir el enlace que escribiste')}</ThemedText>
+        <FormSheet
+          header={
+            <ThemedText type="bodyStrong">
+              {t('Vas a sustituir el enlace que escribiste')}
+            </ThemedText>
+          }
+          onClose={() => setConfirmingGithub(false)}
+          footer={
+            <PrimaryButton label={t('Continuar y sobrescribir')} onPress={() => link('github')} />
+          }>
           <ThemedText type="small" themeColor="textSecondary">
             {t('Tu ficha enseña ahora:')}
           </ThemedText>
@@ -234,12 +237,7 @@ export function LinkAccounts({
           <ThemedText type="small" themeColor="textSecondary">
             {t('Al vincular pasará a enseñar la cuenta con la que entres en GitHub, sea cual sea.')}
           </ThemedText>
-          <PrimaryButton label={t('Continuar y sobrescribir')} onPress={() => link('github')} />
-          <SecondaryButton
-            label={t('Dejarlo como está')}
-            onPress={() => setConfirmingGithub(false)}
-          />
-        </View>
+        </FormSheet>
       ) : null}
 
       {open === 'github' && githubSeal ? (

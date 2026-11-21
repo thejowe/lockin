@@ -88,7 +88,7 @@ describe('OutOfLikesSheet', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Hazte Premium' }));
     expect(onUpgrade).toHaveBeenCalledTimes(1);
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Ahora no' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
@@ -115,7 +115,7 @@ describe('OutOfLikesSheet', () => {
 
     expect(screen.getByText('Demasiados likes por hoy')).toBeOnTheScreen();
     expect(screen.queryByText('Hazte Premium')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Entendido' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Cerrar' })).toBeOnTheScreen();
   });
 
   it('cuando hace falta Premium, lo dice y ofrece el paywall', async () => {
@@ -175,6 +175,6 @@ describe('OutOfLikesSheet', () => {
     );
 
     expect(screen.queryByText('Hazte Premium')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Entendido' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Cerrar' })).toBeOnTheScreen();
   });
 });

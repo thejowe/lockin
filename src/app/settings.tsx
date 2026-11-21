@@ -1,12 +1,10 @@
 import { useRouter } from 'expo-router';
-import { useRef } from 'react';
-import { ScrollView, StyleSheet, type ScrollViewInstance } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/ambient-background';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { AccountSection, LanguageSection, LegalLinks, PersonalInfo } from '@/features/profile';
-import { useReduceMotion } from '@/hooks/use-reduce-motion';
 import { NotificationSection } from '@/features/profile/notification-section';
 
 /**
@@ -16,8 +14,6 @@ import { NotificationSection } from '@/features/profile/notification-section';
  */
 export default function SettingsScreen() {
   const router = useRouter();
-  const scrollRef = useRef<ScrollViewInstance>(null);
-  const reduceMotion = useReduceMotion();
 
   // Ajustes es una ruta apilada y no pasa por la puerta del correo: sin sesión
   // se queda pintada con solo el idioma. Se vacía la pila (para que atrás no
@@ -30,14 +26,13 @@ export default function SettingsScreen() {
   return (
     <Screen ambient="plum">
       <SafeAreaView style={styles.root} edges={['bottom']}>
-        <ScrollView ref={scrollRef} contentContainerStyle={styles.content}>
+        <ScrollView contentContainerStyle={styles.content}>
           <LanguageSection />
           <NotificationSection />
           <AccountSection
             personalInfo={<PersonalInfo />}
             onDeleted={backToStart}
-            onSignedOut={backToStart}
-            onConfirmationShown={() => scrollRef.current?.scrollToEnd({ animated: !reduceMotion })}>
+            onSignedOut={backToStart}>
             <LegalLinks />
           </AccountSection>
         </ScrollView>

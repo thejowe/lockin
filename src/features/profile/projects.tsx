@@ -1,3 +1,4 @@
+import { CloseButton } from '@/components/close-button';
 import type { ScrollViewInstance } from 'react-native';
 import { Image } from 'expo-image';
 import { useRef, useState } from 'react';
@@ -21,6 +22,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { t } from '@/i18n';
 import { SecondaryButton } from './controls';
 import { ProjectAuthorFaces } from './project-author-faces';
+import { ProjectCardCaption } from './project-card-caption';
 import { ProjectEditor } from './project-editor';
 import { useProjects } from './use-projects';
 
@@ -69,12 +71,7 @@ export function MyProjects({ ownerId, wizard = false }: { ownerId: string; wizar
                 </ThemedText>
               </View>
             ) : null}
-            <View style={styles.caption}>
-              <ProjectAuthorFaces project={p} compact />
-              <ThemedText type="smallBold" style={styles.white} numberOfLines={2}>
-                {p.name}
-              </ThemedText>
-            </View>
+            <ProjectCardCaption name={p.name} project={p} />
           </Pressable>
         ))}
         {!loading && !error && publishedCount < 3 ? (
@@ -189,6 +186,7 @@ function Gallery({ photos }: { photos: ProjectPhoto[] }) {
       {start !== null ? (
         <Modal onRequestClose={() => setStart(null)}>
           <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+            <CloseButton onPress={() => setStart(null)} />
             <ScrollView
               key={start}
               horizontal
@@ -209,7 +207,6 @@ function Gallery({ photos }: { photos: ProjectPhoto[] }) {
                 />
               ))}
             </ScrollView>
-            <SecondaryButton label={t('Cerrar')} onPress={() => setStart(null)} />
           </SafeAreaView>
         </Modal>
       ) : null}
@@ -278,7 +275,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: '#181818',
   },
-  caption: { backgroundColor: 'rgba(16,16,16,0.88)', padding: 5 },
   privateBadge: {
     position: 'absolute',
     left: 4,

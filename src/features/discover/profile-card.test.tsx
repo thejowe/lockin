@@ -112,7 +112,7 @@ describe('ProfileCard', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Opciones de Núria' }));
     expect(screen.getByRole('button', { name: 'Bloquear a Núria' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Reportar a Núria' })).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar opciones' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
     expect(screen.getByText('Domina')).toBeTruthy();
   });
   it('con el panel controlado desde fuera, avisa de cada apertura y cierre', async () => {
@@ -129,7 +129,7 @@ describe('ProfileCard', () => {
     await view.rerender(
       <ProfileCard profile={profile} safetyOpen onSafetyOpenChange={onSafetyOpenChange} />
     );
-    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar opciones' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
     expect(onSafetyOpenChange).toHaveBeenLastCalledWith(false);
   });
 
@@ -478,7 +478,7 @@ describe('ProfileCard: foto de fondo', () => {
     // El velo no altera la apertura ni el retorno del panel de seguridad.
     await fireEvent.press(screen.getByRole('button', { name: 'Opciones de Núria' }));
     expect(screen.getByRole('button', { name: 'Reportar a Núria' })).toBeTruthy();
-    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar opciones' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
     expect(screen.getByText('Punto de partida')).toBeTruthy();
   });
 

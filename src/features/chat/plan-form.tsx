@@ -1,10 +1,11 @@
+import { requestClose } from '@/components/close-button';
+import { FormSheet } from '@/components/form-sheet';
 import { uuid } from 'expo';
 import { useRef, useState } from 'react';
-import { Keyboard, StyleSheet, View } from 'react-native';
+import { Keyboard } from 'react-native';
 
 import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
 import type { PlanDraft } from '@/data/chat-plan';
 import { Field, TextField } from '@/features/profile/controls';
 import { t } from '@/i18n';
@@ -50,7 +51,8 @@ export function PlanForm({
 }) {
   const meeting = kind === 'meeting';
   const [title, setTitle] = useState('');
-  const [date, setDate] = useState(tomorrow);
+  const [originalDate] = useState(tomorrow);
+  const [date, setDate] = useState(originalDate);
   const [time, setTime] = useState('10:00');
   const [place, setPlace] = useState('');
   const [pending, setPending] = useState(false);
@@ -92,10 +94,23 @@ export function PlanForm({
 
   const titleLabel = meeting ? t('Tema de la reunión') : t('Nombre de la tarea');
   return (
-    <View style={styles.form}>
-      <ThemedText type="subtitle">
-        {meeting ? t('Programar reunión') : t('Añadir tarea')}
-      </ThemedText>
+    <FormSheet
+      header={
+        <ThemedText type="subtitle">
+          {meeting ? t('Programar reunión') : t('Añadir tarea')}
+        </ThemedText>
+      }
+      disabled={pending}
+      onClose={() =>
+        requestClose(!!title || !!place || date !== originalDate || time !== '10:00', onClose)
+      }
+      footer={
+        <Button
+          label={pending ? t('Guardando…') : t('Guardar')}
+          onPress={submit}
+          disabled={!title.trim() || pending}
+        />
+      }>
       <Field label={titleLabel}>
         <TextField
           accessibilityLabel={titleLabel}
@@ -161,14 +176,6 @@ export function PlanForm({
           {error}
         </ThemedText>
       ) : null}
-      <Button
-        label={pending ? t('Guardando…') : t('Guardar')}
-        onPress={submit}
-        disabled={!title.trim() || pending}
-      />
-      <Button label={t('Cancelar')} onPress={onClose} disabled={pending} variant="secondary" />
-    </View>
+    </FormSheet>
   );
 }
-
-const styles = StyleSheet.create({ form: { gap: Spacing.three } });

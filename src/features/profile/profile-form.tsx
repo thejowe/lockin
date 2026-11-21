@@ -13,6 +13,8 @@
  * rol vacante — eso es Modo Talento (Fase 4), fuera del MVP.
  */
 
+import { requestClose } from '@/components/close-button';
+import { FormSheet } from '@/components/form-sheet';
 import { useRef, useState } from 'react';
 import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import {
@@ -38,16 +40,7 @@ import {
   SPECIALTIES_MAX,
   STARTING_POINT_OPTIONS,
 } from './catalog';
-import {
-  Chip,
-  ChipRow,
-  Field,
-  OptionCard,
-  PrimaryButton,
-  SecondaryButton,
-  Stepper,
-  TextField,
-} from './controls';
+import { Chip, ChipRow, Field, OptionCard, PrimaryButton, Stepper, TextField } from './controls';
 import { MyProjects } from './projects';
 import { Board } from './board';
 import { LocationFields } from './location-fields';
@@ -287,7 +280,6 @@ export interface ProfileFormProps {
   onSubmit: (input: ProfileInput) => Promise<void>;
   /** Acción secundaria (cancelar edición). Si falta, no se pinta. */
   onCancel?: () => void;
-  cancelLabel?: string;
   /** Cabecera propia de la pantalla que lo monta. */
   header?: React.ReactNode;
   /**
@@ -316,12 +308,12 @@ export function ProfileForm({
   submitLabel,
   onSubmit,
   onCancel,
-  cancelLabel = t('Cancelar'),
   header,
   section,
 }: ProfileFormProps) {
   const show = (part: ProfileSection) => section === undefined || section === part;
-  const [draft, setDraft] = useState<Draft>(() => initialDraft(initial, seed));
+  const [original] = useState(() => initialDraft(initial, seed));
+  const [draft, setDraft] = useState<Draft>(original);
   const [errors, setErrors] = useState<Errors>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -387,294 +379,298 @@ export function ProfileForm({
     }
   }
 
-  return (
-    // El campo enfocado sube por encima del teclado. `KeyboardAvoidingView` no
-    // servía: en Android, con edge-to-edge (obligatorio desde Expo SDK 54), la
-    // ventana ya no se redimensiona al abrir el teclado y no se entera (ver la
-    // nota de `KeyboardProvider` en `src/app/_layout.tsx`); la mitad baja del
-    // formulario quedaba tapada mientras se escribía.
-    <View style={styles.root}>
-      <KeyboardAwareScrollView
-        ref={scrollRef}
-        bottomOffset={KEYBOARD_GAP}
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag">
-        {header}
+  const submit = (
+    <PrimaryButton
+      label={saving ? t('Guardando…') : submitLabel}
+      disabled={saving}
+      onPress={handleSubmit}
+    />
+  );
+  const fields = (
+    <KeyboardAwareScrollView
+      ref={scrollRef}
+      bottomOffset={KEYBOARD_GAP}
+      contentContainerStyle={styles.content}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag">
+      {!onCancel && header}
 
-        {show('basics') ? (
-          <>
-            <Field label={t('Nombre')} error={errors.name} onLayout={track('name')}>
-              <TextField
-                value={draft.name}
-                onChangeText={(value) => update('name', value)}
-                placeholder={t('Cómo te llamas')}
-                autoCapitalize="words"
-                autoCorrect={false}
-                autoComplete="name"
-                accessibilityLabel={t('Nombre')}
-              />
-            </Field>
-
-            <Field label={t('Edad')} error={errors.age} onLayout={track('age')}>
-              <TextField
-                value={draft.age}
-                onChangeText={(value) => update('age', value.replace(/[^0-9]/g, ''))}
-                placeholder="28"
-                autoCapitalize="none"
-                autoCorrect={false}
-                inputMode="numeric"
-                maxLength={2}
-                accessibilityLabel={t('Edad')}
-              />
-            </Field>
-
-            <LocationFields
-              value={draft}
-              errors={errors}
-              onCountryChange={(iso) => {
-                setDraft((current) => withCountry(current, iso));
-                setErrors((current) => ({ ...current, country: undefined, timezone: undefined }));
-              }}
-              onCityChange={(value) => update('city', value)}
-              onTimezoneChange={(value) => update('timezone', value)}
-              onLayoutField={track}
+      {show('basics') ? (
+        <>
+          <Field label={t('Nombre')} error={errors.name} onLayout={track('name')}>
+            <TextField
+              value={draft.name}
+              onChangeText={(value) => update('name', value)}
+              placeholder={t('Cómo te llamas')}
+              autoCapitalize="words"
+              autoCorrect={false}
+              autoComplete="name"
+              accessibilityLabel={t('Nombre')}
             />
-          </>
-        ) : null}
+          </Field>
 
-        {show('specialties') ? (
-          <>
-            <Field
-              label={t('Lo que domino')}
-              hint={t('Lo que sabes hacer. Elige todas las que apliquen.')}
-              error={errors.specialties}
-              onLayout={track('specialties')}>
-              <MasteryPicker
-                specialties={draft.specialties}
-                other={draft.otherSpecialty}
-                onSpecialtiesChange={(next) => update('specialties', next)}
-                // El error de «Otra» se pinta en `specialties`.
-                onOtherChange={(next) => {
-                  update('otherSpecialty', next);
-                  setErrors((current) => ({ ...current, specialties: undefined }));
-                }}
-              />
-            </Field>
+          <Field label={t('Edad')} error={errors.age} onLayout={track('age')}>
+            <TextField
+              value={draft.age}
+              onChangeText={(value) => update('age', value.replace(/[^0-9]/g, ''))}
+              placeholder="28"
+              autoCapitalize="none"
+              autoCorrect={false}
+              inputMode="numeric"
+              maxLength={2}
+              accessibilityLabel={t('Edad')}
+            />
+          </Field>
 
-            <Field
-              label={t('Lo que debe dominar quien busco')}
-              hint={t('Lo que a ti te falta. Si lo dejas vacío, te enseñamos a todo el mundo.')}
-              error={errors.seekingSpecialties}
-              onLayout={track('seekingSpecialties')}>
-              <SeekingSpecialtyPicker
-                values={draft.seekingSpecialties}
-                onChange={(next) => update('seekingSpecialties', next)}
-              />
-            </Field>
+          <LocationFields
+            value={draft}
+            errors={errors}
+            onCountryChange={(iso) => {
+              setDraft((current) => withCountry(current, iso));
+              setErrors((current) => ({ ...current, country: undefined, timezone: undefined }));
+            }}
+            onCityChange={(value) => update('city', value)}
+            onTimezoneChange={(value) => update('timezone', value)}
+            onLayoutField={track}
+          />
+        </>
+      ) : null}
 
-            <Field
-              label={t('Idiomas que hablo')}
-              error={errors.languages}
-              onLayout={track('languages')}>
-              <LanguagePicker
-                values={draft.languages}
-                onChange={(next) => update('languages', next)}
-              />
-            </Field>
-
-            <Field
-              label={t('Idiomas que debe hablar quien busco')}
-              hint={t('Si lo dejas vacío, te da igual el idioma.')}>
-              <LanguagePicker
-                values={draft.seekingLanguages}
-                onChange={(next) => update('seekingLanguages', next)}
-                seeking
-              />
-            </Field>
-          </>
-        ) : null}
-
-        {show('work') ? (
-          <>
-            <Field
-              label={t('Punto de partida')}
-              error={errors.startingPoint}
-              onLayout={track('startingPoint')}>
-              {STARTING_POINT_OPTIONS.map((option) => (
-                <OptionCard
-                  key={option.value}
-                  option={option}
-                  selected={draft.startingPoint === option.value}
-                  onPress={() => update('startingPoint', option.value)}
-                />
-              ))}
-            </Field>
-
-            <Field
-              label={t('Cuántas horas puedes dedicarle')}
-              hint={t('Horas reales a la semana, no las que te gustaría tener.')}>
-              <Stepper
-                value={draft.hoursPerWeek}
-                onChange={(value) => update('hoursPerWeek', value)}
-                min={HOURS_MIN}
-                max={HOURS_MAX}
-                step={HOURS_STEP}
-                formatValue={(value) => `${value} h/semana`}
-              />
-            </Field>
-
-            <Field label={t('Cuándo sueles trabajar')}>
-              <WorkRangeEditor
-                value={draft.workRanges}
-                onChange={(range) => update('workRanges', range)}
-              />
-            </Field>
-
-            <Field label={t('Ambición')} error={errors.ambition} onLayout={track('ambition')}>
-              {AMBITION_OPTIONS.map((option) => (
-                <OptionCard
-                  key={option.value}
-                  option={option}
-                  selected={draft.ambition === option.value}
-                  onPress={() => update('ambition', option.value)}
-                />
-              ))}
-            </Field>
-          </>
-        ) : null}
-
-        {show('prompts') ? (
+      {show('specialties') ? (
+        <>
           <Field
-            label={t('Tus respuestas (opcional)')}
-            hint={t('Cortas: es lo que hace que un perfil se lea.')}
-            error={errors.prompts}
-            onLayout={track('prompts')}>
-            {draft.prompts.map((prompt, index) => (
-              <View key={index} style={styles.prompt}>
-                <ChipRow>
-                  {PROMPT_QUESTIONS.map((question) => (
-                    <Chip
-                      key={question}
-                      label={t(question)}
-                      selected={prompt.question === question}
-                      onPress={() => updatePrompt(index, { question })}
-                    />
-                  ))}
-                </ChipRow>
+            label={t('Lo que domino')}
+            hint={t('Lo que sabes hacer. Elige todas las que apliquen.')}
+            error={errors.specialties}
+            onLayout={track('specialties')}>
+            <MasteryPicker
+              specialties={draft.specialties}
+              other={draft.otherSpecialty}
+              onSpecialtiesChange={(next) => update('specialties', next)}
+              // El error de «Otra» se pinta en `specialties`.
+              onOtherChange={(next) => {
+                update('otherSpecialty', next);
+                setErrors((current) => ({ ...current, specialties: undefined }));
+              }}
+            />
+          </Field>
 
-                {/* Prosa, no un nombre propio: el teclado solo levanta la primera
-                  letra y el corrector no entra. Con los defectos de Android la
-                  respuesta se guardaba capitalizada palabra por palabra. */}
-                <TextField
-                  value={prompt.answer}
-                  onChangeText={(answer) => updatePrompt(index, { answer })}
-                  placeholder={index === 0 ? t('Tu respuesta') : t('Opcional')}
-                  autoCapitalize="sentences"
-                  autoCorrect={false}
-                  multiline
-                  maxLength={PROMPT_MAX_LENGTH}
-                  showCount
-                  accessibilityLabel={t(prompt.question)}
-                />
-              </View>
+          <Field
+            label={t('Lo que debe dominar quien busco')}
+            hint={t('Lo que a ti te falta. Si lo dejas vacío, te enseñamos a todo el mundo.')}
+            error={errors.seekingSpecialties}
+            onLayout={track('seekingSpecialties')}>
+            <SeekingSpecialtyPicker
+              values={draft.seekingSpecialties}
+              onChange={(next) => update('seekingSpecialties', next)}
+            />
+          </Field>
+
+          <Field
+            label={t('Idiomas que hablo')}
+            error={errors.languages}
+            onLayout={track('languages')}>
+            <LanguagePicker
+              values={draft.languages}
+              onChange={(next) => update('languages', next)}
+            />
+          </Field>
+
+          <Field
+            label={t('Idiomas que debe hablar quien busco')}
+            hint={t('Si lo dejas vacío, te da igual el idioma.')}>
+            <LanguagePicker
+              values={draft.seekingLanguages}
+              onChange={(next) => update('seekingLanguages', next)}
+              seeking
+            />
+          </Field>
+        </>
+      ) : null}
+
+      {show('work') ? (
+        <>
+          <Field
+            label={t('Punto de partida')}
+            error={errors.startingPoint}
+            onLayout={track('startingPoint')}>
+            {STARTING_POINT_OPTIONS.map((option) => (
+              <OptionCard
+                key={option.value}
+                option={option}
+                selected={draft.startingPoint === option.value}
+                onPress={() => update('startingPoint', option.value)}
+              />
             ))}
           </Field>
-        ) : null}
 
-        {/*
+          <Field
+            label={t('Cuántas horas puedes dedicarle')}
+            hint={t('Horas reales a la semana, no las que te gustaría tener.')}>
+            <Stepper
+              value={draft.hoursPerWeek}
+              onChange={(value) => update('hoursPerWeek', value)}
+              min={HOURS_MIN}
+              max={HOURS_MAX}
+              step={HOURS_STEP}
+              formatValue={(value) => `${value} h/semana`}
+            />
+          </Field>
+
+          <Field label={t('Cuándo sueles trabajar')}>
+            <WorkRangeEditor
+              value={draft.workRanges}
+              onChange={(range) => update('workRanges', range)}
+            />
+          </Field>
+
+          <Field label={t('Ambición')} error={errors.ambition} onLayout={track('ambition')}>
+            {AMBITION_OPTIONS.map((option) => (
+              <OptionCard
+                key={option.value}
+                option={option}
+                selected={draft.ambition === option.value}
+                onPress={() => update('ambition', option.value)}
+              />
+            ))}
+          </Field>
+        </>
+      ) : null}
+
+      {show('prompts') ? (
+        <Field
+          label={t('Tus respuestas (opcional)')}
+          hint={t('Cortas: es lo que hace que un perfil se lea.')}
+          error={errors.prompts}
+          onLayout={track('prompts')}>
+          {draft.prompts.map((prompt, index) => (
+            <View key={index} style={styles.prompt}>
+              <ChipRow>
+                {PROMPT_QUESTIONS.map((question) => (
+                  <Chip
+                    key={question}
+                    label={t(question)}
+                    selected={prompt.question === question}
+                    onPress={() => updatePrompt(index, { question })}
+                  />
+                ))}
+              </ChipRow>
+
+              {/* Prosa, no un nombre propio: el teclado solo levanta la primera
+                  letra y el corrector no entra. Con los defectos de Android la
+                  respuesta se guardaba capitalizada palabra por palabra. */}
+              <TextField
+                value={prompt.answer}
+                onChangeText={(answer) => updatePrompt(index, { answer })}
+                placeholder={index === 0 ? t('Tu respuesta') : t('Opcional')}
+                autoCapitalize="sentences"
+                autoCorrect={false}
+                multiline
+                maxLength={PROMPT_MAX_LENGTH}
+                showCount
+                accessibilityLabel={t(prompt.question)}
+              />
+            </View>
+          ))}
+        </Field>
+      ) : null}
+
+      {/*
           El tablón se sube al instante (cada foto pasa por la moderación del
           servidor), no con «Guardar». Necesita perfil ya creado: en el alta no sale.
         */}
-        {section === undefined && initial ? (
-          <>
-            <MyProjects ownerId={initial.id} />
-            <Board ownerId={initial.id} ownerName={initial.name} editable />
-          </>
-        ) : null}
+      {section === undefined && initial ? (
+        <>
+          <MyProjects ownerId={initial.id} />
+          <Board ownerId={initial.id} ownerName={initial.name} editable />
+        </>
+      ) : null}
 
-        {show('links') ? (
-          <Field
-            label={t('Enlaces y redes (opcional)')}
-            hint={
-              githubLocked
-                ? t(
-                    'Tu GitHub está verificado: lo lleva el sello, no este campo. Para cambiarlo, desvincúlalo desde tu perfil.'
-                  )
-                : t(
-                    'Lo que enseñe qué has hecho y dónde estás: portfolio, LinkedIn, Instagram, TikTok.'
-                  )
-            }
-            error={errors.github}
-            onLayout={track('github')}>
-            <TextField
-              value={draft.github}
-              onChangeText={(value) => update('github', value)}
-              placeholder="https://github.com/tuusuario"
-              autoCapitalize="none"
-              autoCorrect={false}
-              inputMode="url"
-              accessibilityLabel="GitHub"
-              // Con sello, el enlace lo deriva el servidor de la identidad. Dejarlo
-              // editable devolvería el ataque que cierra la verificación entera:
-              // verifico como `alice` y enseño el GitHub de otro.
-              editable={!githubLocked}
-            />
-            <TextField
-              value={draft.portfolio}
-              onChangeText={(value) => update('portfolio', value)}
-              placeholder="https://tuportfolio.com"
-              autoCapitalize="none"
-              autoCorrect={false}
-              inputMode="url"
-              accessibilityLabel="Portfolio"
-            />
-            <TextField
-              value={draft.linkedin}
-              onChangeText={(value) => update('linkedin', value)}
-              placeholder="https://linkedin.com/in/tuusuario"
-              autoCapitalize="none"
-              autoCorrect={false}
-              inputMode="url"
-              accessibilityLabel="LinkedIn"
-            />
-            <TextField
-              value={draft.instagram}
-              onChangeText={(value) => update('instagram', value)}
-              placeholder="https://instagram.com/tuusuario"
-              autoCapitalize="none"
-              autoCorrect={false}
-              inputMode="url"
-              accessibilityLabel="Instagram"
-            />
-            <TextField
-              value={draft.tiktok}
-              onChangeText={(value) => update('tiktok', value)}
-              placeholder="https://tiktok.com/@tuusuario"
-              autoCapitalize="none"
-              autoCorrect={false}
-              inputMode="url"
-              accessibilityLabel="TikTok"
-            />
-          </Field>
-        ) : null}
-
-        {saveError ? (
-          <ThemedText type="small" themeColor="danger">
-            {saveError}
-          </ThemedText>
-        ) : null}
-
-        <View style={styles.actions}>
-          <PrimaryButton
-            label={saving ? t('Guardando…') : submitLabel}
-            disabled={saving}
-            onPress={handleSubmit}
+      {show('links') ? (
+        <Field
+          label={t('Enlaces y redes (opcional)')}
+          hint={
+            githubLocked
+              ? t(
+                  'Tu GitHub está verificado: lo lleva el sello, no este campo. Para cambiarlo, desvincúlalo desde tu perfil.'
+                )
+              : t(
+                  'Lo que enseñe qué has hecho y dónde estás: portfolio, LinkedIn, Instagram, TikTok.'
+                )
+          }
+          error={errors.github}
+          onLayout={track('github')}>
+          <TextField
+            value={draft.github}
+            onChangeText={(value) => update('github', value)}
+            placeholder="https://github.com/tuusuario"
+            autoCapitalize="none"
+            autoCorrect={false}
+            inputMode="url"
+            accessibilityLabel="GitHub"
+            // Con sello, el enlace lo deriva el servidor de la identidad. Dejarlo
+            // editable devolvería el ataque que cierra la verificación entera:
+            // verifico como `alice` y enseño el GitHub de otro.
+            editable={!githubLocked}
           />
-          {onCancel ? <SecondaryButton label={cancelLabel} onPress={onCancel} /> : null}
-        </View>
-      </KeyboardAwareScrollView>
-    </View>
+          <TextField
+            value={draft.portfolio}
+            onChangeText={(value) => update('portfolio', value)}
+            placeholder="https://tuportfolio.com"
+            autoCapitalize="none"
+            autoCorrect={false}
+            inputMode="url"
+            accessibilityLabel="Portfolio"
+          />
+          <TextField
+            value={draft.linkedin}
+            onChangeText={(value) => update('linkedin', value)}
+            placeholder="https://linkedin.com/in/tuusuario"
+            autoCapitalize="none"
+            autoCorrect={false}
+            inputMode="url"
+            accessibilityLabel="LinkedIn"
+          />
+          <TextField
+            value={draft.instagram}
+            onChangeText={(value) => update('instagram', value)}
+            placeholder="https://instagram.com/tuusuario"
+            autoCapitalize="none"
+            autoCorrect={false}
+            inputMode="url"
+            accessibilityLabel="Instagram"
+          />
+          <TextField
+            value={draft.tiktok}
+            onChangeText={(value) => update('tiktok', value)}
+            placeholder="https://tiktok.com/@tuusuario"
+            autoCapitalize="none"
+            autoCorrect={false}
+            inputMode="url"
+            accessibilityLabel="TikTok"
+          />
+        </Field>
+      ) : null}
+
+      {saveError ? (
+        <ThemedText type="small" themeColor="danger">
+          {saveError}
+        </ThemedText>
+      ) : null}
+
+      {!onCancel && submit}
+    </KeyboardAwareScrollView>
+  );
+  if (!onCancel) return <View style={styles.root}>{fields}</View>;
+  return (
+    <FormSheet
+      ownScroll
+      header={header}
+      onClose={() => requestClose(JSON.stringify(draft) !== JSON.stringify(original), onCancel)}
+      disabled={saving}
+      footer={submit}>
+      {fields}
+    </FormSheet>
   );
 }
 
@@ -692,9 +688,5 @@ const styles = StyleSheet.create({
   },
   prompt: {
     gap: Spacing.two,
-  },
-  actions: {
-    gap: Spacing.two,
-    marginTop: Spacing.two,
   },
 });

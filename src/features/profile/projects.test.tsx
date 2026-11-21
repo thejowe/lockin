@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { Linking } from 'react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { Alert, Linking } from 'react-native';
 import { DataProvider, ProjectPhotoError } from '@/data';
 import { createMockRepositories, createMockStore } from '@/data/mock';
 import { buildProfileInput } from '@/data/test-fixtures';
@@ -20,6 +20,7 @@ it('el editor del alta publica la ficha completa y el mismo cuadrado abre su edi
   await fireEvent.press(await screen.findByRole('button', { name: 'Crear proyecto' }));
   expect(screen.queryByLabelText('Descripción')).toBeNull();
   await fireEvent.changeText(screen.getByLabelText('Nombre del proyecto'), 'Mapa');
+  expect(screen.getByRole('button', { name: 'Añadir portada' })).toHaveTextContent(/Mapa/);
   await fireEvent.changeText(screen.getByLabelText('Frase corta'), 'Rutas de barrio');
   await fireEvent.press(screen.getByRole('button', { name: 'Más detalles' }));
   await fireEvent.changeText(screen.getByLabelText('Descripción'), 'Galería de rutas');
@@ -135,7 +136,13 @@ it('después de guardar dos fichas permite ordenar, quitar fotos de la galería 
   expect(screen.queryByText('Foto 1')).toBeNull();
   await fireEvent.press(screen.getByRole('button', { name: 'Eliminar proyecto' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Conservar proyecto' }));
-  await fireEvent.press(screen.getByRole('button', { name: 'Cancelar' }));
+  const alert = jest.spyOn(Alert, 'alert');
+  await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
+  expect(alert).toHaveBeenCalledWith('¿Descartar los cambios?', undefined, expect.any(Array));
+  await act(() =>
+    alert.mock.lastCall?.[2]?.find((choice) => choice.style === 'destructive')?.onPress?.()
+  );
+  alert.mockRestore();
   const [saved] = await repo.projects.list(me.id);
   expect(saved.cover).toBeTruthy();
   expect(saved.photos).toHaveLength(1);

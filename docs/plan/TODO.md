@@ -1,5 +1,10 @@
 # TODO maestro — LockIn MVP
 
+## Cierre de hojas y formularios · 20 de noviembre de 2026
+
+- [x] En `ui/cerrar-con-x`, las hojas de edición comparten X de cristal, asa de arrastre y confirmación cuando hay un borrador. La acción de guardar queda sobre el teclado.
+- [x] El perfil, el chat y los grupos usan un único editor de proyecto con portada, vista previa y detalles plegables. [51 comparativas por pantalla y estado](../auditoria/cerrar-con-x.zip)
+
 ## TestFlight 1.0.1 (72) · 20 de noviembre de 2026
 
 - [x] Compilada desde `23422ee` y disponible para pruebas internas. Apple confirmó `VALID` e `IN_BETA_TESTING`. [TestFlight](https://appstoreconnect.apple.com/apps/6828604279/testflight/ios/37f218ea-ada0-4f2d-b341-8af05f37e274)

@@ -157,12 +157,12 @@ describe('entrar en otra cuenta dejando atrás el perfil anónimo', () => {
       'tu@email.com',
       'Entrar aquí deja atrás el perfil de este teléfono',
       'Entrar y dejar este perfil',
-      'Mejor no',
     ]) {
       assert(abandon.includes(text), text);
       assert(form.includes(text), text);
     }
     assert(form.includes(": 'Entrar'}"));
+    assert(read('../src/components/close-button.tsx').includes('accessibilityLabel="Cerrar"'));
     assert(abandon.includes("'Matches'"));
     assert(tabs.includes("label: 'Matches'"));
     assert(tabs.includes("label: 'Perfil'"));
@@ -181,14 +181,14 @@ describe('entrar en otra cuenta dejando atrás el perfil anónimo', () => {
     assert(read('../src/app/(onboarding)/sign-in.tsx').includes('<SignInForm'));
   });
 
-  it('recorre «Mejor no» antes de aceptar, y afirma la ficha nueva y no la anónima', () => {
+  it('recorre la X antes de aceptar, y afirma la ficha nueva y no la anónima', () => {
     const at = (needle, from = 0) => {
       const index = abandon.indexOf(needle, from);
       assert(index >= from, 'Falta o está fuera de orden: ' + needle);
       return index;
     };
     const warning = at("visible: 'Entrar aquí deja atrás el perfil de este teléfono'");
-    const cancel = at("tapOn: 'Mejor no'", warning);
+    const cancel = at("tapOn: 'Cerrar'", warning);
     const gone = at("notVisible: 'Entrar aquí deja atrás el perfil de este teléfono'", cancel);
     const retry = at("tapOn: 'Entrar'", gone);
     const again = at("visible: 'Entrar aquí deja atrás el perfil de este teléfono'", retry);

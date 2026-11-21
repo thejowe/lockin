@@ -1,7 +1,7 @@
+import { CloseHeader } from '@/components/close-button';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useRepositories } from '@/data';
@@ -28,18 +28,14 @@ export function MessageReportPanel({
   if (sent)
     return (
       <View style={styles.panel}>
-        <ThemedText type="subtitle" accessibilityRole="alert">
-          {t('Reporte enviado.')}
-        </ThemedText>
+        <CloseHeader onPress={onClose}>
+          <ThemedText type="subtitle" accessibilityRole="alert">
+            {t('Reporte enviado.')}
+          </ThemedText>
+        </CloseHeader>
         <ThemedText type="small" themeColor="textSecondary">
           {t('El reporte es privado.')}
         </ThemedText>
-        <Button
-          label={t('Cerrar')}
-          accessibilityLabel={t('Cerrar reporte')}
-          variant="secondary"
-          onPress={onClose}
-        />
       </View>
     );
 

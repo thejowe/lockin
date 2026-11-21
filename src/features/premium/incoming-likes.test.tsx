@@ -213,7 +213,7 @@ describe('IncomingLikes: casos de borde', () => {
     await waitFor(() => expect(screen.getByText(name)).toBeTruthy());
 
     await fireEvent.press(screen.getByText(name));
-    await fireEvent.press(screen.getByText('Cerrar'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
 
     expect(spy).not.toHaveBeenCalled();
     expect(screen.getAllByTestId('incoming-like-tile')).toHaveLength(5);
@@ -327,7 +327,7 @@ describe('IncomingLikes: cierres y fallos de paginación', () => {
     await fireEvent.press(screen.getByText(name));
     await fireEvent.press(screen.getByText('Me gusta'));
     await waitFor(() => expect(screen.getByText(/Sin likes hasta/)).toBeTruthy());
-    await fireEvent.press(screen.getByText('Entendido'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
     expect(screen.queryByText(/Sin likes hasta/)).toBeNull();
     expect(screen.getAllByTestId('incoming-like-tile')).toHaveLength(5);
   });

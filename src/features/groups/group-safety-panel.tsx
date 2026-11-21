@@ -8,6 +8,7 @@
  * del deck y bloquea a su admin.
  */
 
+import { CloseHeader } from '@/components/close-button';
 import { useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
@@ -72,18 +73,14 @@ export function GroupSafetyPanel({
     return (
       <ScrollView keyboardShouldPersistTaps="handled">
         <View style={styles.panel}>
-          <ThemedText type="subtitle" accessibilityRole="alert">
-            {t('Reporte enviado.')}
-          </ThemedText>
+          <CloseHeader onPress={onClose}>
+            <ThemedText type="subtitle" accessibilityRole="alert">
+              {t('Reporte enviado.')}
+            </ThemedText>
+          </CloseHeader>
           <ThemedText type="small" themeColor="textSecondary">
             {t('El reporte es privado.')}
           </ThemedText>
-          <Button
-            label={t('Cerrar')}
-            accessibilityLabel={t('Cerrar opciones')}
-            variant="secondary"
-            onPress={onClose}
-          />
         </View>
       </ScrollView>
     );
@@ -92,7 +89,14 @@ export function GroupSafetyPanel({
     return (
       <ScrollView keyboardShouldPersistTaps="handled">
         <View style={styles.panel}>
-          <ThemedText type="subtitle">{t('¿Bloquear el grupo {name}?', { name })}</ThemedText>
+          <CloseHeader
+            onPress={() => {
+              setError(false);
+              setStage('menu');
+            }}
+            disabled={busy}>
+            <ThemedText type="subtitle">{t('¿Bloquear el grupo {name}?', { name })}</ThemedText>
+          </CloseHeader>
           <ThemedText type="small" themeColor="textSecondary">
             {t(
               'El grupo dejará de salirte y quien lo administra quedará bloqueado: no os veréis en Descubrir ni en Matches. Nadie recibirá ningún aviso.'
@@ -110,16 +114,6 @@ export function GroupSafetyPanel({
             disabled={busy}
             onPress={() => void block()}
           />
-          <Button
-            label={t('Cancelar')}
-            accessibilityLabel={t('Cancelar bloqueo')}
-            variant="secondary"
-            disabled={busy}
-            onPress={() => {
-              setError(false);
-              setStage('menu');
-            }}
-          />
         </View>
       </ScrollView>
     );
@@ -127,7 +121,9 @@ export function GroupSafetyPanel({
   return (
     <ScrollView keyboardShouldPersistTaps="handled">
       <View style={styles.panel}>
-        <ThemedText type="subtitle">{t('Opciones de {name}', { name })}</ThemedText>
+        <CloseHeader onPress={onClose}>
+          <ThemedText type="subtitle">{t('Opciones de {name}', { name })}</ThemedText>
+        </CloseHeader>
         <Button
           label={t('Bloquear grupo')}
           accessibilityLabel={t('Bloquear el grupo {name}', { name })}
@@ -139,12 +135,6 @@ export function GroupSafetyPanel({
           accessibilityLabel={t('Reportar el grupo {name}', { name })}
           variant="secondary"
           onPress={() => setStage('report')}
-        />
-        <Button
-          label={t('Cerrar')}
-          accessibilityLabel={t('Cerrar opciones')}
-          variant="secondary"
-          onPress={onClose}
         />
       </View>
     </ScrollView>

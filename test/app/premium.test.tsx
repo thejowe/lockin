@@ -33,7 +33,7 @@ describe('PremiumRoute', () => {
     await renderRoute(<PremiumRoute />);
 
     await screen.findByText('Likes sin límite');
-    await fireEvent.press(screen.getByRole('button', { name: 'Ahora no' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
 
     expect(router.back).toHaveBeenCalledTimes(1);
     expect(router.replace).not.toHaveBeenCalled();
@@ -44,7 +44,7 @@ describe('PremiumRoute', () => {
     await renderRoute(<PremiumRoute />);
 
     await screen.findByText('Likes sin límite');
-    await fireEvent.press(screen.getByRole('button', { name: 'Ahora no' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
 
     expect(router.replace).toHaveBeenCalledWith('/');
     expect(router.back).not.toHaveBeenCalled();

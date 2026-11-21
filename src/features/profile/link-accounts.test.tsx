@@ -105,7 +105,7 @@ it('avisa antes de sobrescribir un enlace de GitHub escrito a mano', async () =>
   expect(await screen.findByText(/otracosa/)).toBeTruthy();
   expect(verifyGithub).not.toHaveBeenCalled();
 
-  await fireEvent.press(screen.getByText('Dejarlo como está'));
+  await fireEvent.press(screen.getByRole('button', { name: 'Cerrar' }));
   expect(screen.queryByText(/otracosa/)).toBeNull();
   expect(verifyGithub).not.toHaveBeenCalled();
 
