@@ -6,6 +6,12 @@ import { createMockRepositories, createMockStore } from '@/data/mock';
 import { buildProfileInput } from '@/data/test-fixtures';
 import { setSearchParams } from '../../../test/routes';
 
+// La puerta de foto tiene su propio test (`test/app/photo-gate.test.tsx`); aquí deja pasar.
+jest.mock('@/features/profile/require-photo', () => ({
+  ...jest.requireActual('@/features/profile/require-photo'),
+  RequirePhoto: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 jest.mock('expo-router', () => {
   const router = jest.requireActual('../../../test/routes').expoRouterMock();
   router.Stack.Screen = function MockScreen({

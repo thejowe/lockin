@@ -2,7 +2,7 @@ import { Icon } from '@/components/icon';
 import { FormSheet } from '@/components/form-sheet';
 import { requestClose } from '@/components/close-button';
 import { Image } from 'expo-image';
-import { useRef, useState, type ComponentProps, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ProjectFieldEdgeAlpha, Radii, Spacing } from '@/constants/theme';
@@ -78,7 +78,12 @@ export function ProjectEditor({
   const [review, setReview] = useState(false);
   const [error, setError] = useState('');
   const [failedSlot, setFailedSlot] = useState<number | null>(null);
-  const change = (patch: Partial<ProjectInput>) => {
+  // Despierta la función de moderación mientras se rellena el formulario: así el
+  // primer guardado no paga el arranque en frío.
+  useEffect(() => {
+    void projects.warmUpModeration().catch(() => {});
+  }, [projects]);
+  const change =(patch: Partial<ProjectInput>) => {
     setDraft((current) => ({ ...current, ...patch }));
     setError('');
     setFailedSlot(null);

@@ -57,6 +57,7 @@ import {
   TermsAcceptance,
   useTermsGate,
 } from '@/features/profile';
+import { RequirePhoto } from '@/features/profile/require-photo';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { t } from '@/i18n';
 import { setActivePushRoute } from '@/lib/push';
@@ -361,9 +362,11 @@ function RequireTerms({ children }: { children: React.ReactNode }) {
 export default function ChatScreen() {
   return (
     <RequireVerifiedEmail>
-      <RequireTerms>
-        <ChatScreenContent />
-      </RequireTerms>
+      <RequirePhoto>
+        <RequireTerms>
+          <ChatScreenContent />
+        </RequireTerms>
+      </RequirePhoto>
     </RequireVerifiedEmail>
   );
 }

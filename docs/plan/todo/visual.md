@@ -2,6 +2,7 @@
 
 ## Proyectos · 18 de noviembre de 2026
 
+- [x] La hoja arranca bajo el borde del modal y sube en 360 ms. Con movimiento reducido entra por fundido.
 - [x] Panel y miniaturas con texto protegido sobre la imagen, animaciones con movimiento reducido y textos en es/en/ca.
 - [x] «Sobre mí» para fotos personales y nueva pista en la tarjeta y el tutorial. Las capturas del tutorial se toman con la pista desactivada.
 
@@ -821,3 +822,315 @@ Casilla `[comprobador]` de esta sección: la evidencia la **confirma ✅**; no l
 ## Fondo negro, sin luz ambiental (2026-10-17)
 
 - [x] **[Claude]** Decisión del usuario: fuera el difuminado de color, fondo negro. `theme.background` pasa a `#000000`; `AmbientBackground` ya no pinta nada (la API se conserva para no tocar las 13 pantallas que lo montan) y se borran `assets/images/ambient-*.jpg`. `AmbientPeak` = fondo, así que el test de contraste sigue midiendo sobre lo único que hay detrás. Splash a `#000000`; el fondo del icono adaptativo de Android se queda en grafito (es marca). Sin comprobar en dispositivo: lo mira el usuario.
+
+## Rediseño de foto, «Sobre mí» y proyectos (2026-11-18)
+
+Cuatro sesiones de Codex en paralelo, integradas en `redisenio/integracion` (orden A → B → C → D):
+`redisenio/proyectos` (A: paso y sección de proyectos, editor como hoja, `src/components/BottomSheet.tsx`),
+`redisenio/foto` (B: paso y cambio de foto de perfil), `redisenio/sobre-mi` (C: corcho de «Sobre mí»)
+y `redisenio/animaciones` (D: `src/components/animations/`, vuelo de la hoja, chincheta y hápticos).
+
+**Fusión en la principal (2026-11-21, pedida por el usuario).** `redisenio/integracion` entró encima
+de `ui/cerrar-con-x`. Donde las dos reescribían lo mismo manda `ui/cerrar-con-x`, que es más nuevo y
+está verificado: el editor de proyectos, «Tus proyectos», el corcho de «Sobre mí», la hoja de foto
+del perfil y el paso de proyectos del alta usan `FormSheet` con la X de cristal. Por eso salen
+`src/components/animations/`, `board-grid.tsx` y `project-card.tsx`, que ya no usaba nadie, junto
+con el vuelo de la hoja y la chincheta. De `redisenio/integracion` se quedan la puerta de foto
+(`RequirePhoto` y la pantalla `/photo`, con `photo-source-sheet` sobre `BottomSheet`), el ping
+`GET moderate-project` (el editor lo lanza al abrirse) y `useReduceMotionSetting`. Las casillas de
+abajo describen la rama tal como era antes de la fusión.
+- [ ] **[comprobador]** Recorrer en Android la puerta de foto con el editor de `ui/cerrar-con-x`:
+  alta sin foto → `/photo` → pestañas, chat y grupo.
+
+- [x] **[Claude]** Revisión por rama. Ninguna toca `supabase/`, `src/data/`, migraciones ni moderación.
+  B ya usaba el `BottomSheet` real de A (no había sustituto que borrar).
+- [x] **[Claude]** Fusión: conflicto en `src/app/(onboarding)/profile-form.tsx` y su test (A cambiaba
+  el paso de proyectos y C el botón de Sobre mí); quedan los dos. en/ca sin pérdidas.
+- [x] **[Claude]** Enganche de D según `src/components/animations/INTEGRACION.md`: la hoja vuela hasta la
+  tarjeta al crear un proyecto (vibración suave al aterrizar), vibración suave también al guardar
+  una edición, chincheta con golpecito al clavar la foto, `SlotPressable` en «Crear proyecto» y
+  «Añadir foto», chevron de «Más detalles». `ProjectHandoff` de A queda sustituido y se borra.
+- [x] **[Claude]** Unificado: el paso de proyectos usa `WizardScreen` como foto y Sobre mí (misma barra,
+  título, espaciados y un solo botón abajo «Ahora no» / «Continuar»).
+- [x] **[Claude]** `jest.setup.js`: el mock de `useAnimatedRef` se puede llamar como función, igual que el real.
+- [x] **[Claude]** `e2e/projects.yaml` al flujo nuevo (tarjeta de foto → hoja, «Foto aprobada», «Ahora no»
+  en Sobre mí, «Continuar» con un proyecto). Las capturas del tutorial no muestran estas pantallas.
+- [x] `[comprobador]` Alta completa en el emulador (foto, Sobre mí, proyectos), editar un proyecto
+  desde Perfil, las dos animaciones y el título del editor sin cortar. ✅ con el APK **mock** tras
+  cuatro rondas (ver «Hallazgos del comprobador» abajo). Arreglado por el camino: la hoja no volaba
+  (no se podía medir el `Animated.View` y Fabric pisaba el `setNativeProps`; ahora lo compone
+  `BottomSheetMotion`), «Publicar en Sobre mí» cortado en Android (`Button` a todo el ancho), el
+  borrador de Sobre mí pasa a la hoja compartida y el panel de la hoja es opaco.
+- [x] `[comprobador]` Alta completa con **Supabase** real y cuenta confirmada (la cuenta demo de la
+  revisión de Apple, credenciales fuera del repo): foto aprobada, Sobre mí, proyecto, editar desde
+  Perfil y reapertura en frío. Rondas 5 y 6 abajo. Hizo falta desplegar `moderate-project` en
+  producción (2026-11-18, con ok del usuario). Arreglado por el camino: la chincheta esperaba a la
+  foto firmada y «Tus proyectos» salía como «T» (BlurTargetView, ahora un View).
+- [x] `[comprobador]` Vuelo de la hoja contra Supabase (ronda 7, desde Perfil con portada y un
+  proyecto temporal ya borrado): «Guardando…», aviso de guardado lento y vuelo hasta la tarjeta.
+  Guardado medido en caliente: 0,2–0,5 s sin imagen, 1,4–2,8 s con portada; ~8 s en frío.
+- [x] `[comprobador]` Reducir movimiento cambia en vivo en la hoja (ronda 7) y el paso de foto no salta.
+- [ ] Menor: con animaciones normales la hoja asoma 1–2 fotogramas por encima de su sitio antes de
+  deslizarse, y el deslizamiento es corto (~135 px). Sin tocar.
+- [x] (usuario, 2026-11-18) **Puerta de foto**: sin foto aprobada no se entra a las pestañas ni a
+  chat/grupo/likes, también las cuentas antiguas (4 en producción el 2026-11-18). `/photo` pide los
+  Términos, deja ir a Ajustes y solo sale con foto aprobada (`require-photo.tsx`,
+  `photo-gate-screen.tsx`, `test/app/photo-gate.test.tsx`).
+- [x] (usuario, 2026-11-18) Reducir movimiento en la hoja sigue el ajuste en vivo
+  (`useReduceMotionSetting`).
+- [x] (usuario, 2026-11-18) Producción: aplicada la migración `chat_reads` y borrada la cuenta anónima
+  de prueba «Comprobador Rediseno» con `delete_my_account()`.
+- [ ] Aparte (no en este merge): Formato (14 archivos ajenos), umbral de cobertura y E2E
+  `full-journey`, rojos ya en la base.
+- [x] (usuario, 2026-11-18) «Guardar proyecto» pasa al `PrimaryButton` blanco común, con el mismo
+  estado desactivado. Fuera el naranja propio del editor.
+
+### Hallazgos del comprobador — rediseño (2026-11-18, commit `834740e`)
+
+AVD `lockin` (pixel_7, Android 16), APK **release** compilado desde `C:\Users\Usuari\Downloads\lockin-integracion`
+(solo x86_64). Evidencia: `e2e/artifacts/local/2026-11-18-redisenio/` (logs de build, `logcat-*.txt`, capturas
+numeradas y carpetas `15-pin`, `22-vuelo`, `24-vuelo2`, `44-pin-reducir`, `47-vuelo-reducir` con fotogramas de
+`screenrecord --output-format=frames` y su hoja de contacto `*-sheet00.png`).
+
+**Dos backends, y por qué.** Primero **Supabase real** (`[lockin] backend de datos: Supabase`, build con `--rerun`,
+`EXPO_PUBLIC_REQUIRE_ACCOUNT=false`). El alta llega al paso de la foto, pero `moderate-avatar` da **401 a las cuentas
+anónimas** (`index.ts:72`) y la app enseña «No hemos podido revisar la foto ahora mismo» (`06b`: «En revisión…»;
+`07`: el error; «Continuar» sigue apagado). No es un fallo del rediseño: sin cuenta con email confirmado no se pasa
+de ese paso. Perfil de prueba que quedó en prod: «Comprobador Rediseno» (cuenta anónima). El resto se recorrió con
+**mock** (`EXPO_PUBLIC_LOCKIN_ALLOW_MOCK=1`, «esta build NO habla con ningún servidor»): demuestra la interfaz y las
+animaciones, **nada de Supabase**. Para el ✅ en Supabase hace falta una cuenta confirmada (o marcar la anónima como
+no anónima, como se hizo el 2026-10-16) y repetir.
+
+- ✅ (Supabase hasta la revisión; mock el resto) **Paso de foto**: tarjeta «Añadir foto» (`02`) → hoja «Foto de
+  perfil» con «Hacer una foto» / «Elegir de la galería» (`03`) → galería (`04`) → recorte (`05`) → «En revisión…»
+  (`06b`, Supabase) → «Foto aprobada» y «Continuar» activo (`12`, mock).
+- ✅ (mock) **«Sobre mí»**: un solo botón abajo, «Ahora no» sin fotos (`13`) y «Continuar» con una (`16`). Caída de la
+  foto con chincheta: `15-pin/15-pin-sheet00.png` (la foto entra girada, se asienta y la chincheta aparece al final).
+- ❌ (mock) **Botón «Publicar en Sobre mí» cortado**: en el borrador de foto se lee «Publicar en Sobre» y falta «mí»
+  (`14`, zoom `14b-zoom-boton-publicar.png`; mismo corte desde Perfil, `43-reducir-borrador.png`). Esperado: la
+  etiqueta entera. `CompactPrimaryButton` en `src/features/profile/board.tsx:263`.
+- ✅ (mock) **«Tus proyectos»**: «Ahora no» sin proyectos (`17`), hoja «Crear proyecto» (`18`), el botón pasa a
+  «Continuar» tras guardar (`23`, `25`).
+- ❌ (mock) **La hoja no vuela hasta la tarjeta.** Dos grabaciones con escalas a 1 (`22-vuelo`, 15 fotogramas a 360×800;
+  `24-vuelo2`, 32 fotogramas a 216×480): la hoja a tamaño completo con «Guardando…» pasa **en un solo fotograma** a la
+  lista con la tarjeta nueva. No hay fotogramas intermedios de encogerse ni de desvanecerse, aunque la misma
+  grabación sí capta el parpadeo del cursor y, en «Sobre mí», 9 fotogramas de la chincheta. Esperado: el panel se
+  encoge y vuela hasta su hueco (`ShrinkToSlot`).
+- ✅ (mock) **Editar desde Perfil**: «Editar proyecto» con los datos (`31`), cambio de la frase (`32`), «Guardar
+  proyecto» y la tarjeta muestra «Prueba de vuelo editada» (`34`).
+- ✅ (mock) **Título del editor sin cortar**: «Crear proyecto» / «Editar proyecto» enteros con y sin teclado (`18`,
+  `19`, `20`, `31`, `32`) y con `font_scale 1.3` (`39`, `40`).
+- ✅ (mock) **Reducir animaciones** (las tres escalas a 0): la foto termina clavada y en su sitio (`44-pin-reducir`,
+  `45`) y, al crear «Tercero», la hoja desaparece y la tarjeta queda en la lista (`47-vuelo-reducir`, `48`). Nada
+  congelado a medias. Escalas devueltas a 1 y fuente a 1.0 al acabar.
+
+Observaciones menores, fuera de lo pedido: el fondo bajo la hoja del editor es un bloque gris liso o borroso, distinto
+del velo oscuro de la hoja de foto (`18`, `31`). En «Sobre mí», al llegar la primera foto desaparece el subtítulo y la
+rejilla sube (`15-pin`, fotogramas 4→5). El nombre largo del perfil se parte a media palabra («Compr/obador», `28`).
+Las horas de la jornada se parten en dos líneas con fuente 1.3 (`37`).
+
+Notas de entorno, sin cambios en el repo: el `expo prebuild` del worktree se colgaba en Windows (tinyglobby y las
+barras invertidas recorrían el `node_modules` enlazado). Se resolvió con un `--require` local. Para no pasar de
+MAX_PATH se compiló con `-Pexpo.android.cmakeObjectPathMax=240` y `buildStagingDirectory` corto en el `android/`
+generado, que está ignorado.
+
+#### Re-comprobación tras `cfb571e` (2026-11-18)
+
+APK release **mock** (`EXPO_PUBLIC_LOCKIN_ALLOW_MOCK=1`, confirmado en logcat), recompilado con `--rerun` desde el
+worktree en `cfb571e` y con los mismos apaños de compilación (log `build-cfb571e-mock.log`). Alta nueva tras
+`pm clear`. Escalas de animación a 1. Al acabar, fuente y escalas quedan como estaban (1.0 / 1 / 1 / 1).
+
+- ❌ **El vuelo de la hoja sigue sin verse.** Grabado en `49-vuelo-fix/` (20 fotogramas a 216×480, hoja de contacto
+  `49-vuelo-fix-sheet00.png`), creando «Vuelo» desde Perfil. La hoja sale a tamaño completo con «Guardando…» en 5
+  fotogramas seguidos (6–10) sin moverse ni encogerse, y en el fotograma siguiente ya está la lista con la tarjeta.
+  Ningún fotograma la muestra encogida, desplazada ni a medio fundir. La grabación sí capta movimiento: el cursor
+  parpadea (fotogramas 1–5) y la tarjeta «Crear proyecto» se desplaza (11–13). Hipótesis, sin comprobar en código:
+  no solo falla la medida. Tampoco se aplica el `setNativeProps(panel, …)` del worklet, porque ni siquiera se veía el
+  fundido de 140 ms de antes del arreglo.
+- ❌ **«Publicar en Sobre mí» sigue cortado.** El borrador ya sale en la hoja compartida y el botón ocupa todo el ancho
+  del pie, pero se lee «Publicar en Sobre», sin «mí», con fuente 1.0 (`51`, zoom `51b-zoom-boton.png`, también con el
+  teclado abierto en `52`) y con 1.3 (`55`). No hay puntos suspensivos. El volcado de UI da el texto completo
+  «Publicar en Sobre mí» en una caja de una línea (341–739 px). Así que no es por falta de ancho: la palabra «mí» no
+  llega a pintarse, como si saltara a una segunda línea que queda oculta.
+- ✅ **El campo de texto no queda tapado con el teclado abierto** (`52`). El campo y el contador 26/280 quedan por
+  encima del pie y del teclado.
+- ✅ **La chincheta sigue clavándose** (`50-pin-fix/`, con fuente 1.3). La foto entra girada y se asienta, y la
+  chincheta aparece al final (fotogramas 13–16). Resultado en `56`.
+- ✅ **La foto abierta sale en la hoja compartida** (`57`, fuente 1.3): título «Sobre mí», foto grande y «Quitar esta
+  foto» a todo el ancho en el pie.
+- Nuevo, visual: **la hoja compartida deja ver la página de debajo.** En `52`, `55` y `57` se leen a través del panel
+  el subtítulo de «Sobre mí», «Vincular cuentas», «GitHub», «LinkedIn», el texto de ayuda y la pestaña «Perfil» junto
+  al botón. Ya asomaba en la primera pasada (`31`). Esperado: un panel opaco.
+- Al cambiar `font_scale` con la app abierta, Android recrea la actividad. Esta vuelve a Descubrir o al tutorial y
+  pierde la hoja que estaba abierta (`53`). Es comportamiento normal de Android y no lo cuento como fallo.
+
+#### Ronda 3 (2026-11-18): `cfb571e` más cambios sin commitear (log `[vuelo-debug]`, texto del botón a todo el ancho, panel opaco)
+
+APK release **mock** (logcat: «mock en memoria (EXPO_PUBLIC_LOCKIN_ALLOW_MOCK=1…)»), recompilado con `--rerun`
+(`build-ronda3-mock.log`). Alta nueva tras `pm clear`, escalas de animación a 1.
+
+- ❌ **El vuelo sigue sin verse, pero la trayectoria ya se calcula.** Fotogramas en `61-vuelo-debug/` (19 a 216×480):
+  los fotogramas 6–9 muestran la hoja quieta a tamaño completo con «Guardando…» y el 10 ya muestra la lista con
+  «Vuelo». No hay ninguno intermedio. Logcat (`logcat-vuelo-debug-completo.txt`), líneas literales:
+  ```
+  11-18 19:50:18.445 10948 11008 I ReactNativeJS: '[vuelo-debug] save', '6fc679fc-ce69-4f9e-9cad-211cecf65d2d', 'source', true, 'sheet', true, 'rect', 'function'
+  11-18 19:50:18.484 10948 11008 I ReactNativeJS: '[vuelo-debug] frame', 'sheet', true, 'slot', true, 'flight', '{"dx":0,"dy":-108.38095092773438,"sx":0.8833333296245998,"sy":0.29595584914758916}', 'from', '{"x":0,"y":292.5714416503906,"width":411.4285583496094,"height":621.71435546875,"top":292.5714416503906,"left":0,"bottom":914.2857971191406,"right":411.4285583496094}', 'to', '{"x":24,"y":403.04766845703125,"width":363.4285583496094,"height":184,"top":403.04766845703125,"left":24,"bottom":587.0476684570312,"right":387.4285583496094}'
+  ```
+  La medida es válida y la trayectoria también (`flight` no es null). Lo que no llega a la pantalla es su aplicación
+  al panel.
+- ✅ **«Publicar en Sobre mí» se lee entero y centrado**:
+  - fuente 1.0 sin teclado (`64`) y con teclado (`65`, comparativa en `65b-comparativa.png`);
+  - fuente 1.3 sin teclado (`71`) y con teclado (`72`, par en `72b-f13-par.png`).
+
+  En los cuatro casos el campo de texto queda visible por encima del pie y del teclado.
+- ✅ **Otros botones principales**: «Continuar» del alta (`62`, `63`, recorte en `65b`), «Ahora no» del paso de
+  proyectos (`66`) y «Guardar proyecto» del editor (`70`, zoom `70b-zoom-guardar.png`) salen centrados y sin cortar.
+  «Entrar a cofounder» no aparece: la entrada es automática, solo con el logo y «ADN ganador» (`67`, `67b`).
+- ✅ **El panel de la hoja ya es opaco**: no se lee la página de debajo ni en «Sobre mí» (`64`, `65`, `71`, `72`) ni en el
+  editor de proyecto (`69`). Por encima del panel la página solo se ve atenuada, como corresponde al velo.
+
+Al acabar, escalas a 1/1/1 y fuente a 1.0, como estaban. No hay commits; los cambios sin commitear del coordinador
+siguen intactos.
+
+#### Ronda 4 (2026-11-18): vuelo aplicado por el estilo animado de la hoja (`BottomSheetMotion`), cambios sin commitear sobre `cfb571e`
+
+APK release **mock**, recompilado con `--rerun` (`build-ronda4-mock.log`). Alta nueva tras `pm clear`.
+
+- ✅ **La hoja vuela hasta su tarjeta** (escalas a 1, creando «Otro» desde Perfil). Fotogramas en
+  `73-vuelo-final/b/` (30 a 144×320), con zoom en `73b-zoom-f008-f018.png`:
+  - f008–f010: la hoja en «Guardando…»;
+  - f011–f017: el panel se estrecha, se acorta, baja hacia el hueco de la tarjeta y se funde;
+  - f018: la lista con «Otro» en ese hueco.
+
+  La primera grabación, a 216×480 (`73-vuelo-final/`, zoom `73-zoom-f008-f013.png`), solo capta el arranque
+  (f009–f011) porque adb no da más fotogramas a esa resolución. Durante el vuelo, el resto de la lista sigue
+  oscurecido por el velo y aparece de golpe al final. No hice el vuelo en el alta (`74-vuelo-alta/`): un toque
+  desfasado cerró el alta sin proyecto, y repetirla costaba otros cuatro minutos.
+- ✅ **Editar no vuela**: «Final» → «Ronda cuatro editada». La hoja desaparece de un fotograma al siguiente, sin
+  encogerse (`75-editar-cierre/`, f015→f016), y la tarjeta muestra el cambio (`75-editar-guardado.png`). La hoja se
+  cierra de golpe, sin bajar deslizándose; no sé si así es como debe cerrarse.
+- ✅ **«Publicar en Sobre mí» entero y hoja opaca** (`76-sobre-mi-publicar.png`).
+- ✅ **«Más detalles» desplegado** (`77-editor-mas-detalles.png`): pasa a «Ocultar detalles» con el chevron hacia arriba,
+  y aparecen «Descripción» y «Enlace del proyecto». El título «Editar proyecto» sale entero.
+- ✅ **Reducir animaciones** (escalas a 0, creando «Reducido»): la hoja se funde en su sitio sin encogerse
+  (`78-reducir-crear/`, f018–f021) y la lista queda con la tarjeta nueva (f023 en adelante,
+  `78-reducir-crear-final.png`). Nada se queda a medias.
+
+Al acabar, escalas a 1/1/1 y fuente a 1.0. No hay commits; los cambios sin commitear siguen intactos.
+
+#### Ronda 5 (Supabase), parcial (2026-11-18, `3fde8b9`)
+
+APK release contra **Supabase real**, con la configuración de producción: sin `EXPO_PUBLIC_REQUIRE_ACCOUNT` y sin mock.
+Compilado con `--rerun` (`build-ronda5-supabase.log`); el logcat dice «backend de datos: Supabase». Antes de empezar,
+`pm clear`. Cuenta demo `joeldetorres123+appreview@gmail.com`, registrada desde la bienvenida. El coordinador confirmó
+el correo. Los recortes de pantalla no muestran la contraseña.
+
+- ✅ **Registro → «Verify your email»** (`79`, `80-confirmar-correo.png`). Tras la confirmación, la app vuelve al paso
+  de idioma (`82`).
+- ✅ **Alta en español**:
+  - idioma (`83`) y nombre «Revisión Apple» (`84`);
+  - nacimiento 10/3/1996, 30 años (`85`);
+  - Barcelona, España, zona horaria de Madrid (`86`);
+  - qué domina, qué busca e idiomas (`87`, `87b`, `87c`);
+  - punto de partida, horas, franjas y ambición (`87d`–`87g`, contacto `87-hoja-pasos.png`);
+  - respuesta corta (`88`) y enlaces omitidos (`89a`).
+- ✅ **Foto de perfil**: tarjeta (`89b`), hoja «Foto de perfil» (`89c`), galería (`89d`), recorte (`89e`), «En revisión…»
+  y luego «Foto aprobada» por `moderate-avatar` (`89f-revision-hoja.png`, `89g`). La imagen es el retrato ficticio
+  `appleimatges/source/alex.png` de la ficha de la tienda, convertido a JPG y subido a la galería del emulador.
+  Observación: mientras dura «En revisión…» la pantalla se desplaza hacia arriba, el botón de volver queda oculto y el
+  título sube. Al aprobarse la foto vuelve a su sitio (`89f`, fotogramas 3–4 frente a 5). Ya pasó en la primera pasada
+  (`06b`).
+- ✅ **«Sobre mí»**: el borrador lleva el texto «Bocetos de la primera version», escrito sin tilde porque `adb input`
+  no admite caracteres acentuados (`89i`). «Revisando y subiendo…» y después la chincheta se clava
+  (`90-pin-supabase/`, f007–f022). ⚠️ Con Supabase la caída y la chincheta se animan sobre una tarjeta gris vacía,
+  porque la foto llega por URL firmada después: aparece en f023, cuando la animación ya ha terminado.
+- ❌ **«Tus proyectos»: no se puede guardar.** En el editor, con «cofounder» y «App para encontrar cofundador» (`90d`),
+  «Guardar proyecto» muestra «Guardando…» y después «No se ha podido guardar.» (`91b-proyectos-con-uno.png`). La hoja
+  no vuela, porque el guardado falla antes (`91-vuelo-alta-supabase/`). Causa: la Edge Function `moderate-project` no
+  existe en producción. `POST /functions/v1/moderate-project` responde **404 «Requested function was not found»**,
+  mientras que `moderate-avatar` responde 401 sin JWT de usuario. La tabla `profile_projects` sí existe: con la clave
+  anon da 42501 «permission denied». `src/data/supabase/projects.ts` guarda solo a través de esa función.
+- Pendiente: Descubrir y Perfil. La app sigue en el editor del alta, con el error a la vista.
+
+#### Ronda 5 (Supabase), cierre (2026-11-18)
+
+Con `moderate-project` ya desplegada en producción, y desde la misma hoja «Crear proyecto» del alta:
+
+- ✅ **El proyecto se guarda**, pero ⚠️ **el vuelo no quedó grabado.** Tras «Guardar proyecto», la hoja pasó más de 8 s en
+  «Guardando…», probablemente por el arranque en frío de la función. La grabación de `92-vuelo-alta-supabase/`
+  (11 fotogramas) terminó antes del vuelo. Pocos segundos después, la lista ya mostraba la tarjeta «cofounder»
+  (`92c-estado.png`). Repetir el vuelo dentro del alta exigía crear un segundo proyecto en la cuenta demo de
+  producción; el clasificador de permisos bloqueó esa acción y no la hice. El vuelo está verificado en mock en la
+  ronda 4.
+- ✅ **Entrada a la app**: «Continuar», tutorial (`92d`) omitido, y Descubrir con perfiles reales (`93-descubrir.png`).
+- ✅/❌ **Perfil**:
+  - foto aprobada, «Revisión Apple», 30 · Barcelona, España (`94-perfil.png`);
+  - proyecto y «Sobre mí» con el cuaderno y su chincheta (`95-perfil-proyecto-sobre-mi.png`, `95b-perfil-sobre-mi.png`);
+  - ❌ **el encabezado «Tus proyectos» del Perfil se pinta solo como «T»** (`95`, `95c-titulo-proyectos.png`, `96`). El
+    volcado de UI tiene el texto completo «Tus proyectos» en una caja de una línea a todo el ancho (63–1017 × 485–567).
+    Es el mismo tipo de recorte que tenía antes «Publicar en Sobre mí». El texto sale de
+    `src/features/profile/projects.tsx:66`.
+  - «Lo que domina» muestra solo «Producto»: un toque mío en «Desarrollo» no entró en el paso 5. Es un fallo del
+    recorrido, no de la app.
+- ✅ **Editar contra Supabase**: «App para encontrar cofundador» → «… en España» (`96a-editar-teclado.png`). Tras guardar,
+  la tarjeta muestra la frase nueva (`96-editar-guardado.png`).
+- ✅ **Puerta de foto con una cuenta que sí tiene foto**: quité la app de recientes y la cerré con `am kill`, sin
+  force-stop (`pidof` vacío). Al relanzarla, en el logcat aparecen `Running "main"` y «backend de datos: Supabase», y
+  entra directa a Descubrir, sin pasar por `/photo` (`97-reapertura-secuencia.png`, `97-reapertura.png`). El primer
+  intento no cerró la app (`97a-recientes.png`) y lo repetí.
+
+#### Ronda 6 (2026-11-18): el título «T», con el cambio sin commitear en `projects.tsx` (`MyProjects` dentro de un `View`)
+
+APK release de producción contra Supabase (`build-ronda6-supabase.log`; el logcat dice «backend de datos:
+Supabase»). Lo instalé sin `pm clear` y la sesión de la cuenta demo se conservó.
+
+- ✅ **«Tus proyectos» se lee entero** en Perfil (`98-tus-proyectos.png`). Sigue entero tras ir a Matches
+  (`98c-en-matches.png`) y volver a Perfil (`98b-tras-cambiar-pestana.png`). El volcado de UI da el texto en
+  63–1017 × 516–598.
+- ✅ **La hoja «Editar proyecto» se ve bien sobre el velo**: panel opaco, título entero, datos actuales y «Guardar
+  proyecto» desactivado porque no hay cambios (`99-editar-sobre-velo.png`). La página de detrás queda atenuada por el
+  velo. Al cerrarla con «Cerrar» sin tocar nada, Perfil queda igual, con «Tus proyectos» entero
+  (`99b-tras-cerrar.png`).
+- Vuelo contra Supabase: no lo hice, como pediste, para no crear proyectos en la cuenta demo.
+
+#### Ronda 7 (2026-11-18, `da49b1c`)
+
+**A) APK release de producción contra Supabase** (`build-ronda7-supabase.log`; el logcat dice «backend de datos:
+Supabase»). Lo instalé sin `pm clear` y se conservó la sesión de la cuenta demo. Escalas a 1.
+
+- ✅ **Vuelo contra Supabase** al crear «Temporal vuelo» / «Prueba de vuelo» con portada (cuaderno, `100b`).
+  Grabación en `100-vuelo-supabase/`: 48 fotogramas a 144×320 en unos 27 s. `screenrecord` no da marcas de tiempo, así
+  que los tiempos son por fotograma:
+  - f000: «Guardar proyecto»;
+  - f001–f027: «Guardando…»;
+  - f028–f034: aparece el aviso «Revisando el proyecto antes de publicarlo…» bajo el botón;
+  - f035: la hoja, ya encogida y semitransparente, cae sobre el hueco de su tarjeta;
+  - f036–f037: se va el velo;
+  - f038 en adelante: la lista con «Temporal vuelo» y su portada (`100-zoom-f032-f040.png`, `100c-tras-vuelo.png`).
+
+  El vuelo solo deja un fotograma intermedio a esta cadencia, pero se ve encogerse y aterrizar en la tarjeta.
+- ✅ **Borrado del proyecto temporal**: Editar → «Eliminar proyecto» → «¿Eliminar este proyecto?» → «Confirmar
+  eliminación» (`101a`). En Perfil queda solo «cofounder», con «Tus proyectos» entero (`101-tras-eliminar.png`).
+- ✅/⚠️ **Reducir movimiento en vivo**: el mismo proceso (pid 19236) durante todo el recorrido, sin cerrar ni reiniciar.
+  - Escalas a 1: la hoja entra moviéndose y se asienta en su sitio (`102-hoja-normal/`, f005–f010).
+  - Con `transition_animation_scale` y `animator_duration_scale` a 0: entra con fundido en su sitio, sin
+    desplazarse: f009 semitransparente, f010 más opaca, f011 final (`103-hoja-reducida/`).
+  - De nuevo a 1, sin reiniciar: vuelve a moverse; el borde superior pasa de y≈125 a 119, 115, 108 y 107 en f008–f011
+    (`104-hoja-normal-otra-vez/`).
+  - ⚠️ Con escalas a 1, en los primeros fotogramas (102: f005–f008; 104: f006–f007) el panel aparece **por encima** de su
+    posición final y luego salta hacia abajo antes de subir hasta su sitio. Es un destello de uno o dos fotogramas
+    antes del deslizamiento, que además es corto: arranca unos 18 px por debajo de la posición final a 144×320,
+    unos 135 px reales. No es un deslizamiento desde el borde de la pantalla.
+
+**B) APK mock** (`build-ronda7-mock.log`, `pm clear`, alta hasta la foto).
+
+- ✅ **Paso de foto sin saltos** (`105-foto-sin-salto/`, 158 fotogramas a 216×480; comparativa
+  `105-comparativa-f141-f143-f150.png`). Medido en píxeles, el título queda en y=66, el borde superior de la tarjeta en
+  y=84 y el botón en y=421, igual en f141 (sin foto y sin flecha), f143 (foto elegida, ya con flecha), f150 (aprobada)
+  y f157. La flecha aparece sin mover nada. ⚠️ El mock aprueba al instante, así que «En revisión…» no se llega a ver en
+  esta build; el estado «En revisión…» real solo se ve contra Supabase.
+
+**Al acabar**: reinstalé el APK de producción con `pm clear` y volví a iniciar sesión con la cuenta demo. Entra directa,
+sin pasar por `/photo`, y Perfil muestra «Revisión Apple», la foto y los datos (`106-sesion-demo-perfil.png`). Tras el
+`pm clear`, la app sale en inglés, el idioma del emulador; el idioma es del dispositivo, no de la cuenta. Escalas
+1/1/1 y fuente 1.0.

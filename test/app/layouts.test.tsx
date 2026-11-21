@@ -25,6 +25,12 @@ import RootLayout from '../../src/app/_layout';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
+// La puerta de foto tiene su propio test (`test/app/photo-gate.test.tsx`); aquí deja pasar.
+jest.mock('@/features/profile/require-photo', () => ({
+  ...jest.requireActual('@/features/profile/require-photo'),
+  RequirePhoto: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 jest.mock('expo-splash-screen', () => ({
   preventAutoHideAsync: jest.fn(),
   hideAsync: jest.fn(),

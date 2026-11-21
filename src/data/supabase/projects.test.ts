@@ -27,6 +27,13 @@ function fixture() {
   );
   return { repo, invoke, upload, remove, storage };
 }
+it('calienta la función con un GET sin borrador ni archivos', async () => {
+  const { repo, invoke, storage } = fixture();
+  await repo.warmUpModeration();
+  expect(invoke.mock.calls).toEqual([['moderate-project', { method: 'GET' }]]);
+  expect(storage).not.toHaveBeenCalled();
+});
+
 it('sube solo las fotos nuevas y entrega claves privadas, incluso al editar con URLs firmadas', async () => {
   const { repo, invoke, upload, remove, storage } = fixture();
   await repo.save(input, { id: 'p', revision: 'v' });

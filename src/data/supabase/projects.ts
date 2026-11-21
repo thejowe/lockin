@@ -198,6 +198,9 @@ export function supabaseProjects(
     }
   }
   return {
+    async warmUpModeration() {
+      await getClient().functions.invoke('moderate-project', { method: 'GET' });
+    },
     createForGroup: (input, draftId, group) => save(input, undefined, draftId, undefined, group),
     async forGroups(ids) {
       if (!ids.length) return [];

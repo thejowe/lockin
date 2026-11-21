@@ -31,6 +31,12 @@ import IndexRoute from '../../src/app/index';
 import ModeScreen from '../../src/app/(onboarding)/mode';
 import SignInScreen from '../../src/app/(onboarding)/sign-in';
 
+// La puerta de foto tiene su propio test (`test/app/photo-gate.test.tsx`); aquí deja pasar.
+jest.mock('@/features/profile/require-photo', () => ({
+  ...jest.requireActual('@/features/profile/require-photo'),
+  RequirePhoto: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 jest.mock('expo-router', () => require('../routes').expoRouterMock());
 
 let mockAvailable = true;

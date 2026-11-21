@@ -1,6 +1,7 @@
 import AppTabs from '@/components/app-tabs';
 import { useUnreadCounts } from '@/features/chat';
 import { RequireVerifiedEmail } from '@/features/profile';
+import { RequirePhoto } from '@/features/profile/require-photo';
 
 /** Las pestañas con el globo de mensajes sin leer en Matches. */
 function Tabs() {
@@ -11,7 +12,9 @@ function Tabs() {
 export default function TabsLayout() {
   return (
     <RequireVerifiedEmail>
-      <Tabs />
+      <RequirePhoto>
+        <Tabs />
+      </RequirePhoto>
     </RequireVerifiedEmail>
   );
 }

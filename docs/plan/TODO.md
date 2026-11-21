@@ -49,6 +49,8 @@ Fusionada en la principal. El proyecto privado se crea desde el match y conserva
 
 ## Proyectos · 18 de noviembre de 2026
 
+La hoja de proyecto entra desde el borde inferior en 360 ms. Abrir el editor anticipa el arranque de `moderate-project`. El despliegue de la función con el nuevo ping queda pendiente.
+
 Seguimiento por bloque en [datos](todo/datos.md), [perfil](todo/perfil.md), [descubrir](todo/descubrir.md), [visual](todo/visual.md) y [calidad](todo/calidad.md).
 
 ## TestFlight 1.0.1 · 17 de noviembre de 2026
@@ -789,6 +791,7 @@ Lo que sigue es el texto de la mañana; el punto 1 de la lista de bloqueos ya es
 
 - [x] Pulido visual de toda la app — bloque 13 `visual` en `PLAN.md`, abierto el 2026-09-29 y cerrado el 2026-09-30: auditoría, tokens, pantallas, estados y movimiento, con CI, Schema drift y E2E Android en verde sobre `02bb9e3`. Detalle y capturas en `todo/visual.md`. La casilla `[comprobador]` queda aparcada, como las del resto de bloques en esta máquina.
 - [x] Rediseño «cristal» — 2026-10-03, pedido por el usuario sobre la referencia Hume: solo oscuro, luz ambiental, superficies de cristal, acento brasa, Inter, barra de pestañas flotante y motion en toda la app. Cambia la marca (`CONCEPTO.md` → «Dirección visual»). Detalle en `todo/visual.md` → «Segunda pasada».
+- [ ] Rediseño de foto, «Sobre mí» y proyectos — 2026-11-18, cuatro sesiones de Codex integradas en `redisenio/integracion` (hoja inferior compartida, chincheta, vuelo de la hoja, hápticos). Comprobado en el emulador con mock y con Supabase real (cuenta demo de Apple); puerta de foto añadida. Detalle en `todo/visual.md` → «Rediseño de foto, «Sobre mí» y proyectos».
 
 ## Calidad
 - [x] ESLint/Prettier/TS estricto

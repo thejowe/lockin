@@ -95,7 +95,7 @@ export function WizardScreen({
   return (
     <View style={styles.root}>
       <View style={styles.topBar}>
-        {onBack ? <BackArrow onPress={onBack} /> : <View style={styles.side} />}
+        {onBack ? <BackArrow onPress={onBack} /> : <View testID="wizard-back-slot" style={styles.side} />}
         <View style={styles.progress}>
           <WizardProgress step={step} total={total} />
         </View>
@@ -175,8 +175,11 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
   },
+  // Mismo alto que la flecha: al ocultarla (p. ej. mientras se revisa la foto) la
+  // barra no encoge y la pantalla no salta hacia arriba.
   side: {
     width: Control.minTouch + Spacing.two,
+    height: Control.minTouch,
   },
   sideEnd: {
     alignItems: 'flex-end',

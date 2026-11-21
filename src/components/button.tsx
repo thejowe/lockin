@@ -92,7 +92,13 @@ export function Button({
                 },
             { opacity: disabled ? Opacity.disabled : pressed ? Opacity.pressed : 1 },
           ]}>
+          {/*
+            A su ancho propio, Android mide algunas etiquetas un poco cortas con
+            esta fuente y la última palabra salta a una línea que no se ve
+            («Publicar en Sobre mí»). Con el ancho del botón no se parte.
+          */}
           <ThemedText
+            style={compact ? undefined : styles.label}
             type={compact ? 'smallBold' : 'bodyStrong'}
             themeColor={primary ? 'onAccent' : variant === 'danger' ? 'danger' : 'text'}>
             {label}
@@ -126,6 +132,10 @@ const styles = StyleSheet.create({
   compact: {
     minHeight: Control.minTouch,
     paddingHorizontal: Spacing.three,
+  },
+  label: {
+    alignSelf: 'stretch',
+    textAlign: 'center',
   },
   compactSelf: {
     alignSelf: 'flex-start',

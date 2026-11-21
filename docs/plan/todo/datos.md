@@ -9,6 +9,8 @@
 
 - [x] Contrato, semillas, límite concurrente, RLS, URLs firmadas y publicación atómica del proyecto tras moderar sus imágenes.
 - [x] `profile_projects` figura en el historial de producción como `20261118160427`. Las cinco migraciones de ampliación y las versiones de las funciones desplegadas figuran en el TODO maestro.
+- [x] `GET moderate-project` devuelve el ping antes de consultar Auth, Storage o la base de datos.
+- [ ] Aplicar la migración y desplegar `moderate-project` en el entorno de destino tras la revisión.
 
 ## Plan compartido de los chats · 17 de noviembre de 2026
 

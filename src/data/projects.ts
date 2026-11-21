@@ -51,6 +51,7 @@ export interface ListOptions {
 }
 
 export interface ProjectRepository {
+  warmUpModeration(): Promise<void>;
   list(ownerId: string, options?: ListOptions): Promise<Project[]>;
   save(
     input: ProjectInput,

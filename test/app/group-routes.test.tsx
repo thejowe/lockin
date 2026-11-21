@@ -44,6 +44,12 @@ import type { GroupInput, Specialty } from '@/data';
 
 let mockChatFocused = true;
 
+// La puerta de foto tiene su propio test (`test/app/photo-gate.test.tsx`); aquí deja pasar.
+jest.mock('@/features/profile/require-photo', () => ({
+  ...jest.requireActual('@/features/profile/require-photo'),
+  RequirePhoto: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 jest.mock('expo-router', () => ({
   ...jest.requireActual('../routes').expoRouterMock(),
   useFocusEffect: (effect: () => void | (() => void)) => {

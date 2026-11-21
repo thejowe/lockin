@@ -1081,6 +1081,9 @@
   "Hasta {age} años": "Fins a {age} anys",
   "Añade una foto de perfil para continuar.": "Afegeix una foto de perfil per continuar.",
   "Pon tu foto de perfil": "Posa la teva foto de perfil",
+  "Añadir foto": "Afegeix una foto",
+  "Que se te vea la cara y con buena luz": "Que se’t vegi bé la cara i amb bona llum",
+  "Foto aprobada": "Foto aprovada",
   "Es obligatoria: la gente quiere saber con quién habla. Se revisa antes de publicarse.": "És obligatòria: la gent vol saber amb qui parla. Es revisa abans de publicar-se.",
   "Al menos {UNBLOCK_REASON_MIN} caracteres.": "Almenys {UNBLOCK_REASON_MIN} caràcters.",
   "Correo de la cuenta eliminada": "Correu del compte eliminat",
@@ -1301,5 +1304,6 @@
   "Actualiza la app para seguir usándola. Esta versión ya no es compatible.": "Actualitza l’app per continuar fent-la servir. Aquesta versió ja no és compatible.",
   "No se ha podido abrir la tienda.": "No s’ha pogut obrir la botiga.",
   "Actualizar": "Actualitza",
-  "Por ahora los proyectos compartidos no pueden llevar fotos. Quítalas para guardarlo.": "De moment, els projectes compartits no poden portar fotos. Treu-les per desar-lo."
+  "Por ahora los proyectos compartidos no pueden llevar fotos. Quítalas para guardarlo.": "De moment, els projectes compartits no poden portar fotos. Treu-les per desar-lo.",
+  "Para seguir en cofounder necesitas una foto de perfil aprobada.": "Per seguir a cofounder necessites una foto de perfil aprovada."
 }

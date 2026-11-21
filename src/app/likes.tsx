@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AmbientBackground } from '@/components/ambient-background';
 import { IncomingLikes } from '@/features/premium';
 import { RequireVerifiedEmail } from '@/features/profile';
+import { RequirePhoto } from '@/features/profile/require-photo';
 import { useTheme } from '@/hooks/use-theme';
 
 /**
@@ -33,7 +34,9 @@ function LikesContent() {
 export default function LikesRoute() {
   return (
     <RequireVerifiedEmail>
-      <LikesContent />
+      <RequirePhoto>
+        <LikesContent />
+      </RequirePhoto>
     </RequireVerifiedEmail>
   );
 }

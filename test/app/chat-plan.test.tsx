@@ -9,6 +9,12 @@ import { buildProfileInput } from '@/data/test-fixtures';
 import { meetingInstant } from '@/features/chat/plan-form';
 import { renderRoute, repositories, resetRepositories, setSearchParams } from '../routes';
 
+// La puerta de foto tiene su propio test (`test/app/photo-gate.test.tsx`); aquí deja pasar.
+jest.mock('@/features/profile/require-photo', () => ({
+  ...jest.requireActual('@/features/profile/require-photo'),
+  RequirePhoto: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 jest.mock('expo-router', () => jest.requireActual('../routes').expoRouterMock());
 
 it('conserva el borrador del chat y reintenta la misma tarea si se pierde la respuesta', async () => {

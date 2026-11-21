@@ -14,6 +14,12 @@ import { renderRoute, repositories, resetRepositories, resetRouter, router } fro
 
 import LikesRoute from '../../src/app/likes';
 
+// La puerta de foto tiene su propio test (`test/app/photo-gate.test.tsx`); aquí deja pasar.
+jest.mock('@/features/profile/require-photo', () => ({
+  ...jest.requireActual('@/features/profile/require-photo'),
+  RequirePhoto: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 jest.mock('expo-router', () => require('../routes').expoRouterMock());
 jest.mock('@/features/profile/use-registration-gate', () => ({
   useRegistrationGate: jest.fn(() => 'open'),

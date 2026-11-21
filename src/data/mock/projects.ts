@@ -92,6 +92,7 @@ export function mockProjects(
     return [...store.state.jointProjects.entries()].find(([, row]) => row.matchId === id);
   }
   return {
+    warmUpModeration: () => Promise.resolve(),
     async list(ownerId, options) {
       if (!store.state.profiles.has(ownerId) || blocked(actor, ownerId)) return [];
       const mine = ownerId === actor;
