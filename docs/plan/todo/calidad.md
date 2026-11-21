@@ -8,6 +8,7 @@
 - [x] El editor comparte la vista previa con la tarjeta de perfil. Los tests de tema miden los límites de los campos, el icono de la portada y el nombre sobre una fotografía clara.
 - [x] En la rama local pasaron TypeScript, el lint de Expo (tres avisos previos) y 2.447 pruebas de Jest en 192 suites. El contrato optativo de Supabase aporta los 247 casos omitidos. Pasaron además las 24 comprobaciones estáticas de los recorridos Maestro modificados de acceso y edición.
 - La galería reúne 51 parejas de capturas, indica sus plataformas y revisiones e incluye las comprobaciones con el teclado de Android y el registro de gestos táctiles en Edge móvil. [Abrir la galería comprimida](../../auditoria/cerrar-con-x.zip)
+- [ ] Sigue pendiente el recorrido completo con Supabase local. En la ejecución anterior, la moderación del avatar devolvió HTTP 500 durante el alta. [Registro de Maestro](https://github.com/thejowe/lockin/actions/runs/44743212718/job/136311828186)
 
 ## Formato y cobertura para TestFlight · 20 de noviembre de 2026
 
