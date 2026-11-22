@@ -8,7 +8,7 @@
     "scheme": "cofounder",
     "userInterfaceStyle": "dark",
     "ios": {
-      "version": "1.0.1",
+      "version": "1.0.2",
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "app.cofounder.mobile",
       "usesAppleSignIn": true,
